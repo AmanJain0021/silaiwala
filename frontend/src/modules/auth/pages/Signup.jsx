@@ -92,9 +92,9 @@ const Signup = () => {
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-2.5 text-[10px] font-bold uppercase tracking-wider text-pink-600 bg-pink-50 rounded-xl border border-pink-100 flex items-center justify-center gap-2"
+                    className="mb-4 p-2.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center justify-center gap-2"
                 >
-                    <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse" />
+                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
                     {error}
                 </motion.div>
             )}
@@ -143,13 +143,13 @@ const Signup = () => {
                                 />
                             </div>
 
-                            <div className="bg-[#FFF9FB] rounded-2xl p-1 border border-pink-50 shadow-inner">
+                            <div className="bg-[#F7F8FC] rounded-2xl p-1 border border-pink-50 shadow-inner">
                                 <Input
                                     name="referralCode"
                                     placeholder="Referral Code (Optional)"
                                     value={formData.referralCode}
                                     onChange={handleChange}
-                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#FD0053] placeholder:text-pink-400 placeholder:font-medium uppercase tracking-wider"
+                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#2D2F6E] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider"
                                 />
                             </div>
                         </>
@@ -163,14 +163,14 @@ const Signup = () => {
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
                                     Verification Code Sent to
                                 </p>
-                                <p className="text-xs font-black text-[#FD0053] mt-1">
+                                <p className="text-xs font-black text-[#2D2F6E] mt-1">
                                     {formData.phoneNumber}
                                 </p>
                             </div>
 
                             <div className="flex justify-between gap-2 px-1">
                                 {otp.map((digit, index) => (
-                                    <div key={index} className="flex-1 max-w-[45px] aspect-square bg-[#F8FAFC] rounded-xl border-2 border-slate-100 shadow-inner overflow-hidden focus-within:border-[#FD0053] focus-within:ring-2 focus-within:ring-[#FD0053]/10 transition-all duration-200">
+                                    <div key={index} className="flex-1 max-w-[45px] aspect-square bg-[#F8FAFC] rounded-xl border-2 border-slate-100 shadow-inner overflow-hidden focus-within:border-[#2D2F6E] focus-within:ring-2 focus-within:ring-[#2D2F6E]/10 transition-all duration-200">
                                         <input
                                             ref={(el) => (otpRefs.current[index] = el)}
                                             type="text"
@@ -189,7 +189,7 @@ const Signup = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStep('info')}
-                                    className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#FD0053] transition-colors flex items-center justify-center gap-2 mx-auto"
+                                    className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#2D2F6E] transition-colors flex items-center justify-center gap-2 mx-auto"
                                 >
                                     <span className="text-sm">←</span> Edit information
                                 </button>
@@ -201,7 +201,7 @@ const Signup = () => {
                 <div className="pt-2">
                     <Button
                         type="submit"
-                        className="w-full h-11 sm:h-12 rounded-full bg-[#FD0053] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#FD0053]/10"
+                        className="w-full h-11 sm:h-12 rounded-full bg-[#2D2F6E] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#2D2F6E]/10"
                         disabled={isLoading}
                     >
                         {isLoading ? (step === 'info' ? 'Sending...' : 'Verifying...') : (

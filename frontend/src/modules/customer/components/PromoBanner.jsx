@@ -14,7 +14,7 @@ const PromoBanner = () => {
             title: "FLAT 20% OFF",
             subtitle: "On your first custom stitching order",
             badge: "LIMITED OFFER",
-            color: "bg-gradient-to-br from-[#FD0053] to-[#ff85a2]",
+            color: "bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]",
             image: "https://cdn-icons-png.flaticon.com/128/9284/9284227.png"
         },
         {
@@ -38,7 +38,7 @@ const PromoBanner = () => {
                         title: b.title || "Special Offer",
                         subtitle: b.subtitle || "Premium custom tailoring services",
                         badge: b.badge || "FEATURED",
-                        color: b.color || "bg-gradient-to-br from-[#FD0053] to-[#ff85a2]",
+                        color: b.color || "bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]",
                         image: b.image || "https://cdn-icons-png.flaticon.com/128/9284/9284227.png"
                     }));
                     setBanners(activeBanners);
@@ -105,7 +105,7 @@ const PromoBanner = () => {
 
                     <div className="relative z-10 flex-1 flex flex-col gap-1.5 sm:gap-3 px-6 sm:px-12">
                         <div className="bg-white/20 w-fit px-2.5 py-1 rounded-full text-[8px] sm:text-[10px] font-black tracking-widest backdrop-blur-md flex items-center gap-1.5 border border-white/10 uppercase">
-                            <Sparkles size={8} className="text-pink-300" /> {currentBanner.badge || 'PROMO'}
+                            <Sparkles size={8} className="text-indigo-300" /> {currentBanner.badge || 'PROMO'}
                         </div>
                         <div className="max-w-md">
                             <h2 className="text-xl sm:text-3xl lg:text-5xl font-black leading-none tracking-tighter uppercase drop-shadow-lg">
@@ -114,7 +114,7 @@ const PromoBanner = () => {
                             <p className="text-[10px] sm:text-sm lg:text-base text-white/90 mt-0.5 sm:mt-3 font-bold tracking-tight drop-shadow-md leading-tight">{currentBanner.subtitle}</p>
                         </div>
                         <div className="flex items-center gap-4 mt-2 sm:mt-6">
-                            <button className="bg-[#FD0053] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-pink-900/20 hover:bg-[#cc496e] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest">
+                            <button className="bg-[#2D2F6E] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-indigo-900/20 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest">
                                 Book Now <ArrowRight size={12} />
                             </button>
                         </div>

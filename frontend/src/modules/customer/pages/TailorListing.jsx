@@ -38,15 +38,15 @@ const TailorListing = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-                <Loader2 size={40} className="text-[#FD0053] animate-spin mb-4" />
+                <Loader2 size={40} className="text-[#2D2F6E] animate-spin mb-4" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Searching Experts...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#fcf8f9] pb-24 font-sans selection:bg-[#FD0053] selection:text-white">
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-pink-50/50 via-white to-white -z-10" />
+        <div className="min-h-screen bg-[#F7F8FC] pb-24 font-sans selection:bg-[#2D2F6E] selection:text-white">
+            <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-50/50 via-white to-white -z-10" />
 
             {/* 1. Premium Sticky Header */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-5 pt-safe shadow-sm">
@@ -71,14 +71,14 @@ const TailorListing = () => {
                 {/* Search Bar with Internal Shadows */}
                 <div className="max-w-3xl mx-auto relative group">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-[#FD0053] transition-colors" />
+                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-[#2D2F6E] transition-colors" />
                     </div>
                     <input
                         type="text"
                         placeholder="Search by name, expertise..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-100/50 border border-transparent rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FD0053]/10 focus:bg-white focus:border-[#FD0053]/20 transition-all placeholder:text-gray-400"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-100/50 border border-transparent rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D2F6E]/10 focus:bg-white focus:border-[#2D2F6E]/20 transition-all placeholder:text-gray-400"
                     />
                 </div>
             </div>
@@ -90,7 +90,7 @@ const TailorListing = () => {
                 </span>
                 <div className="flex gap-2">
                     <div className="h-5 w-px bg-gray-200" />
-                    <span className="text-xs font-black text-[#FD0053] cursor-pointer">Sort By: Distance</span>
+                    <span className="text-xs font-black text-[#2D2F6E] cursor-pointer">Sort By: Distance</span>
                 </div>
             </div>
 
@@ -110,7 +110,7 @@ const TailorListing = () => {
                                     className="block bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.98] group relative overflow-hidden h-full"
                                 >
                                     {/* Subtle Gradient Hover Effect */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#FD0053]/5 to-transparent rounded-bl-full translate-x-10 -translate-y-10 group-hover:translate-x-4 group-hover:-translate-y-4 transition-transform duration-500"></div>
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#2D2F6E]/5 to-transparent rounded-bl-full translate-x-10 -translate-y-10 group-hover:translate-x-4 group-hover:-translate-y-4 transition-transform duration-500"></div>
 
                                     <div className="flex gap-4 items-start relative z-10">
                                         {/* Profile Picture with Status Ring */}
@@ -126,15 +126,15 @@ const TailorListing = () => {
                                             <div className="flex justify-between items-start mb-1">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     <h3 className="font-black text-gray-900 truncate tracking-tight">{tailor.shopName || tailor.user?.name}</h3>
-                                                    <ShieldCheck size={14} className="text-[#FD0053] shrink-0" />
+                                                    <ShieldCheck size={14} className="text-[#2D2F6E] shrink-0" />
                                                 </div>
-                                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-pink-50 text-[#FD0053] rounded-lg text-[10px] font-black border border-[#FD0053]/10">
-                                                    {tailor.rating || 0} <Star size={8} className="fill-[#FD0053] text-[#FD0053]" />
+                                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-[#2D2F6E] rounded-lg text-[10px] font-black border border-[#2D2F6E]/10">
+                                                    {tailor.rating || 0} <Star size={8} className="fill-[#2D2F6E] text-[#2D2F6E]" />
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center gap-2 mb-2">
-                                                <p className="text-[11px] text-[#FD0053] font-bold bg-pink-50 px-2 py-0.5 rounded-md">
+                                                <p className="text-[11px] text-[#2D2F6E] font-bold bg-indigo-50 px-2 py-0.5 rounded-md">
                                                     {tailor.specializations?.[0] || 'Expert Tailor'}
                                                 </p>
                                                 {tailor.isAvailable && (
@@ -161,7 +161,7 @@ const TailorListing = () => {
                                                 </span>
                                             ))}
                                         </div>
-                                        <button className="text-[11px] font-black text-[#FD0053] flex items-center gap-1 group/btn">
+                                        <button className="text-[11px] font-black text-[#2D2F6E] flex items-center gap-1 group/btn">
                                             View Details <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                                         </button>
                                     </div>

@@ -262,7 +262,7 @@ const Products = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-2xl font-black text-[#FD0053] tracking-tighter">
+                    <h3 className="text-2xl font-black text-[#2D2F6E] tracking-tighter">
                         {activeTab === 'samples' ? 'Stitching Services' : 'Fabric Inventory'}
                     </h3>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
@@ -274,7 +274,7 @@ const Products = () => {
                         setIsEditing(false);
                         setShowModal(true);
                     }}
-                    className="h-12 w-12 bg-[#FD0053] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-pink-900/10 hover:bg-primary-dark active:scale-90 transition-all"
+                    className="h-12 w-12 bg-[#2D2F6E] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-900/10 hover:bg-primary-dark active:scale-90 transition-all"
                 >
                     <Plus size={24} />
                 </button>
@@ -284,13 +284,13 @@ const Products = () => {
             <div className="flex p-1 bg-gray-100 rounded-[1.25rem] gap-1">
                 <button
                     onClick={() => setActiveTab('samples')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-[1rem] transition-all ${activeTab === 'samples' ? 'bg-[#FD0053] text-white shadow-md' : 'text-gray-400'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-[1rem] transition-all ${activeTab === 'samples' ? 'bg-[#2D2F6E] text-white shadow-md' : 'text-gray-400'}`}
                 >
                     <Layers size={14} /> Stitching Services
                 </button>
                 <button
                     onClick={() => setActiveTab('fabrics')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-[1rem] transition-all ${activeTab === 'fabrics' ? 'bg-[#FD0053] text-white shadow-md' : 'text-gray-400'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest rounded-[1rem] transition-all ${activeTab === 'fabrics' ? 'bg-[#2D2F6E] text-white shadow-md' : 'text-gray-400'}`}
                 >
                     <ShoppingBag size={14} /> Fabric Inventory
                 </button>
@@ -303,7 +303,7 @@ const Products = () => {
                     placeholder={`Search ${activeTab === 'samples' ? 'samples' : 'fabrics'}...`}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#FD0053] shadow-sm text-sm transition-colors"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] shadow-sm text-sm transition-colors"
                 />
             </div>
 
@@ -320,7 +320,7 @@ const Products = () => {
                             {activeTab === 'samples' ? <Scissors size={32} className="text-gray-200" /> : <Package size={32} className="text-gray-200" />}
                         </div>
                         <p className="text-gray-400 font-bold text-sm tracking-tight uppercase">No {activeTab} found</p>
-                        <button onClick={() => { setIsEditing(false); setShowModal(true); }} className="mt-4 text-[#FD0053] text-[10px] font-black underline uppercase tracking-widest">Add your first {activeTab.slice(0, -1)}</button>
+                        <button onClick={() => { setIsEditing(false); setShowModal(true); }} className="mt-4 text-[#2D2F6E] text-[10px] font-black underline uppercase tracking-widest">Add your first {activeTab.slice(0, -1)}</button>
                     </div>
                 ) : (
                     (() => {
@@ -344,7 +344,7 @@ const Products = () => {
                                             <div className="absolute top-2 right-2 flex gap-1.5 translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                                                 <button
                                                     onClick={() => handleEdit(item)}
-                                                    className="p-1.5 bg-white shadow-xl rounded-lg text-gray-600 hover:text-[#FD0053] hover:bg-pink-50 active:scale-95 transition-all"
+                                                    className="p-1.5 bg-white shadow-xl rounded-lg text-gray-600 hover:text-[#2D2F6E] hover:bg-indigo-50 active:scale-95 transition-all"
                                                 >
                                                     <Edit3 size={14} />
                                                 </button>
@@ -357,7 +357,7 @@ const Products = () => {
                                             </div>
 
                                             <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[90%]">
-                                                <div className="bg-[#FD0053] text-white px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider shadow-lg border border-white/10 backdrop-blur-md">
+                                                <div className="bg-[#2D2F6E] text-white px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider shadow-lg border border-white/10 backdrop-blur-md">
                                                     {item.category?.name || 'General'}
                                                 </div>
                                                 {activeTab === 'samples' && (
@@ -366,7 +366,7 @@ const Products = () => {
                                                             {item.serviceType || 'STITCHING'}
                                                         </div>
                                                         {item.tags && item.tags.slice(0, 1).map((tag, idx) => (
-                                                            <div key={idx} className="bg-yellow-400 text-[#FD0053] px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider shadow-lg border border-white/10">
+                                                            <div key={idx} className="bg-yellow-400 text-[#2D2F6E] px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider shadow-lg border border-white/10">
                                                                 {tag}
                                                             </div>
                                                         ))}
@@ -384,13 +384,13 @@ const Products = () => {
                                                     {activeTab === 'samples' ? (
                                                         <><Scissors size={10} /> EST: {item.deliveryTime || '10-15 DAYS'}</>
                                                     ) : (
-                                                        <><Package size={10} /> STOCK: <span className="text-[#FD0053] font-black">{item.stock || 0}M</span></>
+                                                        <><Package size={10} /> STOCK: <span className="text-[#2D2F6E] font-black">{item.stock || 0}M</span></>
                                                     )}
                                                 </p>
                                             </div>
                                             <div className="mt-3 pt-2 border-t border-gray-50 flex items-baseline justify-between">
                                                 <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'samples' ? 'Base' : 'Rate'}</p>
-                                                <p className="text-base font-black text-[#FD0053] italic tracking-tighter">
+                                                <p className="text-base font-black text-[#2D2F6E] italic tracking-tighter">
                                                     ₹{(item.basePrice || item.price || item.laborPrice || 0).toLocaleString()}
                                                 </p>
                                             </div>
@@ -405,7 +405,7 @@ const Products = () => {
 
             {/* Add New Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#FD0053]/20 backdrop-blur-xl animate-in fade-in duration-500">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2D2F6E]/20 backdrop-blur-xl animate-in fade-in duration-500">
                     <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-[0_32px_100px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-500 relative max-h-[92vh]">
                         {/* Close Button Top Right */}
                         <button
@@ -417,7 +417,7 @@ const Products = () => {
 
                         <div className="p-8 md:p-12 pt-12 md:pt-16 pb-4 md:pb-6">
                             <div>
-                                <h4 className="text-3xl md:text-4xl font-black text-[#FD0053] tracking-tighter uppercase italic leading-none">{isEditing ? 'Edit' : 'Upload'} {activeTab === 'samples' ? 'Service' : 'Fabric'}</h4>
+                                <h4 className="text-3xl md:text-4xl font-black text-[#2D2F6E] tracking-tighter uppercase italic leading-none">{isEditing ? 'Edit' : 'Upload'} {activeTab === 'samples' ? 'Service' : 'Fabric'}</h4>
                                 <p className="text-[10px] md:text-[11px] font-bold text-gray-400 uppercase tracking-[0.25em] mt-3">{isEditing ? `Update your existing ${activeTab.slice(0, -1)} details` : (activeTab === 'samples' ? 'Add a new stitching service for customers' : 'Add new fabric material to your shop')}</p>
                             </div>
                         </div>
@@ -428,7 +428,7 @@ const Products = () => {
                                 <label className="text-[11px] font-black text-gray-600 uppercase tracking-widest ml-4">Title / Name</label>
                                 <input
                                     required
-                                    className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-full focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053] placeholder:text-gray-400 shadow-inner"
+                                    className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-full focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E] placeholder:text-gray-400 shadow-inner"
                                     placeholder={activeTab === 'samples' ? "e.g. Royal Silk Sherwani" : "e.g. Italian Wool Fabric"}
                                     value={activeTab === 'samples' ? newItem.title : newItem.name}
                                     onChange={(e) => activeTab === 'samples'
@@ -446,7 +446,7 @@ const Products = () => {
                                     <div className="relative">
                                         <select
                                             required
-                                            className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-full focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053] appearance-none cursor-pointer"
+                                            className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-full focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E] appearance-none cursor-pointer"
                                             value={activeTab === 'fabrics' ? selectedParent : newItem.category}
                                             onChange={(e) => {
                                                 if (activeTab === 'fabrics') {
@@ -464,7 +464,7 @@ const Products = () => {
                                                     <option key={cat._id} value={cat._id}>{cat.name}</option>
                                                 ))}
                                         </select>
-                                        <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-[#FD0053]/30">
+                                        <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-[#2D2F6E]/30">
                                             <ChevronRight className="rotate-90" size={20} />
                                         </div>
                                     </div>
@@ -477,7 +477,7 @@ const Products = () => {
                                         <div className="relative">
                                             <select
                                                 required
-                                                className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-full focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053] appearance-none cursor-pointer"
+                                                className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-full focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E] appearance-none cursor-pointer"
                                                 value={newItem.category}
                                                 onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                                             >
@@ -486,7 +486,7 @@ const Products = () => {
                                                     <option key={cat._id} value={cat._id}>{cat.name}</option>
                                                 ))}
                                             </select>
-                                            <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-[#FD0053]/30">
+                                            <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-[#2D2F6E]/30">
                                                 <ChevronRight className="rotate-90" size={20} />
                                             </div>
                                         </div>
@@ -501,7 +501,7 @@ const Products = () => {
                                     <input
                                         required
                                         type="number"
-                                        className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-full focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053]"
+                                        className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-full focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E]"
                                         placeholder="0.00"
                                         value={activeTab === 'samples' ? newItem.basePrice : newItem.price}
                                         onChange={(e) => activeTab === 'samples'
@@ -517,7 +517,7 @@ const Products = () => {
                                     </label>
                                     <input
                                         required
-                                        className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-full focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053] placeholder:text-gray-400"
+                                        className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-full focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E] placeholder:text-gray-400"
                                         placeholder={activeTab === 'samples' ? "2-4 DAYS" : "50"}
                                         value={activeTab === 'samples' ? newItem.deliveryTime : newItem.stock}
                                         onChange={(e) => activeTab === 'samples'
@@ -532,7 +532,7 @@ const Products = () => {
                                 <textarea
                                     required
                                     rows="3"
-                                    className="w-full px-8 py-6 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-[2rem] focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053] resize-none placeholder:text-gray-400 shadow-inner"
+                                    className="w-full px-8 py-6 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-[2rem] focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E] resize-none placeholder:text-gray-400 shadow-inner"
                                     placeholder={`Describe your ${activeTab.slice(0, -1)}...`}
                                     value={newItem.description}
                                     onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
@@ -544,14 +544,14 @@ const Products = () => {
                                 <div className="space-y-2.5">
                                     <label className="text-[11px] font-black text-gray-600 uppercase tracking-widest ml-4">Tags (Comma separated)</label>
                                     <input
-                                        className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#FD0053]/10 rounded-full focus:outline-none focus:ring-8 ring-[#FD0053]/5 focus:bg-white transition-all text-sm font-black text-[#FD0053] placeholder:text-gray-400 shadow-inner"
+                                        className="w-full px-8 py-5 bg-[#f8f9fa] border-2 border-transparent focus:border-[#2D2F6E]/10 rounded-full focus:outline-none focus:ring-8 ring-[#2D2F6E]/5 focus:bg-white transition-all text-sm font-black text-[#2D2F6E] placeholder:text-gray-400 shadow-inner"
                                         placeholder="e.g. POPULAR, EXPRESS, BRIDAL"
                                         value={newItem.tags}
                                         onChange={(e) => setNewItem({ ...newItem, tags: e.target.value.toUpperCase() })}
                                     />
                                     <div className="flex flex-wrap gap-2 mt-2 ml-2">
                                         {newItem.tags.split(',').map((tag, idx) => tag.trim() !== '' && (
-                                            <span key={idx} className="px-2 md:px-3 py-1 bg-[#FD0053] text-white text-[8px] md:text-[9px] font-black rounded-lg tracking-widest uppercase">
+                                            <span key={idx} className="px-2 md:px-3 py-1 bg-[#2D2F6E] text-white text-[8px] md:text-[9px] font-black rounded-lg tracking-widest uppercase">
                                                 {tag.trim()}
                                             </span>
                                         ))}
@@ -579,9 +579,9 @@ const Products = () => {
                                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                                 disabled={isImageUploading}
                                             />
-                                            <div className="w-full px-6 py-4 bg-[#f8f9fa] rounded-2xl text-[10px] font-black text-[#FD0053] flex items-center justify-center gap-2 hover:bg-white border border-transparent hover:border-gray-100 transition-all uppercase tracking-widest">
+                                            <div className="w-full px-6 py-4 bg-[#f8f9fa] rounded-2xl text-[10px] font-black text-[#2D2F6E] flex items-center justify-center gap-2 hover:bg-white border border-transparent hover:border-gray-100 transition-all uppercase tracking-widest">
                                                 {isImageUploading ? (
-                                                    <div className="w-4 h-4 border-2 border-[#FD0053] border-t-transparent animate-spin rounded-full" />
+                                                    <div className="w-4 h-4 border-2 border-[#2D2F6E] border-t-transparent animate-spin rounded-full" />
                                                 ) : (
                                                     <Plus size={16} />
                                                 )}
@@ -608,7 +608,7 @@ const Products = () => {
                             <button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="w-full bg-[#FD0053] text-white rounded-full py-6 font-black uppercase tracking-[0.3em] italic text-sm shadow-[0_24px_50px_rgba(255,92,138,0.22)] hover:shadow-[0_28px_60px_rgba(255,92,138,0.3)] transition-all active:scale-95 disabled:opacity-50"
+                                className="w-full bg-[#2D2F6E] text-white rounded-full py-6 font-black uppercase tracking-[0.3em] italic text-sm shadow-[0_24px_50px_rgba(255,92,138,0.22)] hover:shadow-[0_28px_60px_rgba(255,92,138,0.3)] transition-all active:scale-95 disabled:opacity-50"
                             >
                                 {isSubmitting ? (isEditing ? 'Updating...' : 'Publishing...') : (isEditing ? 'Update ' : 'Publish ') + (activeTab === 'samples' ? 'Service' : 'Fabric')}
                             </button>

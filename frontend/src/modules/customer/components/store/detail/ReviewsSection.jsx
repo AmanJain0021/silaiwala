@@ -58,7 +58,7 @@ const ReviewsSection = () => {
                     <div className="flex items-center gap-2">
                         <span>1★</span>
                         <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-                            <div className="bg-red-500 h-full w-[2%]"></div>
+                            <div className="bg-indigo-500 h-full w-[2%]"></div>
                         </div>
                         <span>2</span>
                     </div>

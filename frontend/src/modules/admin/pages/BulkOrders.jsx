@@ -11,7 +11,7 @@ const statusConfig = {
     accepted: { color: 'text-green-500', bg: 'bg-green-50', label: 'Awaiting Assignment' },
     'accepted-by-tailor': { color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Master Tailor Assigned' },
     'fabric-ready-for-pickup': { color: 'text-orange-600', bg: 'bg-orange-50', label: 'Fabric Scheduled' },
-    'in-production': { color: 'text-[#FD0053]', bg: 'bg-pink-50', label: 'In Production' },
+    'in-production': { color: 'text-[#2D2F6E]', bg: 'bg-indigo-50', label: 'In Production' },
     'ready-for-pickup': { color: 'text-cyan-600', bg: 'bg-cyan-50', label: 'Quality Checked' },
     shipped: { color: 'text-sky-600', bg: 'bg-sky-50', label: 'In Transit' },
     delivered: { color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Completed' },

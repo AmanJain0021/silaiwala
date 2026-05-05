@@ -58,7 +58,7 @@ const ReferEarn = () => {
                         </button>
                     </div>
 
-                    <button className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-pink-900/10 mt-6 flex items-center justify-center gap-3 transition-all hover:bg-primary-dark active:scale-95">
+                    <button className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-900/10 mt-6 flex items-center justify-center gap-3 transition-all hover:bg-primary-dark active:scale-95">
                         <Share2 size={18} />
                         Share Invitation Link
                     </button>
@@ -79,7 +79,7 @@ const ReferEarn = () => {
                         </div>
                     </div>
                     <div className="flex gap-6">
-                        <div className="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center shrink-0 border border-pink-100">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
                             <span className="font-black text-primary">2</span>
                         </div>
                         <div>

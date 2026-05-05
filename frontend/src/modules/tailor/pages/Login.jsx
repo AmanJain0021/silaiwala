@@ -94,7 +94,7 @@ const TailorLogin = () => {
 
                 <div className="space-y-4">
                     {/* Mobile Number Field */}
-                    <div className="bg-white rounded-xl p-1 border border-gray-200 shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-pink-100 focus-within:border-pink-300">
+                    <div className="bg-white rounded-xl p-1 border border-gray-200 shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-pink-300">
                         <div className="flex items-center px-3 py-2 gap-2">
                             <FiUser className="text-[#D86580] text-lg" />
                             <span className="text-gray-500 font-bold text-sm border-r border-gray-100 pr-2">+91</span>
@@ -124,7 +124,7 @@ const TailorLogin = () => {
                             className={`w-full h-12 rounded-xl font-bold transition-all duration-300 ${
                                 !mobileNumber || mobileNumber.length < 10 || sendingOtp
                                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                    : 'bg-[#D86580] hover:bg-[#b8526a] text-white shadow-md shadow-pink-200'
+                                    : 'bg-[#D86580] hover:bg-[#b8526a] text-white shadow-md shadow-indigo-200'
                             }`}
                         >
                             {sendingOtp ? 'Sending OTP...' : 'Send OTP'}
@@ -141,7 +141,7 @@ const TailorLogin = () => {
                             className="space-y-4 overflow-hidden pt-2"
                         >
                             {/* OTP Field */}
-                            <div className="bg-white rounded-xl p-1 border border-gray-200 shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-pink-100 focus-within:border-pink-300">
+                            <div className="bg-white rounded-xl p-1 border border-gray-200 shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-pink-300">
                                 <div className="flex items-center px-3 py-2 gap-3">
                                     <input
                                         type="text"
@@ -160,7 +160,7 @@ const TailorLogin = () => {
                                 type="submit"
                                 disabled={isLoading}
                                 className={`w-full h-12 rounded-xl font-bold text-white transition-all duration-300 ${
-                                    isLoading ? 'bg-pink-300 cursor-not-allowed' : 'bg-[#D86580] hover:bg-[#b8526a] shadow-md shadow-pink-200'
+                                    isLoading ? 'bg-indigo-300 cursor-not-allowed' : 'bg-[#D86580] hover:bg-[#b8526a] shadow-md shadow-indigo-200'
                                 }`}
                             >
                                 {isLoading ? 'Verifying...' : 'Verify & Login'}

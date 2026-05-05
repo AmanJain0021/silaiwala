@@ -27,7 +27,7 @@ const PartnerLanding = () => {
       description: "Join SewZella and bring your tailoring skills to a global audience.",
       image: img1,
       icon: <Sparkles className="w-8 h-8" />,
-      color: "#FD0053"
+      color: "#2D2F6E"
     },
     {
       title: "Manage with Ease",
@@ -41,7 +41,7 @@ const PartnerLanding = () => {
       description: "Showcase your portfolio and get discovered by thousands of customers.",
       image: img3,
       icon: <Globe className="w-8 h-8" />,
-      color: "#FD0053"
+      color: "#2D2F6E"
     },
     {
       title: "Secure Earnings",
@@ -76,7 +76,7 @@ const PartnerLanding = () => {
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: idx <= currentStep ? "100%" : "0%" }}
-              className="h-full bg-[#FD0053]"
+              className="h-full bg-[#2D2F6E]"
             />
           </div>
         ))}
@@ -132,7 +132,7 @@ const PartnerLanding = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
-                className="w-16 h-16 rounded-3xl bg-[#FD0053]/10 text-[#FD0053] flex items-center justify-center mb-6 shadow-sm"
+                className="w-16 h-16 rounded-3xl bg-[#2D2F6E]/10 text-[#2D2F6E] flex items-center justify-center mb-6 shadow-sm"
               >
                 {steps[currentStep].icon}
               </motion.div>
@@ -167,7 +167,7 @@ const PartnerLanding = () => {
             className={`w-full py-5 rounded-3xl font-bold text-xl flex items-center justify-center gap-3 shadow-2xl transition-all ${
               currentStep === steps.length - 1 
                 ? "bg-[#1B263B] text-white shadow-[#1B263B]/30" 
-                : "bg-[#FD0053] text-white shadow-[#FD0053]/30"
+                : "bg-[#2D2F6E] text-white shadow-[#2D2F6E]/30"
             }`}
           >
             {currentStep === steps.length - 1 ? (
@@ -183,7 +183,7 @@ const PartnerLanding = () => {
               <div 
                 key={idx} 
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentStep ? "w-8 bg-[#FD0053]" : "w-2 bg-gray-200"
+                  idx === currentStep ? "w-8 bg-[#2D2F6E]" : "w-2 bg-gray-200"
                 }`}
               />
             ))}

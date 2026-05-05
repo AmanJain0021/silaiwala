@@ -112,7 +112,7 @@ const DeliveryForgotPassword = () => {
       className="w-full max-w-sm mx-auto"
     >
       <div className="text-left mb-8">
-        <h2 className="text-2xl font-black text-[#1A202C] tracking-tight">Forgot Password</h2>
+        <h2 className="text-2xl font-black text-[#1A1A1A] tracking-tight">Forgot Password</h2>
         <p className="text-gray-500 font-medium mt-1">
           {step === 'request'
             ? 'Enter your delivery account email to receive OTP.'

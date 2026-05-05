@@ -42,7 +42,7 @@ const EditProfile = () => {
                 </div>
                 <button
                     onClick={handleSubmit}
-                    className="p-2 text-[#FD0053] hover:bg-pink-50 rounded-full transition-colors font-black"
+                    className="p-2 text-[#2D2F6E] hover:bg-indigo-50 rounded-full transition-colors font-black"
                     disabled={isLoading}
                 >
                     <Save size={20} />
@@ -53,10 +53,10 @@ const EditProfile = () => {
                 {/* 2. Profile Photo */}
                 <div className="flex flex-col items-center">
                     <div className="relative group">
-                        <div className="w-28 h-28 rounded-full border-4 border-white ring-4 ring-pink-50/50 shadow-xl overflow-hidden bg-white flex items-center justify-center">
-                            <span className="text-4xl font-black text-[#FD0053]">{formData.name.charAt(0)}</span>
+                        <div className="w-28 h-28 rounded-full border-4 border-white ring-4 ring-indigo-50/50 shadow-xl overflow-hidden bg-white flex items-center justify-center">
+                            <span className="text-4xl font-black text-[#2D2F6E]">{formData.name.charAt(0)}</span>
                         </div>
-                        <button type="button" className="absolute bottom-1 right-1 bg-gray-900 text-white p-2 rounded-full shadow-lg hover:bg-[#FD0053] transition-all transform hover:scale-110 active:scale-90">
+                        <button type="button" className="absolute bottom-1 right-1 bg-gray-900 text-white p-2 rounded-full shadow-lg hover:bg-[#2D2F6E] transition-all transform hover:scale-110 active:scale-90">
                             <Camera size={16} />
                         </button>
                     </div>
@@ -66,7 +66,7 @@ const EditProfile = () => {
                 <div className="space-y-6">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#FD0053] focus-within:bg-white transition-all">
+                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
                             <User size={18} className="text-gray-400" />
                             <input
                                 type="text"
@@ -80,7 +80,7 @@ const EditProfile = () => {
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#FD0053] focus-within:bg-white transition-all">
+                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
                             <Mail size={18} className="text-gray-400" />
                             <input
                                 type="email"
@@ -94,7 +94,7 @@ const EditProfile = () => {
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#FD0053] focus-within:bg-white transition-all">
+                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
                             <Phone size={18} className="text-gray-400" />
                             <input
                                 type="tel"
@@ -108,7 +108,7 @@ const EditProfile = () => {
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">City / Location</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#FD0053] focus-within:bg-white transition-all">
+                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
                             <MapPin size={18} className="text-gray-400" />
                             <input
                                 type="text"
@@ -124,7 +124,7 @@ const EditProfile = () => {
                 <div className="pt-6">
                     <button
                         type="submit"
-                        className="w-full bg-[#FD0053] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-pink-100 flex items-center justify-center gap-3 transition-all hover:bg-[#cc496e] active:scale-95"
+                        className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all hover:bg-[#1E1F4D] active:scale-95"
                         disabled={isLoading}
                     >
                         {isLoading ? (

@@ -169,9 +169,9 @@ const AdminLayout = () => {
                         <div className="flex items-center gap-3 lg:gap-4 pl-3 lg:pl-6 border-l border-gray-100">
                             <div className="text-right hidden lg:block">
                                 <p className="text-xs font-black text-gray-900 leading-none uppercase tracking-tighter">Super Admin</p>
-                                <p className="text-[9px] text-[#FD0053] font-black uppercase mt-1 tracking-[0.1em]">Full Platform Access</p>
+                                <p className="text-[9px] text-[#2D2F6E] font-black uppercase mt-1 tracking-[0.1em]">Full Platform Access</p>
                             </div>
-                            <div className="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#FD0053] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-pink-900/20 shrink-0 border-2 border-white">
+                            <div className="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#2D2F6E] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-indigo-900/20 shrink-0 border-2 border-white">
                                 SA
                             </div>
                             <button

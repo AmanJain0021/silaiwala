@@ -54,7 +54,7 @@ const UploadSlip = ({ onUpload, onCancel }) => {
                 onClick={() => !preview && fileInputRef.current?.click()}
                 className={cn(
                     "relative w-full aspect-[4/3] rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all bg-white cursor-pointer group mb-4 overflow-hidden",
-                    error ? "border-red-300 bg-red-50" : "border-gray-200 hover:border-primary hover:bg-[#f2fcf9]"
+                    error ? "border-red-300 bg-indigo-50" : "border-gray-200 hover:border-primary hover:bg-[#f2fcf9]"
                 )}
             >
                 <input
@@ -73,14 +73,14 @@ const UploadSlip = ({ onUpload, onCancel }) => {
                                 e.stopPropagation();
                                 handleRemove();
                             }}
-                            className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow-md hover:bg-red-50 text-red-500 transition-colors"
+                            className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow-md hover:bg-indigo-50 text-error transition-colors"
                         >
                             <X size={16} />
                         </button>
                     </>
                 ) : (
                     <div className="text-center p-6">
-                        <div className="w-12 h-12 rounded-full bg-pink-50 text-primary flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 rounded-full bg-indigo-50 text-primary flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                             <Upload size={20} />
                         </div>
                         <p className="text-sm font-semibold text-gray-700">Click to Upload Slip</p>
@@ -89,7 +89,7 @@ const UploadSlip = ({ onUpload, onCancel }) => {
                 )}
             </div>
 
-            {error && <p className="text-xs text-red-500 text-center mb-4">{error}</p>}
+            {error && <p className="text-xs text-error text-center mb-4">{error}</p>}
 
             {/* Notes Section */}
             <div className="mb-6">

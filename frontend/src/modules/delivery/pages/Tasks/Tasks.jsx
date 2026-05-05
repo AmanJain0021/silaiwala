@@ -206,7 +206,7 @@ const Tasks = () => {
 
         if (task.status === 'fabric-picked-up') {
             return (
-                <button onClick={() => handleUpdateStatus(task._id, 'fabric-delivered')} className={`${btnClass} bg-primary text-white hover:bg-primary shadow-pink-100`}>
+                <button onClick={() => handleUpdateStatus(task._id, 'fabric-delivered')} className={`${btnClass} bg-primary text-white hover:bg-primary shadow-indigo-100`}>
                     <CheckCircle2 size={14} /> Delivered to Tailor Workshop
                 </button>
             );
@@ -244,7 +244,7 @@ const Tasks = () => {
                             </div>
                             <button
                                 onClick={() => handleUpdateStatus(task._id, 'delivered', 'Order successfully delivered', taskProof)}
-                                className={`${btnClass} bg-primary text-white hover:bg-primary-dark shadow-pink-100`}
+                                className={`${btnClass} bg-primary text-white hover:bg-primary-dark shadow-indigo-100`}
                             >
                                 <CheckCircle2 size={14} /> Complete Delivery
                             </button>
@@ -294,7 +294,7 @@ const Tasks = () => {
                     </div>
                     <button 
                         onClick={() => window.location.href = '/delivery/profile'}
-                        className="text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-pink-50 px-6 py-3 rounded-xl hover:bg-pink-100 transition-all active:scale-95"
+                        className="text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-indigo-50 px-6 py-3 rounded-xl hover:bg-indigo-100 transition-all active:scale-95"
                     >
                         Go To Availability Settings
                     </button>
@@ -337,7 +337,7 @@ const Tasks = () => {
                             {/* Header Info */}
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
-                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${activeTask.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-pink-100 text-primary'}`}>
+                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${activeTask.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
                                         <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></div>
                                         {getTaskType(activeTask)}
                                     </div>
@@ -441,7 +441,7 @@ const Tasks = () => {
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
                                                     <p className="text-[14px] font-black text-slate-800 tracking-tight capitalize">{getTaskType(task)}</p>
-                                                    <span className="text-[10px] font-black text-primary bg-pink-50 px-2 py-0.5 rounded uppercase tracking-tighter italic">#{task._id.slice(-6)}</span>
+                                                    <span className="text-[10px] font-black text-primary bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-tighter italic">#{task._id.slice(-6)}</span>
                                                 </div>
                                                 <p className="text-[10px] font-bold text-slate-500 capitalize tracking-wide">
                                                     {task.taskType === 'fabric-pickup' ? `From: ${task.customer?.name}` : `From: ${task.tailor?.shopName}`}
@@ -491,12 +491,12 @@ const Tasks = () => {
                             <>
                                 {availableTasks.map((task) => (
                                     <div key={task._id} className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-xl relative overflow-hidden group">
-                                         <div className="absolute top-0 right-0 w-24 h-24 bg-pink-50 rounded-bl-full -z-0 group-hover:bg-pink-100 transition-all"></div>
+                                         <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -z-0 group-hover:bg-indigo-100 transition-all"></div>
                                         
                                         <div className="relative z-10 space-y-4">
                                             <div className="flex justify-between items-start">
                                                  <div className="space-y-1">
-                                                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest mb-1 ${task.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-pink-100 text-primary'}`}>
+                                                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest mb-1 ${task.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
                                                         {task.taskType === 'fabric-pickup' ? 'Fabric Collection' : 'Final Delivery'}
                                                     </div>
                                                     <p className="text-[15px] font-black text-slate-900 tracking-tight capitalize">Available Dispatch</p>

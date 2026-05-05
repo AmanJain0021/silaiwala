@@ -47,7 +47,7 @@ const TailorSelection = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-                <Loader2 size={32} className="text-[#FD0053] animate-spin mb-4" />
+                <Loader2 size={32} className="text-[#2D2F6E] animate-spin mb-4" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Finding Available Tailors...</p>
             </div>
         );
@@ -56,7 +56,7 @@ const TailorSelection = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20 font-sans">
             {/* Header */}
-            <div className="sticky top-0 z-50 bg-[#FD0053] text-white px-4 py-4 flex items-center gap-3 pt-safe">
+            <div className="sticky top-0 z-50 bg-[#2D2F6E] text-white px-4 py-4 flex items-center gap-3 pt-safe">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
                     <ArrowLeft size={20} />
                 </button>
@@ -69,13 +69,13 @@ const TailorSelection = () => {
             {/* Progress Bar */}
             <div className="bg-white px-6 py-6 flex justify-between items-center border-b border-gray-100">
                 <div className="flex flex-col items-center gap-1">
-                    <div className="w-6 h-6 rounded-full bg-[#FD0053] text-white text-[10px] flex items-center justify-center font-bold">1</div>
-                    <span className="text-[10px] font-bold text-[#FD0053]">Service</span>
+                    <div className="w-6 h-6 rounded-full bg-[#2D2F6E] text-white text-[10px] flex items-center justify-center font-bold">1</div>
+                    <span className="text-[10px] font-bold text-[#2D2F6E]">Service</span>
                 </div>
-                <div className="h-px bg-[#FD0053] flex-1 mx-4"></div>
+                <div className="h-px bg-[#2D2F6E] flex-1 mx-4"></div>
                 <div className="flex flex-col items-center gap-1">
-                    <div className="w-6 h-6 rounded-full bg-[#FD0053] text-white text-[10px] flex items-center justify-center font-bold animate-pulse">2</div>
-                    <span className="text-[10px] font-bold text-[#FD0053]">Tailor</span>
+                    <div className="w-6 h-6 rounded-full bg-[#2D2F6E] text-white text-[10px] flex items-center justify-center font-bold animate-pulse">2</div>
+                    <span className="text-[10px] font-bold text-[#2D2F6E]">Tailor</span>
                 </div>
                 <div className="h-px bg-gray-200 flex-1 mx-4"></div>
                 <div className="flex flex-col items-center gap-1">
@@ -96,12 +96,12 @@ const TailorSelection = () => {
                             <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName || tailor.user?.name} className="w-full h-full" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#FD0053] transition-colors">{tailor.shopName || tailor.user?.name}</h3>
-                            <p className="text-[10px] text-[#FD0053] font-bold mb-1">{tailor.specializations?.[0] || 'Expert Tailor'}</p>
+                            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#2D2F6E] transition-colors">{tailor.shopName || tailor.user?.name}</h3>
+                            <p className="text-[10px] text-[#2D2F6E] font-bold mb-1">{tailor.specializations?.[0] || 'Expert Tailor'}</p>
                             <div className="flex items-center gap-3 text-[10px] text-gray-500">
                                 <span className="flex items-center gap-0.5"><Star size={10} className="fill-yellow-400 text-yellow-400" /> {tailor.rating || 0}</span>
                                 <span className="flex items-center gap-0.5"><MapPin size={10} /> {tailor.distance || 'Near You'}</span>
-                                <span className="font-bold text-[#FD0053] bg-pink-50 px-1 py-0.5 rounded text-[8px]">{tailor.experienceInYears || 0}Y Exp</span>
+                                <span className="font-bold text-[#2D2F6E] bg-indigo-50 px-1 py-0.5 rounded text-[8px]">{tailor.experienceInYears || 0}Y Exp</span>
                             </div>
                         </div>
                         <ChevronRight size={18} className="text-gray-300 mr-1" />
@@ -114,7 +114,7 @@ const TailorSelection = () => {
             </div>
 
             {/* Info Message */}
-            <div className="mx-4 bg-pink-50 p-4 rounded-xl border border-pink-100">
+            <div className="mx-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                 <p className="text-[10px] text-blue-700 leading-relaxed">
                     <span className="font-bold">Note:</span> You are manually selecting a tailor. Their specific stitching quality and style will be reflected in your final outfit.
                 </p>

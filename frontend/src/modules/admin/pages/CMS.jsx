@@ -15,7 +15,7 @@ const AdminCMS = () => {
         title: '',
         subtitle: '',
         badge: '',
-        color: 'bg-gradient-to-br from-[#FD0053] to-[#ff85a2]',
+        color: 'bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]',
         targetLocation: 'Home Page - Top Carousel',
         image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
     });
@@ -89,7 +89,7 @@ const AdminCMS = () => {
                 title: '',
                 subtitle: '',
                 badge: '',
-                color: 'bg-gradient-to-br from-[#FD0053] to-[#ff85a2]',
+                color: 'bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]',
                 targetLocation: 'Home Page - Top Carousel',
                 image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
             });
@@ -502,7 +502,7 @@ const AdminCMS = () => {
                                         <div>
                                             <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Gradient Color (Tailwind)</label>
                                             <select value={newBanner.color} onChange={e => setNewBanner({ ...newBanner, color: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors appearance-none">
-                                                <option value="bg-gradient-to-br from-[#FD0053] to-[#ff85a2]">SilaiWala Pink</option>
+                                                <option value="bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]">SilaiWala Pink</option>
                                                 <option value="bg-gradient-to-br from-[#1e3e5a] to-[#2d5a8c]">Deep Ocean Blue</option>
                                                 <option value="bg-gradient-to-br from-[#5a1e3e] to-[#8c2d5a]">Luxury Purple</option>
                                                 <option value="bg-gradient-to-br from-[#1e3932] to-[#2d5246]">Classic Emerald</option>

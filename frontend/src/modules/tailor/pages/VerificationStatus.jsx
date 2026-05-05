@@ -23,7 +23,7 @@ const VerificationStatus = () => {
     if (isLoading) {
         return (
             <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-[#0A0A0A]">
-                <Loader2 className="animate-spin text-[#FD0053]" size={32} />
+                <Loader2 className="animate-spin text-[#2D2F6E]" size={32} />
                 <p className="text-[10px] font-black text-white/25 uppercase tracking-widest">Checking Documents...</p>
             </div>
         );
@@ -37,7 +37,7 @@ const VerificationStatus = () => {
         <div className="space-y-4 animate-in fade-in duration-500 bg-[#0A0A0A] min-h-screen p-4">
 
             {/* Progress Card */}
-            <div className="bg-[#FD0053] p-7 rounded-3xl text-white relative overflow-hidden">
+            <div className="bg-[#2D2F6E] p-7 rounded-3xl text-white relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 h-40 w-40 bg-white/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute right-5 bottom-5 w-20 h-20 bg-white/5 rounded-full pointer-events-none" />
                 <h4 className="text-[11px] font-black tracking-widest uppercase opacity-60">Verification Status</h4>
@@ -103,14 +103,14 @@ const VerificationStatus = () => {
             </div>
 
             {/* Update Button */}
-            <button className="w-full bg-[#111111] border border-[#1E1E1E] p-4 rounded-3xl flex items-center justify-between hover:border-[#FD0053]/30 transition-all group">
+            <button className="w-full bg-[#111111] border border-[#1E1E1E] p-4 rounded-3xl flex items-center justify-between hover:border-[#2D2F6E]/30 transition-all group">
                 <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-[#FD0053]/10 rounded-2xl flex items-center justify-center text-[#FD0053]">
+                    <div className="h-9 w-9 bg-[#2D2F6E]/10 rounded-2xl flex items-center justify-center text-[#2D2F6E]">
                         <FileText size={16} />
                     </div>
                     <span className="text-xs font-black text-white/60 uppercase tracking-widest">Update Documents</span>
                 </div>
-                <ChevronRight size={16} className="text-white/20 group-hover:text-[#FD0053] transition-colors" />
+                <ChevronRight size={16} className="text-white/20 group-hover:text-[#2D2F6E] transition-colors" />
             </button>
         </div>
     );

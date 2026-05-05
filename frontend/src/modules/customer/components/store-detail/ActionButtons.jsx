@@ -14,7 +14,7 @@ const ActionButtons = ({ onAddToCart, onBuyNow }) => {
                 </button>
                 <button
                     onClick={onBuyNow}
-                    className="flex-1 bg-[#FD0053] text-white py-3.5 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-pink-100 hover:bg-[#cc496e] active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#2D2F6E] text-white py-3.5 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                     <Zap size={18} fill="currentColor" />
                     Buy Now

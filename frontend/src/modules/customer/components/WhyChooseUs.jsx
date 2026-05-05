@@ -12,7 +12,7 @@ const WhyChooseUs = () => {
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Verified</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                    <div className="h-10 w-10 bg-pink-50 rounded-xl flex items-center justify-center text-primary shadow-sm transition-transform group-hover:scale-110">
+                    <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary shadow-sm transition-transform group-hover:scale-110">
                         <Truck size={20} strokeWidth={2.5} />
                     </div>
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Free Pickup</span>

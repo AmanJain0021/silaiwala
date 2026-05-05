@@ -22,7 +22,7 @@ const WishlistPage = () => {
                 <p className="text-sm text-gray-500 mb-6 max-w-xs">Save items that you like to your wishlist to review them later.</p>
                 <Link
                     to="/store"
-                    className="px-6 py-3 rounded-xl bg-[#FD0053] text-white font-bold text-sm shadow-lg hover:bg-[#cc496e] transition-all"
+                    className="px-6 py-3 rounded-xl bg-[#2D2F6E] text-white font-bold text-sm shadow-lg hover:bg-[#1E1F4D] transition-all"
                 >
                     Explore Store
                 </Link>
@@ -45,7 +45,7 @@ const WishlistPage = () => {
                 </div>
                 <button
                     onClick={clearWishlist}
-                    className="text-[10px] font-bold text-red-500 uppercase tracking-wider px-3 py-1 hover:bg-red-50 rounded-full transition-colors"
+                    className="text-[10px] font-bold text-error uppercase tracking-wider px-3 py-1 hover:bg-indigo-50 rounded-full transition-colors"
                 >
                     Clear All
                 </button>
@@ -62,7 +62,7 @@ const WishlistPage = () => {
             {/* Quick Link to Cart if items available */}
             <Link
                 to="/cart"
-                className="fixed bottom-6 right-6 w-14 h-14 bg-[#FD0053] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 md:hidden"
+                className="fixed bottom-6 right-6 w-14 h-14 bg-[#2D2F6E] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 md:hidden"
             >
                 <ShoppingBag size={24} />
             </Link>

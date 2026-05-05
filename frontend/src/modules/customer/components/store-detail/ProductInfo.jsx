@@ -34,7 +34,7 @@ const ProductInfo = ({ product }) => {
             <div className="flex items-end gap-3 mb-4">
                 <span className="text-3xl font-bold text-primary">₹{product.price}</span>
                 <span className="text-sm text-gray-400 line-through mb-1">₹{product.originalPrice}</span>
-                <span className="text-sm font-bold text-red-500 mb-1">({discount}% OFF)</span>
+                <span className="text-sm font-bold text-error mb-1">({discount}% OFF)</span>
             </div>
 
             {/* Stock & COD Status */}

@@ -23,7 +23,7 @@ const MeasurementInput = ({ label, value, onChange, placeholder, min, max, error
                     )}
                 />
             </div>
-            {error && <span className="text-[10px] text-red-500 ml-1">{error}</span>}
+            {error && <span className="text-[10px] text-error ml-1">{error}</span>}
         </div>
     );
 };

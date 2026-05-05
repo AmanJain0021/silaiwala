@@ -72,15 +72,15 @@ const Login = () => {
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="p-3.5 text-[11px] font-bold uppercase tracking-wider text-pink-600 bg-pink-50 rounded-2xl border border-pink-100 flex items-center justify-center gap-2"
+                        className="p-3.5 text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-center gap-2"
                     >
-                        <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse" />
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
                         {error}
                     </motion.div>
                 )}
 
                 <div className="space-y-3">
-                    <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-pink-100 focus-within:border-pink-200">
+                    <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
                         <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
                             <span className="text-gray-800 font-bold text-sm">+91</span>
                             <div className="w-px h-6 bg-slate-200" />
@@ -104,7 +104,7 @@ const Login = () => {
                             disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
                             className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || sendingOtp
                                     ? 'bg-gray-200 text-gray-500'
-                                    : 'bg-[#FD0053] hover:bg-[#E04D79] text-white shadow-[#FD0053]/20 hover:shadow-lg'
+                                    : 'bg-[#2D2F6E] hover:bg-[#E04D79] text-white shadow-[#2D2F6E]/20 hover:shadow-lg'
                                 }`}
                         >
                             {sendingOtp ? 'Sending...' : (
@@ -124,7 +124,7 @@ const Login = () => {
                             exit={{ opacity: 0, height: 0 }}
                             className="space-y-4 overflow-hidden pt-2"
                         >
-                            <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-pink-100 focus-within:border-pink-200">
+                            <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
                                 <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
                                     <input
                                         type="text"
@@ -140,7 +140,7 @@ const Login = () => {
 
                             <Button
                                 type="submit"
-                                className="w-full h-11 sm:h-12 rounded-full bg-[#FD0053] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#FD0053]/20"
+                                className="w-full h-11 sm:h-12 rounded-full bg-[#2D2F6E] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#2D2F6E]/20"
                                 disabled={isLoading}
                             >
                                 {isLoading ? 'Verifying...' : (
@@ -153,7 +153,7 @@ const Login = () => {
                             <button
                                 type="button"
                                 onClick={() => setOtpSent(false)}
-                                className="w-full text-[10px] font-black text-pink-400 hover:text-pink-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mt-2"
+                                className="w-full text-[10px] font-black text-indigo-400 hover:text-indigo-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mt-2"
                             >
                                 ← Change mobile number
                             </button>

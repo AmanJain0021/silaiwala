@@ -176,7 +176,7 @@ const DeliveryProfile = () => {
     if (loading) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="w-10 h-10 text-[#FD0053] animate-spin" />
+                <Loader2 className="w-10 h-10 text-[#2D2F6E] animate-spin" />
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Scanning Profile...</p>
             </div>
         );
@@ -186,10 +186,10 @@ const DeliveryProfile = () => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2">
             {/* Profile Hero Card */}
             <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-2xl shadow-slate-200/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-pink-50 to-transparent rounded-bl-full -z-0 opacity-60"></div>
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 opacity-60"></div>
                 <div className="relative z-10 flex items-center gap-4">
                     <div className="relative">
-                        <div className="w-20 h-20 rounded-full border-[3px] border-white shadow-xl overflow-hidden bg-pink-50">
+                        <div className="w-20 h-20 rounded-full border-[3px] border-white shadow-xl overflow-hidden bg-indigo-50">
                             <img
                                 src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Chirag"}
                                 alt="Profile"
@@ -223,7 +223,7 @@ const DeliveryProfile = () => {
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex items-center justify-between relative z-20 group">
                 <div>
                     <h2 className="text-xl font-black text-slate-900 tracking-tight">Availability</h2>
-                    <p className={`text-[10px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#FD0053]' : 'text-slate-400'}`}>
+                    <p className={`text-[10px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#2D2F6E]' : 'text-slate-400'}`}>
                         {isOnline ? 'Active & Receiving Tasks' : 'Currently Off Duty'}
                     </p>
                 </div>
@@ -231,14 +231,14 @@ const DeliveryProfile = () => {
                 {/* Interactive Toggle Switch */}
                 <button
                     onClick={handleToggleDuty}
-                    className={`w-14 h-8 rounded-full p-1 transition-colors duration-500 ease-in-out relative flex items-center shadow-inner ${isOnline ? 'bg-[#FD0053]' : 'bg-slate-200'
+                    className={`w-14 h-8 rounded-full p-1 transition-colors duration-500 ease-in-out relative flex items-center shadow-inner ${isOnline ? 'bg-[#2D2F6E]' : 'bg-slate-200'
                         }`}
                 >
                     <div
                         className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isOnline ? 'translate-x-6' : 'translate-x-0'
                             }`}
                     >
-                        {isOnline && <div className="w-2 h-2 bg-[#FD0053] rounded-full animate-pulse"></div>}
+                        {isOnline && <div className="w-2 h-2 bg-[#2D2F6E] rounded-full animate-pulse"></div>}
                     </div>
                 </button>
             </div>
@@ -284,7 +284,7 @@ const DeliveryProfile = () => {
                         />
                         <MenuOption
                             icon={CreditCard}
-                            color="bg-pink-500"
+                            color="bg-indigo-500"
                             label="Financial Routing"
                             subLabel="Bank details"
                             onClick={() => setIsEditing('bank')}
@@ -479,7 +479,7 @@ const DeliveryProfile = () => {
                             </button>
 
                             <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-pink-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md">
+                                <div className="w-16 h-16 bg-indigo-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md">
                                     <ShieldCheck size={32} />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">Identity Verification</h3>
@@ -490,10 +490,10 @@ const DeliveryProfile = () => {
                                 {/* Aadhar Card Upload */}
                                 <div>
                                     <label className="text-[10px] font-black text-slate-700 tracking-widest mb-2 flex items-center gap-2 uppercase">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-pink-500"></div>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                                         Aadhar Core / Voter ID
                                     </label>
-                                    <label className="w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-pink-50 hover:border-blue-200 hover:text-primary transition-all text-slate-400 group cursor-pointer relative overflow-hidden">
+                                    <label className="w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-indigo-50 hover:border-blue-200 hover:text-primary transition-all text-slate-400 group cursor-pointer relative overflow-hidden">
                                         <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                                             if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
@@ -512,7 +512,7 @@ const DeliveryProfile = () => {
                                         {aadharImage ? (
                                             <div className="absolute inset-0 w-full h-full bg-slate-900/10 flex items-center justify-center backdrop-blur-sm">
                                                 <img src={aadharImage} alt="Aadhar" className="w-full h-full object-cover opacity-60" />
-                                                <CheckCircle2 size={32} className="text-[#FD0053] absolute drop-shadow-md bg-white rounded-full" />
+                                                <CheckCircle2 size={32} className="text-[#2D2F6E] absolute drop-shadow-md bg-white rounded-full" />
                                             </div>
                                         ) : (
                                             <>
@@ -548,7 +548,7 @@ const DeliveryProfile = () => {
                                         {licenseImage ? (
                                             <div className="absolute inset-0 w-full h-full bg-slate-900/10 flex items-center justify-center backdrop-blur-sm">
                                                 <img src={licenseImage} alt="License" className="w-full h-full object-cover opacity-60" />
-                                                <CheckCircle2 size={32} className="text-[#FD0053] absolute drop-shadow-md bg-white rounded-full" />
+                                                <CheckCircle2 size={32} className="text-[#2D2F6E] absolute drop-shadow-md bg-white rounded-full" />
                                             </div>
                                         ) : (
                                             <>
@@ -564,7 +564,7 @@ const DeliveryProfile = () => {
                                 onClick={handleKYCSubmit}
                                 className="w-full bg-slate-900 text-white rounded-2xl p-4 font-black tracking-widest text-xs hover:bg-black active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 uppercase"
                             >
-                                <CheckCircle2 size={16} className="text-[#FD0053]" /> Submit To Admin
+                                <CheckCircle2 size={16} className="text-[#2D2F6E]" /> Submit To Admin
                             </button>
 
                             <p className="text-center mt-4 text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">

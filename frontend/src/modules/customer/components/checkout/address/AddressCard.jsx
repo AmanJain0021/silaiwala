@@ -14,7 +14,7 @@ const AddressCard = ({ address, isSelected, onSelect }) => {
             onClick={onSelect}
             className={cn(
                 "relative p-4 rounded-xl border transition-all cursor-pointer bg-white group hover:shadow-sm",
-                isSelected ? "border-primary ring-1 ring-primary bg-pink-50" : "border-gray-200 hover:border-gray-300"
+                isSelected ? "border-primary ring-1 ring-primary bg-indigo-50" : "border-gray-200 hover:border-gray-300"
             )}
         >
             <div className="flex items-start justify-between mb-2">
@@ -33,7 +33,7 @@ const AddressCard = ({ address, isSelected, onSelect }) => {
 
                 {isSelected ? (
                     <div className="text-primary">
-                        <CheckCircle2 size={20} fill="#FD0053" className="text-white" />
+                        <CheckCircle2 size={20} fill="#2D2F6E" className="text-white" />
                     </div>
                 ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-gray-400" />
@@ -56,7 +56,7 @@ const AddressCard = ({ address, isSelected, onSelect }) => {
                         e.stopPropagation();
                         removeAddress(address.id);
                     }}
-                    className="p-1.5 hover:bg-red-50 text-red-500 rounded-full"
+                    className="p-1.5 hover:bg-indigo-50 text-error rounded-full"
                     title="Delete Address"
                 >
                     <Trash2 size={14} />

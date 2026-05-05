@@ -21,7 +21,7 @@ const ProductCard = ({ product, onAddClick }) => {
         >
             {/* Discount Badge */}
             {product.discount && (
-                <div className="absolute top-2 left-2 z-20 bg-[#FFBC00] text-[#FD0053] text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+                <div className="absolute top-2 left-2 z-20 bg-[#FFBC00] text-[#2D2F6E] text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
                     -{product.discount}%
                 </div>
             )}
@@ -35,7 +35,7 @@ const ProductCard = ({ product, onAddClick }) => {
                 }}
                 className={cn(
                     "absolute top-2 right-2 z-20 p-1.5 rounded-full bg-white/90 shadow-sm transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300",
-                    isWishlisted ? "text-red-500 opacity-100 translate-y-0" : "text-gray-400 hover:text-red-500"
+                    isWishlisted ? "text-error opacity-100 translate-y-0" : "text-gray-400 hover:text-error"
                 )}
             >
                 <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
@@ -60,22 +60,22 @@ const ProductCard = ({ product, onAddClick }) => {
                     <span className="text-[10px] text-gray-500 uppercase tracking-widest font-black">
                         {typeof product.category === 'object' ? product.category?.name : product.category || 'FABRICS'}
                     </span>
-                    <div className="flex items-center gap-1 bg-pink-50 px-1.5 py-0.5 rounded-md text-[10px] font-black text-[#FD0053]">
+                    <div className="flex items-center gap-1 bg-indigo-50 px-1.5 py-0.5 rounded-md text-[10px] font-black text-[#2D2F6E]">
                         {product.rating || product.ratings || 0} <Star className="h-2 w-2 fill-current" />
                     </div>
                 </div>
 
                 {/* Name & Subtitle */}
-                <h3 className="text-[13px] font-black text-gray-900 line-clamp-1 mb-0.5 tracking-tight group-hover:text-[#FD0053] transition-colors">
+                <h3 className="text-[13px] font-black text-gray-900 line-clamp-1 mb-0.5 tracking-tight group-hover:text-[#2D2F6E] transition-colors">
                     {product.name}
                 </h3>
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-1">
-                    Available at: <span className="text-[#FD0053] truncate">{product.tailor?.shopName || product.tailor?.name || "Silaiwala Central Store"}</span>
+                    Available at: <span className="text-[#2D2F6E] truncate">{product.tailor?.shopName || product.tailor?.name || "Silaiwala Central Store"}</span>
                 </p>
 
                 {/* Price - simple and clean */}
                 <div className="flex items-baseline gap-2">
-                    <span className="text-[15px] font-black text-[#FD0053]">₹{product.price}</span>
+                    <span className="text-[15px] font-black text-[#2D2F6E]">₹{product.price}</span>
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">/ meter</span>
                     {product.originalPrice && (
                         <span className="text-[11px] text-gray-400 font-bold line-through ml-1">₹{product.originalPrice}</span>

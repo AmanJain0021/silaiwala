@@ -18,7 +18,7 @@ const CustomerMainLayout = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#fcf8f9] flex flex-col font-sans">
+        <div className="min-h-screen bg-[#F7F8FC] flex flex-col font-sans">
             {/* Desktop Navbar - Only visible on md and up */}
             <header className="hidden md:block sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
@@ -29,7 +29,7 @@ const CustomerMainLayout = () => {
                         </div>
                         <div>
                             <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-none tracking-tight">
-                                SewZ<span className="text-[#FD0053]">ella</span>
+                                SewZ<span className="text-[#2D2F6E]">ella</span>
                             </h1>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">Modern Stitching</p>
                         </div>
@@ -45,8 +45,8 @@ const CustomerMainLayout = () => {
                                     to={item.to}
                                     className={`px-5 py-2 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
                                         isActive 
-                                            ? 'bg-[#FD0053] text-white shadow-lg shadow-[#FD0053]/20' 
-                                            : 'text-gray-500 hover:text-[#FD0053] hover:bg-pink-50'
+                                            ? 'bg-[#2D2F6E] text-white shadow-lg shadow-[#2D2F6E]/20' 
+                                            : 'text-gray-500 hover:text-[#2D2F6E] hover:bg-indigo-50'
                                     }`}
                                 >
                                     {item.label}
@@ -57,19 +57,19 @@ const CustomerMainLayout = () => {
 
                     {/* Right Actions */}
                     <div className="flex items-center gap-4">
-                        <button className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#FD0053] transition-all relative">
+                        <button className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all relative">
                             <Search size={20} />
                         </button>
-                        <Link to="/cart" className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#FD0053] transition-all relative">
+                        <Link to="/cart" className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all relative">
                             <ShoppingBag size={20} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#FD0053] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#2D2F6E] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
                         <Link to="/profile" className="flex items-center gap-3 pl-2 border-l border-gray-100 ml-2">
-                            <div className="w-10 h-10 rounded-xl border-2 border-[#FD0053]/10 p-0.5 overflow-hidden shadow-sm hover:border-[#FD0053]/30 transition-all">
+                            <div className="w-10 h-10 rounded-xl border-2 border-[#2D2F6E]/10 p-0.5 overflow-hidden shadow-sm hover:border-[#2D2F6E]/30 transition-all">
                                 <img
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
                                     className="w-full h-full object-cover bg-gray-100 rounded-lg"

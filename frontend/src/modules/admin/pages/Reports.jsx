@@ -110,7 +110,7 @@ const AdminReports = () => {
 
                     <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full max-w-md">
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-pink-50 text-primary rounded-lg">
+                            <div className="p-3 bg-indigo-50 text-primary rounded-lg">
                                 {reportTypes.find(t => t.id === selectedReportType)?.icon}
                             </div>
                             <div className="text-left flex-1">

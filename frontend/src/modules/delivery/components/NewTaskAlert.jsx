@@ -71,7 +71,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                     icon: '🚀',
                     style: {
                         borderRadius: '1rem',
-                        background: '#FD0053',
+                        background: '#2D2F6E',
                         color: '#fff',
                         fontWeight: '900',
                         fontSize: '12px',
@@ -117,7 +117,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                             </div>
                             <div>
                                 <h3 className="text-sm font-black text-white tracking-widest uppercase mb-0.5">New Dispatch Request</h3>
-                                <p className="text-[10px] font-bold text-pink-300/80 tracking-widest leading-none">EST. EARNINGS: ₹20.00</p>
+                                <p className="text-[10px] font-bold text-indigo-300/80 tracking-widest leading-none">EST. EARNINGS: ₹20.00</p>
                             </div>
                         </div>
                         <button
@@ -132,7 +132,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                     <div className="p-6 space-y-4">
                         <div className="flex gap-4">
                             <div className="w-10 flex flex-col items-center">
-                                <div className="w-2.5 h-2.5 rounded-full bg-pink-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
                                 <div className="w-0.5 flex-1 bg-white/5 border-l border-white/10 border-dashed my-1"></div>
                                 <div className="w-2.5 h-2.5 rounded-full bg-slate-500"></div>
                             </div>
@@ -145,7 +145,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                                                 ? `Pickup: ${newTask.customer?.name || 'Customer'}`
                                                 : `Pickup: ${newTask.tailor?.shopName || 'Artisan'}`}
                                         </p>
-                                        <p className="text-[11px] font-bold text-pink-300/60 leading-tight">
+                                        <p className="text-[11px] font-bold text-indigo-300/60 leading-tight">
                                             {newTask.taskType === 'fabric-pickup'
                                                 ? `Drop to: ${newTask.tailor?.shopName || 'Workshop'}`
                                                 : `Drop to: ${newTask.customer?.name || 'Requester'}`}

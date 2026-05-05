@@ -20,7 +20,7 @@ const StoreHeader = ({ searchQuery, setSearchQuery }) => {
                             <img src={silaiwalaLogo} alt="Silaiwala" className="w-full h-full object-cover" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-black text-gray-900 leading-none tracking-tight">SewZ<span className="text-[#FD0053]">ella</span></h1>
+                            <h1 className="text-xl font-black text-gray-900 leading-none tracking-tight">SewZ<span className="text-[#2D2F6E]">ella</span></h1>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">Premium Collection</p>
                         </div>
                     </div>
@@ -28,11 +28,11 @@ const StoreHeader = ({ searchQuery, setSearchQuery }) => {
                     <div className="flex items-center gap-2">
                         <Link
                             to="/wishlist"
-                            className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#FD0053] transition-all active:scale-90 relative"
+                            className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
                         >
-                            <Heart size={20} className={wishlistCount > 0 ? "fill-[#FD0053] text-[#FD0053]" : ""} />
+                            <Heart size={20} className={wishlistCount > 0 ? "fill-[#2D2F6E] text-[#2D2F6E]" : ""} />
                             {wishlistCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#FFBC00] text-[#FD0053] text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#FFBC00] text-[#2D2F6E] text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
                                     {wishlistCount}
                                 </span>
                             )}
@@ -40,11 +40,11 @@ const StoreHeader = ({ searchQuery, setSearchQuery }) => {
 
                         <Link
                             to="/cart"
-                            className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#FD0053] transition-all active:scale-90 relative"
+                            className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
                         >
                             <ShoppingBag size={20} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#FD0053] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#2D2F6E] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
                                     {cartCount}
                                 </span>
                             )}
@@ -61,14 +61,14 @@ const StoreHeader = ({ searchQuery, setSearchQuery }) => {
                 {/* Search Bar */}
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-[#FD0053] transition-colors" />
+                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-[#2D2F6E] transition-colors" />
                     </div>
                     <input
                         type="text"
                         placeholder="Search fabrics, designs, collections..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-gray-100 border border-transparent rounded-[1.25rem] py-3.5 pl-11 pr-4 text-sm font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#FD0053]/5 focus:border-[#FD0053]/20 transition-all placeholder:text-gray-400 shadow-inner"
+                        className="w-full bg-gray-100 border border-transparent rounded-[1.25rem] py-3.5 pl-11 pr-4 text-sm font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D2F6E]/5 focus:border-[#2D2F6E]/20 transition-all placeholder:text-gray-400 shadow-inner"
                     />
                 </div>
             </div>

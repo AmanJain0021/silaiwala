@@ -118,7 +118,7 @@ const ReviewModal = ({ isOpen, onClose, orderId, tailorId, deliveryPartnerId, on
                             />
                         </div>
 
-                        {error && <p className="text-[10px] font-bold text-red-500 text-center uppercase tracking-tight">{error}</p>}
+                        {error && <p className="text-[10px] font-bold text-error text-center uppercase tracking-tight">{error}</p>}
 
                         {/* Submit Button */}
                         <button

@@ -121,7 +121,7 @@ const Orders = () => {
                     <button onClick={onClose} className="p-1 text-gray-600 hover:text-gray-900">
                         <ArrowLeft size={22} />
                     </button>
-                    <h1 className="text-[17px] font-black text-[#FD0053] tracking-tight">SEWZELLA</h1>
+                    <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
                     <div className="w-9 h-9 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-sm">
                         {order.customer?.name?.charAt(0) || 'C'}
                     </div>
@@ -138,7 +138,7 @@ const Orders = () => {
                                 <Clock size={12} /> {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                         </div>
-                        <span className={`text-[11px] font-black uppercase px-3 py-1 rounded-full ${isPending ? 'bg-red-50 text-[#FD0053]' : 'bg-green-50 text-green-600'}`}>
+                        <span className={`text-[11px] font-black uppercase px-3 py-1 rounded-full ${isPending ? 'bg-red-50 text-[#2D2F6E]' : 'bg-green-50 text-green-600'}`}>
                             {isPending ? 'Pending Accept' : 'In Progress'}
                         </span>
                     </div>
@@ -159,17 +159,17 @@ const Orders = () => {
                                             <p className="text-[12px] text-gray-400 font-medium mt-0.5">{order.customer?.phoneNumber}</p>
                                         </div>
                                     </div>
-                                    <button className="w-10 h-10 bg-[#FFF0F4] border border-[#FD0053]/20 text-[#FD0053] rounded-2xl flex items-center justify-center">
+                                    <button className="w-10 h-10 bg-[#FDE5D2] border border-[#2D2F6E]/20 text-[#2D2F6E] rounded-2xl flex items-center justify-center">
                                         <MessageSquare size={18} />
                                     </button>
                                 </div>
                                 <div className="pt-3 border-t border-gray-50 flex items-start gap-2">
-                                    <MapPin size={16} className="text-[#FD0053] mt-0.5 shrink-0" />
+                                    <MapPin size={16} className="text-[#2D2F6E] mt-0.5 shrink-0" />
                                     <div className="flex-1">
                                         <p className="text-[12px] text-gray-700 font-medium leading-relaxed">
                                             {[order.deliveryAddress?.street, order.deliveryAddress?.city, order.deliveryAddress?.state, order.deliveryAddress?.zipCode].filter(Boolean).join(', ')}
                                         </p>
-                                        <button className="text-[11px] font-black text-[#FD0053] uppercase tracking-wider mt-1 block">View Map</button>
+                                        <button className="text-[11px] font-black text-[#2D2F6E] uppercase tracking-wider mt-1 block">View Map</button>
                                     </div>
                                 </div>
                             </div>
@@ -179,8 +179,8 @@ const Orders = () => {
                                 <div className="bg-gray-200 h-44 rounded-2xl relative overflow-hidden flex items-center justify-center">
                                     {/* Map Graphic Mock */}
                                     <div className="absolute inset-0 bg-[#E2E8F0] opacity-80" />
-                                    <div className="relative w-12 h-12 bg-[#FFF0F4] border-4 border-white rounded-full flex items-center justify-center shadow-lg">
-                                        <MapPin size={24} className="text-[#FD0053]" />
+                                    <div className="relative w-12 h-12 bg-[#FDE5D2] border-4 border-white rounded-full flex items-center justify-center shadow-lg">
+                                        <MapPin size={24} className="text-[#2D2F6E]" />
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +215,7 @@ const Orders = () => {
                                             {/* Connector line */}
                                             <div className="absolute top-5 left-5 right-5 h-1 bg-gray-100 z-0" />
                                             <div
-                                                className="absolute top-5 left-5 h-1 bg-[#FD0053] z-0 transition-all duration-500"
+                                                className="absolute top-5 left-5 h-1 bg-[#2D2F6E] z-0 transition-all duration-500"
                                                 style={{ width: currentIdx < 0 ? '0%' : `${(currentIdx / (steps.length - 1)) * 100}%` }}
                                             />
                                             {steps.map((step, idx) => {
@@ -226,18 +226,18 @@ const Orders = () => {
                                                         <button 
                                                             onClick={() => handleStatusUpdate(order._id, step.key)}
                                                             className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                                                                done   ? 'bg-[#FD0053] border-[#FD0053]' :
-                                                                active ? 'bg-white border-[#FD0053] shadow-md' :
+                                                                done   ? 'bg-[#2D2F6E] border-[#2D2F6E]' :
+                                                                active ? 'bg-white border-[#2D2F6E] shadow-md' :
                                                                          'bg-white border-gray-200'
                                                             }`}
                                                         >
                                                             {done
                                                                 ? <Check size={16} strokeWidth={3} className="text-white" />
-                                                                : <span className={`w-2.5 h-2.5 rounded-full ${active ? 'bg-[#FD0053]' : 'bg-gray-200'}`} />
+                                                                : <span className={`w-2.5 h-2.5 rounded-full ${active ? 'bg-[#2D2F6E]' : 'bg-gray-200'}`} />
                                                             }
                                                         </button>
                                                         <span className={`text-[10px] font-black uppercase tracking-wide ${
-                                                            active ? 'text-[#FD0053]' : 'text-gray-400'
+                                                            active ? 'text-[#2D2F6E]' : 'text-gray-400'
                                                         }`}>{step.label}</span>
                                                     </div>
                                                 );
@@ -254,12 +254,12 @@ const Orders = () => {
                                     value={noteInput}
                                     onChange={(e) => setNoteInput(e.target.value)}
                                     placeholder="Add a technical note for this order..."
-                                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs text-gray-700 outline-none focus:border-[#FD0053] resize-none h-20"
+                                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs text-gray-700 outline-none focus:border-[#2D2F6E] resize-none h-20"
                                 />
                                 <div className="flex justify-end">
                                     <button 
                                         onClick={() => handleAddNote(order._id)}
-                                        className="text-xs font-black text-[#FD0053] uppercase tracking-wider flex items-center gap-1"
+                                        className="text-xs font-black text-[#2D2F6E] uppercase tracking-wider flex items-center gap-1"
                                     >
                                         + Add Note
                                     </button>
@@ -267,8 +267,8 @@ const Orders = () => {
 
                                 <div className="space-y-2 mt-2">
                                     {(productionNotes[order._id] || []).map((note, i) => (
-                                        <div key={i} className="bg-red-50/50 border-l-4 border-[#FD0053] p-3 rounded-r-xl">
-                                            <p className="text-[10px] font-bold text-[#FD0053]">{note.time}</p>
+                                        <div key={i} className="bg-red-50/50 border-l-4 border-[#2D2F6E] p-3 rounded-r-xl">
+                                            <p className="text-[10px] font-bold text-[#2D2F6E]">{note.time}</p>
                                             <p className="text-[12px] text-gray-700 mt-0.5 leading-relaxed font-medium">{note.text}</p>
                                         </div>
                                     ))}
@@ -302,7 +302,7 @@ const Orders = () => {
                                         <span className="text-[9px] font-black uppercase bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
                                             Size: {item.measurements?.type === 'slip' ? 'Slip' : 'Custom'}
                                         </span>
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${item.deliveryType === 'express' ? 'bg-red-50 text-[#FD0053] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${item.deliveryType === 'express' ? 'bg-red-50 text-[#2D2F6E] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                             {item.deliveryType || 'Standard'}
                                         </span>
                                     </div>
@@ -312,7 +312,12 @@ const Orders = () => {
                     </div>
 
                     {/* Customer Measurements Section */}
-                    {order.items?.some(item => item.measurements && Object.keys(item.measurements).length > 0) && (
+                    {order.items?.some(item => {
+                        const m = item.measurements;
+                        if (!m) return false;
+                        if (m instanceof Map) return m.size > 0;
+                        return Object.keys(m).length > 0;
+                    }) && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
                             <div className="flex items-center justify-between">
                                 <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">📐 Customer Measurements</p>
@@ -320,14 +325,18 @@ const Orders = () => {
                             </div>
                             {order.items?.map((item, idx) => {
                                 const measurements = item.measurements || {};
-                                const entries = Object.entries(measurements).filter(([key]) => key !== 'type' && key !== 'slipImage');
+                                // Handle both plain object and possible Map (though lean() should make it an object)
+                                const entries = Object.entries(
+                                    measurements instanceof Map ? Object.fromEntries(measurements) : measurements
+                                ).filter(([key]) => key !== 'type' && key !== 'slipImage' && key !== 'notes');
 
-                                if (entries.length === 0) return null;
+                                // We only return null if there is absolutely NO measurement data at all
+                                if (entries.length === 0 && !measurements.slipImage && !measurements.type) return null;
 
                                 return (
                                     <div key={idx} className="space-y-3">
                                         {order.items.length > 1 && (
-                                            <p className="text-[10px] font-bold text-[#FD0053] uppercase tracking-wider">
+                                            <p className="text-[10px] font-bold text-[#2D2F6E] uppercase tracking-wider">
                                                 Item {idx + 1}: {item.service?.title || 'Custom Garment'}
                                             </p>
                                         )}
@@ -335,7 +344,7 @@ const Orders = () => {
                                         {/* Measurement Type Badge */}
                                         {measurements.type && (
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-[9px] font-black uppercase bg-pink-50 text-[#FD0053] px-2.5 py-1 rounded-full border border-pink-100">
+                                                <span className="text-[9px] font-black uppercase bg-indigo-50 text-[#2D2F6E] px-2.5 py-1 rounded-full border border-indigo-100">
                                                     {measurements.type === 'slip' ? '📎 Uploaded Slip' : measurements.type === 'saved' ? '💾 Saved Profile' : '✏️ Self Measured'}
                                                 </span>
                                             </div>
@@ -368,6 +377,14 @@ const Orders = () => {
                                                 ))}
                                             </div>
                                         )}
+
+                                        {/* Customer Notes for this item */}
+                                        {measurements.notes && (
+                                            <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 mt-2">
+                                                <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1">Customer Notes</p>
+                                                <p className="text-[12px] text-gray-700 font-medium italic">"{measurements.notes}"</p>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -376,7 +393,7 @@ const Orders = () => {
 
                     {isPending && (
                         /* Special Instructions (Pending accept view) */
-                        <div className="bg-[#1A202C] text-white rounded-3xl p-5 space-y-2">
+                        <div className="bg-[#1A1A1A] text-white rounded-3xl p-5 space-y-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                                 <span className="text-red-400">ℹ️</span> Special Instructions
                             </p>
@@ -397,7 +414,7 @@ const Orders = () => {
                             </button>
                             <button 
                                 onClick={() => { handleAction('Accept Order', order); onClose(); }}
-                                className="flex-[2] py-4 bg-[#FD0053] text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-[#FD0053]/25 active:scale-95 transition-all flex items-center justify-center gap-1"
+                                className="flex-[2] py-4 bg-[#2D2F6E] text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-[#2D2F6E]/25 active:scale-95 transition-all flex items-center justify-center gap-1"
                             >
                                 Accept Order
                             </button>
@@ -432,7 +449,7 @@ const Orders = () => {
                         placeholder="Search Order ID or Customer..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#FD0053] text-sm text-gray-900 shadow-sm"
+                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] text-sm text-gray-900 shadow-sm"
                     />
                 </div>
 
@@ -443,7 +460,7 @@ const Orders = () => {
                             onClick={() => setActiveTab(tab)}
                             className={cn(
                                 "flex-1 py-2 rounded-xl text-[12px] font-black uppercase tracking-wider transition-all",
-                                activeTab === tab ? "bg-white text-[#FD0053] shadow-sm" : "text-gray-400"
+                                activeTab === tab ? "bg-white text-[#2D2F6E] shadow-sm" : "text-gray-400"
                             )}
                         >
                             {tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
@@ -456,7 +473,7 @@ const Orders = () => {
             <div className="px-4 space-y-4">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-2">
-                        <div className="h-6 w-6 border-2 border-[#FD0053] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="h-6 w-6 border-2 border-[#2D2F6E] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Loading orders...</p>
                     </div>
                 ) : filteredOrders.length === 0 ? (
@@ -469,7 +486,7 @@ const Orders = () => {
                         return (
                             <div key={order._id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
                                 <div className="flex justify-between items-start">
-                                    <span className="text-[10px] font-black uppercase bg-red-50 text-[#FD0053] px-2 py-1 rounded-md border border-red-100">
+                                    <span className="text-[10px] font-black uppercase bg-red-50 text-[#2D2F6E] px-2 py-1 rounded-md border border-red-100">
                                         #{order.orderId || 'ALT123456'}
                                     </span>
                                     <span className="text-[11px] text-gray-400 font-medium">24m ago</span>
@@ -492,7 +509,7 @@ const Orders = () => {
                                             Items: {order.items?.[0]?.service?.title || 'Custom Design'}
                                         </p>
                                         <p className="text-[11px] text-gray-400 font-medium mt-0.5 truncate flex items-center gap-1">
-                                            <MapPin size={12} className="text-[#FD0053]" />
+                                            <MapPin size={12} className="text-[#2D2F6E]" />
                                             {order.deliveryAddress?.street || 'Pick up point'}
                                         </p>
                                     </div>
@@ -508,7 +525,7 @@ const Orders = () => {
                                     {isNew ? (
                                         <button 
                                             onClick={() => handleStatusUpdate(order._id, 'accepted')}
-                                            className="flex-[1.5] py-3 bg-[#FD0053] rounded-2xl text-[12px] font-black text-white uppercase tracking-wide shadow-md shadow-[#FD0053]/20 active:scale-95 transition-all"
+                                            className="flex-[1.5] py-3 bg-[#2D2F6E] rounded-2xl text-[12px] font-black text-white uppercase tracking-wide shadow-md shadow-[#2D2F6E]/20 active:scale-95 transition-all"
                                         >
                                             Accept Order
                                         </button>

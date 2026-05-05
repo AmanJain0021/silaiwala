@@ -3,10 +3,10 @@ import React from 'react';
 export const Button = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, loading = false }) => {
     const baseStyles = 'w-full py-3 px-6 rounded-2xl font-bold transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:active:scale-100';
     const variants = {
-        primary: 'bg-primary text-white hover:bg-primary-dark shadow-lg shadow-pink-900/10',
-        secondary: 'bg-white text-primary border-2 border-primary hover:bg-pink-50',
+        primary: 'bg-primary text-white hover:bg-primary-dark shadow-lg shadow-indigo-900/10',
+        secondary: 'bg-white text-primary border-2 border-primary hover:bg-indigo-50',
         outline: 'bg-transparent text-gray-400 border border-gray-200 hover:border-gray-400',
-        ghost: 'bg-transparent text-primary hover:bg-pink-50',
+        ghost: 'bg-transparent text-primary hover:bg-indigo-50',
     };
 
     return (

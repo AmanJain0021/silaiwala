@@ -72,9 +72,9 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                     className="relative w-full max-w-xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl z-10"
                 >
                     {/* Header */}
-                    <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-pink-50/50 to-white">
+                    <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/50 to-white">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#FD0053] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-pink-100">
+                            <div className="w-10 h-10 bg-[#2D2F6E] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
                                 <Wand2 size={20} />
                             </div>
                             <div>
@@ -96,7 +96,7 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                                 placeholder="Search styles (e.g. Pockets, Embroidery)"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-xs focus:ring-2 focus:ring-[#FD0053]/10 focus:outline-none transition-all placeholder:text-gray-400"
+                                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-xs focus:ring-2 focus:ring-[#2D2F6E]/10 focus:outline-none transition-all placeholder:text-gray-400"
                             />
                         </div>
                     </div>
@@ -108,7 +108,7 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                                    className="w-10 h-10 border-2 border-[#FD0053] border-t-transparent rounded-full font-black"
+                                    className="w-10 h-10 border-2 border-[#2D2F6E] border-t-transparent rounded-full font-black"
                                 />
                                 <p className="text-[10px] font-black uppercase tracking-widest">Designing Options...</p>
                             </div>
@@ -128,8 +128,8 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                                             className={cn(
                                                 "p-4 rounded-[1.5rem] border transition-all cursor-pointer flex items-center gap-4 group",
                                                 isSelected
-                                                    ? "border-[#FD0053] bg-pink-50/30 shadow-sm"
-                                                    : "border-gray-100 bg-white hover:border-[#FD0053]/30"
+                                                    ? "border-[#2D2F6E] bg-indigo-50/30 shadow-sm"
+                                                    : "border-gray-100 bg-white hover:border-[#2D2F6E]/30"
                                             )}
                                         >
                                             <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
@@ -143,11 +143,11 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                                             <div className="flex-1">
                                                 <h4 className="text-sm font-black text-gray-900 leading-none mb-1">{addon.name}</h4>
                                                 <p className="text-[10px] text-gray-400 line-clamp-1 font-medium">{addon.description}</p>
-                                                <p className="text-xs font-black text-[#FD0053] mt-2">+₹{addon.price}</p>
+                                                <p className="text-xs font-black text-[#2D2F6E] mt-2">+₹{addon.price}</p>
                                             </div>
                                             <div className={cn(
                                                 "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
-                                                isSelected ? "bg-[#FD0053] text-white" : "bg-gray-50 text-gray-300"
+                                                isSelected ? "bg-[#2D2F6E] text-white" : "bg-gray-50 text-gray-300"
                                             )}>
                                                 {isSelected ? <Check size={18} /> : <Plus size={18} />}
                                             </div>
@@ -166,7 +166,7 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                         </div>
                         <button
                             onClick={onClose}
-                            className="bg-[#FD0053] text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-pink-100 active:scale-95 transition-all"
+                            className="bg-[#2D2F6E] text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-all"
                         >
                             Confirm Selection
                         </button>

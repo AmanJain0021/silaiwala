@@ -41,7 +41,7 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
                     onClick={() => onSelect('customer')}
                     className={cn(
                         "p-3 rounded-xl border cursor-pointer transition-all text-center",
-                        selected === 'customer' ? "border-primary bg-[#f2fcf9] ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
+                        selected === 'customer' ? "border-primary bg-primary-soft ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
                     )}
                 >
                     <div className="w-10 h-10 mx-auto bg-gray-100 rounded-full flex items-center justify-center text-gray-600 mb-2">
@@ -59,10 +59,10 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
                     }}
                     className={cn(
                         "p-3 rounded-xl border cursor-pointer transition-all text-center",
-                        selected === 'platform' ? "border-primary bg-[#f2fcf9] ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
+                        selected === 'platform' ? "border-primary bg-primary-soft ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
                     )}
                 >
-                    <div className="w-10 h-10 mx-auto bg-pink-50 rounded-full flex items-center justify-center text-primary mb-2">
+                    <div className="w-10 h-10 mx-auto bg-indigo-50 rounded-full flex items-center justify-center text-primary mb-2">
                         <ShoppingBag size={20} />
                     </div>
                     <p className="text-xs font-bold text-gray-900">Buy from Tailor</p>
@@ -129,7 +129,7 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
                                 </div>
                             ) : error ? (
                                 <div className="text-center py-8">
-                                    <p className="text-xs text-red-500 font-medium">{error}</p>
+                                    <p className="text-xs text-error font-medium">{error}</p>
                                     <button 
                                         onClick={() => setShowFabricPicker(false)}
                                         className="mt-4 text-[10px] font-black uppercase text-primary underline"
@@ -155,7 +155,7 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
                                             }}
                                             className={cn(
                                                 "p-2 rounded-2xl border transition-all cursor-pointer group",
-                                                selectedFabric?._id === fabric._id ? "border-primary bg-[#f2fcf9]" : "border-gray-100 hover:border-gray-200"
+                                                selectedFabric?._id === fabric._id ? "border-primary bg-primary-soft" : "border-gray-100 hover:border-gray-200"
                                             )}
                                         >
                                             <div className="aspect-square rounded-xl overflow-hidden mb-2 border border-gray-50">

@@ -1,11 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes';
 import useSocketStore from './store/socketStore';
 import { Toaster } from 'react-hot-toast';
+import SplashScreen from './components/common/SplashScreen';
 
 function App() {
   const { socket, connect, disconnect } = useSocketStore();
+  const [showSplash, setShowSplash] = useState(
+    window.location.pathname === '/' || window.location.pathname === '/welcome'
+  );
 
   useEffect(() => {
     // Check if user is logged in
@@ -74,6 +78,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       <Toaster position="top-right" />
       <AppRoutes />
     </BrowserRouter>

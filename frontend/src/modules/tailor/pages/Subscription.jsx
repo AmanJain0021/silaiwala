@@ -6,7 +6,7 @@ const Subscription = () => {
         <div className="space-y-4 animate-in fade-in duration-500 bg-[#0A0A0A] min-h-screen p-4">
 
             {/* Current Plan Card */}
-            <div className="bg-[#FD0053] p-7 rounded-3xl text-white relative overflow-hidden">
+            <div className="bg-[#2D2F6E] p-7 rounded-3xl text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 opacity-10">
                     <Zap size={100} />
                 </div>
@@ -48,7 +48,7 @@ const Subscription = () => {
                             <p className="text-[10px] text-white/30 font-bold italic">0% Platform Fee + Priority Support</p>
                         </div>
                     </div>
-                    <button className="text-[#FD0053] font-black text-[10px] uppercase tracking-widest bg-[#FD0053]/10 px-3 py-1.5 rounded-xl border border-[#FD0053]/20">
+                    <button className="text-[#2D2F6E] font-black text-[10px] uppercase tracking-widest bg-[#2D2F6E]/10 px-3 py-1.5 rounded-xl border border-[#2D2F6E]/20">
                         View
                     </button>
                 </div>
@@ -56,7 +56,7 @@ const Subscription = () => {
 
             {/* Action Buttons */}
             <div className="space-y-2.5">
-                <button className="w-full bg-[#FD0053] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[#FD0053]/25 active:scale-95 transition-all">
+                <button className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[#2D2F6E]/25 active:scale-95 transition-all">
                     Renew Subscription
                 </button>
                 <button className="w-full bg-[#111111] border border-[#1E1E1E] text-white/50 py-4 rounded-2xl font-black uppercase tracking-widest text-xs active:scale-95 transition-all hover:border-[#2A2A2A]">

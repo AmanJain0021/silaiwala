@@ -51,7 +51,7 @@ const Overview = () => {
                 <button onClick={() => navigate('/partner/settings')} className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
                     <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
                 </button>
-                <h1 className="text-[17px] font-black text-[#FD0053] tracking-tight">SEWZELLA</h1>
+                <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
                 <button
                     onClick={() => navigate('/partner/notifications')}
                     className="relative"
@@ -60,7 +60,7 @@ const Overview = () => {
                         {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                     </div>
                     {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-[#FD0053] rounded-full border-2 border-white" />
+                        <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-[#2D2F6E] rounded-full border-2 border-white" />
                     )}
                 </button>
             </div>
@@ -107,7 +107,7 @@ const Overview = () => {
                         {/* New Orders */}
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
                             <div className="w-10 h-10 bg-red-50 rounded-2xl flex items-center justify-center mb-3">
-                                <ShoppingBag size={20} color="#FD0053" />
+                                <ShoppingBag size={20} color="#2D2F6E" />
                             </div>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">New Orders</p>
                             <p className="text-[28px] font-black text-gray-900 leading-none">
@@ -147,7 +147,7 @@ const Overview = () => {
                     <div className="flex gap-3">
                         <button
                             onClick={() => navigate('/partner/orders')}
-                            className="flex items-center gap-2 bg-[#FD0053] text-white px-5 py-3 rounded-2xl font-bold text-[13px] shadow-md shadow-[#FD0053]/25 active:scale-95 transition-all"
+                            className="flex items-center gap-2 bg-[#2D2F6E] text-white px-5 py-3 rounded-2xl font-bold text-[13px] shadow-md shadow-[#2D2F6E]/25 active:scale-95 transition-all"
                         >
                             <Plus size={16} strokeWidth={3} />
                             New Order
@@ -168,7 +168,7 @@ const Overview = () => {
                         <h3 className="text-[16px] font-black text-gray-900">Upcoming Pickups</h3>
                         <button
                             onClick={() => navigate('/partner/orders')}
-                            className="text-[11px] font-black text-[#FD0053] uppercase tracking-wider"
+                            className="text-[11px] font-black text-[#2D2F6E] uppercase tracking-wider"
                         >
                             VIEW ALL
                         </button>
@@ -190,7 +190,7 @@ const Overview = () => {
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="text-[11px] text-gray-500 font-medium mb-1">Today, 4:00 PM</p>
-                                        <span className="text-[9px] font-black text-[#FD0053] bg-red-50 px-2 py-0.5 rounded-full border border-red-100 uppercase tracking-wider">RUSH</span>
+                                        <span className="text-[9px] font-black text-[#2D2F6E] bg-red-50 px-2 py-0.5 rounded-full border border-red-100 uppercase tracking-wider">RUSH</span>
                                     </div>
                                 </div>
                                 <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
@@ -223,7 +223,7 @@ const Overview = () => {
                                         <p className="text-[11px] text-gray-500 font-medium mb-1">₹{order.totalAmount}</p>
                                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
                                             order.status === 'pending'
-                                                ? 'text-[#FD0053] bg-red-50 border border-red-100'
+                                                ? 'text-[#2D2F6E] bg-red-50 border border-red-100'
                                                 : 'text-blue-600 bg-blue-50 border border-blue-100'
                                         }`}>
                                             {order.status === 'pending' ? 'RUSH' : 'STANDARD'}
@@ -263,7 +263,7 @@ const Overview = () => {
                                 <span className="text-[12px] font-black text-gray-700">75%</span>
                             </div>
                             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-[#FD0053] rounded-full" style={{ width: '75%' }} />
+                                <div className="h-full bg-[#2D2F6E] rounded-full" style={{ width: '75%' }} />
                             </div>
                         </div>
 
@@ -277,7 +277,7 @@ const Overview = () => {
                             </button>
                             <button
                                 onClick={() => navigate('/partner/orders')}
-                                className="flex-1 py-3 bg-[#FD0053] rounded-2xl text-[12px] font-black text-white uppercase tracking-wide shadow-md shadow-[#FD0053]/25 active:scale-95 transition-all"
+                                className="flex-1 py-3 bg-[#2D2F6E] rounded-2xl text-[12px] font-black text-white uppercase tracking-wide shadow-md shadow-[#2D2F6E]/25 active:scale-95 transition-all"
                             >
                                 Mark Ready
                             </button>

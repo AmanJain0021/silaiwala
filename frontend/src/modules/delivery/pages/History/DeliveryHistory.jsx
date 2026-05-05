@@ -82,7 +82,7 @@ const DeliveryHistory = () => {
             {/* Title for list */}
             <div className="flex items-center justify-between px-2 pt-2">
                 <h2 className="text-[11px] font-black text-slate-800 tracking-widest uppercase">Verified Deliveries</h2>
-                <div className="flex items-center gap-1.5 text-primary bg-pink-100 px-2 py-1 rounded-md">
+                <div className="flex items-center gap-1.5 text-primary bg-indigo-100 px-2 py-1 rounded-md">
                     <ShieldCheck size={12} />
                     <span className="text-[9px] font-black uppercase tracking-wider">Proof Secured</span>
                 </div>
@@ -105,7 +105,7 @@ const DeliveryHistory = () => {
                         className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex flex-col group hover:border-slate-100 transition-all"
                     >
                         <div className="flex items-start gap-4 mb-3">
-                            <div className="w-12 h-12 rounded-2xl bg-pink-100 text-primary flex items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-primary flex items-center justify-center shrink-0">
                                 <Package size={22} />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -181,7 +181,7 @@ const DeliveryHistory = () => {
                             </button>
 
                             <div className="flex items-center gap-3 mb-5 mt-1 relative z-10">
-                                <div className="w-12 h-12 bg-pink-100 text-primary rounded-2xl flex items-center justify-center">
+                                <div className="w-12 h-12 bg-indigo-100 text-primary rounded-2xl flex items-center justify-center">
                                     <ShieldCheck size={24} />
                                 </div>
                                 <div>

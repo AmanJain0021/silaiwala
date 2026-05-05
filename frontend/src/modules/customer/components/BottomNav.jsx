@@ -13,13 +13,13 @@ const NavItem = ({ to, icon: Icon, label }) => {
             to={to}
             className={cn(
                 "flex flex-col items-center justify-center p-2 w-full transition-colors relative",
-                isActive ? "text-[#FD0053]" : "text-gray-400 hover:text-gray-600"
+                isActive ? "text-[#2D2F6E]" : "text-gray-400 hover:text-gray-600"
             )}
         >
             <Icon className={cn("h-6 w-6 mb-1 transition-all duration-300", isActive && "fill-current scale-110")} strokeWidth={isActive ? 2.5 : 2} />
             <span className={cn("text-[10px] font-medium transition-all", isActive ? "font-bold" : "")}>{label}</span>
             {isActive && (
-                <span className="absolute bottom-1 w-1 h-1 bg-[#FD0053] rounded-full animate-bounce" />
+                <span className="absolute bottom-1 w-1 h-1 bg-[#2D2F6E] rounded-full animate-bounce" />
             )}
         </Link>
     );

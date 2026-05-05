@@ -58,7 +58,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                     type="button"
                     onClick={handleSendOTP}
                     disabled={!phone || phone.length < 10 || otpSent}
-                    className="px-4 py-3 h-[52px] bg-primary text-white rounded-2xl font-bold text-sm whitespace-nowrap active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all shadow-lg shadow-pink-900/10 mb-1"
+                    className="px-4 py-3 h-[52px] bg-primary text-white rounded-2xl font-bold text-sm whitespace-nowrap active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all shadow-lg shadow-indigo-900/10 mb-1"
                 >
                     {otpSent ? 'OTP Sent' : 'Send OTP'}
                 </button>

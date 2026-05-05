@@ -118,9 +118,7 @@ const ServiceDetail = () => {
     </div>;
 
     // Pricing Logic
-    // MODIFIED: Added a safety cap for testing (if price > 5000, it's likely a data error or for testing)
-    const rawBasePrice = serviceData.basePrice || 0;
-    const basePrice = (rawBasePrice > 10000) ? 499 : rawBasePrice;
+    const basePrice = serviceData.basePrice || 0;
     
     const deliveryPrice = deliveryType === 'express' ? 150 : (deliveryType === 'premium' ? 350 : 0);
     const fabricPrice = (fabricSource === 'platform' && selectedFabric) ? selectedFabric.price : 0;
@@ -184,9 +182,9 @@ const ServiceDetail = () => {
                 console.error("Failed to save measurement profile:", err);
             }
         } else if (measurements?.type === 'self') {
-            finalMeasurements = measurements.data;
+            finalMeasurements = { ...measurements.data, type: 'self' };
         } else if (measurements?.type === 'slip' || measurements?.type === 'saved') {
-            finalMeasurements = measurements.type === 'saved' ? measurements.measurements : measurements;
+            finalMeasurements = measurements.type === 'saved' ? { ...(measurements.measurements || {}), type: 'saved' } : measurements;
         }
 
         return {
@@ -235,7 +233,7 @@ const ServiceDetail = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f8faf9] pb-48 font-sans">
+        <div className="min-h-screen bg-gray-50 pb-48 font-sans">
             {/* 1. Header & Stepper Integration */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl pt-safe">
                 <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
@@ -249,7 +247,7 @@ const ServiceDetail = () => {
                         </div>
                     </div>
                     {serviceItems.length > 0 && (
-                        <div className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-full shadow-lg shadow-pink-100">
+                        <div className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-full shadow-lg shadow-indigo-100">
                             <ShoppingBag size={12} />
                             <span className="text-[10px] font-black">{serviceItems.length} Items</span>
                         </div>
@@ -292,7 +290,7 @@ const ServiceDetail = () => {
                                                     e.stopPropagation();
                                                     removeServiceItem(idx);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all active:scale-95"
+                                                className="p-2 text-gray-400 hover:text-error hover:bg-indigo-50 rounded-lg transition-all active:scale-95"
                                             >
                                                 <X size={16} />
                                             </button>
@@ -349,7 +347,7 @@ const ServiceDetail = () => {
                     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center text-primary">
+                                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary">
                                     <Wand2 size={18} />
                                 </div>
                                 <div>
@@ -398,7 +396,7 @@ const ServiceDetail = () => {
                 {/* 5. Additional Info Card */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center text-primary">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary">
                             <Info size={18} />
                         </div>
                         <div>
@@ -447,7 +445,7 @@ const ServiceDetail = () => {
                         </div>
                         <div className="text-right">
                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter mb-0.5">Est. Arrival</p>
-                            <div className="flex items-center justify-end gap-1 text-primary bg-pink-50 px-2 py-0.5 rounded-lg border border-primary/10">
+                            <div className="flex items-center justify-end gap-1 text-primary bg-indigo-50 px-2 py-0.5 rounded-lg border border-primary/10">
                                 <Clock size={10} />
                                 <span className="text-[10px] font-black">{getDeliveryDays()} Days</span>
                             </div>
@@ -461,7 +459,7 @@ const ServiceDetail = () => {
                             <span className="text-[9px] font-black text-gray-500 uppercase">Current: ₹{currentTotal}</span>
                         </div>
                         {serviceItems.length > 0 && (
-                            <div className="shrink-0 bg-pink-50 px-2 py-1 rounded-md border border-primary/10 flex items-center gap-1.5">
+                            <div className="shrink-0 bg-indigo-50 px-2 py-1 rounded-md border border-primary/10 flex items-center gap-1.5">
                                 <ShoppingBag size={8} className="text-primary" />
                                 <span className="text-[9px] font-black text-primary uppercase">Basket: ₹{basketTotal}</span>
                             </div>
@@ -476,7 +474,7 @@ const ServiceDetail = () => {
                             className={cn(
                                 "flex-1 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2",
                                 measurementType && (measurementType === 'saved' || measurements) 
-                                    ? "border-primary text-primary hover:bg-pink-50 active:scale-95" 
+                                    ? "border-primary text-primary hover:bg-indigo-50 active:scale-95" 
                                     : "border-gray-100 text-gray-300 cursor-not-allowed"
                             )}
                         >
@@ -489,7 +487,7 @@ const ServiceDetail = () => {
                             className={cn(
                                 "flex-[2] py-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
                                 measurementType && (measurementType === 'saved' || measurements)
-                                    ? "bg-primary text-white shadow-pink-100 active:scale-[0.98] hover:bg-primary-dark" 
+                                    ? "bg-primary text-white shadow-indigo-100 active:scale-[0.98] hover:bg-primary-dark" 
                                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                             )}
                         >

@@ -24,7 +24,7 @@ const Notifications = () => {
             case 'ORDER_CREATED':
                 return { icon: <ShoppingBag size={18} />, bg: 'bg-emerald-500/10', color: 'text-emerald-400' };
             case 'ORDER_STATUS_UPDATED':
-                return { icon: <Bell size={18} />, bg: 'bg-[#FD0053]/10', color: 'text-[#FD0053]' };
+                return { icon: <Bell size={18} />, bg: 'bg-[#2D2F6E]/10', color: 'text-[#2D2F6E]' };
             case 'SYSTEM_NOTICE':
                 return { icon: <AlertCircle size={18} />, bg: 'bg-amber-500/10', color: 'text-amber-400' };
             default:
@@ -46,7 +46,7 @@ const Notifications = () => {
                 {unreadCount > 0 ? (
                     <button
                         onClick={markAllRead}
-                        className="text-[9px] font-black text-[#FD0053] uppercase tracking-widest bg-[#FD0053]/10 border border-[#FD0053]/20 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                        className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest bg-[#2D2F6E]/10 border border-[#2D2F6E]/20 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
                     >
                         Mark All Read
                     </button>
@@ -80,11 +80,11 @@ const Notifications = () => {
                                 className={`p-4 rounded-3xl border transition-all flex gap-4 cursor-pointer relative ${
                                     notif.isRead
                                         ? 'bg-[#111111] border-[#1C1C1C] opacity-50'
-                                        : 'bg-[#111111] border-[#FD0053]/20 shadow-[0_0_20px_rgba(253,0,83,0.05)]'
+                                        : 'bg-[#111111] border-[#2D2F6E]/20 shadow-[0_0_20px_rgba(253,0,83,0.05)]'
                                 }`}
                             >
                                 {!notif.isRead && (
-                                    <div className="absolute top-4 right-4 h-2 w-2 bg-[#FD0053] rounded-full animate-pulse" />
+                                    <div className="absolute top-4 right-4 h-2 w-2 bg-[#2D2F6E] rounded-full animate-pulse" />
                                 )}
                                 <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 ${bg} ${color}`}>
                                     {icon}

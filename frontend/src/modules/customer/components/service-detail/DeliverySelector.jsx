@@ -10,7 +10,7 @@ const options = [
         price: 0,
         icon: Truck,
         color: 'text-primary',
-        bg: 'bg-pink-50',
+        bg: 'bg-indigo-50',
     },
     {
         id: 'express',
@@ -29,7 +29,7 @@ const options = [
         price: 350,
         icon: Crown,
         color: 'text-primary',
-        bg: 'bg-pink-50',
+        bg: 'bg-indigo-50',
     }
 ];
 
@@ -55,7 +55,7 @@ const DeliverySelector = ({ selected, onSelect }) => {
                             onClick={() => onSelect(opt.id)}
                             className={cn(
                                 "relative p-3 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between min-h-[140px]",
-                                isSelected ? "border-primary bg-[#f2fcf9] shadow-md ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
+                                isSelected ? "border-primary bg-primary-soft shadow-md ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
                             )}
                         >
                             {opt.badge && (

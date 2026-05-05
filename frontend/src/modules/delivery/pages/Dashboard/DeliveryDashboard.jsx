@@ -300,7 +300,7 @@ const DeliveryDashboard = () => {
                         <div className="p-6 lg:p-8">
                             <div className="flex justify-between items-start mb-6">
                                 <div className="space-y-1.5">
-                                    <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-pink-50 rounded-md border border-pink-100">
+                                    <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-indigo-50 rounded-md border border-indigo-100">
                                         <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
                                         <span className="text-[10px] font-black tracking-widest text-primary uppercase">Active Dispatch</span>
                                     </div>
@@ -396,7 +396,7 @@ const DeliveryDashboard = () => {
                                     </div>
                                     <button
                                         onClick={() => handleOpenMap(currentTask)}
-                                        className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-pink-900/10"
+                                        className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
                                     >
                                         Open Map
                                     </button>
@@ -415,7 +415,7 @@ const DeliveryDashboard = () => {
                             <p className="text-slate-600 font-bold text-sm">You have no active tasks, but there are <span className="text-primary">{availableOrders.length} live orders</span> waiting!</p>
                             <button
                                 onClick={() => navigate('/delivery/tasks')}
-                                className="px-6 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-pink-900/20"
+                                className="px-6 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20"
                             >
                                 View Live Pool
                             </button>
@@ -434,7 +434,7 @@ const DeliveryDashboard = () => {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></div>
+                            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
                             <h2 className="text-lg font-black text-white tracking-tight capitalize">Live <span className="text-white">Available</span> Tasks</h2>
                         </div>
                         <button onClick={() => navigate('/delivery/tasks')} className="text-[10px] font-black text-white uppercase tracking-widest hover:underline">See All</button>
@@ -445,11 +445,11 @@ const DeliveryDashboard = () => {
                                 key={order._id}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setSelectedAvailableTask(order)}
-                                className="min-w-[240px] bg-gradient-to-br from-white to-slate-50/50 p-4 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-pink-200 hover:shadow-md transition-all"
+                                className="min-w-[240px] bg-gradient-to-br from-white to-slate-50/50 p-4 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-indigo-200 hover:shadow-md transition-all"
                             >
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-start">
-                                        <span className="text-[9px] font-black bg-pink-100 text-primary px-2 py-0.5 rounded uppercase tracking-wider">{getTaskType(order)}</span>
+                                        <span className="text-[9px] font-black bg-indigo-100 text-primary px-2 py-0.5 rounded uppercase tracking-wider">{getTaskType(order)}</span>
                                         <span className="text-[9px] font-bold text-slate-400">₹{order.totalAmount || '--'}</span>
                                     </div>
                                     <div>
@@ -497,7 +497,7 @@ const DeliveryDashboard = () => {
 
                             <div className="mb-8">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedAvailableTask.taskType === 'fabric-pickup' ? 'bg-pink-50 text-primary border border-pink-100' : 'bg-pink-50 text-primary border border-pink-100'}`}>
+                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedAvailableTask.taskType === 'fabric-pickup' ? 'bg-indigo-50 text-primary border border-indigo-100' : 'bg-indigo-50 text-primary border border-indigo-100'}`}>
                                         {getTaskType(selectedAvailableTask)}
                                     </div>
                                     <h2 className="text-xl font-black text-slate-900">₹{selectedAvailableTask.totalAmount}</h2>

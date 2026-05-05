@@ -153,7 +153,7 @@ const DeliveryLayout = () => {
     ];
 
     return (
-        <div className="min-h-[100dvh] bg-[#FAFAFB] flex flex-col font-sans selection:bg-pink-100 selection:text-primary overflow-x-clip">
+        <div className="min-h-[100dvh] bg-[#FAFAFB] flex flex-col font-sans selection:bg-indigo-100 selection:text-primary overflow-x-clip">
             {/* New Task Rapido-Style Alert */}
             <NewTaskAlert onTaskAccepted={(orderId) => {
                 // Refresh data if we are on dashboard or tasks page
@@ -202,7 +202,7 @@ const DeliveryLayout = () => {
                                         <div 
                                             key={n._id} 
                                             onClick={() => !n.isRead && handleMarkRead(n._id)}
-                                            className={`p-4 rounded-2xl border transition-all cursor-pointer ${!n.isRead ? 'bg-pink-50/50 border-pink-100' : 'bg-white border-slate-100'}`}
+                                            className={`p-4 rounded-2xl border transition-all cursor-pointer ${!n.isRead ? 'bg-indigo-50/50 border-indigo-100' : 'bg-white border-slate-100'}`}
                                         >
                                             <div className="flex justify-between items-start mb-1">
                                                 <h3 className={`text-sm font-black ${!n.isRead ? 'text-primary' : 'text-slate-700'}`}>{n.title}</h3>
@@ -219,7 +219,7 @@ const DeliveryLayout = () => {
                             <div className="p-6 border-t border-slate-100">
                                 <button 
                                     onClick={handleMarkAllRead}
-                                    className="w-full py-3.5 bg-primary text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-pink-200 active:scale-95 transition-all"
+                                    className="w-full py-3.5 bg-primary text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-indigo-200 active:scale-95 transition-all"
                                 >
                                     Mark All As Read
                                 </button>
@@ -347,7 +347,7 @@ const DeliveryLayout = () => {
                     <button
                         onClick={toggleAvailability}
                         className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-300 ${isOnline
-                            ? 'bg-pink-50 border-pink-100 text-primary'
+                            ? 'bg-indigo-50 border-indigo-100 text-primary'
                             : 'bg-slate-50 border-slate-200 text-slate-400'
                             }`}
                     >
@@ -359,7 +359,7 @@ const DeliveryLayout = () => {
 
                     <button
                         onClick={() => setShowNotifications(true)}
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all relative ${showNotifications ? 'bg-primary text-white shadow-lg shadow-pink-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all relative ${showNotifications ? 'bg-primary text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
                         <Bell size={20} className={showNotifications ? 'animate-bounce' : ''} />
                         {unreadCount > 0 && (

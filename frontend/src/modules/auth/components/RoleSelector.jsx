@@ -9,14 +9,14 @@ const roles = [
         title: 'Customer',
         icon: User,
         description: 'I want to get clothes stitched.',
-        color: 'bg-pink-50 text-primary border-pink-200 hover:border-primary',
+        color: 'bg-indigo-50 text-primary border-indigo-200 hover:border-primary',
     },
     {
         id: ROLES.TAILOR,
         title: 'Tailor',
         icon: Scissors,
         description: 'I want to stitch clothes.',
-        color: 'bg-pink-50 text-primary border-pink-200 hover:border-primary',
+        color: 'bg-indigo-50 text-primary border-indigo-200 hover:border-primary',
     },
     {
         id: ROLES.DELIVERY,
@@ -42,7 +42,7 @@ const RoleSelector = ({ selectedRole, onSelect }) => {
                         onClick={() => onSelect(role.id)}
                         className={`
               cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center gap-4
-              ${isSelected ? 'border-primary ring-1 ring-primary bg-pink-50' : 'border-transparent bg-gray-50 hover:bg-white hover:shadow-md'}
+              ${isSelected ? 'border-primary ring-1 ring-primary bg-indigo-50' : 'border-transparent bg-gray-50 hover:bg-white hover:shadow-md'}
             `}
                     >
                         <div className={`p-3 rounded-full ${role.color}`}>

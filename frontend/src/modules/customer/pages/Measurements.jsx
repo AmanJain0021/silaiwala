@@ -186,7 +186,7 @@ const MeasurementsPage = () => {
                                 </div>
 
                                 <Button 
-                                    className="w-full bg-primary h-14 rounded-full text-white font-bold shadow-lg shadow-pink-900/10 hover:bg-primary-dark transition-all"
+                                    className="w-full bg-primary h-14 rounded-full text-white font-bold shadow-lg shadow-indigo-900/10 hover:bg-primary-dark transition-all"
                                     type="submit"
                                     disabled={isLoading}
                                 >
@@ -202,12 +202,12 @@ const MeasurementsPage = () => {
                             className="space-y-4"
                         >
                             {/* Stats/Intro */}
-                            <div className="bg-primary p-6 rounded-[2rem] text-white shadow-lg shadow-pink-900/20 mb-8 relative overflow-hidden">
+                            <div className="bg-primary p-6 rounded-[2rem] text-white shadow-lg shadow-indigo-900/20 mb-8 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-4 opacity-10">
                                     <Ruler size={120} />
                                 </div>
                                 <h3 className="text-lg font-bold mb-1">Stay Fit, Fit Well.</h3>
-                                <p className="text-pink-100/60 text-xs mb-4 max-w-[200px]">Save your body profiles once and use them for any tailor order.</p>
+                                <p className="text-indigo-100/60 text-xs mb-4 max-w-[200px]">Save your body profiles once and use them for any tailor order.</p>
                                 <button 
                                     onClick={() => setIsAdding(true)}
                                     className="bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 text-xs font-bold transition-all"
@@ -218,7 +218,7 @@ const MeasurementsPage = () => {
 
                             {measurements.length === 0 && !isLoading ? (
                                 <div className="text-center py-20 px-10">
-                                    <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                                    <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
                                         <Ruler size={32} />
                                     </div>
                                     <h4 className="font-bold text-gray-400 mb-1">No profiles yet</h4>
@@ -234,7 +234,7 @@ const MeasurementsPage = () => {
                                         className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all active:scale-95 cursor-default"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-primary">
                                                 <ShirtIcon size={20} />
                                             </div>
                                             <div>
@@ -248,13 +248,13 @@ const MeasurementsPage = () => {
                                         <div className="flex items-center gap-2">
                                             <button 
                                                 onClick={() => handleEdit(m)}
-                                                className="p-2 text-gray-400 hover:text-primary hover:bg-pink-50 rounded-lg transition-all"
+                                                className="p-2 text-gray-400 hover:text-primary hover:bg-indigo-50 rounded-lg transition-all"
                                             >
                                                 <Edit2 size={16} />
                                             </button>
                                             <button 
                                                 onClick={() => handleDelete(m._id)}
-                                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                className="p-2 text-gray-300 hover:text-error hover:bg-indigo-50 rounded-lg transition-all"
                                             >
                                                 <Trash2 size={16} />
                                             </button>

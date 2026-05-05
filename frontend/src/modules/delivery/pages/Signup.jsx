@@ -124,7 +124,7 @@ const DeliverySignup = () => {
             className="w-full max-w-sm mx-auto"
         >
             <div className="text-left mb-6">
-                <h2 className="text-2xl font-black text-[#1A202C] tracking-tight">Join the Fleet</h2>
+                <h2 className="text-2xl font-black text-[#1A1A1A] tracking-tight">Join the Fleet</h2>
                 <p className="text-gray-500 font-medium mt-1">Become a delivery partner today</p>
                 
                 {/* Progress Indicator */}

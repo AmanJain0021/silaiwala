@@ -26,7 +26,7 @@ const statusConfig = {
     reviewing: { color: 'text-blue-500', bg: 'bg-blue-50', icon: <Search size={14} />, label: 'Reviewing' },
     quoted: { color: 'text-purple-500', bg: 'bg-purple-50', icon: <ClipboardList size={14} />, label: 'Quote Ready' },
     accepted: { color: 'text-green-500', bg: 'bg-green-50', icon: <CheckCircle2 size={14} />, label: 'Accepted' },
-    'in-production': { color: 'text-[#FD0053]', bg: 'bg-pink-50', icon: <MoreHorizontal size={14} />, label: 'In Production' },
+    'in-production': { color: 'text-[#2D2F6E]', bg: 'bg-indigo-50', icon: <MoreHorizontal size={14} />, label: 'In Production' },
     completed: { color: 'text-green-600', bg: 'bg-green-100', icon: <CheckCircle2 size={14} />, label: 'Delivered' },
     cancelled: { color: 'text-gray-400', bg: 'bg-gray-100', icon: <AlertCircle size={14} />, label: 'Closed' }
 };
@@ -54,7 +54,7 @@ const MyBulkOrders = () => {
 
     if (isLoading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="w-10 h-10 border-4 border-[#FD0053] border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-[#2D2F6E] border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
@@ -99,7 +99,7 @@ const MyBulkOrders = () => {
                         <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mt-2">Scale your team's look Today</p>
                         <button
                             onClick={() => navigate('/bulk-order')}
-                            className="mt-8 px-8 py-3 bg-[#FD0053] text-white rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-[#FD0053]/20"
+                            className="mt-8 px-8 py-3 bg-[#2D2F6E] text-white rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-[#2D2F6E]/20"
                         >
                             Start First Bulk Request
                         </button>
@@ -118,7 +118,7 @@ const MyBulkOrders = () => {
                                 >
                                     {/* Quote Available Badge - Compact Version */}
                                     {order.status === 'quoted' && (
-                                        <div className="absolute top-0 right-0 p-1.5 px-3 bg-gradient-to-l from-[#FD0053] to-[#ff8da8] text-white rounded-bl-xl shadow-md z-10 transition-transform group-hover:scale-105">
+                                        <div className="absolute top-0 right-0 p-1.5 px-3 bg-gradient-to-l from-[#2D2F6E] to-[#ff8da8] text-white rounded-bl-xl shadow-md z-10 transition-transform group-hover:scale-105">
                                             <span className="text-[7px] sm:text-[9px] font-black uppercase tracking-widest whitespace-nowrap flex items-center gap-1">
                                                 <Sparkles size={8} /> Quote Ready
                                             </span>
@@ -157,7 +157,7 @@ const MyBulkOrders = () => {
                                             <Calendar className="text-gray-300" size={8} />
                                             <span className="text-[7px] font-bold text-gray-400 uppercase">{new Date(order.createdAt).toLocaleDateString()}</span>
                                         </div>
-                                        <div className="w-5 h-5 rounded-full bg-pink-50 flex items-center justify-center text-[#FD0053]">
+                                        <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center text-[#2D2F6E]">
                                             <ChevronRight size={10} />
                                         </div>
                                     </div>
@@ -209,26 +209,26 @@ const MyBulkOrders = () => {
 
                                     {/* Quote Section (if available) */}
                                     {selectedOrder.status === 'quoted' && selectedOrder.quote && (
-                                        <section className="bg-gradient-to-br from-[#FD0053]/10 to-pink-50 p-5 sm:p-7 rounded-[2rem] sm:rounded-[2.5rem] border border-[#FD0053]/20 shadow-xl shadow-pink-100/50 relative overflow-hidden group">
+                                        <section className="bg-gradient-to-br from-[#2D2F6E]/10 to-indigo-50 p-5 sm:p-7 rounded-[2rem] sm:rounded-[2.5rem] border border-[#2D2F6E]/20 shadow-xl shadow-indigo-100/50 relative overflow-hidden group">
                                             <div className="absolute -right-4 -top-4 w-20 sm:w-24 h-20 sm:h-24 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-                                            <h3 className="text-[10px] sm:text-sm font-black uppercase text-[#FD0053] tracking-[0.2em] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 italic">
-                                                <div className="px-1.5 py-0.5 bg-[#FD0053] rounded text-white italic scale-x-[-1]">
+                                            <h3 className="text-[10px] sm:text-sm font-black uppercase text-[#2D2F6E] tracking-[0.2em] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 italic">
+                                                <div className="px-1.5 py-0.5 bg-[#2D2F6E] rounded text-white italic scale-x-[-1]">
                                                     <FileText size={10} strokeWidth={3} />
                                                 </div>
                                                 Official Quote
                                             </h3>
                                             <div className="grid grid-cols-2 gap-3 sm:gap-6 relative z-10">
-                                                <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-[#FD0053]/10">
+                                                <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-[#2D2F6E]/10">
                                                     <p className="text-[8px] sm:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1 sm:mb-1.5">Unit Price</p>
                                                     <p className="text-md sm:text-xl font-black text-gray-900 tracking-tight">₹{selectedOrder.quote.pricePerUnit.toLocaleString()}</p>
                                                 </div>
-                                                <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-[#FD0053]/10">
+                                                <div className="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-[#2D2F6E]/10">
                                                     <p className="text-[8px] sm:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1 sm:mb-1.5">Total Quote</p>
-                                                    <p className="text-md sm:text-xl font-black text-[#FD0053] tracking-tight">₹{selectedOrder.quote.totalAmount.toLocaleString()}</p>
+                                                    <p className="text-md sm:text-xl font-black text-[#2D2F6E] tracking-tight">₹{selectedOrder.quote.totalAmount.toLocaleString()}</p>
                                                 </div>
-                                                <div className="bg-white p-4 sm:p-6 rounded-[2rem] border border-[#FD0053]/20 flex flex-col items-center justify-center col-span-2 mt-2 shadow-inner bg-pink-50/30">
-                                                    <p className="text-[10px] text-[#FD0053] font-black uppercase tracking-[0.2em] mb-1">Security Deposit Required</p>
-                                                    <p className="text-2xl sm:text-3xl font-black text-[#FD0053] tracking-tighter">₹{selectedOrder.quote.depositRequired?.toLocaleString() || '0'}</p>
+                                                <div className="bg-white p-4 sm:p-6 rounded-[2rem] border border-[#2D2F6E]/20 flex flex-col items-center justify-center col-span-2 mt-2 shadow-inner bg-indigo-50/30">
+                                                    <p className="text-[10px] text-[#2D2F6E] font-black uppercase tracking-[0.2em] mb-1">Security Deposit Required</p>
+                                                    <p className="text-2xl sm:text-3xl font-black text-[#2D2F6E] tracking-tighter">₹{selectedOrder.quote.depositRequired?.toLocaleString() || '0'}</p>
                                                     <p className="text-[8px] sm:text-[9px] text-gray-400 font-bold uppercase mt-1 tracking-widest text-center">Pay this amount to confirm your order & start production</p>
                                                 </div>
                                             </div>
@@ -243,7 +243,7 @@ const MyBulkOrders = () => {
                                     {/* Location Section */}
                                     <section className="space-y-2">
                                         <h3 className="text-[9px] font-black uppercase text-gray-400 tracking-[0.2em] flex items-center gap-2 italic">
-                                            <Building2 size={12} className="text-[#FD0053]" /> Service Location
+                                            <Building2 size={12} className="text-[#2D2F6E]" /> Service Location
                                         </h3>
                                         <div className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100 flex items-start gap-3">
                                             <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-50">
@@ -259,9 +259,9 @@ const MyBulkOrders = () => {
                                     {/* Measurement Details */}
                                     <section className="space-y-3">
                                         <h3 className="text-[9px] font-black uppercase text-gray-400 tracking-[0.2em] flex items-center gap-2 italic">
-                                            <Scissors size={12} className="text-[#FD0053]" /> Measurement Strategy
+                                            <Scissors size={12} className="text-[#2D2F6E]" /> Measurement Strategy
                                         </h3>
-                                        <div className="bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm border-l-4 border-l-[#FD0053]">
+                                        <div className="bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm border-l-4 border-l-[#2D2F6E]">
                                             <p className="text-[10px] font-black text-gray-900 uppercase mb-1">
                                                 {selectedOrder.measurementMethod === 'standard-sizes' ? 'Standard Sizing' :
                                                     selectedOrder.measurementMethod === 'custom-sheet' ? 'Custom Measurement Sheet' :
@@ -278,7 +278,7 @@ const MyBulkOrders = () => {
                                                     {Object.entries(selectedOrder.sizeDistribution).map(([size, qty]) => (
                                                         qty > 0 && (
                                                             <div key={size} className="text-center bg-white py-1.5 rounded-lg border border-gray-100 shadow-sm">
-                                                                <p className="text-[8px] font-black text-[#FD0053] mb-0.5">{size}</p>
+                                                                <p className="text-[8px] font-black text-[#2D2F6E] mb-0.5">{size}</p>
                                                                 <p className="text-[10px] font-black text-gray-900">{qty}</p>
                                                             </div>
                                                         )
@@ -291,13 +291,13 @@ const MyBulkOrders = () => {
                                     {/* Request Section */}
                                     <section className="space-y-3">
                                         <h3 className="text-[9px] sm:text-[11px] font-black uppercase text-gray-400 tracking-[0.2em] flex items-center gap-2 italic">
-                                            <ClipboardList size={12} className="text-[#FD0053]" /> Requirements
+                                            <ClipboardList size={12} className="text-[#2D2F6E]" /> Requirements
                                         </h3>
                                         <div className="bg-white p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-100/50 space-y-4">
                                             <div className="flex justify-between items-start">
                                                 <div className="min-w-0">
                                                     <p className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight leading-none mb-1.5 truncate">{selectedOrder.serviceType}</p>
-                                                    <p className="text-[9px] sm:text-[11px] font-bold text-[#FD0053] uppercase tracking-[0.2em] italic">{selectedOrder.orderType} Category</p>
+                                                    <p className="text-[9px] sm:text-[11px] font-bold text-[#2D2F6E] uppercase tracking-[0.2em] italic">{selectedOrder.orderType} Category</p>
                                                 </div>
                                                 <div className="text-right shrink-0">
                                                     <p className="text-md sm:text-lg font-black text-gray-900 leading-none">{selectedOrder.estimatedQuantity}</p>
@@ -306,7 +306,7 @@ const MyBulkOrders = () => {
                                             </div>
                                             <div className="h-px bg-gray-50 w-full" />
                                             <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-pink-50 rounded-lg text-[#FD0053]">
+                                                <div className="p-1.5 bg-indigo-50 rounded-lg text-[#2D2F6E]">
                                                     <Info size={12} />
                                                 </div>
                                                 <div>
@@ -333,7 +333,7 @@ const MyBulkOrders = () => {
                                     <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-white/80 backdrop-blur-xl border-t border-gray-100 flex gap-3 sm:gap-4">
                                         <button
                                             onClick={() => navigate('/checkout/summary', { state: { bulkOrderId: selectedOrder._id } })}
-                                            className="flex-1 py-3.5 sm:py-4 bg-[#FD0053] text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-xl shadow-pink-200 active:scale-95 transition-all"
+                                            className="flex-1 py-3.5 sm:py-4 bg-[#2D2F6E] text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-xl shadow-indigo-200 active:scale-95 transition-all"
                                         >
                                             Accept Quote & Pay
                                         </button>
@@ -346,7 +346,7 @@ const MyBulkOrders = () => {
 
                 {/* Info Card - Compact */}
                 <div className="mt-8 p-4 bg-white rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/30 flex flex-col sm:flex-row items-center gap-4 mx-1">
-                    <div className="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center text-[#FD0053] shrink-0">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-[#2D2F6E] shrink-0">
                         <Info size={20} />
                     </div>
                     <div className="text-center sm:text-left">

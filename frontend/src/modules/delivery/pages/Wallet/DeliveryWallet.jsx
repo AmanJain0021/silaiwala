@@ -101,7 +101,7 @@ const DeliveryWallet = () => {
     return (
         <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="bg-[#FD0053] text-white p-6 pb-20 rounded-b-[2.5rem] relative overflow-hidden">
+            <div className="bg-[#2D2F6E] text-white p-6 pb-20 rounded-b-[2.5rem] relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                     <Wallet size={120} />
                 </div>
@@ -117,11 +117,11 @@ const DeliveryWallet = () => {
                 </div>
 
                 <div className="text-center space-y-2">
-                    <p className="text-pink-100/60 text-[10px] font-black uppercase tracking-[0.3em] italic">Available Liquidity</p>
+                    <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em] italic">Available Liquidity</p>
                     <h2 className="text-6xl font-black tracking-tighter drop-shadow-2xl italic">₹{walletData.balance.toLocaleString()}</h2>
                     <div className="flex items-center justify-center gap-2 pt-2">
-                        <div className="px-3 py-1 bg-[#FD0053]/20 rounded-full border border-[#FD0053]/30">
-                            <span className="text-[10px] font-black tracking-widest text-pink-300 uppercase">Settled Earnings</span>
+                        <div className="px-3 py-1 bg-[#2D2F6E]/20 rounded-full border border-[#2D2F6E]/30">
+                            <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase">Settled Earnings</span>
                         </div>
                     </div>
                 </div>
@@ -130,14 +130,14 @@ const DeliveryWallet = () => {
             {/* Quick Stats & Action */}
             <div className="px-6 -mt-12 space-y-4">
                 <div className="bg-white p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-50 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform"></div>
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Lifetime Withdrawn</p>
                         <p className="text-xl font-black text-slate-900 tracking-tight">₹{walletData.totalWithdrawn.toLocaleString()}</p>
                     </div>
                     <button
                         onClick={() => setShowWithdrawModal(true)}
-                        className="relative z-10 bg-[#FD0053] text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-pink-900/10"
+                        className="relative z-10 bg-[#2D2F6E] text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
                     >
                         Withdraw Now
                     </button>
@@ -182,7 +182,7 @@ const DeliveryWallet = () => {
                                         .map((txn, idx) => (
                                             <div key={txn._id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.type === 'credit' ? 'bg-pink-50 text-[#FD0053]' : 'bg-rose-50 text-rose-600'}`}>
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.type === 'credit' ? 'bg-indigo-50 text-[#2D2F6E]' : 'bg-rose-50 text-rose-600'}`}>
                                                         {txn.type === 'credit' ? <ArrowDownRight size={20} /> : <ArrowUpRight size={20} />}
                                                     </div>
                                                     <div>
@@ -190,7 +190,7 @@ const DeliveryWallet = () => {
                                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(txn.createdAt).toLocaleDateString()} • {txn.category.replace('_', ' ')}</p>
                                                     </div>
                                                 </div>
-                                                <p className={`text-[15px] font-black ${txn.type === 'credit' ? 'text-[#FD0053]' : 'text-rose-600'}`}>
+                                                <p className={`text-[15px] font-black ${txn.type === 'credit' ? 'text-[#2D2F6E]' : 'text-rose-600'}`}>
                                                     {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
                                                 </p>
                                             </div>
@@ -261,7 +261,7 @@ const DeliveryWallet = () => {
                             </button>
 
                             <div className="mb-8 flex items-center gap-4">
-                                <div className="w-14 h-14 bg-pink-50 text-[#FD0053] rounded-2xl flex items-center justify-center">
+                                <div className="w-14 h-14 bg-indigo-50 text-[#2D2F6E] rounded-2xl flex items-center justify-center">
                                     <Send size={28} />
                                 </div>
                                 <div>
@@ -278,7 +278,7 @@ const DeliveryWallet = () => {
                                         value={withdrawAmount}
                                         onChange={(e) => setWithdrawAmount(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#FD0053] focus:bg-white transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
                                         required
                                         max={walletData.balance}
                                     />
@@ -287,7 +287,7 @@ const DeliveryWallet = () => {
                                         <button
                                             type="button"
                                             onClick={() => setWithdrawAmount(walletData.balance)}
-                                            className="text-[10px] font-black text-[#FD0053] uppercase tracking-widest"
+                                            className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest"
                                         >
                                             Max
                                         </button>
@@ -301,7 +301,7 @@ const DeliveryWallet = () => {
                                         value={upiId}
                                         onChange={(e) => setUpiId(e.target.value)}
                                         placeholder="yourname@upi"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-base font-bold text-slate-900 focus:outline-none focus:border-[#FD0053] focus:bg-white transition-all uppercase placeholder:normal-case"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-base font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all uppercase placeholder:normal-case"
                                         required
                                     />
                                 </div>
@@ -309,7 +309,7 @@ const DeliveryWallet = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !withdrawAmount || !upiId}
-                                    className="w-full bg-[#FD0053] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-pink-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+                                    className="w-full bg-[#2D2F6E] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
                                 >
                                     {isSubmitting ? (
                                         <>

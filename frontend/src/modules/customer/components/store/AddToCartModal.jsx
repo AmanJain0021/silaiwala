@@ -77,7 +77,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
 
                             {/* Discount Badge */}
                             {product.discount && (
-                                <div className="absolute top-4 left-4 bg-[#FFBC00] text-[#FD0053] text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
+                                <div className="absolute top-4 left-4 bg-[#FFBC00] text-[#2D2F6E] text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
                                     -{product.discount}%
                                 </div>
                             )}
@@ -89,7 +89,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                     {categoryName || 'FABRICS'}
                                 </span>
-                                <div className="flex items-center gap-1 bg-pink-50 px-2 py-0.5 rounded-md text-[10px] font-black text-[#FD0053]">
+                                <div className="flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded-md text-[10px] font-black text-[#2D2F6E]">
                                     {product.rating || product.ratings || 0} <Star className="h-3 w-3 fill-current" />
                                 </div>
                             </div>
@@ -99,12 +99,12 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                     {product.name}
                                 </h2>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">
-                                    Available At: <span className="text-[#FD0053]">{storeName}</span>
+                                    Available At: <span className="text-[#2D2F6E]">{storeName}</span>
                                 </p>
                             </div>
 
                             <div className="flex items-baseline gap-2 mt-1">
-                                <span className="text-2xl font-black text-[#FD0053]">₹{price}</span>
+                                <span className="text-2xl font-black text-[#2D2F6E]">₹{price}</span>
                                 {product.type === 'fabric' && <span className="text-[11px] text-gray-500 font-bold">/ meter</span>}
                                 {product.originalPrice && (
                                     <span className="text-sm font-bold text-gray-400 line-through">₹{product.originalPrice}</span>
@@ -115,12 +115,12 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                             <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 flex flex-col gap-2 shadow-inner mt-1">
                                 <div className="flex justify-between items-center">
                                     <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Est. Stitching</span>
-                                    <span className="text-xs font-black text-[#FD0053]">₹{estStitching}</span>
+                                    <span className="text-xs font-black text-[#2D2F6E]">₹{estStitching}</span>
                                 </div>
                                 <div className="h-[1px] w-full bg-gray-200 border-dashed border-b border-gray-200"></div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Total Est.</span>
-                                    <span className="text-sm font-black text-[#FD0053]">₹{totalPrice}*</span>
+                                    <span className="text-sm font-black text-[#2D2F6E]">₹{totalPrice}*</span>
                                 </div>
                             </div>
 
@@ -142,13 +142,13 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                     }}
                                     className="p-4 rounded-[1.2rem] border border-gray-100 bg-gray-50 flex items-center justify-center active:scale-95 transition-all w-14 shrink-0"
                                 >
-                                    <Heart className={cn("h-6 w-6 stroke-2", isWishlisted ? "fill-red-500 text-red-500" : "text-gray-400")} />
+                                    <Heart className={cn("h-6 w-6 stroke-2", isWishlisted ? "fill-red-500 text-error" : "text-gray-400")} />
                                 </button>
 
                                 <button
                                     onClick={handleAddToCart}
                                     disabled={isAdding}
-                                    className="flex-1 bg-[#FD0053] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-pink-900/20 disabled:opacity-50"
+                                    className="flex-1 bg-[#2D2F6E] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-indigo-900/20 disabled:opacity-50"
                                 >
                                     {isAdding ? "Adding..." : (
                                         <>

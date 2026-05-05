@@ -185,7 +185,7 @@ const AdminOrders = () => {
             case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
             case 'completed': return 'bg-green-100 text-green-700 border-green-200';
             case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'accepted': return 'bg-pink-50 text-primary border-pink-100';
+            case 'accepted': return 'bg-indigo-50 text-primary border-indigo-100';
             case 'ready-for-pickup': return 'bg-purple-100 text-purple-700 border-purple-200';
             case 'out-for-delivery': return 'bg-orange-100 text-orange-700 border-orange-200';
             case 'pending': return 'bg-gray-100 text-gray-700 border-gray-200';
@@ -499,7 +499,7 @@ const AdminOrders = () => {
                                 <button
                                     onClick={() => handleManageOrderDetails(selectedOrder.fullId)}
                                     disabled={isLoadingDetails || selectedOrder.isCustomBooking}
-                                    className="px-6 py-3 bg-[#FD0053] text-white text-xs font-bold rounded-xl hover:bg-[#cc496e] shadow-lg shadow-[#FD0053]/20 transition-all uppercase tracking-wider flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-6 py-3 bg-[#2D2F6E] text-white text-xs font-bold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#2D2F6E]/20 transition-all uppercase tracking-wider flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isLoadingDetails ? 'Loading...' : 'Manage Order Details'}
                                 </button>
@@ -526,7 +526,7 @@ const AdminOrders = () => {
                             <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
                                 <div>
                                     <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                                        <Package size={18} className="text-[#FD0053]" />
+                                        <Package size={18} className="text-[#2D2F6E]" />
                                         Order Details — {manageOrderData.orderId || manageOrderData._id?.substring(0, 8)}
                                     </h2>
                                     <p className="text-[10px] text-gray-500 font-medium mt-1">
@@ -596,7 +596,7 @@ const AdminOrders = () => {
 
                                 {/* Team Assignments */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="bg-pink-50/50 border border-pink-100 p-4 rounded-xl">
+                                    <div className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-xl">
                                         <h4 className="text-[10px] font-semibold uppercase text-blue-400 tracking-wider mb-2 flex items-center gap-1.5">
                                             <Scissors size={12} /> Assigned Tailor
                                         </h4>
@@ -655,7 +655,7 @@ const AdminOrders = () => {
                                                                     <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Style Add-ons</p>
                                                                     <div className="flex flex-wrap gap-1">
                                                                         {item.styleAddons.map((addon, addonIdx) => (
-                                                                            <span key={addonIdx} className="text-[10px] bg-pink-50 text-[#FD0053] px-2 py-0.5 rounded-full border border-pink-100 font-medium">
+                                                                            <span key={addonIdx} className="text-[10px] bg-indigo-50 text-[#2D2F6E] px-2 py-0.5 rounded-full border border-indigo-100 font-medium">
                                                                                 {addon.name} (+₹{addon.price || 0})
                                                                             </span>
                                                                         ))}
@@ -679,7 +679,7 @@ const AdminOrders = () => {
                                                             )}
                                                         </div>
                                                         <div className="text-right ml-4 shrink-0">
-                                                            <p className="text-sm font-bold text-[#FD0053]">₹{(item.price || 0).toLocaleString()}</p>
+                                                            <p className="text-sm font-bold text-[#2D2F6E]">₹{(item.price || 0).toLocaleString()}</p>
                                                             {item.styleAddonsTotal > 0 && (
                                                                 <p className="text-[10px] text-gray-400 mt-0.5">+₹{item.styleAddonsTotal} add-ons</p>
                                                             )}
@@ -721,7 +721,7 @@ const AdminOrders = () => {
                                         )}
                                         <div className="flex justify-between text-sm pt-2 mt-2 border-t border-gray-200">
                                             <span className="font-bold text-gray-900">Total</span>
-                                            <span className="font-bold text-[#FD0053]">₹{(manageOrderData.totalAmount || 0).toLocaleString()}</span>
+                                            <span className="font-bold text-[#2D2F6E]">₹{(manageOrderData.totalAmount || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -735,7 +735,7 @@ const AdminOrders = () => {
                                         <div className="relative pl-6 space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
                                             {[...manageOrderData.trackingHistory].reverse().map((event, idx) => (
                                                 <div key={idx} className="relative">
-                                                    <div className={`absolute -left-[19px] top-1 h-3 w-3 rounded-full border-2 border-white shadow-sm ${idx === 0 ? 'bg-[#FD0053]' : 'bg-gray-300'}`} />
+                                                    <div className={`absolute -left-[19px] top-1 h-3 w-3 rounded-full border-2 border-white shadow-sm ${idx === 0 ? 'bg-[#2D2F6E]' : 'bg-gray-300'}`} />
                                                     <div className="bg-white p-3 rounded-xl border border-gray-50 shadow-sm">
                                                         <div className="flex justify-between items-start">
                                                             <p className="text-[11px] font-bold text-gray-900 uppercase tracking-tight">{event.status?.replace(/-/g, ' ')}</p>

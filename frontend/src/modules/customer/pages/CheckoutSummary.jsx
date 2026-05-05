@@ -180,7 +180,7 @@ const CheckoutSummary = () => {
                     name: selectedAddress?.receiverName || "",
                     contact: selectedAddress?.phone || ""
                 },
-                theme: { color: "#FD0053" }
+                theme: { color: "#2D2F6E" }
             };
 
             const rzp = new window.Razorpay(options);
@@ -200,7 +200,7 @@ const CheckoutSummary = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900">
             {/* 1. Header */}
-            <div className="sticky top-0 z-50 bg-[#FD0053] shadow-md border-b border-[#FD0053] px-4 py-3 flex items-center gap-3 pt-safe">
+            <div className="sticky top-0 z-50 bg-[#2D2F6E] shadow-md border-b border-[#2D2F6E] px-4 py-3 flex items-center gap-3 pt-safe">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white transition-colors">
                     <ArrowLeft size={20} />
                 </button>
@@ -217,7 +217,7 @@ const CheckoutSummary = () => {
                     {bulkOrderId && bulkOrder ? (
                         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-4 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-3">
-                                <span className="px-3 py-1 bg-pink-50 text-[#FD0053] rounded-full text-[10px] font-black uppercase tracking-widest border border-pink-100">Bulk Order Deposit</span>
+                                <span className="px-3 py-1 bg-indigo-50 text-[#2D2F6E] rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">Bulk Order Deposit</span>
                             </div>
                             <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest italic">Inquiry Review</h3>
                             <div className="flex gap-5">
@@ -264,7 +264,7 @@ const CheckoutSummary = () => {
                                             <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.title}</h4>
                                             <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">Size: {item.selectedSize} • {item.selectedColor}</p>
                                             <div className="flex justify-between items-center mt-2">
-                                                <span className="text-sm font-bold text-[#FD0053]">₹{item.price}</span>
+                                                <span className="text-sm font-bold text-[#2D2F6E]">₹{item.price}</span>
                                                 <span className="text-[10px] font-black text-gray-400">QTY: {item.quantity}</span>
                                             </div>
                                         </div>
@@ -278,21 +278,21 @@ const CheckoutSummary = () => {
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                <MapPin size={16} className="text-[#FD0053]" />
+                                <MapPin size={16} className="text-[#2D2F6E]" />
                                 Delivery Details
                             </h3>
                             <button
                                 onClick={() => navigate('/checkout/address')}
-                                className="text-[10px] font-bold text-[#FD0053] uppercase tracking-wider hover:underline"
+                                className="text-[10px] font-bold text-[#2D2F6E] uppercase tracking-wider hover:underline"
                             >
                                 Change
                             </button>
                         </div>
                         {selectedAddress ? (
-                            <div className="bg-[#FD0053]/[0.02] p-4 rounded-xl border border-[#FD0053]/10 text-xs text-gray-600 leading-relaxed animate-in fade-in duration-300">
-                                <p className="font-bold text-gray-900 mb-2">{selectedAddress?.receiverName} <span className="ml-2 px-2 py-0.5 bg-[#FD0053]/10 text-[#FD0053] rounded-full text-[9px] uppercase tracking-widest">{selectedAddress?.type}</span></p>
+                            <div className="bg-[#2D2F6E]/[0.02] p-4 rounded-xl border border-[#2D2F6E]/10 text-xs text-gray-600 leading-relaxed animate-in fade-in duration-300">
+                                <p className="font-bold text-gray-900 mb-2">{selectedAddress?.receiverName} <span className="ml-2 px-2 py-0.5 bg-[#2D2F6E]/10 text-[#2D2F6E] rounded-full text-[9px] uppercase tracking-widest">{selectedAddress?.type}</span></p>
                                 <p className="text-gray-600">{selectedAddress?.street}, {selectedAddress?.city}, {selectedAddress?.state} - {selectedAddress?.zipCode}</p>
-                                <p className="mt-2 font-bold text-[#FD0053]">Contact: {selectedAddress?.phone}</p>
+                                <p className="mt-2 font-bold text-[#2D2F6E]">Contact: {selectedAddress?.phone}</p>
                             </div>
                         ) : (
                             <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 text-center space-y-3">
@@ -316,7 +316,7 @@ const CheckoutSummary = () => {
                     {/* 5. Payment Method */}
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                         <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <CreditCard size={16} className="text-[#FD0053]" />
+                            <CreditCard size={16} className="text-[#2D2F6E]" />
                             Payment Method
                         </h3>
                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
@@ -327,13 +327,13 @@ const CheckoutSummary = () => {
                                 <p className="text-xs font-bold text-gray-900">Razorpay Secure</p>
                                 <p className="text-[10px] text-gray-500">Fast & Encrypted</p>
                             </div>
-                            <Lock size={14} className="text-[#FD0053]" />
+                            <Lock size={14} className="text-[#2D2F6E]" />
                         </div>
 
                         <button
                             onClick={handlePayment}
                             disabled={isProcessing || !selectedAddress}
-                            className="hidden lg:flex w-full mt-6 py-4 rounded-xl bg-[#FD0053] text-white text-sm font-bold shadow-lg shadow-pink-200 hover:bg-[#cc496e] active:scale-[0.98] transition-all items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
+                            className="hidden lg:flex w-full mt-6 py-4 rounded-xl bg-[#2D2F6E] text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
                         >
                             {isProcessing ? 'Initializing...' : !selectedAddress ? 'Select Address to Pay' : `Pay ₹${finalTotal}`} <ArrowRight size={18} />
                         </button>
@@ -352,7 +352,7 @@ const CheckoutSummary = () => {
                 <button
                     onClick={handlePayment}
                     disabled={isProcessing || !selectedAddress}
-                    className="w-full py-3.5 rounded-xl bg-[#FD0053] text-white text-sm font-bold shadow-lg shadow-pink-100 hover:bg-[#cc496e] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
+                    className="w-full py-3.5 rounded-xl bg-[#2D2F6E] text-white text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
                 >
                     {isProcessing ? 'Wait...' : !selectedAddress ? 'Select Address' : `Pay ₹${finalTotal}`} <ArrowRight size={16} />
                 </button>

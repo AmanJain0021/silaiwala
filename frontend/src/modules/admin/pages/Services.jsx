@@ -201,7 +201,7 @@ const AdminServices = () => {
                                                         {service.description}
                                                     </span>
                                                     {service.productCount > 0 && (
-                                                        <span className="mt-1 text-[9px] font-bold text-primary bg-pink-50 px-1.5 py-0.5 rounded-md w-fit">
+                                                        <span className="mt-1 text-[9px] font-bold text-primary bg-indigo-50 px-1.5 py-0.5 rounded-md w-fit">
                                                             {service.productCount} Linked Products
                                                         </span>
                                                     )}

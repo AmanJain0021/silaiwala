@@ -24,7 +24,7 @@ const Dashboard = () => {
             icon: <ShoppingBag size={20} />,
             change: '+12%',
             sub: 'from last month',
-            accent: '#FD0053',
+            accent: '#2D2F6E',
         },
         {
             label: 'Pending',
@@ -48,7 +48,7 @@ const Dashboard = () => {
             icon: <TrendingUp size={20} />,
             change: '₹450',
             sub: 'avg / order',
-            accent: '#FD0053',
+            accent: '#2D2F6E',
         },
     ];
 
@@ -61,7 +61,7 @@ const Dashboard = () => {
 
     const getStatusStyle = (status) => {
         switch (status.toLowerCase()) {
-            case 'measuring': return { bg: 'bg-[#FD0053]/10', text: 'text-[#FD0053]', dot: 'bg-[#FD0053]' };
+            case 'measuring': return { bg: 'bg-[#2D2F6E]/10', text: 'text-[#2D2F6E]', dot: 'bg-[#2D2F6E]' };
             case 'cutting': return { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400' };
             case 'stitching': return { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' };
             case 'ironing': return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' };
@@ -71,7 +71,7 @@ const Dashboard = () => {
 
     const getPriorityStyle = (priority) => {
         switch (priority.toLowerCase()) {
-            case 'urgent': return 'text-[#FD0053] font-black';
+            case 'urgent': return 'text-[#2D2F6E] font-black';
             case 'high': return 'text-amber-400 font-bold';
             default: return 'text-white/30 font-medium';
         }
@@ -103,14 +103,14 @@ const Dashboard = () => {
                         >
                             <Settings size={17} />
                         </button>
-                        <div className="w-10 h-10 bg-[#FD0053] rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#FD0053]/30">
+                        <div className="w-10 h-10 bg-[#2D2F6E] rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#2D2F6E]/30">
                             {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                         </div>
                     </div>
                 </div>
 
                 {/* Greeting Banner */}
-                <div className="bg-[#FD0053] rounded-3xl p-5 relative overflow-hidden mb-1">
+                <div className="bg-[#2D2F6E] rounded-3xl p-5 relative overflow-hidden mb-1">
                     {/* Decorative circles */}
                     <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
                     <div className="absolute right-8 -bottom-8 w-20 h-20 rounded-full bg-white/5 pointer-events-none" />
@@ -126,7 +126,7 @@ const Dashboard = () => {
                         </p>
                         <button
                             onClick={() => navigate('/partner/orders')}
-                            className="bg-white text-[#FD0053] text-[10px] font-black uppercase px-4 py-2 rounded-xl tracking-wider flex items-center gap-1"
+                            className="bg-white text-[#2D2F6E] text-[10px] font-black uppercase px-4 py-2 rounded-xl tracking-wider flex items-center gap-1"
                         >
                             View All <ChevronRight size={13} />
                         </button>
@@ -180,7 +180,7 @@ const Dashboard = () => {
                     <h3 className="text-[15px] font-black text-white">Active Work Orders</h3>
                     <button
                         onClick={() => navigate('/partner/orders')}
-                        className="flex items-center gap-1 text-[#FD0053] text-[11px] font-bold"
+                        className="flex items-center gap-1 text-[#2D2F6E] text-[11px] font-bold"
                     >
                         See all <ChevronRight size={13} />
                     </button>
@@ -219,7 +219,7 @@ const Dashboard = () => {
                                 {/* Update Button */}
                                 <button
                                     onClick={() => navigate('/partner/orders', { state: { highlightOrderTitle: order.id } })}
-                                    className="shrink-0 w-8 h-8 bg-[#FD0053]/10 rounded-xl flex items-center justify-center text-[#FD0053] hover:bg-[#FD0053] hover:text-white transition-all"
+                                    className="shrink-0 w-8 h-8 bg-[#2D2F6E]/10 rounded-xl flex items-center justify-center text-[#2D2F6E] hover:bg-[#2D2F6E] hover:text-white transition-all"
                                 >
                                     <ChevronRight size={14} />
                                 </button>

@@ -12,7 +12,7 @@ const TailorAuthLayout = () => {
                 {/* Banner Section */}
                 <div className="relative h-[300px] w-full bg-[#FDF2F8] overflow-hidden">
                     {/* Background elements */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-pink-100 rounded-full blur-3xl -mr-10 -mt-10 opacity-50" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-full blur-3xl -mr-10 -mt-10 opacity-50" />
                     <div className="absolute bottom-0 left-0 w-40 h-40 bg-white rounded-full blur-3xl -ml-20 -mb-20 opacity-50" />
                     
                     <div className="relative z-10 h-full grid grid-cols-[1.2fr_1fr] items-center px-6">

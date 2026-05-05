@@ -276,7 +276,7 @@ const OrderTracking = () => {
                         href={`tel:${order.tailor?.phoneNumber || '+919876543210'}`}
                         className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center no-underline hover:bg-gray-50"
                     >
-                        <div className="w-10 h-10 rounded-full bg-pink-50 text-primary flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center">
                             <Phone size={18} />
                         </div>
                         <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Call Artisan</span>
@@ -367,7 +367,7 @@ const OrderTracking = () => {
                             {order.deliveryPartner.phoneNumber && (
                                 <a 
                                     href={`tel:${order.deliveryPartner.phoneNumber}`}
-                                    className="w-10 h-10 rounded-full bg-pink-50 text-primary flex items-center justify-center border border-pink-100 shadow-sm active:scale-90 transition-all"
+                                    className="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center border border-indigo-100 shadow-sm active:scale-90 transition-all"
                                 >
                                     <Phone size={16} />
                                 </a>
@@ -400,7 +400,7 @@ const OrderTracking = () => {
                 )}
 
                 {(order.isReviewed || isReviewed) && (
-                    <div className="bg-pink-50 rounded-[2rem] p-6 text-center border border-pink-100 italic font-bold text-primary text-xs">
+                    <div className="bg-indigo-50 rounded-[2rem] p-6 text-center border border-indigo-100 italic font-bold text-primary text-xs">
                         Thank you for your valuable feedback! 💚
                     </div>
                 )}

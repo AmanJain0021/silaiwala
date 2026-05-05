@@ -68,7 +68,7 @@ const TailorEarnings = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#FD0053]" />
+                <Loader2 size={32} className="animate-spin text-[#2D2F6E]" />
             </div>
         );
     }
@@ -81,7 +81,7 @@ const TailorEarnings = () => {
                 <button onClick={() => navigate('/partner/settings')} className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
                     <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
                 </button>
-                <h1 className="text-[17px] font-black text-[#FD0053] tracking-tight">SEWZELLA</h1>
+                <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
                 <div className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center text-white font-black text-sm">
                     {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                 </div>
@@ -98,7 +98,7 @@ const TailorEarnings = () => {
                                 onClick={() => setActiveTab(tab)}
                                 className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
                                     activeTab === tab
-                                        ? 'text-[#FD0053] border border-[#FD0053]/30 bg-[#FFF0F4]'
+                                        ? 'text-[#2D2F6E] border border-[#2D2F6E]/30 bg-[#FDE5D2]'
                                         : 'text-gray-400'
                                 }`}
                             >
@@ -128,7 +128,7 @@ const TailorEarnings = () => {
                 {/* ── ORDER EARNINGS ROW ── */}
                 <div className="bg-white rounded-3xl px-4 py-4 mb-3 border border-gray-100 shadow-sm flex items-center gap-3">
                     <div className="w-10 h-10 bg-red-50 rounded-2xl flex items-center justify-center shrink-0">
-                        <ShoppingBag size={18} color="#FD0053" />
+                        <ShoppingBag size={18} color="#2D2F6E" />
                     </div>
                     <div className="flex-1">
                         <p className="text-[12px] text-gray-400 font-medium">Order Earnings</p>
@@ -164,7 +164,7 @@ const TailorEarnings = () => {
                 {/* ── RECENT PAYOUTS ── */}
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-[17px] font-black text-gray-900">Recent Payouts</h3>
-                    <button className="text-[12px] font-black text-[#FD0053] uppercase tracking-wider">View All</button>
+                    <button className="text-[12px] font-black text-[#2D2F6E] uppercase tracking-wider">View All</button>
                 </div>
 
                 <div className="space-y-3">

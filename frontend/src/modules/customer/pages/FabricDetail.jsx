@@ -42,19 +42,19 @@ const FabricDetail = () => {
 
     if (isLoading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="w-10 h-10 border-4 border-[#FD0053] border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-[#2D2F6E] border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
     if (!fabric || !tailor) return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
             <h2 className="text-xl font-bold text-gray-900">Fabric Not Found</h2>
-            <button onClick={() => navigate(-1)} className="mt-4 text-[#FD0053] font-bold">Go Back</button>
+            <button onClick={() => navigate(-1)} className="mt-4 text-[#2D2F6E] font-bold">Go Back</button>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#f8faf9] pb-32 font-sans overflow-x-hidden">
+        <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans overflow-x-hidden">
             {/* Header */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 pt-safe flex items-center gap-4">
                 <button
@@ -78,8 +78,8 @@ const FabricDetail = () => {
                 />
                 <div className="absolute top-4 left-4">
                     <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-100 shadow-xl flex items-center gap-1.5">
-                        <Tag size={12} className="text-[#FD0053]" />
-                        <span className="text-[10px] font-black text-[#FD0053] uppercase tracking-wider">{fabric.category?.name || 'Fabric'}</span>
+                        <Tag size={12} className="text-[#2D2F6E]" />
+                        <span className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-wider">{fabric.category?.name || 'Fabric'}</span>
                     </div>
                 </div>
             </div>
@@ -94,7 +94,7 @@ const FabricDetail = () => {
                     <div className="mb-6">
                         <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-2 leading-tight">{fabric.name}</h2>
                         <div className="flex items-center gap-4">
-                            <span className="text-2xl font-black text-[#FD0053]">₹{fabric.price}</span>
+                            <span className="text-2xl font-black text-[#2D2F6E]">₹{fabric.price}</span>
                             <div className="h-4 w-px bg-gray-200" />
                             <div className="flex items-center gap-1.5 text-green-600">
                                 <CheckCircle2 size={16} />
@@ -144,17 +144,17 @@ const FabricDetail = () => {
                     {/* Tailor Information Section */}
                     <div>
                         <h3 className="text-xs font-black text-gray-900 tracking-widest uppercase mb-4 opacity-40">Artisan Mastermind</h3>
-                        <Link to={`/tailor/${tailor._id}`} className="flex items-center gap-4 bg-white p-4 rounded-[2.5rem] border-2 border-gray-50 active:scale-95 transition-transform group shadow-sm hover:border-[#FD0053]/10">
+                        <Link to={`/tailor/${tailor._id}`} className="flex items-center gap-4 bg-white p-4 rounded-[2.5rem] border-2 border-gray-50 active:scale-95 transition-transform group shadow-sm hover:border-[#2D2F6E]/10">
                             <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border-2 border-white shadow-xl rotate-3 group-hover:rotate-0 transition-all duration-500">
                                 <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 mb-1">
-                                    <h4 className="font-black text-gray-900 truncate group-hover:text-[#FD0053] transition-colors">{tailor.shopName || tailor.user?.name}</h4>
-                                    <ShieldCheck size={14} className="text-[#FD0053]" />
+                                    <h4 className="font-black text-gray-900 truncate group-hover:text-[#2D2F6E] transition-colors">{tailor.shopName || tailor.user?.name}</h4>
+                                    <ShieldCheck size={14} className="text-[#2D2F6E]" />
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1 text-[10px] font-black text-[#FD0053] bg-pink-50 px-2 py-0.5 rounded-lg border border-[#FD0053]/5">
+                                    <div className="flex items-center gap-1 text-[10px] font-black text-[#2D2F6E] bg-indigo-50 px-2 py-0.5 rounded-lg border border-[#2D2F6E]/5">
                                         {tailor.rating} <Star size={10} className="fill-current" />
                                     </div>
                                     <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -162,7 +162,7 @@ const FabricDetail = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:text-[#FD0053] group-hover:bg-pink-50 transition-all">
+                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:text-[#2D2F6E] group-hover:bg-indigo-50 transition-all">
                                 <ChevronRight size={18} />
                             </div>
                         </Link>
@@ -178,7 +178,7 @@ const FabricDetail = () => {
                             setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
                             navigate('/services', { state: { selectedFabric: fabric, tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name, fabricSource: 'platform' } });
                         }}
-                        className="w-full bg-[#FD0053] text-white py-4 rounded-2xl shadow-xl shadow-[#FD0053]/30 font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
+                        className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl shadow-xl shadow-[#2D2F6E]/30 font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
                     >
                         <Scissors size={18} />
                         Book Stitching With This Fabric

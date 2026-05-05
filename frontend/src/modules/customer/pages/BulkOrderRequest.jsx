@@ -134,40 +134,40 @@ const BulkOrderRequest = () => {
     const renderStep1 = () => (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
             <div className="relative group">
-                <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.organizationName ? 'text-red-500' : 'text-[#FD0053]'}`} size={14} />
+                <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.organizationName ? 'text-error' : 'text-[#2D2F6E]'}`} size={14} />
                 <input
                     type="text"
                     placeholder="Organization / Company Name"
-                    className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.organizationName ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                    className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.organizationName ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                     value={formData.organizationName}
                     onChange={e => {
                         setFormData({ ...formData, organizationName: e.target.value });
                         if (errors.organizationName) setErrors({ ...errors, organizationName: null });
                     }}
                 />
-                {errors.organizationName && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.organizationName}</p>}
+                {errors.organizationName && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.organizationName}</p>}
             </div>
             <div className="relative group">
-                <Users className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.contactPerson ? 'text-red-500' : 'text-[#FD0053]'}`} size={14} />
+                <Users className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.contactPerson ? 'text-error' : 'text-[#2D2F6E]'}`} size={14} />
                 <input
                     type="text"
                     placeholder="Contact Liaison Person"
-                    className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.contactPerson ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                    className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.contactPerson ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                     value={formData.contactPerson}
                     onChange={e => {
                         setFormData({ ...formData, contactPerson: e.target.value });
                         if (errors.contactPerson) setErrors({ ...errors, contactPerson: null });
                     }}
                 />
-                {errors.contactPerson && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.contactPerson}</p>}
+                {errors.contactPerson && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.contactPerson}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
-                    <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.phoneNumber ? 'text-red-500' : 'text-[#FD0053]'}`} size={14} />
+                    <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.phoneNumber ? 'text-error' : 'text-[#2D2F6E]'}`} size={14} />
                     <input
                         type="tel"
                         placeholder="Connect Phone"
-                        className={`w-full pl-9 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.phoneNumber ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                        className={`w-full pl-9 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.phoneNumber ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                         value={formData.phoneNumber}
                         maxLength={10}
                         onChange={e => {
@@ -176,56 +176,56 @@ const BulkOrderRequest = () => {
                             if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: null });
                         }}
                     />
-                    {errors.phoneNumber && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.phoneNumber}</p>}
+                    {errors.phoneNumber && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.phoneNumber}</p>}
                 </div>
                 <div className="relative">
-                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.email ? 'text-red-500' : 'text-[#FD0053]'}`} size={14} />
+                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.email ? 'text-error' : 'text-[#2D2F6E]'}`} size={14} />
                     <input
                         type="email"
                         placeholder="Auth Email"
-                        className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.email ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                        className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.email ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                         value={formData.email}
                         onChange={e => {
                             setFormData({ ...formData, email: e.target.value });
                             if (errors.email) setErrors({ ...errors, email: null });
                         }}
                     />
-                    {errors.email && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.email}</p>}
+                    {errors.email && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.email}</p>}
                 </div>
             </div>
             <div className="relative group">
-                <ClipboardList className={`absolute left-3 top-3 transition-colors ${errors.address ? 'text-red-500' : 'text-[#FD0053]'}`} size={14} />
+                <ClipboardList className={`absolute left-3 top-3 transition-colors ${errors.address ? 'text-error' : 'text-[#2D2F6E]'}`} size={14} />
                 <textarea
                     rows="2"
                     placeholder="Full Logistics Address"
-                    className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none resize-none transition-all ${errors.address ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                    className={`w-full pl-10 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none resize-none transition-all ${errors.address ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                     value={formData.address}
                     onChange={e => {
                         setFormData({ ...formData, address: e.target.value });
                         if (errors.address) setErrors({ ...errors, address: null });
                     }}
                 />
-                {errors.address && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.address}</p>}
+                {errors.address && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.address}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col">
                     <input
                         type="text"
                         placeholder="Service City"
-                        className={`w-full px-4 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.city ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                        className={`w-full px-4 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.city ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                         value={formData.city}
                         onChange={e => {
                             setFormData({ ...formData, city: e.target.value });
                             if (errors.city) setErrors({ ...errors, city: null });
                         }}
                     />
-                    {errors.city && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.city}</p>}
+                    {errors.city && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.city}</p>}
                 </div>
                 <div className="flex flex-col">
                     <input
                         type="text"
                         placeholder="Pincode"
-                        className={`w-full px-4 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.pincode ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                        className={`w-full px-4 py-2.5 bg-gray-50/50 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.pincode ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                         value={formData.pincode}
                         maxLength={6}
                         onChange={e => {
@@ -234,12 +234,12 @@ const BulkOrderRequest = () => {
                             if (errors.pincode) setErrors({ ...errors, pincode: null });
                         }}
                     />
-                    {errors.pincode && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.pincode}</p>}
+                    {errors.pincode && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.pincode}</p>}
                 </div>
             </div>
             <button
                 onClick={handleNext}
-                className="w-full py-4 bg-[#FD0053] text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-pink-100/50 transition-all hover:translate-y-[-2px] active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-[#2D2F6E] text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100/50 transition-all hover:translate-y-[-2px] active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
             >
                 Next: Order Details
                 <Check size={14} strokeWidth={3} />
@@ -251,53 +251,53 @@ const BulkOrderRequest = () => {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
             <div className="grid grid-cols-4 gap-1.5 px-0.5">
                 {['corporate', 'school', 'wholesale', 'other'].map(type => (
-                    <button key={type} onClick={() => setFormData({ ...formData, orderType: type })} className={`py-2.5 rounded-xl border text-[8px] font-black uppercase transition-all shadow-sm ${formData.orderType === type ? 'bg-[#FD0053] text-white border-[#FD0053] shadow-pink-100' : 'bg-white text-gray-400 border-gray-100 h-full flex items-center justify-center'}`}>{type}</button>
+                    <button key={type} onClick={() => setFormData({ ...formData, orderType: type })} className={`py-2.5 rounded-xl border text-[8px] font-black uppercase transition-all shadow-sm ${formData.orderType === type ? 'bg-[#2D2F6E] text-white border-[#2D2F6E] shadow-indigo-100' : 'bg-white text-gray-400 border-gray-100 h-full flex items-center justify-center'}`}>{type}</button>
                 ))}
             </div>
 
             <div className="space-y-3">
                 <div className="relative">
-                    <Scissors className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.serviceType ? 'text-red-500' : 'text-gray-300'}`} size={14} />
+                    <Scissors className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.serviceType ? 'text-error' : 'text-gray-300'}`} size={14} />
                     <input
                         type="text"
                         placeholder="Product Type (e.g. Uniforms, Shirts)"
-                        className={`w-full pl-10 py-3 bg-gray-50/30 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.serviceType ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                        className={`w-full pl-10 py-3 bg-gray-50/30 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.serviceType ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                         value={formData.serviceType}
                         onChange={e => {
                             setFormData({ ...formData, serviceType: e.target.value });
                             if (errors.serviceType) setErrors({ ...errors, serviceType: null });
                         }}
                     />
-                    {errors.serviceType && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.serviceType}</p>}
+                    {errors.serviceType && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.serviceType}</p>}
                 </div>
 
                 <div className="flex gap-3">
                     <div className="relative flex-1">
-                        <Users className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.estimatedQuantity ? 'text-red-500' : 'text-gray-300'}`} size={14} />
+                        <Users className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.estimatedQuantity ? 'text-error' : 'text-gray-300'}`} size={14} />
                         <input
                             type="number"
                             placeholder="Qty"
-                            className={`w-full pl-10 py-3 bg-gray-50/30 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.estimatedQuantity ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                            className={`w-full pl-10 py-3 bg-gray-50/30 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.estimatedQuantity ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                             value={formData.estimatedQuantity || ''}
                             onChange={e => {
                                 setFormData({ ...formData, estimatedQuantity: parseInt(e.target.value) || 0 });
                                 if (errors.estimatedQuantity) setErrors({ ...errors, estimatedQuantity: null });
                             }}
                         />
-                        {errors.estimatedQuantity && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.estimatedQuantity}</p>}
+                        {errors.estimatedQuantity && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.estimatedQuantity}</p>}
                     </div>
                     <div className="relative flex-[1.5]">
-                        <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.expectedDeliveryDate ? 'text-red-500' : 'text-gray-300'}`} size={14} />
+                        <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.expectedDeliveryDate ? 'text-error' : 'text-gray-300'}`} size={14} />
                         <input
                             type="date"
-                            className={`w-full pl-10 py-3 bg-gray-50/30 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.expectedDeliveryDate ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}
+                            className={`w-full pl-10 py-3 bg-gray-50/30 border rounded-xl text-[11px] font-black outline-none transition-all ${errors.expectedDeliveryDate ? 'border-red-200 bg-indigo-50/30' : 'border-gray-100'}`}
                             value={formData.expectedDeliveryDate}
                             onChange={e => {
                                 setFormData({ ...formData, expectedDeliveryDate: e.target.value });
                                 if (errors.expectedDeliveryDate) setErrors({ ...errors, expectedDeliveryDate: null });
                             }}
                         />
-                        {errors.expectedDeliveryDate && <p className="text-[8px] text-red-500 font-bold uppercase mt-1 px-1 tracking-widest">{errors.expectedDeliveryDate}</p>}
+                        {errors.expectedDeliveryDate && <p className="text-[8px] text-error font-bold uppercase mt-1 px-1 tracking-widest">{errors.expectedDeliveryDate}</p>}
                     </div>
                 </div>
             </div>
@@ -308,12 +308,12 @@ const BulkOrderRequest = () => {
                     <Info size={10} className="text-gray-300" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setFormData({ ...formData, fabricPreference: 'platform-provided' })} className={`p-3 rounded-2xl border text-left transition-all ${formData.fabricPreference === 'platform-provided' ? 'border-[#FD0053] bg-[#FD0053]/5 ring-1 ring-[#FD0053]/20' : 'bg-white border-gray-100'}`}>
-                        <p className={`text-[10px] font-black uppercase tracking-tight ${formData.fabricPreference === 'platform-provided' ? 'text-[#FD0053]' : 'text-gray-900'}`}>Silaiwala Premium</p>
+                    <button onClick={() => setFormData({ ...formData, fabricPreference: 'platform-provided' })} className={`p-3 rounded-2xl border text-left transition-all ${formData.fabricPreference === 'platform-provided' ? 'border-[#2D2F6E] bg-[#2D2F6E]/5 ring-1 ring-[#2D2F6E]/20' : 'bg-white border-gray-100'}`}>
+                        <p className={`text-[10px] font-black uppercase tracking-tight ${formData.fabricPreference === 'platform-provided' ? 'text-[#2D2F6E]' : 'text-gray-900'}`}>Silaiwala Premium</p>
                         <p className="text-[8px] text-gray-400 font-medium leading-tight mt-0.5">We source high quality material</p>
                     </button>
-                    <button onClick={() => setFormData({ ...formData, fabricPreference: 'customer-provided' })} className={`p-3 rounded-2xl border text-left transition-all ${formData.fabricPreference === 'customer-provided' ? 'border-[#FD0053] bg-[#FD0053]/5 ring-1 ring-[#FD0053]/20' : 'bg-white border-gray-100'}`}>
-                        <p className={`text-[10px] font-black uppercase tracking-tight ${formData.fabricPreference === 'customer-provided' ? 'text-[#FD0053]' : 'text-gray-900'}`}>Self-Provided</p>
+                    <button onClick={() => setFormData({ ...formData, fabricPreference: 'customer-provided' })} className={`p-3 rounded-2xl border text-left transition-all ${formData.fabricPreference === 'customer-provided' ? 'border-[#2D2F6E] bg-[#2D2F6E]/5 ring-1 ring-[#2D2F6E]/20' : 'bg-white border-gray-100'}`}>
+                        <p className={`text-[10px] font-black uppercase tracking-tight ${formData.fabricPreference === 'customer-provided' ? 'text-[#2D2F6E]' : 'text-gray-900'}`}>Self-Provided</p>
                         <p className="text-[8px] text-gray-400 font-medium leading-tight mt-0.5">Send your material to us</p>
                     </button>
                 </div>
@@ -327,11 +327,11 @@ const BulkOrderRequest = () => {
                         { id: 'custom-sheet', label: 'Digital Measurement Sheet', desc: 'Upload your Excel/CSV data' },
                         { id: 'on-site-service', label: 'Professional Tailor Visit', desc: 'We take measurements on-site' }
                     ].map(opt => (
-                        <button key={opt.id} onClick={() => setFormData({ ...formData, measurementMethod: opt.id })} className={`px-4 py-3 rounded-2xl border flex items-center justify-between transition-all ${formData.measurementMethod === opt.id ? 'border-[#FD0053] bg-[#FD0053]/5 ring-1 ring-[#FD0053]/20' : 'bg-white border-gray-100'}`}>
+                        <button key={opt.id} onClick={() => setFormData({ ...formData, measurementMethod: opt.id })} className={`px-4 py-3 rounded-2xl border flex items-center justify-between transition-all ${formData.measurementMethod === opt.id ? 'border-[#2D2F6E] bg-[#2D2F6E]/5 ring-1 ring-[#2D2F6E]/20' : 'bg-white border-gray-100'}`}>
                             <div className="flex items-center gap-4">
-                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${formData.measurementMethod === opt.id ? 'bg-[#FD0053] border-[#FD0053] text-white' : 'border-gray-200 text-transparent'}`}><Check size={10} strokeWidth={4} /></div>
+                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${formData.measurementMethod === opt.id ? 'bg-[#2D2F6E] border-[#2D2F6E] text-white' : 'border-gray-200 text-transparent'}`}><Check size={10} strokeWidth={4} /></div>
                                 <div className="text-left">
-                                    <p className={`text-[10px] font-black uppercase tracking-tight ${formData.measurementMethod === opt.id ? 'text-[#FD0053]' : 'text-gray-800'}`}>{opt.label}</p>
+                                    <p className={`text-[10px] font-black uppercase tracking-tight ${formData.measurementMethod === opt.id ? 'text-[#2D2F6E]' : 'text-gray-800'}`}>{opt.label}</p>
                                     <p className="text-[8px] text-gray-400 font-medium">{opt.desc}</p>
                                 </div>
                             </div>
@@ -347,9 +347,9 @@ const BulkOrderRequest = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="bg-pink-50/30 p-4 rounded-[2rem] border border-pink-100/50"
+                        className="bg-indigo-50/30 p-4 rounded-[2rem] border border-indigo-100/50"
                     >
-                        <p className="text-[9px] font-black text-[#FD0053] uppercase italic mb-3 text-center tracking-[0.2em]">Breakdown Required</p>
+                        <p className="text-[9px] font-black text-[#2D2F6E] uppercase italic mb-3 text-center tracking-[0.2em]">Breakdown Required</p>
                         <div className="grid grid-cols-5 gap-2">
                             {['S', 'M', 'L', 'XL', 'XXL'].map(size => (
                                 <div key={size} className="text-center space-y-1.5">
@@ -357,7 +357,7 @@ const BulkOrderRequest = () => {
                                     <input
                                         type="number"
                                         min="0"
-                                        className="w-full py-2 bg-white border border-gray-100 rounded-xl text-center text-[11px] font-black outline-none focus:border-[#FD0053] focus:ring-1 focus:ring-pink-100"
+                                        className="w-full py-2 bg-white border border-gray-100 rounded-xl text-center text-[11px] font-black outline-none focus:border-[#2D2F6E] focus:ring-1 focus:ring-indigo-100"
                                         value={formData.sizeDistribution[size]}
                                         onChange={(e) => {
                                             const newVal = parseInt(e.target.value) || 0;
@@ -381,7 +381,7 @@ const BulkOrderRequest = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className={`p-5 rounded-[2rem] border-2 border-dashed text-center space-y-3 relative overflow-hidden transition-all ${errors.measurementSheet ? 'bg-red-50 border-red-200' : formData.measurementSheet ? 'bg-green-50 border-green-200' : 'border-gray-200 bg-white'}`}
+                        className={`p-5 rounded-[2rem] border-2 border-dashed text-center space-y-3 relative overflow-hidden transition-all ${errors.measurementSheet ? 'bg-indigo-50 border-red-200' : formData.measurementSheet ? 'bg-green-50 border-green-200' : 'border-gray-200 bg-white'}`}
                     >
                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mx-auto ${formData.measurementSheet ? 'bg-green-500 text-white' : 'bg-gray-50 text-gray-300'}`}>
                             {formData.measurementSheet ? <Check size={20} /> : <ImageIcon size={20} />}
@@ -394,7 +394,7 @@ const BulkOrderRequest = () => {
                             {isUploading ? <span className="flex items-center gap-2"><Clock size={10} className="animate-spin" /> {uploadProgress}%</span> : 'Browse Files'}
                             <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading} />
                         </label>
-                        {errors.measurementSheet && <p className="text-[8px] text-red-500 font-bold uppercase tracking-widest">{errors.measurementSheet}</p>}
+                        {errors.measurementSheet && <p className="text-[8px] text-error font-bold uppercase tracking-widest">{errors.measurementSheet}</p>}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -404,7 +404,7 @@ const BulkOrderRequest = () => {
                 <button
                     onClick={handleSubmit}
                     disabled={isSubmitting || isUploading}
-                    className="flex-[2] py-4 bg-[#FD0053] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-pink-100 transition-all hover:translate-y-[-2px] active:scale-[0.98] disabled:opacity-50"
+                    className="flex-[2] py-4 bg-[#2D2F6E] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 transition-all hover:translate-y-[-2px] active:scale-[0.98] disabled:opacity-50"
                 >
                     {isSubmitting ? 'Processing...' : 'Submit Final Inquiry'}
                 </button>
@@ -435,12 +435,12 @@ const BulkOrderRequest = () => {
                     {steps.map((step, idx) => (
                         <React.Fragment key={step.id}>
                             <div className="flex flex-col items-center gap-1.5 relative">
-                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${currentStep >= step.id ? 'bg-[#FD0053] text-white shadow-lg' : 'bg-white text-gray-200 border border-gray-50'}`}>
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${currentStep >= step.id ? 'bg-[#2D2F6E] text-white shadow-lg' : 'bg-white text-gray-200 border border-gray-50'}`}>
                                     {React.cloneElement(step.icon, { size: 14 })}
                                 </div>
-                                <span className={`text-[7px] font-black uppercase absolute -bottom-4 whitespace-nowrap ${currentStep >= step.id ? 'text-[#FD0053]' : 'text-gray-300'}`}>{step.title}</span>
+                                <span className={`text-[7px] font-black uppercase absolute -bottom-4 whitespace-nowrap ${currentStep >= step.id ? 'text-[#2D2F6E]' : 'text-gray-300'}`}>{step.title}</span>
                             </div>
-                            {idx < steps.length - 1 && <div className={`flex-1 h-[1.5px] mx-1 rounded-full ${currentStep > step.id ? 'bg-[#FD0053]' : 'bg-gray-100'}`} />}
+                            {idx < steps.length - 1 && <div className={`flex-1 h-[1.5px] mx-1 rounded-full ${currentStep > step.id ? 'bg-[#2D2F6E]' : 'bg-gray-100'}`} />}
                         </React.Fragment>
                     ))}
                 </div>

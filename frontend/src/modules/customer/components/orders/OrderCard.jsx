@@ -11,9 +11,9 @@ const OrderCard = ({ order }) => {
     const getStatusColor = (status) => {
         const s = status?.toLowerCase();
         if (s?.includes('delivered')) return 'bg-green-50 text-green-600 border-green-100';
-        if (s?.includes('cancelled')) return 'bg-red-50 text-red-600 border-red-100';
+        if (s?.includes('cancelled')) return 'bg-indigo-50 text-red-600 border-indigo-100';
         if (s?.includes('pending')) return 'bg-orange-50 text-orange-600 border-orange-100';
-        return 'bg-pink-50 text-primary border-pink-100';
+        return 'bg-indigo-50 text-primary border-indigo-100';
     };
 
     const formattedDate = new Date(order.createdAt).toLocaleDateString('en-GB', {
@@ -47,12 +47,12 @@ const OrderCard = ({ order }) => {
                                     {displayId}
                                 </span>
                             </div>
-                            <h3 className="text-sm font-black text-gray-900 line-clamp-1 group-hover:text-[#FD0053] transition-colors uppercase tracking-tight">
+                            <h3 className="text-sm font-black text-gray-900 line-clamp-1 group-hover:text-[#2D2F6E] transition-colors uppercase tracking-tight">
                                 {serviceTitle}
                             </h3>
                         </div>
                         <div className="text-right">
-                            <span className="text-sm font-black text-[#FD0053]">₹{order.totalAmount}</span>
+                            <span className="text-sm font-black text-[#2D2F6E]">₹{order.totalAmount}</span>
                             <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">{order.paymentStatus}</p>
                         </div>
                     </div>
@@ -70,7 +70,7 @@ const OrderCard = ({ order }) => {
                 </div>
 
                 {/* 3. Arrow */}
-                <div className="self-center text-gray-300 group-hover:text-[#FD0053] transition-colors">
+                <div className="self-center text-gray-300 group-hover:text-[#2D2F6E] transition-colors">
                     <ChevronRight size={20} />
                 </div>
             </div>

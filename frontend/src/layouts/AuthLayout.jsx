@@ -114,7 +114,7 @@ const AuthLayout = () => {
 
     return (
         <div
-            className="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 font-sans selection:bg-[#FD0053]/20 transition-all duration-[1500ms] ease-in-out"
+            className="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 font-sans selection:bg-[#2D2F6E]/20 transition-all duration-[1500ms] ease-in-out"
             style={{ background: bgGradients[currentImage] }}
         >
             {/* Main Card */}
@@ -183,7 +183,7 @@ const AuthLayout = () => {
                                 style={{
                                     width: idx === currentImage ? 18 : 5,
                                     height: 5,
-                                    backgroundColor: idx === currentImage ? '#FD0053' : 'rgba(255,255,255,0.5)',
+                                    backgroundColor: idx === currentImage ? '#2D2F6E' : 'rgba(255,255,255,0.5)',
                                 }}
                             />
                         ))}
@@ -199,7 +199,7 @@ const AuthLayout = () => {
 
                 {/* ─── Logo Circle ─── */}
                 <div className="absolute top-[155px] sm:top-[180px] left-1/2 -translate-x-1/2 z-40">
-                    <div className="p-1 bg-[#FFF0F4] rounded-full shadow-lg">
+                    <div className="p-1 bg-[#FDE5D2] rounded-full shadow-lg">
                         <div className="w-[65px] h-[65px] sm:w-[75px] sm:h-[75px] bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
                             <img src="/sewzella_logo.jpeg" alt="SewZella" className="w-full h-full object-cover" />
                         </div>
@@ -209,16 +209,16 @@ const AuthLayout = () => {
                 {/* ─── Content Section ─── */}
                 <div className="pt-12 sm:pt-14 pb-6 sm:pb-8 px-5 sm:px-7">
                     {/* Tab Selection */}
-                    <div className="bg-[#FFF9FB] p-1 rounded-[1.5rem] flex items-center relative mb-5 sm:mb-6 shadow-inner border border-pink-50/50">
+                    <div className="bg-[#F7F8FC] p-1 rounded-[1.5rem] flex items-center relative mb-5 sm:mb-6 shadow-inner border border-pink-50/50">
                         <Link
                             to={config.loginLink}
-                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${isLogin ? 'text-[#FD0053]' : 'text-pink-300'}`}
+                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${isLogin ? 'text-[#2D2F6E]' : 'text-indigo-300'}`}
                         >
                             LOGIN
                         </Link>
                         <Link
                             to={config.signupLink}
-                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${!isLogin ? 'text-[#FD0053]' : 'text-pink-300'}`}
+                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${!isLogin ? 'text-[#2D2F6E]' : 'text-indigo-300'}`}
                         >
                             SIGN UP
                         </Link>

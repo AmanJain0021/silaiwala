@@ -7,37 +7,37 @@ import api from '../../../utils/api';
 const actions = [
     {
         label: 'Tailors',
-        icon: <Users size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <Users size={28} color="#2D2F6E" strokeWidth={2} />,
         path: '/tailors'
     },
     {
         label: 'Store',
-        icon: <ShoppingBag size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <ShoppingBag size={28} color="#2D2F6E" strokeWidth={2} />,
         path: '/store'
     },
     {
         label: 'My Orders',
-        icon: <ClipboardList size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <ClipboardList size={28} color="#2D2F6E" strokeWidth={2} />,
         path: '/orders'
     },
     {
         label: 'Stitching',
-        icon: <Scissors size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <Scissors size={28} color="#2D2F6E" strokeWidth={2} />,
         path: '/services'
     },
     {
         label: 'Style Add-ons',
-        icon: <Sparkles size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <Sparkles size={28} color="#2D2F6E" strokeWidth={2} />,
         path: '/embellishments'
     },
     {
         label: 'Bridal',
-        icon: <Heart size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <Heart size={28} color="#2D2F6E" strokeWidth={2} />,
         action: 'modal_bridal'
     },
     {
         label: 'Bulk Order',
-        icon: <Layers size={28} color="#FD0053" strokeWidth={2} />,
+        icon: <Layers size={28} color="#2D2F6E" strokeWidth={2} />,
         path: '/bulk-order'
     }
 ];
@@ -94,7 +94,7 @@ const QuickActions = () => {
                 {actions.length > 4 && (
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="text-[10px] font-black text-[#FD0053] bg-pink-50 px-3 py-1.5 rounded-full border border-[#FD0053]/10 hover:shadow-sm transition-all uppercase tracking-widest sm:hidden"
+                        className="text-[10px] font-black text-[#2D2F6E] bg-indigo-50 px-3 py-1.5 rounded-full border border-[#2D2F6E]/10 hover:shadow-sm transition-all uppercase tracking-widest sm:hidden"
                     >
                         {isExpanded ? 'Hide' : 'View All'}
                     </button>
@@ -120,7 +120,7 @@ const QuickActions = () => {
                                 whileTap={{ scale: 0.92 }}
                                 onClick={() => handleActionClick(action)}
                             >
-                                <div className="w-16 h-16 bg-[#FFF0F4] border border-[#FD0053]/10 rounded-3xl flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md mx-auto">
+                                <div className="w-16 h-16 bg-[#FDE5D2] border border-[#2D2F6E]/10 rounded-3xl flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md mx-auto">
                                     {action.icon}
                                 </div>
                                 <span className="text-[9px] sm:text-[10px] font-black text-center text-gray-500 uppercase tracking-widest leading-none truncate w-full px-1">
@@ -157,7 +157,7 @@ const QuickActions = () => {
                                 <X size={16} />
                             </button>
 
-                            <div className="w-12 h-12 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mb-4">
                                 <Heart size={24} />
                             </div>
 
@@ -175,7 +175,7 @@ const QuickActions = () => {
                                             type="date"
                                             required
                                             min={new Date().toISOString().split('T')[0]}
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#FD0053] focus:ring-1 focus:ring-[#FD0053]/20 transition-all outline-none"
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#2D2F6E] focus:ring-1 focus:ring-[#2D2F6E]/20 transition-all outline-none"
                                             value={bookingData.date}
                                             onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
                                         />
@@ -189,7 +189,7 @@ const QuickActions = () => {
                                         <input
                                             type="time"
                                             required
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#FD0053] focus:ring-1 focus:ring-[#FD0053]/20 transition-all outline-none"
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#2D2F6E] focus:ring-1 focus:ring-[#2D2F6E]/20 transition-all outline-none"
                                             value={bookingData.time}
                                             onChange={(e) => setBookingData({ ...bookingData, time: e.target.value })}
                                         />
@@ -201,7 +201,7 @@ const QuickActions = () => {
                                     <textarea
                                         placeholder="Specific requests, dress type, etc."
                                         rows="2"
-                                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs focus:bg-white focus:border-[#FD0053] focus:ring-1 focus:ring-[#FD0053]/20 transition-all outline-none resize-none"
+                                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs focus:bg-white focus:border-[#2D2F6E] focus:ring-1 focus:ring-[#2D2F6E]/20 transition-all outline-none resize-none"
                                         value={bookingData.notes}
                                         onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
                                     ></textarea>
@@ -210,7 +210,7 @@ const QuickActions = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full py-4 rounded-xl bg-[#FD0053] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-[#FD0053]/20 hover:bg-[#cc496e] active:scale-[0.98] transition-all disabled:opacity-70 mt-2"
+                                    className="w-full py-4 rounded-xl bg-[#2D2F6E] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all disabled:opacity-70 mt-2"
                                 >
                                     {isSubmitting ? 'Requesting...' : 'Request Booking'}
                                 </button>

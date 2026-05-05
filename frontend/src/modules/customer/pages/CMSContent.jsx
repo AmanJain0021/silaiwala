@@ -47,7 +47,7 @@ const CMSContentPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
             {/* Curved Header */}
-            <div className="relative bg-primary pt-8 pb-32 px-5 text-white overflow-hidden shrink-0 shadow-xl shadow-pink-900/10">
+            <div className="relative bg-primary pt-8 pb-32 px-5 text-white overflow-hidden shrink-0 shadow-xl shadow-indigo-900/10">
                 <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full fill-white">
                         <path d="M0,100 C40,80 60,0 100,0 L100,100 Z" />
@@ -116,7 +116,7 @@ const CMSContentPage = () => {
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .cms-content-render h1, .cms-content-render h2, .cms-content-render h3 {
-                    color: #FD0053;
+                    color: #2D2F6E;
                     font-weight: 900;
                     margin-top: 1.5em;
                     margin-bottom: 0.5em;
@@ -142,7 +142,7 @@ const CMSContentPage = () => {
                     top: 0.6rem;
                     width: 0.5rem;
                     height: 1px;
-                    background: #FD0053;
+                    background: #2D2F6E;
                 }
             `}} />
         </div>

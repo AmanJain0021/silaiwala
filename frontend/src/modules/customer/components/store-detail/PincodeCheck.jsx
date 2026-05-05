@@ -57,7 +57,7 @@ const PincodeCheck = () => {
             )}
 
             {status === 'error' && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-red-700 bg-red-50 p-2 rounded-lg">
+                <div className="mt-2 flex items-center gap-2 text-xs text-red-700 bg-indigo-50 p-2 rounded-lg">
                     <XCircle size={14} />
                     <p className="font-bold">Not deliverable to {pincode}</p>
                 </div>

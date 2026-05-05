@@ -56,7 +56,7 @@ const DeliveryLogin = () => {
             className="w-full max-w-sm mx-auto"
         >
             <div className="text-left mb-8">
-                <h2 className="text-2xl font-black text-[#1A202C] tracking-tight">Welcome Partner!</h2>
+                <h2 className="text-2xl font-black text-[#1A1A1A] tracking-tight">Welcome Partner!</h2>
                 <p className="text-gray-500 font-medium mt-1">
                     {otpSent ? 'Enter the verification code sent to your mobile' : 'Login to start delivering with SEWZELLA'}
                 </p>

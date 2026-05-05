@@ -23,7 +23,7 @@ const DeliveryDetails = () => {
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 bg-[#0A0A0A] min-h-screen">
-                <Loader2 size={36} className="text-[#FD0053] animate-spin mb-4" />
+                <Loader2 size={36} className="text-[#2D2F6E] animate-spin mb-4" />
                 <p className="text-[10px] font-black text-white/25 uppercase tracking-widest">Fetching active riders...</p>
             </div>
         );
@@ -36,7 +36,7 @@ const DeliveryDetails = () => {
     if (!currentPartner && activeTasks.length === 0 && recentHistory.length === 0) {
         return (
             <div className="bg-[#111111] border border-[#1E1E1E] p-10 rounded-3xl text-center flex flex-col items-center gap-4 mx-4 mt-4">
-                <div className="w-20 h-20 bg-[#FD0053]/10 rounded-full flex items-center justify-center text-[#FD0053]/40">
+                <div className="w-20 h-20 bg-[#2D2F6E]/10 rounded-full flex items-center justify-center text-[#2D2F6E]/40">
                     <Truck size={40} />
                 </div>
                 <h3 className="text-lg font-black text-white">No active deliveries</h3>
@@ -54,7 +54,7 @@ const DeliveryDetails = () => {
             {currentPartner ? (
                 <div className="bg-[#111111] p-6 rounded-3xl border border-[#1E1E1E] relative overflow-hidden">
                     {/* Glow */}
-                    <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-[#FD0053]/5 blur-2xl pointer-events-none" />
+                    <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-[#2D2F6E]/5 blur-2xl pointer-events-none" />
 
                     <div className="flex flex-col items-center">
                         <div className="h-20 w-20 bg-[#1A1A1A] rounded-[2rem] border-2 border-[#2A2A2A] overflow-hidden flex items-center justify-center shadow-xl">
@@ -73,7 +73,7 @@ const DeliveryDetails = () => {
 
                     <div className="grid grid-cols-2 gap-3 mt-6">
                         <a href={`tel:${currentPartner.phone || '+91'}`}
-                            className="flex items-center justify-center gap-2 py-3 bg-[#FD0053] rounded-2xl text-white font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all no-underline shadow-lg shadow-[#FD0053]/25">
+                            className="flex items-center justify-center gap-2 py-3 bg-[#2D2F6E] rounded-2xl text-white font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all no-underline shadow-lg shadow-[#2D2F6E]/25">
                             <Phone size={14} fill="currentColor" /> Call
                         </a>
                         <button className="flex items-center justify-center gap-2 py-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl text-white/50 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all outline-none">
@@ -84,7 +84,7 @@ const DeliveryDetails = () => {
                     <div className="mt-4">
                         <div className="flex items-center justify-between p-3.5 bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A]">
                             <div className="flex items-center gap-3">
-                                <div className="text-[#FD0053]"><Truck size={18} /></div>
+                                <div className="text-[#2D2F6E]"><Truck size={18} /></div>
                                 <span className="text-xs font-bold text-white/40">Active Task</span>
                             </div>
                             <span className="text-[11px] font-black text-white uppercase">#{currentPartner.orderId} · {currentPartner.task}</span>
@@ -92,7 +92,7 @@ const DeliveryDetails = () => {
                     </div>
                 </div>
             ) : (
-                <div className="bg-[#FD0053] p-6 rounded-3xl text-white flex items-center justify-between relative overflow-hidden">
+                <div className="bg-[#2D2F6E] p-6 rounded-3xl text-white flex items-center justify-between relative overflow-hidden">
                     <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
                     <div>
                         <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Status</p>
@@ -114,7 +114,7 @@ const DeliveryDetails = () => {
                     {recentHistory.length > 0 ? recentHistory.map((item, idx) => (
                         <div key={idx} className="bg-[#111111] p-4 rounded-3xl border border-[#1E1E1E] flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="h-9 w-9 bg-[#FD0053]/10 rounded-xl flex items-center justify-center text-[#FD0053] font-black text-[11px]">
+                                <div className="h-9 w-9 bg-[#2D2F6E]/10 rounded-xl flex items-center justify-center text-[#2D2F6E] font-black text-[11px]">
                                     {new Date(item.deliveredAt).getDate()}
                                 </div>
                                 <div>

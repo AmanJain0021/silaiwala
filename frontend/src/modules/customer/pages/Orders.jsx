@@ -35,7 +35,7 @@ const OrdersPage = () => {
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
             {/* 1. Header */}
             {/* 1. Header */}
-            <div className="sticky top-0 z-50 bg-[#FD0053] shadow-md px-4 py-4 pt-safe">
+            <div className="sticky top-0 z-50 bg-[#2D2F6E] shadow-md px-4 py-4 pt-safe">
                 <h1 className="text-xl font-bold text-white mb-1">My Orders</h1>
                 <p className="text-xs text-gray-300">Track and manage your requests</p>
             </div>
@@ -60,7 +60,7 @@ const OrdersPage = () => {
             <div className="max-w-7xl mx-auto p-4 space-y-4">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
-                        <div className="w-10 h-10 border-4 border-[#FD0053] border-t-transparent rounded-full animate-spin mb-4" />
+                        <div className="w-10 h-10 border-4 border-[#2D2F6E] border-t-transparent rounded-full animate-spin mb-4" />
                         <p className="text-xs text-gray-500">Loading your orders...</p>
                     </div>
                 ) : orders.length === 0 ? (

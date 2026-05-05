@@ -44,7 +44,7 @@ const ServiceHero = ({ service }) => {
                     <Star size={14} className="fill-current" />
                     <span>{service.rating} ({service.reviews} reviews)</span>
                 </div>
-                <div className="flex items-center gap-1 bg-pink-50 px-2 py-1 rounded-md text-blue-700 font-medium">
+                <div className="flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md text-primary font-medium">
                     <Clock size={14} />
                     <span>Avg. {service.deliveryTime}</span>
                 </div>

@@ -12,7 +12,7 @@ const DeliveryComparison = () => {
             <div className="grid grid-cols-3 gap-3">
                 {/* Normal */}
                 <div className="bg-white p-4 rounded-xl border border-gray-100 text-center shadow-sm">
-                    <div className="w-10 h-10 mx-auto bg-pink-50 rounded-full flex items-center justify-center text-primary mb-2">
+                    <div className="w-10 h-10 mx-auto bg-indigo-50 rounded-full flex items-center justify-center text-primary mb-2">
                         <Truck size={20} />
                     </div>
                     <h3 className="font-bold text-gray-900 text-sm">Normal</h3>
@@ -35,7 +35,7 @@ const DeliveryComparison = () => {
 
                 {/* Premium */}
                 <div className="bg-white p-4 rounded-xl border border-gray-100 text-center shadow-sm opacity-80 hover:opacity-100 transition-opacity">
-                    <div className="w-10 h-10 mx-auto bg-pink-50 rounded-full flex items-center justify-center text-primary mb-2">
+                    <div className="w-10 h-10 mx-auto bg-indigo-50 rounded-full flex items-center justify-center text-primary mb-2">
                         <Crown size={20} />
                     </div>
                     <h3 className="font-bold text-gray-900 text-sm">Premium</h3>

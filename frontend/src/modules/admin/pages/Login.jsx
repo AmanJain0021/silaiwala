@@ -96,7 +96,7 @@ const AdminLogin = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#FD0053] relative overflow-hidden font-sans">
+        <div className="min-h-screen flex items-center justify-center bg-[#2D2F6E] relative overflow-hidden font-sans">
             {/* Ambient Animated Gradients */}
             <div className="absolute top-[-10%] left-[-5%] w-[60%] h-[60%] bg-pink-400 rounded-full blur-[140px] opacity-40 animate-pulse"></div>
             <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-primary-dark rounded-full blur-[120px] opacity-60"></div>
@@ -126,7 +126,7 @@ const AdminLogin = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Work Email Address</label>
                                     <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#FD0053] transition-colors">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#2D2F6E] transition-colors">
                                             <Mail size={18} />
                                         </span>
                                         <input
@@ -134,7 +134,7 @@ const AdminLogin = () => {
                                             placeholder="admin@sewzella.com"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold text-gray-900 outline-none focus:border-[#FD0053] focus:bg-white transition-all shadow-inner"
+                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold text-gray-900 outline-none focus:border-[#2D2F6E] focus:bg-white transition-all shadow-inner"
                                             required
                                         />
                                     </div>
@@ -143,7 +143,7 @@ const AdminLogin = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full py-5 bg-[#FD0053] hover:bg-[#cc496e] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-pink-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
+                                    className="w-full py-5 bg-[#2D2F6E] hover:bg-[#1E1F4D] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
                                 >
                                     {isLoading ? (
                                         <RefreshCw size={18} className="animate-spin" />
@@ -155,8 +155,8 @@ const AdminLogin = () => {
                         ) : (
                             <form onSubmit={handleVerifyOTP} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="text-center space-y-2">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-50 text-[#FD0053] rounded-full text-[10px] font-black uppercase tracking-wider">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#FD0053] animate-ping"></div>
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-[#2D2F6E] rounded-full text-[10px] font-black uppercase tracking-wider">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#2D2F6E] animate-ping"></div>
                                         Safety Token Sent
                                     </div>
                                     <p className="text-[11px] text-gray-500 font-medium">Verify login for <span className="font-black text-gray-900">{email}</span></p>
@@ -167,7 +167,7 @@ const AdminLogin = () => {
                                         <input
                                             key={index}
                                             ref={el => otpInputs.current[index] = el}
-                                            className="w-12 h-14 text-center text-xl font-black bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-[#FD0053] focus:bg-white focus:ring-4 focus:ring-pink-50 transition-all text-gray-900 shadow-sm"
+                                            className="w-12 h-14 text-center text-xl font-black bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-[#2D2F6E] focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all text-gray-900 shadow-sm"
                                             type="text"
                                             maxLength="1"
                                             value={data}
@@ -182,7 +182,7 @@ const AdminLogin = () => {
                                     <button
                                         type="submit"
                                         disabled={isLoading || otp.join('').length !== 6}
-                                        className="w-full py-5 bg-[#FD0053] hover:bg-[#cc496e] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-pink-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
+                                        className="w-full py-5 bg-[#2D2F6E] hover:bg-[#1E1F4D] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
                                     >
                                         {isLoading ? (
                                             <RefreshCw size={18} className="animate-spin" />
@@ -195,7 +195,7 @@ const AdminLogin = () => {
                                         <button
                                             type="button"
                                             onClick={() => setStep('identifier')}
-                                            className="text-[10px] text-gray-400 font-bold uppercase hover:text-[#FD0053] transition-colors"
+                                            className="text-[10px] text-gray-400 font-bold uppercase hover:text-[#2D2F6E] transition-colors"
                                         >
                                             Change Email Address
                                         </button>
@@ -204,7 +204,7 @@ const AdminLogin = () => {
                                             type="button"
                                             onClick={handleSendOTP}
                                             disabled={timer > 0 || isLoading}
-                                            className="text-[10px] text-[#FD0053] font-black uppercase tracking-widest disabled:text-gray-300"
+                                            className="text-[10px] text-[#2D2F6E] font-black uppercase tracking-widest disabled:text-gray-300"
                                         >
                                             {timer > 0 ? `Resend Code in ${timer}s` : 'Resend Security Code'}
                                         </button>
@@ -217,7 +217,7 @@ const AdminLogin = () => {
 
                 {/* Footer Assurance */}
                 <div className="bg-gray-50/80 p-6 border-t border-gray-100 flex items-center justify-center gap-2">
-                    <ShieldCheck size={14} className="text-[#FD0053]" />
+                    <ShieldCheck size={14} className="text-[#2D2F6E]" />
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
                         Secure SSL Encrypted Session
                     </p>

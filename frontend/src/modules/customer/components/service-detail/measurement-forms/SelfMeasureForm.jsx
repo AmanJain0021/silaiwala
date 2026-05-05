@@ -145,7 +145,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
             </div>
 
             {/* Helper Banner */}
-            <div className="bg-pink-50 border border-pink-100 rounded-lg p-3 mb-4 flex gap-3">
+            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-4 flex gap-3">
                 <Info size={18} className="text-primary shrink-0 mt-0.5" />
                 <div>
                     <h4 className="text-xs font-bold text-gray-800">Standard Size Guide ({selectedCategory})</h4>

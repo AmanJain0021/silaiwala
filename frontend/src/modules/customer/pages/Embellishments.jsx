@@ -62,7 +62,7 @@ const Embellishments = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#fcf8f9] pb-40 font-sans selection:bg-[#FD0053] selection:text-white">
+        <div className="min-h-screen bg-[#F7F8FC] pb-40 font-sans selection:bg-[#2D2F6E] selection:text-white">
             {/* Header */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
                 <div className="px-5 py-6 flex items-center justify-between">
@@ -93,7 +93,7 @@ const Embellishments = () => {
                                     <p className="text-[10px] text-gray-400 font-bold">{category.description}</p>
                                 </div>
                                 {selectedDesigns[category.id]?.length > 0 && (
-                                    <span className="text-[10px] font-black text-primary bg-pink-50 px-2 py-0.5 rounded-full uppercase">
+                                    <span className="text-[10px] font-black text-primary bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
                                         {selectedDesigns[category.id].length} Selected
                                     </span>
                                 )}
@@ -109,7 +109,7 @@ const Embellishments = () => {
                                             onClick={() => toggleDesign(category.id, design)}
                                             className={cn(
                                                 "relative bg-white rounded-[2rem] overflow-hidden border transition-all cursor-pointer group",
-                                                isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "border-gray-100 shadow-sm hover:border-pink-200"
+                                                isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "border-gray-100 shadow-sm hover:border-indigo-200"
                                             )}
                                         >
                                             <div className="aspect-[4/3] relative">
@@ -142,7 +142,7 @@ const Embellishments = () => {
                 {/* Info Card */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 mb-10">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center text-primary">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary">
                             <Info size={18} />
                         </div>
                         <div>
@@ -171,7 +171,7 @@ const Embellishments = () => {
                                 </div>
                             ))}
                             {Object.values(selectedDesigns).flat().length > 3 && (
-                                <div className="w-8 h-8 rounded-full border-2 border-white bg-pink-50 flex items-center justify-center text-[10px] font-black text-primary">
+                                <div className="w-8 h-8 rounded-full border-2 border-white bg-indigo-50 flex items-center justify-center text-[10px] font-black text-primary">
                                     +{Object.values(selectedDesigns).flat().length - 3}
                                 </div>
                             )}

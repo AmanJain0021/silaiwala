@@ -312,7 +312,7 @@ const AdminFinance = () => {
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xs font-black text-gray-900">{payout.tailor?.name}</span>
-                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.tailor?.role === 'delivery' ? 'bg-pink-50 text-primary border-pink-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.tailor?.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                                                                     {payout.tailor?.role}
                                                                 </span>
                                                             </div>

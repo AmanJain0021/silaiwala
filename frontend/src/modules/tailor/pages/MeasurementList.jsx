@@ -62,7 +62,7 @@ const MeasurementList = () => {
                         placeholder="Search by name or order ID..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#FD0053] text-sm text-gray-900 shadow-sm"
+                        className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] text-sm text-gray-900 shadow-sm"
                     />
                 </div>
 
@@ -74,7 +74,7 @@ const MeasurementList = () => {
                             onClick={() => setActiveFilter(filter)}
                             className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-[12px] font-black tracking-wide transition-all ${
                                 activeFilter === filter
-                                    ? 'bg-[#FD0053] text-white shadow-md shadow-[#FD0053]/20'
+                                    ? 'bg-[#2D2F6E] text-white shadow-md shadow-[#2D2F6E]/20'
                                     : 'text-gray-500 hover:text-gray-800'
                             }`}
                         >
@@ -87,7 +87,7 @@ const MeasurementList = () => {
                 <div className="space-y-3 mt-2">
                     {isLoading ? (
                         <div className="flex justify-center py-10">
-                            <div className="h-6 w-6 border-2 border-[#FD0053] border-t-transparent rounded-full animate-spin"></div>
+                            <div className="h-6 w-6 border-2 border-[#2D2F6E] border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : filteredProfiles.map((profile, i) => {
                         const avatarChar = profile.profileName?.charAt(0) || 'C';
@@ -111,7 +111,7 @@ const MeasurementList = () => {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[20px] font-black text-[#FD0053] leading-none">
+                                        <p className="text-[20px] font-black text-[#2D2F6E] leading-none">
                                             {profile.metrics || Object.keys(profile.measurements || {}).length || '12'}
                                         </p>
                                         <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest block mt-0.5">Metrics</span>
@@ -133,7 +133,7 @@ const MeasurementList = () => {
                                             </span>
                                         ))}
                                     </div>
-                                    <button className="text-[12px] font-black text-[#FD0053] flex items-center gap-1 hover:underline">
+                                    <button className="text-[12px] font-black text-[#2D2F6E] flex items-center gap-1 hover:underline">
                                         View Profile <ChevronRight size={14} strokeWidth={3} />
                                     </button>
                                 </div>
@@ -146,7 +146,7 @@ const MeasurementList = () => {
             {/* Floating Action Button */}
             <button 
                 onClick={() => alert('Feature coming soon')}
-                className="fixed bottom-28 right-5 w-14 h-14 bg-[#FD0053] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[#FD0053]/30 active:scale-95 transition-all z-20"
+                className="fixed bottom-28 right-5 w-14 h-14 bg-[#2D2F6E] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[#2D2F6E]/30 active:scale-95 transition-all z-20"
             >
                 <UserPlus size={24} />
             </button>

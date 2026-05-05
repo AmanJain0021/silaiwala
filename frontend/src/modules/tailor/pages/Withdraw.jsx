@@ -58,7 +58,7 @@ const Withdraw = () => {
     if (isLoading) {
         return (
             <div className="min-h-full bg-[#0A0A0A] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FD0053]" />
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2D2F6E]" />
             </div>
         );
     }
@@ -68,7 +68,7 @@ const Withdraw = () => {
         return (
             <div className="min-h-full bg-[#0A0A0A] flex items-center justify-center p-6 animate-in zoom-in duration-300">
                 <div className="bg-[#111111] border border-[#1E1E1E] rounded-[2.5rem] p-10 w-full max-w-sm text-center flex flex-col items-center">
-                    <div className="h-24 w-24 bg-[#FD0053] rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-[#FD0053]/40">
+                    <div className="h-24 w-24 bg-[#2D2F6E] rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-[#2D2F6E]/40">
                         <Check size={40} strokeWidth={3} className="text-white" />
                     </div>
                     <h2 className="text-2xl font-black text-white tracking-tight">Withdrawal Sent</h2>
@@ -77,7 +77,7 @@ const Withdraw = () => {
                     </p>
                     <button
                         onClick={() => navigate('/partner')}
-                        className="mt-10 w-full bg-[#FD0053] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#FD0053]/30 active:scale-95 transition-all"
+                        className="mt-10 w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#2D2F6E]/30 active:scale-95 transition-all"
                     >
                         Return to Home
                     </button>
@@ -104,7 +104,7 @@ const Withdraw = () => {
                 {/* Balance Badge */}
                 <div className="bg-[#111111] border border-[#1E1E1E] px-5 py-2.5 rounded-full mb-8">
                     <p className="text-white/30 font-black uppercase tracking-[0.2em] text-[10px]">
-                        Available: <span className="text-[#FD0053] ml-1">₹{availableBalance.toLocaleString('en-IN')}</span>
+                        Available: <span className="text-[#2D2F6E] ml-1">₹{availableBalance.toLocaleString('en-IN')}</span>
                     </p>
                 </div>
 
@@ -130,7 +130,7 @@ const Withdraw = () => {
                         <button
                             key={num}
                             onClick={() => handleKeyPress(num.toString())}
-                            className="h-14 rounded-2xl text-2xl font-black text-white active:scale-90 active:bg-white/10 hover:text-[#FD0053] transition-all flex items-center justify-center"
+                            className="h-14 rounded-2xl text-2xl font-black text-white active:scale-90 active:bg-white/10 hover:text-[#2D2F6E] transition-all flex items-center justify-center"
                         >
                             {num}
                         </button>
@@ -138,7 +138,7 @@ const Withdraw = () => {
                     <div />
                     <button
                         onClick={() => handleKeyPress('0')}
-                        className="h-14 rounded-2xl text-2xl font-black text-white active:scale-90 active:bg-white/10 hover:text-[#FD0053] transition-all flex items-center justify-center"
+                        className="h-14 rounded-2xl text-2xl font-black text-white active:scale-90 active:bg-white/10 hover:text-[#2D2F6E] transition-all flex items-center justify-center"
                     >
                         0
                     </button>
@@ -154,7 +154,7 @@ const Withdraw = () => {
                     <button
                         onClick={handleWithdrawRequest}
                         disabled={numAmount === 0 || numAmount > availableBalance || isSubmitting}
-                        className="w-full bg-[#FD0053] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-[#FD0053]/30 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-3"
+                        className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-[#2D2F6E]/30 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-3"
                     >
                         {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <ArrowUpRight size={18} strokeWidth={3} />}
                         {isSubmitting ? 'Verifying...' : 'Initiate Instant Payout'}

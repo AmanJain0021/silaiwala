@@ -419,7 +419,7 @@ const AdminDelivery = () => {
                                 {/* Live Status */}
                                 <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-pink-50 text-primary rounded-lg">
+                                        <div className="p-2 bg-indigo-50 text-primary rounded-lg">
                                             <Truck size={20} />
                                         </div>
                                         <div>
@@ -470,7 +470,7 @@ const AdminDelivery = () => {
                                     onClick={() => handleUpdateUserStatus(selectedPartner.id, selectedPartner.status === 'Offline')}
                                     className={`px-4 py-3 border text-xs font-black rounded-xl transition-colors uppercase tracking-widest flex items-center justify-center gap-2 ${
                                         selectedPartner.status === 'Offline' 
-                                        ? 'bg-pink-50 text-primary border-pink-100 hover:bg-pink-100' 
+                                        ? 'bg-indigo-50 text-primary border-indigo-100 hover:bg-indigo-100' 
                                         : 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'
                                     }`}
                                 >
@@ -479,7 +479,7 @@ const AdminDelivery = () => {
                                 </button>
                                 <button 
                                     onClick={() => toast.info('Tracking feature available in next update')}
-                                    className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-pink-900/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                                    className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
                                     View Tracking
                                 </button>
@@ -573,7 +573,7 @@ const AdminDelivery = () => {
                                     <button onClick={() => handleReject(selectedApp.id)} className="py-3 bg-white border border-gray-200 text-red-600 text-xs font-black rounded-xl hover:bg-red-50 hover:border-red-100 transition-colors uppercase tracking-widest">
                                         Reject Application
                                     </button>
-                                    <button onClick={() => handleApprove(selectedApp.id)} className="py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-pink-900/20 transition-all uppercase tracking-widest">
+                                    <button onClick={() => handleApprove(selectedApp.id)} className="py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest">
                                         Approve Rider
                                     </button>
                                 </div>

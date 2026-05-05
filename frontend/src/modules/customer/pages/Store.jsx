@@ -54,7 +54,7 @@ const StorePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-[#FD0053]">
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-[#2D2F6E]">
             {/* 1. Sticky Header */}
             <StoreHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
@@ -64,7 +64,7 @@ const StorePage = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="relative h-32 overflow-hidden rounded-[2.5rem] shadow-xl group cursor-pointer border border-pink-100/50"
+                        className="relative h-32 overflow-hidden rounded-[2.5rem] shadow-xl group cursor-pointer border border-indigo-100/50"
                     >
                         {/* Background Image */}
                         <motion.img

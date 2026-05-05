@@ -134,7 +134,7 @@ const ProfileSettings = () => {
     return (
         <div className="min-h-full bg-gray-50 flex flex-col relative animate-in fade-in duration-300 pb-20">
             {/* Curved Header */}
-            <div className={`relative bg-primary pt-8 ${isEditing ? 'pb-24' : 'pb-32'} px-5 text-white overflow-hidden shrink-0 shadow-xl shadow-pink-900/10 transition-all duration-300`}>
+            <div className={`relative bg-primary pt-8 ${isEditing ? 'pb-24' : 'pb-32'} px-5 text-white overflow-hidden shrink-0 shadow-xl shadow-indigo-900/10 transition-all duration-300`}>
                 <div className="absolute inset-0 z-0 opacity-20 mix-blend-overlay pointer-events-none">
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full fill-white">
                         <path d="M0,100 C40,80 60,0 100,0 L100,100 Z" />
@@ -142,7 +142,7 @@ const ProfileSettings = () => {
                 </div>
 
                 <div className="relative z-10 flex items-center justify-between mb-2">
-                    <button onClick={() => isEditing ? setIsEditing(false) : navigate(-1)} className="p-2 -ml-2 text-white hover:text-pink-100 transition-colors">
+                    <button onClick={() => isEditing ? setIsEditing(false) : navigate(-1)} className="p-2 -ml-2 text-white hover:text-indigo-100 transition-colors">
                         {isEditing ? <X size={20} /> : <ArrowLeft size={20} />}
                     </button>
                     <h1 className="text-lg font-black tracking-tight absolute left-1/2 -translate-x-1/2 uppercase">
@@ -209,7 +209,7 @@ const ProfileSettings = () => {
                             onChange={(e) => setFormData({...formData, address: e.target.value})}
                         />
                     </div>
-                    <Button type="submit" loading={isSaving} className="py-5 rounded-2xl shadow-xl shadow-pink-900/20 transition-all font-black uppercase tracking-widest">
+                    <Button type="submit" loading={isSaving} className="py-5 rounded-2xl shadow-xl shadow-indigo-900/20 transition-all font-black uppercase tracking-widest">
                          Save Profile
                     </Button>
                 </form>
@@ -233,7 +233,7 @@ const ProfileSettings = () => {
                         />
                         <MenuOption
                             icon={Bell}
-                            color="bg-pink-500"
+                            color="bg-indigo-500"
                             label="Notifications"
                             subLabel="Manage alerts"
                             to="/partner/notifications"

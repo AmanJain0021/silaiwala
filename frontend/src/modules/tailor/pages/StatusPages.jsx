@@ -12,7 +12,7 @@ export const UnderReview = () => {
     return (
         <AppContainer>
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
-                <div className="h-24 w-24 bg-pink-50 text-primary rounded-[2rem] flex items-center justify-center mb-8 shadow-xl shadow-pink-500/5">
+                <div className="h-24 w-24 bg-indigo-50 text-primary rounded-[2rem] flex items-center justify-center mb-8 shadow-xl shadow-indigo-500/5">
                     <Clock size={40} strokeWidth={2.5} className="animate-pulse" />
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">Account Under Review</h2>

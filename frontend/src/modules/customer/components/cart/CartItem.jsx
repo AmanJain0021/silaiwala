@@ -20,7 +20,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
                         <h3 className="text-sm font-bold text-gray-900 line-clamp-2">{item.title}</h3>
                         <button
                             onClick={() => onRemove(item.cartId)}
-                            className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-2 -mt-2"
+                            className="text-gray-400 hover:text-error transition-colors p-1 -mr-2 -mt-2"
                         >
                             <Trash2 size={16} />
                         </button>
@@ -37,20 +37,20 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
                 </div>
 
                 <div className="flex justify-between items-end mt-2">
-                    <div className="font-bold text-[#FD0053]">₹{item.price}</div>
+                    <div className="font-bold text-[#2D2F6E]">₹{item.price}</div>
 
                     {/* Quantity Control */}
                     <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-gray-200">
                         <button
                             onClick={() => onUpdateQuantity(item.cartId, item.quantity - 1)}
-                            className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-[#FD0053] active:scale-90 transition-all"
+                            className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-[#2D2F6E] active:scale-90 transition-all"
                         >
                             <Minus size={12} />
                         </button>
                         <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                         <button
                             onClick={() => onUpdateQuantity(item.cartId, item.quantity + 1)}
-                            className="w-6 h-6 flex items-center justify-center bg-[#FD0053] rounded shadow-sm text-white hover:bg-[#cc496e] active:scale-90 transition-all"
+                            className="w-6 h-6 flex items-center justify-center bg-[#2D2F6E] rounded shadow-sm text-white hover:bg-[#1E1F4D] active:scale-90 transition-all"
                         >
                             <Plus size={12} />
                         </button>

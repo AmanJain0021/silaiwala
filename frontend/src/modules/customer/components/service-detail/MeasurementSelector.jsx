@@ -53,10 +53,10 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                                 onClick={() => handleSavedProfileSelect(m)}
                                 className={cn(
                                     "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all relative overflow-hidden",
-                                    selectedSavedProfile?._id === m._id ? "border-primary bg-[#f2fcf9] shadow-sm" : "border-gray-100 hover:border-gray-200"
+                                    selectedSavedProfile?._id === m._id ? "border-primary bg-primary-soft shadow-sm" : "border-gray-100 hover:border-gray-200"
                                 )}
                             >
-                                <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-primary z-10">
+                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-primary z-10">
                                     <User size={16} />
                                 </div>
                                 <div className="flex-1 z-10">
@@ -80,7 +80,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                         onClick={() => onSelectType('new')} // Just select, don't toggle form visibility directly here if we want it to stay open when selected
                         className={cn(
                             "flex items-center gap-3 p-3 cursor-pointer transition-all relative",
-                            selectedType === 'new' ? "bg-[#f2fcf9]" : "bg-white"
+                            selectedType === 'new' ? "bg-primary-soft" : "bg-white"
                         )}
                     >
                         <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-primary">
@@ -115,7 +115,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                         onClick={() => onSelectType('upload')}
                         className={cn(
                             "flex items-center gap-3 p-3 cursor-pointer transition-all",
-                            selectedType === 'upload' ? "bg-[#f2fcf9]" : "bg-white"
+                            selectedType === 'upload' ? "bg-primary-soft" : "bg-white"
                         )}
                     >
                         <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
@@ -145,19 +145,19 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     onClick={() => onSelectType('home')}
                     className={cn(
                         "group p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden",
-                        selectedType === 'home' ? "border-primary bg-pink-50 ring-1 ring-primary shadow-sm" : "border-gray-100 bg-white hover:border-gray-200"
+                        selectedType === 'home' ? "border-primary bg-indigo-50 ring-1 ring-primary shadow-sm" : "border-gray-100 bg-white hover:border-gray-200"
                     )}
                 >
                     <div className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                        selectedType === 'home' ? "bg-primary text-white" : "bg-blue-50 text-blue-600"
+                        selectedType === 'home' ? "bg-primary text-white" : "bg-primary-soft text-primary"
                     )}>
                         <Home size={16} />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
                             <h4 className="text-sm font-bold text-gray-900">Tailor at Home</h4>
-                            <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">Premium</span>
+                            <span className="text-[8px] bg-primary-soft text-primary px-1.5 py-0.5 rounded font-black uppercase tracking-widest">Premium</span>
                         </div>
                         <p className="text-[10px] text-gray-400 font-medium leading-none mt-1">
                             {isDistanceBased ? 'Expert will visit your location' : 'Expert visits start at base price'}
@@ -183,12 +183,12 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     }}
                     className={cn(
                         "group p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden",
-                        selectedType === 'sample' ? "border-primary bg-purple-50 ring-1 ring-primary shadow-sm" : "border-gray-100 bg-white hover:border-gray-200"
+                        selectedType === 'sample' ? "border-primary bg-primary-soft ring-1 ring-primary shadow-sm" : "border-gray-100 bg-white hover:border-gray-200"
                     )}
                 >
                     <div className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                        selectedType === 'sample' ? "bg-primary text-white" : "bg-purple-50 text-purple-600"
+                        selectedType === 'sample' ? "bg-primary text-white" : "bg-primary-soft text-primary"
                     )}>
                         <Shirt size={16} />
                     </div>
