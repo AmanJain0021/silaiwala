@@ -3,13 +3,28 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes';
 import useSocketStore from './store/socketStore';
 import { Toaster } from 'react-hot-toast';
-import SplashScreen from './components/common/SplashScreen';
+import SplashScreen from './components/Common/SplashScreen';
 
 function App() {
   const { socket, connect, disconnect } = useSocketStore();
-  const [showSplash, setShowSplash] = useState(
-    window.location.pathname === '/' || window.location.pathname === '/welcome'
-  );
+  
+  // Initialize splash state based on current path
+  const [splashConfig, setSplashConfig] = useState(() => {
+    const path = window.location.pathname;
+    const isSplash = path === '/' || 
+                    path === '/welcome' || 
+                    path.startsWith('/partner') || 
+                    path.startsWith('/delivery');
+    
+    let role = 'customer';
+    if (path.startsWith('/partner')) {
+      role = 'tailor';
+    } else if (path.startsWith('/delivery')) {
+      role = 'delivery';
+    }
+    
+    return { isSplash, role };
+  });
 
   useEffect(() => {
     // Check if user is logged in
@@ -78,7 +93,12 @@ function App() {
 
   return (
     <BrowserRouter>
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {splashConfig.isSplash && (
+        <SplashScreen 
+          role={splashConfig.role} 
+          onComplete={() => setSplashConfig(prev => ({ ...prev, isSplash: false }))} 
+        />
+      )}
       <Toaster position="top-right" />
       <AppRoutes />
     </BrowserRouter>

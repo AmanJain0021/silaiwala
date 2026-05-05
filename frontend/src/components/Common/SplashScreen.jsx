@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import PartnerLogo from './PartnerLogo';
+import deliveryLogo from '../../assets/deliveryLogo.png';
 
 /* ── TOP: Needle with curved thread (matching first image reference) ── */
 const NeedleWithThread = () => (
@@ -135,7 +137,7 @@ const BottomStitchLine = () => (
     </svg>
 );
 
-const SplashScreen = ({ onComplete }) => {
+const SplashScreen = ({ role = 'customer', onComplete }) => {
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
@@ -172,37 +174,70 @@ const SplashScreen = ({ onComplete }) => {
 
                     {/* ═══ CENTER: Logo Image ═══ */}
                     <div className="relative flex flex-col items-center z-10">
-                        <motion.img
-                            src="/sewzella_logo-removebg-preview.png"
-                            alt="SewZella Logo"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{
-                                duration: 1.2,
-                                delay: 0.4,
-                                ease: [0.25, 0.46, 0.45, 0.94]
-                            }}
-                            className="w-56 h-auto object-contain drop-shadow-2xl"
-                            style={{
-                                filter: 'brightness(1.3) contrast(1.1) drop-shadow(0 8px 32px rgba(0,0,0,0.3))'
-                            }}
-                        />
-                        {/* Tagline below logo */}
-                        <motion.p
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 0.45, y: 0 }}
-                            transition={{ delay: 1.3, duration: 0.8 }}
-                            className="text-center mt-4"
-                            style={{
-                                color: 'rgba(255,255,255,0.5)',
-                                fontSize: '10px',
-                                letterSpacing: '5px',
-                                fontWeight: 400,
-                                textTransform: 'uppercase'
-                            }}
-                        >
-                            Tailoring, Simplified.
-                        </motion.p>
+                        {role === 'tailor' ? (
+                            <PartnerLogo scale={1.2} />
+                        ) : role === 'delivery' ? (
+                            <>
+                                <motion.img
+                                    src={deliveryLogo}
+                                    alt="SewZella Delivery"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{
+                                        duration: 1.2,
+                                        delay: 0.4,
+                                        ease: [0.25, 0.46, 0.45, 0.94]
+                                    }}
+                                    className="w-80 h-auto object-contain drop-shadow-2xl"
+                                    style={{
+                                        filter: 'brightness(1.1) contrast(1.1) drop-shadow(0 8px 32px rgba(0,0,0,0.3))'
+                                    }}
+                                />
+                                {/* Delivery Tagline */}
+                                <motion.p
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 0.8, y: 0 }}
+                                    transition={{ delay: 1.3, duration: 0.8 }}
+                                    className="text-center mt-6 text-[#F9F4E0] text-[12px] font-medium tracking-wider opacity-60 px-8"
+                                >
+                                    Delivering perfection, on time, every time.
+                                </motion.p>
+                            </>
+                        ) : (
+                            <>
+                                <motion.img
+                                    src="/sewzella_logo-removebg-preview.png"
+                                    alt="SewZella Logo"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{
+                                        duration: 1.2,
+                                        delay: 0.4,
+                                        ease: [0.25, 0.46, 0.45, 0.94]
+                                    }}
+                                    className="w-56 h-auto object-contain drop-shadow-2xl"
+                                    style={{
+                                        filter: 'brightness(1.3) contrast(1.1) drop-shadow(0 8px 32px rgba(0,0,0,0.3))'
+                                    }}
+                                />
+                                {/* Tagline below logo */}
+                                <motion.p
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 0.45, y: 0 }}
+                                    transition={{ delay: 1.3, duration: 0.8 }}
+                                    className="text-center mt-4"
+                                    style={{
+                                        color: 'rgba(255,255,255,0.5)',
+                                        fontSize: '10px',
+                                        letterSpacing: '5px',
+                                        fontWeight: 400,
+                                        textTransform: 'uppercase'
+                                    }}
+                                >
+                                    Tailoring, Simplified.
+                                </motion.p>
+                            </>
+                        )}
                     </div>
 
                     {/* ═══ BOTTOM SECTION: Thread Spool + Buttons + Stitch Line ═══ */}

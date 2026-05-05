@@ -10,7 +10,6 @@ import {
   Wallet
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
 // Asset Imports
 import img1 from '../../../assets/aunty silai krti hui image.jpeg';
 import img2 from '../../../assets/cc3b8d6c20aa7bdc7d77e233743d163e.jpg';
