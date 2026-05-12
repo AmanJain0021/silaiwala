@@ -117,7 +117,7 @@ const StorePage = () => {
                 If we want Filter bar sticky, we need to account for header height.
                 Let's make it sticky but with top-16 approx.
             */}
-            <div className="sticky top-[60px] z-30 bg-white shadow-sm">
+            <div className="sticky top-[140px] sm:top-[160px] z-30 bg-white shadow-sm transition-all duration-300">
                 <SearchFilterBar
                     onOpenFilter={() => setIsFilterOpen(true)}
                     searchQuery={searchQuery}

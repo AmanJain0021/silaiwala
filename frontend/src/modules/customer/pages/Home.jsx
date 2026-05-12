@@ -34,7 +34,6 @@ const Home = () => {
 
             {/* 1. Header & Location */}
             <HomeHeader user={user || { name: 'Guest' }} />
-            <LocationBar />
 
             <PromoBanner />
             <QuickActions />

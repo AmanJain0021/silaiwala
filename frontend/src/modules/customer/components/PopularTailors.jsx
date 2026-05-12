@@ -46,13 +46,6 @@ const PopularTailors = () => {
                             to={`/tailor/${tailor._id}`}
                             className="flex gap-4 bg-white p-4 rounded-[1.5rem] shadow-[0_4px_15px_rgba(0,0,0,0.02)] border border-gray-100 active:scale-[0.98] transition-transform group relative overflow-hidden"
                         >
-                            {/* Visual Indicator of Fabric availability */}
-                            {tailor.isAvailable && (
-                                <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md text-[8px] font-black border border-amber-100/50 shadow-sm">
-                                    <Clock size={10} className="animate-pulse" /> AVAILABLE
-                                </div>
-                            )}
-
                             <div className="relative shrink-0">
                                 <div className="h-20 w-20 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group-hover:rotate-2 transition-transform">
                                     <SafeImage
@@ -66,11 +59,18 @@ const PopularTailors = () => {
                                 </div>
                             </div>
 
-                            <div className="flex-1 pt-1">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                    <h3 className="text-sm font-black text-gray-900 leading-none group-hover:text-[#2D2F6E] transition-colors">{tailor.shopName || tailor.user?.name}</h3>
+                            <div className="flex-1 pt-1 min-w-0">
+                                <div className="flex justify-between items-start gap-2 mb-0.5">
+                                    <h3 className="text-[13px] sm:text-sm font-black text-gray-900 leading-tight group-hover:text-[#2D2F6E] transition-colors truncate">
+                                        {tailor.shopName || tailor.user?.name}
+                                    </h3>
+                                    {tailor.isAvailable && (
+                                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-md text-[7px] font-black border border-amber-100/50 shadow-sm whitespace-nowrap shrink-0">
+                                            <Clock size={8} className="animate-pulse" /> AVAILABLE
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-[11px] text-[#2D2F6E] font-bold mt-1 bg-indigo-50 w-fit px-2 py-0.5 rounded-full border border-[#2D2F6E]/5 italic">
+                                <p className="text-[10px] text-[#2D2F6E] font-bold mt-1.5 bg-indigo-50 w-fit px-2 py-0.5 rounded-full border border-[#2D2F6E]/5 italic truncate max-w-full">
                                     {tailor.specializations?.[0] || 'Expert Tailor'}
                                 </p>
 

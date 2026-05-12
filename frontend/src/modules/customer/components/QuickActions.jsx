@@ -1,44 +1,53 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Scissors, ShoppingBag, ClipboardList, Users, Sparkles, Heart, X, Calendar, Clock, Layers } from 'lucide-react';
+import { Scissors, ShoppingBag, ClipboardList, Users, Sparkles, Heart, X, Calendar, Clock, Layers, Feather } from 'lucide-react';
 import api from '../../../utils/api';
+
+const ICON_COLOR = "#E2C17D";
+const ICON_SIZE = 28;
+const STROKE_WIDTH = 1.5;
 
 const actions = [
     {
         label: 'Tailors',
-        icon: <Users size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <Users size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/tailors'
     },
     {
         label: 'Store',
-        icon: <ShoppingBag size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <ShoppingBag size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/store'
     },
     {
         label: 'My Orders',
-        icon: <ClipboardList size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <ClipboardList size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/orders'
     },
     {
         label: 'Stitching',
-        icon: <Scissors size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <Scissors size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/services'
     },
     {
         label: 'Style Add-ons',
-        icon: <Sparkles size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <Sparkles size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/embellishments'
     },
     {
         label: 'Bridal',
-        icon: <Heart size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <Heart size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         action: 'modal_bridal'
     },
     {
         label: 'Bulk Order',
-        icon: <Layers size={28} color="#2D2F6E" strokeWidth={2} />,
+        icon: <Layers size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/bulk-order'
+    },
+    {
+        label: 'Embroidery',
+        icon: <Feather size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+        path: '/embroidery'
     }
 ];
 
@@ -47,7 +56,6 @@ const QuickActions = () => {
     const [isBridalModalOpen, setIsBridalModalOpen] = useState(false);
     const [bookingData, setBookingData] = useState({ date: '', time: '', notes: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(false);
 
     const handleActionClick = (action) => {
         if (action.action === 'modal_bridal') {
@@ -80,35 +88,23 @@ const QuickActions = () => {
         }
     };
 
-    // Filter actions for mobile row (4 columns)
-    const displayedActions = isExpanded ? actions : actions.slice(0, 4);
+
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             {/* Header with Title and Toggle */}
-            <div className="flex justify-between items-center mb-4 sm:mb-6">
-                <div>
-                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">Quick Actions</h2>
-                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Order fast, track easy</p>
+            <div className="relative flex items-center justify-center mb-10 sm:mb-14 px-2">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div className="w-full border-t border-dashed border-gray-300"></div>
                 </div>
-                {actions.length > 4 && (
-                    <button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="text-[10px] font-black text-[#2D2F6E] bg-indigo-50 px-3 py-1.5 rounded-full border border-[#2D2F6E]/10 hover:shadow-sm transition-all uppercase tracking-widest sm:hidden"
-                    >
-                        {isExpanded ? 'Hide' : 'View All'}
-                    </button>
-                )}
+                <div className="relative bg-[#F7F8FC] px-4">
+                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#2D2F6E] uppercase tracking-[0.4em] whitespace-nowrap">What We Offer</h2>
+                </div>
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-6 lg:grid-cols-6 xl:grid-cols-6 gap-4 md:gap-8 lg:gap-12 transition-all duration-500">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-y-8 transition-all duration-500 sm:divide-x sm:divide-gray-200">
                 <AnimatePresence mode="popLayout">
                     {actions.map((action, index) => {
-                        // On mobile, hide items > index 3 if not expanded
-                        // Responsive visibility: items > 3 are hidden on mobile unless expanded, 
-                        // but always visible on small screens (sm) and above (laptops/tablets)
-                        const isHiddenOnMobile = !isExpanded && index > 3;
-
                         return (
                             <motion.div
                                 key={index}
@@ -116,14 +112,14 @@ const QuickActions = () => {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
-                                className={`flex-col items-center gap-2 cursor-pointer group ${isHiddenOnMobile ? 'hidden sm:flex' : 'flex'}`}
+                                className={`flex-col items-center gap-3 cursor-pointer group px-2 sm:px-6 md:px-8 lg:px-10 flex flex-1 min-w-[25%] sm:min-w-0`}
                                 whileTap={{ scale: 0.92 }}
                                 onClick={() => handleActionClick(action)}
                             >
-                                <div className="w-16 h-16 bg-[#FDE5D2] border border-[#2D2F6E]/10 rounded-3xl flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md mx-auto">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#2D2F6E] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl mx-auto shadow-md">
                                     {action.icon}
                                 </div>
-                                <span className="text-[9px] sm:text-[10px] font-black text-center text-gray-500 uppercase tracking-widest leading-none truncate w-full px-1">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-center text-gray-500 uppercase tracking-[0.2em] leading-none truncate w-full px-1">
                                     {action.label}
                                 </span>
                             </motion.div>

@@ -96,6 +96,7 @@ import Embellishments from './modules/customer/pages/Embellishments'; // NEW
 import MyReviews from './modules/customer/pages/MyReviews'; // NEW
 import BulkOrderRequest from './modules/customer/pages/BulkOrderRequest'; // NEW
 import MyBulkOrders from './modules/customer/pages/MyBulkOrders'; // NEW
+import EmbroideryPage from './modules/customer/pages/Embroidery'; // NEW
 
 const AppRoutes = () => {
     return (
@@ -164,6 +165,7 @@ const AppRoutes = () => {
                         <Route path="/reviews" element={<MyReviews />} />
                         <Route path="/bulk-order" element={<BulkOrderRequest />} />
                         <Route path="/bulk-orders" element={<MyBulkOrders />} />
+                        <Route path="/embroidery" element={<EmbroideryPage />} />
                     </Route>
                 </Route>
             </Route>

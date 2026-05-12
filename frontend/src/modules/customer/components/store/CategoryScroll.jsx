@@ -81,7 +81,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
     };
 
     return (
-        <div className="bg-white py-4 relative group border-b border-gray-50 transition-all duration-300">
+        <div className="bg-white pt-6 pb-4 relative group border-b border-gray-50 transition-all duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
                 {history.length > 0 && (
                     <div className="mb-2 flex items-center gap-2">
@@ -99,7 +99,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
 
                 <div
                     ref={scrollRef}
-                    className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide snap-x relative"
+                    className="flex overflow-x-auto gap-4 pt-2 pb-3 scrollbar-hide snap-x relative"
                 >
                     {history.length === 0 && (
                         <button

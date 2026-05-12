@@ -237,7 +237,7 @@ const OrderTracking = () => {
                 </div>
 
                 {/* 3. The Timeline Section */}
-                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm relative overflow-hidden">
+                <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm relative overflow-hidden">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                             <Package size={16} className="text-primary" />
@@ -249,7 +249,7 @@ const OrderTracking = () => {
                     </div>
 
                     {/* New: Status Progress Banner */}
-                    <div className="mb-8 p-4 bg-gradient-to-br from-primary to-primary-dark rounded-2xl text-white shadow-lg relative overflow-hidden">
+                    <div className="mb-4 p-3 bg-gradient-to-br from-primary to-primary-dark rounded-2xl text-white shadow-lg relative overflow-hidden">
                         <div className="relative z-10">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Current Milestone</p>
                             <h2 className="text-xl font-black tracking-tight leading-none mb-2">
@@ -259,8 +259,8 @@ const OrderTracking = () => {
                                 {getCurrentStatusMessage()}
                             </p>
                         </div>
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            {React.createElement(timelineStates[actualCurrentIndex]?.icon || Package, { size: 64 })}
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                            {React.createElement(timelineStates[actualCurrentIndex]?.icon || Package, { size: 48 })}
                         </div>
                     </div>
 

@@ -31,8 +31,8 @@ const LegalLinks = () => {
     return (
         <div className="mt-8 space-y-4">
             <div className="flex items-center gap-2 mb-2 px-1">
-                <div className="p-1 px-1.5 bg-[#2D2F6E] rounded text-white italic">
-                    <FileText size={10} strokeWidth={3} />
+                <div className="p-1 px-1.5 bg-[#2D2F6E] rounded text-[#E2C17D] italic">
+                    <FileText size={12} strokeWidth={3} />
                 </div>
                 <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] italic">Legal & Policies</h3>
             </div>
@@ -192,7 +192,7 @@ const ProfilePage = () => {
                         className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 group hover:bg-red-50 transition-all duration-300 active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-200 group-hover:rotate-6 transition-transform">
+                            <div className="w-12 h-12 rounded-2xl bg-[#2D2F6E] flex items-center justify-center text-[#E2C17D] shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
                                 <LogOut size={20} strokeWidth={2.5} />
                             </div>
                             <div className="text-left">

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Bell, ShoppingBag, X, User } from 'lucide-react';
+import { Search, Bell, ShoppingBag, X, User, MapPin, ChevronDown, Check, Loader2, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
+import useLocationStore from '../../../store/locationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import silaiwalaLogo from '/sewzella_logo.jpeg';
@@ -11,22 +12,130 @@ import { useNotifications } from '../context/NotificationContext';
 const HomeHeader = ({ user }) => {
     const [showNotifications, setShowNotifications] = useState(false);
     const cartCount = useCartStore(state => state.getTotalItems());
-
     const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+
+    const { address: location, setLocation } = useLocationStore();
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempLocation, setTempLocation] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSave = () => {
+        if (tempLocation.trim()) {
+            const mockLat = 34.0837 + (Math.random() - 0.5) * 0.01;
+            const mockLng = 74.7973 + (Math.random() - 0.5) * 0.01;
+            setLocation(tempLocation, mockLat, mockLng);
+            setIsEditing(false);
+        }
+    };
+
+    const handleDetectLocation = () => {
+        setIsLoading(true);
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    // Real Reverse Geocoding using Nominatim (OpenStreetMap)
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`);
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const addr = data.address;
+                        // Build a concise address: Suburb/City, State - Postcode
+                        const area = addr.suburb || addr.neighbourhood || addr.residential || addr.city_district || addr.town || addr.city || "";
+                        const city = addr.city || addr.town || addr.village || addr.county || "";
+                        const postcode = addr.postcode || "";
+                        
+                        const displayAddress = `${area}${area && city ? ', ' : ''}${city}${postcode ? ' - ' + postcode : ''}` || data.display_name.split(',').slice(0, 2).join(',');
+                        
+                        setLocation(displayAddress, latitude, longitude);
+                    } else {
+                        throw new Error("No address found");
+                    }
+                } catch (error) {
+                    console.error("Reverse geocoding failed:", error);
+                    // Fallback to coordinates if API fails
+                    setLocation(`Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, latitude, longitude);
+                } finally {
+                    setIsLoading(false);
+                    setIsEditing(false);
+                }
+            }, (error) => {
+                alert("Location access denied. Please enable location permissions.");
+                setIsLoading(false);
+            }, { enableHighAccuracy: true });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-1 transition-all duration-300 md:hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 pt-safe">
                 {/* Top Row: Brand & Icons */}
                 <div className="flex justify-between items-center mb-3 sm:mb-5">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3">
-                            <img src={silaiwalaLogo} alt="Silaiwala" className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg sm:text-xl font-black text-gray-900 leading-none tracking-tight">SewZ<span className="text-[#2D2F6E]">ella</span></h1>
-                            <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5 sm:mt-1">Modern Stitching</p>
-                        </div>
+                    <div className="flex-1 min-w-0 mr-4">
+                        <AnimatePresence mode="wait">
+                            {isEditing ? (
+                                <motion.div
+                                    key="editing"
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    className="flex items-center gap-2 w-full"
+                                >
+                                    <div className="flex-1 relative flex items-center">
+                                        <Search className="absolute left-2.5 h-3 w-3 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={tempLocation}
+                                            onChange={(e) => setTempLocation(e.target.value)}
+                                            placeholder="Enter area..."
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl py-1.5 pl-7 pr-2 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-[#2D2F6E]/10 transition-all shadow-sm"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleDetectLocation}
+                                        className="p-1.5 bg-[#2D2F6E]/5 text-[#2D2F6E] rounded-lg"
+                                    >
+                                        {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        className="p-1.5 bg-[#2D2F6E] text-white rounded-lg shadow-md"
+                                    >
+                                        <Check size={12} />
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="viewing"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex items-center gap-2 cursor-pointer group"
+                                    onClick={() => {
+                                        setTempLocation(location);
+                                        setIsEditing(true);
+                                    }}
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[#2D2F6E] shrink-0 border border-gray-100 shadow-sm">
+                                        <MapPin size={14} className="group-hover:scale-110 transition-transform" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
+                                        <div className="flex items-center gap-1 overflow-hidden">
+                                            <span className="text-[11px] font-black text-gray-900 truncate tracking-tight">{location}</span>
+                                            <ChevronDown size={10} className="text-[#2D2F6E] opacity-50" />
+                                        </div>
+                                    </div>
+                                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#2D2F6E] animate-pulse"></div>
+                                        <span className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest opacity-70">Riders Online</span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     <div className="flex items-center gap-2">
