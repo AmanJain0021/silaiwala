@@ -27,7 +27,7 @@ import useAuthStore from '../../../store/authStore';
 
 import api from '../../../utils/api';
 
-const silaiwalaLogo = '/logo.png';
+const silaiwalaLogo = '/sewzella_logo-removebg-preview.png';
 
 const DeliveryLayout = () => {
     const [isOnline, setIsOnline] = useState(false);
@@ -51,7 +51,7 @@ const DeliveryLayout = () => {
         const fetchPlatformSettings = async () => {
             try {
                 // Public endpoint to get basic settings
-                const res = await api.get('/content/settings');
+                const res = await api.get('/cms/settings');
                 if (res.data?.success) {
                     setPlatformSettings(res.data.data);
                 }
@@ -320,50 +320,50 @@ const DeliveryLayout = () => {
             </AnimatePresence>
 
             {/* Top Fixed Header - Elegant Mobile Profile Bar */}
-            <header className="fixed top-0 left-0 right-0 h-20 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-6 z-50">
-                <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-slate-200/50 overflow-hidden border border-gray-100">
-                        <img src={silaiwalaLogo} alt="Silaiwala" className="w-full h-full object-contain p-1.5" />
+            <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-5 z-50">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-lg shadow-slate-200/50 overflow-hidden border border-gray-100">
+                        <img src={silaiwalaLogo} alt="SewZelaa" className="w-full h-full object-contain p-1" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="font-black text-slate-900 text-lg tracking-tighter leading-none">Silaiwala</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                            <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                            <span className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Partner Hub</span>
+                        <span className="font-black text-slate-900 text-base tracking-tighter leading-none">SewZelaa</span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                            <div className={`w-1 h-1 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                            <span className="text-[8px] font-black uppercase tracking-[0.1em] text-slate-400">Partner Hub</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    {/* SOS Emergency Button */}
-                    <button
-                        onClick={() => setShowSOS(true)}
-                        className="w-11 h-11 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-red-100"
-                    >
-                        <ShieldAlert size={20} className={showSOS ? 'animate-pulse' : ''} />
-                    </button>
-
+                <div className="flex items-center gap-2.5">
                     {/* Status Pill Toggle */}
                     <button
                         onClick={toggleAvailability}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-300 ${isOnline
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all duration-300 ${isOnline
                             ? 'bg-indigo-50 border-indigo-100 text-primary'
                             : 'bg-slate-50 border-slate-200 text-slate-400'
                             }`}
                     >
-                        <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+                        <span className="text-[8px] font-black uppercase tracking-widest leading-none">
                             {isOnline ? 'Online' : 'Offline'}
                         </span>
-                        <Power size={11} strokeWidth={3} className={isOnline ? 'text-primary' : 'text-slate-300'} />
+                        <Power size={10} strokeWidth={3} className={isOnline ? 'text-primary' : 'text-slate-300'} />
+                    </button>
+
+                    {/* SOS Emergency Button */}
+                    <button
+                        onClick={() => setShowSOS(true)}
+                        className="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-red-100"
+                    >
+                        <ShieldAlert size={18} className={showSOS ? 'animate-pulse' : ''} />
                     </button>
 
                     <button
                         onClick={() => setShowNotifications(true)}
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all relative ${showNotifications ? 'bg-primary text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all relative ${showNotifications ? 'bg-primary text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
-                        <Bell size={20} className={showNotifications ? 'animate-bounce' : ''} />
+                        <Bell size={18} className={showNotifications ? 'animate-bounce' : ''} />
                         {unreadCount > 0 && (
-                            <span className="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-2 ring-rose-50">
+                            <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-2 ring-rose-50">
                                 {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                         )}
@@ -372,7 +372,7 @@ const DeliveryLayout = () => {
             </header>
 
             {/* Main Dynamic Viewport */}
-            <main className="flex-1 pb-24 md:pb-12 pt-[104px] px-4 md:px-10 max-w-lg mx-auto w-full">
+            <main className="flex-1 pb-24 md:pb-12 pt-[74px] px-4 md:px-10 max-w-lg mx-auto w-full">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}

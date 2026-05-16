@@ -79,12 +79,12 @@ const Signup = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="w-full"
         >
-            <div className="text-center mb-4 sm:mb-5">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-                    Almost There!
+            <div className="text-left mb-3 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2D2F6E] tracking-tight leading-tight">
+                    Welcome to <br className="hidden md:block"/> Sewzella
                 </h2>
-                <p className="text-[9px] sm:text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mt-1 px-4">
-                    Complete your customer profile
+                <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1 sm:mt-4 max-w-[250px]">
+                    Please sign up to continue
                 </p>
             </div>
 
@@ -104,9 +104,9 @@ const Signup = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 onSubmit={step === 'info' ? handleSendOTP : handleSubmit}
-                className="space-y-4"
+                className="space-y-3 sm:space-y-5"
             >
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-4">
                     {step === 'info' ? (
                         <>
                             <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner">
@@ -116,7 +116,7 @@ const Signup = () => {
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
-                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-gray-500 placeholder:font-medium"
+                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-gray-500 placeholder:font-medium py-1.5 sm:py-2"
                                 />
                             </div>
 
@@ -128,7 +128,7 @@ const Signup = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     required
-                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-gray-500 placeholder:font-medium"
+                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-gray-500 placeholder:font-medium py-1.5 sm:py-2"
                                 />
                             </div>
 
@@ -139,7 +139,7 @@ const Signup = () => {
                                     value={formData.phoneNumber}
                                     onChange={handleChange}
                                     required
-                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-slate-300 placeholder:font-medium"
+                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-slate-300 placeholder:font-medium py-1.5 sm:py-2"
                                 />
                             </div>
 
@@ -149,7 +149,7 @@ const Signup = () => {
                                     placeholder="Referral Code (Optional)"
                                     value={formData.referralCode}
                                     onChange={handleChange}
-                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#2D2F6E] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider"
+                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#2D2F6E] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider py-1.5 sm:py-2"
                                 />
                             </div>
                         </>
@@ -198,10 +198,10 @@ const Signup = () => {
                     )}
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1 sm:pt-2">
                     <Button
                         type="submit"
-                        className="w-full h-11 sm:h-12 rounded-full bg-[#2D2F6E] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#2D2F6E]/10"
+                        className="w-full h-10 sm:h-12 rounded-full bg-[#2D2F6E] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#2D2F6E]/10"
                         disabled={isLoading}
                     >
                         {isLoading ? (step === 'info' ? 'Sending...' : 'Verifying...') : (
@@ -212,6 +212,17 @@ const Signup = () => {
                     </Button>
                 </div>
             </motion.form>
+            <div className="mt-3 sm:mt-8 text-center sm:text-left">
+                <p className="text-xs sm:text-sm font-bold text-slate-400">
+                    Already have an account?{' '}
+                    <button 
+                        onClick={() => navigate('/login')}
+                        className="text-[#2D2F6E] font-black hover:underline ml-1"
+                    >
+                        Sign In
+                    </button>
+                </p>
+            </div>
         </motion.div>
     );
 };

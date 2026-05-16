@@ -22,10 +22,10 @@ const FAQItem = ({ question, answer }) => {
     return (
         <div className="border-b border-gray-100 last:border-0">
             <button
-                className="w-full flex justify-between items-center py-4 text-left group"
+                className="w-full flex justify-between items-center py-3 text-left group"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span className="text-[13px] font-bold text-gray-800 group-hover:text-primary transition-colors">{question}</span>
+                <span className="text-base font-bold text-gray-800 group-hover:text-primary transition-colors">{question}</span>
                 {isOpen ? <ChevronUp size={16} className="text-primary" /> : <ChevronDown size={16} className="text-gray-400" />}
             </button>
             <motion.div
@@ -70,6 +70,17 @@ const ServiceDetail = () => {
     const [measurements, setMeasurements] = useState(null);
     const [visitSettings, setVisitSettings] = useState({ baseFee: 150, perKmFee: 20, freeKm: 3 });
     const userCoords = useLocationStore(state => state.coordinates);
+
+    const [showFooter, setShowFooter] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80;
+            setShowFooter(isBottom);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -233,16 +244,16 @@ const ServiceDetail = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-48 font-sans">
+        <div className="min-h-screen bg-gray-50 pb-40 font-sans">
             {/* 1. Header & Stepper Integration */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl pt-safe">
-                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
+                <div className="px-5 py-3 flex items-center justify-between border-b border-gray-100">
                     <div className="flex items-center gap-3">
                         <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-all active:scale-90">
                             <ArrowLeft size={22} className="text-gray-900" />
                         </button>
                         <div>
-                            <h1 className="text-lg font-black text-gray-900 leading-none">{serviceData.title}</h1>
+                            <h1 className="text-base font-black text-gray-900 leading-none">{serviceData.title}</h1>
                             <p className="text-[10px] text-primary font-bold uppercase tracking-widest mt-1">Configuring Order</p>
                         </div>
                     </div>
@@ -256,7 +267,7 @@ const ServiceDetail = () => {
                 <BookingStepper currentStepId={measurements ? 'review' : (measurementType ? 'details' : 'fabric')} />
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 mt-6 space-y-6">
+            <div className="max-w-2xl mx-auto px-4 mt-4 space-y-3.5">
 
                 {/* Basket Summary Card */}
                 {serviceItems.length > 0 && (
@@ -344,22 +355,22 @@ const ServiceDetail = () => {
 
                 {/* 3.5 Style Add-ons Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-5 duration-600">
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between gap-2 mb-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary">
                                     <Wand2 size={18} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Style Add-ons</h3>
-                                    <p className="text-[10px] text-gray-400 font-bold">Pockets, Padding, etc.</p>
+                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest leading-tight">Style Add-ons</h3>
+                                    <p className="text-[9px] text-gray-400 font-bold leading-none mt-0.5">Pockets, Padding, etc.</p>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => setIsAddonModalOpen(true)}
-                                className="px-4 py-2 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/20 transition-all active:scale-95"
+                                className="px-3 py-2 bg-primary/5 text-primary text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-primary/10 transition-all active:scale-95 shrink-0"
                             >
-                                {selectedAddons.length > 0 ? 'Edit Selection' : 'Browse Styles'}
+                                {selectedAddons.length > 0 ? 'Edit' : 'Browse'}
                             </button>
                         </div>
 
@@ -427,79 +438,89 @@ const ServiceDetail = () => {
             </div>
 
             {/* 7. LIVE BILL - Sticky Transparent Footer */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-gray-100 p-4 pb-10 sm:pb-6 animate-in slide-in-from-bottom duration-500">
-                <div className="max-w-md mx-auto">
-                    {/* Live Bill Header - Compact */}
-                    <div className="flex justify-between items-center mb-3">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-[9px] font-black text-primary uppercase tracking-tighter">
-                                    {serviceItems.length > 0 ? `Total Bundle (${serviceItems.length + 1} items)` : 'Live Bill'}
-                                </span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            <AnimatePresence>
+                {showFooter && (
+                    <motion.div 
+                        initial={{ y: 200, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 200, opacity: 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-2xl border-t border-gray-100 p-3 pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]"
+                    >
+                        <div className="max-w-md mx-auto">
+                            {/* Live Bill Header - Compact */}
+                            <div className="flex justify-between items-center mb-3">
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                        <span className="text-[9px] font-black text-primary uppercase tracking-tighter">
+                                            {serviceItems.length > 0 ? `Total Bundle (${serviceItems.length + 1} items)` : 'Live Bill'}
+                                        </span>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                    </div>
+                                    <h4 className="text-xl font-black text-gray-900 flex items-baseline gap-1 leading-none">
+                                        ₹{grandTotal.toLocaleString()}
+                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Incl. GST</span>
+                                    </h4>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter mb-0.5">Est. Arrival</p>
+                                    <div className="flex items-center justify-end gap-1 text-primary bg-indigo-50 px-2 py-0.5 rounded-lg border border-primary/10">
+                                        <Clock size={10} />
+                                        <span className="text-[10px] font-black">{getDeliveryDays()} Days</span>
+                                    </div>
+                                </div>
                             </div>
-                            <h4 className="text-xl font-black text-gray-900 flex items-baseline gap-1 leading-none">
-                                ₹{grandTotal.toLocaleString()}
-                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Incl. GST</span>
-                            </h4>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter mb-0.5">Est. Arrival</p>
-                            <div className="flex items-center justify-end gap-1 text-primary bg-indigo-50 px-2 py-0.5 rounded-lg border border-primary/10">
-                                <Clock size={10} />
-                                <span className="text-[10px] font-black">{getDeliveryDays()} Days</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Quick Breakdown - Mini Tags */}
-                    <div className="flex gap-1.5 overflow-x-auto pb-3 no-scrollbar">
-                        <div className="shrink-0 bg-gray-50 px-2 py-1 rounded-md border border-gray-100 flex items-center gap-1.5">
-                            <Scissors size={8} className="text-gray-400" />
-                            <span className="text-[9px] font-black text-gray-500 uppercase">Current: ₹{currentTotal}</span>
-                        </div>
-                        {serviceItems.length > 0 && (
-                            <div className="shrink-0 bg-indigo-50 px-2 py-1 rounded-md border border-primary/10 flex items-center gap-1.5">
-                                <ShoppingBag size={8} className="text-primary" />
-                                <span className="text-[9px] font-black text-primary uppercase">Basket: ₹{basketTotal}</span>
+                            {/* Quick Breakdown - Mini Tags */}
+                            <div className="flex gap-1.5 overflow-x-auto pb-3 no-scrollbar">
+                                <div className="shrink-0 bg-gray-50 px-2 py-1 rounded-md border border-gray-100 flex items-center gap-1.5">
+                                    <Scissors size={8} className="text-gray-400" />
+                                    <span className="text-[9px] font-black text-gray-500 uppercase">Current: ₹{currentTotal}</span>
+                                </div>
+                                {serviceItems.length > 0 && (
+                                    <div className="shrink-0 bg-indigo-50 px-2 py-1 rounded-md border border-primary/10 flex items-center gap-1.5">
+                                        <ShoppingBag size={8} className="text-primary" />
+                                        <span className="text-[9px] font-black text-primary uppercase">Basket: ₹{basketTotal}</span>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleAddMore}
-                            disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
-                            className={cn(
-                                "flex-1 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2",
-                                measurementType && (measurementType === 'saved' || measurements) 
-                                    ? "border-primary text-primary hover:bg-indigo-50 active:scale-95" 
-                                    : "border-gray-100 text-gray-300 cursor-not-allowed"
-                            )}
-                        >
-                            <Tag size={16} /> Add Another
-                        </button>
-                        
-                        <button
-                            onClick={handleProceed}
-                            disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
-                            className={cn(
-                                "flex-[2] py-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
-                                measurementType && (measurementType === 'saved' || measurements)
-                                    ? "bg-primary text-white shadow-indigo-100 active:scale-[0.98] hover:bg-primary-dark" 
-                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            )}
-                        >
-                            {measurementType && (measurementType === 'saved' || measurements) ? (
-                                <>Confirm & Checkout ({serviceItems.length + 1}) <ChevronRight size={16} /></>
-                            ) : (
-                                <>Enter Details to Proceed</>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleAddMore}
+                                    disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
+                                    className={cn(
+                                        "flex-1 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2",
+                                        measurementType && (measurementType === 'saved' || measurements) 
+                                            ? "border-primary text-primary hover:bg-indigo-50 active:scale-95" 
+                                            : "border-gray-100 text-gray-300 cursor-not-allowed"
+                                    )}
+                                >
+                                    <Tag size={16} /> Add Another
+                                </button>
+                                
+                                <button
+                                    onClick={handleProceed}
+                                    disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
+                                    className={cn(
+                                        "flex-[2.5] py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
+                                        measurementType && (measurementType === 'saved' || measurements)
+                                            ? "bg-primary text-white shadow-indigo-100 active:scale-[0.98] hover:bg-primary-dark" 
+                                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    )}
+                                >
+                                    {measurementType && (measurementType === 'saved' || measurements) ? (
+                                        <>Confirm & Checkout ({serviceItems.length + 1}) <ChevronRight size={16} /></>
+                                    ) : (
+                                        <>Enter Details to Proceed</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Modals */}
             <StyleAddonModal

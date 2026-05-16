@@ -35,22 +35,22 @@ const OrdersPage = () => {
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
             {/* 1. Header */}
             {/* 1. Header */}
-            <div className="sticky top-0 z-50 bg-[#2D2F6E] shadow-md px-4 py-4 pt-safe">
-                <h1 className="text-xl font-bold text-white mb-1">My Orders</h1>
-                <p className="text-xs text-gray-300">Track and manage your requests</p>
+            <div className="sticky top-0 z-50 bg-[#2D2F6E] shadow-md px-4 pt-safe  pb-4">
+                <h1 className="text-xl font-bold text-white mb-1 pt-2">My Orders</h1>
+                <p className="text-xs text-gray-300 pt-1">Track and manage your requests</p>
             </div>
 
-            {/* 2. Filters & Search (Mock) */}
-            <div className="max-w-7xl mx-auto px-4 py-3 bg-white border-b border-gray-100 flex gap-3 overflow-x-auto no-scrollbar">
-                <div className="bg-gray-100 rounded-full px-3 py-1.5 flex items-center gap-2 min-w-[200px] flex-1">
-                    <Search size={14} className="text-gray-400" />
+            {/* 2. Filters & Search (Static) */}
+            <div className="max-w-7xl mx-auto px-4 py-2.5 bg-white border-b border-gray-100 flex items-center gap-2">
+                <div className="bg-gray-100 rounded-full px-3 py-1.5 flex items-center gap-2 flex-1 min-w-0">
+                    <Search size={14} className="text-gray-400 shrink-0" />
                     <input
                         type="text"
                         placeholder="Search orders..."
-                        className="bg-transparent text-xs w-full focus:outline-none"
+                        className="bg-transparent text-[11px] w-full focus:outline-none"
                     />
                 </div>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-full text-xs font-medium whitespace-nowrap text-gray-600 active:bg-gray-50">
+                <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-black whitespace-nowrap text-gray-600 active:bg-gray-50 shrink-0">
                     <ListFilter size={14} />
                     All Status
                 </button>

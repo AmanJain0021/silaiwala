@@ -54,7 +54,7 @@ const ServiceReviewCard = ({ service, config }) => {
             </div>
 
             {/* Instructions if any */}
-            {config?.instructions && (
+            {config?.instructions && typeof config.instructions === 'string' && (
                 <div className="mt-3 p-2 bg-yellow-50 rounded-lg border border-yellow-100 text-[10px] text-yellow-800 leading-relaxed italic">
                     Note: "{config.instructions}"
                 </div>

@@ -82,7 +82,7 @@ const PromoBanner = () => {
     const currentBanner = banners[currentIndex];
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 relative group">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 relative group">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentIndex}
@@ -90,7 +90,7 @@ const PromoBanner = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.6 }}
-                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-40 sm:h-64 lg:h-72 flex items-center`}
+                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-32 sm:h-64 lg:h-72 flex items-center`}
                 >
                     {/* Full Background Image */}
                     <div className="absolute inset-0 z-0">

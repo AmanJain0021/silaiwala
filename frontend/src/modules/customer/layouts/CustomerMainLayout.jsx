@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { Shirt, ShoppingBag, ClipboardList, User, Search, Bell } from 'lucide-react';
+import { Shirt, ShoppingBag, ClipboardList, User, Search, Bell, MapPin, ChevronDown } from 'lucide-react';
 import silaiwalaLogo from '/sewzella_logo.jpeg';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
+import useLocationStore from '../../../store/locationStore';
 
 const CustomerMainLayout = () => {
     const location = useLocation();
     const cartCount = useCartStore(state => state.getTotalItems());
     const user = useAuthStore(state => state.user);
+    const { address: deliveryAddress } = useLocationStore();
 
     const navItems = [
         { to: '/', icon: Shirt, label: 'Services' },
@@ -20,8 +22,8 @@ const CustomerMainLayout = () => {
     return (
         <div className="min-h-screen bg-[#F7F8FC] flex flex-col font-sans">
             {/* Desktop Navbar - Only visible on md and up */}
-            <header className="hidden md:block sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
+            <header className="hidden md:block sticky top-0 z-[110] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 shadow-sm transition-all duration-300">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
                     {/* Brand */}
                     <Link to="/" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3 group-hover:rotate-0 transition-transform">
@@ -35,8 +37,22 @@ const CustomerMainLayout = () => {
                         </div>
                     </Link>
 
+                    {/* Location Selector - Desktop */}
+                    <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-gray-50/50 rounded-2xl border border-gray-100/50 cursor-pointer hover:bg-white hover:shadow-sm transition-all group ml-4">
+                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-[#2D2F6E] shadow-sm border border-gray-50 group-hover:scale-110 transition-transform">
+                            <MapPin size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">Delivering To</span>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-bold text-gray-900 truncate max-w-[120px]">{deliveryAddress || 'Select Area'}</span>
+                                <ChevronDown size={12} className="text-[#2D2F6E]" />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Navigation Links */}
-                    <nav className="flex items-center gap-1">
+                    <nav className="hidden lg:flex items-center gap-1 ml-auto">
                         {navItems.map((item) => {
                             const isActive = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
                             return (

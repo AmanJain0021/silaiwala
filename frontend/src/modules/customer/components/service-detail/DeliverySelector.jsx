@@ -41,7 +41,7 @@ const DeliverySelector = ({ selected, onSelect }) => {
     };
 
     return (
-        <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100">
             <h3 className="text-sm font-bold text-gray-900 mb-3">Choose Delivery Speed</h3>
             <div className="grid grid-cols-3 gap-3">
                 {options.map((opt) => {
@@ -54,7 +54,7 @@ const DeliverySelector = ({ selected, onSelect }) => {
                             key={opt.id}
                             onClick={() => onSelect(opt.id)}
                             className={cn(
-                                "relative p-3 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between min-h-[140px]",
+                                "relative p-2.5 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between min-h-[120px]",
                                 isSelected ? "border-primary bg-primary-soft shadow-md ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
                             )}
                         >

@@ -60,14 +60,17 @@ const Login = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="w-full"
         >
-            <div className="text-center mb-4 sm:mb-5">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Welcome Back!</h2>
-                <p className="text-[9px] sm:text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mt-1">
-                    {otpSent ? 'Enter code sent to mobile' : 'OTP will be sent for verification'}
+            <div className="text-left mb-10 sm:mb-12">
+                <h2 className="text-2xl md:text-4xl font-black text-[#2D2F6E] tracking-tight leading-tight">
+                    Welcome to <br className="hidden md:block" />
+                    Sewzella
+                </h2>
+                <p className="text-xs md:text-sm font-bold text-slate-500 mt-4 sm:mt-5 max-w-[250px]">
+                    Please login to continue
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-10">
                 {error && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
@@ -79,7 +82,7 @@ const Login = () => {
                     </motion.div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-6 sm:space-y-8">
                     <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
                         <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
                             <span className="text-gray-800 font-bold text-sm">+91</span>
@@ -133,7 +136,7 @@ const Login = () => {
                                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                         maxLength={6}
                                         required
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-medium tracking-[0.5em] text-center outline-none"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-medium placeholder:tracking-normal placeholder:text-sm tracking-[0.5em] text-center outline-none"
                                     />
                                 </div>
                             </div>
@@ -161,6 +164,17 @@ const Login = () => {
                     )}
                 </AnimatePresence>
             </form>
+            <div className="mt-10 md:mt-12 text-center sm:text-left">
+                <p className="text-xs md:text-sm font-bold text-slate-400">
+                    Don't have an account?{' '}
+                    <button 
+                        onClick={() => navigate('/signup')}
+                        className="text-[#2D2F6E] font-black hover:underline ml-1"
+                    >
+                        Create Account
+                    </button>
+                </p>
+            </div>
         </motion.div>
     );
 };

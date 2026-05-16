@@ -206,14 +206,14 @@ const OrderTracking = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12 font-sans text-gray-900">
-            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe flex flex-col gap-2">
+            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe pt-8 flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
                         <ArrowLeft size={20} />
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-sm font-bold text-gray-900">Track Order</h1>
-                        <p className="text-[10px] text-gray-500 font-medium font-mono uppercase tracking-widest leading-none mt-1">
+                        <h1 className="text-sm font-bold text-gray-900 h-3 pt-2">Track Order</h1>
+                        <p className="text-[10px] text-gray-500 font-medium font-mono uppercase tracking-widest leading-none mt-1 pt-3">
                             {order.orderId}
                         </p>
                     </div>

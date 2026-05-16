@@ -156,7 +156,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
             </div>
 
             {/* Input Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-4 mb-6">
                 {(categoryFields[selectedCategory] || categoryFields['Other']).map(field => (
                     <MeasurementInput
                         key={field.key}
@@ -170,32 +170,32 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
             </div>
 
             {/* Notes Section */}
-            <div className="mb-4">
-                <label className="text-xs font-medium text-gray-700 ml-1 mb-1 block">
+            <div className="mb-6">
+                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-widest ml-1 mb-1 block">
                     Specific Instructions (Optional)
                 </label>
                 <textarea
                     value={values.notes}
                     onChange={(e) => setValues(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-[#e6f4f1] transition-all placeholder:text-gray-300 resize-none"
+                    className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold text-[#2D2F6E] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-gray-300 resize-none shadow-sm"
                     rows={3}
                     placeholder="E.g., I prefer a loose fit around the waist. Please add pockets."
                 />
             </div>
 
             {/* Save Profile Toggle */}
-            <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-100 mb-6">
+            <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-100 mb-8 shadow-sm">
                 <div
                     onClick={() => setSaveProfile(!saveProfile)}
                     className={cn(
-                        "w-5 h-5 rounded border flex items-center justify-center cursor-pointer mt-0.5",
-                        saveProfile ? "bg-primary border-primary" : "border-gray-300 bg-white"
+                        "w-5 h-5 rounded-lg border-2 flex items-center justify-center cursor-pointer mt-0.5 transition-all",
+                        saveProfile ? "bg-primary border-primary shadow-lg shadow-primary/20" : "border-gray-200 bg-white"
                     )}
                 >
                     {saveProfile && <div className="w-2.5 h-1.5 border-b-2 border-l-2 border-white rotate-[-45deg] mb-0.5" />}
                 </div>
                 <div className="flex-1">
-                    <p className="text-xs font-semibold text-gray-900 cursor-pointer" onClick={() => setSaveProfile(!saveProfile)}>
+                    <p className="text-xs font-bold text-gray-800 cursor-pointer" onClick={() => setSaveProfile(!saveProfile)}>
                         Save this measurement profile
                     </p>
                     {saveProfile && (
@@ -208,7 +208,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
                             }}
                             placeholder="Profile Name (e.g. My Summer Fit)"
                             className={cn(
-                                "mt-2 w-full text-xs border-b border-gray-200 py-1 outline-none focus:border-primary bg-transparent",
+                                "mt-2 w-full text-[11px] font-bold border-b-2 border-gray-100 py-1.5 outline-none focus:border-primary bg-transparent transition-colors",
                                 errors.profileName ? "border-red-300 placeholder:text-red-300" : ""
                             )}
                             autoFocus
@@ -221,15 +221,14 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
             <div className="flex gap-3">
                 <button
                     onClick={onCancel}
-                    className="flex-1 py-2.5 rounded-full border border-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3.5 rounded-xl border-2 border-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95"
                 >
                     Cancel
                 </button>
                 <button
                     onClick={handleSave}
-                    className="flex-1 py-2.5 rounded-full bg-primary text-white text-xs font-bold shadow-md hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="flex-[2] py-3.5 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-primary-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
-                    <Save size={14} />
                     Confirm Measurements
                 </button>
             </div>

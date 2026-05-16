@@ -99,47 +99,47 @@ const DeliveryWallet = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
+        <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500 -mt-2">
             {/* Header */}
-            <div className="bg-[#2D2F6E] text-white p-6 pb-20 rounded-b-[2.5rem] relative overflow-hidden">
+            <div className="bg-[#2D2F6E] text-white p-5 pb-16 rounded-b-[2rem] relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                    <Wallet size={120} />
+                    <Wallet size={100} />
                 </div>
 
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-3 mb-6">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-3 bg-white/10 rounded-2xl hover:bg-white/20 transition-colors border border-white/10 backdrop-blur-md"
+                        className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-colors border border-white/10 backdrop-blur-md"
                     >
-                        <ArrowLeft size={20} strokeWidth={3} />
+                        <ArrowLeft size={18} strokeWidth={3} />
                     </button>
-                    <h1 className="text-2xl font-black tracking-tight uppercase italic drop-shadow-md">Payout Wallet</h1>
+                    <h1 className="text-xl font-black tracking-tight uppercase italic drop-shadow-md">Payout Wallet</h1>
                 </div>
 
-                <div className="text-center space-y-2">
-                    <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em] italic">Available Liquidity</p>
-                    <h2 className="text-6xl font-black tracking-tighter drop-shadow-2xl italic">₹{walletData.balance.toLocaleString()}</h2>
-                    <div className="flex items-center justify-center gap-2 pt-2">
-                        <div className="px-3 py-1 bg-[#2D2F6E]/20 rounded-full border border-[#2D2F6E]/30">
-                            <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase">Settled Earnings</span>
+                <div className="text-center space-y-1">
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase tracking-[0.3em] italic">Available Liquidity</p>
+                    <h2 className="text-5xl font-black tracking-tighter drop-shadow-2xl italic">₹{walletData.balance.toLocaleString()}</h2>
+                    <div className="flex items-center justify-center gap-2 pt-1.5">
+                        <div className="px-3 py-1 bg-white/10 rounded-full border border-white/5 backdrop-blur-sm">
+                            <span className="text-[9px] font-black tracking-widest text-indigo-300 uppercase">Settled Earnings</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Quick Stats & Action */}
-            <div className="px-6 -mt-12 space-y-4">
-                <div className="bg-white p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-50 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform"></div>
+            <div className="px-4 -mt-10 space-y-3">
+                <div className="bg-white p-5 rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-50 flex items-center justify-between relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform"></div>
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Lifetime Withdrawn</p>
-                        <p className="text-xl font-black text-slate-900 tracking-tight">₹{walletData.totalWithdrawn.toLocaleString()}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Lifetime Withdrawn</p>
+                        <p className="text-lg font-black text-slate-900 tracking-tight">₹{walletData.totalWithdrawn.toLocaleString()}</p>
                     </div>
                     <button
                         onClick={() => setShowWithdrawModal(true)}
-                        className="relative z-10 bg-[#2D2F6E] text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
+                        className="relative z-10 bg-[#2D2F6E] text-white px-6 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
                     >
-                        Withdraw Now
+                        Withdraw
                     </button>
                 </div>
 

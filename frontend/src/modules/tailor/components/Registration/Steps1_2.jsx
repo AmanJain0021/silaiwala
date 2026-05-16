@@ -45,7 +45,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                 {...register('fullName', { required: 'Name is required' })}
                 error={errors.fullName?.message}
             />
-            <div className="flex gap-2 items-end w-full">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch sm:items-end w-full">
                 <div className="flex-1">
                     <Input
                         label="Phone Number"
@@ -58,7 +58,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                     type="button"
                     onClick={handleSendOTP}
                     disabled={!phone || phone.length < 10 || otpSent}
-                    className="px-4 py-3 h-[52px] bg-primary text-white rounded-2xl font-bold text-sm whitespace-nowrap active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all shadow-lg shadow-indigo-900/10 mb-1"
+                    className="w-full sm:w-auto px-4 py-3 h-[48px] sm:h-[52px] bg-primary text-white rounded-2xl font-bold text-sm whitespace-nowrap active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all shadow-lg shadow-indigo-900/10 sm:mb-1"
                 >
                     {otpSent ? 'OTP Sent' : 'Send OTP'}
                 </button>
@@ -100,7 +100,7 @@ export const Step2Business = ({ register, errors }) => {
                 {...register('address', { required: 'Address is required' })}
                 error={errors.address?.message}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                     label="City"
                     placeholder="e.g. Mumbai"
@@ -131,7 +131,7 @@ export const Step2Business = ({ register, errors }) => {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Primary Service Area</label>
                 <select
                     {...register('serviceArea', { required: 'Area is required' })}
-                    className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-2xl focus:outline-none transition-all ${errors.serviceArea ? 'border-red-400 focus:border-red-500 bg-red-50/50' : 'border-gray-50 focus:border-primary focus:bg-white'}`}
+                    className={`w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-gray-50 border-2 rounded-2xl focus:outline-none transition-all text-sm font-medium ${errors.serviceArea ? 'border-red-400 focus:border-red-500 bg-red-50/50' : 'border-gray-50 focus:border-primary focus:bg-white'}`}
                 >
                     <option value="">Select Region</option>
                     <option value="north">North India</option>

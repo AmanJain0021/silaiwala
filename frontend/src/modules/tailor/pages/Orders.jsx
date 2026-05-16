@@ -371,7 +371,7 @@ const Orders = () => {
                                                             {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()}
                                                         </p>
                                                         <p className="text-[14px] font-black text-gray-900">
-                                                            {typeof value === 'number' ? `${value}"` : value || '—'}
+                                                            {typeof value === 'number' ? `${value}"` : (typeof value === 'object' ? 'Configured' : (value || '—'))}
                                                         </p>
                                                     </div>
                                                 ))}
@@ -427,128 +427,157 @@ const Orders = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F5F5] pb-24 flex flex-col">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
             
             {/* ── HEADER ── */}
-            <div className="bg-white px-5 pt-5 pb-4 border-b border-gray-100">
+            <div className="md:hidden bg-white pt-3 pb-2 border-b border-gray-100 text-left px-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-[24px] font-black text-gray-900 tracking-tight">New Orders</h2>
-                    <span className="text-[12px] font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    <h2 className="text-[18px] font-black text-gray-900 tracking-tight">New Orders</h2>
+                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                         {filteredOrders.length} Pending
                     </span>
                 </div>
-                <p className="text-[12px] text-gray-400 font-medium mt-1">Review and accept incoming tailoring tasks</p>
+                <p className="text-[10px] text-gray-400 font-medium mt-0.5">Review and accept incoming tailoring tasks</p>
             </div>
 
-            {/* Search and Tabs */}
-            <div className="p-4 space-y-3">
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search Order ID or Customer..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] text-sm text-gray-900 shadow-sm"
-                    />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-2 md:px-0">
+                <div className="hidden md:block">
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Orders Management</h2>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Manage and track production status</p>
                 </div>
 
-                <div className="flex bg-gray-200/50 rounded-2xl p-1 gap-1">
-                    {['new', 'active', 'history'].map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={cn(
-                                "flex-1 py-2 rounded-xl text-[12px] font-black uppercase tracking-wider transition-all",
-                                activeTab === tab ? "bg-white text-[#2D2F6E] shadow-sm" : "text-gray-400"
-                            )}
-                        >
-                            {tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
-                        </button>
-                    ))}
+                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-80">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search Order ID or Customer..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] text-[12px] text-gray-900 shadow-sm"
+                        />
+                    </div>
+
+                    <div className="flex bg-gray-200/50 rounded-2xl p-1 gap-1">
+                        {['new', 'active', 'history'].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={cn(
+                                    "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                    activeTab === tab ? "bg-white text-[#2D2F6E] shadow-md shadow-black/5" : "text-gray-500 hover:bg-gray-100"
+                                )}
+                            >
+                                {tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
             {/* List Content */}
-            <div className="px-4 space-y-4">
+            <div className="flex-1">
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-2">
-                        <div className="h-6 w-6 border-2 border-[#2D2F6E] border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Loading orders...</p>
+                    <div className="flex flex-col items-center justify-center py-24 gap-3">
+                        <div className="h-8 w-8 border-[3px] border-[#2D2F6E] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Synchronizing orders...</p>
                     </div>
                 ) : filteredOrders.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-3xl border border-gray-100 shadow-sm">
-                        <p className="text-gray-400 font-medium text-sm">No orders found.</p>
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2rem] border border-gray-100 shadow-sm">
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4">
+                            <Layers size={32} />
+                        </div>
+                        <p className="text-gray-400 font-black uppercase tracking-widest text-xs">No orders found in this section</p>
                     </div>
                 ) : (
-                    filteredOrders.map((order) => {
-                        const isNew = order.status === 'pending';
-                        return (
-                            <div key={order._id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
-                                <div className="flex justify-between items-start">
-                                    <span className="text-[10px] font-black uppercase bg-red-50 text-[#2D2F6E] px-2 py-1 rounded-md border border-red-100">
-                                        #{order.orderId || 'ALT123456'}
-                                    </span>
-                                    <span className="text-[11px] text-gray-400 font-medium">24m ago</span>
-                                </div>
-
-                                <h4 className="text-[18px] font-black text-gray-900 leading-tight">
-                                    {order.customer?.name}
-                                </h4>
-
-                                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
-                                        {order.items?.[0]?.selectedFabric?.image ? (
-                                            <img src={order.items[0].selectedFabric.image} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Scissors size={20} className="text-gray-400" />
-                                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                        {filteredOrders.map((order) => {
+                            const isNew = order.status === 'pending';
+                            return (
+                                <div key={order._id} className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#2D2F6E]/10 transition-all flex flex-col group">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black uppercase bg-[#FDE5D2] text-[#2D2F6E] px-3 py-1 rounded-lg border border-[#2D2F6E]/10 w-fit">
+                                                #{order.orderId || 'ALT123456'}
+                                            </span>
+                                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">Received {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        </div>
+                                        <div className="w-10 h-10 bg-gray-900 rounded-2xl flex items-center justify-center text-white font-black text-xs group-hover:scale-110 transition-transform">
+                                            {order.customer?.name?.charAt(0) || 'C'}
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[13px] font-bold text-gray-900 leading-snug truncate">
-                                            Items: {order.items?.[0]?.service?.title || 'Custom Design'}
-                                        </p>
-                                        <p className="text-[11px] text-gray-400 font-medium mt-0.5 truncate flex items-center gap-1">
-                                            <MapPin size={12} className="text-[#2D2F6E]" />
-                                            {order.deliveryAddress?.street || 'Pick up point'}
-                                        </p>
-                                    </div>
-                                </div>
 
-                                <div className="flex gap-3">
-                                    <button 
-                                        onClick={() => handleAction('View Detail', order)}
-                                        className="flex-1 py-3 bg-white border border-gray-200 rounded-2xl text-[12px] font-black text-gray-700 uppercase tracking-wide active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1"
-                                    >
-                                        Details
-                                    </button>
-                                    {isNew ? (
-                                        <button 
-                                            onClick={() => handleStatusUpdate(order._id, 'accepted')}
-                                            className="flex-[1.5] py-3 bg-[#2D2F6E] rounded-2xl text-[12px] font-black text-white uppercase tracking-wide shadow-md shadow-[#2D2F6E]/20 active:scale-95 transition-all"
-                                        >
-                                            Accept Order
-                                        </button>
-                                    ) : (
+                                    <h4 className="text-base font-black text-gray-900 leading-tight mb-4">
+                                        {order.customer?.name}
+                                    </h4>
+
+                                    <div className="flex-1 bg-gray-50 p-3 rounded-[1.5rem] border border-gray-100 mb-5 flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
+                                            {order.items?.[0]?.selectedFabric?.image ? (
+                                                <img src={order.items[0].selectedFabric.image} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Scissors size={18} className="text-[#2D2F6E]" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-black text-gray-900 truncate">
+                                                {order.items?.[0]?.service?.title || 'Custom Design'}
+                                            </p>
+                                            <div className="flex items-center gap-1 mt-1 text-gray-400">
+                                                <MapPin size={10} className="shrink-0" />
+                                                <p className="text-[10px] font-bold truncate">
+                                                    {order.deliveryAddress?.street || 'Local Pick-up'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
                                         <button 
                                             onClick={() => handleAction('View Detail', order)}
-                                            className="flex-[1.5] py-3 bg-gray-900 rounded-2xl text-[12px] font-black text-white uppercase tracking-wide shadow-md active:scale-95 transition-all"
+                                            className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
                                         >
-                                            Update Status
+                                            Details
                                         </button>
-                                    )}
+                                        {isNew ? (
+                                            <button 
+                                                onClick={() => handleStatusUpdate(order._id, 'accepted')}
+                                                className="flex-[1.5] py-3 bg-[#2D2F6E] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] active:scale-95 transition-all"
+                                            >
+                                                Accept Order
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handleAction('View Detail', order)}
+                                                className="flex-[1.5] py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all"
+                                            >
+                                                Update Status
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+                    </div>
                 )}
             </div>
 
-            <OrderDetailModal 
-                order={selectedOrder} 
-                isOpen={isModalOpen} 
-                onClose={() => { setIsModalOpen(false); setSelectedOrder(null); }} 
-            />
+            {/* Slide-over Detail Panel */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex justify-end">
+                    <div 
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+                        onClick={() => { setIsModalOpen(false); setSelectedOrder(null); }}
+                    />
+                    <div className="relative w-full max-w-xl bg-[#F5F5F5] h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-hidden flex flex-col">
+                        <OrderDetailModal 
+                            order={selectedOrder} 
+                            isOpen={isModalOpen} 
+                            onClose={() => { setIsModalOpen(false); setSelectedOrder(null); }} 
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

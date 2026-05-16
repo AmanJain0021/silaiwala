@@ -267,34 +267,34 @@ const Tasks = () => {
     }
 
     return (
-        <div className="space-y-4 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-2 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700 -mt-2">
             {/* Page Header */}
-            <div className="flex items-end justify-between">
+            <div className="flex items-center justify-between px-1">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight capitalize">
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight capitalize">
                         {activeTask ? 'Active Dispatch' : 'My Orders'}
                     </h1>
                 </div>
                 {!activeTask && (
-                    <button onClick={fetchTasks} className="p-3 bg-white border border-slate-100 rounded-2xl shadow-sm text-slate-400 hover:text-primary transition-all active:rotate-180 duration-500">
-                        <RefreshCw size={18} />
+                    <button onClick={fetchTasks} className="p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-primary transition-all active:rotate-180 duration-500">
+                        <RefreshCw size={16} />
                     </button>
                 )}
             </div>
 
             {/* Online/Offline Block */}
             {!isOnline && (
-                <div className="bg-white p-8 rounded-[2rem] border-2 border-dashed border-slate-200 text-center space-y-4 shadow-sm animate-in fade-in zoom-in duration-500">
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto">
-                        <Power size={32} className="opacity-50" />
+                <div className="bg-white p-6 rounded-[1.5rem] border-2 border-dashed border-slate-200 text-center space-y-3 shadow-sm animate-in fade-in zoom-in duration-500 mx-1">
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 mx-auto">
+                        <Power size={24} className="opacity-50" />
                     </div>
                     <div className="space-y-1">
-                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Currently Offline</h3>
-                        <p className="text-slate-500 text-xs font-medium tracking-wide leading-relaxed">You must be online to receive new <br/> delivery requests and manage your tasks.</p>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight">Currently Offline</h3>
+                        <p className="text-slate-500 text-[10px] font-medium tracking-wide leading-relaxed">You must be online to receive new <br/> delivery requests and manage your tasks.</p>
                     </div>
                     <button 
                         onClick={() => window.location.href = '/delivery/profile'}
-                        className="text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-indigo-50 px-6 py-3 rounded-xl hover:bg-indigo-100 transition-all active:scale-95"
+                        className="text-[9px] font-black text-primary uppercase tracking-[0.2em] bg-indigo-50 px-5 py-2.5 rounded-lg hover:bg-indigo-100 transition-all active:scale-95"
                     >
                         Go To Availability Settings
                     </button>
@@ -305,16 +305,16 @@ const Tasks = () => {
                 <>
                 {/* Tab Switcher */}
                 {!activeTask && (
-                    <div className="flex p-1.5 bg-slate-100 rounded-2xl gap-1">
+                    <div className="flex p-1 bg-slate-100 rounded-xl gap-1 mx-1">
                         <button
                             onClick={() => setActiveTab('assigned')}
-                            className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'assigned' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`flex-1 py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'assigned' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             My Tasks ({tasks.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('available')}
-                            className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'available' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`flex-1 py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'available' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Find New ({availableTasks.length})
                         </button>
@@ -329,28 +329,28 @@ const Tasks = () => {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-[1.5rem] border border-slate-100 shadow-md overflow-hidden relative"
+                            className="bg-white rounded-[1.25rem] border border-slate-100 shadow-md overflow-hidden relative mx-1"
                         >
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-slate-50 rounded-bl-[100px] -z-0"></div>
-                        <div className="p-5 relative z-10 space-y-4">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[80px] -z-0"></div>
+                        <div className="p-4 relative z-10 space-y-3">
 
                             {/* Header Info */}
                             <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${activeTask.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></div>
+                                <div className="space-y-0.5">
+                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${activeTask.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
+                                        <div className="w-1 h-1 rounded-full bg-current animate-pulse"></div>
                                         {getTaskType(activeTask)}
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight capitalize">Task #{activeTask._id.slice(-6)}</h3>
+                                    <h3 className="text-base font-black text-slate-900 tracking-tight capitalize">Task #{activeTask._id.slice(-6)}</h3>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[9px] font-bold text-slate-400 capitalize tracking-wider leading-none">Status</p>
-                                    <p className="text-[13px] font-black text-primary-dark tracking-tight mt-1 capitalize leading-none">{activeTask.status}</p>
+                                    <p className="text-[8px] font-bold text-slate-400 capitalize tracking-wider leading-none">Status</p>
+                                    <p className="text-[11px] font-black text-primary-dark tracking-tight mt-0.5 capitalize leading-none">{activeTask.status}</p>
                                 </div>
                             </div>
 
                             {/* Address details */}
-                            <div className="bg-slate-50 p-4 rounded-2xl space-y-3 border border-slate-100">
+                            <div className="bg-slate-50 p-3 rounded-xl space-y-2.5 border border-slate-100">
                                 {(() => {
                                     const isFabricPickup = activeTask.taskType === 'fabric-pickup';
                                     const isPickupStage = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(activeTask.status);
@@ -360,14 +360,8 @@ const Tasks = () => {
                                     // RECOVERY LOGIC: Determine actual address based on Task Type and Current Stage
                                     let address = 'Address not specified';
                                     if (isPickupStage) {
-                                        // Stage 1: Going to Pick up
-                                        // If Fabric Pickup -> Go to Customer House (deliveryAddress)
-                                        // If Order Delivery -> Go to Tailor Shop (tailor.location.address)
                                         address = isFabricPickup ? activeTask.deliveryAddress : (activeTask.tailor?.location?.address || activeTask.tailor?.address);
                                     } else {
-                                        // Stage 2: Going to Drop off
-                                        // If Fabric Pickup -> Go to Tailor Shop (tailor.location.address)
-                                        // If Order Delivery -> Go to Customer House (deliveryAddress)
                                         address = isFabricPickup ? (activeTask.tailor?.location?.address || activeTask.tailor?.address) : activeTask.deliveryAddress;
                                     }
                                     
@@ -381,28 +375,28 @@ const Tasks = () => {
 
                                     return (
                                         <>
-                                            <div className="flex gap-3">
-                                                <div className="w-7 h-7 rounded-full bg-slate-100 text-primary-dark flex items-center justify-center shrink-0">
-                                                    <MapPin size={14} />
+                                            <div className="flex gap-2.5">
+                                                <div className="w-6 h-6 rounded-full bg-slate-100 text-primary-dark flex items-center justify-center shrink-0">
+                                                    <MapPin size={12} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-slate-400 capitalize tracking-wider leading-none mb-1">{stopLabel}</p>
-                                                    <p className="text-[13px] font-bold text-slate-700 leading-tight capitalize">{formatAddress(address)}</p>
+                                                    <p className="text-[8px] font-bold text-slate-400 capitalize tracking-wider leading-none mb-0.5">{stopLabel}</p>
+                                                    <p className="text-[12px] font-bold text-slate-700 leading-tight capitalize">{formatAddress(address)}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2.5 items-center pt-2.5 border-t border-slate-200/60 mt-1">
-                                                <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
-                                                    <User size={13} className="text-slate-400" />
+                                            <div className="flex gap-2 items-center pt-2 border-t border-slate-200/60 mt-0.5">
+                                                <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
+                                                    <User size={12} className="text-slate-400" />
                                                 </div>
-                                                <div className="flex-1">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <p className="text-[12px] font-black text-slate-800 capitalize leading-none">{contactName || 'Contact'}</p>
-                                                        <span className="text-[7px] font-black bg-slate-100 text-primary-dark px-1 py-0.5 rounded uppercase tracking-tighter">Verified</span>
+                                                        <p className="text-[11px] font-black text-slate-800 capitalize leading-none truncate">{contactName || 'Contact'}</p>
+                                                        <span className="text-[6px] font-black bg-slate-100 text-primary-dark px-1 py-0.5 rounded uppercase tracking-tighter">Verified</span>
                                                     </div>
-                                                    <p className="text-[10px] font-bold text-slate-400 tracking-wide leading-none">{contactPhone || 'No Phone'}</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 tracking-wide leading-none">{contactPhone || 'No Phone'}</p>
                                                 </div>
-                                                <a href={`tel:${contactPhone}`} className="w-8 h-8 bg-slate-50 text-primary-dark rounded-lg flex items-center justify-center hover:bg-slate-100 active:scale-90 transition-all shadow-sm">
-                                                    <Phone size={13} />
+                                                <a href={`tel:${contactPhone}`} className="w-7 h-7 bg-slate-50 text-primary-dark rounded-lg flex items-center justify-center hover:bg-slate-100 active:scale-90 transition-all shadow-sm">
+                                                    <Phone size={11} />
                                                 </a>
                                             </div>
                                         </>
@@ -412,155 +406,155 @@ const Tasks = () => {
 
                             {/* Execution Area */}
                             <div className="pt-0">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="h-px w-6 bg-slate-200"></div>
-                                    <span className="text-[9px] font-bold text-slate-400 capitalize tracking-wider">Execute Action</span>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="h-px w-4 bg-slate-200"></div>
+                                    <span className="text-[8px] font-bold text-slate-400 capitalize tracking-wider">Execute Action</span>
                                     <div className="h-px flex-1 bg-slate-200"></div>
                                 </div>
                                 {renderActiveTaskActions(activeTask)}
                             </div>
 
                         </div>
-                    </motion.div>
-                )}
+                        </motion.div>
+                    )}
 
-                {/* TAB CONTENT */}
-                {!activeTask && (
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, x: activeTab === 'assigned' ? -20 : 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: activeTab === 'assigned' ? 20 : -20 }}
-                        className="space-y-4"
-                    >
-                        {activeTab === 'assigned' ? (
-                            <>
-                                {pendingTasks.map((task) => (
-                                    <div key={task._id} className="bg-white p-5 rounded-[1.5rem] border-2 border-slate-100 shadow-sm transition-all hover:border-slate-100">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-[14px] font-black text-slate-800 tracking-tight capitalize">{getTaskType(task)}</p>
-                                                    <span className="text-[10px] font-black text-primary bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-tighter italic">#{task._id.slice(-6)}</span>
-                                                </div>
-                                                <p className="text-[10px] font-bold text-slate-500 capitalize tracking-wide">
-                                                    {task.taskType === 'fabric-pickup' ? `From: ${task.customer?.name}` : `From: ${task.tailor?.shopName}`}
-                                                </p>
-                                            </div>
-                                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-slate-100 text-slate-500">
-                                                Standard
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-3 mb-5 pl-1">
-                                            <div className="flex gap-3">
-                                                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-primary-dark">
-                                                    <MapPin size={14} />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Pickup Location</p>
-                                                    <p className="text-[12px] font-bold text-primary-dark leading-tight capitalize">
-                                                        {task.taskType === 'fabric-pickup' 
-                                                            ? formatAddress(task.deliveryAddress) 
-                                                            : formatAddress(task.tailor?.location?.address || task.tailor?.address)}
+                    {/* TAB CONTENT */}
+                    {!activeTask && (
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, x: activeTab === 'assigned' ? -20 : 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: activeTab === 'assigned' ? 20 : -20 }}
+                            className="space-y-3 px-1"
+                        >
+                            {activeTab === 'assigned' ? (
+                                <>
+                                    {pendingTasks.map((task) => (
+                                        <div key={task._id} className="bg-white p-4 rounded-[1.25rem] border-2 border-slate-100 shadow-sm transition-all hover:border-slate-100">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="space-y-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-black text-slate-800 tracking-tight capitalize">{getTaskType(task)}</p>
+                                                        <span className="text-[9px] font-black text-primary bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-tighter italic">#{task._id.slice(-6)}</span>
+                                                    </div>
+                                                    <p className="text-[9px] font-bold text-slate-500 capitalize tracking-wide">
+                                                        {task.taskType === 'fabric-pickup' ? `From: ${task.customer?.name}` : `From: ${task.tailor?.shopName}`}
                                                     </p>
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => handleStartTask(task._id)}
-                                            className="w-full bg-slate-900 text-white rounded-xl py-3.5 font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary-dark active:scale-95 transition-all shadow-md"
-                                        >
-                                            Start Dispatch <Navigation size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-
-                                {pendingTasks.length === 0 && (
-                                    <div className="text-center py-20 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
-                                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
-                                            <CheckCircle2 size={32} />
-                                        </div>
-                                        <p className="text-slate-500 font-bold capitalize tracking-wide text-[14px]">No pending tasks assigned.</p>
-                                        <p className="text-slate-400 text-[10px] mt-1">Check "Find New" for available dispatches.</p>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                {availableTasks.map((task) => (
-                                    <div key={task._id} className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-xl relative overflow-hidden group">
-                                         <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -z-0 group-hover:bg-indigo-100 transition-all"></div>
-                                        
-                                        <div className="relative z-10 space-y-4">
-                                            <div className="flex justify-between items-start">
-                                                 <div className="space-y-1">
-                                                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest mb-1 ${task.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
-                                                        {task.taskType === 'fabric-pickup' ? 'Fabric Collection' : 'Final Delivery'}
-                                                    </div>
-                                                    <p className="text-[15px] font-black text-slate-900 tracking-tight capitalize">Available Dispatch</p>
-                                                    <p className="text-[11px] font-bold text-slate-400 tracking-wide italic leading-none mt-1">Reward: ₹20</p>
-                                                </div>
-                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${task.taskType === 'fabric-pickup' ? 'bg-amber-600' : 'bg-primary'}`}>
-                                                    <Truck size={20} />
-                                                </div>
+                                                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">
+                                                    Standard
+                                                </span>
                                             </div>
 
-                                             <div className="bg-slate-50 p-3.5 rounded-2xl space-y-3 border border-slate-100">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Pickup</span>
+                                            <div className="space-y-2.5 mb-4 pl-0.5">
+                                                <div className="flex gap-2.5">
+                                                    <div className="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center text-primary-dark">
+                                                        <MapPin size={12} />
                                                     </div>
-                                                    <div className="flex gap-2 pl-3">
-                                                        <MapPin size={12} className="text-primary-dark mt-0.5 shrink-0" />
-                                                        <p className="text-[11px] font-bold text-primary-dark leading-snug">
+                                                    <div className="flex-1">
+                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Pickup Location</p>
+                                                        <p className="text-[11px] font-bold text-primary-dark leading-tight capitalize">
                                                             {task.taskType === 'fabric-pickup' 
                                                                 ? formatAddress(task.deliveryAddress) 
-                                                                : (task.tailor?.shopName || 'Tailor Workshop')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2 pt-2 border-t border-slate-200/50">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Drop-off</span>
-                                                    </div>
-                                                    <div className="flex gap-2 pl-3">
-                                                        <Store size={12} className="text-primary-dark mt-0.5 shrink-0" />
-                                                        <p className="text-[11px] font-bold text-primary-dark leading-snug opacity-80">
-                                                            {task.taskType === 'fabric-pickup'
-                                                                ? (task.tailor?.shopName || 'Tailor Workshop')
-                                                                : formatAddress(task.deliveryAddress)}
+                                                                : formatAddress(task.tailor?.location?.address || task.tailor?.address)}
                                                         </p>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <button
-                                                onClick={() => handleAcceptOrder(task._id)}
-                                                className="w-full bg-primary-dark text-white rounded-2xl py-4 font-black text-[11px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95"
+                                                onClick={() => handleStartTask(task._id)}
+                                                className="w-full bg-slate-900 text-white rounded-lg py-3 font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary-dark active:scale-95 transition-all shadow-md"
                                             >
-                                                Claim Task <Check size={16} />
+                                                Start Dispatch <Navigation size={12} />
                                             </button>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
 
-                                {availableTasks.length === 0 && (
-                                    <div className="text-center py-20 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
-                                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
-                                            <Search size={32} />
+                                    {pendingTasks.length === 0 && (
+                                        <div className="text-center py-16 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200">
+                                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-slate-300 mx-auto mb-3">
+                                                <CheckCircle2 size={24} />
+                                            </div>
+                                            <p className="text-slate-500 font-bold capitalize tracking-wide text-sm">No pending tasks assigned.</p>
+                                            <p className="text-slate-400 text-[9px] mt-0.5">Check "Find New" for available dispatches.</p>
                                         </div>
-                                        <p className="text-slate-500 font-bold capitalize tracking-wide text-[14px]">Searching for dispatches...</p>
-                                        <p className="text-slate-400 text-[10px] mt-1">Try again in a few minutes.</p>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </motion.div>
-                )}
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    {availableTasks.map((task) => (
+                                        <div key={task._id} className="bg-white p-4 rounded-[1.5rem] border-2 border-slate-100 shadow-lg relative overflow-hidden group">
+                                             <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-50 rounded-bl-full -z-0 group-hover:bg-indigo-100 transition-all"></div>
+                                            
+                                            <div className="relative z-10 space-y-3">
+                                                <div className="flex justify-between items-start">
+                                                     <div className="space-y-0.5">
+                                                        <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest mb-0.5 ${task.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
+                                                            {task.taskType === 'fabric-pickup' ? 'Fabric Collection' : 'Final Delivery'}
+                                                        </div>
+                                                        <p className="text-sm font-black text-slate-900 tracking-tight capitalize">Available Dispatch</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 tracking-wide italic leading-none mt-0.5">Reward: ₹20</p>
+                                                    </div>
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg ${task.taskType === 'fabric-pickup' ? 'bg-amber-600' : 'bg-primary'}`}>
+                                                        <Truck size={18} />
+                                                    </div>
+                                                </div>
+
+                                                 <div className="bg-slate-50 p-3 rounded-xl space-y-2.5 border border-slate-100">
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1 h-1 rounded-full bg-primary"></div>
+                                                            <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Pickup</span>
+                                                        </div>
+                                                        <div className="flex gap-2 pl-2">
+                                                            <MapPin size={11} className="text-primary-dark mt-0.5 shrink-0" />
+                                                            <p className="text-[10px] font-bold text-primary-dark leading-snug">
+                                                                {task.taskType === 'fabric-pickup' 
+                                                                    ? formatAddress(task.deliveryAddress) 
+                                                                    : (task.tailor?.shopName || 'Tailor Workshop')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1.5 pt-2 border-t border-slate-200/50">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                                                            <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Drop-off</span>
+                                                        </div>
+                                                        <div className="flex gap-2 pl-2">
+                                                            <Store size={11} className="text-primary-dark mt-0.5 shrink-0" />
+                                                            <p className="text-[10px] font-bold text-primary-dark leading-snug opacity-80">
+                                                                {task.taskType === 'fabric-pickup'
+                                                                    ? (task.tailor?.shopName || 'Tailor Workshop')
+                                                                    : formatAddress(task.deliveryAddress)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleAcceptOrder(task._id)}
+                                                    className="w-full bg-primary-dark text-white rounded-xl py-3 font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95"
+                                                >
+                                                    Claim Task <Check size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {availableTasks.length === 0 && (
+                                        <div className="text-center py-16 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200">
+                                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-slate-300 mx-auto mb-3">
+                                                <Search size={24} />
+                                            </div>
+                                            <p className="text-slate-500 font-bold capitalize tracking-wide text-sm">Searching for dispatches...</p>
+                                            <p className="text-slate-400 text-[9px] mt-0.5">Try again in a few minutes.</p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </motion.div>
+                    )}
                 </AnimatePresence>
                 </>
             )}

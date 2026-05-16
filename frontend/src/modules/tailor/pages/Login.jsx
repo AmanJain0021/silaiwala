@@ -95,7 +95,7 @@ const TailorLogin = () => {
                 <div className="space-y-4">
                     {/* Mobile Number Field */}
                     <div className="group">
-                        <div className={`flex items-center px-4 py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${errors.mobileNumber ? 'border-red-100' : 'border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white'}`}>
+                        <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${errors.mobileNumber ? 'border-red-100' : 'border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white'}`}>
                             <Phone className={`w-5 h-5 mr-3 transition-colors ${errors.mobileNumber ? 'text-red-400' : 'text-[#2D2F6F]'}`} />
                             <input
                                 type="tel"
@@ -109,7 +109,7 @@ const TailorLogin = () => {
                                     }
                                 })}
                                 disabled={otpSent || sendingOtp}
-                                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 outline-none w-full disabled:opacity-60"
+                                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full disabled:opacity-60"
                             />
                         </div>
                         {errors.mobileNumber && <p className="text-[10px] text-red-500 font-bold mt-1 pl-2">{errors.mobileNumber.message}</p>}
@@ -144,7 +144,7 @@ const TailorLogin = () => {
                         >
                             {/* OTP Field */}
                             <div className="group">
-                                <div className={`flex items-center px-4 py-4 rounded-2xl bg-[#F8F9FD] border-2 border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white transition-all duration-300`}>
+                                <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white transition-all duration-300`}>
                                     <Lock className="w-5 h-5 mr-3 text-[#2D2F6F]" />
                                     <input
                                         type={showOtp ? "text" : "password"}
@@ -153,7 +153,7 @@ const TailorLogin = () => {
                                         {...register('otp', {
                                             required: 'OTP is required',
                                         })}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 outline-none w-full tracking-[0.2em]"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 placeholder:tracking-normal outline-none w-full tracking-[0.2em]"
                                     />
                                     <button 
                                         type="button" 

@@ -56,6 +56,21 @@ const DeliveryDashboard = () => {
     const primaryOrder = activeTasksList[0];
     const currentLocation = useDeliveryTracking(user?._id, activeTasksList);
 
+    // --- Scroll Visibility for Map ---
+    const [scrollOpacity, setScrollOpacity] = useState(1);
+    
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            // Map starts fading after 50px and is fully gone by 300px
+            const newOpacity = Math.max(0, 1 - (scrollY / 300));
+            setScrollOpacity(newOpacity);
+        };
+        
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const fetchDashboardData = async () => {
         try {
             const [statsRes, ordersRes, availableRes] = await Promise.all([
@@ -221,9 +236,15 @@ const DeliveryDashboard = () => {
     const upcomingTasks = activeOrders.slice(1);
 
     return (
-        <div className="animate-in fade-in duration-700 relative w-full h-full">
+        <div className="animate-in fade-in duration-700 relative w-full h-full -mt-2">
             {/* Operational Map - Full Viewport Background (Starts below header) */}
-            <div className="fixed inset-x-0 bottom-0 top-[80px] z-0 bg-slate-100 pointer-events-auto">
+            <div 
+                className="fixed inset-x-0 bottom-0 top-[64px] z-0 bg-slate-100 transition-opacity duration-300 ease-out"
+                style={{ 
+                    opacity: scrollOpacity,
+                    pointerEvents: scrollOpacity > 0 ? 'auto' : 'none'
+                }}
+            >
                 <DashboardMap 
                     currentLocation={currentLocation} 
                     activeOrder={currentTask}
@@ -234,59 +255,59 @@ const DeliveryDashboard = () => {
                 />
             </div>
 
-            <div className="relative z-10 w-full pt-[calc(100vh-250px)] pb-10 pointer-events-none">
-                <div className="space-y-4 pointer-events-auto px-4">
+            <div className="relative z-10 w-full pt-[calc(100vh-220px)] pb-10 pointer-events-none">
+                <div className="space-y-3 pointer-events-auto px-3">
                     {/* Today's Stats Hero Card */}
-                    <div className="bg-white rounded-[2.5rem] p-7 shadow-2xl shadow-slate-200/50 border border-slate-50 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -z-0 opacity-50"></div>
+                    <div className="bg-white rounded-[2rem] p-5 shadow-2xl shadow-slate-200/50 border border-slate-50 relative overflow-hidden group mx-1">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-full -z-0 opacity-50"></div>
 
                 <div className="relative z-10">
-                    <div className="flex justify-between items-center mb-4">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Today's Earnings</p>
-                        <button onClick={() => navigate('/delivery/wallet')} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">View Details</button>
+                    <div className="flex justify-between items-center mb-3">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Today's Earnings</p>
+                        <button onClick={() => navigate('/delivery/wallet')} className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline">Details</button>
                     </div>
 
-                    <div className="flex items-end gap-2 mb-6">
-                        <h3 className="text-[40px] font-black text-slate-900 tracking-tighter leading-none">
+                    <div className="flex items-end gap-1.5 mb-5">
+                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">
                             ₹{dashboardStats.todayEarnings || 0}
                         </h3>
                         {dashboardStats.growth !== 0 && (
-                            <div className={`flex items-center gap-1 ${dashboardStats.growth >= 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'} px-1.5 py-0.5 rounded-full mb-1 border scale-90`}>
+                            <div className={`flex items-center gap-1 ${dashboardStats.growth >= 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'} px-1.5 py-0.5 rounded-full mb-0.5 border scale-75`}>
                                 <TrendingUp
-                                    size={11}
+                                    size={10}
                                     strokeWidth={3}
                                     className={dashboardStats.growth < 0 ? 'rotate-180' : ''}
                                 />
-                                <span className="text-[9px] font-black">
+                                <span className="text-[8px] font-black">
                                     {dashboardStats.growth >= 0 ? '+' : ''}{dashboardStats.growth}%
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-50">
-                        <div className="text-center space-y-2">
-                            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                <Package size={18} strokeWidth={2.5} />
+                    <div className="grid grid-cols-3 gap-1.5 pt-3.5 border-t border-slate-50">
+                        <div className="text-center space-y-1.5">
+                            <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mx-auto shadow-sm">
+                                <Package size={16} strokeWidth={2.5} />
                             </div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today</p>
-                            <p className="text-sm font-black text-slate-900">{dashboardStats.todayCount || 0}</p>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Today</p>
+                            <p className="text-xs font-black text-slate-900">{dashboardStats.todayCount || 0}</p>
                         </div>
-                        <div className="text-center space-y-2 relative">
+                        <div className="text-center space-y-1.5 relative">
                             <div className="absolute inset-y-0 left-0 w-px bg-slate-100"></div>
-                            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                <TrendingUp size={18} strokeWidth={2.5} />
+                            <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mx-auto shadow-sm">
+                                <TrendingUp size={16} strokeWidth={2.5} />
                             </div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Wallet</p>
-                            <p className="text-sm font-black text-slate-900">₹{dashboardStats.earnings || 0}</p>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Wallet</p>
+                            <p className="text-xs font-black text-slate-900">₹{dashboardStats.earnings || 0}</p>
                             <div className="absolute inset-y-0 right-0 w-px bg-slate-100"></div>
                         </div>
-                        <div className="text-center space-y-2">
-                            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                <Package size={18} strokeWidth={2.5} />
+                        <div className="text-center space-y-1.5">
+                            <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mx-auto shadow-sm">
+                                <Package size={16} strokeWidth={2.5} />
                             </div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</p>
-                            <p className="text-sm font-black text-slate-900">{profile?.totalDeliveries || 0}</p>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total</p>
+                            <p className="text-xs font-black text-slate-900">{profile?.totalDeliveries || 0}</p>
                         </div>
                     </div>
                 </div>
@@ -294,20 +315,20 @@ const DeliveryDashboard = () => {
 
             {/* Active Task Hero Card */}
             {currentTask ? (
-                <div className="relative group w-[calc(100%+2rem)] -mx-4 md:w-full md:mx-0">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-slate-100 to-slate-200 rounded-[2.5rem] blur-lg opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                    <div className="relative bg-white rounded-[2.5rem] overflow-hidden text-slate-900 shadow-xl mx-2 border border-slate-100">
-                        <div className="p-6 lg:p-8">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="space-y-1.5">
-                                    <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-indigo-50 rounded-md border border-indigo-100">
-                                        <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
-                                        <span className="text-[10px] font-black tracking-widest text-primary uppercase">Active Dispatch</span>
+                <div className="relative group w-full">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-slate-100 to-slate-200 rounded-[2rem] blur-lg opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                    <div className="relative bg-white rounded-[2rem] overflow-hidden text-slate-900 shadow-xl mx-1 border border-slate-100">
+                        <div className="p-5 lg:p-7">
+                            <div className="flex justify-between items-start mb-5">
+                                <div className="space-y-1">
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-md border border-indigo-100">
+                                        <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
+                                        <span className="text-[9px] font-black tracking-widest text-primary uppercase">Active Dispatch</span>
                                     </div>
-                                    <h2 className="text-2xl font-black tracking-tight text-slate-900 mt-1 capitalize">{getTaskType(currentTask)}</h2>
+                                    <h2 className="text-xl font-black tracking-tight text-slate-900 mt-1 capitalize">{getTaskType(currentTask)}</h2>
                                 </div>
-                                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 mt-1">
-                                    <Truck size={24} className="text-slate-400" />
+                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 mt-1">
+                                    <Truck size={20} className="text-slate-400" />
                                 </div>
                             </div>
 

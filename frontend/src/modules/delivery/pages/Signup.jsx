@@ -119,16 +119,15 @@ const DeliverySignup = () => {
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-sm mx-auto"
+            className="w-full"
         >
-            <div className="text-left mb-6">
-                <h2 className="text-2xl font-black text-[#1A1A1A] tracking-tight">Join the Fleet</h2>
-                <p className="text-gray-500 font-medium mt-1">Become a delivery partner today</p>
+            <div className="text-left mb-4">
+                <h2 className="text-lg md:text-xl font-black text-[#1A1A1A] tracking-tight whitespace-nowrap">Join the SewZella</h2>
+                <p className="text-gray-500 text-[11px] md:text-xs font-bold mt-0.5 whitespace-nowrap">Become a delivery partner today</p>
                 
                 {/* Progress Indicator */}
-                <div className="flex items-center gap-2 mt-4">
+                <div className="flex items-center gap-2 mt-2">
                     {[1, 2, 3].map(step => (
                         <div 
                             key={step} 
@@ -146,7 +145,7 @@ const DeliverySignup = () => {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2.5">
                 <AnimatePresence mode="wait">
                     {currentStep === 1 && (
                         <motion.div 
@@ -154,7 +153,7 @@ const DeliverySignup = () => {
                             initial={{ opacity: 0, x: -10 }} 
                             animate={{ opacity: 1, x: 0 }} 
                             exit={{ opacity: 0, x: 10 }} 
-                            className="space-y-3"
+                            className="space-y-2.5"
                         >
                             <div className="relative group">
                                 <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
@@ -210,7 +209,7 @@ const DeliverySignup = () => {
                             initial={{ opacity: 0, x: -10 }} 
                             animate={{ opacity: 1, x: 0 }} 
                             exit={{ opacity: 0, x: 10 }} 
-                            className="space-y-3"
+                            className="space-y-2.5"
                         >
                             <div className="relative group">
                                 <FiTruck className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
@@ -233,7 +232,7 @@ const DeliverySignup = () => {
                     )}
                 </AnimatePresence>
 
-                <div className="pt-6 flex gap-3">
+                <div className="pt-4 flex gap-3">
                     {currentStep > 1 && (
                         <button 
                             type="button" 

@@ -20,7 +20,7 @@ const ProductCard = ({ product, onAddClick }) => {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Discount Badge */}
-            {product.discount && (
+            {product.discount > 0 && (
                 <div className="absolute top-2 left-2 z-20 bg-[#FFBC00] text-[#2D2F6E] text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
                     -{product.discount}%
                 </div>
@@ -54,32 +54,36 @@ const ProductCard = ({ product, onAddClick }) => {
             </div>
 
             {/* Compact Details (Matches Image 2) */}
-            <div className="p-3 pb-4">
-                {/* Category & Rating */}
-                <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest font-black">
-                        {typeof product.category === 'object' ? product.category?.name : product.category || 'FABRICS'}
-                    </span>
-                    <div className="flex items-center gap-1 bg-indigo-50 px-1.5 py-0.5 rounded-md text-[10px] font-black text-[#2D2F6E]">
-                        {product.rating || product.ratings || 0} <Star className="h-2 w-2 fill-current" />
+            <div className="p-2.5 pb-3 flex-1 flex flex-col justify-between">
+                <div>
+                    {/* Category & Rating */}
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-[8px] sm:text-[9px] text-gray-400 uppercase tracking-widest font-black truncate max-w-[60%]">
+                            {typeof product.category === 'object' ? product.category?.name : product.category || 'FABRICS'}
+                        </span>
+                        <div className="flex items-center gap-0.5 bg-indigo-50 px-1 py-0.5 rounded text-[9px] font-black text-[#2D2F6E]">
+                            {product.rating || product.ratings || 0} <Star className="h-2 w-2 fill-current" />
+                        </div>
                     </div>
+
+                    {/* Name & Subtitle */}
+                    <h3 className="text-[12px] sm:text-[13px] font-black text-gray-900 line-clamp-1 mb-0.5 tracking-tight group-hover:text-[#2D2F6E] transition-colors">
+                        {product.name}
+                    </h3>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter mb-2 flex items-center gap-1">
+                        BY <span className="text-[#2D2F6E] truncate max-w-[70px] uppercase">{product.tailor?.shopName || product.tailor?.name || "Silaiwala"}</span>
+                    </p>
                 </div>
 
-                {/* Name & Subtitle */}
-                <h3 className="text-[13px] font-black text-gray-900 line-clamp-1 mb-0.5 tracking-tight group-hover:text-[#2D2F6E] transition-colors">
-                    {product.name}
-                </h3>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-1">
-                    Available at: <span className="text-[#2D2F6E] truncate">{product.tailor?.shopName || product.tailor?.name || "Silaiwala Central Store"}</span>
-                </p>
-
                 {/* Price - simple and clean */}
-                <div className="flex items-baseline gap-2">
-                    <span className="text-[15px] font-black text-[#2D2F6E]">₹{product.price}</span>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">/ meter</span>
-                    {product.originalPrice && (
-                        <span className="text-[11px] text-gray-400 font-bold line-through ml-1">₹{product.originalPrice}</span>
-                    )}
+                <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 mt-auto">
+                    <span className="text-[14px] sm:text-[15px] font-black text-[#2D2F6E]">₹{product.price}</span>
+                    <div className="flex items-center gap-1">
+                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">/ m</span>
+                        {product.originalPrice && (
+                            <span className="text-[10px] text-gray-400 font-bold line-through opacity-60">₹{product.originalPrice}</span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

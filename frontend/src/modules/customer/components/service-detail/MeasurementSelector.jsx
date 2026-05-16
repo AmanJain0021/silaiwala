@@ -38,7 +38,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
     };
 
     return (
-        <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100">
             <h3 className="text-sm font-bold text-gray-900 mb-3">Measurement Options</h3>
 
             <div className="space-y-3">

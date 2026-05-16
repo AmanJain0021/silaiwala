@@ -70,10 +70,10 @@ const HomeHeader = ({ user }) => {
     };
 
     return (
-        <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-1 transition-all duration-300 md:hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 pt-safe">
+        <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-2 transition-all duration-300 md:hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pt-safe">
                 {/* Top Row: Brand & Icons */}
-                <div className="flex justify-between items-center mb-3 sm:mb-5">
+                <div className="flex justify-between items-center mb-2 sm:mb-4">
                     <div className="flex-1 min-w-0 mr-4">
                         <AnimatePresence mode="wait">
                             {isEditing ? (
@@ -181,7 +181,7 @@ const HomeHeader = ({ user }) => {
                     <input
                         type="text"
                         placeholder="Search tailors, fabrics, designs..."
-                        className="w-full bg-gray-100 border border-transparent rounded-[1rem] sm:rounded-[1.25rem] py-2.5 sm:py-3.5 pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D2F6E]/5 focus:border-[#2D2F6E]/20 transition-all placeholder:text-gray-400 shadow-inner"
+                        className="w-full bg-gray-100 border border-transparent rounded-[1rem] sm:rounded-[1.25rem] py-2 sm:py-3 pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D2F6E]/5 focus:border-[#2D2F6E]/20 transition-all placeholder:text-gray-400 shadow-inner"
                     />
                 </div>
             </div>

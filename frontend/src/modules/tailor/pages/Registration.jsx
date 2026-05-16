@@ -159,27 +159,21 @@ const TailorRegistration = () => {
             animate={{ opacity: 1 }}
             className="w-full"
         >
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 sm:gap-3 w-full">
                     {step > 1 && (
-                        <button type="button" onClick={prevStep} className="p-2 -ml-2 text-gray-400 hover:text-[#2D2F6F] transition-colors bg-gray-50 rounded-xl">
+                        <button type="button" onClick={prevStep} className="p-2 -ml-2 text-gray-400 hover:text-[#2D2F6F] transition-colors bg-gray-50 rounded-xl shrink-0">
                             <ChevronLeft size={20} />
                         </button>
                     )}
-                    <div>
-                        <h2 className="text-xl font-black text-slate-800 tracking-tight leading-tight">
+                    <div className="flex items-center justify-between w-full gap-2 overflow-hidden">
+                        <h2 className="text-[17px] sm:text-xl font-bold text-slate-800 tracking-tight leading-tight truncate">
                             {stepTitles[step - 1]}
                         </h2>
-                        <p className="text-[10px] font-black text-[#2D2F6F] uppercase tracking-[0.2em] mt-1">
-                            Step {step} of 4
-                        </p>
+                        <span className="text-[9px] sm:text-[10px] font-bold text-white bg-[#2D2F6F] px-2 py-1 rounded-md uppercase tracking-wider shrink-0">
+                            Step {step}/4
+                        </span>
                     </div>
-                </div>
-
-                <div className="flex gap-1.5">
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className={`h-1.5 w-6 rounded-full transition-all duration-500 ${i <= step ? 'bg-[#2D2F6F]' : 'bg-gray-100'}`} />
-                    ))}
                 </div>
             </div>
 

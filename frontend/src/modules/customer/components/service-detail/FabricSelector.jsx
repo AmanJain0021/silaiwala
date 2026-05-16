@@ -32,7 +32,7 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
     }, [tailor?._id, showFabricPicker]);
 
     return (
-        <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100 relative">
+        <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100 relative">
             <h3 className="text-sm font-bold text-gray-900 mb-3">Fabric Source</h3>
 
             <div className="grid grid-cols-2 gap-3">

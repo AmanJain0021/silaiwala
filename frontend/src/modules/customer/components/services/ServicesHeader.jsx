@@ -5,13 +5,13 @@ import { Input } from '../../../../components/ui/Input';
 
 const ServicesHeader = () => {
     return (
-        <div className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm px-4 pb-4 pt-safe">
-            {/* Top Bar */}
-            <div className="flex items-center gap-3 pt-4 mb-4">
-                <Link to="/" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
+        <div className="sticky top-0 md:top-20 z-[100] bg-white border-b border-gray-100 shadow-sm px-4 pb-4 transition-all duration-300">
+            {/* Top Bar - Mobile Only */}
+            <div className="flex items-center gap-3 pt-3 mb-3 md:hidden">
+                <Link to="/" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700 active:scale-90 transition-transform">
                     <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-xl font-bold text-primary">Stitching Services</h1>
+                <h1 className="text-xl font-black text-[#2D2F6E] tracking-tight">Stitching Services</h1>
             </div>
 
             {/* Search & Filter */}

@@ -91,9 +91,9 @@ const QuickActions = () => {
 
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0.5 pb-1.5">
             {/* Header with Title and Toggle */}
-            <div className="relative flex items-center justify-center mb-10 sm:mb-14 px-2">
+            <div className="relative flex items-center justify-center mb-2 sm:mb-4 px-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
                     <div className="w-full border-t border-dashed border-gray-300"></div>
                 </div>
@@ -102,7 +102,7 @@ const QuickActions = () => {
                 </div>
             </div>
 
-            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-y-8 transition-all duration-500 sm:divide-x sm:divide-gray-200">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-y-3 transition-all duration-500 sm:divide-x sm:divide-gray-200">
                 <AnimatePresence mode="popLayout">
                     {actions.map((action, index) => {
                         return (

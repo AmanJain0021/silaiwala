@@ -132,177 +132,234 @@ const ProfileSettings = () => {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 flex flex-col relative animate-in fade-in duration-300 pb-20">
-            {/* Curved Header */}
-            <div className={`relative bg-primary pt-8 ${isEditing ? 'pb-24' : 'pb-32'} px-5 text-white overflow-hidden shrink-0 shadow-xl shadow-indigo-900/10 transition-all duration-300`}>
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white pb-20">
+            
+            {/* ── MOBILE HEADER ── */}
+            <div className={`md:hidden relative bg-[#2D2F6E] pt-4 ${isEditing ? 'pb-12' : 'pb-16'} px-5 text-white overflow-hidden shrink-0 shadow-xl transition-all duration-300`}>
                 <div className="absolute inset-0 z-0 opacity-20 mix-blend-overlay pointer-events-none">
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full fill-white">
                         <path d="M0,100 C40,80 60,0 100,0 L100,100 Z" />
                     </svg>
                 </div>
-
-                <div className="relative z-10 flex items-center justify-between mb-2">
-                    <button onClick={() => isEditing ? setIsEditing(false) : navigate(-1)} className="p-2 -ml-2 text-white hover:text-indigo-100 transition-colors">
+                <div className="relative z-10 flex items-center justify-between">
+                    <button onClick={() => isEditing ? setIsEditing(false) : navigate(-1)} className="p-1.5 -ml-2 text-white hover:text-indigo-100 transition-colors">
                         {isEditing ? <X size={20} /> : <ArrowLeft size={20} />}
                     </button>
-                    <h1 className="text-lg font-black tracking-tight absolute left-1/2 -translate-x-1/2 uppercase">
-                        {isEditing ? 'Edit Profile' : 'Profile'}
+                    <h1 className="text-base font-black tracking-tight absolute left-1/2 -translate-x-1/2 uppercase">
+                        {isEditing ? 'Edit Profile' : 'Profile Settings'}
                     </h1>
-                    <div className="w-10"></div>
                 </div>
-
                 <div className="absolute -bottom-1 left-0 w-full leading-none">
-                    <svg className="w-full h-16 text-gray-50 fill-current" viewBox="0 0 100 20" preserveAspectRatio="none">
+                    <svg className="w-full h-8 text-[#F5F5F5] fill-current" viewBox="0 0 100 20" preserveAspectRatio="none">
                         <path d="M0,20 C30,0 70,0 100,20 L100,20 L0,20 Z" />
                     </svg>
                 </div>
             </div>
 
-            {/* Avatar Container */}
-            {!isEditing && (
-                <div className="relative z-20 flex flex-col items-center -mt-20 mb-8 px-5 animate-in zoom-in duration-300">
-                    <div className="h-[5.5rem] w-[5.5rem] bg-white p-1 rounded-full shadow-lg mb-4 pointer-events-none">
-                        <div className="w-full h-full bg-primary rounded-full flex flex-col items-center justify-center text-white relative overflow-hidden pointer-events-auto">
-                            <span className="text-3xl font-black">{profile?.shopName?.charAt(0) || formData.name?.charAt(0) || 'R'}</span>
-                            <div
-                                className="absolute bottom-0 w-full bg-black/20 py-1 text-center cursor-pointer hover:bg-black/30 transition-colors"
-                                onClick={() => setIsEditing(true)}
+            <div className="flex-1 p-2 md:p-0">
+                
+                {/* ── DESKTOP TITLE ── */}
+                <div className="hidden md:block py-6">
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Account & Security</h2>
+                    <p className="text-xs text-gray-400 font-black uppercase tracking-[0.2em] mt-1">Manage your shop profile and platform preferences</p>
+                </div>
+
+                <div className="flex flex-col lg:flex-row gap-8">
+                    
+                    {/* LEFT: PROFILE SUMMARY & EDIT FORM */}
+                    <div className="flex-1 space-y-6">
+                        
+                        {/* Profile Overview Card */}
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Shield size={120} className="text-[#2D2F6E]" />
+                            </div>
+                            
+                            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+                                <div className="h-24 w-24 bg-[#1A1A1A] rounded-[2rem] flex items-center justify-center text-[#FDE5D2] shadow-2xl shadow-[#2D2F6E]/20 relative group-hover:scale-105 transition-transform duration-500">
+                                    <span className="text-3xl font-black">{profile?.shopName?.charAt(0) || formData.name?.charAt(0) || 'R'}</span>
+                                    <button 
+                                        onClick={() => setIsEditing(true)}
+                                        className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-gray-100 text-[#2D2F6E] hover:bg-[#2D2F6E] hover:text-white transition-all"
+                                    >
+                                        <Edit2 size={14} />
+                                    </button>
+                                </div>
+                                <div className="text-center md:text-left">
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">{profile?.shopName || 'Luxury Stitches'}</h2>
+                                    <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
+                                        <span className="bg-indigo-50 text-[#2D2F6E] px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                                            Verified Partner
+                                        </span>
+                                        <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                                            Premium Tier
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {isEditing ? (
+                                <form onSubmit={handleSave} className="mt-8 space-y-4 animate-in slide-in-from-top-4 duration-500">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Shop Name</label>
+                                            <input 
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                value={formData.shopName} 
+                                                onChange={(e) => setFormData({...formData, shopName: e.target.value})}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Owner Name</label>
+                                            <input 
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                value={formData.name} 
+                                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Email Address</label>
+                                            <input 
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                type="email" 
+                                                value={formData.email} 
+                                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Contact Number</label>
+                                            <input 
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                type="tel" 
+                                                value={formData.phoneNumber} 
+                                                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Shop Address</label>
+                                        <input 
+                                            className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                            value={formData.address} 
+                                            onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="flex gap-4 pt-4">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setIsEditing(false)}
+                                            className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            disabled={isSaving}
+                                            className="flex-[2] py-4 bg-[#2D2F6E] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] transition-all"
+                                        >
+                                            {isSaving ? 'Saving Changes...' : 'Update Profile'}
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <Phone size={12} className="text-gray-400" />
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Mobile Number</p>
+                                        </div>
+                                        <p className="text-sm font-black text-gray-900">{formData.phoneNumber || 'Not provided'}</p>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <Mail size={12} className="text-gray-400" />
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Email Access</p>
+                                        </div>
+                                        <p className="text-sm font-black text-gray-900">{formData.email || 'Not provided'}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* RIGHT: NAVIGATION MENU */}
+                    <div className="w-full lg:w-[400px] space-y-6">
+                        
+                        {/* Account Actions */}
+                        <div className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm space-y-1">
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-3 mb-3">Quick Navigation</h3>
+                            <MenuOption
+                                icon={Wallet}
+                                color="bg-[#2D2F6E]"
+                                label="Wallet & Payouts"
+                                subLabel="Check your balance"
+                                extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100">₹ 0</span>}
+                                to="/partner/withdraw"
+                            />
+                            <MenuOption
+                                icon={MapPin}
+                                color="bg-[#2D2F6E]"
+                                label="Pick Up Info"
+                                subLabel="Manage addresses"
+                                onClick={() => setActiveModal('pickup')}
+                            />
+                            <MenuOption
+                                icon={Shield}
+                                color="bg-[#2D2F6E]"
+                                label="Privacy & Terms"
+                                subLabel="Legal guidelines"
+                                onClick={() => setActiveModal('privacy')}
+                            />
+                        </div>
+
+                        {/* Logout Section */}
+                        <div className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm">
+                            <button
+                                onClick={handleLogout}
+                                className="w-full p-4 bg-rose-50 hover:bg-rose-100 rounded-2xl border border-rose-100 flex items-center justify-between group transition-all"
                             >
-                                <Edit2 size={10} className="mx-auto text-white/90" />
-                            </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="h-10 w-10 bg-[#1A1A1A] rounded-xl flex items-center justify-center text-rose-500 shadow-lg group-hover:rotate-6 transition-transform">
+                                        <LogOut size={18} strokeWidth={3} />
+                                    </div>
+                                    <div className="text-left">
+                                        <h4 className="text-xs font-black text-rose-600 uppercase tracking-widest leading-none">Logout Account</h4>
+                                        <p className="text-[9px] font-bold text-rose-400 mt-1">End current session</p>
+                                    </div>
+                                </div>
+                                <ChevronRight size={18} className="text-rose-300 group-hover:translate-x-1 transition-transform" />
+                            </button>
                         </div>
+
                     </div>
-                    <h2 className="text-xl font-black text-gray-900 tracking-tight">{profile?.shopName || 'Luxury Stitches'}</h2>
-                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">Premium Tailor</p>
                 </div>
-            )}
+            </div>
 
-            {isEditing ? (
-                /* Compacted Edit Form */
-                <form onSubmit={handleSave} className="px-5 flex-1 pb-10 relative z-20 -mt-10 animate-in slide-in-from-bottom-4 duration-300">
-                    <div className="bg-white p-6 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 mb-6 space-y-4">
-                        <Input 
-                            label="Shop Name" 
-                            value={formData.shopName} 
-                            onChange={(e) => setFormData({...formData, shopName: e.target.value})}
-                        />
-                        <Input 
-                            label="Owner Name" 
-                            value={formData.name} 
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        />
-                        <Input 
-                            label="Email Address" 
-                            type="email" 
-                            value={formData.email} 
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        />
-                        <Input 
-                            label="Contact Number" 
-                            type="tel" 
-                            value={formData.phoneNumber} 
-                            onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                        />
-                        <Input 
-                            label="Shop Address" 
-                            value={formData.address} 
-                            onChange={(e) => setFormData({...formData, address: e.target.value})}
-                        />
-                    </div>
-                    <Button type="submit" loading={isSaving} className="py-5 rounded-2xl shadow-xl shadow-indigo-900/20 transition-all font-black uppercase tracking-widest">
-                         Save Profile
-                    </Button>
-                </form>
-            ) : (
-                /* Menu List */
-                <div className="px-5 space-y-4 flex-1 pb-10 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm">
-                        <MenuOption
-                            icon={Edit2}
-                            color="bg-indigo-500"
-                            label="Edit Profile"
-                            subLabel="Update shop details"
-                            onClick={() => setIsEditing(true)}
-                        />
-                        <MenuOption
-                            icon={History}
-                            color="bg-purple-600"
-                            label="Order History"
-                            subLabel="View past transactions"
-                            to="/partner/orders"
-                        />
-                        <MenuOption
-                            icon={Bell}
-                            color="bg-indigo-500"
-                            label="Notifications"
-                            subLabel="Manage alerts"
-                            to="/partner/notifications"
-                        />
-                    </div>
-
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2 italic">Earnings & Wallet</h3>
-                    <div className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm">
-                        <MenuOption
-                            icon={Wallet}
-                            color="bg-orange-400"
-                            label="Wallet & Payouts"
-                            subLabel="Check your balance"
-                            extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 0</span>}
-                            to="/partner/withdraw"
-                        />
-                        <MenuOption
-                            icon={MapPin}
-                            color="bg-green-500"
-                            label="Pick Up Information"
-                            subLabel="Manage addresses"
-                            onClick={() => setActiveModal('pickup')}
-                        />
-                    </div>
-
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4 mb-2 italic">Support & Legal</h3>
-                    <div className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm">
-                        <MenuOption
-                            icon={FileText}
-                            color="bg-blue-600"
-                            label="Terms & Conditions"
-                            onClick={() => setActiveModal('terms')}
-                        />
-                        <MenuOption
-                            icon={Shield}
-                            color="bg-red-500"
-                            label="Privacy & Security"
-                            onClick={() => setActiveModal('privacy')}
-                        />
-                    </div>
-
-                    <button
-                        onClick={handleLogout}
-                        className="w-full bg-red-50/50 p-4 rounded-[2rem] border border-red-100 flex items-center justify-between hover:bg-red-50 transition-all group active:scale-[0.98] mt-6"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 bg-red-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200 group-hover:rotate-6 transition-transform">
-                                <LogOut size={20} />
-                            </div>
-                            <div className="text-left">
-                                <h4 className="text-sm font-black text-red-600 uppercase tracking-widest italic leading-none">Sign Out</h4>
-                                <p className="text-[10px] font-bold text-red-400 mt-1">Exit Partner Dashboard</p>
-                            </div>
-                        </div>
-                        <ChevronRight size={16} className="text-red-300" />
-                    </button>
-                </div>
-            )}
-
-            {/* Modals for Pickup, Terms, Privacy */}
+            {/* Slide-up Modals for Desktop/Mobile */}
             {activeModal && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-[450px] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom flex flex-col max-h-[80vh] shadow-2xl">
-                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-                        <div className="overflow-y-auto custom-scrollbar pr-2">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-500 max-h-[85vh]">
+                        <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-gray-50">
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                                {activeModal === 'pickup' ? 'Pick Up Information' : activeModal === 'terms' ? 'Terms & Conditions' : 'Privacy & Security'}
+                            </h3>
+                            <button
+                                onClick={() => setActiveModal(null)}
+                                className="h-10 w-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-8 pt-6 custom-scrollbar">
                             {renderModalContent()}
                         </div>
-                        <div className="mt-8">
-                            <Button onClick={() => setActiveModal(null)} className="rounded-2xl py-4 font-black uppercase tracking-widest italic">Understood</Button>
+                        <div className="p-8 border-t border-gray-50">
+                            <button 
+                                onClick={() => setActiveModal(null)} 
+                                className="w-full bg-[#2D2F6E] text-white rounded-2xl py-4 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-[#2D2F6E]/20 active:scale-95 transition-all"
+                            >
+                                Close Information
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -668,7 +668,7 @@ const AdminOrders = () => {
                                                                     <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Measurements</p>
                                                                     <div className="grid grid-cols-3 gap-x-4 gap-y-1">
                                                                         {Object.entries(item.measurements).map(([key, val]) => (
-                                                                            val && (
+                                                                            val && typeof val !== 'object' && (
                                                                                 <span key={key} className="text-[10px] text-gray-600">
                                                                                     <span className="text-gray-400 capitalize">{key}:</span> {val}"
                                                                                 </span>

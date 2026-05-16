@@ -74,10 +74,10 @@ const TailorEarnings = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
 
-            {/* ── HEADER ── */}
-            <div className="bg-white px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100">
+            {/* ── MOBILE HEADER ── */}
+            <div className="md:hidden bg-white px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
                 <button onClick={() => navigate('/partner/settings')} className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
                     <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
                 </button>
@@ -87,139 +87,155 @@ const TailorEarnings = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-28 px-4">
-
-                {/* ── TAB BAR ── */}
-                <div className="mt-4 mb-4">
-                    <div className="flex bg-white border border-gray-200 rounded-2xl p-1 gap-1">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
-                                    activeTab === tab
-                                        ? 'text-[#2D2F6E] border border-[#2D2F6E]/30 bg-[#FDE5D2]'
-                                        : 'text-gray-400'
-                                }`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
+            <div className="flex-1 p-2 md:p-0">
+                
+                {/* ── DESKTOP TITLE ── */}
+                <div className="hidden md:block py-6">
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Earnings & Wallet</h2>
+                    <p className="text-xs text-gray-400 font-black uppercase tracking-[0.2em] mt-1">Track your financial performance and payouts</p>
                 </div>
 
-                {/* ── TOTAL EARNINGS CARD ── */}
-                <div className="bg-[#4A5568] rounded-3xl p-6 mb-4 relative overflow-hidden">
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-10">
-                        <ArrowUpRight size={80} color="white" />
-                    </div>
-                    <p className="text-[12px] text-white/60 font-medium mb-2">
-                        Total Earnings {activeTab.toLowerCase()}
-                    </p>
-                    <p className="text-[36px] font-black text-white tracking-tight leading-none mb-3">
-                        ₹{todayEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                        <ArrowUpRight size={14} color="#10B981" strokeWidth={3} />
-                        <span className="text-[12px] font-semibold text-green-400">+12.5% from yesterday</span>
-                    </div>
-                </div>
-
-                {/* ── ORDER EARNINGS ROW ── */}
-                <div className="bg-white rounded-3xl px-4 py-4 mb-3 border border-gray-100 shadow-sm flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-50 rounded-2xl flex items-center justify-center shrink-0">
-                        <ShoppingBag size={18} color="#2D2F6E" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-[12px] text-gray-400 font-medium">Order Earnings</p>
-                        <p className="text-[18px] font-black text-gray-900">
-                            ₹{orderEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                    </div>
-                    <ChevronRight size={18} color="#D1D5DB" />
-                </div>
-
-                {/* ── INCENTIVES & BONUS ── */}
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
-                        <div className="w-9 h-9 bg-blue-50 rounded-2xl flex items-center justify-center mb-3">
-                            <Star size={17} color="#3B82F6" fill="#3B82F6" />
+                {/* ── MAIN CONTENT GRID ── */}
+                <div className="flex flex-col lg:flex-row gap-6">
+                    
+                    {/* LEFT COLUMN: BALANCE & BREAKDOWN */}
+                    <div className="flex-1 space-y-6">
+                        
+                        {/* ── TAB BAR ── */}
+                        <div className="bg-gray-200/50 rounded-2xl p-1 flex gap-1 w-fit">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-8 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        activeTab === tab
+                                            ? 'text-[#2D2F6E] bg-white shadow-md shadow-black/5'
+                                            : 'text-gray-500 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
                         </div>
-                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">Incentives</p>
-                        <p className="text-[20px] font-black text-gray-900">
-                            ₹{incentives.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                    </div>
-                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
-                        <div className="w-9 h-9 bg-green-50 rounded-2xl flex items-center justify-center mb-3">
-                            <Gift size={17} color="#10B981" />
-                        </div>
-                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">Bonus</p>
-                        <p className="text-[20px] font-black text-gray-900">
-                            ₹{bonus.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                    </div>
-                </div>
 
-                {/* ── RECENT PAYOUTS ── */}
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[17px] font-black text-gray-900">Recent Payouts</h3>
-                    <button className="text-[12px] font-black text-[#2D2F6E] uppercase tracking-wider">View All</button>
-                </div>
-
-                <div className="space-y-3">
-                    {transactions.length === 0 ? (
-                        /* Fallback static items matching Figma */
-                        [
-                            { id: 'AL-9302', time: 'Today, 2:45 PM',    amount: '85.00',  badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'suit'  },
-                            { id: 'AL-9298', time: 'Today, 11:20 AM',   amount: '120.00', badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'fabric'},
-                            { id: 'Peak Hour Bonus', time: 'Today, 9:00 AM', amount: '15.00', badge: 'INCENTIVE', badgeColor: 'text-blue-600 bg-blue-50', img: 'bonus' },
-                            { id: 'AL-9285', time: 'Yesterday, 5:15 PM', amount: '75.00', badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'shirt' },
-                        ].map((item, i) => (
-                            <div key={i} className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
-                                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
-                                    {item.img === 'bonus'
-                                        ? <Gift size={20} color="white" />
-                                        : <ShoppingBag size={20} color="white" />
-                                    }
+                        {/* ── TOTAL EARNINGS CARD ── */}
+                        <div className="bg-[#1A1A1A] rounded-[2.5rem] p-8 relative overflow-hidden group shadow-2xl shadow-black/10">
+                            <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
+                                <ArrowUpRight size={240} color="white" />
+                            </div>
+                            <div className="relative z-10">
+                                <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] mb-3">
+                                    Current Balance • {activeTab}
+                                </p>
+                                <div className="flex items-baseline gap-2 mb-6">
+                                    <span className="text-2xl font-black text-white/40">₹</span>
+                                    <h3 className="text-5xl font-black text-white tracking-tighter">
+                                        {todayEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </h3>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[14px] font-black text-gray-900 leading-tight">
-                                        {item.id.startsWith('AL') ? `Order #${item.id}` : item.id}
-                                    </p>
-                                    <p className="text-[11px] text-gray-400 font-medium">{item.time}</p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-[15px] font-black text-gray-900">+₹{item.amount}</p>
-                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wide ${item.badgeColor}`}>
-                                        {item.badge}
-                                    </span>
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1.5 rounded-xl border border-green-500/20">
+                                        <ArrowUpRight size={14} className="text-green-500" strokeWidth={3} />
+                                        <span className="text-[11px] font-black text-green-500">+12.5%</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => navigate('/partner/withdraw')}
+                                        className="bg-[#FDE5D2] text-[#2D2F6E] px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-xl shadow-black/20"
+                                    >
+                                        Withdraw Funds
+                                    </button>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        transactions.slice(0, 8).map((txn, i) => (
-                            <div key={txn._id || i} className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
-                                <div className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center shrink-0">
-                                    <ShoppingBag size={20} color="white" />
+                        </div>
+
+                        {/* ── BREAKDOWN GRID ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex items-center gap-5 group hover:border-[#2D2F6E]/20 transition-all">
+                                <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                    <ShoppingBag size={24} className="text-[#2D2F6E]" />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[14px] font-black text-gray-900 leading-tight truncate">
-                                        {txn.description || `Order #${txn.orderId || 'N/A'}`}
+                                <div className="flex-1">
+                                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Order Earnings</p>
+                                    <p className="text-xl font-black text-gray-900 tracking-tight">
+                                        ₹{orderEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
-                                    <p className="text-[11px] text-gray-400 font-medium">{formatTime(txn.createdAt)}</p>
                                 </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-[15px] font-black text-gray-900">
-                                        {txn.type === 'credit' ? '+' : '-'}₹{txn.amount?.toLocaleString('en-IN')}
+                                <ChevronRight size={18} className="text-gray-200" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm group hover:border-[#2D2F6E]/20 transition-all">
+                                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+                                        <Star size={18} className="text-indigo-600" fill="currentColor" />
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Incentives</p>
+                                    <p className="text-lg font-black text-gray-900 tracking-tight">
+                                        ₹{incentives.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </p>
-                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wide ${getBadgeStyle(getBadgeLabel(txn))}`}>
-                                        {getBadgeLabel(txn)}
-                                    </span>
+                                </div>
+                                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm group hover:border-[#2D2F6E]/20 transition-all">
+                                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+                                        <Gift size={18} className="text-emerald-600" />
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Bonus</p>
+                                    <p className="text-lg font-black text-gray-900 tracking-tight">
+                                        ₹{bonus.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </p>
                                 </div>
                             </div>
-                        ))
-                    )}
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: RECENT PAYOUTS */}
+                    <div className="w-full lg:w-[400px] flex flex-col">
+                        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col h-full overflow-hidden">
+                            <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Activity Log</h3>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Real-time transaction history</p>
+                                </div>
+                                <button className="text-[11px] font-black text-[#2D2F6E] hover:underline uppercase tracking-widest">View All</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                {(transactions.length === 0 ? [
+                                    { id: 'AL-9302', time: 'Today, 2:45 PM',    amount: '85.00',  badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'suit'  },
+                                    { id: 'AL-9298', time: 'Today, 11:20 AM',   amount: '120.00', badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'fabric'},
+                                    { id: 'Peak Hour Bonus', time: 'Today, 9:00 AM', amount: '15.00', badge: 'INCENTIVE', badgeColor: 'text-blue-600 bg-blue-50', img: 'bonus' },
+                                    { id: 'AL-9285', time: 'Yesterday, 5:15 PM', amount: '75.00', badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'shirt' },
+                                ] : transactions.slice(0, 15)).map((item, i) => {
+                                    const isCredit = item.type === 'credit' || !item.id.startsWith('Peak');
+                                    return (
+                                        <div key={i} className="group p-4 bg-white hover:bg-gray-50 rounded-3xl border border-transparent hover:border-gray-100 transition-all flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-[#1A1A1A] rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                {item.img === 'bonus' || (item.description && item.description.includes('bonus'))
+                                                    ? <Gift size={20} className="text-white" />
+                                                    : <ShoppingBag size={20} className="text-white" />
+                                                }
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-black text-gray-900 leading-tight truncate">
+                                                    {item._id ? (item.description || `Order #${item.orderId || 'N/A'}`) : (item.id.startsWith('AL') ? `Order #${item.id}` : item.id)}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mt-1">
+                                                    {item.createdAt ? formatTime(item.createdAt) : item.time}
+                                                </p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className={`text-base font-black ${isCredit ? 'text-gray-900' : 'text-rose-500'}`}>
+                                                    {isCredit ? '+' : '-'}₹{(item.amount || 0).toLocaleString('en-IN')}
+                                                </p>
+                                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-lg tracking-widest ${item.badgeColor || getBadgeStyle(getBadgeLabel(item))}`}>
+                                                    {item.badge || getBadgeLabel(item)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

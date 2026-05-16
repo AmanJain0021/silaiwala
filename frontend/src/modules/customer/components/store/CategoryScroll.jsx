@@ -81,7 +81,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
     };
 
     return (
-        <div className="bg-white pt-6 pb-4 relative group border-b border-gray-50 transition-all duration-300">
+        <div className="bg-white pt-3 pb-2 relative group border-b border-gray-100/50 transition-all duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
                 {history.length > 0 && (
                     <div className="mb-2 flex items-center gap-2">
@@ -99,19 +99,19 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
 
                 <div
                     ref={scrollRef}
-                    className="flex overflow-x-auto gap-4 pt-2 pb-3 scrollbar-hide snap-x relative"
+                    className="flex overflow-x-auto gap-3 pt-1 pb-2 no-scrollbar snap-x relative"
                 >
                     {history.length === 0 && (
                         <button
                             onClick={() => {
                                 if (onSelectCategory) onSelectCategory("All", null);
                             }}
-                            className={`flex flex-col items-center gap-2 min-w-[80px] snap-center transition-all duration-300 ${activeCategory === "All" ? 'scale-105' : 'opacity-80 hover:opacity-100'}`}
+                            className={`flex flex-col items-center gap-1.5 min-w-[70px] snap-center transition-all duration-300 ${activeCategory === "All" ? 'scale-105' : 'opacity-80 hover:opacity-100'}`}
                         >
-                            <div className={`w-16 h-16 rounded-full overflow-hidden border-2 flex items-center justify-center bg-gray-50 ${activeCategory === "All" ? 'border-[#2D2F6E] shadow-lg' : 'border-gray-100'}`}>
+                            <div className={`w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-gray-50 ${activeCategory === "All" ? 'border-[#2D2F6E] shadow-lg' : 'border-gray-100'}`}>
                                 <span className="text-[10px] font-black uppercase text-[#2D2F6E]">All</span>
                             </div>
-                            <span className={`text-xs font-medium text-center ${activeCategory === "All" ? 'text-[#2D2F6E] font-bold' : 'text-gray-600'}`}>
+                            <span className={`text-[10px] font-medium text-center ${activeCategory === "All" ? 'text-[#2D2F6E] font-bold' : 'text-gray-600'}`}>
                                 All Fabrics
                             </span>
                         </button>
@@ -129,9 +129,9 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                             <button
                                 key={category._id}
                                 onClick={() => handleCategoryClick(category)}
-                                className={`flex flex-col items-center gap-2 min-w-[80px] snap-center transition-all duration-300 ${activeCategory === category.name ? 'scale-105' : 'opacity-80 hover:opacity-100'}`}
+                                className={`flex flex-col items-center gap-1.5 min-w-[70px] snap-center transition-all duration-300 ${activeCategory === category.name ? 'scale-105' : 'opacity-80 hover:opacity-100'}`}
                             >
-                                <div className={`w-16 h-16 rounded-full overflow-hidden border-2 flex items-center justify-center bg-gray-50 ${activeCategory === category.name ? 'border-[#2D2F6E] shadow-lg' : 'border-gray-100'}`}>
+                                <div className={`w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-gray-50 ${activeCategory === category.name ? 'border-[#2D2F6E] shadow-lg' : 'border-gray-100'}`}>
                                     <SafeImage
                                         src={getImageUrl(category.image)}
                                         alt={category.name}
@@ -139,7 +139,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                                         fallback={`https://placehold.co/150x150/FFF0F4/FD0053?text=${category.name.charAt(0)}`}
                                     />
                                 </div>
-                                <span className={`text-xs font-medium text-center whitespace-nowrap ${activeCategory === category.name ? 'text-[#2D2F6E] font-bold' : 'text-gray-600'}`}>
+                                <span className={`text-[10px] font-medium text-center whitespace-nowrap ${activeCategory === category.name ? 'text-[#2D2F6E] font-bold' : 'text-gray-600'}`}>
                                     {category.name}
                                 </span>
                             </button>

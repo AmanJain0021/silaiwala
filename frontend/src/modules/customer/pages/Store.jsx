@@ -55,8 +55,18 @@ const StorePage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans text-[#2D2F6E]">
-            {/* 1. Sticky Header */}
-            <StoreHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            {/* 1. Unified Sticky Header */}
+            <div className="sticky top-0 md:top-20 z-[100] shadow-md">
+                <StoreHeader
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    onOpenFilter={() => setIsFilterOpen(true)}
+                />
+                <CategoryScroll
+                    activeCategory={activeCategory.name}
+                    onSelectCategory={handleCategorySelect}
+                />
+            </div>
 
             {/* 2. Dynamic Store Banner */}
             {storeBanners.length > 0 && (
@@ -102,28 +112,6 @@ const StorePage = () => {
                     </motion.div>
                 </div>
             )}
-
-
-            {/* 3. Categories */}
-            <CategoryScroll
-                activeCategory={activeCategory.name}
-                onSelectCategory={handleCategorySelect}
-            />
-
-
-            {/* 4. Search & Filter Bar (Sticky below header approx) */}
-            {/* Adjust top value based on header height. 
-                Header is sticky top-0. Location bar scrolls. 
-                If we want Filter bar sticky, we need to account for header height.
-                Let's make it sticky but with top-16 approx.
-            */}
-            <div className="sticky top-[140px] sm:top-[160px] z-30 bg-white shadow-sm transition-all duration-300">
-                <SearchFilterBar
-                    onOpenFilter={() => setIsFilterOpen(true)}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                />
-            </div>
 
             {/* 5. Product Grid (Infinite Scroll) */}
             <ProductGrid filters={filters} categoryId={activeCategory.id} categoryName={activeCategory.name} searchQuery={searchQuery} />

@@ -183,36 +183,36 @@ const DeliveryProfile = () => {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2 -mt-2">
             {/* Profile Hero Card */}
-            <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-2xl shadow-slate-200/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 opacity-60"></div>
-                <div className="relative z-10 flex items-center gap-4">
+            <div className="bg-white rounded-[1.5rem] p-4 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden mx-0.5">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 opacity-60"></div>
+                <div className="relative z-10 flex items-center gap-3">
                     <div className="relative">
-                        <div className="w-20 h-20 rounded-full border-[3px] border-white shadow-xl overflow-hidden bg-indigo-50">
+                        <div className="w-14 h-14 rounded-full border-[3px] border-white shadow-md overflow-hidden bg-indigo-50">
                             <img
                                 src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Chirag"}
                                 alt="Profile"
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
-                            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
+                            <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
                         </div>
                     </div>
                     <div className="flex-1">
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2">{user?.name || 'Partner'}</h2>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
-                                <span className="text-amber-500 font-black text-xs">★</span>
-                                <span className="text-amber-700 font-bold text-xs">{deliveryProfile?.rating || '4.8'}</span>
+                        <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{user?.name || 'Partner'}</h2>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-lg border border-amber-100">
+                                <span className="text-amber-500 font-black text-[9px]">★</span>
+                                <span className="text-amber-700 font-bold text-[9px]">{deliveryProfile?.rating || '4.8'}</span>
                             </div>
                             <span className="text-slate-200">•</span>
-                            <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">ID: {user?._id?.slice(-6).toUpperCase() || '882190'}</span>
+                            <span className="text-slate-400 font-bold text-[8px] uppercase tracking-wider">ID: {user?._id?.slice(-6).toUpperCase() || '882190'}</span>
                         </div>
-                        <div className="flex items-center gap-3 mt-2">
-                            <div className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                                <span className="text-emerald-600 font-black text-[10px] uppercase tracking-wider">{deliveryProfile?.totalDeliveries || 0} Deliveries</span>
+                        <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
+                                <span className="text-emerald-600 font-black text-[8px] uppercase tracking-wider">{deliveryProfile?.totalDeliveries || 0} Deliveries</span>
                             </div>
                         </div>
                     </div>
@@ -220,10 +220,10 @@ const DeliveryProfile = () => {
             </div>
 
             {/* Duty Status */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex items-center justify-between relative z-20 group">
-                <div>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Availability</h2>
-                    <p className={`text-[10px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#2D2F6E]' : 'text-slate-400'}`}>
+            <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center justify-between relative z-20 mx-0.5">
+                <div className="text-left">
+                    <h2 className="text-base font-black text-slate-900 tracking-tight">Availability</h2>
+                    <p className={`text-[8px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#2D2F6E]' : 'text-slate-400'}`}>
                         {isOnline ? 'Active & Receiving Tasks' : 'Currently Off Duty'}
                     </p>
                 </div>
@@ -231,123 +231,113 @@ const DeliveryProfile = () => {
                 {/* Interactive Toggle Switch */}
                 <button
                     onClick={handleToggleDuty}
-                    className={`w-14 h-8 rounded-full p-1 transition-colors duration-500 ease-in-out relative flex items-center shadow-inner ${isOnline ? 'bg-[#2D2F6E]' : 'bg-slate-200'
-                        }`}
+                    className={`w-12 h-7 rounded-full p-0.5 transition-colors duration-500 relative flex items-center shadow-inner ${isOnline ? 'bg-[#2D2F6E]' : 'bg-slate-200'}`}
                 >
                     <div
-                        className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isOnline ? 'translate-x-6' : 'translate-x-0'
-                            }`}
+                        className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-500 ${isOnline ? 'translate-x-5' : 'translate-x-0'}`}
                     >
-                        {isOnline && <div className="w-2 h-2 bg-[#2D2F6E] rounded-full animate-pulse"></div>}
+                        {isOnline && <div className="w-1.5 h-1.5 bg-[#2D2F6E] rounded-full animate-pulse"></div>}
                     </div>
                 </button>
+            </div>            {/* 1. Identity & Duty */}
+            <div className="mx-0.5">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2 italic">Identity & Performance</h3>
+                <div className="space-y-1">
+                    <MenuOption
+                        icon={User}
+                        color="bg-[#2D2F6E]"
+                        label="Identity Profile"
+                        subLabel={deliveryProfile?.user?.isVerified ? "Verified Partner" : "Update details"}
+                        onClick={() => setIsEditing('personal')}
+                    />
+                    <MenuOption
+                        icon={Star}
+                        color="bg-[#2D2F6E]"
+                        label="Performance Rating"
+                        subLabel="Your service score"
+                        extra={<span className="bg-orange-50 text-[10px] font-black px-2.5 py-1 rounded-full text-orange-600 border border-orange-100 italic">4.8</span>}
+                        to="/delivery/stats"
+                    />
+                </div>
             </div>
 
-
-
-            {/* New Categorized Menu - Matching Reference */}
-            <div className="space-y-6">
-
-                {/* 1. Identity & Duty */}
-                <div className="space-y-3">
-                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 italic">Identity & Performance</h3>
-                    <div className="bg-white rounded-[2rem] p-4 border border-slate-100 shadow-sm">
-                        <MenuOption
-                            icon={User}
-                            color="bg-green-500"
-                            label="Identity Profile"
-                            subLabel={deliveryProfile?.user?.isVerified ? "Verified Partner" : "Update details"}
-                            onClick={() => setIsEditing('personal')}
-                        />
-                        <MenuOption
-                            icon={Star}
-                            color="bg-orange-400"
-                            label="Performance Rating"
-                            subLabel="Your service score"
-                            extra={<span className="bg-orange-50 text-[10px] font-black px-2.5 py-1 rounded-full text-orange-600 border border-orange-100 italic">4.8</span>}
-                            to="/delivery/stats"
-                        />
-                    </div>
+            {/* 2. Financials */}
+            <div className="mx-0.5">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2 italic">Earnings & Bank</h3>
+                <div className="space-y-1">
+                    <MenuOption
+                        icon={Wallet}
+                        color="bg-[#2D2F6E]"
+                        label="Wallet & Earnings"
+                        subLabel="Check your balance"
+                        extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 1,240</span>}
+                        to="/delivery/wallet"
+                    />
+                    <MenuOption
+                        icon={CreditCard}
+                        color="bg-[#2D2F6E]"
+                        label="Financial Routing"
+                        subLabel="Bank details"
+                        onClick={() => setIsEditing('bank')}
+                    />
                 </div>
+            </div>
 
-                {/* 2. Financials */}
-                <div className="space-y-3">
-                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 italic">Earnings & Bank</h3>
-                    <div className="bg-white rounded-[2rem] p-4 border border-slate-100 shadow-sm">
-                        <MenuOption
-                            icon={Wallet}
-                            color="bg-purple-600"
-                            label="Wallet & Earnings"
-                            subLabel="Check your balance"
-                            extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 1,240</span>}
-                            to="/delivery/wallet"
-                        />
-                        <MenuOption
-                            icon={CreditCard}
-                            color="bg-indigo-500"
-                            label="Financial Routing"
-                            subLabel="Bank details"
-                            onClick={() => setIsEditing('bank')}
-                        />
-                    </div>
-                </div>
-
-                {/* 3. Settings & Support */}
-                <div className="space-y-3">
-                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 italic">Platform Settings</h3>
-                    <div className="bg-white rounded-[2rem] p-4 border border-slate-100 shadow-sm">
-                        <MenuOption
-                            icon={Bell}
-                            color="bg-red-500"
-                            label="Notifications"
-                            subLabel="Alert preferences"
-                            to="/delivery/notifications"
-                        />
-                        <MenuOption
-                            icon={Globe}
-                            color="bg-blue-600"
-                            label="Language"
-                            extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
-                            to="/delivery/language"
-                        />
-                        <MenuOption
-                            icon={FileText}
-                            color="bg-amber-600"
-                            label="KYC Documents"
-                            subLabel={kycStatus}
-                            onClick={() => setShowKYCModal(true)}
-                        />
-                        <MenuOption
-                            icon={LifeBuoy}
-                            color="bg-cyan-500"
-                            label="Help & Support"
-                            onClick={() => setShowSupport(true)}
-                        />
-                    </div>
+            {/* 3. Settings & Support */}
+            <div className="mx-0.5">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2 italic">Platform Settings</h3>
+                <div className="space-y-1">
+                    <MenuOption
+                        icon={Bell}
+                        color="bg-[#2D2F6E]"
+                        label="Notifications"
+                        subLabel="Alert preferences"
+                        to="/delivery/notifications"
+                    />
+                    <MenuOption
+                        icon={Globe}
+                        color="bg-[#2D2F6E]"
+                        label="Language"
+                        extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
+                        to="/delivery/language"
+                    />
+                    <MenuOption
+                        icon={FileText}
+                        color="bg-[#2D2F6E]"
+                        label="KYC Documents"
+                        subLabel={kycStatus}
+                        onClick={() => setShowKYCModal(true)}
+                    />
+                    <MenuOption
+                        icon={LifeBuoy}
+                        color="bg-[#2D2F6E]"
+                        label="Help & Support"
+                        onClick={() => setShowSupport(true)}
+                    />
                 </div>
             </div>
 
             {/* Logout Action - Premium Style */}
-            <div className="pt-6 pb-4">
+            <div className="pt-2 pb-4">
                 <button
                     onClick={() => {
                         logout();
                         navigate('/delivery/login');
                     }}
-                    className="w-full bg-red-50/50 p-5 rounded-[2rem] border border-red-100 flex items-center justify-between group active:scale-[0.98] transition-all"
+                    className="w-full bg-red-50/50 p-3 rounded-[1.5rem] border border-red-100 flex items-center justify-between group active:scale-[0.98] transition-all"
                 >
-                    <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-red-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200 group-hover:rotate-6 transition-transform">
-                            <LogOut size={22} strokeWidth={2.5} />
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-[#2D2F6E] rounded-2xl flex items-center justify-center text-[#E2C17D] shadow-md shadow-indigo-100 group-hover:rotate-6 transition-transform">
+                            <LogOut size={18} strokeWidth={2.5} />
                         </div>
                         <div className="text-left">
-                            <h4 className="text-sm font-black text-red-600 uppercase tracking-widest italic leading-none">Secure Logout</h4>
-                            <p className="text-[10px] font-bold text-red-400 mt-1">Sign out of Silaiwala</p>
+                            <h4 className="text-xs font-black text-red-600 uppercase tracking-widest italic leading-none">Secure Logout</h4>
+                            <p className="text-[9px] font-bold text-red-400 mt-1">Sign out of SewZelaa</p>
                         </div>
                     </div>
-                    <ChevronRight size={18} className="text-red-300" />
+                    <ChevronRight size={16} className="text-red-300" />
                 </button>
-                <p className="text-center mt-8 text-[11px] font-black text-slate-400 uppercase tracking-widest opacity-50">Silaiwala • Version 1.2 (Beta)</p>
+                <p className="text-center mt-6 text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50">SewZelaa • Version 1.2 (Beta)</p>
             </div>
 
             {/* Platform Rules Modal */}

@@ -15,15 +15,15 @@ const MenuOption = ({ icon: Icon, label, subLabel, to, onClick, isDanger, color,
         <Component
             to={to}
             onClick={onClick}
-            className={`w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2D2F6E]/20 hover:bg-[#2D2F6E]/[0.02] transition-all group mb-3 ${isDanger ? 'hover:bg-indigo-50 hover:border-indigo-100' : ''}`}
+            className={`w-full flex items-center justify-between p-2 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-[#2D2F6E]/20 hover:bg-[#2D2F6E]/[0.02] transition-all group mb-1 ${isDanger ? 'hover:bg-indigo-50 hover:border-indigo-100' : ''}`}
         >
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${getIconColor()}`}>
-                    <Icon size={20} strokeWidth={2.5} />
+            <div className="flex items-center gap-2.5">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105 group-active:scale-95 ${getIconColor()}`}>
+                    <Icon size={17} strokeWidth={2.5} />
                 </div>
-                <div className="text-left py-1">
-                    <h4 className={`text-[15px] font-black tracking-tight ${isDanger ? 'text-red-600' : 'text-gray-900 group-hover:text-indigo-600 transition-colors'}`}>{label}</h4>
-                    {subLabel && <p className="text-[11px] font-bold text-gray-400 leading-tight mt-0.5">{subLabel}</p>}
+                <div className="text-left py-0.5">
+                    <h4 className={`text-[13px] font-black tracking-tight leading-none ${isDanger ? 'text-red-600' : 'text-gray-900 group-hover:text-[#2D2F6E] transition-colors'}`}>{label}</h4>
+                    {subLabel && <p className="text-[10px] font-bold text-gray-400 leading-none mt-1">{subLabel}</p>}
                 </div>
             </div>
 

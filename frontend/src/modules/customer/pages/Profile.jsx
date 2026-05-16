@@ -80,10 +80,10 @@ const ProfilePage = () => {
             {/* 1. Header & Stats */}
             <ProfileHeader user={displayUser} stats={profile?.stats} />
 
-            <div className="max-w-4xl mx-auto px-4 -mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-4xl mx-auto px-3 -mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                 {/* Account Section */}
-                <div className="mb-6">
+                <div className="mb-4">
                     <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Account Management</h3>
                     <div className="space-y-1">
                         <MenuOption
@@ -118,7 +118,7 @@ const ProfilePage = () => {
                 </div>
 
                 {/* Rewards & Benefits Section */}
-                <div className="mb-6">
+                <div className="mb-4">
                     <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Rewards & Benefits</h3>
                     <div className="space-y-1">
                         <MenuOption
@@ -156,7 +156,7 @@ const ProfilePage = () => {
                 </div>
 
                 {/* Settings Section */}
-                <div className="mb-6">
+                <div className="mb-4">
                     <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Settings</h3>
                     <div className="space-y-1">
                         <MenuOption

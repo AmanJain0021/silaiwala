@@ -14,7 +14,7 @@ const BookingStepper = ({ currentStepId }) => {
     const currentIndex = STEPS.findIndex(s => s.id === currentStepId);
 
     return (
-        <div className="w-full py-3 px-4 bg-white border-b border-gray-100 shadow-sm">
+        <div className="w-full py-2.5 px-4 bg-white border-b border-gray-100 shadow-sm">
             <div className="max-w-md mx-auto relative flex justify-between items-center px-2">
                 {/* Connecting Lines */}
                 <div className="absolute top-[14px] left-8 right-8 h-0.5 bg-gray-100 z-0">

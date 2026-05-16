@@ -56,8 +56,8 @@ const DeliveryLogin = () => {
             animate={{ opacity: 1 }}
             className="w-full"
         >
-            <div className="mb-8">
-                <h2 className="text-2xl font-black text-[#1e293b] mb-1">Welcome back!</h2>
+            <div className="mb-4">
+                <h2 className="text-xl font-black text-[#1e293b] mb-0.5">Welcome back!</h2>
                 <p className="text-sm font-medium text-gray-400">
                     {otpSent ? 'Verify your number' : 'Login to continue'}
                 </p>
@@ -74,11 +74,11 @@ const DeliveryLogin = () => {
                 </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-4">
                     {/* Mobile Number Field */}
                     <div className="group">
-                        <div className={`flex items-center px-4 py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${error && !otpSent ? 'border-red-100' : 'border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white'}`}>
+                        <div className={`flex items-center px-4 py-3 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${error && !otpSent ? 'border-red-100' : 'border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white'}`}>
                             <Phone className={`w-5 h-5 mr-3 transition-colors ${error && !otpSent ? 'text-red-400' : 'text-[#2D2F6F]'}`} />
                             <input
                                 type="tel"
@@ -97,7 +97,7 @@ const DeliveryLogin = () => {
                             type="button"
                             onClick={handleSendOTP}
                             disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
-                            className={`w-full h-14 rounded-2xl font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                            className={`w-full h-12 rounded-2xl font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
                                 !mobileNumber || mobileNumber.length < 10 || sendingOtp
                                     ? 'bg-gray-200 text-gray-400'
                                     : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] shadow-lg shadow-purple-100'
@@ -121,7 +121,7 @@ const DeliveryLogin = () => {
                         >
                             {/* OTP Field */}
                             <div className="group">
-                                <div className={`flex items-center px-4 py-4 rounded-2xl bg-[#F8F9FD] border-2 border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white transition-all duration-300`}>
+                                <div className={`flex items-center px-4 py-3 rounded-2xl bg-[#F8F9FD] border-2 border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white transition-all duration-300`}>
                                     <Lock className="w-5 h-5 mr-3 text-[#2D2F6F]" />
                                     <input
                                         type={showOtp ? "text" : "password"}
@@ -129,7 +129,7 @@ const DeliveryLogin = () => {
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                         maxLength={6}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 outline-none w-full tracking-[0.2em]"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 placeholder:tracking-normal outline-none w-full tracking-[0.2em]"
                                     />
                                     <button 
                                         type="button" 
@@ -150,7 +150,7 @@ const DeliveryLogin = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className={`w-full h-14 rounded-2xl font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                                className={`w-full h-12 rounded-2xl font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
                                     isLoading ? 'bg-purple-300' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] shadow-lg shadow-purple-100'
                                 }`}
                             >

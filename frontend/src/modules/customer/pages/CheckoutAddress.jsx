@@ -27,9 +27,9 @@ const CheckoutAddress = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans">
+        <div className="min-h-screen bg-gray-50 pb-32 font-sans">
             {/* 1. Sticky Header */}
-            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center gap-3 pt-safe">
+            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 h-16 flex items-end gap-3 pb-4">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
                     <ArrowLeft size={20} />
                 </button>
@@ -97,20 +97,20 @@ const CheckoutAddress = () => {
                 )}
             </div>
 
-            {/* 4. Sticky Footer Button */}
+            {/* 4. Solid Sticky Footer */}
             {!isAddingNew && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 pb-safe z-40">
+                <div className="fixed bottom-0 left-0 right-0 px-4 pt-3 pb-4 bg-white border-t border-gray-100 z-40">
                     <button
                         onClick={handleProceed}
                         disabled={!selectedAddressId}
                         className={cn(
-                            "w-full py-3.5 rounded-full text-sm font-bold shadow-lg transition-all flex items-center justify-center gap-2",
+                            "w-full py-3.5 rounded-full text-sm font-black shadow-lg transition-all flex items-center justify-center gap-2",
                             selectedAddressId
-                                ? "bg-[#2D2F6E] text-white hover:bg-[#1E1F4D] active:scale-95 shadow-[#2D2F6E]/20"
+                                ? "bg-[#2D2F6E] text-white active:scale-[0.98] shadow-[#2D2F6E]/20"
                                 : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                         )}
                     >
-                        Proceed to Order Summary <ArrowRight size={16} />
+                        Proceed to Order Summary <ArrowRight size={18} />
                     </button>
                 </div>
             )}

@@ -59,42 +59,42 @@ const DeliveryHistory = () => {
     const { orders: historicalTasks, stats } = historyData;
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2">
+        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2 -mt-2">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tighter capitalize mb-4">
+            <div className="px-1">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tighter capitalize mb-1">
                     Transaction <span className="text-slate-400">History</span>
                 </h1>
             </div>
 
             {/* Earnings Summary Mini Card */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex items-center justify-between overflow-hidden relative group">
-                <div className="space-y-1 relative z-10">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Total Admin Payouts</p>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter">₹{stats.totalEarnings}</h3>
+            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex items-center justify-between overflow-hidden relative group mx-1">
+                <div className="space-y-0.5 relative z-10">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Total Admin Payouts</p>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tighter">₹{stats.totalEarnings}</h3>
                 </div>
-                <div className="w-11 h-11 bg-slate-600 rounded-[0.8rem] flex items-center justify-center text-white relative z-10">
-                    <IndianRupee size={22} strokeWidth={2.5} />
+                <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center text-white relative z-10">
+                    <IndianRupee size={20} strokeWidth={2.5} />
                 </div>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50/50 rounded-full blur-3xl -translate-y-10 translate-x-10 group-hover:scale-150 transition-transform duration-1000"></div>
             </div>
 
             {/* Title for list */}
-            <div className="flex items-center justify-between px-2 pt-2">
-                <h2 className="text-[11px] font-black text-slate-800 tracking-widest uppercase">Verified Deliveries</h2>
-                <div className="flex items-center gap-1.5 text-primary bg-indigo-100 px-2 py-1 rounded-md">
-                    <ShieldCheck size={12} />
-                    <span className="text-[9px] font-black uppercase tracking-wider">Proof Secured</span>
+            <div className="flex items-center justify-between px-2 pt-1">
+                <h2 className="text-[10px] font-black text-slate-800 tracking-widest uppercase">Verified Deliveries</h2>
+                <div className="flex items-center gap-1.5 text-primary bg-indigo-100 px-2 py-0.5 rounded-md">
+                    <ShieldCheck size={10} />
+                    <span className="text-[8px] font-black uppercase tracking-wider">Proof Secured</span>
                 </div>
             </div>
 
             {/* List */}
-            <div className="space-y-4">
+            <div className="space-y-3 px-1">
                 {historicalTasks.length === 0 ? (
-                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center">
-                        <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[1.5rem] p-10 text-center">
+                        <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                         <p className="text-slate-500 font-bold text-sm">No historical records found.</p>
-                        <p className="text-slate-400 text-xs mt-1">Complete tasks to see them here.</p>
+                        <p className="text-slate-400 text-[10px] mt-0.5">Complete tasks to see them here.</p>
                     </div>
                 ) : historicalTasks.map((task, idx) => (
                     <motion.div
@@ -102,37 +102,37 @@ const DeliveryHistory = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex flex-col group hover:border-slate-100 transition-all"
+                        className="bg-white p-4 rounded-[1.25rem] border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex flex-col group hover:border-slate-100 transition-all"
                     >
-                        <div className="flex items-start gap-4 mb-3">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-primary flex items-center justify-center shrink-0">
-                                <Package size={22} />
+                        <div className="flex items-start gap-3 mb-2.5">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-100 text-primary flex items-center justify-center shrink-0">
+                                <Package size={18} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between mb-1 gap-2">
-                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">#{task._id.slice(-6).toUpperCase()}</p>
-                                    <span className="text-[8px] font-black px-2 py-1 rounded max-w-max uppercase tracking-widest shrink-0 bg-slate-50 text-slate-600">Platform Payout</span>
+                                <div className="flex items-start justify-between mb-0.5 gap-2">
+                                    <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight truncate">#{task._id.slice(-6).toUpperCase()}</p>
+                                    <span className="text-[7px] font-black px-1.5 py-0.5 rounded max-w-max uppercase tracking-widest shrink-0 bg-slate-50 text-slate-600">Platform Payout</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate max-w-[120px]">To: {task.customer?.name || 'Customer'}</p>
-                                    <span className="text-sm font-black text-slate-900">₹20</span>
+                                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest truncate max-w-[120px]">To: {task.customer?.name || 'Customer'}</p>
+                                    <span className="text-[13px] font-black text-slate-900">₹20</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Bottom Metadata & Proof Action */}
-                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-3 opacity-80">
+                        <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2 opacity-80">
                                 <div className="flex items-center gap-1">
-                                    <Calendar size={10} className="text-slate-600" />
-                                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-                                        {new Date(task.deliveredAt || task.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    <Calendar size={9} className="text-slate-600" />
+                                    <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">
+                                        {new Date(task.deliveredAt || task.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                     </span>
                                 </div>
-                                <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
+                                <div className="w-0.5 h-0.5 bg-slate-300 rounded-full"></div>
                                 <div className="flex items-center gap-1">
-                                    <Clock size={10} className="text-slate-600" />
-                                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+                                    <Clock size={9} className="text-slate-600" />
+                                    <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">
                                         {new Date(task.deliveredAt || task.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
@@ -140,9 +140,9 @@ const DeliveryHistory = () => {
 
                             <button
                                 onClick={() => setSelectedProof(task)}
-                                className="flex items-center gap-1.5 text-[9px] font-black text-slate-600 bg-slate-50/50 hover:bg-slate-100 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors active:scale-95"
+                                className="flex items-center gap-1 text-[8px] font-black text-slate-600 bg-slate-50/50 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg uppercase tracking-widest transition-colors active:scale-95"
                             >
-                                <Camera size={12} />
+                                <Camera size={11} />
                                 View Proof
                             </button>
                         </div>
