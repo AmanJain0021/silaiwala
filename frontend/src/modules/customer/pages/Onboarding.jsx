@@ -56,13 +56,13 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col overflow-hidden font-sans">
+    <div className="h-[100dvh] bg-white flex flex-col overflow-hidden font-sans relative">
       {/* Top Progress Bar */}
-      <div className="fixed top-0 left-0 w-full flex gap-1 p-2 z-50">
+      <div className="absolute top-0 left-0 w-full flex gap-1 p-2 z-50">
         {steps.map((_, idx) => (
           <div 
             key={idx} 
-            className="h-1 flex-1 rounded-full bg-gray-100 overflow-hidden"
+            className="h-1 flex-1 rounded-full bg-gray-300/50 overflow-hidden backdrop-blur-sm"
           >
             <motion.div 
               initial={{ width: 0 }}
@@ -74,7 +74,7 @@ const Onboarding = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 relative flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -82,10 +82,10 @@ const Onboarding = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col min-h-0"
           >
             {/* Image Section */}
-            <div className="relative h-[60vh] w-full overflow-hidden bg-gray-100">
+            <div className="relative h-[45%] lg:h-[50%] shrink-0 w-full overflow-hidden bg-gray-100">
               <motion.img 
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
@@ -95,16 +95,15 @@ const Onboarding = () => {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                     console.error("Image load failed:", steps[currentStep].image);
-                    // Optional: set a fallback image
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
               
               {/* Skip Button */}
               {currentStep < steps.length - 1 && (
                 <button 
                   onClick={handleSkip}
-                  className="absolute top-8 right-6 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-white text-sm font-bold border border-white/30 shadow-sm"
+                  className="absolute top-8 right-4 px-4 py-1.5 bg-black/20 backdrop-blur-md rounded-full text-white text-xs font-bold border border-white/30 shadow-sm z-10"
                 >
                   Skip
                 </button>
@@ -112,30 +111,31 @@ const Onboarding = () => {
             </div>
 
             {/* Content Section */}
-            <div className="flex-1 bg-white px-8 pt-4 pb-12 flex flex-col items-center text-center">
+            <div className="flex-1 bg-white px-5 py-4 flex flex-col items-center justify-center text-center min-h-0 z-10 relative">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
-                className="w-16 h-16 rounded-3xl bg-[#2D2F6E]/10 text-[#2D2F6E] flex items-center justify-center mb-6 shadow-sm"
+                className="w-12 h-12 rounded-2xl bg-[#2D2F6E]/10 text-[#2D2F6E] flex items-center justify-center mb-4 shadow-sm shrink-0"
               >
-                {steps[currentStep].icon}
+                {/* Clone the icon element to override its size classes safely without mutating the original object */}
+                {React.cloneElement(steps[currentStep].icon, { className: "w-6 h-6" })}
               </motion.div>
 
               <motion.h2 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-4xl font-black text-[#1A1A1A] mb-4 tracking-tight"
+                className="text-2xl md:text-3xl font-bold text-[#1A1A1A] mb-2 tracking-tight"
               >
                 {steps[currentStep].title}
               </motion.h2>
 
               <motion.p 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="text-gray-500 text-lg leading-relaxed max-w-xs"
+                className="text-gray-500 text-sm md:text-base leading-relaxed max-w-[280px]"
               >
                 {steps[currentStep].description}
               </motion.p>
@@ -143,32 +143,28 @@ const Onboarding = () => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Buttons */}
-        <div className="p-8 bg-white fixed bottom-0 left-0 w-full">
+        {/* Static Navigation Buttons */}
+        <div className="px-5 py-4 bg-white shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] border-t border-gray-50 z-20">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleNext}
-            className={`w-full py-5 rounded-3xl font-bold text-xl flex items-center justify-center gap-3 shadow-2xl transition-all ${
-              currentStep === steps.length - 1 
-                ? "bg-[#2D2F6E] text-white shadow-[#2D2F6E]/30" 
-                : "bg-[#2D2F6E] text-white shadow-[#2D2F6E]/30"
-            }`}
+            className="w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-[#2D2F6E]/20 transition-all bg-[#2D2F6E] text-white"
           >
             {currentStep === steps.length - 1 ? (
-              <>Get Started <Sparkles className="w-6 h-6" /></>
+              <>Get Started <Sparkles className="w-5 h-5" /></>
             ) : (
-              <>Continue <ArrowRight className="w-6 h-6" /></>
+              <>Continue <ArrowRight className="w-5 h-5" /></>
             )}
           </motion.button>
           
           {/* Step Indicators (Dots) */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-1.5 mt-4">
             {steps.map((_, idx) => (
               <div 
                 key={idx} 
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentStep ? "w-8 bg-[#2D2F6E]" : "w-2 bg-gray-200"
+                  idx === currentStep ? "w-6 bg-[#2D2F6E]" : "w-1.5 bg-gray-200"
                 }`}
               />
             ))}

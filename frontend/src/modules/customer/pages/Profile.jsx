@@ -76,16 +76,16 @@ const ProfilePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
+        <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans text-gray-900">
             {/* 1. Header & Stats */}
             <ProfileHeader user={displayUser} stats={profile?.stats} />
 
-            <div className="max-w-4xl mx-auto px-3 -mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-4xl mx-auto px-3 md:px-6 -mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                 {/* Account Section */}
                 <div className="mb-4">
                     <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Account Management</h3>
-                    <div className="space-y-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                         <MenuOption
                             icon={ShoppingBag}
                             color="bg-[#2D2F6E]"
@@ -120,7 +120,7 @@ const ProfilePage = () => {
                 {/* Rewards & Benefits Section */}
                 <div className="mb-4">
                     <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Rewards & Benefits</h3>
-                    <div className="space-y-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                         <MenuOption
                             icon={Star}
                             color="bg-[#2D2F6E]"
@@ -158,7 +158,7 @@ const ProfilePage = () => {
                 {/* Settings Section */}
                 <div className="mb-4">
                     <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Settings</h3>
-                    <div className="space-y-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                         <MenuOption
                             icon={Globe}
                             color="bg-[#2D2F6E]"

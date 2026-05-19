@@ -6,11 +6,11 @@ const ProfileHeader = ({ user, stats }) => {
     return (
         <div className="relative mb-4">
             {/* Background Pattern */}
-            <div className="absolute inset-x-0 top-0 h-24 bg-[#2D2F6E] rounded-b-[2rem] overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-24 md:h-32 bg-[#2D2F6E] md:rounded-b-3xl overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
             </div>
 
-            <div className="relative pt-8 px-6 flex flex-col items-center">
+            <div className="relative pt-8 md:pt-12 px-6 flex flex-col items-center">
                 {/* Avatar with Edit Badge */}
                 <div className="relative mb-3 group">
                     <div className="w-20 h-20 rounded-[2rem] border-4 border-white shadow-2xl overflow-hidden bg-gray-50 flex items-center justify-center transform group-hover:rotate-3 transition-transform duration-300">
@@ -37,7 +37,7 @@ const ProfileHeader = ({ user, stats }) => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-3 w-full max-w-sm mt-4 pb-2">
+                <div className="grid grid-cols-3 gap-3 md:gap-4 w-full max-w-sm md:max-w-lg mt-4 pb-2">
                     <div className="bg-white py-3 px-1 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 text-center group hover:border-[#2D2F6E]/20 transition-all">
                         <span className="block text-lg font-black text-gray-900 group-hover:text-[#2D2F6E] transition-colors">{stats?.totalOrders || 0}</span>
                         <span className="text-[8px] text-gray-400 uppercase font-black tracking-widest leading-none mt-1">Orders</span>

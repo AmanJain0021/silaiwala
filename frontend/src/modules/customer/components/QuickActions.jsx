@@ -91,7 +91,7 @@ const QuickActions = () => {
 
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0.5 pb-1.5">
+        <div className="px-4 md:px-6 lg:px-8 pt-0.5 pb-1.5">
             {/* Header with Title and Toggle */}
             <div className="relative flex items-center justify-center mb-2 sm:mb-4 px-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">

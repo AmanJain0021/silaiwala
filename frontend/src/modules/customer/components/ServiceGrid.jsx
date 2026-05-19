@@ -39,7 +39,7 @@ const ServiceGrid = () => {
     if (services.length === 0) return null;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        <div className="px-4 md:px-6 lg:px-8 py-2">
             <div className="flex justify-between items-end mb-3">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">Popular Services</h2>
