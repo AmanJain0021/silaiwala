@@ -120,8 +120,8 @@ const ServicesGrid = () => {
     }
 
     return (
-        <div className="p-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">All Services</h2>
+        <div className="p-4 md:p-6 lg:p-8">
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">All Services</h2>
             {services.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                     <p className="text-gray-400 font-bold text-sm">No services found.</p>

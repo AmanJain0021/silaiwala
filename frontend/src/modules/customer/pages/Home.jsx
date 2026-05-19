@@ -29,7 +29,7 @@ const Home = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#F7F8FC] pb-24 font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-screen bg-[#F7F8FC] pb-24 md:pb-8 font-sans selection:bg-[#2D2F6E] selection:text-white">
             <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-50/50 via-white to-white -z-10" />
 
             {/* 1. Header & Location */}

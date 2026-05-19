@@ -23,7 +23,7 @@ const CustomerMainLayout = () => {
         <div className="min-h-screen bg-[#F7F8FC] flex flex-col font-sans">
             {/* Desktop Navbar - Only visible on md and up */}
             <header className="hidden md:block sticky top-0 z-[110] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 shadow-sm transition-all duration-300">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
                     {/* Brand */}
                     <Link to="/" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3 group-hover:rotate-0 transition-transform">
@@ -101,8 +101,8 @@ const CustomerMainLayout = () => {
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <main className="flex-1 w-full">
+            {/* Main Content Area - Responsive Container */}
+            <main className="flex-1 w-full max-w-[1400px] mx-auto md:px-6 lg:px-8">
                 <Outlet />
             </main>
         </div>

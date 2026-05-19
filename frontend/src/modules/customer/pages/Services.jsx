@@ -8,7 +8,7 @@ import FAQSection from '../components/services/FAQSection';
 
 const Services = () => {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#f3f9f8] to-[#e6f4f1] pb-20 font-sans">
+        <div className="min-h-screen bg-gradient-to-b from-[#f3f9f8] to-[#e6f4f1] pb-20 md:pb-8 font-sans">
             {/* Sticky Header */}
             <ServicesHeader />
 

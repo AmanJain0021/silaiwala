@@ -82,7 +82,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
 
     return (
         <div className="bg-white pt-3 pb-2 relative group border-b border-gray-100/50 transition-all duration-300">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 relative">
                 {history.length > 0 && (
                     <div className="mb-2 flex items-center gap-2">
                         <button

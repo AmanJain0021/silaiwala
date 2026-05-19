@@ -35,7 +35,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery }) => {
 
     return (
         <div className="bg-gray-50 pb-8 min-h-[50vh]">
-            <h2 className="text-xl font-bold text-[#2D2F6E] px-4 py-4">
+            <h2 className="text-xl md:text-2xl font-bold text-[#2D2F6E] px-4 md:px-6 lg:px-8 py-4">
                 {categoryName && categoryName !== 'All' ? `${categoryName} Collection` : 'Explore Fabrics'}
             </h2>
 
@@ -44,7 +44,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery }) => {
                     <p>No products found in this category.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 px-2 md:px-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 px-2 md:px-6 lg:px-8">
                     {items.map((product, index) => (
                         <ProductCard
                             key={`${product.id || product._id}-${index}`}

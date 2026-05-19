@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/Input';
 
 const ServicesHeader = () => {
     return (
-        <div className="sticky top-0 md:top-20 z-[100] bg-white border-b border-gray-100 shadow-sm px-4 pb-4 transition-all duration-300">
+        <div className="sticky top-0 md:top-20 z-[100] bg-white border-b border-gray-100 shadow-sm px-4 md:px-6 lg:px-8 pb-4 transition-all duration-300">
             {/* Top Bar - Mobile Only */}
             <div className="flex items-center gap-3 pt-3 mb-3 md:hidden">
                 <Link to="/" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700 active:scale-90 transition-transform">

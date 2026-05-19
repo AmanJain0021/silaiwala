@@ -69,7 +69,7 @@ const PromoBanner = () => {
 
     if (isLoading) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="px-4 md:px-6 lg:px-8 py-3">
                 <div className="w-full h-42 bg-gray-100 animate-pulse rounded-3xl flex items-center justify-center">
                     <Sparkles size={24} className="text-gray-200" />
                 </div>
@@ -82,7 +82,7 @@ const PromoBanner = () => {
     const currentBanner = banners[currentIndex];
 
     return (
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 relative group">
+        <div className="px-3 md:px-6 lg:px-8 py-1.5 relative group">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentIndex}

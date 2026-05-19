@@ -54,7 +54,7 @@ const StorePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-[#2D2F6E]">
+        <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans text-[#2D2F6E]">
             {/* 1. Unified Sticky Header */}
             <div className="sticky top-0 md:top-20 z-[100] shadow-md">
                 <StoreHeader
@@ -70,7 +70,7 @@ const StorePage = () => {
 
             {/* 2. Dynamic Store Banner */}
             {storeBanners.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div className="px-4 md:px-6 lg:px-8 py-4">
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}

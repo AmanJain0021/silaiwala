@@ -13,7 +13,7 @@ const StoreHeader = ({ searchQuery, setSearchQuery, onOpenFilter }) => {
 
     return (
         <div className="sticky top-0 md:top-20 z-[105] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 transition-all duration-300">
-            <div className="max-w-7xl mx-auto px-4 py-2 pt-safe">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-2 pt-safe">
                 {/* Branding Row - Mobile Only */}
                 <div className="flex justify-between items-center mb-2 md:hidden">
                     <div className="flex items-center gap-2">

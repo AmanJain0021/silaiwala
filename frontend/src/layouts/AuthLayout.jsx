@@ -107,7 +107,7 @@ const AuthLayout = () => {
     // NEW CUSTOMER SPLIT LAYOUT
     if (isCustomerAuth) {
         return (
-            <div className="min-h-screen bg-white flex flex-col-reverse justify-end md:justify-start md:flex-row font-sans selection:bg-[#2D2F6E]/20">
+            <div className="min-h-screen bg-white flex flex-col-reverse justify-end md:justify-start md:flex-row font-sans selection:bg-[#2D2F6E]/20 overflow-x-hidden">
                 {/* Left Side: Auth Content */}
                 <div className="w-full md:w-3/5 lg:w-[55%] flex flex-col flex-1 min-h-0">
                     <div className="p-4 md:p-10 flex flex-col flex-1 max-w-[550px] mx-auto w-full">
@@ -140,7 +140,7 @@ const AuthLayout = () => {
                 </div>
 
                 {/* Right Side: Visual Content */}
-                <div className="w-full h-[250px] sm:h-[300px] md:h-auto md:w-2/5 lg:w-[45%] relative overflow-hidden bg-[#F8F9FD]">
+                <div className="w-full h-[250px] sm:h-[300px] md:h-auto md:w-2/5 lg:w-[45%] relative overflow-hidden bg-[#F8F9FD] max-w-[100vw]">
                     <motion.div 
                         initial={{ opacity: 0, scale: 1.05 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -150,7 +150,7 @@ const AuthLayout = () => {
                         <img 
                             src="/userlogin.png" 
                             alt="Expert Tailoring" 
-                            className="w-full h-full object-cover object-top md:object-center scale-[1.20] translate-x-4 sm:translate-x-8 md:scale-100 md:translate-x-0"
+                            className="w-full h-full object-cover object-top md:object-center scale-[1.15] md:scale-100"
                         />
                         {/* Gradient Overlay matching reference */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent md:from-white md:via-white/90 md:to-transparent w-[60%] sm:w-[70%] md:w-[70%]" />
