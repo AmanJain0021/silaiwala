@@ -144,7 +144,7 @@ const FabricDetail = () => {
                     {/* Tailor Information Section */}
                     <div>
                         <h3 className="text-xs font-black text-gray-900 tracking-widest uppercase mb-4 opacity-40">Artisan Mastermind</h3>
-                        <Link to={`/tailor/${tailor._id}`} className="flex items-center gap-4 bg-white p-4 rounded-[2.5rem] border-2 border-gray-50 active:scale-95 transition-transform group shadow-sm hover:border-[#2D2F6E]/10">
+                        <Link to={`/user/tailor/${tailor._id}`} className="flex items-center gap-4 bg-white p-4 rounded-[2.5rem] border-2 border-gray-50 active:scale-95 transition-transform group shadow-sm hover:border-[#2D2F6E]/10">
                             <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border-2 border-white shadow-xl rotate-3 group-hover:rotate-0 transition-all duration-500">
                                 <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName} className="w-full h-full object-cover" />
                             </div>

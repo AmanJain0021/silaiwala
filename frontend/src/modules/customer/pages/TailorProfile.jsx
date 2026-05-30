@@ -240,7 +240,7 @@ const TailorProfile = () => {
                                 <div
                                     onClick={() => {
                                         setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                                        navigate(`/fabric/${fabric._id}`);
+                                        navigate(`/user/fabric/${fabric._id}`);
                                     }}
                                     className="bg-white rounded-[2.5rem] p-3 shadow-md border border-gray-100 group cursor-pointer hover:shadow-xl transition-all duration-500 overflow-hidden"
                                 >

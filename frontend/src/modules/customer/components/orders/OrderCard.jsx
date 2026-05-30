@@ -25,7 +25,7 @@ const OrderCard = ({ order }) => {
     }) : "Date Unknown";
 
     return (
-        <Link to={`/orders/${order._id}/track`} className="block bg-white rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+        <Link to={`/user/orders/${order._id}/track`} className="block bg-white rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
             <div className="flex gap-3 sm:gap-4">
                 {/* 1. Image */}
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-gray-50 border border-gray-100">

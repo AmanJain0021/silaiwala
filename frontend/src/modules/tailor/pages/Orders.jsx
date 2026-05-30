@@ -365,16 +365,27 @@ const Orders = () => {
                                         {/* Measurement Values Grid */}
                                         {entries.length > 0 && (
                                             <div className="grid grid-cols-2 gap-2">
-                                                {entries.map(([key, value]) => (
-                                                    <div key={key} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()}
-                                                        </p>
-                                                        <p className="text-[14px] font-black text-gray-900">
-                                                            {typeof value === 'number' ? `${value}"` : (typeof value === 'object' ? 'Configured' : (value || '—'))}
-                                                        </p>
-                                                    </div>
-                                                ))}
+                                                {entries.map(([key, value]) => {
+                                                    const isImage = typeof value === 'string' && (value.startsWith('data:image') || value.match(/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|svg)/i));
+                                                    return (
+                                                        <div key={key} className={`bg-gray-50 rounded-xl p-3 border border-gray-100 ${isImage ? 'col-span-2' : ''}`}>
+                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()}
+                                                            </p>
+                                                            {isImage ? (
+                                                                <img 
+                                                                    src={value} 
+                                                                    alt={key} 
+                                                                    className="w-full max-h-60 object-contain rounded-xl border border-gray-200 mt-1 bg-white"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-[14px] font-black text-gray-900">
+                                                                    {typeof value === 'number' ? `${value}"` : (typeof value === 'object' ? 'Configured' : (value || '—'))}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         )}
 
@@ -547,12 +558,30 @@ const Orders = () => {
                                                 Accept Order
                                             </button>
                                         ) : (
-                                            <button 
-                                                onClick={() => handleAction('View Detail', order)}
-                                                className="flex-[1.5] py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all"
-                                            >
-                                                Update Status
-                                            </button>
+                                            (() => {
+                                                const flow = [
+                                                    { current: 'accepted', next: 'cutting', label: 'Start Cutting' },
+                                                    { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
+                                                    { current: 'stitching', next: 'ready-for-pickup', label: 'Mark Ready' }
+                                                ];
+                                                const nextStep = flow.find(f => f.current === order.status);
+                                                
+                                                return (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (nextStep) {
+                                                                handleStatusUpdate(order._id, nextStep.next);
+                                                            } else {
+                                                                handleAction('View Detail', order);
+                                                            }
+                                                        }}
+                                                        className="flex-[1.5] py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all"
+                                                    >
+                                                        {nextStep ? nextStep.label : 'Update Status'}
+                                                    </button>
+                                                );
+                                            })()
                                         )}
                                     </div>
                                 </div>

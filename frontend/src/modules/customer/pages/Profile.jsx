@@ -43,7 +43,7 @@ const LegalLinks = () => {
                         icon={Shield}
                         label={doc.title}
                         subLabel={`Official ${doc.title} document`}
-                        to={`/legal/${doc.slug}`}
+                        to={`/user/legal/${doc.slug}`}
                     />
                 ))}
             </div>

@@ -106,7 +106,7 @@ const TailorListing = () => {
                                 transition={{ delay: index * 0.05 }}
                             >
                                 <Link
-                                    to={`/tailor/${tailor._id}`}
+                                    to={`/user/tailor/${tailor._id}`}
                                     className="block bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.98] group relative overflow-hidden h-full"
                                 >
                                     {/* Subtle Gradient Hover Effect */}
