@@ -10,7 +10,7 @@ const ServiceCard = ({ service }) => {
 
     const handleNavigate = () => {
         // Forward existing state (like tailor selection) to the detail page
-        navigate(`/services/${service._id}`, { state: location.state });
+        navigate(`/user/services/${service._id}`, { state: location.state });
     };
 
     return (

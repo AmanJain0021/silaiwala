@@ -150,7 +150,7 @@ const CheckoutSummary = () => {
                             });
 
                             if (verifyRes.data.success) {
-                                navigate('/checkout/success', {
+                                navigate('/user/checkout/success', {
                                     state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true }
                                 });
                             }
@@ -166,7 +166,7 @@ const CheckoutSummary = () => {
                                 if (isServiceCheckout) clearCheckout();
                                 else clearCart();
 
-                                navigate('/checkout/success', {
+                                navigate('/user/checkout/success', {
                                     state: { orderId: order._id, orderNumber: order.orderId }
                                 });
                             }

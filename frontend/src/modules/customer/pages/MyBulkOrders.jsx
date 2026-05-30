@@ -332,7 +332,7 @@ const MyBulkOrders = () => {
                                 {selectedOrder.status === 'quoted' && (
                                     <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-white/80 backdrop-blur-xl border-t border-gray-100 flex gap-3 sm:gap-4">
                                         <button
-                                            onClick={() => navigate('/checkout/summary', { state: { bulkOrderId: selectedOrder._id } })}
+                                            onClick={() => navigate('/user/checkout/summary', { state: { bulkOrderId: selectedOrder._id } })}
                                             className="flex-1 py-3.5 sm:py-4 bg-[#2D2F6E] text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-xl shadow-indigo-200 active:scale-95 transition-all"
                                         >
                                             Accept Quote & Pay

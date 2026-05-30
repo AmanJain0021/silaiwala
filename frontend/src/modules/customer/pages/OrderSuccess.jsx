@@ -38,7 +38,7 @@ const OrderSuccess = () => {
 
             <div className="w-full max-w-xs space-y-3 animate-in slide-in-from-bottom-2 duration-700 delay-500">
                 <Link
-                    to={`/orders/${orderId}/track`}
+                    to={`/user/orders/${orderId}/track`}
                     className="w-full py-3.5 rounded-full bg-primary text-white font-bold shadow-lg shadow-indigo-900/10 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                     <PackageCheck size={18} />
