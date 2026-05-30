@@ -13,7 +13,7 @@ const ActiveOrderBanner = ({ order }) => {
     const displayId = order.orderId || order._id?.substring(0, 8);
 
     return (
-        <div className="px-4 md:px-6 lg:px-8 mb-4" onClick={() => navigate(`/orders/${order._id}/track`)}>
+        <div className="px-4 md:px-6 lg:px-8 mb-4" onClick={() => navigate(`/user/orders/${order._id}/track`)}>
             <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all">
                 <div className="flex justify-between items-start mb-4 relative z-10 gap-3">
                     <div className="min-w-0">

@@ -292,7 +292,7 @@ const TailorProfile = () => {
                                 onClick={() => {
                                     if (sample.type === 'service') {
                                         setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                                        navigate(`/services/${sample._id}`, { state: { tailorId: tailor._id } });
+                                        navigate(`/user/services/${sample._id}`, { state: { tailorId: tailor._id } });
                                     }
                                 }}
                                 className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer hover:shadow-md transition-all duration-300"
@@ -335,7 +335,7 @@ const TailorProfile = () => {
                     <button
                         onClick={() => {
                             setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                            navigate('/services', { state: { fabricSource: 'customer' } });
+                            navigate('/user/services', { state: { fabricSource: 'customer' } });
                         }}
                         className="flex-1 bg-white border-2 border-[#2D2F6E] text-[#2D2F6E] py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-sm"
                     >

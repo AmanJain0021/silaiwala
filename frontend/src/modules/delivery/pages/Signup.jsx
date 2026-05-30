@@ -70,23 +70,75 @@ const DeliverySignup = () => {
 
     const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
 
+    const uploadBulkFiles = async (filesArray) => {
+        const data = new FormData();
+        let hasFiles = false;
+        
+        filesArray.forEach(item => {
+            if (item.file) {
+                data.append('images', item.file);
+                hasFiles = true;
+            }
+        });
+        
+        if (!hasFiles) return [];
+        
+        try {
+            const { default: api } = await import('../../../utils/api');
+            const res = await api.post('/upload/public/bulk', data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Bulk file upload failed:', error);
+            throw new Error('Failed to upload documents. Please try again.');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         if (!validateStep(3)) return;
 
         try {
-            // Note: The backend register function expects 'phoneNumber' or 'phone'
-            await signup({
+            useAuthStore.setState({ isLoading: true });
+
+            const filesToUpload = [
+                { name: 'Driving License Front', file: formData.drivingLicense },
+                { name: 'Driving License Back', file: formData.drivingLicenseBack },
+                { name: 'Aadhar Front', file: formData.aadharCard },
+                { name: 'Aadhar Back', file: formData.aadharCardBack }
+            ].filter(item => item.file);
+
+            const uploadedUrls = await uploadBulkFiles(filesToUpload);
+
+            const documents = filesToUpload.map((item, index) => ({
+                name: item.name,
+                url: uploadedUrls[index],
+                status: 'pending'
+            })).filter(doc => doc.url);
+
+            const payloadData = {
                 ...formData,
                 phoneNumber: formData.phone,
-                role: 'delivery'
-            });
+                role: 'delivery',
+                documents
+            };
+            
+            // Clean up file objects from payload
+            delete payloadData.drivingLicense;
+            delete payloadData.drivingLicenseBack;
+            delete payloadData.aadharCard;
+            delete payloadData.aadharCardBack;
+
+            // Note: The backend register function expects 'phoneNumber' or 'phone'
+            await signup(payloadData);
             // If signup is successful, redirect to a "waiting for approval" or dashboard
             // Based on auth controller, new delivery partners are isActive: false
             navigate('/delivery'); 
         } catch (err) {
             setError(err.message || 'Signup failed');
+            useAuthStore.setState({ isLoading: false });
         }
     };
 

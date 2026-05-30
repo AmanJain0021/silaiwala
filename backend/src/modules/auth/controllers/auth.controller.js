@@ -16,13 +16,63 @@ const generateToken = (id) => {
 };
 
 /**
+ * @desc    Check if user email or phone exists
+ * @route   POST /api/v1/auth/check-user
+ * @access  Public
+ */
+exports.checkUserExists = asyncHandler(async (req, res, next) => {
+  const { email, phoneNumber } = req.body;
+  const query = [];
+  
+  if (email) {
+    query.push({ email: email.toLowerCase() });
+  }
+  
+  if (phoneNumber) {
+    let finalPhoneNumber = String(phoneNumber).replace(/[^\d]/g, '');
+    if (finalPhoneNumber.length >= 10) {
+      finalPhoneNumber = `+91${finalPhoneNumber.slice(-10)}`;
+    }
+    query.push({ phoneNumber: finalPhoneNumber });
+  }
+
+  if (query.length === 0) {
+    return next(new ErrorResponse("Please provide email or phone number to check", 400));
+  }
+
+  const userExists = await User.findOne({ $or: query });
+  
+  if (userExists) {
+    const conflictField = userExists.email === email?.toLowerCase() ? "email" : "phone";
+    return res.status(200).json({ success: true, exists: true, message: `This ${conflictField} is already registered`, field: conflictField });
+  }
+  
+  res.status(200).json({ success: true, exists: false, message: "User does not exist" });
+});
+
+/**
  * @desc    Register a new user
  * @route   POST /api/v1/auth/register
  * @access  Public
  */
 exports.register = asyncHandler(async (req, res, next) => {
   const { name, email, phoneNumber, phone, otp, password, role, shopName, experienceInYears, coordinates, specializations, referralCode } = req.body;
-  const finalPhoneNumber = phoneNumber || phone;
+  let finalPhoneNumber = phoneNumber || phone;
+
+  if (!finalPhoneNumber) {
+    return next(new ErrorResponse("Please provide a phone number", 400));
+  }
+
+  // Normalize phone number: strip non-digits except +, extract last 10 digits
+  const digitsOnly = finalPhoneNumber.trim().replace(/[^\d]/g, '');
+  const last10Digits = digitsOnly.slice(-10);
+
+  if (!/^[6-9]\d{9}$/.test(last10Digits)) {
+    return next(new ErrorResponse("Please provide a valid 10-digit mobile number starting with 6-9", 400));
+  }
+
+  // Enforce country code +91
+  finalPhoneNumber = `+91${last10Digits}`;
 
   // 0. Verify OTP (Currently hardcoded legacy check, but required for signup flow)
   const isDev = process.env.NODE_ENV !== 'production';
@@ -146,10 +196,21 @@ exports.registerCustomer = exports.register;
  */
 exports.sendOTP = asyncHandler(async (req, res, next) => {
   const { phoneNumber, email } = req.body;
-  const identifier = phoneNumber || email;
+  let identifier = phoneNumber || email;
 
   if (!identifier) {
     return next(new ErrorResponse("Please provide an email or phone number", 400));
+  }
+
+  if (phoneNumber) {
+    const digitsOnly = String(phoneNumber).replace(/[^\d]/g, '');
+    const last10Digits = digitsOnly.slice(-10);
+    
+    if (!/^[6-9]\d{9}$/.test(last10Digits)) {
+      return next(new ErrorResponse("Please provide a valid 10-digit mobile number starting with 6-9", 400));
+    }
+    
+    identifier = `+91${last10Digits}`;
   }
   
   // Real implementation would use Twilio/AWS SNS etc.
@@ -168,8 +229,20 @@ exports.login = asyncHandler(async (req, res, next) => {
   // 1. Identify User (By Email OR Phone Number)
   if (!email) return next(new ErrorResponse("Identifier is required", 400));
   
+  let phoneIdentifier = email;
+  if (/^[\d+]+$/.test(email)) {
+    const digitsOnly = String(email).replace(/[^\d]/g, '');
+    const last10Digits = digitsOnly.slice(-10);
+    
+    if (!/^[6-9]\d{9}$/.test(last10Digits)) {
+      return next(new ErrorResponse("Please provide a valid 10-digit mobile number starting with 6-9", 400));
+    }
+    
+    phoneIdentifier = `+91${last10Digits}`;
+  }
+
   const user = await User.findOne({ 
-    $or: [{ email: email.toLowerCase() }, { phoneNumber: email }] 
+    $or: [{ email: email.toLowerCase() }, { phoneNumber: phoneIdentifier }] 
   }).select("+password");
 
   if (!user) {

@@ -54,6 +54,10 @@ app.use(globalLimiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// ─── Sanitization ────────────────────────────────────────────────────────────
+const sanitizeRequest = require("./middlewares/sanitizeRequest");
+app.use(sanitizeRequest);
+
 // ─── Static Files ────────────────────────────────────────────────────────────
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 

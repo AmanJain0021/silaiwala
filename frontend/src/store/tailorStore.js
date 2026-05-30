@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../utils/api';
+import axios from 'axios';
 
 const useTailorStore = create((set) => ({
     tailors: [],
@@ -16,7 +17,9 @@ const useTailorStore = create((set) => ({
             const response = await api.get('/customers/tailors', { params });
             set({ tailors: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
         }
     }
 }));

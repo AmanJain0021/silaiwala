@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../utils/api';
+import axios from 'axios';
 
 const useOrderStore = create((set, get) => ({
     orders: [],
@@ -7,12 +8,15 @@ const useOrderStore = create((set, get) => ({
     error: null,
 
     fetchOrders: async () => {
+        if (get().isLoading) return;
         set({ isLoading: true });
         try {
             const response = await api.get('/orders/my-orders');
             set({ orders: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
         }
     },
 

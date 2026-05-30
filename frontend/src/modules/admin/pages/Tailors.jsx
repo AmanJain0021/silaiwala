@@ -163,6 +163,8 @@ const AdminTailors = () => {
                             <thead>
                                 <tr className="bg-gray-50/50 text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
                                     <th className="px-6 py-4">Tailor Details</th>
+                                    <th className="px-6 py-4">Contact Info</th>
+                                    <th className="px-6 py-4">Shop Info</th>
                                     <th className="px-6 py-4">Specialty & Location</th>
                                     <th className="px-6 py-4">Performance</th>
                                     <th className="px-6 py-4">Commission</th>
@@ -184,6 +186,26 @@ const AdminTailors = () => {
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{tailor.name}</span>
                                                     <span className="text-[10px] text-gray-400 font-medium">Joined {tailor.joined}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                                                    <Mail size={12} className="text-gray-400" /> {tailor.email}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium mt-0.5">
+                                                    <Phone size={10} className="text-gray-400" /> {tailor.phone}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                                                    <Building size={12} className="text-gray-400" /> {tailor.shopName || 'Independent'}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium mt-0.5">
+                                                    <Star size={10} className="text-gray-400" /> {tailor.experience ? `${tailor.experience} Years Exp.` : 'New'}
                                                 </div>
                                             </div>
                                         </td>

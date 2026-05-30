@@ -36,28 +36,3 @@ export const Input = ({ label, error, ...props }) => {
         </div>
     );
 };
-
-export const FileUpload = ({ label, error, onChange, value, placeholder = "Upload Document" }) => {
-    return (
-        <div className="space-y-1.5 w-full">
-            {label && <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">{label}</label>}
-            <div className={`relative border-2 border-dashed rounded-2xl p-6 transition-all duration-300 bg-[#F8F9FD] flex flex-col items-center justify-center gap-2 ${error ? 'border-red-200 bg-red-50/30' : 'border-gray-100 hover:border-[#2D2F6F] hover:bg-white'
-                }`}>
-                <input
-                    type="file"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={(e) => onChange(e.target.files[0])}
-                />
-                <div className="h-12 w-12 bg-white rounded-2xl shadow-sm border border-gray-50 flex items-center justify-center text-gray-300 group-hover:text-[#2D2F6F]">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                    </svg>
-                </div>
-                <p className="text-sm font-black text-gray-700">{value ? value.name : placeholder}</p>
-                <span className="text-[10px] text-gray-400 font-bold">PNG, JPG up to 5MB</span>
-            </div>
-            {error && <p className="text-[10px] text-red-500 font-bold pl-2">{error}</p>}
-        </div>
-    );
-};
-

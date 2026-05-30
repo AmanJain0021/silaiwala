@@ -18,8 +18,8 @@ const TailorLogin = () => {
     const mobileNumber = watch('mobileNumber');
 
     const handleSendOTP = async () => {
-        if (!mobileNumber || mobileNumber.length < 10) {
-            setFormError('root', { type: 'manual', message: 'Enter a valid 10-digit number' });
+        if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
+            setFormError('root', { type: 'manual', message: 'Enter a valid 10-digit number starting with 6-9' });
             return;
         }
 
@@ -96,16 +96,21 @@ const TailorLogin = () => {
                     {/* Mobile Number Field */}
                     <div className="group">
                         <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${errors.mobileNumber ? 'border-red-100' : 'border-transparent focus-within:border-[#2D2F6F] focus-within:bg-white'}`}>
-                            <Phone className={`w-5 h-5 mr-3 transition-colors ${errors.mobileNumber ? 'text-red-400' : 'text-[#2D2F6F]'}`} />
+                            <Phone className={`w-5 h-5 mr-2 transition-colors ${errors.mobileNumber ? 'text-red-400' : 'text-gray-400 focus-within:text-[#2D2F6F]'}`} />
+                            <span className="text-gray-800 font-bold text-sm mr-2">+91</span>
+                            <div className="w-px h-5 bg-slate-200 mr-2" />
                             <input
                                 type="tel"
-                                placeholder="Mobile number"
+                                placeholder="00000 00000"
                                 maxLength={10}
                                 {...register('mobileNumber', {
                                     required: 'Mobile number is required',
                                     pattern: {
-                                        value: /^[0-9]{10}$/,
-                                        message: 'Invalid mobile number'
+                                        value: /^[6-9]\d{9}$/,
+                                        message: 'Invalid mobile number starting with 6-9'
+                                    },
+                                    onChange: (e) => {
+                                        e.target.value = e.target.value.replace(/\D/g, '');
                                     }
                                 })}
                                 disabled={otpSent || sendingOtp}

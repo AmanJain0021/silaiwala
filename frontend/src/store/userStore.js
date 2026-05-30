@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../utils/api';
+import axios from 'axios';
 
 const useUserStore = create((set, get) => ({
     profile: null,
@@ -9,6 +10,7 @@ const useUserStore = create((set, get) => ({
     error: null,
 
     fetchProfile: async () => {
+        if (get().isLoading) return;
         set({ isLoading: true });
         try {
             const response = await api.get('/customers/profile');
@@ -20,7 +22,9 @@ const useUserStore = create((set, get) => ({
             });
             return data;
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
         }
     },
 
@@ -36,17 +40,23 @@ const useUserStore = create((set, get) => ({
             });
             return data;
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
+            throw err;
         }
     },
 
     fetchAddresses: async () => {
+        if (get().isLoading) return;
         set({ isLoading: true });
         try {
             const response = await api.get('/customers/addresses');
             set({ addresses: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
         }
     },
 
@@ -56,7 +66,10 @@ const useUserStore = create((set, get) => ({
             const response = await api.post('/customers/addresses', newAddress);
             set({ addresses: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
+            throw err;
         }
     },
 
@@ -66,7 +79,10 @@ const useUserStore = create((set, get) => ({
             const response = await api.patch(`/customers/addresses/${id}`, updatedData);
             set({ addresses: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
+            throw err;
         }
     },
 
@@ -76,7 +92,10 @@ const useUserStore = create((set, get) => ({
             const response = await api.delete(`/customers/addresses/${id}`);
             set({ addresses: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
+            throw err;
         }
     },
 
@@ -96,7 +115,9 @@ const useUserStore = create((set, get) => ({
             const response = await api.get('/customers/referral-stats');
             set({ referralStats: response.data.data, isLoading: false });
         } catch (err) {
-            set({ error: err.message, isLoading: false });
+            if (!axios.isCancel(err)) {
+                set({ error: err.message, isLoading: false });
+            }
         }
     }
 }));

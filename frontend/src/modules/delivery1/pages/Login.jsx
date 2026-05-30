@@ -36,16 +36,20 @@ const DeliveryLogin = () => {
   }, [isAuthenticated, navigate, location]);
 
   const handleChange = (e) => {
+    let value = e.target.value;
+    if (e.target.name === 'phone' || e.target.name === 'otp') {
+      value = value.replace(/\D/g, '');
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     });
   };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!formData.phone || formData.phone.length !== 10) {
-      toast.error('Please enter a valid 10-digit mobile number');
+    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
+      toast.error('Please enter a valid 10-digit mobile number starting with 6-9');
       return;
     }
     try {
@@ -121,16 +125,20 @@ const DeliveryLogin = () => {
                   <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">
                     Mobile Number
                   </label>
-                  <div className="relative">
-                    <FiPhone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                      <FiPhone className="text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
+                      <span className="text-gray-800 font-bold text-sm">+91</span>
+                      <div className="w-px h-5 bg-gray-300" />
+                    </div>
                     <input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder="10-digit number"
+                      placeholder="00000 00000"
                       maxLength={10}
-                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:border-gray-300 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400 font-bold"
+                      className="w-full pl-[6.5rem] pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:border-indigo-300 focus:bg-white focus:outline-none transition-all text-gray-900 placeholder:text-gray-400 font-bold"
                       required
                     />
                   </div>

@@ -176,7 +176,7 @@ const FabricDetail = () => {
                     <button
                         onClick={() => {
                             setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                            navigate('/services', { state: { selectedFabric: fabric, tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name, fabricSource: 'platform' } });
+                            navigate('/user/services', { state: { selectedFabric: fabric, tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name, fabricSource: 'platform' } });
                         }}
                         className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl shadow-xl shadow-[#2D2F6E]/30 font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
                     >

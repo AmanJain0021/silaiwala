@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import useAuthStore from '../../../store/authStore';
+import { validateEmail, validatePhone, validateName } from '../../../utils/validation';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -24,7 +25,11 @@ const Signup = () => {
     const [error, setError] = useState('');
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        let value = e.target.value;
+        if (e.target.name === 'phoneNumber') {
+            value = value.replace(/\D/g, '');
+        }
+        setFormData({ ...formData, [e.target.name]: value });
     };
 
     const handleOtpChange = (index, value) => {
@@ -48,6 +53,24 @@ const Signup = () => {
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setError('');
+
+        // Name Validation
+        const nameErr = validateName(formData.name, "Full Name");
+        if (nameErr) return setError(nameErr);
+
+        // Email Validation
+        const emailErr = validateEmail(formData.email);
+        if (emailErr) return setError(emailErr);
+
+        // Phone Validation
+        const phoneErr = validatePhone(formData.phoneNumber);
+        if (phoneErr) return setError(phoneErr);
+
+        // Extra check for indian numbers starting with 6-9
+        if (!/^[6-9]\d{9}$/.test(formData.phoneNumber)) {
+            return setError('Please enter a valid 10-digit mobile number starting with 6-9');
+        }
+
         try {
             await sendOTP(formData.phoneNumber);
             setStep('otp');
@@ -132,15 +155,21 @@ const Signup = () => {
                                 />
                             </div>
 
-                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner">
-                                <Input
-                                    name="phoneNumber"
-                                    placeholder="Phone Number"
-                                    value={formData.phoneNumber}
-                                    onChange={handleChange}
-                                    required
-                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-slate-300 placeholder:font-medium py-1.5 sm:py-2"
-                                />
+                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
+                                <div className="flex items-center px-3 sm:px-4 gap-2 sm:gap-3 h-full">
+                                    <span className="text-gray-800 font-bold text-sm">+91</span>
+                                    <div className="w-px h-6 bg-slate-200" />
+                                    <input
+                                        type="tel"
+                                        name="phoneNumber"
+                                        placeholder="Phone Number"
+                                        value={formData.phoneNumber}
+                                        onChange={handleChange}
+                                        maxLength={10}
+                                        required
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-bold placeholder:text-slate-300 placeholder:font-medium outline-none py-1.5 sm:py-2"
+                                    />
+                                </div>
                             </div>
 
                             <div className="bg-[#F7F8FC] rounded-2xl p-1 border border-pink-50 shadow-inner">

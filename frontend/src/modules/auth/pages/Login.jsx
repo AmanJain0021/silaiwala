@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import useAuthStore from '../../../store/authStore';
+import { validatePhone } from '../../../utils/validation';
+
 const Login = () => {
     const navigate = useNavigate();
     const { otpLogin, sendOTP, isLoading } = useAuthStore();
@@ -15,8 +17,12 @@ const Login = () => {
 
     const handleSendOtp = async () => {
         setError('');
-        if (!mobileNumber || mobileNumber.length < 10) {
-            setError('Please enter a valid mobile number');
+        
+        const phoneErr = validatePhone(mobileNumber);
+        if (phoneErr) return setError(phoneErr);
+        
+        if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
+            setError('Please enter a valid 10-digit mobile number starting with 6-9');
             return;
         }
 

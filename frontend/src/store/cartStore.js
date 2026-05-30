@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../utils/api';
+import axios from 'axios';
 
 const useCartStore = create(
     persist(
@@ -10,6 +11,7 @@ const useCartStore = create(
             error: null,
 
             fetchCart: async () => {
+                if (get().isLoading) return;
                 set({ isLoading: true });
                 try {
                     const response = await api.get('/customers/cart');
@@ -32,7 +34,9 @@ const useCartStore = create(
                     });
                     set({ items: backendItems, isLoading: false });
                 } catch (err) {
-                    set({ error: err.message, isLoading: false });
+                    if (!axios.isCancel(err)) {
+                        set({ error: err.message, isLoading: false });
+                    }
                 }
             },
 
@@ -50,9 +54,11 @@ const useCartStore = create(
                         await get().fetchCart();
                     }
                 } catch (err) {
-                    console.error('Add to cart failed:', err);
-                    // Fallback to local if needed, but here we want backend sync
-                    set({ error: err.message, isLoading: false });
+                    if (!axios.isCancel(err)) {
+                        console.error('Add to cart failed:', err);
+                        // Fallback to local if needed, but here we want backend sync
+                        set({ error: err.message, isLoading: false });
+                    }
                 }
             },
 
@@ -61,7 +67,9 @@ const useCartStore = create(
                     await api.delete(`/customers/cart/${cartId}`);
                     await get().fetchCart();
                 } catch (err) {
-                    set({ error: err.message });
+                    if (!axios.isCancel(err)) {
+                        set({ error: err.message });
+                    }
                 }
             },
 

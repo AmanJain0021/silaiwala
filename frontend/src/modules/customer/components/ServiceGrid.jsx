@@ -54,7 +54,7 @@ const ServiceGrid = () => {
                 {services.map((service) => (
                     <div
                         key={service._id}
-                        onClick={() => navigate(`/services/${service._id}`, { state: location.state })}
+                        onClick={() => navigate(`/user/services/${service._id}`, { state: location.state })}
                         className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 group cursor-pointer hover:shadow-md transition-shadow"
                     >
                         <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-gray-50">

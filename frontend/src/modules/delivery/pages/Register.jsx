@@ -70,8 +70,8 @@ const DeliveryRegister = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.phone || !/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
-      toast.error('Enter a valid 10-digit mobile number');
+    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
+      toast.error('Enter a valid 10-digit mobile number starting with 6-9');
       return;
     }
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -116,7 +116,7 @@ const DeliveryRegister = () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email.trim())) { toast.error('Enter a valid email address'); return false; }
         if (!formData.phone.trim()) { toast.error('Mobile number is required'); return false; }
-        if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit mobile number'); return false; }
+        if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit mobile number starting with 6-9'); return false; }
         if (!isPhoneVerified) { toast.error('Please verify your mobile number first'); return false; }
         if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact.replace(/\D/g, ''))) { toast.error('Enter a valid emergency contact number'); return false; }
         if (!formData.aadharNumber.trim()) { toast.error('Aadhaar number is required'); return false; }

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, User, Mail, Phone, MapPin, Camera } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../store/authStore';
+import ImageUploader from '../../../components/Common/ImageUploader';
+import { validateName, validateEmail, validatePhone } from '../../../utils/validation';
 
 const EditProfile = () => {
     const navigate = useNavigate();
@@ -11,13 +13,32 @@ const EditProfile = () => {
         name: user?.name || 'Guest User',
         email: user?.email || 'guest@example.com',
         phone: user?.phone || '+91 9876543210',
-        location: user?.location || 'Srinagar, Kashmir'
+        location: user?.location || 'Srinagar, Kashmir',
+        profileImage: user?.profileImage || null
     });
-
+    
+    const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        const newErrors = {};
+
+        const nameErr = validateName(formData.name);
+        if (nameErr) newErrors.name = nameErr;
+
+        const emailErr = validateEmail(formData.email);
+        if (emailErr) newErrors.email = emailErr;
+
+        const phoneErr = validatePhone(formData.phone);
+        if (phoneErr) newErrors.phone = phoneErr;
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setErrors({});
         setIsLoading(true);
 
         // Mock API Call
@@ -35,12 +56,13 @@ const EditProfile = () => {
             {/* 1. Header */}
             <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between pt-safe">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50 transition-colors">
+                    <button type="button" onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50 transition-colors">
                         <ArrowLeft size={20} />
                     </button>
                     <h1 className="text-lg font-bold">Edit Profile</h1>
                 </div>
                 <button
+                    type="button"
                     onClick={handleSubmit}
                     className="p-2 text-[#2D2F6E] hover:bg-indigo-50 rounded-full transition-colors font-black"
                     disabled={isLoading}
@@ -52,13 +74,11 @@ const EditProfile = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-8 max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* 2. Profile Photo */}
                 <div className="flex flex-col items-center">
-                    <div className="relative group">
-                        <div className="w-28 h-28 rounded-full border-4 border-white ring-4 ring-indigo-50/50 shadow-xl overflow-hidden bg-white flex items-center justify-center">
-                            <span className="text-4xl font-black text-[#2D2F6E]">{formData.name.charAt(0)}</span>
-                        </div>
-                        <button type="button" className="absolute bottom-1 right-1 bg-gray-900 text-white p-2 rounded-full shadow-lg hover:bg-[#2D2F6E] transition-all transform hover:scale-110 active:scale-90">
-                            <Camera size={16} />
-                        </button>
+                    <div className="w-32">
+                        <ImageUploader 
+                            value={formData.profileImage}
+                            onChange={(file) => setFormData({ ...formData, profileImage: file })}
+                        />
                     </div>
                 </div>
 
@@ -66,7 +86,7 @@ const EditProfile = () => {
                 <div className="space-y-6">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.name ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#2D2F6E] focus-within:bg-white transition-all`}>
                             <User size={18} className="text-gray-400" />
                             <input
                                 type="text"
@@ -76,11 +96,12 @@ const EditProfile = () => {
                                 placeholder="Enter your name"
                             />
                         </div>
+                        {errors.name && <p className="text-[10px] text-red-500 font-bold ml-2">{errors.name}</p>}
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.email ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#2D2F6E] focus-within:bg-white transition-all`}>
                             <Mail size={18} className="text-gray-400" />
                             <input
                                 type="email"
@@ -90,11 +111,12 @@ const EditProfile = () => {
                                 placeholder="Enter email"
                             />
                         </div>
+                        {errors.email && <p className="text-[10px] text-red-500 font-bold ml-2">{errors.email}</p>}
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.phone ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#2D2F6E] focus-within:bg-white transition-all`}>
                             <Phone size={18} className="text-gray-400" />
                             <input
                                 type="tel"
@@ -104,6 +126,7 @@ const EditProfile = () => {
                                 placeholder="Enter phone"
                             />
                         </div>
+                        {errors.phone && <p className="text-[10px] text-red-500 font-bold ml-2">{errors.phone}</p>}
                     </div>
 
                     <div className="space-y-1.5">

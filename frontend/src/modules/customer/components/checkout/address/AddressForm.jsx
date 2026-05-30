@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Home, Briefcase, ChevronRight, Navigation } from 'lucide-react';
 import useAddressStore from '../../../../../store/userStore';
+import { validateName, validatePhone, validatePincode } from '../../../../../utils/validation';
 
 const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors }) => (
     <div className="mb-3">
@@ -22,6 +23,7 @@ const InputField = ({ label, name, placeholder, type = "text", required, form, e
 
 const AddressForm = ({ onCancel, onSuccess }) => {
     const addAddress = useAddressStore((state) => state.addAddress);
+    const isLoading = useAddressStore((state) => state.isLoading);
     const [isLocating, setIsLocating] = useState(false);
 
     const [form, setForm] = useState({
@@ -64,9 +66,16 @@ const AddressForm = ({ onCancel, onSuccess }) => {
 
     const validate = () => {
         const newErrors = {};
-        if (!form.receiverName.trim()) newErrors.receiverName = "Required";
-        if (!form.phone.match(/^\d{10}$/)) newErrors.phone = "Invalid Phone";
-        if (!form.zipCode.match(/^\d{6}$/)) newErrors.zipCode = "Invalid Pin";
+        
+        const nameErr = validateName(form.receiverName, "Contact Name");
+        if (nameErr) newErrors.receiverName = nameErr;
+        
+        const phoneErr = validatePhone(form.phone);
+        if (phoneErr) newErrors.phone = phoneErr;
+        
+        const pinErr = validatePincode(form.zipCode);
+        if (pinErr) newErrors.zipCode = pinErr;
+        
         if (!form.street.trim()) newErrors.street = "Required";
         if (!form.city.trim()) newErrors.city = "Required";
 
@@ -74,11 +83,15 @@ const AddressForm = ({ onCancel, onSuccess }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (validate()) {
-            addAddress(form);
-            onSuccess && onSuccess();
+            try {
+                await addAddress(form);
+                onSuccess && onSuccess();
+            } catch (err) {
+                console.error("Add address failed", err);
+            }
         }
     };
 
@@ -147,15 +160,17 @@ const AddressForm = ({ onCancel, onSuccess }) => {
                     <button
                         type="button"
                         onClick={onCancel}
+                        disabled={isLoading}
                         className="py-2.5 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
-                        className="py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-lg shadow-indigo-900/10 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-2"
+                        disabled={isLoading}
+                        className={`py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-lg shadow-indigo-900/10 transition-all flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-dark active:scale-95'}`}
                     >
-                        Save Address <ChevronRight size={14} />
+                        {isLoading ? 'Saving...' : 'Save Address'} <ChevronRight size={14} />
                     </button>
                 </div>
             </form>

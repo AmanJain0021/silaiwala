@@ -43,7 +43,7 @@ const PopularTailors = () => {
                         viewport={{ once: true }}
                     >
                         <Link
-                            to={`/tailor/${tailor._id}`}
+                            to={`/user/tailor/${tailor._id}`}
                             className="flex gap-4 bg-white p-4 rounded-[1.5rem] shadow-[0_4px_15px_rgba(0,0,0,0.02)] border border-gray-100 active:scale-[0.98] transition-transform group relative overflow-hidden"
                         >
                             <div className="relative shrink-0">

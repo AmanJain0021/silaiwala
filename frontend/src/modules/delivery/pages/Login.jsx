@@ -16,8 +16,8 @@ const DeliveryLogin = () => {
     const [showOtp, setShowOtp] = useState(false);
 
     const handleSendOTP = async () => {
-        if (!mobileNumber || mobileNumber.length < 10) {
-            setError('Enter a valid 10-digit mobile number');
+        if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
+            setError('Enter a valid 10-digit mobile number starting with 6-9');
             return;
         }
 
