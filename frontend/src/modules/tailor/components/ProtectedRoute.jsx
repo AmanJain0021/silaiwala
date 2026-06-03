@@ -18,11 +18,11 @@ const ProtectedRoute = ({ requiredStatus = [TAILOR_STATUS.APPROVED] }) => {
     }
 
     if (status === TAILOR_STATUS.PENDING_APPROVAL && !requiredStatus.includes(TAILOR_STATUS.PENDING_APPROVAL)) {
-        return <Navigate to="/partner/under-review" replace />;
+        return <Navigate to="/partner/verification" replace />;
     }
 
     if (status === TAILOR_STATUS.REJECTED && !requiredStatus.includes(TAILOR_STATUS.REJECTED)) {
-        return <Navigate to="/partner/rejected" replace />;
+        return <Navigate to="/partner/verification" replace />;
     }
 
     if (!requiredStatus.includes(status)) {

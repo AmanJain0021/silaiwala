@@ -64,6 +64,45 @@ const OrderCard = ({ order }) => {
                             <span>{deliveryType}</span>
                         </div>
                     </div>
+
+                    {/* Additional Order Info Summary */}
+                    {order.items && order.items.length > 0 && (
+                        <div className="mt-2.5 flex flex-col gap-1.5 text-[9px] sm:text-[10px] bg-gray-50/80 p-2 sm:p-2.5 rounded-xl border border-gray-100/50">
+                            {order.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-start gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <div className="flex -space-x-1 shrink-0">
+                                            <img 
+                                                src={getImageUrl(item.service?.image || item.product?.image) || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=200"} 
+                                                alt="" 
+                                                className="w-5 h-5 rounded-md object-cover border border-white relative z-10"
+                                            />
+                                            {item.selectedFabric?.images?.[0] && (
+                                                <img 
+                                                    src={getImageUrl(item.selectedFabric.images[0])} 
+                                                    alt="Fabric" 
+                                                    className="w-5 h-5 rounded-md object-cover border border-white relative z-0"
+                                                />
+                                            )}
+                                        </div>
+                                        <span className="text-gray-600 font-bold truncate line-clamp-1 leading-tight">
+                                            {item.service?.title || item.product?.name} 
+                                            {item.selectedFabric && <span className="font-normal text-[8px] ml-1">w/ Fabric</span>}
+                                            <span className="text-gray-400 ml-1">x{item.quantity}</span>
+                                        </span>
+                                    </div>
+                                    {item.measurements?.type && (
+                                        <span className="shrink-0 text-[8px] font-black text-primary uppercase bg-white border border-indigo-50 px-1.5 py-0.5 rounded-md shadow-sm">
+                                            {item.measurements.type === 'home' ? 'Tailor at Home' :
+                                             item.measurements.type === 'sample' ? 'Sample Garment' :
+                                             item.measurements.type === 'slip' ? 'Slip Uploaded' :
+                                             item.measurements.type === 'saved' ? 'Saved Profile' : 'Self Measured'}
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* 3. Arrow */}

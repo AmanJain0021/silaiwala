@@ -12,6 +12,9 @@ const AdminTailors = () => {
     const [pendingData, setPendingData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isEditCommissionModalOpen, setIsEditCommissionModalOpen] = useState(false);
+    const [newCommission, setNewCommission] = useState('');
+    const [isUpdatingCommission, setIsUpdatingCommission] = useState(false);
 
     const tabs = ['All Tailors', 'Pending Applications'];
 
@@ -28,10 +31,11 @@ const AdminTailors = () => {
                 name: t.name,
                 joined: new Date(t.createdAt).toLocaleDateString(),
                 specialty: t.profile?.specializations?.join(', ') || 'General Tailoring',
-                location: t.profile?.location?.address || 'Verified Platform User',
+                location: t.profile?.location?.address || 'Not Provided',
                 rating: t.profile?.rating || 4.8,
                 completedOrders: t.profile?.totalReviews || 0,
-                commission: '20%',
+                commission: t.profile?.commissionPercentage !== undefined ? `${t.profile.commissionPercentage}%` : '20%',
+                commissionRaw: t.profile?.commissionPercentage !== undefined ? t.profile.commissionPercentage : 20,
                 status: t.isActive ? 'Approved' : (t.isVerified ? 'Suspended' : 'Pending'),
                 email: t.email,
                 phone: t.phoneNumber,
@@ -44,9 +48,11 @@ const AdminTailors = () => {
             setPendingData(pendingRes.data.data.map(t => ({
                 id: t._id,
                 name: t.name,
+                email: t.email,
+                phone: t.phoneNumber,
                 status: 'Pending Review',
                 specialty: t.profile?.specializations?.join(', ') || 'General Tailoring',
-                location: t.profile?.location?.address || 'Registration',
+                location: t.profile?.location?.address || 'Not Provided',
                 submittedDate: new Date(t.createdAt).toLocaleDateString(),
                 documents: t.profile?.documents || [],
                 bio: t.profile?.bio,
@@ -77,13 +83,46 @@ const AdminTailors = () => {
     };
 
     const handleReject = async (id) => {
+        const reason = window.prompt("Enter reason for rejection (e.g. 'Aadhar card is not clear'):");
+        if (!reason) {
+            toast.error('Rejection reason is required');
+            return;
+        }
+
         try {
-            await api.delete(`/admin/tailors/${id}/reject`);
+            await api.put(`/admin/tailors/${id}/reject`, { reason });
             setSelectedApp(null);
             toast.success('Tailor application rejected');
             fetchData();
         } catch (error) {
             console.error('Rejection failed', error);
+        }
+    };
+
+    const handleEditCommission = async () => {
+        if (!selectedTailor || !newCommission) return;
+        
+        setIsUpdatingCommission(true);
+        try {
+            await api.put(`/admin/tailors/${selectedTailor.id}/commission`, {
+                commissionPercentage: Number(newCommission)
+            });
+            
+            toast.success('Commission updated successfully');
+            
+            // Update local state to reflect change immediately
+            setSelectedTailor(prev => ({
+                ...prev,
+                commission: `${newCommission}%`,
+                commissionRaw: Number(newCommission)
+            }));
+            
+            setIsEditCommissionModalOpen(false);
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update commission');
+        } finally {
+            setIsUpdatingCommission(false);
         }
     };
 
@@ -299,8 +338,13 @@ const AdminTailors = () => {
                                         <p className="text-xs text-white/60 font-bold mt-1 flex items-center gap-1.5">
                                             <Scissors size={12} /> {selectedTailor.specialty}
                                         </p>
-                                        <div className="mt-2 inline-block px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-white/10 text-white border border-white/20">
-                                            {selectedTailor.status}
+                                        <div className="flex gap-3 mt-2">
+                                            <div className="inline-block px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-white/10 text-white border border-white/20">
+                                                {selectedTailor.status}
+                                            </div>
+                                            <div className="flex items-center gap-1 text-[10px] font-bold text-white/80">
+                                                <Star size={10} /> {selectedTailor.experience || 0} Yrs Exp.
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -314,8 +358,11 @@ const AdminTailors = () => {
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#fbfcfb]">
 
-                                {/* Contact Info */}
+                                {/* Contact Info & Bio */}
                                 <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                                    <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                                        <Building size={16} className="text-primary opacity-70" /> {selectedTailor.shopName || 'Independent'}
+                                    </div>
                                     <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
                                         <Phone size={16} className="text-primary opacity-70" /> {selectedTailor.phone}
                                     </div>
@@ -325,6 +372,11 @@ const AdminTailors = () => {
                                     <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
                                         <MapPin size={16} className="text-primary opacity-70" /> {selectedTailor.location}
                                     </div>
+                                    {selectedTailor.bio && (
+                                        <div className="pt-2 mt-2 border-t border-gray-50">
+                                            <p className="text-xs italic text-gray-500 font-medium">"{selectedTailor.bio}"</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Performance Stats */}
@@ -354,7 +406,15 @@ const AdminTailors = () => {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-lg font-black text-gray-900">{selectedTailor.commission}</span>
-                                                <button className="text-[10px] text-primary hover:underline font-bold">Edit</button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setNewCommission(selectedTailor.commissionRaw);
+                                                        setIsEditCommissionModalOpen(true);
+                                                    }}
+                                                    className="text-[10px] text-primary hover:underline font-bold"
+                                                >
+                                                    Edit
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center pt-4">
@@ -395,12 +455,25 @@ const AdminTailors = () => {
 
                             {/* Actions */}
                             <div className="p-6 border-t border-gray-100 bg-white grid grid-cols-2 gap-3">
-                                <button className="px-4 py-3 border border-red-100 bg-red-50 text-red-600 text-xs font-black rounded-xl hover:bg-red-100 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
-                                    <Ban size={14} /> Suspend
-                                </button>
-                                <button className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
-                                    View Payouts
-                                </button>
+                                {selectedTailor.status === 'Pending' || selectedTailor.status === 'Pending Review' ? (
+                                    <>
+                                        <button onClick={() => { handleReject(selectedTailor.id); setSelectedTailor(null); }} className="px-4 py-3 border border-red-100 bg-red-50 text-red-600 text-xs font-black rounded-xl hover:bg-red-100 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+                                            <Ban size={14} /> Reject
+                                        </button>
+                                        <button onClick={() => { handleApprove(selectedTailor.id); setSelectedTailor(null); }} className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                                            <CheckCircle2 size={14} /> Approve
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button className="px-4 py-3 border border-red-100 bg-red-50 text-red-600 text-xs font-black rounded-xl hover:bg-red-100 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+                                            <Ban size={14} /> Suspend
+                                        </button>
+                                        <button className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                                            View Payouts
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </motion.div>
                     </>
@@ -438,7 +511,15 @@ const AdminTailors = () => {
                                         <div>
                                             <h3 className="text-2xl font-black text-gray-900">{selectedApp.name}</h3>
                                             <p className="text-sm font-bold text-primary">{selectedApp.specialty}</p>
-                                            <div className="flex gap-4 mt-2">
+                                            <div className="flex flex-col gap-1 mt-2">
+                                                <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                                                    <Mail size={12} className="text-gray-400" /> {selectedApp.email}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                                                    <Phone size={12} className="text-gray-400" /> {selectedApp.phone}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-4 mt-3">
                                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                                     <Building size={14} /> {selectedApp.shopName || 'Independent'}
                                                 </div>
@@ -460,13 +541,6 @@ const AdminTailors = () => {
                                                             <div className="flex items-center gap-3">
                                                                 <div className="text-primary/70"><FileText size={16} /></div>
                                                                 <span className="text-sm font-bold text-gray-700">{doc.name}</span>
-                                                            </div>
-                                                            <div className={`text-[10px] font-bold px-2 py-1 rounded ${
-                                                                doc.status === 'verified' ? 'bg-green-100 text-green-600' : 
-                                                                doc.status === 'rejected' ? 'bg-red-100 text-red-600' : 
-                                                                'bg-orange-100 text-orange-600'
-                                                            }`}>
-                                                                {doc.status}
                                                             </div>
                                                         </div>
                                                         <a 
@@ -508,6 +582,60 @@ const AdminTailors = () => {
                             </motion.div>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Commission Modal */}
+            <AnimatePresence>
+                {isEditCommissionModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+                        onClick={() => !isUpdatingCommission && setIsEditCommissionModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col p-6"
+                        >
+                            <h3 className="text-lg font-black text-gray-900 mb-2">Edit Commission</h3>
+                            <p className="text-xs text-gray-500 font-medium mb-6">Set the percentage taken per order for {selectedTailor?.name}</p>
+                            
+                            <div className="relative mb-6">
+                                <input 
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={newCommission}
+                                    onChange={(e) => setNewCommission(e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 focus:outline-none focus:border-primary pr-12"
+                                    placeholder="20"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                            </div>
+                            
+                            <div className="flex gap-3 mt-2">
+                                <button 
+                                    onClick={() => setIsEditCommissionModalOpen(false)}
+                                    disabled={isUpdatingCommission}
+                                    className="flex-1 py-3 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleEditCommission}
+                                    disabled={isUpdatingCommission || !newCommission}
+                                    className="flex-1 py-3 bg-primary text-white hover:bg-primary-dark transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
+                                >
+                                    {isUpdatingCommission ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

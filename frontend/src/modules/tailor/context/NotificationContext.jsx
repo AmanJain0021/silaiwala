@@ -22,7 +22,9 @@ export const NotificationProvider = ({ children }) => {
                 setUnreadCount(response.data.unreadCount);
             }
         } catch (error) {
-            console.error('Error fetching notifications:', error);
+            if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                console.error('Error fetching notifications:', error);
+            }
         } finally {
             setLoading(false);
         }

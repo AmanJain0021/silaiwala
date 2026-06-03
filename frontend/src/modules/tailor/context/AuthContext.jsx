@@ -22,13 +22,10 @@ export const AuthProvider = ({ children }) => {
         const isActive = tailorData?.user?.isActive || tailorData?.isActive;
         if (isActive) return TAILOR_STATUS.APPROVED;
         
-        if (!tailorData || !tailorData.documents) return TAILOR_STATUS.PENDING_APPROVAL;
+        if (!tailorData) return TAILOR_STATUS.PENDING_APPROVAL;
         
-        const hasRejected = tailorData.documents.some(d => d.status === 'rejected');
-        const allVerified = tailorData.documents.length > 0 && tailorData.documents.every(d => d.status === 'verified');
-        
-        if (hasRejected) return TAILOR_STATUS.REJECTED;
-        if (allVerified) return TAILOR_STATUS.APPROVED;
+        if (tailorData.registrationStatus === 'rejected') return TAILOR_STATUS.REJECTED;
+        if (tailorData.registrationStatus === 'verified') return TAILOR_STATUS.APPROVED;
         
         return TAILOR_STATUS.PENDING_APPROVAL;
     };

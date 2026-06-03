@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings as SettingsIcon, Shield, Bell, CreditCard,
-    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw
+    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -15,6 +15,7 @@ const AdminSettings = () => {
 
     const tabs = [
         { id: 'General', icon: <Globe size={16} />, desc: 'Platform basics' },
+        { id: 'Pricing & Fees', icon: <DollarSign size={16} />, desc: 'GST & Visit charges' },
         { id: 'Security', icon: <Shield size={16} />, desc: 'Roles & permissions' },
         { id: 'Notifications', icon: <Bell size={16} />, desc: 'Email & SMS setup' },
         { id: 'Payment Gateways', icon: <CreditCard size={16} />, desc: 'Razorpay, Stripe' },
@@ -194,6 +195,63 @@ const AdminSettings = () => {
                                         />
                                         <div className="w-12 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedTab === 'Pricing & Fees' && settings && (
+                        <div className="p-8 space-y-8 max-w-3xl">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900">Pricing & Fees Configurations</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">Manage global GST settings and Tailor at Home visit fees.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">GST Percentage (%)</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings.pricing?.gstPercentage ?? 5} 
+                                        onChange={(e) => updateNestedSetting('pricing', 'gstPercentage', Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-medium mt-1">Applied universally to all order subtotals.</p>
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-50" />
+
+                            <div>
+                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Tailor at Home Fees</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Base Visit Fee (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.visitFee?.baseFee ?? 150} 
+                                            onChange={(e) => updateNestedSetting('visitFee', 'baseFee', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Free Radius (km)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.visitFee?.freeKm ?? 3} 
+                                            onChange={(e) => updateNestedSetting('visitFee', 'freeKm', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Fee Per Extra km (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.visitFee?.perKmFee ?? 20} 
+                                            onChange={(e) => updateNestedSetting('visitFee', 'perKmFee', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

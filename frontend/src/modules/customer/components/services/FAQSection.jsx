@@ -15,7 +15,9 @@ const FAQSection = () => {
                     setFaqs(res.data.data);
                 }
             } catch (error) {
-                console.error('Error fetching FAQs:', error);
+                if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                    console.error('Error fetching FAQs:', error);
+                }
             } finally {
                 setIsLoading(false);
             }

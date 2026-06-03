@@ -17,7 +17,8 @@ const TailorRegistration = () => {
     const navigate = useNavigate();
 
     const { register, handleSubmit, watch, setValue, trigger, setError, formState: { errors } } = useForm({
-        mode: 'onChange'
+        mode: 'onChange',
+        shouldUnregister: false
     });
 
     const nextStep = () => setStep(s => s + 1);
@@ -29,10 +30,10 @@ const TailorRegistration = () => {
         let fieldsToValidate = [];
         switch (step) {
             case 1:
-                fieldsToValidate = ['fullName', 'phone', 'otp', 'email', 'password'];
+                fieldsToValidate = ['fullName', 'phone', 'otp', 'email'];
                 break;
             case 2:
-                fieldsToValidate = ['shopName', 'address', 'city', 'pincode', 'serviceArea', 'experienceInYears', 'specializations'];
+                fieldsToValidate = ['shopName', 'address', 'city', 'pincode', 'experienceInYears', 'specializations'];
                 break;
             case 3:
                 fieldsToValidate = ['aadharNumber', 'panNumber'];
@@ -166,7 +167,7 @@ const TailorRegistration = () => {
                 { name: 'Shop License', url: watch('licenseImage') },
                 { name: 'Portfolio 1', url: watch('portfolio1') },
                 { name: 'Portfolio 2', url: watch('portfolio2') }
-            ].filter(doc => typeof doc.url === 'string' && doc.url.startsWith('http')).map(doc => ({ ...doc, status: 'pending' }));
+            ].filter(doc => typeof doc.url === 'string' && doc.url.startsWith('http'));
 
 
             const payload = {
@@ -174,13 +175,14 @@ const TailorRegistration = () => {
                 email: data.email,
                 phoneNumber: data.phone,
                 otp: data.otp,
-                password: data.password,
                 role: 'tailor',
                 shopName: data.shopName,
                 experienceInYears: Number(data.experienceInYears),
                 specializations: data.specializations.split(',').map(s => s.trim()).filter(s => s),
                 documents,
-                coordinates: [72.8777, 19.0760]
+                address: `${data.address}, ${data.city}, ${data.pincode}`,
+                coordinates: [Number(data.longitude) || 72.8777, Number(data.latitude) || 19.0760],
+                profileImage: watch('profileImage')
             };
 
             const response = await api.post('/auth/register', payload);
@@ -201,7 +203,7 @@ const TailorRegistration = () => {
     const renderStep = () => {
         switch (step) {
             case 1: return <Step1Basic register={register} errors={errors} watch={watch} setValue={setValue} />;
-            case 2: return <Step2Business register={register} errors={errors} />;
+            case 2: return <Step2Business register={register} errors={errors} setValue={setValue} />;
             case 3: return <Step3Docs register={register} errors={errors} watch={watch} setValue={setValue} />;
             case 4: return <Step4Portfolio register={register} errors={errors} watch={watch} setValue={setValue} />;
             default: return null;
@@ -230,7 +232,7 @@ const TailorRegistration = () => {
                     Your details are under review. We will notify you once approved.
                 </p>
                 <button
-                    onClick={() => navigate('/partner/under-review')}
+                    onClick={() => navigate('/partner/verification')}
                     className="mt-8 font-black bg-[#2D2F6F] text-white px-10 py-4 rounded-2xl hover:bg-[#1E1F4D] transition-all shadow-lg shadow-purple-200"
                 >
                     View Status
@@ -277,25 +279,47 @@ const TailorRegistration = () => {
                     </motion.div>
                 </AnimatePresence>
 
-                <div className="pt-4">
+                <div className="pt-4 flex gap-3">
                     {step < 4 ? (
-                        <button
-                            type="button"
-                            onClick={handleNext}
-                            disabled={isValidating}
-                            className={`w-full h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${isValidating ? 'bg-gray-300 text-gray-500' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] text-white shadow-purple-100'}`}
-                        >
-                            {isValidating ? 'VALIDATING...' : 'NEXT'} <ArrowRight className="w-5 h-5" />
-                        </button>
+                        <>
+                            {step > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={prevStep}
+                                    disabled={isValidating}
+                                    className="w-1/3 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                                >
+                                    <ChevronLeft className="w-5 h-5" /> BACK
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={handleNext}
+                                disabled={isValidating}
+                                className={`flex-1 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${isValidating ? 'bg-gray-300 text-gray-500' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] text-white shadow-purple-100'}`}
+                            >
+                                {isValidating ? 'VALIDATING...' : 'NEXT'} <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </>
                     ) : (
-                        <button
-                            type="button"
-                            onClick={handleSubmit(onSubmit)}
-                            disabled={isLoading}
-                            className={`w-full h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading ? 'bg-gray-300 text-gray-600' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] text-white shadow-purple-100'}`}
-                        >
-                            {isLoading ? 'Submitting...' : 'SUBMIT APPLICATION'}
-                        </button>
+                        <div className="flex gap-3 w-full">
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                disabled={isLoading}
+                                className="w-1/3 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                            >
+                                <ChevronLeft className="w-5 h-5" /> BACK
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSubmit(onSubmit)}
+                                disabled={isLoading}
+                                className={`flex-1 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading ? 'bg-gray-300 text-gray-600' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] text-white shadow-purple-100'}`}
+                            >
+                                {isLoading ? 'Submitting...' : 'SUBMIT APPLICATION'}
+                            </button>
+                        </div>
                     )}
                 </div>
             </form>

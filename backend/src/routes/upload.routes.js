@@ -25,9 +25,19 @@ const processUpload = async (req, res, isMultiple) => {
     // Try Cloudinary if keys look real
     if (process.env.CLOUDINARY_API_KEY && !process.env.CLOUDINARY_API_KEY.includes('your_')) {
       try {
-        const uploadPromises = files.map(file => 
-           cloudinary.uploader.upload(file.path, { folder: folderName })
-        );
+        const uploadPromises = files.map(file => {
+          return new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { folder: folderName },
+              (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+              }
+            );
+            stream.end(file.buffer);
+          });
+        });
+        
         const results = await Promise.all(uploadPromises);
         
         results.forEach(result => {
@@ -46,8 +56,11 @@ const processUpload = async (req, res, isMultiple) => {
       }
     }
 
-    // Local Fallback
-    const localUrls = files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
+    // Local Fallback (using Base64 since we are in memory and Vercel disk is read-only)
+    const localUrls = files.map(file => {
+      const base64 = file.buffer.toString("base64");
+      return `data:${file.mimetype};base64,${base64}`;
+    });
     
     res.status(200).json({
       success: true,

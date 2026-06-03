@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ShoppingBag,
@@ -8,55 +8,80 @@ import {
     ChevronRight,
     ArrowUpRight,
     Bell,
-    Settings
+    Settings,
+    Loader2
 } from 'lucide-react';
 import { useTailorAuth } from '../context/AuthContext';
+import api from '../../../utils/api';
 const silaiwalaLogo = '/logo.png';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user, status } = useTailorAuth();
+    const [dashboardData, setDashboardData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const response = await api.get('/tailors/dashboard');
+                if (response.data.success) {
+                    setDashboardData(response.data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch dashboard data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    const summary = dashboardData?.summary || {
+        totalEarnings: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedThisWeek: 0,
+        avgDeliveryTime: 0,
+        walletBalance: 0
+    };
+
+    const recentOrders = dashboardData?.recentActivity || [];
 
     const stats = [
         {
             label: 'Total Orders',
-            value: '48',
+            value: summary.totalOrders.toString(),
             icon: <ShoppingBag size={20} />,
-            change: '+12%',
-            sub: 'from last month',
+            change: summary.totalOrders > 0 ? '+1' : '0',
+            sub: 'this week',
             accent: '#2D2F6E',
         },
         {
             label: 'Pending',
-            value: '12',
+            value: summary.pendingOrders.toString(),
             icon: <Clock size={20} />,
-            change: '4 overdue',
+            change: summary.pendingOrders > 0 ? `${summary.pendingOrders} active` : 'All clear',
             sub: 'needs attention',
             accent: '#F59E0B',
         },
         {
             label: 'Completed',
-            value: '32',
+            value: summary.completedThisWeek.toString(),
             icon: <CheckCircle size={20} />,
-            change: '+5',
-            sub: 'today',
+            change: 'Weekly',
+            sub: 'performance',
             accent: '#10B981',
         },
         {
             label: 'Earnings',
-            value: '₹14.5K',
+            value: `₹${(summary.totalEarnings || 0).toLocaleString()}`,
             icon: <TrendingUp size={20} />,
-            change: '₹450',
-            sub: 'avg / order',
+            change: `Bal: ₹${(summary.walletBalance || 0).toLocaleString()}`,
+            sub: 'wallet',
             accent: '#2D2F6E',
         },
-    ];
-
-    const recentOrders = [
-        { id: 'ORD-7214', customer: 'Priya Sharma', service: 'Anarkali Suit', date: '21 Feb 2024', status: 'Measuring', priority: 'High' },
-        { id: 'ORD-7215', customer: 'Rahul Verma', service: 'Sherwani Stitching', date: '22 Feb 2024', status: 'Cutting', priority: 'Normal' },
-        { id: 'ORD-7216', customer: 'Sneha Patel', service: 'Blouse Alteration', date: '22 Feb 2024', status: 'Stitching', priority: 'Urgent' },
-        { id: 'ORD-7217', customer: 'Amit Gupta', service: 'Suit Fitting', date: '23 Feb 2024', status: 'Ironing', priority: 'Normal' },
     ];
 
     const getStatusStyle = (status) => {
@@ -91,7 +116,7 @@ const Dashboard = () => {
                         <div>
                             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-none mb-0.5">Partner Panel</p>
                             <h2 className="text-[17px] font-black text-white leading-none tracking-tight">
-                                {user?.name || 'Royal Stitches'}
+                                {dashboardData?.shopName || user?.name || 'Partner Shop'}
                             </h2>
                         </div>
                     </div>
@@ -118,11 +143,11 @@ const Dashboard = () => {
 
                     <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest mb-1">Welcome back 👋</p>
                     <h3 className="text-[22px] font-black text-white leading-tight mb-3">
-                        {user?.name?.split(' ')[0] || 'Royal Stitches'}!
+                        {dashboardData?.tailorName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Partner'}!
                     </h3>
                     <div className="flex items-center justify-between">
                         <p className="text-[12px] text-white/70 font-medium">
-                            <span className="text-white font-black">3 new orders</span> waiting
+                            <span className="text-white font-black">{summary.pendingOrders} new orders</span> waiting
                         </p>
                         <button
                             onClick={() => navigate('/partner/orders')}
@@ -202,17 +227,21 @@ const Dashboard = () => {
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-black text-white truncate leading-tight">{order.service}</p>
-                                    <p className="text-[10px] text-white/35 font-medium mt-0.5 truncate">{order.customer} · {order.date}</p>
+                                    <p className="text-[13px] font-black text-white truncate leading-tight">
+                                        {order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Job'}
+                                    </p>
+                                    <p className="text-[10px] text-white/35 font-medium mt-0.5 truncate">
+                                        {order.customerName || 'Customer'} · {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </p>
                                 </div>
 
                                 {/* Right Side */}
                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                                     <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${st.bg} ${st.text}`}>
-                                        {order.status}
+                                        {order.status.replace(/-/g, ' ')}
                                     </span>
-                                    <span className={`text-[9px] uppercase font-bold ${getPriorityStyle(order.priority)}`}>
-                                        {order.priority}
+                                    <span className={`text-[9px] uppercase font-bold ${getPriorityStyle('Normal')}`}>
+                                        {order.orderId}
                                     </span>
                                 </div>
 

@@ -16,18 +16,24 @@ const TailorEarnings = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats]         = useState({ balance: 0, totalWithdrawn: 0 });
     const [transactions, setTxns]   = useState([]);
+    const [earningsData, setEarningsData] = useState(null);
 
     const tabs = ['Daily', 'Weekly', 'Monthly'];
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [balRes, txRes] = await Promise.all([
+                let periodMap = { 'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month' };
+                const period = periodMap[activeTab] || 'week';
+                
+                const [balRes, txRes, earnRes] = await Promise.all([
                     api.get('/wallet/balance'),
                     api.get('/wallet/transactions'),
+                    api.get(`/tailors/earnings?period=${period}`)
                 ]);
                 setStats(balRes.data.data);
                 setTxns(txRes.data.data || []);
+                setEarningsData(earnRes.data.data);
             } catch (e) {
                 console.error('Earnings fetch error:', e);
             } finally {
@@ -35,13 +41,14 @@ const TailorEarnings = () => {
             }
         };
         fetchData();
-    }, []);
+    }, [activeTab]);
 
-    // Derived breakdowns (mock logic if not available from API)
-    const orderEarnings  = stats.balance * 0.82 || 280;
-    const incentives     = stats.balance * 0.13 || 45;
-    const bonus          = stats.balance * 0.05 || 17.5;
-    const todayEarnings  = stats.balance          || 342.5;
+    const periodTotal = earningsData?.summary?.periodTotal || 0;
+    // Derive breakdowns dynamically based on period total
+    const orderEarnings  = periodTotal > 0 ? periodTotal * 0.82 : 0;
+    const incentives     = periodTotal > 0 ? periodTotal * 0.13 : 0;
+    const bonus          = periodTotal > 0 ? periodTotal * 0.05 : 0;
+    const displayedEarnings = periodTotal || 0;
 
     const getBadgeStyle = (type) => {
         if (!type) return 'text-green-700 bg-green-50';
@@ -130,8 +137,8 @@ const TailorEarnings = () => {
                                 <div className="flex items-baseline gap-2 mb-6">
                                     <span className="text-2xl font-black text-white/40">₹</span>
                                     <h3 className="text-5xl font-black text-white tracking-tighter">
-                                        {todayEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </h3>
+                                    {displayedEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </h3>
                                 </div>
                                 <div className="flex items-center gap-6">
                                     <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1.5 rounded-xl border border-green-500/20">

@@ -44,6 +44,9 @@ const settingsSchema = new mongoose.Schema(
       baseFee: { type: Number, default: 150 },
       perKmFee: { type: Number, default: 20 },
       freeKm: { type: Number, default: 3 },
+    },
+    pricing: {
+      gstPercentage: { type: Number, default: 5 },
     }
   },
   {

@@ -23,7 +23,7 @@ const TailorLayout = () => {
         { icon: <LayoutDashboard size={20} />, label: 'Home', path: '/partner' },
         { icon: <ClipboardList size={20} />, label: 'Orders', path: '/partner/orders' },
         { icon: <Wallet size={20} />, label: 'Wallet', path: '/partner/wallet' },
-        { icon: <ShoppingBag size={20} />, label: 'Products', path: '/partner/products' },
+        { icon: <ShoppingBag size={20} />, label: 'Services', path: '/partner/products' },
         { icon: <UserCircle size={20} />, label: 'Profile', path: '/partner/settings' },
     ];
 

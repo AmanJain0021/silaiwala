@@ -51,7 +51,7 @@ const BillDetails = ({ pricing }) => {
                 </div>
 
                 <div className="flex justify-between text-xs text-gray-600">
-                    <span>GST (5%)</span>
+                    <span>GST ({pricing.gstPercentage || 5}%)</span>
                     <span>₹{taxes}</span>
                 </div>
 

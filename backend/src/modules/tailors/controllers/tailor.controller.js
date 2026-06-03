@@ -119,7 +119,10 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
     isAvailable,
     name,
     email,
-    phoneNumber
+    phoneNumber,
+    profileImage,
+    latitude,
+    longitude
   } = req.body;
 
   let tailor = await Tailor.findOne({ user: req.user.id });
@@ -135,18 +138,20 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
   if (experienceInYears !== undefined) tailor.experienceInYears = experienceInYears;
   if (location) tailor.location = location;
   if (address) tailor.location.address = address;
+  if (latitude && longitude) tailor.location.coordinates = [longitude, latitude];
   if (isAvailable !== undefined) tailor.isAvailable = isAvailable;
 
   await tailor.save();
 
   // Update User fields if provided
-  if (name || email || phoneNumber) {
+  if (name || email || phoneNumber || profileImage) {
     const user = await User.findById(req.user.id);
     if (!user) return next(new ErrorResponse("User not found", 404));
     
     if (name) user.name = name;
     if (email) user.email = email;
     if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (profileImage) user.profileImage = profileImage;
     await user.save();
   }
 
@@ -156,6 +161,33 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: updatedTailor,
+  });
+});
+
+/**
+ * @desc    Update rejected documents
+ * @route   PATCH /api/v1/tailors/documents
+ * @access  Private (Tailor)
+ */
+exports.updateDocuments = asyncHandler(async (req, res, next) => {
+  const { documents } = req.body;
+  if (!documents || !Array.isArray(documents)) {
+    return next(new ErrorResponse("Please provide valid documents array", 400));
+  }
+
+  const tailor = await Tailor.findOne({ user: req.user.id });
+  if (!tailor) {
+    return next(new ErrorResponse("Tailor profile not found", 404));
+  }
+
+  tailor.documents = documents;
+  tailor.registrationStatus = "pending";
+  tailor.rejectionReason = null;
+  await tailor.save();
+
+  res.status(200).json({
+    success: true,
+    data: tailor,
   });
 });
 
@@ -221,8 +253,20 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
               completedOrders: {
                 $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] }
               },
-              totalEarnings: {
-                $sum: { $cond: [{ $eq: ["$paymentStatus", "paid"] }, "$totalAmount", 0] }
+              totalEarnings: { 
+                $sum: { 
+                  $cond: [
+                    { 
+                      $and: [
+                        { $eq: ["$paymentStatus", "paid"] },
+                        { $ne: ["$status", "pending"] },
+                        { $ne: ["$status", "cancelled"] }
+                      ]
+                    }, 
+                    "$totalAmount", 
+                    0
+                  ] 
+                }
               }
             }
           }
@@ -283,6 +327,14 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     }
   ]);
 
+  // Populate items in recentActivity to get service/product titles
+  if (dashboardData[0].recentActivity.length > 0) {
+    await Order.populate(dashboardData[0].recentActivity, [
+      { path: 'items.service', select: 'title' },
+      { path: 'items.product', select: 'name' }
+    ]);
+  }
+
   const stats = dashboardData[0].stats[0] || { totalOrders: 0, activeOrders: 0, completedOrders: 0, totalEarnings: 0 };
   const weekly = dashboardData[0].weeklyProgress[0]?.completedThisWeek || 0;
   const avgMs = dashboardData[0].deliveryAnalysis[0]?.avgTimeMs || 0;
@@ -296,6 +348,10 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: {
+      shopName: tailorProfile?.shopName || 'Partner',
+      tailorName: req.user.name || 'Tailor',
+      registrationStatus: tailorProfile?.registrationStatus,
+      rejectionReason: tailorProfile?.rejectionReason,
       summary: {
         totalEarnings: stats.totalEarnings,
         totalOrders: stats.totalOrders,
@@ -306,6 +362,73 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       },
       recentActivity: dashboardData[0].recentActivity
     },
+  });
+});
+
+/**
+ * @desc    Get historical earning data for graphs
+ * @route   GET /api/v1/tailors/earnings
+ * @access  Private (Tailor)
+ */
+exports.getEarningsData = asyncHandler(async (req, res, next) => {
+  const tailorId = new mongoose.Types.ObjectId(req.user.id);
+  const { period = 'week' } = req.query; // 'day', 'week', 'month'
+
+  const tailorProfile = await Tailor.findOne({ user: req.user.id });
+
+  // Get date threshold
+  const threshold = new Date();
+  if (period === 'week') threshold.setDate(threshold.getDate() - 7);
+  else if (period === 'month') threshold.setMonth(threshold.getMonth() - 1);
+  else if (period === 'day') threshold.setHours(threshold.getHours() - 24);
+
+  // Grouping format based on period
+  let groupByFormat = "%Y-%m-%d"; // Daily grouping for week/month
+  if (period === 'day') groupByFormat = "%Y-%m-%d %H:00";
+
+  const earnings = await Order.aggregate([
+    { 
+      $match: { 
+        tailor: tailorId, 
+        paymentStatus: "paid",
+        createdAt: { $gte: threshold } 
+      } 
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: groupByFormat, date: "$createdAt" } },
+        revenue: { $sum: "$totalAmount" },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]);
+
+  // Total in period
+  const periodTotal = earnings.reduce((acc, curr) => acc + curr.revenue, 0);
+
+  // Map to expected frontend format (e.g., { name: 'Mon', revenue: 1200 })
+  const formattedChartData = earnings.map(item => {
+    // If daily, format as short day or time
+    let name = item._id;
+    if (period === 'week' || period === 'month') {
+        const d = new Date(item._id);
+        name = d.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+    return { name, revenue: item.revenue };
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      chartData: formattedChartData,
+      summary: {
+        periodTotal,
+        walletBalance: tailorProfile?.walletBalance || 0,
+        totalWithdrawn: tailorProfile?.totalWithdrawn || 0,
+        availableToWithdraw: tailorProfile?.walletBalance || 0
+      }
+    }
   });
 });
 
@@ -331,7 +454,9 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
     else if (statusLower === 'history') {
       query.status = { $in: ['delivered', 'cancelled'] };
     }
-    else query.status = status;
+    else if (statusLower !== 'all') {
+      query.status = status;
+    }
   }
 
   const orders = await Order.find(query)

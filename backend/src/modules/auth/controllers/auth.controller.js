@@ -56,7 +56,7 @@ exports.checkUserExists = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.register = asyncHandler(async (req, res, next) => {
-  const { name, email, phoneNumber, phone, otp, password, role, shopName, experienceInYears, coordinates, specializations, referralCode } = req.body;
+  const { name, email, phoneNumber, phone, otp, password, role, shopName, experienceInYears, coordinates, specializations, referralCode, profileImage } = req.body;
   let finalPhoneNumber = phoneNumber || phone;
 
   if (!finalPhoneNumber) {
@@ -108,7 +108,8 @@ exports.register = asyncHandler(async (req, res, next) => {
     phoneNumber: finalPhoneNumber,
     password,
     role: finalRole,
-    isActive: isAutoActive
+    isActive: isAutoActive,
+    profileImage: profileImage || "default_profile.png"
   });
 
   let profile = null;
@@ -140,7 +141,8 @@ exports.register = asyncHandler(async (req, res, next) => {
           specializations: specializations || [],
           location: {
             type: "Point",
-            coordinates: coordinates || [0, 0] // [longitude, latitude]
+            coordinates: coordinates || [0, 0], // [longitude, latitude]
+            address: req.body.address
           },
           documents: req.body.documents || [] // Save documents if provided
         });

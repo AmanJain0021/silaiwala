@@ -5,10 +5,12 @@ const {
   getMyProfile, 
   updateProfile, 
   getDashboardData, 
+  getEarningsData,
   getOrders,
   getDeliveryDetails,
   updateOrderStatus,
-  withdrawFunds
+  withdrawFunds,
+  updateDocuments
 } = require("../controllers/tailor.controller");
 const {
   getMyWorkSamples,
@@ -49,6 +51,7 @@ router.get("/work-samples/feed", getAllWorkSamples);
 // so we can keep /:id public at the end.
 router.get("/me", protect, authorize("tailor"), getMyProfile);
 router.get("/dashboard", protect, authorize("tailor"), getDashboardData);
+router.get("/earnings", protect, authorize("tailor"), getEarningsData);
 router.get("/orders", protect, authorize("tailor"), getOrders);
 router.get("/work-samples", protect, authorize("tailor"), getMyWorkSamples);
 router.get("/products", protect, authorize("tailor"), getMyProducts);
@@ -63,6 +66,7 @@ router.get("/:id", getTailorDetails);
 router.use(protect, authorize("tailor"));
 
 router.patch("/profile", updateProfile);
+router.patch("/documents", updateDocuments);
 router.post("/withdraw", withdrawFunds);
 router.patch("/orders/:id/status", updateOrderStatus);
 

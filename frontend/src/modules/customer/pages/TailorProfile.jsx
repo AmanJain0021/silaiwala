@@ -7,32 +7,6 @@ import useCheckoutStore from '../../../store/checkoutStore';
 import api from '../../../utils/api';
 import SafeImage from '../../../components/Common/SafeImage';
 
-// Mock Products for portfolio
-const TAILOR_PRODUCTS = [
-    {
-        id: 101,
-        title: 'Custom Bridal Lehenga',
-        name: 'Custom Bridal Lehenga',
-        price: 15499,
-        originalPrice: 18999,
-        discount: 18,
-        image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800',
-        rating: 4.9,
-        category: 'Bridal'
-    },
-    {
-        id: 102,
-        title: 'Embroidered Blouse',
-        name: 'Embroidered Blouse',
-        price: 2499,
-        originalPrice: 3499,
-        discount: 28,
-        image: 'https://images.unsplash.com/photo-1622123512803-51b816a75f28?w=800',
-        rating: 4.7,
-        category: 'Festive'
-    }
-];
-
 const TailorProfile = () => {
     const { id } = useParams();
     const navigate = useNavigate();

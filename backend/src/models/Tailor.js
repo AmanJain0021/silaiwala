@@ -62,12 +62,26 @@ const tailorSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    commissionPercentage: {
+      type: Number,
+      default: 20,
+      min: 0,
+      max: 100
+    },
     bankDetails: {
       accountName: String,
       bankName: String,
       accountNumber: String,
       ifscCode: String,
       upiId: String
+    },
+    registrationStatus: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "pending",
+    },
+    rejectionReason: {
+      type: String,
     },
     documents: [
       {
@@ -77,6 +91,13 @@ const tailorSchema = new mongoose.Schema(
         remarks: String
       },
     ],
+    activePlan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubscriptionPlan",
+    },
+    planExpiryDate: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

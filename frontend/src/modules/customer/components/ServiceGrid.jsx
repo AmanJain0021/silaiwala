@@ -19,7 +19,9 @@ const ServiceGrid = () => {
                     setServices(response.data.data.slice(0, 4));
                 }
             } catch (error) {
-                console.error('Error fetching popular services:', error);
+                if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                    console.error('Error fetching popular services:', error);
+                }
             } finally {
                 setIsLoading(false);
             }

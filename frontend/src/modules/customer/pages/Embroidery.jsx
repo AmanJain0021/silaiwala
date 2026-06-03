@@ -8,7 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../components/BottomNav';
 
-const categories = [
+import api from '../../../utils/api';
+
+const DEFAULT_CATEGORIES = [
     { id: 1, name: 'Bridal Embroidery', icon: '👰' },
     { id: 2, name: 'Blouse Work', icon: '👚' },
     { id: 3, name: 'Neck Designs', icon: '🧶' },
@@ -30,13 +32,34 @@ const gallery = [
 
 const EmbroideryPage = () => {
     const navigate = useNavigate();
-    const [selectedCategory, setSelectedCategory] = useState(categories[0]);
+    const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+    const [selectedCategory, setSelectedCategory] = useState(DEFAULT_CATEGORIES[0]);
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
         dressType: '',
         instructions: ''
     });
+
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/products/categories?type=embroidery');
+                if (res.data.success && res.data.data.length > 0) {
+                    const fetchedCategories = res.data.data.map(c => ({
+                        id: c._id,
+                        name: c.name,
+                        icon: c.image || '✨'
+                    }));
+                    setCategories(fetchedCategories);
+                    setSelectedCategory(fetchedCategories[0]);
+                }
+            } catch (error) {
+                console.error("Error fetching embroidery categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans selection:bg-[#2D2F6E] selection:text-white">

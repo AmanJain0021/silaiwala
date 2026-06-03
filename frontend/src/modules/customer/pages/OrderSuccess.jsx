@@ -1,18 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, PackageCheck, ShoppingBag, Truck } from 'lucide-react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
+import useCheckoutStore from '../../../store/checkoutStore';
+import useCartStore from '../../../store/cartStore';
 
 const OrderSuccess = () => {
     const [animationDone, setAnimationDone] = useState(false);
     const location = useLocation();
     const { orderId, orderNumber } = location.state || {};
 
+    const clearCheckout = useCheckoutStore(state => state.clearCheckout);
+    const clearCart = useCartStore(state => state.clearCart);
+
     useEffect(() => {
+        // Guarantee baskets are cleared when order succeeds
+        if (orderId) {
+            clearCheckout();
+            clearCart();
+        }
+
         const timer = setTimeout(() => {
             setAnimationDone(true);
         }, 1200);
         return () => clearTimeout(timer);
-    }, []);
+    }, [orderId, clearCheckout, clearCart]);
 
     // Redirect if direct access without order data
     if (!orderId) {

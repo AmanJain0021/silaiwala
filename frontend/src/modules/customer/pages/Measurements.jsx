@@ -9,8 +9,9 @@ import useMeasurementStore from '../../../store/measurementStore';
 import BottomNav from '../components/BottomNav';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import api from '../../../utils/api';
 
-const GARMENT_TYPES = ["Shirt", "Pant", "Suit", "Kurta", "Blouse", "Skirt", "Other"];
+const DEFAULT_GARMENT_TYPES = ["Shirt", "Pant", "Suit", "Kurta", "Blouse", "Skirt", "Other"];
 
 const MeasurementsPage = () => {
     const navigate = useNavigate();
@@ -21,6 +22,7 @@ const MeasurementsPage = () => {
 
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [garmentCategories, setGarmentCategories] = useState(DEFAULT_GARMENT_TYPES);
     const [selectedGarment, setSelectedGarment] = useState("Shirt");
     const [formData, setFormData] = useState({
         profileName: '',
@@ -32,6 +34,18 @@ const MeasurementsPage = () => {
 
     useEffect(() => {
         fetchMeasurements();
+        
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/products/categories?type=garment');
+                if (res.data.success && res.data.data.length > 0) {
+                    setGarmentCategories(res.data.data.map(c => c.name));
+                }
+            } catch (error) {
+                console.error("Error fetching garment categories:", error);
+            }
+        };
+        fetchCategories();
     }, [fetchMeasurements]);
 
     const handleAdd = async (e) => {
@@ -140,7 +154,7 @@ const MeasurementsPage = () => {
                                         value={formData.garmentType}
                                         onChange={(e) => setFormData({...formData, garmentType: e.target.value})}
                                     >
-                                        {GARMENT_TYPES.map(type => (
+                                        {garmentCategories.map(type => (
                                             <option key={type} value={type}>{type}</option>
                                         ))}
                                     </select>

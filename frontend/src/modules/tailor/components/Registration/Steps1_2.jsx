@@ -3,6 +3,7 @@ import { Input } from '../UIElements';
 import ImageUploader from '../../../../components/Common/ImageUploader';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { Navigation } from 'lucide-react';
 
 export const Step1Basic = ({ register, errors, setValue, watch }) => {
     const profileImage = watch('profileImage');
@@ -15,6 +16,15 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
         if (phone && /^[6-9]\d{9}$/.test(phone)) {
             setIsSending(true);
             try {
+                // 1. First verify phone doesn't already exist
+                const checkRes = await api.post('/auth/check-user', { phoneNumber: phone });
+                if (checkRes.data.exists) {
+                    toast.error(checkRes.data.message || 'This phone number is already registered');
+                    setIsSending(false);
+                    return;
+                }
+
+                // 2. If it doesn't exist, send OTP
                 const response = await api.post('/auth/send-otp', { phoneNumber: phone });
                 if (response.data.success) {
                     setOtpSent(true);
@@ -116,31 +126,80 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                 })}
                 error={errors.email?.message}
             />
-            <Input
-                label="Create Password"
-                type="password"
-                placeholder="Secure password"
-                {...register('password', { 
-                    required: 'Password is required',
-                    validate: (value) => {
-                        if (value.length < 8) return "Password must be at least 8 characters long";
-                        if (!/[A-Z]/.test(value)) return "Password must contain an uppercase letter";
-                        if (!/[a-z]/.test(value)) return "Password must contain a lowercase letter";
-                        if (!/[0-9]/.test(value)) return "Password must contain a number";
-                        if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) return "Password must contain a special character";
-                        return true;
-                    }
-                })}
-                error={errors.password?.message}
-            />
         </div>
 
     );
 };
 
-export const Step2Business = ({ register, errors }) => {
+export const Step2Business = ({ register, errors, setValue }) => {
+    const [isLocating, setIsLocating] = useState(false);
+
+    const handleAutoLocation = () => {
+        setIsLocating(true);
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
+                        headers: { 'Accept-Language': 'en-US,en' }
+                    });
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const addr = data.address;
+                        
+                        const streetParts = [
+                            addr.house_number,
+                            addr.building,
+                            addr.residential,
+                            addr.street || addr.road,
+                            addr.suburb || addr.neighbourhood || addr.locality
+                        ].filter(Boolean);
+                        
+                        const detailedStreet = streetParts.length > 0 
+                            ? streetParts.join(', ') 
+                            : data.display_name || '';
+
+                        setValue('address', detailedStreet, { shouldValidate: true });
+                        setValue('city', addr.city || addr.town || addr.village || addr.county || addr.state_district || '', { shouldValidate: true });
+                        setValue('pincode', addr.postcode || '', { shouldValidate: true });
+                        setValue('latitude', latitude);
+                        setValue('longitude', longitude);
+                    }
+                } catch (error) {
+                    console.error("Geocoding failed:", error);
+                    toast.error("Could not fetch address details automatically.");
+                } finally {
+                    setIsLocating(false);
+                }
+            }, (error) => {
+                console.error("Geolocation error:", error);
+                toast.error("Location access denied or failed.");
+                setIsLocating(false);
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        } else {
+            setIsLocating(false);
+        }
+    };
+
     return (
         <div className="space-y-4 animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Business Details</h3>
+                <button 
+                    type="button"
+                    onClick={handleAutoLocation}
+                    disabled={isLocating}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-primary/20 text-primary text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                    {isLocating ? (
+                        <div className="w-3 h-3 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                    ) : (
+                        <Navigation size={12} className="fill-primary/10" />
+                    )}
+                    {isLocating ? 'Locating...' : 'Detect Location'}
+                </button>
+            </div>
             <Input
                 label="Shop Name"
                 placeholder="e.g. Royal Stitches"
@@ -190,20 +249,6 @@ export const Step2Business = ({ register, errors }) => {
                 {...register('specializations', { required: 'Specializations are required' })}
                 error={errors.specializations?.message}
             />
-            <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Primary Service Area</label>
-                <select
-                    {...register('serviceArea', { required: 'Area is required' })}
-                    className={`w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-gray-50 border-2 rounded-2xl focus:outline-none transition-all text-sm font-medium ${errors.serviceArea ? 'border-red-400 focus:border-red-500 bg-red-50/50' : 'border-gray-50 focus:border-primary focus:bg-white'}`}
-                >
-                    <option value="">Select Region</option>
-                    <option value="north">North India</option>
-                    <option value="south">South India</option>
-                    <option value="east">East India</option>
-                    <option value="west">West India</option>
-                    <option value="central">Central India</option>
-                </select>
-            </div>
         </div>
     );
 };

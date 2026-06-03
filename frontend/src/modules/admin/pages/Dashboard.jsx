@@ -30,13 +30,14 @@ const AdminDashboard = () => {
     const [liveOrders, setLiveOrders] = useState([]);
     const [topTailorsData, setTopTailorsData] = useState([]);
     const [revenueChartData, setRevenueChartData] = useState([]);
+    const [systemHealthData, setSystemHealthData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
                 const response = await api.get('/admin/dashboard');
-                const { stats, recentOrders: apiRecentOrders, topTailors: apiTopTailors, revenueChart } = response.data;
+                const { stats, recentOrders: apiRecentOrders, topTailors: apiTopTailors, revenueChart, systemHealth } = response.data;
                 const { totalRevenue, activeOrdersCount, totalTailors, pendingTailorsCount, pendingPayouts } = stats;
 
                 setStatsData({
@@ -65,6 +66,31 @@ const AdminDashboard = () => {
 
                 if (revenueChart && revenueChart.length > 0) {
                     setRevenueChartData(revenueChart);
+                }
+
+                if (systemHealth) {
+                    setSystemHealthData([
+                        { 
+                            label: 'Cloud DB', 
+                            status: systemHealth.databaseStatus === 'connected' ? 'Healthy' : 'Degraded', 
+                            color: systemHealth.databaseStatus === 'connected' ? 'bg-green-500' : 'bg-red-500' 
+                        },
+                        { 
+                            label: 'Server Uptime', 
+                            status: systemHealth.uptime > 0 ? 'Healthy' : 'Degraded', 
+                            color: 'bg-green-500' 
+                        },
+                        { 
+                            label: 'Memory Usage', 
+                            status: 'Healthy', 
+                            color: 'bg-green-500' 
+                        },
+                        { 
+                            label: 'Payment Gateway', 
+                            status: 'Healthy', 
+                            color: 'bg-green-500' 
+                        }
+                    ]);
                 }
             } catch (error) {
                 console.error('Error fetching dashboard stats:', error);
@@ -345,12 +371,7 @@ const AdminDashboard = () => {
                     <div className="bg-white border border-gray-100 p-6 lg:p-8 rounded-[2rem] shadow-sm">
                         <h4 className="text-base lg:text-lg font-black text-gray-900 tracking-tight">System Health</h4>
                         <div className="mt-6 space-y-3 lg:space-y-4">
-                            {[
-                                { label: 'Payment Gateway', status: 'Healthy', color: 'bg-green-500' },
-                                { label: 'Partner APIs', status: 'Healthy', color: 'bg-green-500' },
-                                { label: 'Cloud DB', status: 'Maintenance', color: 'bg-orange-500' },
-                                { label: 'Push Notifications', status: 'Degraded', color: 'bg-yellow-500' },
-                            ].map((item, idx) => (
+                            {systemHealthData.length > 0 ? systemHealthData.map((item, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 rounded-xl lg:rounded-2xl border border-gray-100/50">
                                     <span className="text-[10px] lg:text-xs font-bold text-gray-600 flex items-center gap-2">
                                         <CheckCircle2 size={14} className="text-gray-400" />
@@ -361,7 +382,9 @@ const AdminDashboard = () => {
                                         <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-gray-400">{item.status}</span>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Loading system health...</p>
+                            )}
                         </div>
                     </div>
 

@@ -43,8 +43,10 @@ const OrderTracking = () => {
                 setOrder(response.data.data);
             }
         } catch (err) {
-            console.error('Error fetching order tracking:', err);
-            setError(err.response?.data?.message || 'Failed to load tracking details.');
+            if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+                console.error('Error fetching order tracking:', err);
+                setError(err.response?.data?.message || 'Failed to load tracking details.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -135,9 +137,11 @@ const OrderTracking = () => {
         ]
         : [
             { key: 'pending', label: 'Placed', icon: Package },
-            { key: 'accepted', label: 'Accepted', icon: ShieldCheck },
+            { key: 'accepted', label: 'Received', icon: ShieldCheck },
             ...(order.fabricPickupRequired ? [{ key: 'fabric-pickup', label: 'Fabric', icon: Truck }] : []),
-            { key: 'in-production', label: 'Crafting', icon: Calendar },
+            { key: 'cutting', label: 'Cutting', icon: Scissors },
+            { key: 'stitching', label: 'Stitching', icon: Calendar },
+            { key: 'ready-for-pickup', label: 'Ready', icon: CheckCircle2 },
             { key: 'out-for-delivery', label: 'Dispatch', icon: Truck },
             { key: 'delivered', label: 'Arrived', icon: CheckCircle2 }
         ];
@@ -174,6 +178,24 @@ const OrderTracking = () => {
         if (stageKey === 'in-production') {
             const entry = history.find(h => ['cutting', 'stitching', 'in-progress', 'in-production'].includes(h.status));
             const isCompleted = !!entry || ['completed', 'ready-for-pickup', 'out-for-delivery', 'delivered', 'shipped'].includes(status);
+            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
+        }
+
+        if (stageKey === 'cutting') {
+            const entry = history.find(h => ['cutting', 'stitching', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(h.status));
+            const isCompleted = !!entry || ['stitching', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(status);
+            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
+        }
+
+        if (stageKey === 'stitching') {
+            const entry = history.find(h => ['stitching', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(h.status));
+            const isCompleted = !!entry || ['ready-for-pickup', 'out-for-delivery', 'delivered'].includes(status);
+            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
+        }
+
+        if (stageKey === 'ready-for-pickup') {
+            const entry = history.find(h => ['ready-for-pickup', 'out-for-delivery', 'delivered'].includes(h.status));
+            const isCompleted = !!entry || ['out-for-delivery', 'delivered'].includes(status);
             return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
         }
 
@@ -252,8 +274,8 @@ const OrderTracking = () => {
                     <div className="mb-4 p-3 bg-gradient-to-br from-primary to-primary-dark rounded-2xl text-white shadow-lg relative overflow-hidden">
                         <div className="relative z-10">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Current Milestone</p>
-                            <h2 className="text-xl font-black tracking-tight leading-none mb-2">
-                                {timelineStates[actualCurrentIndex]?.label}
+                            <h2 className="text-xl font-black tracking-tight leading-none mb-2 capitalize">
+                                {order.status.replace(/-/g, ' ')}
                             </h2>
                             <p className="text-[10px] text-white/70 font-medium">
                                 {getCurrentStatusMessage()}
@@ -268,6 +290,89 @@ const OrderTracking = () => {
                         states={timelineStates} 
                         currentIndex={actualCurrentIndex} 
                     />
+                </div>
+
+                {/* 3.5 Order Details (Added by Request) */}
+                <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
+                        <Package size={16} className="text-[#2D2F6E]" />
+                        Order Details
+                    </h3>
+                    
+                    {/* Items */}
+                    <div className="space-y-3">
+                        {!isBulk && order.items?.map((item, idx) => (
+                            <div key={idx} className="flex gap-3">
+                                <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                    <img src={item.service?.image || item.product?.images?.[0] || item.product?.image} alt={item.service?.title || item.product?.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.service?.title || item.product?.name}</h4>
+                                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Qty: {item.quantity}</p>
+                                </div>
+                                <span className="text-xs font-bold text-[#2D2F6E]">₹{item.price}</span>
+                            </div>
+                        ))}
+                        {isBulk && (
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <h4 className="text-xs font-bold text-gray-900">{order.serviceType}</h4>
+                                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Est. Qty: {order.estimatedQuantity}</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Measurement Info */}
+                    {!isBulk && order.items?.[0]?.measurements?.type && (
+                        <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Measurement</span>
+                            <span className="text-[10px] font-black text-primary uppercase bg-indigo-50 px-2 py-1 rounded-md">
+                                {order.items[0].measurements.type === 'home' ? 'Tailor At Home' :
+                                 order.items[0].measurements.type === 'sample' ? 'Sample Garment' :
+                                 order.items[0].measurements.type === 'slip' ? 'Uploaded Slip' :
+                                 order.items[0].measurements.type === 'saved' ? 'Saved Profile' : 'Self Measured'}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Delivery Details */}
+                    {order.deliveryAddress && (
+                        <div className="pt-3 border-t border-gray-100">
+                            <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                                <MapPin size={10} /> Delivery Address
+                            </h4>
+                            <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                                {order.deliveryAddress.street}, {order.deliveryAddress.city}, {order.deliveryAddress.state} - {order.deliveryAddress.zipCode}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Price Breakdown */}
+                    <div className="pt-3 border-t border-gray-100 space-y-2">
+                        {order.deliveryFee > 0 && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-500">Delivery Fee</span>
+                                <span className="font-medium text-gray-900">₹{order.deliveryFee}</span>
+                            </div>
+                        )}
+                        {order.tailorAtHomeFee > 0 && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-500">Tailor Visit Fee</span>
+                                <span className="font-medium text-gray-900">₹{order.tailorAtHomeFee}</span>
+                            </div>
+                        )}
+                        {order.discountAmount > 0 && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-500">Discount</span>
+                                <span className="font-medium text-green-600">-₹{order.discountAmount}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
+                            <span className="text-sm font-black text-gray-900">Total Paid</span>
+                            <span className="text-sm font-black text-primary">₹{order.totalAmount}</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 4. Support & Actions */}

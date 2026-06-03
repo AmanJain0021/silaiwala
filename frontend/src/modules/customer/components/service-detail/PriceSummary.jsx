@@ -2,10 +2,10 @@ import React from 'react';
 import { ArrowRight, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const PriceSummary = ({ basePrice, deliveryPrice, fabricPrice = 0, deliveryDays, onProceed }) => {
+const PriceSummary = ({ basePrice, deliveryPrice, fabricPrice = 0, deliveryDays, gstPercentage = 5, onProceed }) => {
     const navigate = useNavigate();
     const total = basePrice + deliveryPrice + fabricPrice;
-    const taxes = Math.round(total * 0.05); // 5% GST estimate
+    const taxes = Math.round(total * (gstPercentage / 100)); // Dynamic GST
     const grandTotal = total + taxes;
 
     // Calculate Estimated Date
@@ -36,7 +36,7 @@ const PriceSummary = ({ basePrice, deliveryPrice, fabricPrice = 0, deliveryDays,
                     </div>
                 )}
                 <div className="flex justify-between text-sm text-gray-600">
-                    <span>GST (5%)</span>
+                    <span>GST ({gstPercentage}%)</span>
                     <span>₹{taxes}</span>
                 </div>
                 <div className="h-px bg-gray-100 my-2" />

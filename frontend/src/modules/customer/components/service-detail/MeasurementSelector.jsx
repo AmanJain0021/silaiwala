@@ -77,7 +77,10 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     selectedType === 'new' ? "border-primary shadow-sm" : "border-gray-100 hover:border-gray-200"
                 )}>
                     <div
-                        onClick={() => onSelectType('new')} // Just select, don't toggle form visibility directly here if we want it to stay open when selected
+                        onClick={() => {
+                            onSelectType('new');
+                            setCompletedMeasurements(prev => ({ ...prev, new: false }));
+                        }}
                         className={cn(
                             "flex items-center gap-3 p-3 cursor-pointer transition-all relative",
                             selectedType === 'new' ? "bg-primary-soft" : "bg-white"
@@ -97,7 +100,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     </div>
 
                     {/* Expandable Form */}
-                    {selectedType === 'new' && (
+                    {selectedType === 'new' && !completedMeasurements.new && (
                         <SelfMeasureForm
                             onSave={handleSelfMeasureSave}
                             onCancel={() => onSelectType(null)}
@@ -112,7 +115,10 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     selectedType === 'upload' ? "border-primary shadow-sm" : "border-gray-100 hover:border-gray-200"
                 )}>
                     <div
-                        onClick={() => onSelectType('upload')}
+                        onClick={() => {
+                            onSelectType('upload');
+                            setCompletedMeasurements(prev => ({ ...prev, upload: false }));
+                        }}
                         className={cn(
                             "flex items-center gap-3 p-3 cursor-pointer transition-all",
                             selectedType === 'upload' ? "bg-primary-soft" : "bg-white"
@@ -132,7 +138,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     </div>
 
                     {/* Expandable Form */}
-                    {selectedType === 'upload' && (
+                    {selectedType === 'upload' && !completedMeasurements.upload && (
                         <UploadSlip
                             onUpload={handleUploadComplete}
                             onCancel={() => onSelectType(null)}

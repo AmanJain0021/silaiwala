@@ -2,21 +2,36 @@ import React, { useState } from 'react';
 import { Home, Briefcase, ChevronRight, Navigation } from 'lucide-react';
 import useAddressStore from '../../../../../store/userStore';
 import { validateName, validatePhone, validatePincode } from '../../../../../utils/validation';
+import useAuthStore from '../../../../../store/authStore';
+import useLocationStore from '../../../../../store/locationStore';
 
-const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors }) => (
+const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors, maxLength, prefix }) => (
     <div className="mb-3">
         <label className="text-[10px] uppercase font-bold text-gray-400 mb-1 block">{label} {required && "*"}</label>
-        <input
-            type={type}
-            placeholder={placeholder}
-            value={form[name]}
-            onChange={(e) => {
-                setForm({ ...form, [name]: e.target.value });
-                if (errors[name]) setErrors({ ...errors, [name]: null });
-            }}
-            className={`w-full text-xs font-semibold p-2.5 rounded-lg border focus:outline-none focus:ring-1 transition-all ${errors[name] ? "border-red-300 focus:border-red-500 bg-indigo-50" : "border-gray-200 focus:border-primary bg-gray-50/50 focus:bg-white"
+        <div className="relative flex items-center">
+            {prefix && (
+                <span className="absolute left-3 text-xs font-bold text-gray-800">
+                    {prefix}
+                </span>
+            )}
+            <input
+                type={type}
+                maxLength={maxLength}
+                placeholder={placeholder}
+                value={form[name]}
+                onChange={(e) => {
+                    let val = e.target.value;
+                    if (name === 'phone' || name === 'zipCode') {
+                        val = val.replace(/\D/g, '');
+                    }
+                    setForm({ ...form, [name]: val });
+                    if (errors[name]) setErrors({ ...errors, [name]: null });
+                }}
+                className={`w-full text-xs font-semibold p-2.5 rounded-lg border focus:outline-none focus:ring-1 transition-all ${prefix ? 'pl-9' : ''} ${
+                    errors[name] ? "border-red-300 focus:border-red-500 bg-indigo-50" : "border-gray-200 focus:border-primary bg-gray-50/50 focus:bg-white"
                 }`}
-        />
+            />
+        </div>
         {errors[name] && <span className="text-[9px] text-error font-medium ml-1">{errors[name]}</span>}
     </div>
 );
@@ -24,11 +39,15 @@ const InputField = ({ label, name, placeholder, type = "text", required, form, e
 const AddressForm = ({ onCancel, onSuccess }) => {
     const addAddress = useAddressStore((state) => state.addAddress);
     const isLoading = useAddressStore((state) => state.isLoading);
+    const user = useAuthStore((state) => state.user);
     const [isLocating, setIsLocating] = useState(false);
 
     const [form, setForm] = useState({
-        receiverName: '', phone: '', zipCode: '',
-        street: '', city: '', state: '', type: 'Home'
+        receiverName: user?.name || user?.fullName || '',
+        phone: user?.phone || user?.phoneNumber || '',
+        zipCode: '',
+        street: '', city: '', state: '', type: 'Home',
+        location: null
     });
 
     const [errors, setErrors] = useState({});
@@ -39,28 +58,55 @@ const AddressForm = ({ onCancel, onSuccess }) => {
             navigator.geolocation.getCurrentPosition(async (position) => {
                 try {
                     const { latitude, longitude } = position.coords;
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
+                        headers: { 'Accept-Language': 'en-US,en' }
+                    });
                     const data = await res.json();
                     
                     if (data && data.address) {
                         const addr = data.address;
+                        
+                        // Construct Swiggy-style detailed street address
+                        const streetParts = [
+                            addr.house_number,
+                            addr.building,
+                            addr.residential,
+                            addr.street || addr.road,
+                            addr.suburb || addr.neighbourhood || addr.locality
+                        ].filter(Boolean);
+                        
+                        const detailedStreet = streetParts.length > 0 
+                            ? streetParts.join(', ') 
+                            : data.display_name || '';
+                        
                         setForm(prev => ({
                             ...prev,
-                            street: data.display_name || '',
-                            city: addr.city || addr.town || addr.village || addr.suburb || '',
+                            street: detailedStreet,
+                            city: addr.city || addr.town || addr.village || addr.county || addr.state_district || '',
                             state: addr.state || '',
-                            zipCode: addr.postcode || ''
+                            zipCode: addr.postcode || '',
+                            location: {
+                                type: 'Point',
+                                coordinates: [longitude, latitude]
+                            }
                         }));
+                        
+                        // Also update global location store so UI knows we're here
+                        useLocationStore.getState().setLocation(detailedStreet, latitude, longitude);
                     }
                 } catch (error) {
                     console.error("Geocoding failed:", error);
+                    alert("Could not fetch address details automatically. Please enter manually.");
                 } finally {
                     setIsLocating(false);
                 }
             }, (error) => {
-                alert("Location access denied. Please enter manually.");
+                console.error("Geolocation error:", error);
+                alert("Location access denied or failed. Please enter manually.");
                 setIsLocating(false);
-            });
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        } else {
+            setIsLocating(false);
         }
     };
 
@@ -123,11 +169,11 @@ const AddressForm = ({ onCancel, onSuccess }) => {
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-3">
                     <InputField label="Contact Name" name="receiverName" placeholder="John Doe" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
-                    <InputField label="Phone Number" name="phone" placeholder="9876543210" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
+                    <InputField label="Phone Number" name="phone" type="tel" maxLength={10} prefix="+91" placeholder="9876543210" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <InputField label="Pincode" name="zipCode" placeholder="110001" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
+                    <InputField label="Pincode" name="zipCode" type="tel" maxLength={6} placeholder="110001" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
                     <InputField label="City" name="city" placeholder="New Delhi" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
                 </div>
 

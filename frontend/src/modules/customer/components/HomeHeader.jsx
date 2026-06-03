@@ -35,17 +35,13 @@ const HomeHeader = ({ user }) => {
                 const { latitude, longitude } = position.coords;
                 try {
                     // Real Reverse Geocoding using Nominatim (OpenStreetMap)
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`);
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
+                        headers: { 'Accept-Language': 'en-US,en' }
+                    });
                     const data = await res.json();
                     
                     if (data && data.address) {
-                        const addr = data.address;
-                        // Build a concise address: Suburb/City, State - Postcode
-                        const area = addr.suburb || addr.neighbourhood || addr.residential || addr.city_district || addr.town || addr.city || "";
-                        const city = addr.city || addr.town || addr.village || addr.county || "";
-                        const postcode = addr.postcode || "";
-                        
-                        const displayAddress = `${area}${area && city ? ', ' : ''}${city}${postcode ? ' - ' + postcode : ''}` || data.display_name.split(',').slice(0, 2).join(',');
+                        const displayAddress = data.display_name || '';
                         
                         setLocation(displayAddress, latitude, longitude);
                     } else {

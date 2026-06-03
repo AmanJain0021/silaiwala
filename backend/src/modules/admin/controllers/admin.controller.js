@@ -107,6 +107,12 @@ exports.getDashboardStats = async (req, res) => {
       revenue: d.revenue
     }));
 
+    const systemHealth = {
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+      databaseStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    };
+
     res.status(200).json({
       success: true,
       stats: {
@@ -120,6 +126,7 @@ exports.getDashboardStats = async (req, res) => {
         pendingTailorsCount,
         pendingPayouts
       },
+      systemHealth,
       recentOrders,
       topTailors,
       revenueChart: formattedChartData
@@ -263,15 +270,10 @@ exports.approveTailor = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Also update all documents in the Tailor profile to 'verified'
+    // Update Tailor profile's registration status
     const tailor = await Tailor.findOne({ user: user._id });
     if (tailor) {
-      if (tailor.documents && tailor.documents.length > 0) {
-        tailor.documents = tailor.documents.map(doc => ({
-          ...doc,
-          status: 'verified'
-        }));
-      }
+      tailor.registrationStatus = 'verified';
       await tailor.save();
     }
 
@@ -301,22 +303,48 @@ exports.rejectTailor = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Instead of deleting, we might want to mark as rejected so they don't apply again immediately with same email
-    // But for now, let's notify them if we can (if we don't delete immediately)
-    await sendNotification({
-      recipient: user._id,
-      type: "ACCOUNT_REJECTED",
-      title: "Application Status",
-      message: `Your tailor application was not approved. ${reason || "Please contact support for details."}`,
-      data: { isRejected: true }
-    });
+    // Update Tailor document
+    const tailor = await Tailor.findOne({ user: id });
+    if (tailor) {
+      tailor.registrationStatus = 'rejected';
+      tailor.rejectionReason = reason;
 
-    // Option A: Delete user
-    await User.findByIdAndDelete(id);
+      await tailor.save();
+    }
+
+    user.isActive = false;
+    user.isVerified = false;
+    await user.save();
     
     res.status(200).json({ success: true, message: "Tailor application rejected" });
   } catch (error) {
     console.error("Error in rejectTailor:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateTailorCommission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commissionPercentage } = req.body;
+
+    if (commissionPercentage === undefined || commissionPercentage < 0 || commissionPercentage > 100) {
+      return res.status(400).json({ success: false, message: "Invalid commission percentage" });
+    }
+
+    const tailor = await Tailor.findOneAndUpdate(
+      { user: id },
+      { commissionPercentage },
+      { new: true }
+    );
+
+    if (!tailor) {
+      return res.status(404).json({ success: false, message: "Tailor profile not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Commission updated successfully", data: tailor });
+  } catch (error) {
+    console.error("Error in updateTailorCommission:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -1140,11 +1168,13 @@ exports.updateSettings = async (req, res) => {
     const updateData = req.body;
     
     // Deep merge or specific updates
-    if (updateData.general) settings.general = { ...settings.general, ...updateData.general };
-    if (updateData.maintenanceMode) settings.maintenanceMode = { ...settings.maintenanceMode, ...updateData.maintenanceMode };
-    if (updateData.notifications) settings.notifications = { ...settings.notifications, ...updateData.notifications };
-    if (updateData.paymentGateways) settings.paymentGateways = { ...settings.paymentGateways, ...updateData.paymentGateways };
-    if (updateData.appConfig) settings.appConfig = { ...settings.appConfig, ...updateData.appConfig };
+    if (updateData.general) settings.general = updateData.general;
+    if (updateData.maintenanceMode) settings.maintenanceMode = updateData.maintenanceMode;
+    if (updateData.notifications) settings.notifications = updateData.notifications;
+    if (updateData.paymentGateways) settings.paymentGateways = updateData.paymentGateways;
+    if (updateData.appConfig) settings.appConfig = updateData.appConfig;
+    if (updateData.visitFee) settings.visitFee = updateData.visitFee;
+    if (updateData.pricing) settings.pricing = updateData.pricing;
 
     await settings.save();
     res.status(200).json({ success: true, data: settings, message: "Settings updated successfully" });

@@ -1,5 +1,16 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+
+import { AuthProvider as TailorAuthProvider } from './modules/tailor/context/AuthContext';
+import { NotificationProvider as TailorNotificationProvider } from './modules/tailor/context/NotificationContext';
+
+const TailorContextWrapper = () => (
+    <TailorAuthProvider>
+        <TailorNotificationProvider>
+            <Outlet />
+        </TailorNotificationProvider>
+    </TailorAuthProvider>
+);
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
@@ -109,15 +120,6 @@ const AppRoutes = () => {
                 <Route path="/signup" element={<Signup />} />
             </Route>
 
-            {/* Partner Landing Page */}
-            <Route path="/partner/welcome" element={<PartnerLanding />} />
-
-            {/* Partner Public Auth Routes */}
-            <Route element={<TailorAuthLayout />}>
-                <Route path="/partner/login" element={<TailorLogin />} />
-                <Route path="/partner/signup" element={<TailorRegistration />} />
-                <Route path="/partner/register" element={<Navigate to="/partner/signup" replace />} />
-            </Route>
 
             {/* Delivery Auth Routes - Using custom design */}
             <Route element={<DeliveryAuthLayout />}>
@@ -175,29 +177,48 @@ const AppRoutes = () => {
                 </Route>
             </Route>
 
-            {/* Tailor/Partner Public Routes */}
-            <Route path="/partner/under-review" element={<UnderReview />} />
-            <Route path="/partner/rejected" element={<RejectedPage />} />
+            {/* === TAILOR / PARTNER MODULE === */}
+            <Route element={<TailorContextWrapper />}>
+                {/* Partner Landing Page */}
+                <Route path="/partner/welcome" element={<PartnerLanding />} />
 
-            {/* Tailor/Partner Protected Routes */}
-            <Route element={<TailorProtectedRoute requiredStatus={[TAILOR_STATUS.APPROVED]} />}>
-                <Route element={<TailorLayout />}>
-                    <Route path="/partner" element={<TailorOverview />} />
-                    <Route path="/partner/orders" element={<TailorOrders />} />
-                    <Route path="/partner/portfolio" element={<TailorProducts />} />
-                    <Route path="/partner/earnings" element={<TailorEarnings />} />
-                    <Route path="/partner/wallet" element={<TailorEarnings />} />
-                    <Route path="/partner/products" element={<TailorProducts />} />
-                    <Route path="/partner/delivery" element={<DeliveryDetails />} />
-                    <Route path="/partner/verification" element={<VerificationStatus />} />
-                    <Route path="/partner/subscription" element={<SubscriptionSettings />} />
-                    <Route path="/partner/settings" element={<ProfileSettings />} />
-                    <Route path="/partner/measurements" element={<MeasurementList />} />
-                    <Route path="/partner/measurements/:id" element={<MeasurementDetail />} />
+                {/* Partner Public Auth Routes */}
+                <Route element={<TailorAuthLayout />}>
+                    <Route path="/partner/login" element={<TailorLogin />} />
+                    <Route path="/partner/signup" element={<TailorRegistration />} />
+                    <Route path="/partner/register" element={<Navigate to="/partner/signup" replace />} />
                 </Route>
-                {/* Full screen tailor views separated from layout nav */}
-                <Route path="/partner/withdraw" element={<TailorWithdraw />} />
-                <Route path="/partner/notifications" element={<TailorNotifications />} />
+
+                {/* Tailor/Partner Public Routes */}
+                <Route path="/partner/under-review" element={<UnderReview />} />
+                <Route path="/partner/rejected" element={<RejectedPage />} />
+
+                {/* Tailor/Partner Verification Route (Accessible by Pending, Rejected, and Approved) */}
+                <Route element={<TailorProtectedRoute requiredStatus={[TAILOR_STATUS.APPROVED, TAILOR_STATUS.PENDING_APPROVAL, TAILOR_STATUS.REJECTED]} />}>
+                    <Route element={<TailorLayout />}>
+                        <Route path="/partner/verification" element={<VerificationStatus />} />
+                    </Route>
+                </Route>
+
+                {/* Tailor/Partner Protected Routes (Approved Only) */}
+                <Route element={<TailorProtectedRoute requiredStatus={[TAILOR_STATUS.APPROVED]} />}>
+                    <Route element={<TailorLayout />}>
+                        <Route path="/partner" element={<TailorOverview />} />
+                        <Route path="/partner/orders" element={<TailorOrders />} />
+                        <Route path="/partner/portfolio" element={<TailorProducts />} />
+                        <Route path="/partner/earnings" element={<TailorEarnings />} />
+                        <Route path="/partner/wallet" element={<TailorEarnings />} />
+                        <Route path="/partner/products" element={<TailorProducts />} />
+                        <Route path="/partner/delivery" element={<DeliveryDetails />} />
+                        <Route path="/partner/subscription" element={<SubscriptionSettings />} />
+                        <Route path="/partner/settings" element={<ProfileSettings />} />
+                        <Route path="/partner/measurements" element={<MeasurementList />} />
+                        <Route path="/partner/measurements/:id" element={<MeasurementDetail />} />
+                    </Route>
+                    {/* Full screen tailor views separated from layout nav */}
+                    <Route path="/partner/withdraw" element={<TailorWithdraw />} />
+                    <Route path="/partner/notifications" element={<TailorNotifications />} />
+                </Route>
             </Route>
 
             {/* Delivery Routes */}

@@ -22,7 +22,18 @@ const AdminStyleAddons = () => {
         category: '',
     });
 
-    const categoryOptions = ['Kurta', 'Shirt', 'Suit', 'Blouse', 'Dress', 'Lehenga', 'Saree', 'Sherwani', 'Other'];
+    const [categoryOptions, setCategoryOptions] = useState([]);
+
+    const fetchCategories = async () => {
+        try {
+            const res = await api.get('/products/categories?type=garment');
+            if (res.data.success) {
+                setCategoryOptions(res.data.data.map(c => c.name));
+            }
+        } catch (error) {
+            console.error('Failed to fetch categories:', error);
+        }
+    };
 
     const fetchAddons = async () => {
         setIsLoading(true);
@@ -39,6 +50,7 @@ const AdminStyleAddons = () => {
 
     useEffect(() => {
         fetchAddons();
+        fetchCategories();
     }, []);
 
     const handleImageUpload = async (e) => {

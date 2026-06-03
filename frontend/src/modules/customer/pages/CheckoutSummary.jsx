@@ -9,6 +9,7 @@ import useCartStore from '../../../store/cartStore';
 import BillDetails from '../components/checkout/summary/BillDetails';
 import ServiceReviewCard from '../components/checkout/summary/ServiceReviewCard';
 import { cn } from '../../../utils/cn';
+import { calculateDistance } from '../../../utils/distance';
 
 import useOrderStore from '../../../store/orderStore';
 
@@ -31,23 +32,104 @@ const CheckoutSummary = () => {
     const location = useLocation();
     const bulkOrderId = location.state?.bulkOrderId;
 
-    // ... (bulk order fetch remains same)
+    const [roadDistances, setRoadDistances] = useState({});
+    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+
+    // Fetch Road Distance dynamically if needed
+    useEffect(() => {
+        if (!selectedAddress?.location?.coordinates || !isServiceCheckout) return;
+
+        const fetchDistances = async () => {
+            const newDistances = { ...roadDistances };
+            let needsUpdate = false;
+            let fetching = false;
+
+            for (const item of serviceItems) {
+                if (item.configuration.isTailorAtHome && item.serviceDetails?.tailorCoordinates) {
+                    const [uLng, uLat] = selectedAddress.location.coordinates;
+                    const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
+
+                    if (roadDistances[item.basketId]?.key !== cacheKey) {
+                        fetching = true;
+                        setIsCalculatingDistance(true);
+                        try {
+                            const [tLng, tLat] = item.serviceDetails.tailorCoordinates;
+                            const res = await api.post('/distance/calculate', {
+                                origin: [tLat, tLng],
+                                destination: [uLat, uLng]
+                            });
+
+                            if (res.data.success) {
+                                const distanceKm = res.data.data.distance;
+                                const visitSettings = { baseFee: 299, perKmFee: 20, freeKm: 5 };
+                                let fee = visitSettings.baseFee;
+                                if (distanceKm > visitSettings.freeKm) {
+                                    fee = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
+                                }
+                                newDistances[item.basketId] = { key: cacheKey, fee };
+                                needsUpdate = true;
+                            }
+                        } catch (err) {
+                            console.error("Failed to fetch road distance:", err);
+                        }
+                    }
+                }
+            }
+
+            if (needsUpdate) {
+                setRoadDistances(newDistances);
+            }
+            if (fetching) {
+                setIsCalculatingDistance(false);
+            }
+        };
+
+        fetchDistances();
+    }, [selectedAddress, serviceItems, isServiceCheckout]); // Removed roadDistances to prevent infinite loop
 
     // Pricing Logic
     const getServicePricing = () => {
-        if (serviceItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0 };
+        if (serviceItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 };
         return serviceItems.reduce((acc, item) => {
-            // Safety cap for testing: If an item in basket is > 10000, treat it as 499 for Razorpay testing
-            const itemTotal = item.pricing.total > 10000 ? 599 : item.pricing.total;
             const itemBase = item.pricing.base > 10000 ? 499 : item.pricing.base;
+            let dynamicTailorAtHome = item.pricing.tailorAtHome || 0;
+
+            if (item.configuration.isTailorAtHome && selectedAddress?.location?.coordinates && item.serviceDetails?.tailorCoordinates) {
+                const [uLng, uLat] = selectedAddress.location.coordinates;
+                const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
+                
+                if (roadDistances[item.basketId] && roadDistances[item.basketId].key === cacheKey) {
+                    dynamicTailorAtHome = roadDistances[item.basketId].fee;
+                } else {
+                    try {
+                        const [tLng, tLat] = item.serviceDetails.tailorCoordinates;
+                        const distance = calculateDistance(uLat, uLng, tLat, tLng);
+                        const visitSettings = { baseFee: 299, perKmFee: 20, freeKm: 5 };
+                        if (distance <= visitSettings.freeKm) {
+                            dynamicTailorAtHome = visitSettings.baseFee;
+                        } else {
+                            dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distance - visitSettings.freeKm) * visitSettings.perKmFee);
+                        }
+                    } catch (err) {
+                        console.error("Distance recalculation failed:", err);
+                    }
+                }
+            }
+
+            const itemTaxes = item.pricing.taxes || 0;
+            const itemDelivery = item.pricing.delivery || 0;
+            const itemAddons = item.pricing.addons || 0;
+            const newTotal = itemBase + itemTaxes + itemDelivery + itemAddons + dynamicTailorAtHome;
 
             return {
-                total: acc.total + itemTotal,
+                total: acc.total + newTotal,
                 base: acc.base + itemBase,
-                taxes: acc.taxes + item.pricing.taxes,
-                delivery: acc.delivery + item.pricing.delivery
+                taxes: acc.taxes + itemTaxes,
+                delivery: acc.delivery + itemDelivery,
+                addons: acc.addons + itemAddons,
+                tailorAtHome: acc.tailorAtHome + dynamicTailorAtHome
             };
-        }, { total: 0, base: 0, taxes: 0, delivery: 0 });
+        }, { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 });
     };
 
     const currentPricing = bulkOrder
@@ -212,7 +294,15 @@ const CheckoutSummary = () => {
 
             <div className="max-w-5xl mx-auto p-4 flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-6">
+                
+                {isCalculatingDistance && (
+                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center gap-3 text-blue-700 animate-pulse">
+                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm font-bold">Calculating precise road distance for Tailor visit...</span>
+                    </div>
+                )}
+
                     {/* 2. Review Section */}
                     {bulkOrderId && bulkOrder ? (
                         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-4 relative overflow-hidden">

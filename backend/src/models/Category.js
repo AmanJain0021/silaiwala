@@ -17,7 +17,7 @@ const categorySchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["product", "service"],
+      enum: ["product", "service", "garment", "embroidery", "addon"],
       default: "product",
     },
     isActive: {

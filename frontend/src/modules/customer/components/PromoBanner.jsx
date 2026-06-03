@@ -46,8 +46,10 @@ const PromoBanner = () => {
                     setBanners(defaultBanners);
                 }
             } catch (error) {
-                console.error('Failed to fetch banners:', error);
-                setBanners(defaultBanners);
+                if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                    console.error('Failed to fetch banners:', error);
+                    setBanners(defaultBanners);
+                }
             } finally {
                 setIsLoading(false);
             }

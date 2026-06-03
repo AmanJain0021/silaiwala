@@ -1,7 +1,7 @@
 export const validatePhone = (phone) => {
     if (!phone) return "Phone number is required";
-    const phoneRegex = /^\d{10}$/; // Assuming 10 digits
-    if (!phoneRegex.test(phone.replace(/\D/g, ''))) return "Enter a valid 10-digit phone number";
+    const phoneRegex = /^[6-9]\d{9}$/; // Assuming 10 digits starting with 6-9
+    if (!phoneRegex.test(phone.replace(/\D/g, ''))) return "Enter a valid 10-digit phone number starting with 6-9";
     return "";
 };
 

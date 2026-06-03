@@ -12,7 +12,7 @@ const Orders = () => {
     const location = useLocation();
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('new');
+    const [activeTab, setActiveTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [orders, setOrders] = useState([]);
@@ -208,6 +208,8 @@ const Orders = () => {
                                         { key: 'cutting',          label: 'Cutting'  },
                                         { key: 'stitching',        label: 'Stitching'},
                                         { key: 'ready-for-pickup', label: 'Ready'    },
+                                        { key: 'out-for-delivery', label: 'Delivery' },
+                                        { key: 'delivered',        label: 'Done'     }
                                     ];
                                     const currentIdx = steps.findIndex(s => s.key === order.status);
                                     return (
@@ -286,8 +288,8 @@ const Orders = () => {
                         {order.items?.map((item, idx) => (
                             <div key={idx} className="bg-white rounded-3xl p-4 border border-gray-100 flex items-center gap-3">
                                 <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
-                                    {item.selectedFabric?.image || item.selectedFabric?.images?.[0] ? (
-                                        <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0]} className="w-full h-full object-cover" />
+                                    {item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.service?.image || item.service?.images?.[0] ? (
+                                        <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.service?.image || item.service?.images?.[0]} className="w-full h-full object-cover" />
                                     ) : (
                                         <Scissors size={24} className="text-gray-400" />
                                     )}
@@ -345,7 +347,11 @@ const Orders = () => {
                                         {measurements.type && (
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="text-[9px] font-black uppercase bg-indigo-50 text-[#2D2F6E] px-2.5 py-1 rounded-full border border-indigo-100">
-                                                    {measurements.type === 'slip' ? '📎 Uploaded Slip' : measurements.type === 'saved' ? '💾 Saved Profile' : '✏️ Self Measured'}
+                                                    {measurements.type === 'slip' ? '📎 Uploaded Slip' : 
+                                                     measurements.type === 'saved' ? '💾 Saved Profile' : 
+                                                     measurements.type === 'home' ? '🏠 Tailor at Home' : 
+                                                     measurements.type === 'sample' ? '👕 Sample Garment' : 
+                                                     '✏️ Self Measured'}
                                                 </span>
                                             </div>
                                         )}
@@ -438,7 +444,7 @@ const Orders = () => {
     };
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white pb-24 md:pb-0">
             
             {/* ── HEADER ── */}
             <div className="md:hidden bg-white pt-3 pb-2 border-b border-gray-100 text-left px-4">
@@ -469,17 +475,17 @@ const Orders = () => {
                         />
                     </div>
 
-                    <div className="flex bg-gray-200/50 rounded-2xl p-1 gap-1">
-                        {['new', 'active', 'history'].map((tab) => (
+                    <div className="flex bg-gray-200/50 rounded-2xl p-1 gap-1 overflow-x-auto">
+                        {['all', 'new', 'active', 'history'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={cn(
-                                    "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                    "px-4 md:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
                                     activeTab === tab ? "bg-white text-[#2D2F6E] shadow-md shadow-black/5" : "text-gray-500 hover:bg-gray-100"
                                 )}
                             >
-                                {tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
+                                {tab === 'all' ? 'All' : tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
                             </button>
                         ))}
                     </div>
@@ -524,8 +530,8 @@ const Orders = () => {
 
                                     <div className="flex-1 bg-gray-50 p-3 rounded-[1.5rem] border border-gray-100 mb-5 flex items-center gap-3">
                                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
-                                            {order.items?.[0]?.selectedFabric?.image ? (
-                                                <img src={order.items[0].selectedFabric.image} className="w-full h-full object-cover" />
+                                            {order.items?.[0]?.selectedFabric?.image || order.items?.[0]?.selectedFabric?.images?.[0] || order.items?.[0]?.service?.image || order.items?.[0]?.service?.images?.[0] ? (
+                                                <img src={order.items[0].selectedFabric?.image || order.items[0].selectedFabric?.images?.[0] || order.items[0].service?.image || order.items[0].service?.images?.[0]} className="w-full h-full object-cover" />
                                             ) : (
                                                 <Scissors size={18} className="text-[#2D2F6E]" />
                                             )}

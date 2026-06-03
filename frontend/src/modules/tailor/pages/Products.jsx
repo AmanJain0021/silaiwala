@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit3, Search, Scissors, Layers, ShoppingBag, Package, ChevronRight, X } from 'lucide-react';
+import { Plus, Trash2, Edit3, Search, Scissors, Layers, ShoppingBag, Package, ChevronRight, X, Clock } from 'lucide-react';
 import { Button } from '../components/UIElements';
 import api from '../services/api';
 import SafeImage from '../../../components/Common/SafeImage';
@@ -42,47 +42,10 @@ const Products = () => {
             ]);
 
             const sRaw = servicesRes.data.data || (Array.isArray(servicesRes.data) ? servicesRes.data : []);
-            let sData = [...sRaw];
-            if (sData.length === 0) {
-                sData = Array.from({ length: 12 }, (_, i) => ({
-                    _id: `seed-service-${i}`,
-                    title: `Stitching Sample #${i + 1}`,
-                    basePrice: 300 + (i * 50),
-                    deliveryTime: '2-4 DAYS',
-                    category: { name: 'Designer' },
-                    serviceType: 'STITCHING'
-                }));
-            } else if (sData.length > 0 && sData.length < 12) {
-                const base = sData[0];
-                const seed = Array.from({ length: 12 - sData.length }, (_, i) => ({
-                    ...base,
-                    _id: `seed-service-${i}`,
-                    title: `${base.title || 'Service'} #${i + 2}`,
-                }));
-                sData = [...sData, ...seed];
-            }
-            setSamples(sData);
+            setSamples(sRaw);
 
             const pRaw = productsRes.data.data || (Array.isArray(productsRes.data) ? productsRes.data : []);
-            let pData = [...pRaw];
-            if (pData.length === 0) {
-                pData = Array.from({ length: 12 }, (_, i) => ({
-                    _id: `seed-fabric-${i}`,
-                    name: `Fabric Material #${i + 1}`,
-                    price: 500 + (i * 100),
-                    stock: 50 + i,
-                    category: { name: 'Cotton' }
-                }));
-            } else if (pData.length > 0 && pData.length < 12) {
-                const base = pData[0];
-                const seed = Array.from({ length: 12 - pData.length }, (_, i) => ({
-                    ...base,
-                    _id: `seed-fabric-${i}`,
-                    name: `${base.name || 'Fabric'} #${i + 2}`,
-                }));
-                pData = [...pData, ...seed];
-            }
-            setFabrics(pData);
+            setFabrics(pRaw);
 
             // Fetch top-level categories
             if (catsRes.data.success) {
@@ -163,7 +126,15 @@ const Products = () => {
                 };
             } else if (activeTab === 'fabrics') {
                 endpoint = isEditing ? `/tailors/products/${editId}` : '/tailors/products';
-                payload = { ...newItem, title: (newItem.name || newItem.title) };
+                const finalName = newItem.name || newItem.title || '';
+                payload = { 
+                    ...newItem, 
+                    title: finalName,
+                    name: finalName,
+                    category: newItem.category || selectedParent,
+                    stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
+                    productType: 'fabric'
+                };
             }
 
             const res = isEditing
@@ -419,7 +390,7 @@ const Products = () => {
                                 {/* Left Side: Details */}
                                 <div className="space-y-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Title / Product Name</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Title / Service Name</label>
                                         <input
                                             required
                                             className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 focus:border-[#2D2F6E]/30 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900 placeholder:text-gray-300"
@@ -457,8 +428,9 @@ const Products = () => {
                                             </label>
                                             <input
                                                 required
+                                                type={activeTab === 'fabrics' ? "number" : "text"}
                                                 className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 focus:border-[#2D2F6E]/30 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
-                                                placeholder={activeTab === 'samples' ? "3-5 DAYS" : "100M"}
+                                                placeholder={activeTab === 'samples' ? "3-5 DAYS" : "100"}
                                                 value={activeTab === 'samples' ? newItem.deliveryTime : newItem.stock}
                                                 onChange={(e) => activeTab === 'samples'
                                                     ? setNewItem({ ...newItem, deliveryTime: e.target.value })

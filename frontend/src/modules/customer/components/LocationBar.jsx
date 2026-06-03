@@ -24,18 +24,32 @@ const LocationBar = () => {
         setIsLoading(true);
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(async (position) => {
-                const { latitude, longitude } = position.coords;
-                // Reverse geocoding would happen here, showing mock for now
-                setTimeout(() => {
-                    const mockAddress = "HSR Layout, Bangalore - 560102";
-                    setLocation(mockAddress, latitude, longitude);
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
+                        headers: { 'Accept-Language': 'en-US,en' }
+                    });
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const displayAddress = data.display_name || '';
+                        
+                        setLocation(displayAddress, latitude, longitude);
+                    } else {
+                        throw new Error("No address found");
+                    }
+                } catch (error) {
+                    console.error("Reverse geocoding failed:", error);
+                    const { latitude, longitude } = position.coords;
+                    setLocation(`Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, latitude, longitude);
+                } finally {
                     setIsLoading(false);
                     setIsEditing(false);
-                }, 1500);
+                }
             }, (error) => {
                 alert("Location access denied.");
                 setIsLoading(false);
-            });
+            }, { enableHighAccuracy: true });
         } else {
             setIsLoading(false);
         }

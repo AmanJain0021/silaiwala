@@ -19,6 +19,16 @@ const customerSchema = new mongoose.Schema(
         zipCode: String,
         country: { type: String, default: "India" },
         isDefault: { type: Boolean, default: false },
+        location: {
+          type: {
+            type: String,
+            enum: ["Point"],
+            default: "Point",
+          },
+          coordinates: {
+            type: [Number], // [longitude, latitude]
+          },
+        },
       },
     ],
     wishlist: [

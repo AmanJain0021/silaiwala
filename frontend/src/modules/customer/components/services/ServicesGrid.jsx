@@ -102,7 +102,9 @@ const ServicesGrid = () => {
                     setServices(response.data.data);
                 }
             } catch (error) {
-                console.error('Failed to fetch services:', error);
+                if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                    console.error('Failed to fetch services:', error);
+                }
             } finally {
                 setIsLoading(false);
             }

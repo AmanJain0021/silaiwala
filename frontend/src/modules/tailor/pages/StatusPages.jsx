@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppContainer from '../../../components/Common/AppContainer';
 import { Button } from '../components/UIElements';
 import { Clock, ShieldAlert, LogOut, MessageCircle } from 'lucide-react';
-import { useTailorAuth } from '../context/AuthContext';
+import { useTailorAuth, TAILOR_STATUS } from '../context/AuthContext';
 
 export const UnderReview = () => {
-    const { logout } = useTailorAuth();
+    const { logout, status } = useTailorAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (status === TAILOR_STATUS.APPROVED) {
+            navigate('/partner');
+        }
+    }, [status, navigate]);
 
     return (
         <AppContainer>
@@ -36,7 +42,6 @@ export const UnderReview = () => {
 export const RejectedPage = () => {
     const { user, logout } = useTailorAuth();
     const navigate = useNavigate();
-    const rejectedDocs = user?.documents?.filter(d => d.status === 'rejected') || [];
 
     return (
         <AppContainer>
@@ -46,15 +51,7 @@ export const RejectedPage = () => {
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">Application Rejected</h2>
                 <div className="mt-6 p-6 bg-red-50 rounded-3xl border border-red-100 w-full space-y-4">
-                    <p className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1 text-left">Issues found in your application:</p>
-                    {rejectedDocs.length > 0 ? rejectedDocs.map((doc, idx) => (
-                        <div key={idx} className="text-left">
-                            <p className="text-xs font-black text-red-900 uppercase tracking-tight">{doc.name}</p>
-                            <p className="text-sm text-red-800 font-bold italic">"{doc.remarks || 'No specific reason provided.'}"</p>
-                        </div>
-                    )) : (
-                        <p className="text-sm text-red-800 font-bold text-left italic">"Please contact support for more information regarding your rejection."</p>
-                    )}
+                    <p className="text-sm text-red-800 font-bold text-left italic">"Your application was not approved. Please contact support for more information regarding your rejection."</p>
                 </div>
                 <p className="text-gray-500 mt-6 leading-relaxed font-medium">
                     Please re-apply with correct information to get your account approved.

@@ -5,8 +5,13 @@ import { cn } from '../../../utils/cn';
 
 const NavItem = ({ to, icon: Icon, label }) => {
     const location = useLocation();
-    // Active if exact match or if path starts with 'to' (except for root '/')
-    const isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+    
+    let isActive = false;
+    if (to === '/user') {
+        isActive = location.pathname === '/user' || location.pathname.startsWith('/user/services') || location.pathname.startsWith('/user/embellishments');
+    } else {
+        isActive = location.pathname === to || location.pathname.startsWith(to + '/');
+    }
 
     return (
         <Link
