@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { Search, Bell, ShoppingBag, X, User, MapPin, ChevronDown, Check, Loader2, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
+import useCheckoutStore from '../../../store/checkoutStore';
 import useLocationStore from '../../../store/locationStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedSearchBar from './AnimatedSearchBar';
+import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
 
 import silaiwalaLogo from '/sewzella_logo.jpeg';
 
@@ -11,13 +14,23 @@ import { useNotifications } from '../context/NotificationContext';
 
 const HomeHeader = ({ user }) => {
     const [showNotifications, setShowNotifications] = useState(false);
-    const cartCount = useCartStore(state => state.getTotalItems());
+    const { items: productCartItems } = useCartStore(state => state);
+    const { serviceItems } = useCheckoutStore(state => state);
+    const cartCount = productCartItems.length + serviceItems.length;
     const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
 
     const { address: location, setLocation } = useLocationStore();
     const [isEditing, setIsEditing] = useState(false);
     const [tempLocation, setTempLocation] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const { detectLocation, isLocating: isLoading } = useGoogleLocation();
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 18) return 'Good Afternoon';
+        return 'Good Evening';
+    };
+    const userName = user?.name ? user.name.split(' ')[0] : 'Guest';
 
     const handleSave = () => {
         if (tempLocation.trim()) {
@@ -28,46 +41,30 @@ const HomeHeader = ({ user }) => {
         }
     };
 
-    const handleDetectLocation = () => {
-        setIsLoading(true);
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    // Real Reverse Geocoding using Nominatim (OpenStreetMap)
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
-                        headers: { 'Accept-Language': 'en-US,en' }
-                    });
-                    const data = await res.json();
-                    
-                    if (data && data.address) {
-                        const displayAddress = data.display_name || '';
-                        
-                        setLocation(displayAddress, latitude, longitude);
-                    } else {
-                        throw new Error("No address found");
-                    }
-                } catch (error) {
-                    console.error("Reverse geocoding failed:", error);
-                    // Fallback to coordinates if API fails
-                    setLocation(`Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, latitude, longitude);
-                } finally {
-                    setIsLoading(false);
-                    setIsEditing(false);
-                }
-            }, (error) => {
-                alert("Location access denied. Please enable location permissions.");
-                setIsLoading(false);
-            }, { enableHighAccuracy: true });
-        } else {
-            alert("Geolocation is not supported by your browser.");
-            setIsLoading(false);
+    const handleDetectLocation = async () => {
+        try {
+            const data = await detectLocation();
+            if (data) {
+                setLocation(data.address, data.latitude, data.longitude);
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.message || "Failed to detect location.");
+        } finally {
+            setIsEditing(false);
         }
     };
 
     return (
-        <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-2 transition-all duration-300 md:hidden">
+        <div className="sticky top-0 z-[100] bg-gradient-to-b from-[#1E2050] to-[#2D2F6E] rounded-b-[2rem] shadow-xl pt-2 pb-6 transition-all duration-300 md:hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pt-safe">
+                {/* Greeting */}
+                <div className="mb-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                        {getGreeting()}, <span className="text-indigo-200 capitalize">{userName}</span> <span className="origin-bottom-right animate-bounce">👋</span>
+                    </h2>
+                </div>
+
                 {/* Top Row: Brand & Icons */}
                 <div className="flex justify-between items-center mb-2 sm:mb-4">
                     <div className="flex-1 min-w-0 mr-4">
@@ -115,19 +112,19 @@ const HomeHeader = ({ user }) => {
                                         setIsEditing(true);
                                     }}
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[#2D2F6E] shrink-0 border border-gray-100 shadow-sm">
+                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20 shadow-sm backdrop-blur-sm">
                                         <MapPin size={14} className="group-hover:scale-110 transition-transform" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
+                                        <p className="text-[9px] text-white/70 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
                                         <div className="flex items-center gap-1 overflow-hidden">
-                                            <span className="text-[11px] font-black text-gray-900 truncate tracking-tight">{location}</span>
-                                            <ChevronDown size={10} className="text-[#2D2F6E] opacity-50" />
+                                            <span className="text-[11px] font-black text-white truncate tracking-tight">{location}</span>
+                                            <ChevronDown size={10} className="text-white/70" />
                                         </div>
                                     </div>
                                     <div className="hidden sm:flex items-center gap-2 shrink-0">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#2D2F6E] animate-pulse"></div>
-                                        <span className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest opacity-70">Riders Online</span>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]"></div>
+                                        <span className="text-[9px] font-black text-white/90 uppercase tracking-widest">Riders Online</span>
                                     </div>
                                 </motion.div>
                             )}
@@ -137,31 +134,32 @@ const HomeHeader = ({ user }) => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative p-2 sm:p-2.5 bg-gray-50 rounded-xl sm:rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90"
+                            className="relative p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/20 hover:bg-white/20 transition-all active:scale-90 backdrop-blur-sm shadow-sm"
                         >
                             <Bell size={18} />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-white animate-pulse shadow-sm"></span>
+                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-[#2D2F6E] animate-pulse shadow-sm"></span>
                             )}
                         </button>
 
                         <Link
-                            to="/user/cart"
-                            className="p-2 sm:p-2.5 bg-gray-50 rounded-xl sm:rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
+                            to={serviceItems.length > 0 && productCartItems.length === 0 ? "/user/checkout/summary" : "/user/cart"}
+                            onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
+                            className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/20 hover:bg-white/20 transition-all active:scale-90 relative backdrop-blur-sm shadow-sm"
                         >
                             <ShoppingBag size={18} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#2D2F6E] text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#2D2F6E] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#2D2F6E] shadow-md">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
 
                         <Link to="/user/profile" className="ml-0.5 active:scale-90 transition-transform">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-[#2D2F6E]/10 p-0.5 overflow-hidden shadow-sm">
+                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-white/30 p-0.5 overflow-hidden shadow-sm bg-white/10 backdrop-blur-sm">
                                 <img
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
-                                    className="w-full h-full object-cover bg-gray-100 rounded-[0.8rem] sm:rounded-[1rem]"
+                                    className="w-full h-full object-cover bg-white rounded-[0.8rem] sm:rounded-[1rem]"
                                     alt="User"
                                 />
                             </div>
@@ -170,16 +168,7 @@ const HomeHeader = ({ user }) => {
                 </div>
 
                 {/* Search Bar - Modernized */}
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <Search className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-[#2D2F6E] transition-colors" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search tailors, fabrics, designs..."
-                        className="w-full bg-gray-100 border border-transparent rounded-[1rem] sm:rounded-[1.25rem] py-2 sm:py-3 pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D2F6E]/5 focus:border-[#2D2F6E]/20 transition-all placeholder:text-gray-400 shadow-inner"
-                    />
-                </div>
+                <AnimatedSearchBar />
             </div>
 
             {/* Notification Dropdown Portal-like */}

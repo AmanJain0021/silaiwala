@@ -550,8 +550,8 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
  * @access  Private (Tailor)
  */
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
-  const { status, message } = req.body;
-  const allowedStatuses = ["accepted", "cutting", "stitching", "ready-for-pickup", "out-for-delivery", "delivered", "cancelled"];
+  const { status, message, autoAssign, deliveryMethod } = req.body;
+  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled"];
 
   if (!allowedStatuses.includes(status)) {
     return next(new ErrorResponse("Invalid status update", 400));
@@ -597,62 +597,86 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
       data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
     });
     
-    // Real-time notification for Delivery Partners if a task is now ready
-    if (finalStatus === "fabric-ready-for-pickup" || finalStatus === "ready-for-pickup" || finalStatus === "out-for-delivery") {
+    // Auto-Assignment Logic for Deliveries
+    if (finalStatus === "fabric-ready-for-pickup" || ((finalStatus === "ready-for-pickup" || finalStatus === "ready-for-delivery") && autoAssign)) {
       const Delivery = require("../../../models/Delivery");
       const tailorProfile = await Tailor.findOne({ user: req.user.id });
       
-      let nearbyRiders = [];
+      let nearestRider = null;
       if (tailorProfile?.location?.coordinates) {
          try {
-             nearbyRiders = await Delivery.find({
+             const nearbyRiders = await Delivery.find({
                 isAvailable: true,
                 currentLocation: {
                    $near: {
                       $geometry: tailorProfile.location,
-                      $maxDistance: 10000
+                      $maxDistance: 15000 // 15km search radius
                    }
                 }
-             }).populate("user");
+             }).populate("user").limit(1);
+             if (nearbyRiders.length > 0) nearestRider = nearbyRiders[0];
          } catch (geoError) {
              console.error("⚠️ Geospatial search failed. Using availability query fallback:", geoError.message);
-             nearbyRiders = await Delivery.find({ isAvailable: true }).populate("user");
-         }
-      }
-
-      if (nearbyRiders.length > 0) {
-         for (const rider of nearbyRiders) {
-            if (!rider?.user?._id) continue;
-            const isFabric = finalStatus === "fabric-ready-for-pickup";
-            
-            await sendNotification({
-              recipient: rider.user._id,
-              type: "NEW_DELIVERY_TASK",
-              title: `New ${isFabric ? 'Fabric' : 'Delivery'} Task! 📍`,
-              message: `Order ${order.orderId} is ready for ${isFabric ? 'fabric pickup from Customer' : 'final delivery from Tailor'}.`,
-              data: { 
-                orderId: order._id, 
-                type: finalStatus, 
-                taskType: isFabric ? 'fabric-pickup' : 'order-delivery',
-                targetUrl: "/delivery/tasks" 
-              }
-            });
+             nearestRider = await Delivery.findOne({ isAvailable: true }).populate("user");
          }
       } else {
-         const isFabric = finalStatus === "fabric-ready-for-pickup";
+         nearestRider = await Delivery.findOne({ isAvailable: true }).populate("user");
+      }
+
+      const isFabric = finalStatus === "fabric-ready-for-pickup";
+      const taskTypeDesc = isFabric ? 'fabric pickup' : 'final delivery';
+
+      if (nearestRider && nearestRider.user) {
+         // Perform the auto-assignment
+         order.deliveryPartner = nearestRider.user._id;
+         order.deliveryStatus = 'assigned';
+         order.assignedAt = new Date();
+         if (deliveryMethod) order.deliveryMethod = deliveryMethod;
+         
+         order.trackingHistory.push({
+            status: "delivery-assigned",
+            message: `Delivery partner auto-assigned for ${taskTypeDesc}.`,
+            timestamp: new Date()
+         });
+         await order.save();
+
+         // Notify assigned rider
          await sendNotification({
-           recipient: "delivery_partners",
+           recipient: nearestRider.user._id,
            type: "NEW_DELIVERY_TASK",
-           title: `New Dispatch Available! 🚚`,
-           message: `A new ${isFabric ? 'fabric pickup' : 'final delivery'} task for order ${order.orderId} is available in your area.`,
+           title: `New ${isFabric ? 'Fabric' : 'Delivery'} Task Assigned! 📍`,
+           message: `Order ${order.orderId} has been auto-assigned to you for ${isFabric ? 'fabric pickup from Customer' : 'final delivery from Tailor'}.`,
            data: { 
-              orderId: order._id, 
-              type: finalStatus, 
-              taskType: isFabric ? 'fabric-pickup' : 'order-delivery',
-              targetUrl: "/delivery/tasks" 
+             orderId: order._id, 
+             type: finalStatus, 
+             taskType: isFabric ? 'fabric-pickup' : 'order-delivery',
+             targetUrl: "/delivery/tasks" 
            }
          });
+         
+         // Clear from general fleet if socket is available
+         const { getIO } = require("../../../config/socket");
+         const io = getIO();
+         if (io) io.to("delivery_partners").emit("task_claimed", { orderId: order._id });
+
+      } else {
+         // Fallback if no rider found: mark as manual/shiprocket later
+         order.deliveryMethod = deliveryMethod || 'manual';
+         await order.save();
+         
+         // Optionally notify admin that manual assignment is needed
+         await sendNotification({
+           recipient: "admin",
+           type: "MANUAL_ASSIGNMENT_REQUIRED",
+           title: `No Riders Available 🚚`,
+           message: `Order ${order.orderId} requires manual delivery assignment.`,
+           data: { orderId: order._id, targetUrl: "/admin/delivery" }
+         });
       }
+    } else if ((finalStatus === "ready-for-pickup" || finalStatus === "ready-for-delivery") && deliveryMethod && deliveryMethod !== 'auto') {
+        // If tailor specifically requested Manual or Shiprocket
+        order.deliveryMethod = deliveryMethod;
+        await order.save();
     }
 
     // Notify Customer about status change
@@ -685,12 +709,12 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
             status: finalStatus
         });
 
-        if (finalStatus === 'ready-for-pickup' || finalStatus === 'fabric-ready-for-pickup') {
+        if (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery' || finalStatus === 'fabric-ready-for-pickup') {
             io.to('delivery_partners').emit('receive_new_order', {
                 orderId: order.orderId,
                 _id: order._id,
                 status: finalStatus,
-                taskType: finalStatus === 'ready-for-pickup' ? 'order-delivery' : 'fabric-pickup'
+                taskType: (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery') ? 'order-delivery' : 'fabric-pickup'
             });
             console.log(`📡 Socket: Broadcasted task ${order.orderId} to Delivery Room`);
         }

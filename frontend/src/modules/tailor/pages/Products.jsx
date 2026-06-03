@@ -118,7 +118,7 @@ const Products = () => {
                     image: newItem.image,
                     basePrice: newItem.basePrice,
                     deliveryTime: newItem.deliveryTime,
-                    category: newItem.category,
+                    ...(newItem.category ? { category: newItem.category } : {}),
                     tags: typeof newItem.tags === 'string'
                         ? newItem.tags.split(',').map(t => t.trim()).filter(t => t !== '')
                         : newItem.tags,
@@ -131,7 +131,7 @@ const Products = () => {
                     ...newItem, 
                     title: finalName,
                     name: finalName,
-                    category: newItem.category || selectedParent,
+                    ...(newItem.category || selectedParent ? { category: newItem.category || selectedParent } : {}),
                     stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
                     productType: 'fabric'
                 };
@@ -384,7 +384,7 @@ const Products = () => {
                         </div>
 
                         {/* Modal Content */}
-                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 pt-6 space-y-6 custom-scrollbar">
+                        <form id="product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 pt-6 space-y-6 custom-scrollbar">
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Left Side: Details */}
@@ -542,7 +542,8 @@ const Products = () => {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleSubmit}
+                                type="submit"
+                                form="product-form"
                                 disabled={isSubmitting}
                                 className="flex-1 bg-[#2D2F6E] text-white rounded-2xl py-4 font-black text-xs uppercase tracking-widest shadow-xl shadow-[#2D2F6E]/20 active:scale-95 disabled:opacity-50 transition-all"
                             >

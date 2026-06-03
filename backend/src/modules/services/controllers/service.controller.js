@@ -75,6 +75,14 @@ exports.getServices = asyncHandler(async (req, res, next) => {
 exports.getServiceById = asyncHandler(async (req, res, next) => {
   const service = await Service.findById(req.params.id)
     .populate("category", "name description")
+    .populate({
+      path: "tailor",
+      select: "shopName rating location user",
+      populate: {
+        path: "user",
+        select: "name profileImage"
+      }
+    })
     .lean();
 
   if (!service) {

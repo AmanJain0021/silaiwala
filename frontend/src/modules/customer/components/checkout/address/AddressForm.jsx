@@ -4,6 +4,7 @@ import useAddressStore from '../../../../../store/userStore';
 import { validateName, validatePhone, validatePincode } from '../../../../../utils/validation';
 import useAuthStore from '../../../../../store/authStore';
 import useLocationStore from '../../../../../store/locationStore';
+import { useGoogleLocation } from '../../../../../hooks/useGoogleLocation';
 
 const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors, maxLength, prefix }) => (
     <div className="mb-3">
@@ -40,7 +41,7 @@ const AddressForm = ({ onCancel, onSuccess }) => {
     const addAddress = useAddressStore((state) => state.addAddress);
     const isLoading = useAddressStore((state) => state.isLoading);
     const user = useAuthStore((state) => state.user);
-    const [isLocating, setIsLocating] = useState(false);
+    const { detectLocation, isLocating } = useGoogleLocation();
 
     const [form, setForm] = useState({
         receiverName: user?.name || user?.fullName || '',
@@ -52,61 +53,27 @@ const AddressForm = ({ onCancel, onSuccess }) => {
 
     const [errors, setErrors] = useState({});
 
-    const handleAutoLocation = () => {
-        setIsLocating(true);
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                try {
-                    const { latitude, longitude } = position.coords;
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
-                        headers: { 'Accept-Language': 'en-US,en' }
-                    });
-                    const data = await res.json();
-                    
-                    if (data && data.address) {
-                        const addr = data.address;
-                        
-                        // Construct Swiggy-style detailed street address
-                        const streetParts = [
-                            addr.house_number,
-                            addr.building,
-                            addr.residential,
-                            addr.street || addr.road,
-                            addr.suburb || addr.neighbourhood || addr.locality
-                        ].filter(Boolean);
-                        
-                        const detailedStreet = streetParts.length > 0 
-                            ? streetParts.join(', ') 
-                            : data.display_name || '';
-                        
-                        setForm(prev => ({
-                            ...prev,
-                            street: detailedStreet,
-                            city: addr.city || addr.town || addr.village || addr.county || addr.state_district || '',
-                            state: addr.state || '',
-                            zipCode: addr.postcode || '',
-                            location: {
-                                type: 'Point',
-                                coordinates: [longitude, latitude]
-                            }
-                        }));
-                        
-                        // Also update global location store so UI knows we're here
-                        useLocationStore.getState().setLocation(detailedStreet, latitude, longitude);
+    const handleAutoLocation = async () => {
+        try {
+            const data = await detectLocation();
+            if (data) {
+                setForm(prev => ({
+                    ...prev,
+                    street: data.address,
+                    city: data.city || '',
+                    state: data.state || '',
+                    zipCode: data.pincode || '',
+                    location: {
+                        type: 'Point',
+                        coordinates: [data.longitude, data.latitude]
                     }
-                } catch (error) {
-                    console.error("Geocoding failed:", error);
-                    alert("Could not fetch address details automatically. Please enter manually.");
-                } finally {
-                    setIsLocating(false);
-                }
-            }, (error) => {
-                console.error("Geolocation error:", error);
-                alert("Location access denied or failed. Please enter manually.");
-                setIsLocating(false);
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-        } else {
-            setIsLocating(false);
+                }));
+                
+                useLocationStore.getState().setLocation(data.address, data.latitude, data.longitude);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Could not fetch address details automatically. Please enter manually.");
         }
     };
 

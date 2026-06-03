@@ -103,19 +103,19 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A]">
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
 
             {/* ── HEADER ─────────────────────── */}
-            <div className="px-5 pt-6 pb-4 bg-[#0A0A0A]">
+            <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
                 <div className="flex items-center justify-between mb-6">
                     {/* Logo + Name */}
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-[#161616] border border-[#2A2A2A] rounded-2xl flex items-center justify-center p-1.5 overflow-hidden">
+                        <div className="w-12 h-12 bg-white border-2 border-[#2D2F6E]/10 rounded-2xl flex items-center justify-center p-1.5 overflow-hidden shadow-sm">
                             <img src={silaiwalaLogo} alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-none mb-0.5">Partner Panel</p>
-                            <h2 className="text-[17px] font-black text-white leading-none tracking-tight">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">Partner Panel</p>
+                            <h2 className="text-[18px] font-black text-[#2D2F6E] leading-none tracking-tight">
                                 {dashboardData?.shopName || user?.name || 'Partner Shop'}
                             </h2>
                         </div>
@@ -124,11 +124,11 @@ const Dashboard = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => navigate('/partner/settings')}
-                            className="w-10 h-10 bg-[#161616] border border-[#2A2A2A] rounded-2xl flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                            className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 hover:text-[#2D2F6E] hover:bg-white transition-all active:scale-95 shadow-sm"
                         >
-                            <Settings size={17} />
+                            <Settings size={18} />
                         </button>
-                        <div className="w-10 h-10 bg-[#2D2F6E] rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#2D2F6E]/30">
+                        <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-[#2D2F6E] font-black text-lg shadow-sm">
                             {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                         </div>
                     </div>
@@ -160,12 +160,12 @@ const Dashboard = () => {
             </div>
 
             {/* ── STATS GRID ─────────────────── */}
-            <div className="px-5 mb-5">
+            <div className="px-4 mt-6 mb-6">
                 <div className="grid grid-cols-2 gap-3">
                     {stats.map((stat, idx) => (
                         <div
                             key={idx}
-                            className="bg-[#111111] border border-[#1E1E1E] rounded-3xl p-4 relative overflow-hidden"
+                            className="bg-white border border-gray-100 rounded-3xl p-4 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                         >
                             {/* Accent dot */}
                             <div
@@ -182,16 +182,15 @@ const Dashboard = () => {
                             </div>
 
                             {/* Value */}
-                            <p className="text-[26px] font-black text-white leading-none mb-1">{stat.value}</p>
-                            <p className="text-[11px] text-white/40 font-medium mb-2">{stat.label}</p>
+                            <p className="text-[24px] font-black text-gray-900 leading-none mb-1 tracking-tight">{stat.value}</p>
+                            <p className="text-[11px] text-gray-500 font-bold mb-3">{stat.label}</p>
 
                             {/* Change */}
-                            <div className="flex items-center gap-1">
-                                <ArrowUpRight size={11} style={{ color: stat.accent }} />
-                                <span className="text-[10px] font-bold" style={{ color: stat.accent }}>
+                            <div className="flex items-center gap-1 bg-gray-50 w-fit px-2 py-1 rounded-lg border border-gray-100">
+                                <ArrowUpRight size={10} style={{ color: stat.accent }} />
+                                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: stat.accent }}>
                                     {stat.change}
                                 </span>
-                                <span className="text-[10px] text-white/25 font-medium">{stat.sub}</span>
                             </div>
                         </div>
                     ))}
@@ -199,26 +198,26 @@ const Dashboard = () => {
             </div>
 
             {/* ── ACTIVE WORK ORDERS ─────────── */}
-            <div className="px-5 pb-6">
+            <div className="px-4 pb-6">
                 {/* Section Header */}
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[15px] font-black text-white">Active Work Orders</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Active Work Orders</h3>
                     <button
                         onClick={() => navigate('/partner/orders')}
-                        className="flex items-center gap-1 text-[#2D2F6E] text-[11px] font-bold"
+                        className="flex items-center gap-1 text-[#2D2F6E] text-[10px] font-black uppercase tracking-widest hover:underline"
                     >
                         See all <ChevronRight size={13} />
                     </button>
                 </div>
 
                 {/* Orders List */}
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                     {recentOrders.map((order) => {
                         const st = getStatusStyle(order.status);
                         return (
                             <div
                                 key={order.id}
-                                className="bg-[#111111] border border-[#1E1E1E] rounded-3xl p-4 flex items-center gap-3"
+                                className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow"
                             >
                                 {/* Status Dot Avatar */}
                                 <div className={`w-10 h-10 rounded-2xl ${st.bg} flex items-center justify-center shrink-0`}>
@@ -227,28 +226,28 @@ const Dashboard = () => {
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-black text-white truncate leading-tight">
+                                    <p className="text-[13px] font-black text-gray-900 truncate leading-tight">
                                         {order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Job'}
                                     </p>
-                                    <p className="text-[10px] text-white/35 font-medium mt-0.5 truncate">
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 truncate">
                                         {order.customerName || 'Customer'} · {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                     </p>
                                 </div>
 
                                 {/* Right Side */}
                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${st.bg} ${st.text}`}>
+                                    <span className={`text-[9px] px-2 py-1 rounded-md font-black uppercase tracking-widest ${st.bg} ${st.text}`}>
                                         {order.status.replace(/-/g, ' ')}
                                     </span>
-                                    <span className={`text-[9px] uppercase font-bold ${getPriorityStyle('Normal')}`}>
-                                        {order.orderId}
+                                    <span className={`text-[9px] uppercase font-bold text-gray-400`}>
+                                        #{order.orderId}
                                     </span>
                                 </div>
 
                                 {/* Update Button */}
                                 <button
                                     onClick={() => navigate('/partner/orders', { state: { highlightOrderTitle: order.id } })}
-                                    className="shrink-0 w-8 h-8 bg-[#2D2F6E]/10 rounded-xl flex items-center justify-center text-[#2D2F6E] hover:bg-[#2D2F6E] hover:text-white transition-all"
+                                    className="shrink-0 w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:bg-[#2D2F6E] hover:text-white transition-all hover:border-[#2D2F6E]"
                                 >
                                     <ChevronRight size={14} />
                                 </button>

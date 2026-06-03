@@ -5,9 +5,9 @@ const { protect, authorize } = require("../../../middlewares/auth.middleware");
 
 router.use(protect);
 
-router.post("/razorpay/create", authorize("customer", "admin"), createRazorpayOrder);
-router.post("/razorpay/verify", authorize("customer", "admin"), verifyPayment);
-router.post("/", authorize("customer", "admin"), createOrder);
+router.post("/razorpay/create", authorize("customer", "admin", "delivery", "tailor"), createRazorpayOrder);
+router.post("/razorpay/verify", authorize("customer", "admin", "delivery", "tailor"), verifyPayment);
+router.post("/", authorize("customer", "admin", "delivery", "tailor"), createOrder);
 router.get("/my-orders", authorize("customer", "delivery", "tailor", "admin"), getMyOrders);
 router.get("/:id", getOrderDetails);
 

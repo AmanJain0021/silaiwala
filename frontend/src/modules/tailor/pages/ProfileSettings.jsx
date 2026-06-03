@@ -7,6 +7,7 @@ import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import ImageUploader from '../../../components/Common/ImageUploader';
+import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
 
 const ProfileSettings = () => {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ const ProfileSettings = () => {
         profileImage: ''
     });
 
-    const [isLocating, setIsLocating] = useState(false);
+    const { detectLocation, isLocating } = useGoogleLocation();
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -58,54 +59,20 @@ const ProfileSettings = () => {
         fetchProfile();
     }, []);
 
-    const handleAutoLocation = () => {
-        setIsLocating(true);
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                try {
-                    const { latitude, longitude } = position.coords;
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
-                        headers: { 'Accept-Language': 'en-US,en' }
-                    });
-                    const data = await res.json();
-                    
-                    if (data && data.address) {
-                        const addr = data.address;
-                        const streetParts = [
-                            addr.house_number,
-                            addr.building,
-                            addr.residential,
-                            addr.street || addr.road,
-                            addr.suburb || addr.neighbourhood || addr.locality,
-                            addr.city || addr.town || addr.village || addr.county,
-                            addr.state,
-                            addr.postcode
-                        ].filter(Boolean);
-                        
-                        const detailedStreet = streetParts.length > 0 
-                            ? streetParts.join(', ') 
-                            : data.display_name || '';
-
-                        setFormData({
-                            ...formData,
-                            address: detailedStreet,
-                            latitude: latitude,
-                            longitude: longitude
-                        });
-                    }
-                } catch (error) {
-                    console.error("Geocoding failed:", error);
-                    toast.error("Could not fetch address details automatically.");
-                } finally {
-                    setIsLocating(false);
-                }
-            }, (error) => {
-                console.error("Geolocation error:", error);
-                toast.error("Location access denied or failed.");
-                setIsLocating(false);
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-        } else {
-            setIsLocating(false);
+    const handleAutoLocation = async () => {
+        try {
+            const data = await detectLocation();
+            if (data) {
+                setFormData({
+                    ...formData,
+                    address: data.address,
+                    latitude: data.latitude,
+                    longitude: data.longitude
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.message || "Could not fetch address details automatically.");
         }
     };
 

@@ -3,12 +3,13 @@ import { MapPin, ChevronDown, Check, Loader2, Navigation, Search } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion';
 
 import useLocationStore from '../../../store/locationStore';
+import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
 
 const LocationBar = () => {
     const { address: location, setLocation, coordinates } = useLocationStore();
     const [isEditing, setIsEditing] = useState(false);
     const [tempLocation, setTempLocation] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const { detectLocation, isLocating: isLoading } = useGoogleLocation();
 
     const handleSave = () => {
         if (tempLocation.trim()) {
@@ -20,38 +21,17 @@ const LocationBar = () => {
         }
     };
 
-    const handleDetectLocation = () => {
-        setIsLoading(true);
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                try {
-                    const { latitude, longitude } = position.coords;
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
-                        headers: { 'Accept-Language': 'en-US,en' }
-                    });
-                    const data = await res.json();
-                    
-                    if (data && data.address) {
-                        const displayAddress = data.display_name || '';
-                        
-                        setLocation(displayAddress, latitude, longitude);
-                    } else {
-                        throw new Error("No address found");
-                    }
-                } catch (error) {
-                    console.error("Reverse geocoding failed:", error);
-                    const { latitude, longitude } = position.coords;
-                    setLocation(`Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, latitude, longitude);
-                } finally {
-                    setIsLoading(false);
-                    setIsEditing(false);
-                }
-            }, (error) => {
-                alert("Location access denied.");
-                setIsLoading(false);
-            }, { enableHighAccuracy: true });
-        } else {
-            setIsLoading(false);
+    const handleDetectLocation = async () => {
+        try {
+            const data = await detectLocation();
+            if (data) {
+                setLocation(data.address, data.latitude, data.longitude);
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.message || "Failed to detect location.");
+        } finally {
+            setIsEditing(false);
         }
     };
 

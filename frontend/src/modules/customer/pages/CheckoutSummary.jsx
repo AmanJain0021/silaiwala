@@ -17,14 +17,18 @@ const CheckoutSummary = () => {
     const navigate = useNavigate();
     const {
         serviceItems,
-        clearCheckout
+        buyNowItem,
+        isBuyNowMode,
+        clearCheckout,
+        removeServiceItem
     } = useCheckoutStore(state => state);
     const { items: cartItems, getTotalPrice, clearCart } = useCartStore(state => state);
     const selectedAddress = useAddressStore(state => state.getSelectedAddress());
 
     const addOrder = useOrderStore(state => state.addOrder);
 
-    const isServiceCheckout = serviceItems.length > 0;
+    const currentCheckoutItems = isBuyNowMode && buyNowItem ? [buyNowItem] : serviceItems;
+    const isServiceCheckout = currentCheckoutItems.length > 0;
     const isCartCheckout = cartItems.length > 0;
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -35,6 +39,13 @@ const CheckoutSummary = () => {
     const [roadDistances, setRoadDistances] = useState({});
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
 
+    // Redirect if cart becomes empty
+    useEffect(() => {
+        if (!bulkOrderId && currentCheckoutItems.length === 0 && cartItems.length === 0) {
+            navigate('/user/services');
+        }
+    }, [currentCheckoutItems.length, cartItems.length, bulkOrderId, navigate]);
+
     // Fetch Road Distance dynamically if needed
     useEffect(() => {
         if (!selectedAddress?.location?.coordinates || !isServiceCheckout) return;
@@ -44,7 +55,7 @@ const CheckoutSummary = () => {
             let needsUpdate = false;
             let fetching = false;
 
-            for (const item of serviceItems) {
+            for (const item of currentCheckoutItems) {
                 if (item.configuration.isTailorAtHome && item.serviceDetails?.tailorCoordinates) {
                     const [uLng, uLat] = selectedAddress.location.coordinates;
                     const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
@@ -85,12 +96,12 @@ const CheckoutSummary = () => {
         };
 
         fetchDistances();
-    }, [selectedAddress, serviceItems, isServiceCheckout]); // Removed roadDistances to prevent infinite loop
+    }, [selectedAddress, currentCheckoutItems, isServiceCheckout]);
 
     // Pricing Logic
     const getServicePricing = () => {
-        if (serviceItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 };
-        return serviceItems.reduce((acc, item) => {
+        if (currentCheckoutItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 };
+        return currentCheckoutItems.reduce((acc, item) => {
             const itemBase = item.pricing.base > 10000 ? 499 : item.pricing.base;
             let dynamicTailorAtHome = item.pricing.tailorAtHome || 0;
 
@@ -162,10 +173,10 @@ const CheckoutSummary = () => {
             if (!bulkOrderId) {
                 let payload;
                 if (isServiceCheckout) {
-                    const firstItemTailor = serviceItems[0]?.serviceDetails?.tailorId || serviceItems[0]?.serviceDetails?.tailor;
+                    const firstItemTailor = currentCheckoutItems[0]?.serviceDetails?.tailorId || currentCheckoutItems[0]?.serviceDetails?.tailor;
                     payload = {
                         tailorId: firstItemTailor,
-                        items: serviceItems.map(item => ({
+                        items: currentCheckoutItems.map(item => ({
                             service: item.serviceDetails.id || item.serviceDetails._id,
                             fabricSource: item.configuration.fabricSource,
                             deliveryType: item.configuration.deliveryType,
@@ -332,12 +343,14 @@ const CheckoutSummary = () => {
                         </div>
                     ) : isServiceCheckout ? (
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Service Bundle ({serviceItems.length} items)</h3>
-                            {serviceItems.map((item, idx) => (
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">{isBuyNowMode ? 'Book Now Item' : `Service Bundle (${currentCheckoutItems.length} items)`}</h3>
+                            {currentCheckoutItems.map((item, idx) => (
                                 <ServiceReviewCard
-                                    key={idx}
+                                    key={item.basketId || idx}
                                     service={item.serviceDetails}
                                     config={item.configuration}
+                                    pricing={item.pricing}
+                                    onRemove={!isBuyNowMode ? () => removeServiceItem(idx) : undefined}
                                 />
                             ))}
                         </div>

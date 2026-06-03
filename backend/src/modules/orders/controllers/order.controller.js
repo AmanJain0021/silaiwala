@@ -297,15 +297,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 exports.getMyOrders = asyncHandler(async (req, res, next) => {
   let query = {};
 
-  // Role-based filtering
-  if (req.user.role === "customer") {
-    query = { customer: req.user.id };
-  } else if (req.user.role === "tailor") {
-    query = { tailor: req.user.id };
-  } else if (req.user.role === "delivery") {
-    // Delivery partners see orders they are currently delivering
-    query = { deliveryPartner: req.user.id };
-  }
+  // This endpoint is used by the customer app, so we always look for orders where the user is the customer
+  query = { customer: req.user.id };
 
   const orders = await Order.find(query)
     .populate("tailor", "name shopName profileImage")

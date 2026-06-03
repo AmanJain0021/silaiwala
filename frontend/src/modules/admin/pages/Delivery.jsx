@@ -163,6 +163,41 @@ const AdminDelivery = () => {
                 <p className="text-xs text-gray-500 font-medium mt-1">Monitor dispatch, view partner tracking, and manage payouts</p>
             </div>
 
+            {/* Summary Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Pending</p>
+                        <h3 className="text-2xl font-black text-gray-900">{unassignedTasks.length}</h3>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center">
+                        <Package size={20} />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Active Partners</p>
+                        <h3 className="text-2xl font-black text-gray-900">
+                            {deliveryData.filter(p => p.status === 'Online').length}
+                        </h3>
+                    </div>
+                    <div className="w-12 h-12 bg-green-50 text-green-500 rounded-xl flex items-center justify-center">
+                        <User size={20} />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Delivered</p>
+                        <h3 className="text-2xl font-black text-gray-900">
+                            {deliveryData.reduce((acc, p) => acc + (p.totalDeliveries || 0), 0)}
+                        </h3>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
+                        <CheckCircle2 size={20} />
+                    </div>
+                </div>
+            </div>
+
             {/* Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="flex bg-gray-50 p-1 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">

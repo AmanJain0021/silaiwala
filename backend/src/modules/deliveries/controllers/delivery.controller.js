@@ -263,8 +263,11 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   const { status, message, proof } = req.body;
   const allowedStatuses = [
     "accepted",
+    "reached-pickup",
     "fabric-picked-up", 
+    "reached-dropoff",
     "fabric-delivered", 
+    "picked-up-from-tailor",
     "out-for-delivery", 
     "delivered", 
     "failed-delivery"
@@ -283,8 +286,35 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
-  // Update logic
-  order.status = status;
+  // Handle Granular Delivery Statuses & Main Status Mapping
+  if (status === "accepted") {
+      order.deliveryStatus = "accepted";
+      order.deliveryAcceptedAt = new Date();
+  } else if (status === "reached-pickup") {
+      order.deliveryStatus = "reached-pickup";
+  } else if (status === "fabric-picked-up") {
+      order.deliveryStatus = "picked-up";
+      order.pickupAt = new Date();
+      order.status = "fabric-picked-up";
+  } else if (status === "reached-dropoff") {
+      order.deliveryStatus = "reached-dropoff";
+  } else if (status === "fabric-delivered") {
+      order.deliveryStatus = "delivered";
+      order.status = "fabric-delivered";
+  } else if (status === "picked-up-from-tailor") {
+      order.deliveryStatus = "picked-up";
+      order.pickupAt = new Date();
+      // Keep main status as ready-for-pickup or advance it to out-for-delivery depending on UI
+      order.status = "out-for-delivery"; 
+  } else if (status === "out-for-delivery") {
+      order.deliveryStatus = "out-for-delivery";
+      order.status = "out-for-delivery";
+  } else if (status === "delivered") {
+      order.deliveryStatus = "delivered";
+      order.status = "delivered";
+  } else if (status === "failed-delivery") {
+      // Just keep existing main status, update delivery history
+  }
 
   // New: Notifications for fabric pickup
   if (status === "fabric-picked-up") {

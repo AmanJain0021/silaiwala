@@ -135,16 +135,31 @@ const OrderTracking = () => {
             { key: 'shipped', label: 'In Transit', icon: Truck },
             { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
         ]
-        : [
-            { key: 'pending', label: 'Placed', icon: Package },
-            { key: 'accepted', label: 'Received', icon: ShieldCheck },
-            ...(order.fabricPickupRequired ? [{ key: 'fabric-pickup', label: 'Fabric', icon: Truck }] : []),
-            { key: 'cutting', label: 'Cutting', icon: Scissors },
-            { key: 'stitching', label: 'Stitching', icon: Calendar },
-            { key: 'ready-for-pickup', label: 'Ready', icon: CheckCircle2 },
-            { key: 'out-for-delivery', label: 'Dispatch', icon: Truck },
-            { key: 'delivered', label: 'Arrived', icon: CheckCircle2 }
-        ];
+        : order.fabricPickupRequired
+            ? [
+                { key: 'pending', label: 'Placed', icon: Package },
+                { key: 'fabric-pickup', label: 'Fabric', icon: Truck }, // corresponds to fabric-delivered/received
+                { key: 'measurement-verification', label: 'Verify', icon: ShieldCheck },
+                { key: 'cutting', label: 'Cutting', icon: Scissors },
+                { key: 'stitching', label: 'Stitching', icon: Calendar },
+                { key: 'finishing', label: 'Finishing', icon: CheckCircle2 },
+                { key: 'quality-check', label: 'QC', icon: ShieldCheck },
+                { key: 'ready-for-delivery', label: 'Ready', icon: CheckCircle2 },
+                { key: 'out-for-delivery', label: 'Dispatch', icon: Truck },
+                { key: 'delivered', label: 'Arrived', icon: CheckCircle2 }
+            ]
+            : [
+                { key: 'pending', label: 'Placed', icon: Package },
+                { key: 'order-received', label: 'Received', icon: ShieldCheck },
+                { key: 'fabric-selected', label: 'Fabric', icon: Package },
+                { key: 'cutting', label: 'Cutting', icon: Scissors },
+                { key: 'stitching', label: 'Stitching', icon: Calendar },
+                { key: 'finishing', label: 'Finishing', icon: CheckCircle2 },
+                { key: 'quality-check', label: 'QC', icon: ShieldCheck },
+                { key: 'ready-for-delivery', label: 'Ready', icon: CheckCircle2 },
+                { key: 'out-for-delivery', label: 'Dispatch', icon: Truck },
+                { key: 'delivered', label: 'Arrived', icon: CheckCircle2 }
+            ];
 
     const getStageStatus = (stageKey) => {
         const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
@@ -163,57 +178,104 @@ const OrderTracking = () => {
             return { completed: isCompleted, time: entry ? new Date(entry.timestamp || entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
         }
 
-        if (stageKey === 'accepted') {
-            const entry = history.find(h => h.status === 'accepted' || h.status.includes('ready-for-pickup'));
-            const isCompleted = !!entry || ['fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered', 'cutting', 'stitching', 'completed', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
+        const statusOrder = [
+            'pending',
+            'accepted',
+            'fabric-ready-for-pickup',
+            'fabric-picked-up',
+            'fabric-delivered',
+            'fabric-received',
+            'order-received',
+            'fabric-selected',
+            'measurement-verification',
+            'cutting',
+            'stitching',
+            'finishing',
+            'quality-check',
+            'ready-for-pickup',
+            'ready-for-delivery',
+            'out-for-delivery',
+            'delivered',
+            'product-delivered',
+            'order-completed'
+        ];
 
-        if (stageKey === 'fabric-pickup') {
-            const entry = history.find(h => h.status === 'fabric-delivered' || h.status === 'delivery-fabric-delivered');
-            const isCompleted = !!entry || ['cutting', 'stitching', 'completed', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
+        // Map stage keys to their equivalent status weights for comparison
+        let equivalentStageKey = stageKey;
+        if (stageKey === 'fabric-pickup') equivalentStageKey = 'fabric-received';
+        if (stageKey === 'accepted') equivalentStageKey = 'order-received';
+        if (stageKey === 'in-production') equivalentStageKey = 'cutting';
+        if (stageKey === 'shipped') equivalentStageKey = 'out-for-delivery';
 
-        if (stageKey === 'in-production') {
-            const entry = history.find(h => ['cutting', 'stitching', 'in-progress', 'in-production'].includes(h.status));
-            const isCompleted = !!entry || ['completed', 'ready-for-pickup', 'out-for-delivery', 'delivered', 'shipped'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
+        const currentIndex = statusOrder.indexOf(status);
+        const stageIndex = statusOrder.indexOf(equivalentStageKey);
 
-        if (stageKey === 'cutting') {
-            const entry = history.find(h => ['cutting', 'stitching', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(h.status));
-            const isCompleted = !!entry || ['stitching', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
+        const isCompleted = currentIndex >= stageIndex && stageIndex !== -1;
 
-        if (stageKey === 'stitching') {
-            const entry = history.find(h => ['stitching', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(h.status));
-            const isCompleted = !!entry || ['ready-for-pickup', 'out-for-delivery', 'delivered'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
+        // Try to find exact timestamp from history
+        let historyEntry = history.find(h => {
+            if (stageKey === 'fabric-pickup') return ['fabric-delivered', 'fabric-received', 'delivery-fabric-delivered'].includes(h.status);
+            if (stageKey === 'ready-for-delivery') return ['ready-for-pickup', 'ready-for-delivery'].includes(h.status);
+            if (stageKey === 'out-for-delivery') return ['out-for-delivery', 'shipped'].includes(h.status);
+            if (stageKey === 'accepted') return ['accepted', 'order-received'].includes(h.status);
+            return h.status === stageKey;
+        });
 
-        if (stageKey === 'ready-for-pickup') {
-            const entry = history.find(h => ['ready-for-pickup', 'out-for-delivery', 'delivered'].includes(h.status));
-            const isCompleted = !!entry || ['out-for-delivery', 'delivered'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
+        // Fallback to current time if just completed but no history sync yet
+        const timeStr = historyEntry 
+            ? new Date(historyEntry.timestamp || historyEntry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+            : (isCompleted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null);
 
-        if (stageKey === 'out-for-delivery' || stageKey === 'shipped') {
-            const entry = history.find(h => h.status === 'out-for-delivery' || h.status === 'delivery-out-for-delivery' || h.status === 'shipped');
-            const isCompleted = !!entry || ['delivered'].includes(status);
-            return { completed: isCompleted, time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
-
-        if (stageKey === 'delivered') {
-            const entry = history.find(h => h.status === 'delivered' || h.status === 'delivery-delivered');
-            return { completed: !!entry || status === 'delivered', time: entry ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null };
-        }
-
-        return { completed: false };
+        return { completed: isCompleted, time: timeStr };
     };
 
-    const timelineStates = stages.map(s => ({ ...s, ...getStageStatus(s.key) }));
+    const getStageSubEvents = (stageKey) => {
+        const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
+        if (history.length === 0) return [];
+
+        let validStatuses = [];
+        let timeConstraint = null; // 'before-cutting', 'after-ready'
+
+        if (stageKey === 'fabric-pickup') {
+            validStatuses = ['reached-pickup', 'fabric-picked-up'];
+            timeConstraint = 'before-cutting';
+        } else if (stageKey === 'out-for-delivery') {
+            validStatuses = ['reached-pickup', 'picked-up-from-tailor', 'reached-dropoff'];
+            timeConstraint = 'after-ready';
+        }
+
+        if (validStatuses.length === 0) return [];
+
+        // Find boundary timestamps
+        const readyForPickupTime = history.find(h => h.status === 'ready-for-pickup')?.timestamp;
+        const cuttingTime = history.find(h => h.status === 'cutting' || h.status === 'fabric-delivered')?.timestamp;
+
+        let events = history.filter(h => validStatuses.includes(h.status));
+
+        if (timeConstraint === 'before-cutting' && cuttingTime) {
+            events = events.filter(e => new Date(e.timestamp) <= new Date(cuttingTime));
+        } else if (timeConstraint === 'after-ready' && readyForPickupTime) {
+            events = events.filter(e => new Date(e.timestamp) >= new Date(readyForPickupTime));
+        } else if (timeConstraint === 'after-ready' && !readyForPickupTime) {
+            // If it hasn't reached ready-for-pickup, there shouldn't be dispatch events
+            // But just in case, if status is out-for-delivery
+            if (stageKey === 'out-for-delivery' && order.status !== 'out-for-delivery' && order.status !== 'delivered') {
+                events = [];
+            }
+        }
+
+        return events.map(e => ({
+            message: e.message || `Status updated to ${e.status.replace(/-/g, ' ')}`,
+            time: new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            rawTime: new Date(e.timestamp).getTime()
+        })).sort((a,b) => a.rawTime - b.rawTime);
+    };
+
+    const timelineStates = stages.map(s => ({ 
+        ...s, 
+        ...getStageStatus(s.key),
+        subEvents: getStageSubEvents(s.key)
+    }));
     const currentStageIndex = [...timelineStates].reverse().findIndex(s => s.completed);
     const actualCurrentIndex = currentStageIndex === -1 ? 0 : (timelineStates.length - 1 - currentStageIndex);
 

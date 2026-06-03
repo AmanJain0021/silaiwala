@@ -48,6 +48,7 @@ const ServiceDetail = () => {
         addServiceItem, 
         serviceItems,
         removeServiceItem,
+        setBuyNowMode,
         serviceDetails: storedDetails 
     } = useCheckoutStore(state => state);
     const addMeasurement = useMeasurementStore(state => state.addMeasurement);
@@ -96,7 +97,12 @@ const ServiceDetail = () => {
                 ]);
 
                 if (results[0].status === 'fulfilled') {
-                    setServiceData(results[0].value.data.data);
+                    const service = results[0].value.data.data;
+                    setServiceData(service);
+                    // Pre-select tailor if it came directly with the service
+                    if (service.tailor && !results[1].value) {
+                        setPreSelectedTailor(service.tailor);
+                    }
                 }
                 if (results[1].status === 'fulfilled' && results[1].value) {
                     setPreSelectedTailor(results[1].value.data.data);
@@ -208,9 +214,9 @@ const ServiceDetail = () => {
         return {
             serviceDetails: {
                 ...serviceData,
-                tailorId: preSelectedTailor?._id || null,
-                tailorName: preSelectedTailor?.shopName || preSelectedTailor?.user?.name || null,
-                tailorCoordinates: preSelectedTailor?.location?.coordinates || null
+                tailorId: preSelectedTailor?._id || serviceData?.tailor?._id || null,
+                tailorName: preSelectedTailor?.shopName || preSelectedTailor?.user?.name || serviceData?.tailor?.shopName || serviceData?.tailor?.user?.name || null,
+                tailorCoordinates: preSelectedTailor?.location?.coordinates || serviceData?.tailor?.location?.coordinates || null
             },
             configuration: { 
                 deliveryType, 
@@ -239,17 +245,32 @@ const ServiceDetail = () => {
         const item = await prepareDraftItem();
         addServiceItem(item);
         resetDraftForm();
-        navigate('/user/services');
+        // Stay on page and show a success toast
+        import('react-hot-toast').then(({ toast }) => {
+            toast.success('Item added to basket', {
+                icon: '🛒',
+                style: {
+                    borderRadius: '10px',
+                    background: '#333',
+                    color: '#fff',
+                },
+            });
+        });
     };
 
-    const handleProceed = async () => {
+    const handleBuyNow = async () => {
         const item = await prepareDraftItem();
-        // Add current drafting to the basket
-        addServiceItem(item);
         
-        // Go to next step
-        if (!preSelectedTailor) navigate('/user/checkout/tailor');
-        else navigate('/user/checkout/address');
+        // Use 'Book Now' mode instead of adding to basket
+        setBuyNowMode(true, item);
+        
+        // Auto-select logic: if the service belongs to a tailor OR user came from tailor profile
+        const targetTailor = preSelectedTailor || serviceData?.tailor;
+        if (!targetTailor) {
+            navigate('/user/checkout/tailor');
+        } else {
+            navigate('/user/checkout/address');
+        }
     };
 
     return (
@@ -462,7 +483,7 @@ const ServiceDetail = () => {
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-1.5 mb-0.5">
                                         <span className="text-[9px] font-black text-primary uppercase tracking-tighter">
-                                            {serviceItems.length > 0 ? `Total Bundle (${serviceItems.length + 1} items)` : 'Live Bill'}
+                                            Live Bill
                                         </span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                                     </div>
@@ -568,11 +589,11 @@ const ServiceDetail = () => {
                                             : "border-gray-100 text-gray-300 cursor-not-allowed"
                                     )}
                                 >
-                                    <Tag size={16} /> Add Another
+                                    <Tag size={16} /> Add to Basket
                                 </button>
                                 
                                 <button
-                                    onClick={handleProceed}
+                                    onClick={handleBuyNow}
                                     disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
                                     className={cn(
                                         "flex-[2.5] py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
@@ -582,7 +603,7 @@ const ServiceDetail = () => {
                                     )}
                                 >
                                     {measurementType && (measurementType === 'saved' || measurements) ? (
-                                        <>Confirm & Checkout ({serviceItems.length + 1}) <ChevronRight size={16} /></>
+                                        <>Book Now <ChevronRight size={16} /></>
                                     ) : (
                                         <>Enter Details to Proceed</>
                                     )}

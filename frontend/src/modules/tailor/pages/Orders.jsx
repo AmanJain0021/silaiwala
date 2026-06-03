@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
+import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -22,6 +22,10 @@ const Orders = () => {
     const [productionNotes, setProductionNotes] = useState({});
     const [noteInput, setNoteInput] = useState('');
 
+    // Dispatch Delivery Modal State
+    const [dispatchOrder, setDispatchOrder] = useState(null);
+    const [isDispatching, setIsDispatching] = useState(false);
+
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
@@ -36,9 +40,9 @@ const Orders = () => {
         }
     };
 
-    const handleStatusUpdate = async (orderId, status) => {
+    const handleStatusUpdate = async (orderId, status, extraPayload = {}) => {
         try {
-            const response = await api.patch(`/tailors/orders/${orderId}/status`, { status });
+            const response = await api.patch(`/tailors/orders/${orderId}/status`, { status, ...extraPayload });
             if (response.data.success) {
                 if (status === 'accepted') {
                     setActiveTab('active');
@@ -52,6 +56,20 @@ const Orders = () => {
             }
         } catch (error) {
             console.error('Error updating status:', error);
+        }
+    };
+
+    const handleDispatchAction = async (method) => {
+        if (!dispatchOrder) return;
+        setIsDispatching(true);
+        try {
+            await handleStatusUpdate(dispatchOrder._id, 'ready-for-pickup', { 
+                autoAssign: method === 'auto',
+                deliveryMethod: method 
+            });
+            setDispatchOrder(null);
+        } finally {
+            setIsDispatching(false);
         }
     };
 
@@ -201,49 +219,167 @@ const Orders = () => {
 
                             {/* Production Status Stepper */}
                             <div className="bg-white rounded-3xl p-5 border border-gray-100">
-                                <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-6">Production Status</p>
+                                {/* Production Status UI Removed (Title Removed) */}
                                 {(() => {
-                                    const steps = [
-                                        { key: 'accepted',         label: 'Received' },
-                                        { key: 'cutting',          label: 'Cutting'  },
-                                        { key: 'stitching',        label: 'Stitching'},
-                                        { key: 'ready-for-pickup', label: 'Ready'    },
-                                        { key: 'out-for-delivery', label: 'Delivery' },
-                                        { key: 'delivered',        label: 'Done'     }
+                                    const steps = order.fabricPickupRequired 
+                                        ? [
+                                            { key: 'fabric-received',          label: 'Fabric Received' },
+                                            { key: 'measurement-verification', label: 'Verification' },
+                                            { key: 'cutting',                  label: 'Cutting' },
+                                            { key: 'stitching',                label: 'Stitching' },
+                                            { key: 'finishing',                label: 'Finishing' },
+                                            { key: 'quality-check',            label: 'QC' },
+                                            { key: 'ready-for-delivery',       label: 'Ready' }
+                                        ]
+                                        : [
+                                            { key: 'order-received',           label: 'Received' },
+                                            { key: 'fabric-selected',          label: 'Fabric Picked' },
+                                            { key: 'cutting',                  label: 'Cutting' },
+                                            { key: 'stitching',                label: 'Stitching' },
+                                            { key: 'finishing',                label: 'Finishing' },
+                                            { key: 'quality-check',            label: 'QC' },
+                                            { key: 'ready-for-delivery',       label: 'Ready' }
+                                        ];
+                                    
+                                    const statusOrder = [
+                                        'pending',
+                                        'accepted',
+                                        'fabric-ready-for-pickup',
+                                        'fabric-picked-up',
+                                        'fabric-delivered',
+                                        'fabric-received',
+                                        'order-received',
+                                        'fabric-selected',
+                                        'measurement-verification',
+                                        'cutting',
+                                        'stitching',
+                                        'finishing',
+                                        'quality-check',
+                                        'ready-for-pickup',
+                                        'ready-for-delivery',
+                                        'out-for-delivery',
+                                        'delivered',
+                                        'product-delivered',
+                                        'order-completed'
                                     ];
-                                    const currentIdx = steps.findIndex(s => s.key === order.status);
+                                    
+                                    const currentStatusWeight = statusOrder.indexOf(order.status);
+                                    
+                                    let currentIdx = -1;
+                                    steps.forEach((step, idx) => {
+                                        const stepWeight = statusOrder.indexOf(step.key);
+                                        // Some older statuses might map to equivalent weights
+                                        if (currentStatusWeight >= stepWeight || 
+                                            (order.status === 'ready-for-pickup' && step.key === 'ready-for-delivery')) {
+                                            currentIdx = idx;
+                                        }
+                                    });
                                     return (
-                                        <div className="flex items-center justify-between relative">
-                                            {/* Connector line */}
-                                            <div className="absolute top-5 left-5 right-5 h-1 bg-gray-100 z-0" />
-                                            <div
-                                                className="absolute top-5 left-5 h-1 bg-[#2D2F6E] z-0 transition-all duration-500"
-                                                style={{ width: currentIdx < 0 ? '0%' : `${(currentIdx / (steps.length - 1)) * 100}%` }}
-                                            />
-                                            {steps.map((step, idx) => {
-                                                const done   = currentIdx > idx;
-                                                const active = currentIdx === idx;
-                                                return (
-                                                    <div key={step.key} className="flex flex-col items-center gap-2 z-10">
-                                                        <button 
-                                                            onClick={() => handleStatusUpdate(order._id, step.key)}
-                                                            className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                                                                done   ? 'bg-[#2D2F6E] border-[#2D2F6E]' :
-                                                                active ? 'bg-white border-[#2D2F6E] shadow-md' :
-                                                                         'bg-white border-gray-200'
-                                                            }`}
-                                                        >
-                                                            {done
-                                                                ? <Check size={16} strokeWidth={3} className="text-white" />
-                                                                : <span className={`w-2.5 h-2.5 rounded-full ${active ? 'bg-[#2D2F6E]' : 'bg-gray-200'}`} />
+                                        <div className="relative">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-[13px] font-black text-gray-900 flex items-center gap-2">
+                                                    <Package size={16} className="text-[#2D2F6E]" />
+                                                    Live Tracking
+                                                </h3>
+                                                <div className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-100 animate-pulse">
+                                                    Real-time
+                                                </div>
+                                            </div>
+
+                                            {/* Status Progress Banner */}
+                                            <div className="mb-4 p-3 bg-gradient-to-br from-[#2D2F6E] to-blue-900 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                                                <div className="relative z-10">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Current Milestone</p>
+                                                    <h2 className="text-xl font-black tracking-tight leading-none mb-2 capitalize">
+                                                        {order.status.replace(/-/g, ' ')}
+                                                    </h2>
+                                                    <p className="text-[10px] text-white/70 font-medium">
+                                                        Order status updated to {order.status.replace(/-/g, ' ')}
+                                                    </p>
+                                                </div>
+                                                <div className="absolute top-0 right-0 p-3 opacity-10">
+                                                    <Calendar size={48} />
+                                                </div>
+                                            </div>
+
+                                            {/* Vertical Timeline */}
+                                            <div className="relative pl-2 py-2">
+                                                {/* Vertical Progress Line */}
+                                                <div className="absolute left-[21px] top-6 bottom-6 w-0.5 bg-gray-100 -z-0">
+                                                    <div 
+                                                        className="w-full bg-green-500 transition-all duration-1000 ease-in-out origin-top" 
+                                                        style={{ height: `${(Math.max(0, currentIdx) / (Math.max(1, steps.length - 1))) * 100}%` }}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="flex flex-col gap-4 relative z-10">
+                                                    {steps.map((step, idx) => {
+                                                        const isCompleted = idx <= currentIdx;
+                                                        const isCurrent = idx === currentIdx;
+                                                        
+                                                        // Calculate time from history
+                                                        const historyEntry = (order.trackingHistory || []).find(h => {
+                                                            if (step.key === 'fabric-delivered') return ['fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered'].includes(h.status);
+                                                            if (step.key === 'delivered') return h.status === 'delivered';
+                                                            if (step.key === 'out-for-delivery') return h.status === 'out-for-delivery';
+                                                            return h.status === step.key;
+                                                        });
+                                                        const timeStr = historyEntry ? new Date(historyEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (isCompleted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null);
+
+                                                        const handleStepClick = () => {
+                                                            if (step.key === 'ready-for-delivery' || step.key === 'ready-for-pickup') {
+                                                                setDispatchOrder(order);
+                                                            } else {
+                                                                handleStatusUpdate(order._id, step.key);
                                                             }
-                                                        </button>
-                                                        <span className={`text-[10px] font-black uppercase tracking-wide ${
-                                                            active ? 'text-[#2D2F6E]' : 'text-gray-400'
-                                                        }`}>{step.label}</span>
-                                                    </div>
-                                                );
-                                            })}
+                                                        };
+
+                                                        return (
+                                                            <div key={step.key} className="flex items-start gap-3 group cursor-pointer" onClick={handleStepClick}>
+                                                                {/* Dot / Icon Container */}
+                                                                <div className={cn(
+                                                                    "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-700 bg-white border-2 shrink-0",
+                                                                    isCompleted ? "border-green-500 text-green-500 shadow-sm" : "border-gray-200 text-gray-300 hover:border-[#2D2F6E] hover:text-[#2D2F6E]",
+                                                                    isCurrent && "ring-4 ring-green-100 scale-110 z-20"
+                                                                )}>
+                                                                    {isCompleted ? (
+                                                                        <Check size={14} strokeWidth={4} className="animate-in zoom-in duration-300" />
+                                                                    ) : (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Content */}
+                                                                <div className="flex-1 pt-0.5">
+                                                                    <div className="flex justify-between items-center gap-2">
+                                                                        <h4 className={cn(
+                                                                            "text-[13px] font-black uppercase tracking-wide transition-colors duration-500",
+                                                                            isCompleted ? "text-gray-900" : "text-gray-400 group-hover:text-gray-600"
+                                                                        )}>
+                                                                            {step.label}
+                                                                        </h4>
+                                                                        <p className={cn(
+                                                                            "text-[10px] font-bold transition-opacity duration-500 flex items-center gap-1",
+                                                                            isCompleted ? "text-gray-500 opacity-100" : "text-gray-300 opacity-100"
+                                                                        )}>
+                                                                            {timeStr ? (
+                                                                                <>{timeStr}</>
+                                                                            ) : (
+                                                                                <span className="flex items-center gap-1"><Clock size={10} /> Pending</span>
+                                                                            )}
+                                                                        </p>
+                                                                    </div>
+                                                                    {isCurrent && (
+                                                                        <p className="text-[10px] text-green-600 font-bold mt-1 animate-pulse">
+                                                                            In progress...
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     );
                                 })()}
@@ -410,11 +546,11 @@ const Orders = () => {
 
                     {isPending && (
                         /* Special Instructions (Pending accept view) */
-                        <div className="bg-[#1A1A1A] text-white rounded-3xl p-5 space-y-2">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <span className="text-red-400">ℹ️</span> Special Instructions
+                        <div className="bg-amber-50 border border-amber-100 text-amber-900 rounded-3xl p-5 space-y-2">
+                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="text-amber-500">ℹ️</span> Special Instructions
                             </p>
-                            <p className="text-[12px] text-gray-200 leading-relaxed font-medium">
+                            <p className="text-[12px] text-amber-800 leading-relaxed font-medium">
                                 "Please ensure optimal fitting around the waist. Use premium thread. Customer has requested delivery before weekend."
                             </p>
                         </div>
@@ -565,19 +701,47 @@ const Orders = () => {
                                             </button>
                                         ) : (
                                             (() => {
-                                                const flow = [
-                                                    { current: 'accepted', next: 'cutting', label: 'Start Cutting' },
-                                                    { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
-                                                    { current: 'stitching', next: 'ready-for-pickup', label: 'Mark Ready' }
-                                                ];
-                                                const nextStep = flow.find(f => f.current === order.status);
+                                                const flow = order.fabricPickupRequired 
+                                                    ? [
+                                                        { current: 'fabric-delivered', next: 'fabric-received', label: 'Receive Fabric' },
+                                                        { current: 'fabric-received', next: 'measurement-verification', label: 'Verify Measurements' },
+                                                        { current: 'measurement-verification', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
+                                                        { current: 'stitching', next: 'finishing', label: 'Start Finishing' },
+                                                        { current: 'finishing', next: 'quality-check', label: 'Start QC' },
+                                                        { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
+                                                        { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' }
+                                                    ]
+                                                    : [
+                                                        { current: 'accepted', next: 'order-received', label: 'Receive Order' },
+                                                        { current: 'order-received', next: 'fabric-selected', label: 'Select Fabric' },
+                                                        { current: 'fabric-selected', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
+                                                        { current: 'stitching', next: 'finishing', label: 'Start Finishing' },
+                                                        { current: 'finishing', next: 'quality-check', label: 'Start QC' },
+                                                        { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
+                                                        { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' }
+                                                    ];
+                                                
+                                                // Handle intermediate statuses for flow
+                                                let currentStatusForFlow = order.status;
+                                                if (['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status)) {
+                                                    // While delivery driver is bringing fabric, next tailor action awaits delivery
+                                                    currentStatusForFlow = 'fabric-delivered'; 
+                                                }
+
+                                                const nextStep = flow.find(f => f.current === currentStatusForFlow);
                                                 
                                                 return (
                                                     <button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (nextStep) {
-                                                                handleStatusUpdate(order._id, nextStep.next);
+                                                                if (nextStep.current === 'quality-check' || order.status === 'ready-for-pickup' || order.status === 'ready-for-delivery') {
+                                                                    setDispatchOrder(order);
+                                                                } else {
+                                                                    handleStatusUpdate(order._id, nextStep.next);
+                                                                }
                                                             } else {
                                                                 handleAction('View Detail', order);
                                                             }
@@ -610,6 +774,69 @@ const Orders = () => {
                             isOpen={isModalOpen} 
                             onClose={() => { setIsModalOpen(false); setSelectedOrder(null); }} 
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* Delivery Dispatch Modal */}
+            {dispatchOrder && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                    <div 
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+                        onClick={() => !isDispatching && setDispatchOrder(null)}
+                    />
+                    <div className="relative bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-black text-gray-900">Assign Delivery Partner</h3>
+                            <button onClick={() => !isDispatching && setDispatchOrder(null)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 text-gray-600">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-500 font-medium mb-6">Select how you want to dispatch this order for delivery.</p>
+                        
+                        <div className="space-y-3">
+                            <button 
+                                onClick={() => handleDispatchAction('auto')}
+                                disabled={isDispatching}
+                                className="w-full p-4 border border-blue-100 bg-blue-50 hover:bg-blue-100 hover:border-blue-200 rounded-2xl flex items-center gap-4 transition-all text-left group"
+                            >
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm">
+                                    <Truck size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-blue-900 mb-0.5 group-hover:text-blue-700">Auto Assign Partner</h4>
+                                    <p className="text-[10px] font-bold text-blue-600/70">Find the nearest available delivery agent.</p>
+                                </div>
+                            </button>
+
+                            <button 
+                                onClick={() => handleDispatchAction('manual')}
+                                disabled={isDispatching}
+                                className="w-full p-4 border border-amber-100 bg-amber-50 hover:bg-amber-100 hover:border-amber-200 rounded-2xl flex items-center gap-4 transition-all text-left group"
+                            >
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm">
+                                    <User size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-amber-900 mb-0.5 group-hover:text-amber-700">Manual Assignment</h4>
+                                    <p className="text-[10px] font-bold text-amber-600/70">Admin will manually select a partner.</p>
+                                </div>
+                            </button>
+
+                            <button 
+                                onClick={() => handleDispatchAction('shiprocket')}
+                                disabled={isDispatching}
+                                className="w-full p-4 border border-purple-100 bg-purple-50 hover:bg-purple-100 hover:border-purple-200 rounded-2xl flex items-center gap-4 transition-all text-left group"
+                            >
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-purple-600 shadow-sm">
+                                    <Package size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-purple-900 mb-0.5 group-hover:text-purple-700">Shiprocket Delivery</h4>
+                                    <p className="text-[10px] font-bold text-purple-600/70">Handover to courier service for long distance.</p>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -8,7 +8,7 @@ import SafeImage from '../../../components/Common/SafeImage';
 
 const TailorSelection = () => {
     const navigate = useNavigate();
-    const { serviceDetails, configuration, pricing, initializeCheckout } = useCheckoutStore();
+    const { serviceDetails, configuration, pricing, setTailor, isBuyNowMode, buyNowItem } = useCheckoutStore();
     const [tailors, setTailors] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -34,13 +34,7 @@ const TailorSelection = () => {
         // We use the tailor's User ID for the order assignment in the backend
         const tailorUserId = tailor.user?._id || tailor.user?.id || tailor._id;
 
-        initializeCheckout({
-            service: serviceDetails,
-            config: configuration,
-            pricing: pricing,
-            tailorId: tailorUserId,
-            tailorName: tailor.shopName || tailor.user?.name
-        });
+        setTailor(tailorUserId, tailor.shopName || tailor.user?.name);
         navigate('/user/checkout/address');
     };
 
@@ -62,7 +56,7 @@ const TailorSelection = () => {
                 </button>
                 <div className="flex-1">
                     <h1 className="text-lg font-bold">Select a Tailor</h1>
-                    <p className="text-[10px] text-gray-100">Choose an expert for your {serviceDetails?.title || 'service'}</p>
+                    <p className="text-[10px] text-gray-100">Choose an expert for your {(isBuyNowMode ? buyNowItem?.serviceDetails?.title : serviceDetails?.title) || 'service'}</p>
                 </div>
             </div>
 

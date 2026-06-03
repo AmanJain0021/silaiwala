@@ -53,7 +53,23 @@ const TrackingTimeline = ({ states, currentIndex }) => {
                                         )}
                                     </p>
                                 </div>
-                                {isCurrent && (
+                                
+                                {/* Granular sub-events / tracking history injected here */}
+                                {state.subEvents && state.subEvents.length > 0 && (
+                                    <div className="mt-3 mb-1 space-y-2.5">
+                                        {state.subEvents.map((event, idx) => (
+                                            <div key={idx} className="flex items-start gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                                                <div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0" />
+                                                <div>
+                                                    <p className="text-[11px] font-bold text-gray-600 leading-tight">{event.message}</p>
+                                                    <p className="text-[9px] font-medium text-gray-400">{event.time}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {isCurrent && (!state.subEvents || state.subEvents.length === 0) && (
                                     <p className="text-[10px] text-primary font-bold mt-1 animate-pulse">
                                         In progress...
                                     </p>

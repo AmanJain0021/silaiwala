@@ -52,18 +52,37 @@ const orderSchema = new mongoose.Schema(
         "fabric-ready-for-pickup",
         "fabric-picked-up",
         "fabric-delivered",
+        "fabric-received",
+        "order-received",
+        "fabric-selected",
         "accepted", 
+        "measurement-verification",
         "in-progress", 
         "cutting",
         "stitching",
+        "finishing",
+        "quality-check",
         "completed", 
-        "ready-for-pickup", 
+        "ready-for-pickup",
+        "ready-for-delivery",
         "out-for-delivery", 
         "delivered", 
+        "product-delivered",
+        "order-completed",
         "failed-delivery", 
         "cancelled"
       ],
       default: "pending",
+    },
+    deliveryStatus: {
+      type: String,
+      enum: ['pending', 'assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'],
+      default: 'pending'
+    },
+    deliveryMethod: {
+      type: String,
+      enum: ['auto', 'manual', 'shiprocket'],
+      default: 'auto'
     },
     fabricPickupRequired: {
         type: Boolean,
@@ -97,6 +116,9 @@ const orderSchema = new mongoose.Schema(
       default: 0
     },
     acceptedAt: Date,
+    assignedAt: Date,
+    deliveryAcceptedAt: Date,
+    pickupAt: Date,
     deliveryFee: {
       type: Number,
       default: 0,

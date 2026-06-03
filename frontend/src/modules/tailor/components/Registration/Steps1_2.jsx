@@ -4,6 +4,7 @@ import ImageUploader from '../../../../components/Common/ImageUploader';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { Navigation } from 'lucide-react';
+import { useGoogleLocation } from '../../../../hooks/useGoogleLocation';
 
 export const Step1Basic = ({ register, errors, setValue, watch }) => {
     const profileImage = watch('profileImage');
@@ -132,53 +133,21 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
 };
 
 export const Step2Business = ({ register, errors, setValue }) => {
-    const [isLocating, setIsLocating] = useState(false);
+    const { detectLocation, isLocating } = useGoogleLocation();
 
-    const handleAutoLocation = () => {
-        setIsLocating(true);
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                try {
-                    const { latitude, longitude } = position.coords;
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
-                        headers: { 'Accept-Language': 'en-US,en' }
-                    });
-                    const data = await res.json();
-                    
-                    if (data && data.address) {
-                        const addr = data.address;
-                        
-                        const streetParts = [
-                            addr.house_number,
-                            addr.building,
-                            addr.residential,
-                            addr.street || addr.road,
-                            addr.suburb || addr.neighbourhood || addr.locality
-                        ].filter(Boolean);
-                        
-                        const detailedStreet = streetParts.length > 0 
-                            ? streetParts.join(', ') 
-                            : data.display_name || '';
-
-                        setValue('address', detailedStreet, { shouldValidate: true });
-                        setValue('city', addr.city || addr.town || addr.village || addr.county || addr.state_district || '', { shouldValidate: true });
-                        setValue('pincode', addr.postcode || '', { shouldValidate: true });
-                        setValue('latitude', latitude);
-                        setValue('longitude', longitude);
-                    }
-                } catch (error) {
-                    console.error("Geocoding failed:", error);
-                    toast.error("Could not fetch address details automatically.");
-                } finally {
-                    setIsLocating(false);
-                }
-            }, (error) => {
-                console.error("Geolocation error:", error);
-                toast.error("Location access denied or failed.");
-                setIsLocating(false);
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-        } else {
-            setIsLocating(false);
+    const handleAutoLocation = async () => {
+        try {
+            const data = await detectLocation();
+            if (data) {
+                setValue('address', data.address, { shouldValidate: true });
+                setValue('city', data.city || '', { shouldValidate: true });
+                setValue('pincode', data.pincode || '', { shouldValidate: true });
+                setValue('latitude', data.latitude);
+                setValue('longitude', data.longitude);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.message || "Could not fetch address details automatically.");
         }
     };
 

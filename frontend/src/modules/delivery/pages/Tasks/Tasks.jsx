@@ -191,42 +191,50 @@ const Tasks = () => {
     // Renders the bottom action area for the Active Task based on its current type and status
     const renderActiveTaskActions = (task) => {
         const btnClass = "w-full rounded-xl py-3 font-black tracking-[0.12em] text-[10px] uppercase flex items-center justify-center gap-2 transition-all shadow-md active:scale-95";
+        const isFabric = task.taskType === 'fabric-pickup';
 
-        if (task.status === 'accepted' || task.status === 'fabric-ready-for-pickup') {
-            const isFabric = task.taskType === 'fabric-pickup';
+        // Use deliveryStatus if available for granular tracking, fallback to main status
+        const currentStage = task.deliveryStatus || task.status;
+
+        if (currentStage === 'accepted' || currentStage === 'fabric-ready-for-pickup' || currentStage === 'ready-for-pickup') {
             return (
                 <button 
-                    onClick={() => handleUpdateStatus(task._id, isFabric ? 'fabric-picked-up' : 'out-for-delivery')} 
+                    onClick={() => handleUpdateStatus(task._id, 'reached-pickup')} 
+                    className={`${btnClass} bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100 uppercase tracking-widest font-black`}
+                >
+                    <MapPin size={14} /> Reached Pickup Location
+                </button>
+            );
+        }
+
+        if (currentStage === 'reached-pickup') {
+            return (
+                <button 
+                    onClick={() => handleUpdateStatus(task._id, isFabric ? 'fabric-picked-up' : 'picked-up-from-tailor')} 
                     className={`${btnClass} bg-amber-600 text-white hover:bg-amber-700 shadow-amber-100 uppercase tracking-widest font-black`}
                 >
-                    <Navigation size={14} /> Confirm Item Picked Up
+                    <Package size={14} /> Confirm Item Picked Up
                 </button>
             );
         }
 
-        if (task.status === 'fabric-picked-up') {
+        if (currentStage === 'picked-up' || currentStage === 'fabric-picked-up' || currentStage === 'out-for-delivery') {
             return (
-                <button onClick={() => handleUpdateStatus(task._id, 'fabric-delivered')} className={`${btnClass} bg-primary text-white hover:bg-primary shadow-indigo-100`}>
-                    <CheckCircle2 size={14} /> Delivered to Tailor Workshop
+                <button 
+                    onClick={() => handleUpdateStatus(task._id, 'reached-dropoff')} 
+                    className={`${btnClass} bg-primary-dark text-white hover:bg-black shadow-slate-100 uppercase tracking-widest font-black`}
+                >
+                    <Store size={14} /> Reached Drop-off Location
                 </button>
             );
         }
 
-        if (task.status === 'ready-for-pickup') {
-            return (
-                <button onClick={() => handleUpdateStatus(task._id, 'out-for-delivery')} className={`${btnClass} bg-primary-dark text-white hover:bg-primary-dark shadow-slate-100 uppercase tracking-widest font-black`}>
-                    <Package size={14} /> Picked Up from Artisan
-                </button>
-            );
-        }
-
-        if (task.status === 'out-for-delivery') {
+        if (currentStage === 'reached-dropoff') {
             return (
                 <div className="space-y-3">
-                    {!taskProof ? (
+                    {!taskProof && !isFabric ? (
                         <button
                             onClick={() => {
-                                // Simulate photo capture
                                 setTaskProof("https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=400&auto=format&fit=crop");
                                 toast.success("Photo captured!");
                             }}
@@ -236,14 +244,16 @@ const Tasks = () => {
                         </button>
                     ) : (
                         <div className="space-y-3">
-                            <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-primary relative">
-                                <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
-                                <button onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
-                                    <X size={12} />
-                                </button>
-                            </div>
+                            {taskProof && (
+                                <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-primary relative">
+                                    <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
+                                    <button onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            )}
                             <button
-                                onClick={() => handleUpdateStatus(task._id, 'delivered', 'Order successfully delivered', taskProof)}
+                                onClick={() => handleUpdateStatus(task._id, isFabric ? 'fabric-delivered' : 'delivered', 'Order successfully delivered', taskProof)}
                                 className={`${btnClass} bg-primary text-white hover:bg-primary-dark shadow-indigo-100`}
                             >
                                 <CheckCircle2 size={14} /> Complete Delivery
