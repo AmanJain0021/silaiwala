@@ -406,6 +406,7 @@ const CheckoutSummary = () => {
                                     className="px-4 py-2 bg-amber-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest"
                                 >
                                     Select Now
+
                                 </button>
                             </div>
                         )}
@@ -419,7 +420,7 @@ const CheckoutSummary = () => {
                     {/* 5. Payment Method */}
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                         <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <CreditCard size={16} className="text-[#2D2F6E]" />
+                            <CreditCard size={15} className="text-[#2D2F6E]" />
                             Payment Method
                         </h3>
                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
