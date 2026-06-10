@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import useAuthStore from '../../../store/authStore';
 import { validatePhone } from '../../../utils/validation';
-import LocationSplashScreen from '../../../components/common/LocationSplashScreen';
+import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 
 const Login = () => {
     const navigate = useNavigate();

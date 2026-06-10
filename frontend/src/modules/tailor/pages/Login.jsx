@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTailorAuth } from '../context/AuthContext';
 import { Phone, Lock, Eye, ArrowRight, EyeOff } from 'lucide-react';
 import api from '../services/api';
-import LocationSplashScreen from '../../../components/common/LocationSplashScreen';
+import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 
 const TailorLogin = () => {
     const { login } = useTailorAuth();
