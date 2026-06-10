@@ -34,6 +34,7 @@ const mapBackendStatusToUI = (status) => {
 const toAddressLine = (shippingAddress = {}) => {
   const parts = [
     shippingAddress.address,
+    shippingAddress.street,
     shippingAddress.locality,
     shippingAddress.city,
     shippingAddress.state,
@@ -44,7 +45,7 @@ const toAddressLine = (shippingAddress = {}) => {
 
 const normalizeOrder = (raw) => {
   if (!raw) return null;
-  const shippingAddress = raw?.shippingAddress || {};
+  const shippingAddress = raw?.deliveryAddress || raw?.shippingAddress || {};
   const guestInfo = raw?.guestInfo || {};
   const backendStatus = raw?.status || 'pending';
   const uiStatus = mapBackendStatusToUI(backendStatus);
@@ -54,14 +55,16 @@ const normalizeOrder = (raw) => {
   const vendorFirst = Array.isArray(raw?.vendorItems) && raw.vendorItems.length > 0 ? raw.vendorItems[0] : null;
   const vendorData = vendorFirst?.vendorId || {};
   
-  let vendorAddress = vendorData.shopAddress || (vendorData.address?.street ? `${vendorData.address.street}, ${vendorData.address.city || ''}` : (vendorFirst?.vendorName ? 'Address in notes' : 'Address unavailable'));
+  const tailor = raw?.tailor || vendorData;
+  let vendorAddress = tailor?.location?.address || tailor?.shopAddress || (tailor?.address?.street ? `${tailor.address.street}, ${tailor.address.city || ''}` : (tailor?.shopName || vendorFirst?.vendorName ? 'Address in notes' : 'Address unavailable'));
 
-  const dropoffCoords = raw?.dropoffLocation?.coordinates;
+  const deliveryAddressCoords = raw?.deliveryAddress?.location?.coordinates;
+  const dropoffCoords = raw?.dropoffLocation?.coordinates || deliveryAddressCoords;
   const derivedLat = Array.isArray(dropoffCoords) && dropoffCoords.length === 2 && dropoffCoords[1] !== 0 ? dropoffCoords[1] : raw?.latitude || null;
   const derivedLng = Array.isArray(dropoffCoords) && dropoffCoords.length === 2 && dropoffCoords[0] !== 0 ? dropoffCoords[0] : raw?.longitude || null;
 
   const pickupCoords = raw?.pickupLocation?.coordinates;
-  const vendorDataCoords = vendorData?.shopLocation?.coordinates;
+  const vendorDataCoords = tailor?.location?.coordinates || tailor?.shopLocation?.coordinates;
 
   // Priority: Latest Shop Profile > Order Snapshot
   const vendorLat = Array.isArray(vendorDataCoords) && vendorDataCoords.length === 2 && vendorDataCoords[1] !== 0 
@@ -72,15 +75,19 @@ const normalizeOrder = (raw) => {
     ? vendorDataCoords[0] 
     : (Array.isArray(pickupCoords) && pickupCoords.length === 2 && pickupCoords[0] !== 0 ? pickupCoords[0] : null);
 
+  const customerObj = typeof raw?.customer === 'object' ? raw.customer : null;
+
   return {
     ...raw,
     id: raw?.orderId || raw?._id || raw?.id,
     orderId: raw?.orderId || raw?._id || raw?.id,
-    customer: shippingAddress?.name || guestInfo?.name || 'Customer',
-    phone: shippingAddress?.phone || shippingAddress?.mobile || guestInfo?.phone || raw?.customerPhone || raw?.phone || '',
+    customer: customerObj?.name || shippingAddress?.name || guestInfo?.name || 'Customer',
+    phone: customerObj?.phoneNumber || shippingAddress?.phone || shippingAddress?.mobile || guestInfo?.phone || raw?.customerPhone || raw?.phone || '',
     address: toAddressLine(shippingAddress) || 'Address unavailable',
-    vendorName: vendorData.storeName || vendorFirst?.vendorName || 'Vendor',
+    vendorName: tailor?.shopName || tailor?.name || vendorData?.storeName || vendorFirst?.vendorName || 'Tailor',
     vendorAddress,
+    vendorPhone: tailor?.phone || vendorData?.phone || '',
+    taskType: raw?.taskType || (['fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered'].includes(backendStatus) ? 'fabric-pickup' : 'order-delivery'),
     total: Number(raw?.total ?? 0),
     deliveryEarnings: Number(raw?.deliveryEarnings ?? 0),
     deliveryDistance: Number(raw?.deliveryDistance ?? 0),
@@ -138,6 +145,7 @@ export const useDeliveryAuthStore = create(
       isLoadingOrder: false,
       isUpdatingOrderStatus: false,
       isUpdatingStatus: false,
+      dashboardStats: null,
 
       // --- AUTH ACTIONS ---
       sendOtp: async (phone) => {
@@ -217,7 +225,7 @@ export const useDeliveryAuthStore = create(
       fetchProfile: async () => {
         set({ isLoading: true });
         try {
-          const res = await api.get('/delivery/auth/profile');
+          const res = await api.get('/deliveries/me');
           const user = normalizeDeliveryBoy(res.data || res);
           set({ deliveryBoy: user, isLoading: false }); return user;
         } catch (e) { set({ isLoading: false }); throw e; }
@@ -232,7 +240,7 @@ export const useDeliveryAuthStore = create(
       updateProfile: async (data) => {
         set({ isLoading: true });
         try {
-          const res = await api.put('/delivery/auth/profile', data);
+          const res = await api.patch('/deliveries/profile', data);
           const user = normalizeDeliveryBoy(res.data || res);
           set({ deliveryBoy: user, isLoading: false }); return user;
         } catch (e) { set({ isLoading: false }); throw e; }
@@ -246,7 +254,7 @@ export const useDeliveryAuthStore = create(
         set({ isUpdatingStatus: true, deliveryBoy: normalizeDeliveryBoy({ ...current, status }) });
 
         try {
-          const res = await api.put('/delivery/auth/profile', { 
+          const res = await api.patch('/deliveries/status', { 
             isAvailable: status === 'available', 
             status 
           });
@@ -266,7 +274,7 @@ export const useDeliveryAuthStore = create(
         }
       },
       _lastLocationUpdate: 0,
-      updateLocation: async (latitude, longitude) => {
+      updateLocation: async (latitude, longitude, eta, distanceRemaining) => {
         const current = get().deliveryBoy;
         if (!current || current.status === 'offline') return;
         // Throttle: max once per 10 seconds
@@ -274,7 +282,7 @@ export const useDeliveryAuthStore = create(
         if (now - get()._lastLocationUpdate < 10000) return;
         set({ _lastLocationUpdate: now });
         try {
-          const res = await api.put('/delivery/auth/profile', { currentLocation: { type: 'Point', coordinates: [longitude, latitude] } });
+          const res = await api.patch('/deliveries/status', { lat: latitude, lng: longitude, eta, distanceRemaining });
           set({ deliveryBoy: normalizeDeliveryBoy({ ...current, ...(res.data || res) }) });
         } catch (e) { console.error("Location Update Failed", e); }
       },
@@ -282,15 +290,17 @@ export const useDeliveryAuthStore = create(
       // --- ORDER ACTIONS ---
       fetchDashboardSummary: async () => {
         try {
-          const res = await api.get('/delivery/orders/dashboard-summary');
+          const res = await api.get('/deliveries/stats');
           const p = res.data || res || {};
-          return { ...p, recentOrders: (p.recentOrders || []).map(normalizeOrder) };
+          const stats = { ...p, recentOrders: (p.recentOrders || []).map(normalizeOrder) };
+          set({ dashboardStats: stats });
+          return stats;
         } catch (e) { throw e; }
       },
       fetchAvailableOrders: async (opt = {}) => {
         set({ isLoadingOrders: true });
         try {
-          const res = await api.get('/delivery/orders/available', { params: opt });
+          const res = await api.get('/deliveries/available-orders', { params: opt });
           const list = ((res.data || res)?.orders || []).map(normalizeOrder);
           set({ orders: list, isLoadingOrders: false }); return list;
         } catch (e) { set({ isLoadingOrders: false }); throw e; }
@@ -298,7 +308,7 @@ export const useDeliveryAuthStore = create(
       fetchOrders: async (opt = {}) => {
         set({ orders: [], isLoadingOrders: true });
         try {
-          const res = await api.get('/delivery/orders', { params: opt });
+          const res = await api.get('/deliveries/orders', { params: opt });
           const p = res.data || res;
           // Sort by latest update to ensure status changes are seen first
           const orders = (p?.orders || (Array.isArray(p) ? p : []))
@@ -310,8 +320,9 @@ export const useDeliveryAuthStore = create(
       fetchOrderById: async (id) => {
         set({ isLoadingOrder: true });
         try {
-          const res = await api.get(`/delivery/orders/${id}`);
-          const order = normalizeOrder(res.data || res);
+          const res = await api.get(`/deliveries/orders/${id}`);
+          const orderData = res.data?.data || res.data || res;
+          const order = normalizeOrder(orderData);
           set({ selectedOrder: order, isLoadingOrder: false }); return order;
         } catch (e) { set({ isLoadingOrder: false }); throw e; }
       },
@@ -328,8 +339,9 @@ export const useDeliveryAuthStore = create(
 
         set({ isUpdatingOrderStatus: true });
         try {
-          const res = await api.post(`/delivery/orders/${id}/accept`);
-          const order = normalizeOrder(res.data || res);
+          const res = await api.post(`/deliveries/orders/${id}/accept`);
+          const payload = res.data?.data || res.data || res;
+          const order = normalizeOrder(payload.order || payload);
           
           set({ 
             orders: [order, ...get().orders.filter(o => o.id !== id)],
@@ -343,11 +355,27 @@ export const useDeliveryAuthStore = create(
           throw e; 
         }
       },
+      rejectOrder: async (id) => {
+        set({ isUpdatingOrderStatus: true });
+        try {
+          const res = await api.post(`/deliveries/orders/${id}/reject`);
+          // Remove order from active orders list locally
+          set({ 
+            orders: get().orders.filter(o => o.id !== id),
+            isUpdatingOrderStatus: false 
+          }); 
+          return res.data || res;
+        } catch (e) { 
+          set({ isUpdatingOrderStatus: false });
+          throw e; 
+        }
+      },
       cancelOrder: async (id, reason) => {
         set({ isUpdatingOrderStatus: true });
         try {
           const res = await api.post(`/delivery/orders/${id}/cancel`, { reason });
-          const order = normalizeOrder(res.data || res);
+          const payload = res.data?.data || res.data || res;
+          const order = normalizeOrder(payload.order || payload);
           set({ 
             orders: get().orders.map(o => o.id === id ? order : o),
             isUpdatingOrderStatus: false 
@@ -361,8 +389,8 @@ export const useDeliveryAuthStore = create(
       updateOrderStatus: async (id, status, opt = {}) => {
         set({ isUpdatingOrderStatus: true });
         try {
-          const res = await api.patch(`/delivery/orders/${id}/status`, { status, ...opt });
-          const payload = res.data || res;
+          const res = await api.patch(`/deliveries/orders/${id}/status`, { status, ...opt });
+          const payload = res.data?.data || res.data || res;
           const order = normalizeOrder(payload.order || payload);
           if (payload.rider) set({ deliveryBoy: normalizeDeliveryBoy({ ...get().deliveryBoy, ...payload.rider }) });
           if (get().selectedOrder?.id === id) set({ selectedOrder: order });
@@ -373,7 +401,7 @@ export const useDeliveryAuthStore = create(
         set({ isUpdatingOrderStatus: true });
         try {
           const res = await api.patch(`/delivery/orders/${id}/status`, { status: 'delivered', otp, ...opt });
-          const payload = res.data || res;
+          const payload = res.data?.data || res.data || res;
           const order = normalizeOrder(payload.order || payload);
           if (payload.rider) set({ deliveryBoy: normalizeDeliveryBoy({ ...get().deliveryBoy, ...payload.rider }) });
           set({ isUpdatingOrderStatus: false }); return order;
@@ -407,7 +435,7 @@ export const useDeliveryAuthStore = create(
       completeDeliveryFlow: async (id, { otp, openBoxPhoto, deliveryProofPhoto }) => {
         set({ isUpdatingOrderStatus: true });
         try {
-          const res = await api.patch(`/delivery/orders/${id}/complete`, { otp, openBoxPhoto, deliveryProofPhoto });
+          const res = await api.patch(`/deliveries/orders/${id}/complete`, { otp, openBoxPhoto, deliveryProofPhoto });
           const data = res.data?.data || res.data || res;
           const order = normalizeOrder(data.order || data);
           if (data.rider) set({ deliveryBoy: normalizeDeliveryBoy({ ...get().deliveryBoy, ...data.rider }) });
@@ -415,11 +443,11 @@ export const useDeliveryAuthStore = create(
         } catch (e) { set({ isUpdatingOrderStatus: false }); throw e; }
       },
       resendDeliveryOtp: async (id) => {
-        const res = await api.post(`/delivery/orders/${id}/resend-delivery-otp`);
+        const res = await api.post(`/deliveries/orders/${id}/resend-delivery-otp`);
         return res.data || res;
       },
       getCompanyQR: async (id) => {
-        const res = await api.get(`/delivery/orders/${id}/company-qr`);
+        const res = await api.get(`/deliveries/orders/${id}/company-qr`);
         return res.data || res;
       },
       setBalance: (data) => {

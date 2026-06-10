@@ -92,14 +92,24 @@ const DeliveryOrderDetail = () => {
   const currentPhase = getPhase();
   const liveLocation = useDeliveryTracking(deliveryBoy?.id, order ? [order] : []);
 
+  // Helper to extract ID from populated or unpopulated partner field
+  const getPartnerId = (partner) => {
+    if (!partner) return null;
+    return typeof partner === 'string' ? partner : (partner._id || partner.id);
+  };
+
+  const myId = deliveryBoy?.id;
+  const isPickupCycle = getPartnerId(order?.pickupPartner) === myId;
+  const isDropoffCycle = getPartnerId(order?.dropoffPartner) === myId;
+
   // Check if this order is actually assigned to the current rider
   const isAssignedToMe = order && (
-    (typeof order.deliveryBoyId === 'string' && order.deliveryBoyId === deliveryBoy?.id) ||
-    (order.deliveryBoyId?._id === deliveryBoy?.id) ||
-    (order.deliveryBoyId === deliveryBoy?._id)
+    isPickupCycle || isDropoffCycle || getPartnerId(order?.deliveryPartner) === myId || getPartnerId(order?.deliveryBoyId) === myId
   );
 
-  const isAvailableTask = order && !order.deliveryBoyId && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending');
+  const myDeliveryStatus = isPickupCycle ? order?.pickupDeliveryStatus : (isDropoffCycle ? order?.dropoffDeliveryStatus : order?.deliveryStatus);
+  const needsAcceptance = isAssignedToMe && myDeliveryStatus === 'assigned';
+  const isAvailableTask = order && !isAssignedToMe && !order.deliveryPartner && !order.pickupPartner && !order.dropoffPartner && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending');
   
   useEffect(() => {
     if (liveLocation) setCurrentLocation(liveLocation);
@@ -151,6 +161,16 @@ const DeliveryOrderDetail = () => {
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to accept mission');
       navigate('/delivery/dashboard');
+    }
+  };
+
+  const handleRejectMission = async () => {
+    try {
+      await useDeliveryAuthStore.getState().rejectOrder(id);
+      toast.success('Task rejected and reassigned');
+      navigate('/delivery/dashboard');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to reject mission');
     }
   };
 
@@ -566,18 +586,19 @@ const DeliveryOrderDetail = () => {
 
         {/* BOTTOM ACTION BUTTON */}
         <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50">
-          {isAvailableTask ? (
+          {(isAvailableTask || needsAcceptance) ? (
             <div className="flex gap-3">
               <button 
-                  onClick={() => navigate(-1)}
-                  className="flex-1 h-12 bg-slate-100 text-slate-500 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] border border-slate-200 active:scale-95 transition-all"
+                  onClick={needsAcceptance ? handleRejectMission : () => navigate(-1)}
+                  disabled={isUpdatingOrderStatus}
+                  className="flex-1 h-12 bg-slate-100 text-slate-500 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] border border-slate-200 active:scale-95 transition-all disabled:opacity-50"
               >
-                  Decline
+                  {needsAcceptance ? 'Reject' : 'Decline'}
               </button>
               <button 
-                  onClick={handleAcceptMission}
+                  onClick={needsAcceptance ? () => handleUpdateStatus('accepted', 'MISSION ACCEPTED! GO TO PICKUP') : handleAcceptMission}
                   disabled={isUpdatingOrderStatus}
-                  className="flex-[2] h-12 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-200 active:scale-95 transition-all"
+                  className="flex-[2] h-12 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-200 active:scale-95 transition-all disabled:opacity-50"
               >
                   {isUpdatingOrderStatus ? 'ACCEPTING MISSION...' : 'ACCEPT TASK TO START'}
               </button>

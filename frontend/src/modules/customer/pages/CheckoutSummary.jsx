@@ -32,6 +32,7 @@ const CheckoutSummary = () => {
     const isCartCheckout = cartItems.length > 0;
 
     const [isProcessing, setIsProcessing] = useState(false);
+    const [loadingText, setLoadingText] = useState('Initializing...');
     const [bulkOrder, setBulkOrder] = useState(null);
     const location = useLocation();
     const bulkOrderId = location.state?.bulkOrderId;
@@ -214,11 +215,25 @@ const CheckoutSummary = () => {
                     };
                 }
 
+                setLoadingText('Submitting request to Tailor...');
                 const orderRes = await api.post('/orders', payload);
                 if (!orderRes.data.success) throw new Error('Order creation failed');
                 order = orderRes.data.data;
             }
 
+            if (!bulkOrderId) {
+                // NORMAL ORDER: Skip payment, send to tailor for acceptance
+                if (isServiceCheckout) clearCheckout();
+                else clearCart();
+
+                navigate('/user/checkout/success', {
+                    state: { orderId: order._id, orderNumber: order.orderId, pendingAcceptance: true }
+                });
+                return;
+            }
+
+            // ONLY BULK ORDERS DO DEPOSIT PAYMENT HERE NOW
+            setLoadingText('Connecting to Secure Payment...');
             const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: finalTotal });
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
             const rzpOrder = rzpOrderRes.data.data;
@@ -228,45 +243,30 @@ const CheckoutSummary = () => {
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "SilaiWala",
-                description: bulkOrderId ? "Bulk Order Deposit" : "Order Payment",
+                description: "Bulk Order Deposit",
                 order_id: rzpOrder.id,
                 handler: async function (response) {
                     try {
-                        if (bulkOrderId) {
-                            const verifyRes = await api.put(`/bulk-orders/${bulkOrderId}`, {
-                                paymentStatus: 'deposit-paid',
-                                status: 'accepted',
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                message: "Security deposit paid via Razorpay. Order accepted."
+                        const verifyRes = await api.put(`/bulk-orders/${bulkOrderId}`, {
+                            paymentStatus: 'deposit-paid',
+                            status: 'accepted',
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            message: "Security deposit paid via Razorpay. Order accepted."
+                        });
+
+                        if (verifyRes.data.success) {
+                            navigate('/user/checkout/success', {
+                                state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true }
                             });
-
-                            if (verifyRes.data.success) {
-                                navigate('/user/checkout/success', {
-                                    state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true }
-                                });
-                            }
-                        } else {
-                            const verifyRes = await api.post('/orders/razorpay/verify', {
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                orderObjectId: order._id
-                            });
-
-                            if (verifyRes.data.success) {
-                                if (isServiceCheckout) clearCheckout();
-                                else clearCart();
-
-                                navigate('/user/checkout/success', {
-                                    state: { orderId: order._id, orderNumber: order.orderId }
-                                });
-                            }
                         }
                     } catch (err) {
                         console.error('Verification failed:', err);
                         alert('Payment verification failed. Please contact support.');
+                    } finally {
+                        setIsProcessing(false);
+                        setLoadingText('Initializing...');
                     }
                 },
                 prefill: {
@@ -278,6 +278,8 @@ const CheckoutSummary = () => {
 
             const rzp = new window.Razorpay(options);
             rzp.on('payment.failed', function (response) {
+                setIsProcessing(false);
+                setLoadingText('Initializing...');
                 alert('Payment failed: ' + response.error.description);
             });
             rzp.open();
@@ -285,13 +287,21 @@ const CheckoutSummary = () => {
         } catch (error) {
             console.error('Payment process failed:', error);
             alert(error.response?.data?.message || 'Payment initialization failed. Please try again.');
-        } finally {
             setIsProcessing(false);
+            setLoadingText('Initializing...');
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900">
+            {/* Full Screen Processing Loader */}
+            {isProcessing && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[1000] flex flex-col items-center justify-center text-white">
+                    <div className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                    <h2 className="text-xl font-black uppercase tracking-widest">{loadingText}</h2>
+                    <p className="text-xs font-bold text-slate-300 mt-2 opacity-80">Please do not close this window</p>
+                </div>
+            )}
             {/* 1. Header */}
             <div className="sticky top-0 z-50 bg-[#2D2F6E] shadow-md border-b border-[#2D2F6E] px-4 py-3 flex items-center gap-3 pt-safe">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white transition-colors">
@@ -439,7 +449,7 @@ const CheckoutSummary = () => {
                             disabled={isProcessing || !selectedAddress}
                             className="hidden lg:flex w-full mt-6 py-4 rounded-xl bg-[#2D2F6E] text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
                         >
-                            {isProcessing ? 'Initializing...' : !selectedAddress ? 'Select Address to Pay' : `Pay ₹${finalTotal}`} <ArrowRight size={18} />
+                            {isProcessing ? 'Initializing...' : !selectedAddress ? 'Select Address to Book' : (bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now')} <ArrowRight size={18} />
                         </button>
 
                         <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
@@ -458,7 +468,7 @@ const CheckoutSummary = () => {
                     disabled={isProcessing || !selectedAddress}
                     className="w-full py-3.5 rounded-xl bg-[#2D2F6E] text-white text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
                 >
-                    {isProcessing ? 'Wait...' : !selectedAddress ? 'Select Address' : `Pay ₹${finalTotal}`} <ArrowRight size={16} />
+                    {isProcessing ? 'Wait...' : !selectedAddress ? 'Select Address' : (bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now')} <ArrowRight size={16} />
                 </button>
             </div>
         </div>

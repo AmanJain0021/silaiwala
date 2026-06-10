@@ -56,12 +56,12 @@ const HomeHeader = ({ user }) => {
     };
 
     return (
-        <div className="sticky top-0 z-[100] bg-gradient-to-b from-[#1E2050] to-[#2D2F6E] rounded-b-[2rem] shadow-xl pt-2 pb-6 transition-all duration-300 md:hidden">
+        <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-2 transition-all duration-300 md:hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pt-safe">
                 {/* Greeting */}
                 <div className="mb-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                        {getGreeting()}, <span className="text-indigo-200 capitalize">{userName}</span> <span className="origin-bottom-right animate-bounce">👋</span>
+                    <h2 className="text-lg font-black text-[#2D2F6E] tracking-tight flex items-center gap-2">
+                        {getGreeting()}, <span className="text-primary capitalize">{userName}</span> <span className="origin-bottom-right animate-bounce">👋</span>
                     </h2>
                 </div>
 
@@ -112,19 +112,19 @@ const HomeHeader = ({ user }) => {
                                         setIsEditing(true);
                                     }}
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20 shadow-sm backdrop-blur-sm">
+                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[#2D2F6E] shrink-0 border border-gray-100 shadow-sm">
                                         <MapPin size={14} className="group-hover:scale-110 transition-transform" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[9px] text-white/70 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
                                         <div className="flex items-center gap-1 overflow-hidden">
-                                            <span className="text-[11px] font-black text-white truncate tracking-tight">{location}</span>
-                                            <ChevronDown size={10} className="text-white/70" />
+                                            <span className="text-[11px] font-black text-gray-900 truncate tracking-tight">{location}</span>
+                                            <ChevronDown size={10} className="text-[#2D2F6E] opacity-50" />
                                         </div>
                                     </div>
                                     <div className="hidden sm:flex items-center gap-2 shrink-0">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]"></div>
-                                        <span className="text-[9px] font-black text-white/90 uppercase tracking-widest">Riders Online</span>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#2D2F6E] animate-pulse"></div>
+                                        <span className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest opacity-70">Riders Online</span>
                                     </div>
                                 </motion.div>
                             )}
@@ -134,32 +134,32 @@ const HomeHeader = ({ user }) => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/20 hover:bg-white/20 transition-all active:scale-90 backdrop-blur-sm shadow-sm"
+                            className="relative p-2 sm:p-2.5 bg-gray-50 rounded-xl sm:rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90"
                         >
                             <Bell size={18} />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-[#2D2F6E] animate-pulse shadow-sm"></span>
+                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-white animate-pulse shadow-sm"></span>
                             )}
                         </button>
 
                         <Link
                             to={serviceItems.length > 0 && productCartItems.length === 0 ? "/user/checkout/summary" : "/user/cart"}
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
-                            className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/20 hover:bg-white/20 transition-all active:scale-90 relative backdrop-blur-sm shadow-sm"
+                            className="p-2 sm:p-2.5 bg-gray-50 rounded-xl sm:rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
                         >
                             <ShoppingBag size={18} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#2D2F6E] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#2D2F6E] shadow-md">
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#2D2F6E] text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
 
                         <Link to="/user/profile" className="ml-0.5 active:scale-90 transition-transform">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-white/30 p-0.5 overflow-hidden shadow-sm bg-white/10 backdrop-blur-sm">
+                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-[#2D2F6E]/10 p-0.5 overflow-hidden shadow-sm">
                                 <img
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
-                                    className="w-full h-full object-cover bg-white rounded-[0.8rem] sm:rounded-[1rem]"
+                                    className="w-full h-full object-cover bg-gray-100 rounded-[0.8rem] sm:rounded-[1rem]"
                                     alt="User"
                                 />
                             </div>

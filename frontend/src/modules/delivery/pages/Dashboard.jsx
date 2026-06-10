@@ -17,7 +17,7 @@ const DeliveryDashboard = () => {
   const navigate = useNavigate();
   const {
     deliveryBoy, updateStatus, fetchProfile, fetchDashboardSummary,
-    isUpdatingStatus, orders
+    isUpdatingStatus, orders, dashboardStats
   } = useDeliveryAuthStore();
 
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
@@ -202,6 +202,35 @@ const DeliveryDashboard = () => {
               <FiAlertCircle size={20} />
             </motion.button>
           </div>
+
+          {/* EARNINGS & STATS SUMMARY OVERLAY */}
+          {dashboardStats && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }} 
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/95 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl p-4 flex items-center justify-between"
+            >
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Today's Earnings</span>
+                <span className="text-2xl font-black text-slate-800">{formatPrice(dashboardStats.todayEarnings || 0)}</span>
+              </div>
+              <div className="h-10 w-[1px] bg-slate-200 mx-4"></div>
+              <div className="flex flex-col flex-1 gap-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Today's Orders</span>
+                  <span className="text-[12px] font-black text-slate-800">{dashboardStats.todayCount || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Wallet Balance</span>
+                  <span className="text-[12px] font-black text-emerald-600">{formatPrice(dashboardStats.walletBalance || 0)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Total Deliveries</span>
+                  <span className="text-[12px] font-black text-slate-800">{dashboardStats.totalDeliveries || 0}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
         </div>
 

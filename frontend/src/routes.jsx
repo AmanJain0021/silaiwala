@@ -79,7 +79,8 @@ import DeliveryLayout from './modules/delivery/layouts/DeliveryLayout';
 import DeliveryAuthLayout from './modules/delivery/layouts/DeliveryAuthLayout';
 import DeliveryProtectedRoute from './modules/delivery/components/DeliveryProtectedRoute';
 const DeliveryWallet = React.lazy(() => import('./modules/delivery/pages/Wallet/DeliveryWallet'));
-
+const DeliveryOrderDetail = React.lazy(() => import('./modules/delivery/pages/OrderDetail')); // NEW
+const LiveTracking = React.lazy(() => import('./modules/delivery/pages/LiveTracking')); // NEW
 // Admin Pages
 const AdminDashboard = React.lazy(() => import('./modules/admin/pages/Dashboard'));
 const AdminOrders = React.lazy(() => import('./modules/admin/pages/Orders'));
@@ -231,8 +232,9 @@ const AppRoutes = () => {
                     <Route path="/delivery/wallet" element={<DeliveryWallet />} />
                     <Route path="/delivery/profile" element={<DeliveryProfile />} />
                 </Route>
+                <Route path="/delivery/orders/:id" element={<DeliveryOrderDetail />} />
+                <Route path="/delivery/orders/:id/tracking" element={<LiveTracking />} />
             </Route>
-
             {/* Admin Module */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route element={<AdminProtectedRoute />}>

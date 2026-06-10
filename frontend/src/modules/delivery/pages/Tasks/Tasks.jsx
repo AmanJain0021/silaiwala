@@ -363,25 +363,40 @@ const Tasks = () => {
                             <div className="bg-slate-50 p-3 rounded-xl space-y-2.5 border border-slate-100">
                                 {(() => {
                                     const isFabricPickup = activeTask.taskType === 'fabric-pickup';
-                                    const isPickupStage = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(activeTask.status);
                                     
-                                    const stopLabel = isPickupStage ? "Pickup Location" : "Delivery Location";
+                                    // Robust logic for determining stage:
+                                    const pickupStatuses = ['pending', 'accepted', 'fabric-ready-for-pickup', 'ready-for-pickup'];
+                                    const isPickupStage = pickupStatuses.includes(activeTask.status);
                                     
-                                    // RECOVERY LOGIC: Determine actual address based on Task Type and Current Stage
+                                    const stopLabel = isPickupStage ? "Pickup Location" : "Drop-off Location";
+                                    
                                     let address = 'Address not specified';
-                                    if (isPickupStage) {
-                                        address = isFabricPickup ? activeTask.deliveryAddress : (activeTask.tailor?.location?.address || activeTask.tailor?.address);
+                                    let contactName = 'Unknown';
+                                    let contactPhone = 'N/A';
+
+                                    if (isFabricPickup) {
+                                        // Fabric Pickup Flow: Customer -> Tailor
+                                        if (isPickupStage) {
+                                            address = activeTask.deliveryAddress;
+                                            contactName = activeTask.customer?.name;
+                                            contactPhone = activeTask.customer?.phoneNumber;
+                                        } else {
+                                            address = activeTask.tailor?.location?.address || activeTask.tailor?.address;
+                                            contactName = activeTask.tailor?.shopName;
+                                            contactPhone = activeTask.tailor?.phone;
+                                        }
                                     } else {
-                                        address = isFabricPickup ? (activeTask.tailor?.location?.address || activeTask.tailor?.address) : activeTask.deliveryAddress;
+                                        // Final Delivery Flow: Tailor -> Customer
+                                        if (isPickupStage) {
+                                            address = activeTask.tailor?.location?.address || activeTask.tailor?.address;
+                                            contactName = activeTask.tailor?.shopName;
+                                            contactPhone = activeTask.tailor?.phone;
+                                        } else {
+                                            address = activeTask.deliveryAddress;
+                                            contactName = activeTask.customer?.name;
+                                            contactPhone = activeTask.customer?.phoneNumber;
+                                        }
                                     }
-                                    
-                                    const contactName = isPickupStage
-                                        ? (isFabricPickup ? activeTask.customer?.name : activeTask.tailor?.shopName)
-                                        : (isFabricPickup ? activeTask.tailor?.shopName : activeTask.customer?.name);
-                                    
-                                    const contactPhone = isPickupStage
-                                        ? (isFabricPickup ? activeTask.customer?.phoneNumber : activeTask.tailor?.phone)
-                                        : (isFabricPickup ? activeTask.tailor?.phone : activeTask.customer?.phoneNumber);
 
                                     return (
                                         <>

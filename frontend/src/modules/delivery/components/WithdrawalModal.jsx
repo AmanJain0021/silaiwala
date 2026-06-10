@@ -23,7 +23,7 @@ const WithdrawalModal = ({ isOpen, onClose, balance, onWithdrawalRequested }) =>
         setError(null);
 
         try {
-            await api.post('/delivery/withdrawals', { amount: numAmount });
+            await api.post('/deliveries/payouts/request', { amount: numAmount });
             setSuccess(true);
             if (onWithdrawalRequested) onWithdrawalRequested();
             toast.success('Withdrawal request submitted!');

@@ -32,7 +32,8 @@ api.interceptors.request.use(
         activeRequests.set(requestKey, controller);
 
         const token = localStorage.getItem('token');
-        if (token) {
+        const hasAuth = config.headers && (config.headers.Authorization || (typeof config.headers.has === 'function' && config.headers.has('Authorization')));
+        if (token && !hasAuth) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;

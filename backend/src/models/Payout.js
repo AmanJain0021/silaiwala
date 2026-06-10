@@ -7,7 +7,7 @@ const payoutSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
-    tailor: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,

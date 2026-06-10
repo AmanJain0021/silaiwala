@@ -254,6 +254,32 @@ const AdminSettings = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            <hr className="border-gray-50" />
+
+                            <div>
+                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Delivery Partner Payouts</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Base Delivery Fee (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.deliveryRates?.baseFee ?? 20} 
+                                            onChange={(e) => updateNestedSetting('deliveryRates', 'baseFee', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Delivery Fee Per km (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.deliveryRates?.perKmRate ?? 10} 
+                                            onChange={(e) => updateNestedSetting('deliveryRates', 'perKmRate', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTailorAuth } from '../context/AuthContext';
 import { Phone, Lock, Eye, ArrowRight, EyeOff } from 'lucide-react';
 import api from '../services/api';
+import LocationSplashScreen from '../../../components/common/LocationSplashScreen';
 
 const TailorLogin = () => {
     const { login } = useTailorAuth();
@@ -14,6 +15,9 @@ const TailorLogin = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [sendingOtp, setSendingOtp] = useState(false);
     const [showOtp, setShowOtp] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+    const [loggedInUser, setLoggedInUser] = useState(null);
+    const [loggedInToken, setLoggedInToken] = useState(null);
     const { register, handleSubmit, watch, formState: { errors }, setError: setFormError, clearErrors } = useForm();
     const mobileNumber = watch('mobileNumber');
 
@@ -56,8 +60,9 @@ const TailorLogin = () => {
                     return;
                 }
 
-                login(userData, token);
-                navigate('/partner');
+                setLoggedInUser(userData);
+                setLoggedInToken(token);
+                setIsLocating(true);
             }
         } catch (error) {
             const message = error.response?.data?.message || "Invalid OTP or server error";
@@ -66,6 +71,16 @@ const TailorLogin = () => {
             setIsLoading(false);
         }
     };
+
+    const handleLocationComplete = () => {
+        setIsLocating(false);
+        login(loggedInUser, loggedInToken);
+        navigate('/partner');
+    };
+
+    if (isLocating && loggedInUser) {
+        return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} token={loggedInToken} />;
+    }
 
     return (
         <motion.div

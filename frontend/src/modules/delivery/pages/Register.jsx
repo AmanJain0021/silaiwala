@@ -33,6 +33,7 @@ const DeliveryRegister = () => {
     drivingLicenseBack: null,
     aadharCard: null,
     aadharCardBack: null,
+    profileImage: null,
   });
   
   const [phoneOtp, setPhoneOtp] = useState('');
@@ -45,7 +46,7 @@ const DeliveryRegister = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack'].includes(name)) {
+    if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack', 'profileImage'].includes(name)) {
       const file = files?.[0] || null;
       setFormData((prev) => ({ ...prev, [name]: file }));
       if (file) {
@@ -56,6 +57,13 @@ const DeliveryRegister = () => {
     }
     if (['aadharNumber', 'phone', 'emergencyContact'].includes(name)) {
       const numericValue = value.replace(/\D/g, '');
+      
+      if (name === 'aadharNumber') {
+        const formatted = numericValue.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+        setFormData((prev) => ({ ...prev, [name]: formatted }));
+        return;
+      }
+
       setFormData((prev) => ({ ...prev, [name]: numericValue }));
       
       // If phone number changes, reset verification
@@ -70,8 +78,8 @@ const DeliveryRegister = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
-      toast.error('Enter a valid 10-digit mobile number starting with 6-9');
+    if (!formData.phone || !/^6\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
+      toast.error('Enter a valid 10-digit mobile number starting with 6');
       return;
     }
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -111,16 +119,18 @@ const DeliveryRegister = () => {
   const validateStep = (step) => {
     switch (step) {
       case 1:
-        if (!formData.name.trim()) { toast.error('Full name is required'); return false; }
+        if (!formData.profileImage) { toast.error('Profile photo is required'); return false; }
+        if (!formData.name.trim() || formData.name.trim().length < 3) { toast.error('Full name (min 3 chars) is required'); return false; }
         if (!formData.email.trim()) { toast.error('Email address is required'); return false; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email.trim())) { toast.error('Enter a valid email address'); return false; }
         if (!formData.phone.trim()) { toast.error('Mobile number is required'); return false; }
-        if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit mobile number starting with 6-9'); return false; }
+        if (!/^6\d{9}$/.test(formData.phone.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit mobile number starting with 6'); return false; }
         if (!isPhoneVerified) { toast.error('Please verify your mobile number first'); return false; }
-        if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact.replace(/\D/g, ''))) { toast.error('Enter a valid emergency contact number'); return false; }
+        if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit emergency contact number'); return false; }
+        if (formData.emergencyContact && formData.emergencyContact === formData.phone) { toast.error('Emergency contact cannot be the same as your mobile number'); return false; }
         if (!formData.aadharNumber.trim()) { toast.error('Aadhaar number is required'); return false; }
-        if (formData.aadharNumber.length !== 12) { toast.error('Aadhaar number must be exactly 12 digits'); return false; }
+        if (formData.aadharNumber.replace(/\s/g, '').length !== 12 || !/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) { toast.error('Aadhaar number must be exactly 12 digits'); return false; }
         return true;
       case 2:
         if (!formData.drivingLicense) { toast.error('Driving License (Front) is required'); return false; }
@@ -130,7 +140,8 @@ const DeliveryRegister = () => {
         return true;
       case 3:
         if (!formData.vehicleNumber.trim()) { toast.error('Vehicle number is required'); return false; }
-        if (!formData.address.trim()) { toast.error('Full address is required'); return false; }
+        if (!/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) { toast.error('Enter a valid vehicle number (e.g. MH 12 AB 1234)'); return false; }
+        if (!formData.address.trim() || formData.address.trim().length < 10) { toast.error('Please provide a complete residential address'); return false; }
         return true;
       default:
         return true;
@@ -153,15 +164,15 @@ const DeliveryRegister = () => {
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
         emergencyContact: formData.emergencyContact.trim(),
-        aadharNumber: formData.aadharNumber.trim(),
+        aadharNumber: formData.aadharNumber.replace(/\s/g, ''),
         address: formData.address.trim(),
         vehicleType: formData.vehicleType,
         vehicleNumber: formData.vehicleNumber.trim(),
-        // password: formData.password,
         drivingLicense: formData.drivingLicense,
         drivingLicenseBack: formData.drivingLicenseBack,
         aadharCard: formData.aadharCard,
         aadharCardBack: formData.aadharCardBack,
+        profileImage: formData.profileImage,
       });
       toast.success(result.message || 'Registration submitted');
       navigate('/delivery/login', { replace: true });
@@ -302,6 +313,35 @@ const DeliveryRegister = () => {
                   transition={{ duration: 0.25 }}
                   className="space-y-5"
                 >
+                  <div className="flex flex-col items-center justify-center mb-2">
+                    <div 
+                      className="relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-400 hover:bg-indigo-50 transition-all shadow-sm"
+                      onClick={() => fileInputRefs.current.profileImage?.click()}
+                    >
+                      <input 
+                        type="file" 
+                        name="profileImage" 
+                        accept="image/*"
+                        ref={(el) => (fileInputRefs.current.profileImage = el)}
+                        onChange={handleChange}
+                        className="hidden" 
+                      />
+                      {previews.profileImage ? (
+                        <img src={previews.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <FiCamera className="text-gray-400 group-hover:text-indigo-500 mb-1" size={24} />
+                          <span className="text-[9px] font-bold text-gray-400 uppercase">Upload</span>
+                        </div>
+                      )}
+                      {previews.profileImage && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <FiCamera className="text-white" size={20} />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-3">Profile Photo *</p>
+                  </div>
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Full Name *</label>
                     <div className="relative">
@@ -321,6 +361,7 @@ const DeliveryRegister = () => {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <div className="relative flex-1 group w-full">
                         <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base">+91</span>
                         <input 
                           type="tel" 
                           name="phone" 
@@ -329,7 +370,7 @@ const DeliveryRegister = () => {
                           placeholder="Mobile number" 
                           required 
                           maxLength={10} 
-                          className={`w-full pl-12 ${isPhoneVerified ? 'pr-12' : 'pr-4'} py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/30 focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} 
+                          className={`w-full pl-20 ${isPhoneVerified ? 'pr-12' : 'pr-4'} py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/30 focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} 
                           disabled={isPhoneVerified}
                         />
                         {isPhoneVerified && (
@@ -384,14 +425,15 @@ const DeliveryRegister = () => {
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Emergency Contact</label>
                     <div className="relative">
                       <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="tel" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="Emergency contact number" maxLength={10} className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900" />
+                      <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base">+91</span>
+                      <input type="tel" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="Emergency contact number" maxLength={10} className="w-full pl-20 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900 font-bold text-sm sm:text-base" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Aadhaar Number</label>
                     <div className="relative">
                       <FiFileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="12-digit Aadhaar number" maxLength={12} className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900" />
+                      <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="1234 5678 9012" maxLength={14} className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900 font-bold tracking-widest" />
                     </div>
                   </div>
                 </motion.div>

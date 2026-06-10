@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import AppRoutes from './routes';
 import useSocketStore from './store/socketStore';
 import { Toaster } from 'react-hot-toast';
 import SplashScreen from './components/Common/SplashScreen';
+// import LocationSplashScreen from './components/Common/LocationSplashScreen';
 
-function App() {
-  const { socket, connect, disconnect } = useSocketStore();
-  
-  // Initialize splash state based on current path
-  const [splashConfig, setSplashConfig] = useState(() => {
-    const path = window.location.pathname;
+function SplashManager({ splashConfig, setSplashConfig }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
     const isSplash = path === '/user' || 
                     path === '/welcome' || 
-                    path.startsWith('/partner') || 
-                    path.startsWith('/delivery');
+                    path === '/partner' || 
+                    path === '/delivery/dashboard';
     
     let role = 'customer';
     if (path.startsWith('/partner')) {
@@ -23,8 +23,24 @@ function App() {
       role = 'delivery';
     }
     
-    return { isSplash, role };
-  });
+    if (isSplash) {
+      setSplashConfig({ isSplash: true, role });
+    }
+  }, [location.pathname, setSplashConfig]);
+
+  if (!splashConfig.isSplash) return null;
+
+  return (
+    <SplashScreen 
+      role={splashConfig.role}
+      onComplete={() => setSplashConfig(prev => ({ ...prev, isSplash: false }))} 
+    />
+  );
+}
+
+function App() {
+  const { socket, connect, disconnect } = useSocketStore();
+  const [splashConfig, setSplashConfig] = useState({ isSplash: false, role: 'customer' });
 
   useEffect(() => {
     // Check if user is logged in
@@ -93,12 +109,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      {splashConfig.isSplash && (
-        <SplashScreen 
-          role={splashConfig.role} 
-          onComplete={() => setSplashConfig(prev => ({ ...prev, isSplash: false }))} 
-        />
-      )}
+      <SplashManager splashConfig={splashConfig} setSplashConfig={setSplashConfig} />
       <Toaster position="top-right" />
       <AppRoutes />
     </BrowserRouter>

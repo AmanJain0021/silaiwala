@@ -13,6 +13,7 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!token) {
+      console.log("[AUTH ERROR] No token provided in headers");
       return res.status(401).json({
         success: false,
         message: "Not authorized to access this route",
@@ -26,6 +27,7 @@ exports.protect = async (req, res, next) => {
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
+      console.log("[AUTH ERROR] User no longer exists for ID:", decoded.id);
       return res.status(401).json({
         success: false,
         message: "User no longer exists",
@@ -34,7 +36,7 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("[AUTH ERROR]", error);
+    console.error("[AUTH ERROR] protect catch block:", error.message);
     return res.status(401).json({
       success: false,
       message: "Not authorized to access this route",

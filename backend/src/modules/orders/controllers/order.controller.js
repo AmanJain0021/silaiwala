@@ -11,6 +11,7 @@ const { sendNotification } = require("../../../utils/notification");
 const razorpay = require("../../../config/razorpay");
 
 const PromoCode = require("../../../models/PromoCode");
+const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
 
 /**
  * @desc    Create a new order in Razorpay
@@ -82,6 +83,16 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
     // Send Notification only AFTER successful payment validation
     const fabricPickupRequired = order.items.some(item => item.fabricSource === 'customer');
     
+    // Update master order status based on payment
+    order.status = fabricPickupRequired ? 'fabric-ready-for-pickup' : 'in-progress';
+    order.trackingHistory.push({
+      status: order.status,
+      timestamp: new Date(),
+      message: "Payment successful. Order confirmed.",
+    });
+
+    await order.save();
+
     await sendNotification({
         recipient: order.tailor,
         type: "ORDER_CREATED",
@@ -97,6 +108,9 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
         message: `Your payment for order ${order.orderId} was successful. Our tailor will start working on it soon.`,
         data: { orderId: order._id, targetUrl: "/profile/orders" }
     });
+
+    // Note: Auto-assignment is no longer triggered here. 
+    // The customer must select their delivery preference ('self' or 'partner') via a separate endpoint.
 
     // --- Socket Emission for Tailor ---
     try {
@@ -262,11 +276,12 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     fabricPickupRequired,
     trackingHistory: [{ 
         status: initialStatus, 
-        message: fabricPickupRequired 
-            ? "Order placed. Fabric pickup task created." 
-            : "Order placed successfully" 
+        message: "Waiting for the tailor to accept the order before assigning a delivery partner."
     }],
   });
+
+  // Auto-assignment is now deferred until after payment in verifyPayment.
+
   // 7. Socket Emission for Tailor (if order is created - e.g. COD or during development)
   try {
     const io = getIO();
@@ -300,9 +315,12 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
   // This endpoint is used by the customer app, so we always look for orders where the user is the customer
   query = { customer: req.user.id };
 
-  const orders = await Order.find(query)
-    .populate("tailor", "name shopName profileImage")
-    .populate("customer", "name phoneNumber")
+    const orders = await Order.find(query)
+      .populate("tailor", "name shopName profileImage")
+      .populate("customer", "name phoneNumber")
+      .populate("deliveryPartner", "name phoneNumber profileImage")
+      .populate("pickupPartner", "name phoneNumber profileImage")
+      .populate("dropoffPartner", "name phoneNumber profileImage")
     .populate("items.service", "title image")
     .populate("items.product", "name image images")
     .populate("items.selectedFabric", "name image images")
@@ -326,6 +344,8 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
     .populate("customer", "name phoneNumber")
     .populate("tailor", "name shopName phoneNumber")
     .populate("deliveryPartner", "name phoneNumber profileImage")
+    .populate("pickupPartner", "name phoneNumber profileImage")
+    .populate("dropoffPartner", "name phoneNumber profileImage")
     .populate("items.service", "title image")
     .populate("items.product", "name image images")
     .populate("items.selectedFabric", "name image images")
@@ -348,5 +368,137 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: order,
+  });
+});
+
+/**
+ * @desc    Change tailor for an order (Customer)
+ * @route   PATCH /api/v1/orders/:id/change-tailor
+ * @access  Private (Customer)
+ */
+exports.changeTailorRequest = asyncHandler(async (req, res, next) => {
+    const { newTailorId } = req.body;
+    const orderId = req.params.id;
+
+    if (!newTailorId) {
+        return next(new ErrorResponse("Please provide a new tailor ID", 400));
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+        return next(new ErrorResponse("Order not found", 404));
+    }
+
+    // Check ownership
+    if (order.customer.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(new ErrorResponse("Not authorized to modify this order", 403));
+    }
+
+    if (order.status !== 'pending') {
+        return next(new ErrorResponse("Can only change tailor while order is pending acceptance", 400));
+    }
+
+    // Add old tailor to rejectedBy
+    if (!order.rejectedBy.includes(order.tailor)) {
+        order.rejectedBy.push(order.tailor);
+    }
+
+    // Validate new tailor
+    let tailor = await User.findOne({ _id: newTailorId, role: { $in: ["tailor", "admin"] } });
+    if (!tailor) {
+        const Tailor = require("../../../models/Tailor");
+        const tailorProfile = await Tailor.findById(newTailorId).populate("user");
+        if (tailorProfile && tailorProfile.user) {
+            tailor = tailorProfile.user;
+        }
+    }
+    
+    if (!tailor) {
+        return next(new ErrorResponse("New Tailor account not found or invalid", 404));
+    }
+
+    // Update order
+    order.tailor = tailor._id;
+    order.tailorTimeoutNotified = false;
+    order.createdAt = new Date(); // Reset timeout clock
+    order.trackingHistory.push({
+        status: 'pending',
+        message: 'Order reassigned to a new tailor.',
+        timestamp: new Date()
+    });
+
+    await order.save();
+
+    // Notify new tailor
+    try {
+        const { getIO } = require("../../../config/socket");
+        const io = getIO();
+        if (io) {
+            io.to(`user_${tailor._id}`).emit('receive_new_order', {
+                orderId: order.orderId,
+                _id: order._id,
+                totalAmount: order.totalAmount,
+                status: order.status
+            });
+        }
+    } catch (err) {}
+
+    res.status(200).json({
+        success: true,
+        message: "Tailor changed successfully",
+        data: order
+    });
+});
+
+/**
+ * @desc    Update delivery preference (self vs partner) after payment
+ * @route   POST /api/v1/orders/:id/delivery-preference
+ * @access  Private (Customer)
+ */
+exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
+  const { preference } = req.body;
+  const orderId = req.params.id;
+
+  if (!['self', 'partner'].includes(preference)) {
+    return next(new ErrorResponse("Invalid delivery preference", 400));
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) {
+    return next(new ErrorResponse("Order not found", 404));
+  }
+
+  // Ensure this order belongs to the customer
+  if (order.customer.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse("Not authorized to update this order", 403));
+  }
+
+  order.fabricDeliveryPreference = preference;
+
+  if (preference === 'self') {
+    order.status = 'waiting-for-customer-dropoff';
+    order.trackingHistory.push({
+      status: order.status,
+      timestamp: new Date(),
+      message: "Customer opted for self delivery of fabric.",
+    });
+  } else if (preference === 'partner') {
+    // If partner, trigger auto-assignment
+    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+    await autoAssignDelivery(order._id, "pickup");
+    
+    order.trackingHistory.push({
+      status: order.status,
+      timestamp: new Date(),
+      message: "Customer requested a delivery partner. Searching for partners.",
+    });
+  }
+
+  await order.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Delivery preference updated successfully",
+    data: order
   });
 });

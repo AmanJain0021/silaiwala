@@ -11,7 +11,7 @@ import TrackingTimeline from '../components/orders/TrackingTimeline';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import ReviewModal from '../components/orders/ReviewModal';
-
+import LiveDeliveryTracker from '../components/orders/LiveDeliveryTracker';
 const OrderTracking = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -22,6 +22,8 @@ const OrderTracking = () => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [isReviewed, setIsReviewed] = useState(false);
     const [isBulk, setIsBulk] = useState(location.state?.isBulk || false);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
 
     const fetchOrderDetails = async () => {
         try {
@@ -52,11 +54,14 @@ const OrderTracking = () => {
         }
     };
 
+    const [socketInstance, setSocketInstance] = useState(null);
+
     useEffect(() => {
         if (id) {
             fetchOrderDetails();
 
             const socket = io(SOCKET_URL);
+            setSocketInstance(socket);
             socket.emit('join_order_room', id);
 
             socket.on('order_status_updated', (data) => {
@@ -73,6 +78,7 @@ const OrderTracking = () => {
 
             return () => {
                 socket.disconnect();
+                setSocketInstance(null);
             };
         }
     }, [id]);
@@ -100,6 +106,76 @@ const OrderTracking = () => {
             </div>
         );
     }
+
+    const handlePayment = async () => {
+        setIsProcessingPayment(true);
+        try {
+            const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: order.totalAmount });
+            if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
+            const rzpOrder = rzpOrderRes.data.data;
+
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                amount: rzpOrder.amount,
+                currency: rzpOrder.currency,
+                name: "SilaiWala",
+                description: "Order Payment",
+                order_id: rzpOrder.id,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await api.post('/orders/razorpay/verify', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            orderObjectId: order._id
+                        });
+
+                        if (verifyRes.data.success) {
+                            alert('Payment successful!');
+                            fetchOrderDetails();
+                        }
+                    } catch (err) {
+                        console.error('Verification failed:', err);
+                        alert('Payment verification failed. Please contact support.');
+                    } finally {
+                        setIsProcessingPayment(false);
+                    }
+                },
+                prefill: {
+                    name: order.customer?.name || "",
+                    contact: order.customer?.phoneNumber || ""
+                },
+                theme: { color: "#2D2F6E" }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                setIsProcessingPayment(false);
+                alert('Payment failed: ' + response.error.description);
+            });
+            rzp.open();
+        } catch (error) {
+            console.error('Payment process failed:', error);
+            alert(error.response?.data?.message || 'Payment initialization failed. Please try again.');
+            setIsProcessingPayment(false);
+        }
+    };
+
+    const handleDeliveryPreference = async (preference) => {
+        setIsUpdatingPreference(true);
+        try {
+            const res = await api.post(`/orders/${id}/delivery-preference`, { preference });
+            if (res.data.success) {
+                alert('Delivery preference updated!');
+                fetchOrderDetails();
+            }
+        } catch (error) {
+            console.error('Failed to update delivery preference:', error);
+            alert(error.response?.data?.message || 'Failed to update preference. Please try again.');
+        } finally {
+            setIsUpdatingPreference(false);
+        }
+    };
 
     // Data Extraction based on Order Type
     const serviceTitle = isBulk 
@@ -181,6 +257,7 @@ const OrderTracking = () => {
         const statusOrder = [
             'pending',
             'accepted',
+            'waiting-for-customer-dropoff',
             'fabric-ready-for-pickup',
             'fabric-picked-up',
             'fabric-delivered',
@@ -237,10 +314,10 @@ const OrderTracking = () => {
         let timeConstraint = null; // 'before-cutting', 'after-ready'
 
         if (stageKey === 'fabric-pickup') {
-            validStatuses = ['reached-pickup', 'fabric-picked-up'];
+            validStatuses = ['delivery-accepted', 'delivery-reached-pickup', 'delivery-fabric-picked-up', 'reached-pickup', 'fabric-picked-up', 'fabric-delivered', 'delivery-fabric-delivered'];
             timeConstraint = 'before-cutting';
         } else if (stageKey === 'out-for-delivery') {
-            validStatuses = ['reached-pickup', 'picked-up-from-tailor', 'reached-dropoff'];
+            validStatuses = ['delivery-accepted', 'delivery-reached-pickup', 'delivery-picked-up-from-tailor', 'delivery-reached-dropoff', 'delivery-delivered', 'out-for-delivery', 'shipped'];
             timeConstraint = 'after-ready';
         }
 
@@ -280,6 +357,9 @@ const OrderTracking = () => {
     const actualCurrentIndex = currentStageIndex === -1 ? 0 : (timelineStates.length - 1 - currentStageIndex);
 
     const getCurrentStatusMessage = () => {
+        if (order.status === 'accepted' && order.paymentStatus === 'pending') {
+            return "Tailor accepted the order. Pay to confirm.";
+        }
         const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
         const latestHistory = history[history.length - 1];
         if (latestHistory?.message) return latestHistory.message;
@@ -353,6 +433,65 @@ const OrderTracking = () => {
                         currentIndex={actualCurrentIndex} 
                     />
                 </div>
+
+                {/* 3.3.5 Live Delivery Tracker */}
+                {(['fabric-ready-for-pickup', 'fabric-picked-up', 'ready-for-delivery', 'out-for-delivery'].includes(order.status) || 
+                  ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus) ||
+                  ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus)) && (
+                    <LiveDeliveryTracker order={order} socket={socketInstance} />
+                )}
+
+                {/* 3.4 Payment CTA (If accepted but not paid) */}
+                {order.status === 'accepted' && order.paymentStatus === 'pending' && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-3">
+                        <h3 className="text-sm font-bold text-gray-900">Payment Required</h3>
+                        <p className="text-xs text-gray-600 max-w-xs">
+                            Tailor accepted the order. Pay to confirm.
+                        </p>
+                        <button
+                            onClick={handlePayment}
+                            disabled={isProcessingPayment}
+                            className={`w-full max-w-xs py-3 rounded-full font-bold text-white text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
+                                isProcessingPayment ? 'bg-indigo-400' : 'bg-primary hover:bg-primary-dark'
+                            }`}
+                        >
+                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : 'Pay Now'}
+                        </button>
+                    </div>
+                )}
+
+                {/* 3.4.5 Delivery Preference (After Payment) */}
+                {order.fabricPickupRequired && order.paymentStatus === 'paid' && order.fabricDeliveryPreference === 'pending' && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
+                        <div className="bg-white p-3 rounded-full shadow-sm">
+                            <Package size={24} className="text-orange-500" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900">How will the fabric reach the tailor?</h3>
+                            <p className="text-xs text-gray-600 mt-1 max-w-xs mx-auto">
+                                Please select your preference for delivering the fabric to the tailor.
+                            </p>
+                        </div>
+                        
+                        <div className="flex flex-col w-full gap-3 mt-2">
+                            <button
+                                onClick={() => handleDeliveryPreference('self')}
+                                disabled={isUpdatingPreference}
+                                className="w-full py-3 rounded-xl font-bold text-gray-700 bg-white border border-gray-200 text-sm transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                {isUpdatingPreference ? <Loader2 size={16} className="animate-spin" /> : 'I will drop it off myself (Self Delivery)'}
+                            </button>
+                            
+                            <button
+                                onClick={() => handleDeliveryPreference('partner')}
+                                disabled={isUpdatingPreference}
+                                className="w-full py-3 rounded-xl font-bold text-white bg-primary text-sm transition-all shadow-md hover:bg-primary-dark active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                {isUpdatingPreference ? <Loader2 size={16} className="animate-spin" /> : 'Assign a Delivery Partner'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* 3.5 Order Details (Added by Request) */}
                 <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
@@ -505,45 +644,55 @@ const OrderTracking = () => {
                         </div>
                     </div>
                 )}
-                {/* 6. Delivery Partner Card */}
-                {order.deliveryPartner && (
-                    <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Delivery Partner</h4>
-                        <div className="flex items-center justify-between">
+                {/* 5.5. Delivery Partner Card */}
+                {(order.deliveryPartner || order.pickupPartner || order.dropoffPartner) && (() => {
+                    let activePartner = order.deliveryPartner;
+                    let partnerRole = 'Delivery Partner';
+                    
+                    if (['pending', 'accepted', 'paid', 'fabric-ready-for-pickup', 'fabric-pickup-assigned', 'fabric-picked-up'].includes(order.status) && order.pickupPartner) {
+                        activePartner = order.pickupPartner;
+                        partnerRole = 'Pickup Partner';
+                    } else if (order.dropoffPartner) {
+                        activePartner = order.dropoffPartner;
+                        partnerRole = 'Delivery Partner';
+                    } else if (order.pickupPartner && !order.dropoffPartner) {
+                        activePartner = order.pickupPartner;
+                        partnerRole = 'Pickup Partner';
+                    }
+
+                    if (!activePartner) return null;
+
+                    return (
+                        <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assigned {partnerRole}</h4>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-primary border border-gray-100 font-black text-xs overflow-hidden">
-                                    {order.deliveryPartner.profileImage ? (
-                                        <img src={order.deliveryPartner.profileImage} alt={order.deliveryPartner.name} className="w-full h-full object-cover" />
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-[#2D2F6E] border border-indigo-100 font-black text-xs overflow-hidden shrink-0">
+                                    {activePartner.profileImage ? (
+                                        <img src={activePartner.profileImage} alt={activePartner.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Truck size={20} />
+                                        <Truck size={16} />
                                     )}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-black text-gray-900 leading-none mb-1">{order.deliveryPartner.name}</p>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 rounded-lg border border-amber-100">
-                                            <Star size={8} className="fill-amber-600 text-amber-600" />
-                                            <span className="text-[9px] font-black text-amber-800">{order.deliveryPartner.rating?.toFixed(1) || '0.0'}</span>
-                                        </div>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-                                            {order.deliveryPartner.totalDeliveries || 0} Deliveries
-                                        </p>
-                                    </div>
+                                    <p className="text-sm font-black text-gray-900 leading-none mb-1">{activePartner.name || partnerRole}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight flex items-center gap-1">
+                                        <Phone size={10} /> {activePartner.phoneNumber || 'Contact Unavailable'}
+                                    </p>
                                 </div>
+                                {activePartner.phoneNumber && (
+                                    <a 
+                                        href={`tel:${activePartner.phoneNumber}`}
+                                        className="w-8 h-8 bg-indigo-50 text-[#2D2F6E] rounded-full flex items-center justify-center border border-indigo-100 shrink-0 hover:bg-indigo-100 transition-colors"
+                                    >
+                                        <Phone size={14} />
+                                    </a>
+                                )}
                             </div>
-                            {order.deliveryPartner.phoneNumber && (
-                                <a 
-                                    href={`tel:${order.deliveryPartner.phoneNumber}`}
-                                    className="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center border border-indigo-100 shadow-sm active:scale-90 transition-all"
-                                >
-                                    <Phone size={16} />
-                                </a>
-                            )}
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
-                {/* 7. Review Section (If Delivered) */}
+                {/* 6. Review Section (If Delivered) */}
                 {order.status === 'delivered' && !order.isReviewed && !isReviewed && (
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}

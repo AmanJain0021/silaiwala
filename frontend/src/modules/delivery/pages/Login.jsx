@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Lock, Eye, ArrowRight, EyeOff } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
+import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 
 const DeliveryLogin = () => {
     const navigate = useNavigate();
@@ -14,6 +15,8 @@ const DeliveryLogin = () => {
     const [sendingOtp, setSendingOtp] = useState(false);
     const [error, setError] = useState('');
     const [showOtp, setShowOtp] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+    const [loggedInUser, setLoggedInUser] = useState(null);
 
     const handleSendOTP = async () => {
         if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
@@ -43,12 +46,22 @@ const DeliveryLogin = () => {
         }
 
         try {
-            await otpLogin(mobileNumber, otp);
-            navigate('/delivery');
+            const user = await otpLogin(mobileNumber, otp);
+            setLoggedInUser(user);
+            setIsLocating(true);
         } catch (err) {
             setError(err.message || 'Invalid OTP. Please try again.');
         }
     };
+
+    const handleLocationComplete = () => {
+        setIsLocating(false);
+        navigate('/delivery/dashboard');
+    };
+
+    if (isLocating && loggedInUser) {
+        return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} />;
+    }
 
     return (
         <motion.div

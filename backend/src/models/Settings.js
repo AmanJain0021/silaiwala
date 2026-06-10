@@ -47,6 +47,10 @@ const settingsSchema = new mongoose.Schema(
     },
     pricing: {
       gstPercentage: { type: Number, default: 5 },
+    },
+    deliveryRates: {
+      baseFee: { type: Number, default: 20 },
+      perKmRate: { type: Number, default: 10 },
     }
   },
   {

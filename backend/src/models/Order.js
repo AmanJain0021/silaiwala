@@ -21,6 +21,18 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    pickupPartner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    dropoffPartner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    rejectedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
     items: [
       {
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
@@ -49,6 +61,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         "pending", 
+        "waiting-for-customer-dropoff",
         "fabric-ready-for-pickup",
         "fabric-picked-up",
         "fabric-delivered",
@@ -63,6 +76,7 @@ const orderSchema = new mongoose.Schema(
         "finishing",
         "quality-check",
         "completed", 
+        "ready",
         "ready-for-pickup",
         "ready-for-delivery",
         "out-for-delivery", 
@@ -79,6 +93,32 @@ const orderSchema = new mongoose.Schema(
       enum: ['pending', 'assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'],
       default: 'pending'
     },
+    pickupDeliveryStatus: {
+      type: String,
+      enum: ['pending', 'assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'],
+      default: 'pending'
+    },
+    dropoffDeliveryStatus: {
+      type: String,
+      enum: ['pending', 'assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'],
+      default: 'pending'
+    },
+    pickupDeliveryOtp: {
+      type: String,
+      select: false // Only selected explicitly for verification
+    },
+    pickupOtpVerified: {
+      type: Boolean,
+      default: false
+    },
+    dropoffDeliveryOtp: {
+      type: String,
+      select: false
+    },
+    dropoffOtpVerified: {
+      type: Boolean,
+      default: false
+    },
     deliveryMethod: {
       type: String,
       enum: ['auto', 'manual', 'shiprocket'],
@@ -88,10 +128,19 @@ const orderSchema = new mongoose.Schema(
         type: Boolean,
         default: false
     },
+    fabricDeliveryPreference: {
+        type: String,
+        enum: ['pending', 'self', 'partner'],
+        default: 'pending'
+    },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "refunded", "failed"],
       default: "pending",
+    },
+    tailorTimeoutNotified: {
+      type: Boolean,
+      default: false,
     },
     paymentId: String, // Razorpay Payment ID
     razorpayOrderId: String,

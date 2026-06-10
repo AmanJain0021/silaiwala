@@ -44,6 +44,11 @@ const deliveryService = {
         return response.data;
     },
 
+    rejectOrder: async (orderId) => {
+        const response = await api.post(`/deliveries/orders/${orderId}/reject`);
+        return response.data;
+    },
+
     updateDeliveryStatus: async (orderId, status, message, proof) => {
         const response = await api.patch(`/deliveries/orders/${orderId}/status`, { status, message, proof });
         return response.data;

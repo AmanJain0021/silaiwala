@@ -99,7 +99,11 @@ const DeliveryDashboard = () => {
                 });
             }
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
+            import('axios').then(({ default: axios }) => {
+                if (!axios.isCancel(error)) {
+                    console.error('Error fetching dashboard data:', error);
+                }
+            });
         } finally {
             setLoading(false);
         }
@@ -150,6 +154,24 @@ const DeliveryDashboard = () => {
         }
     };
 
+    const handleRejectTask = async (orderId) => {
+        setIsAccepting(true);
+        try {
+            const res = await deliveryService.rejectOrder(orderId);
+            if (res.success) {
+                toast.success('Task rejected and reassigned!');
+                fetchDashboardData();
+            } else {
+                toast.error(res.message || 'Failed to reject task');
+            }
+        } catch (error) {
+            console.error('Error rejecting task:', error);
+            toast.error('Failed to reject task');
+        } finally {
+            setIsAccepting(false);
+        }
+    };
+
     const handleOpenMap = (task) => {
         if (!task) return;
 
@@ -159,9 +181,9 @@ const DeliveryDashboard = () => {
 
         let destination;
         if (isPickupStage) {
-            destination = isFabricPickup ? task.deliveryAddress : task.tailor?.address;
+            destination = isFabricPickup ? task.deliveryAddress : task.tailor?.location?.address;
         } else {
-            destination = isFabricPickup ? task.tailor?.address : task.deliveryAddress;
+            destination = isFabricPickup ? task.tailor?.location?.address : task.deliveryAddress;
         }
 
         if (!destination) {
@@ -234,6 +256,8 @@ const DeliveryDashboard = () => {
 
     const currentTask = activeOrders.length > 0 ? activeOrders[0] : null;
     const upcomingTasks = activeOrders.slice(1);
+
+    const needsAcceptance = currentTask ? (currentTask.pickupDeliveryStatus === 'assigned' || currentTask.dropoffDeliveryStatus === 'assigned' || currentTask.deliveryStatus === 'assigned') : false;
 
     return (
         <div className="animate-in fade-in duration-700 relative w-full h-full -mt-2">
@@ -315,7 +339,10 @@ const DeliveryDashboard = () => {
 
             {/* Active Task Hero Card */}
             {currentTask ? (
-                <div className="relative group w-full">
+                <div 
+                    className="relative group w-full cursor-pointer"
+                    onClick={() => navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`)}
+                >
                     <div className="absolute -inset-1 bg-gradient-to-r from-slate-100 to-slate-200 rounded-[2rem] blur-lg opacity-20 group-hover:opacity-40 transition duration-1000"></div>
                     <div className="relative bg-white rounded-[2rem] overflow-hidden text-slate-900 shadow-xl mx-1 border border-slate-100">
                         <div className="p-5 lg:p-7">
@@ -356,23 +383,13 @@ const DeliveryDashboard = () => {
                                             <p className="text-[14px] font-black text-slate-900 truncate leading-tight">
                                                 {(() => {
                                                     const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    const isPickup = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(currentTask.status);
-                                                    if (isPickup) {
-                                                        return isFabric ? currentTask.customer?.name : currentTask.tailor?.shopName;
-                                                    } else {
-                                                        return isFabric ? currentTask.tailor?.shopName : currentTask.customer?.name;
-                                                    }
+                                                    return isFabric ? currentTask.customer?.name : currentTask.tailor?.shopName;
                                                 })()}
                                             </p>
                                             <p className="text-[10px] text-slate-400 font-bold truncate leading-tight mt-0.5">
                                                 {(() => {
                                                     const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    const isPickup = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(currentTask.status);
-                                                    if (isPickup) {
-                                                        return isFabric ? formatAddress(currentTask.deliveryAddress) : formatAddress(currentTask.tailor?.address);
-                                                    } else {
-                                                        return isFabric ? formatAddress(currentTask.tailor?.address) : formatAddress(currentTask.deliveryAddress);
-                                                    }
+                                                    return isFabric ? formatAddress(currentTask.deliveryAddress) : formatAddress(currentTask.tailor?.location?.address);
                                                 })()}
                                             </p>
                                         </div>
@@ -385,23 +402,13 @@ const DeliveryDashboard = () => {
                                             <p className="text-[14px] font-black text-slate-900 truncate leading-tight">
                                                 {(() => {
                                                     const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    const isPickup = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(currentTask.status);
-                                                    if (isPickup) {
-                                                        return isFabric ? currentTask.tailor?.shopName : currentTask.customer?.name;
-                                                    } else {
-                                                        return isFabric ? currentTask.customer?.name : currentTask.tailor?.shopName;
-                                                    }
+                                                    return isFabric ? currentTask.tailor?.shopName : currentTask.customer?.name;
                                                 })()}
                                             </p>
                                             <p className="text-[10px] text-slate-500 font-bold truncate leading-tight mt-0.5">
                                                 {(() => {
                                                     const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    const isPickup = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(currentTask.status);
-                                                    if (isPickup) {
-                                                        return isFabric ? formatAddress(currentTask.tailor?.address) : formatAddress(currentTask.deliveryAddress);
-                                                    } else {
-                                                        return isFabric ? formatAddress(currentTask.deliveryAddress) : formatAddress(currentTask.tailor?.address);
-                                                    }
+                                                    return isFabric ? formatAddress(currentTask.tailor?.location?.address) : formatAddress(currentTask.deliveryAddress);
                                                 })()}
                                             </p>
                                         </div>
@@ -409,18 +416,39 @@ const DeliveryDashboard = () => {
                                 </div>
 
                                 <div className="flex items-center justify-between pt-5 border-t border-slate-50 mt-0">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
-                                            <Clock size={16} />
+                                    {needsAcceptance ? (
+                                        <div className="flex items-center w-full gap-3">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleRejectTask(currentTask._id); }}
+                                                disabled={isAccepting}
+                                                className="flex-1 bg-slate-100 text-slate-500 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition-all disabled:opacity-50"
+                                            >
+                                                Reject
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleAcceptTask(currentTask._id); }}
+                                                disabled={isAccepting}
+                                                className="flex-[2] bg-primary text-white py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50"
+                                            >
+                                                {isAccepting ? 'Accepting...' : 'Accept Task'}
+                                            </button>
                                         </div>
-                                        <span className="text-[11px] font-bold tracking-wider text-slate-400 capitalize">Arriving Soon</span>
-                                    </div>
-                                    <button
-                                        onClick={() => handleOpenMap(currentTask)}
-                                        className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
-                                    >
-                                        Open Map
-                                    </button>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
+                                                    <Clock size={16} />
+                                                </div>
+                                                <span className="text-[11px] font-bold tracking-wider text-slate-400 capitalize">Arriving Soon</span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleOpenMap(currentTask); }}
+                                                className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
+                                            >
+                                                Open Map
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -547,7 +575,7 @@ const DeliveryDashboard = () => {
                                                 <p className="text-xs text-slate-500 mt-0.5 italic">
                                                     {selectedAvailableTask.taskType === 'fabric-pickup'
                                                         ? formatAddress(selectedAvailableTask.deliveryAddress)
-                                                        : formatAddress(selectedAvailableTask.tailor?.address)}
+                                                        : formatAddress(selectedAvailableTask.tailor?.location?.address)}
                                                 </p>
                                             </div>
                                             {(selectedAvailableTask.status.includes('fabric') ? selectedAvailableTask.customer?.phoneNumber : selectedAvailableTask.tailor?.phone) && (
@@ -575,7 +603,7 @@ const DeliveryDashboard = () => {
                                                 </p>
                                                 <p className="text-xs text-slate-500 mt-0.5 italic">
                                                     {selectedAvailableTask.taskType === 'fabric-pickup'
-                                                        ? formatAddress(selectedAvailableTask.tailor?.address)
+                                                        ? formatAddress(selectedAvailableTask.tailor?.location?.address)
                                                         : formatAddress(selectedAvailableTask.deliveryAddress)}
                                                 </p>
                                             </div>
@@ -619,13 +647,14 @@ const DeliveryDashboard = () => {
                                 <motion.div
                                     drag="x"
                                     dragConstraints={{ left: 0, right: 260 }}
+                                    dragSnapToOrigin={true}
                                     dragElastic={0.1}
                                     onDragEnd={(e, info) => {
-                                        if (info.offset.x > 180) {
+                                        if (info.offset.x > 150) {
                                             handleAcceptTask(selectedAvailableTask._id);
                                         }
                                     }}
-                                    className="w-13 h-13 bg-primary rounded-xl flex items-center justify-center text-white shadow-xl cursor-grab active:cursor-grabbing z-10"
+                                    className="w-[52px] h-[52px] bg-primary rounded-xl flex items-center justify-center text-white shadow-xl cursor-grab active:cursor-grabbing z-10"
                                 >
                                     {isAccepting ? <Loader2 className="animate-spin" size={20} /> : <ArrowUpRight size={24} />}
                                 </motion.div>

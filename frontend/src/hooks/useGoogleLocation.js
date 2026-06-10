@@ -21,27 +21,12 @@ export const useGoogleLocation = () => {
                 async (position) => {
                     const { latitude, longitude } = position.coords;
                     try {
-                        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-                        const response = await fetch(
-                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-                        );
-                        const data = await response.json();
+                        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+                        const response = await fetch(`${apiUrl}/distance/geocode?lat=${latitude}&lng=${longitude}`);
+                        const result = await response.json();
 
-                        if (data.status === "OK" && data.results.length > 0) {
-                            const result = data.results[0];
-                            const address = result.formatted_address;
-                            
-                            let city = "";
-                            let state = "";
-                            let pincode = "";
-                            let street = "";
-                            
-                            result.address_components.forEach(comp => {
-                                if (comp.types.includes('locality')) city = comp.long_name;
-                                if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
-                                if (comp.types.includes('postal_code')) pincode = comp.long_name;
-                                if (comp.types.includes('route')) street = comp.long_name;
-                            });
+                        if (result.success && result.data) {
+                            const { address, city, state, pincode, street, raw } = result.data;
 
                             const locationData = {
                                 address,
@@ -51,12 +36,12 @@ export const useGoogleLocation = () => {
                                 state,
                                 pincode,
                                 street,
-                                raw: result
+                                raw
                             };
                             setIsLocating(false);
                             resolve(locationData);
                         } else {
-                            throw new Error(data.error_message || "No address found from Google Maps API.");
+                            throw new Error("No address found from Backend Geocoding API.");
                         }
                     } catch (err) {
                         console.error("Google Geocoding failed:", err);

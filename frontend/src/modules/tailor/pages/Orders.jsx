@@ -556,6 +556,36 @@ const Orders = () => {
                         </div>
                     )}
 
+                    {/* Delivery Partner Details */}
+                    {order.deliveryPartner && (
+                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
+                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Delivery Partner</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0">
+                                    {order.deliveryPartner.profileImage ? (
+                                        <img src={order.deliveryPartner.profileImage} alt={order.deliveryPartner.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Truck size={16} className="text-[#2D2F6E]" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-[14px] font-black text-gray-900 leading-none mb-1">{order.deliveryPartner.name || 'Delivery Partner'}</p>
+                                    <p className="text-[11px] font-bold text-gray-400 mt-0.5 flex items-center gap-1">
+                                        <Phone size={10} /> {order.deliveryPartner.phoneNumber || 'Contact Unavailable'}
+                                    </p>
+                                </div>
+                                {order.deliveryPartner.phoneNumber && (
+                                    <a 
+                                        href={`tel:${order.deliveryPartner.phoneNumber}`}
+                                        className="w-8 h-8 bg-indigo-50 text-[#2D2F6E] rounded-full flex items-center justify-center border border-indigo-100 shrink-0"
+                                    >
+                                        <Phone size={14} />
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {isPending && (
                         /* Bottom Actions for Pending Order */
                         <div className="flex gap-3 pt-4 sticky bottom-0 bg-[#F5F5F5] pb-4 z-10">

@@ -33,7 +33,7 @@ const Payouts = () => {
   const loadWithdrawalHistory = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/delivery/withdrawals');
+      const response = await api.get('/deliveries/payouts');
       const history = response.data?.data || [];
       setWithdrawalHistory(history);
 

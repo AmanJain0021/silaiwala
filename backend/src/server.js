@@ -1,9 +1,11 @@
 require("dotenv").config();
+// Trigger nodemon restart
 
 const http = require("http");
 const app = require("./app");
 const connectDB = require("./config/db");
 const { initSocket } = require("./config/socket");
+const { initCronJobs } = require("./utils/cronJobs");
 
 const PORT = process.env.PORT || 5000;
 
@@ -21,8 +23,11 @@ const startServer = async () => {
   try {
     // 1. Connect to MongoDB first
     await connectDB();
+    
+    // 2. Initialize background jobs
+    initCronJobs();
 
-    // 2. Start the HTTP server
+    // 3. Start the HTTP server
     server.listen(PORT, () => {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log(`🚀 Server running in ${process.env.NODE_ENV || "development"} mode`);

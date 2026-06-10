@@ -47,25 +47,8 @@ const distributeEarnings = async (orderId) => {
       ], { session });
     }
 
-    // 3. Credit Delivery Partner (if exists)
-    if (deliveryPartner) {
-      const deliveryProfile = await Delivery.findOne({ user: deliveryPartner }).session(session);
-      if (deliveryProfile) {
-        deliveryProfile.walletBalance += deliveryFee;
-        await deliveryProfile.save({ session });
-
-        await WalletTransaction.create([
-          {
-            user: deliveryPartner,
-            amount: deliveryFee,
-            type: "credit",
-            category: "order_earnings",
-            order: orderId,
-            description: `Delivery fee for order ${order.orderId}`,
-          },
-        ], { session });
-      }
-    }
+    // Note: Delivery partner payouts are now handled per-phase inside delivery.controller.js
+    // to correctly support distance-based payouts for both fabric pickup and product delivery.
 
     await session.commitTransaction();
     console.log(`Earnings distributed for order ${order.orderId}`);

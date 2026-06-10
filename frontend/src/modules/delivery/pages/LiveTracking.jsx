@@ -9,11 +9,22 @@ import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import PageTransition from '../../../shared/components/PageTransition';
 import toast from 'react-hot-toast';
 
+import { useJsApiLoader } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
+
 const LiveTracking = () => {
-  const { isLoaded } = useOutletContext();
+  const outletCtx = useOutletContext();
+  const { isLoaded: localIsLoaded } = useJsApiLoader({
+      id: 'google-map-script',
+      googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+      libraries: GOOGLE_MAPS_LIBRARIES
+  });
+  const isLoaded = outletCtx?.isLoaded !== undefined ? outletCtx.isLoaded : localIsLoaded;
+
   const navigate = useNavigate();
   const { orderId } = useParams();
-  const { deliveryBoy } = useDeliveryAuthStore();
+  const { deliveryBoy, updateLocation } = useDeliveryAuthStore();
   const [currentLocation, setCurrentLocation] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
   const [destination, setDestination] = useState(null);
@@ -21,16 +32,20 @@ const LiveTracking = () => {
   // Start location tracking
   useDeliveryTracking(deliveryBoy?.id, orderDetails ? [orderDetails] : []);
 
+  const handleRouteCalculated = (routeData) => {
+    if (currentLocation?.lat && currentLocation?.lng) {
+      updateLocation(currentLocation.lat, currentLocation.lng, routeData.duration, routeData.distanceValue);
+    }
+  };
+
   // Start distance tracking
-  const {
-    totalDistance,
-    earnings,
-    path,
-    isTracking,
-    startTracking,
-    updateLocation,
-    stopTracking
-  } = useDistanceTracker(orderId);
+  const { distance } = useDistanceTracker(currentLocation);
+  const isTracking = !!currentLocation;
+  
+  // Calculate total distance in km
+  const totalDistance = distance ? distance / 1000 : 0;
+  const earnings = Math.round(totalDistance * 10); // Example: Rs 10 per km
+  const path = []; // Mock path length if needed, or track locations
 
   // Get current location and update distance tracker
   useEffect(() => {
@@ -45,14 +60,6 @@ const LiveTracking = () => {
         const newLocation = { lat, lng };
         
         setCurrentLocation(newLocation);
-
-        // Update distance tracker
-        if (isTracking) {
-          updateLocation(newLocation);
-        } else if (orderDetails) {
-          // Start tracking when order is active
-          startTracking(newLocation);
-        }
       },
       (error) => {
         console.error('Location error:', error);
@@ -67,18 +74,15 @@ const LiveTracking = () => {
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
-      if (isTracking) {
-        stopTracking();
-      }
     };
-  }, [isTracking, orderDetails, startTracking, updateLocation, stopTracking]);
+  }, [isTracking, orderDetails]);
 
   // Fetch order details
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/delivery/orders/${orderId}`,
+          `${import.meta.env.VITE_API_URL}/deliveries/orders/${orderId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('deliveryToken')}`
@@ -89,15 +93,27 @@ const LiveTracking = () => {
         if (!response.ok) throw new Error('Failed to fetch order');
 
         const data = await response.json();
-        setOrderDetails(data.order);
+        const orderData = data.data || data.order;
+        setOrderDetails(orderData);
 
-        // Set destination based on order status
-        if (data.order.deliveryLocation?.coordinates) {
-          const [lng, lat] = data.order.deliveryLocation.coordinates;
-          setDestination({ lat, lng });
-        } else if (data.order.pickupLocation?.coordinates) {
-          const [lng, lat] = data.order.pickupLocation.coordinates;
-          setDestination({ lat, lng });
+        // Determine phase and destination based on order data
+        const isFabricPickup = orderData?.taskType === 'fabric-pickup';
+        const s = String(orderData?.status || '').toLowerCase();
+        
+        let phase = 'pickup';
+        if (['picked-up', 'picked_up', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s)) {
+            phase = 'delivery';
+        }
+
+        // Set destination based on phase
+        if (phase === 'pickup') {
+            const lat = isFabricPickup ? orderData?.latitude : orderData?.vendorLatitude;
+            const lng = isFabricPickup ? orderData?.longitude : orderData?.vendorLongitude;
+            if (lat && lng) setDestination({ lat, lng });
+        } else {
+            const lat = isFabricPickup ? orderData?.vendorLatitude : orderData?.latitude;
+            const lng = isFabricPickup ? orderData?.vendorLongitude : orderData?.longitude;
+            if (lat && lng) setDestination({ lat, lng });
         }
       } catch (error) {
         console.error('Failed to load order:', error);
@@ -127,7 +143,7 @@ const LiveTracking = () => {
 
         {/* Map Container */}
         <div className="flex-1 p-4">
-          <DeliveryBoyLiveMap
+          <DeliveryBoyLiveMap 
             currentLocation={currentLocation}
             destination={destination}
             path={path}
@@ -135,10 +151,11 @@ const LiveTracking = () => {
             earnings={earnings}
             orderDetails={orderDetails ? {
               orderId: orderDetails.orderId,
-              customerName: orderDetails.user?.name || 'Customer',
+              customerName: orderDetails.customer?.name || orderDetails.customer || 'Customer',
               status: orderDetails.status
             } : null}
             isLoaded={isLoaded}
+            onRouteCalculated={handleRouteCalculated}
           />
         </div>
 

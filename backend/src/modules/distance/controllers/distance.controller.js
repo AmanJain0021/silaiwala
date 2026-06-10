@@ -82,3 +82,86 @@ exports.calculateDistance = asyncHandler(async (req, res, next) => {
         });
     }
 });
+
+/**
+ * @desc    Reverse geocode coordinates to get address details
+ * @route   GET /api/v1/distance/geocode
+ * @access  Public
+ */
+exports.geocode = asyncHandler(async (req, res, next) => {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+        return next(new ErrorResponse("Please provide valid lat and lng parameters", 400));
+    }
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey || apiKey === 'your_google_maps_api_key' || apiKey === 'your_backend_google_maps_api_key_here') {
+        return res.status(200).json({
+            success: true,
+            data: {
+                address: "Development Mode Location",
+                city: "LocalCity",
+                state: "LocalState",
+                pincode: "000000",
+                street: "Local Street",
+                raw: {}
+            }
+        });
+    }
+
+    try {
+        const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+            params: {
+                latlng: `${lat},${lng}`,
+                key: apiKey
+            }
+        });
+
+        const data = response.data;
+        if (data.status === 'OK' && data.results.length > 0) {
+            const result = data.results[0];
+            const address = result.formatted_address;
+            
+            let city = "";
+            let state = "";
+            let pincode = "";
+            let street = "";
+            
+            result.address_components.forEach(comp => {
+                if (comp.types.includes('locality')) city = comp.long_name;
+                if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
+                if (comp.types.includes('postal_code')) pincode = comp.long_name;
+                if (comp.types.includes('route')) street = comp.long_name;
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    address,
+                    city,
+                    state,
+                    pincode,
+                    street,
+                    raw: result
+                }
+            });
+        } else {
+            throw new Error(data.error_message || 'Google Maps Geocoding failed or returned no results');
+        }
+    } catch (error) {
+        console.error("Geocoding API Failed:", error.message);
+        return res.status(200).json({
+            success: true,
+            data: {
+                address: "Unknown Location",
+                city: "Unknown",
+                state: "Unknown",
+                pincode: "000000",
+                street: "Unknown",
+                raw: {}
+            }
+        });
+    }
+});

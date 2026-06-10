@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import useAuthStore from '../../../store/authStore';
 import { validatePhone } from '../../../utils/validation';
+import LocationSplashScreen from '../../../components/common/LocationSplashScreen';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -14,6 +15,8 @@ const Login = () => {
     const [otpSent, setOtpSent] = useState(false);
     const [error, setError] = useState('');
     const [sendingOtp, setSendingOtp] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+    const [loggedInUser, setLoggedInUser] = useState(null);
 
     const handleSendOtp = async () => {
         setError('');
@@ -48,16 +51,26 @@ const Login = () => {
 
         try {
             const user = await otpLogin(mobileNumber, otp);
-            const redirectPath = {
-                tailor: '/partner',
-                delivery: '/delivery',
-                admin: '/admin'
-            }[user.role] || '/user';
-            navigate(redirectPath);
+            setLoggedInUser(user);
+            setIsLocating(true);
         } catch (err) {
             setError(err.message || 'Invalid OTP');
         }
     };
+
+    const handleLocationComplete = () => {
+        setIsLocating(false);
+        const redirectPath = {
+            tailor: '/partner',
+            delivery: '/delivery/dashboard',
+            admin: '/admin'
+        }[loggedInUser?.role] || '/user';
+        navigate(redirectPath);
+    };
+
+    if (isLocating && loggedInUser) {
+        return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} />;
+    }
 
     return (
         <motion.div

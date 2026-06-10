@@ -5,6 +5,9 @@ const Order = require("../../../models/Order");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 const { sendNotification } = require("../../../utils/notification");
+const Notification = require("../../../models/Notification");
+const { getIO } = require("../../../config/socket");
+const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
 
 /**
  * @desc    Get all tailors with filters and location
@@ -551,7 +554,7 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
  */
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { status, message, autoAssign, deliveryMethod } = req.body;
-  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled"];
+  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled", "ready"];
 
   if (!allowedStatuses.includes(status)) {
     return next(new ErrorResponse("Invalid status update", 400));
@@ -571,16 +574,12 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     order.deliveredAt = new Date();
   }
 
-  // LOGIC: If tailor accepts AND fabric pickup is needed, change status to fabric-ready-for-pickup
-  let finalStatus = status;
-  if (status === "accepted" && order.fabricPickupRequired) {
-    finalStatus = "fabric-ready-for-pickup";
-  }
-
-  order.status = finalStatus;
+  // LOGIC: Status just becomes the new status. 
+  // We don't auto-change to fabric-ready-for-pickup on "accepted" because we wait for payment.
+  order.status = status;
   order.trackingHistory.push({
-    status: finalStatus,
-    message: message || `Order status updated to ${finalStatus}`,
+    status: status,
+    message: message || `Order status updated to ${status}`,
     timestamp: new Date()
   });
 
@@ -593,93 +592,22 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
       recipient: order.customer,
       type: "ORDER_STATUS_UPDATED",
       title: "Order Update",
-      message: `Your order ${order.orderId} status has been updated to ${finalStatus.replace(/-/g, ' ')}.`,
+      message: `Your order ${order.orderId} status has been updated to ${status.replace(/-/g, ' ')}.`,
       data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
     });
     
-    // Auto-Assignment Logic for Deliveries
-    if (finalStatus === "fabric-ready-for-pickup" || ((finalStatus === "ready-for-pickup" || finalStatus === "ready-for-delivery") && autoAssign)) {
-      const Delivery = require("../../../models/Delivery");
-      const tailorProfile = await Tailor.findOne({ user: req.user.id });
-      
-      let nearestRider = null;
-      if (tailorProfile?.location?.coordinates) {
-         try {
-             const nearbyRiders = await Delivery.find({
-                isAvailable: true,
-                currentLocation: {
-                   $near: {
-                      $geometry: tailorProfile.location,
-                      $maxDistance: 15000 // 15km search radius
-                   }
-                }
-             }).populate("user").limit(1);
-             if (nearbyRiders.length > 0) nearestRider = nearbyRiders[0];
-         } catch (geoError) {
-             console.error("⚠️ Geospatial search failed. Using availability query fallback:", geoError.message);
-             nearestRider = await Delivery.findOne({ isAvailable: true }).populate("user");
-         }
-      } else {
-         nearestRider = await Delivery.findOne({ isAvailable: true }).populate("user");
-      }
+    // Auto-Assignment Logic for Deliveries (Second Cycle)
+    if ((status === "ready" || status === "ready-for-delivery") && autoAssign) {
+      const { autoAssignDelivery } = require("../../deliveries/controllers/delivery.controller");
+      await autoAssignDelivery(order._id, "dropoff");
+    }
 
-      const isFabric = finalStatus === "fabric-ready-for-pickup";
-      const taskTypeDesc = isFabric ? 'fabric pickup' : 'final delivery';
-
-      if (nearestRider && nearestRider.user) {
-         // Perform the auto-assignment
-         order.deliveryPartner = nearestRider.user._id;
-         order.deliveryStatus = 'assigned';
-         order.assignedAt = new Date();
-         if (deliveryMethod) order.deliveryMethod = deliveryMethod;
-         
-         order.trackingHistory.push({
-            status: "delivery-assigned",
-            message: `Delivery partner auto-assigned for ${taskTypeDesc}.`,
-            timestamp: new Date()
-         });
-         await order.save();
-
-         // Notify assigned rider
-         await sendNotification({
-           recipient: nearestRider.user._id,
-           type: "NEW_DELIVERY_TASK",
-           title: `New ${isFabric ? 'Fabric' : 'Delivery'} Task Assigned! 📍`,
-           message: `Order ${order.orderId} has been auto-assigned to you for ${isFabric ? 'fabric pickup from Customer' : 'final delivery from Tailor'}.`,
-           data: { 
-             orderId: order._id, 
-             type: finalStatus, 
-             taskType: isFabric ? 'fabric-pickup' : 'order-delivery',
-             targetUrl: "/delivery/tasks" 
-           }
-         });
-         
-         // Clear from general fleet if socket is available
-         const { getIO } = require("../../../config/socket");
-         const io = getIO();
-         if (io) io.to("delivery_partners").emit("task_claimed", { orderId: order._id });
-
-      } else {
-         // Fallback if no rider found: mark as manual/shiprocket later
-         order.deliveryMethod = deliveryMethod || 'manual';
-         await order.save();
-         
-         // Optionally notify admin that manual assignment is needed
-         await sendNotification({
-           recipient: "admin",
-           type: "MANUAL_ASSIGNMENT_REQUIRED",
-           title: `No Riders Available 🚚`,
-           message: `Order ${order.orderId} requires manual delivery assignment.`,
-           data: { orderId: order._id, targetUrl: "/admin/delivery" }
-         });
-      }
-    } else if ((finalStatus === "ready-for-pickup" || finalStatus === "ready-for-delivery") && deliveryMethod && deliveryMethod !== 'auto') {
-        // If tailor specifically requested Manual or Shiprocket
+    // If tailor specifically requested Manual or Shiprocket
+    if ((status === "ready-for-pickup" || status === "ready-for-delivery") && deliveryMethod && deliveryMethod !== 'auto') {
         order.deliveryMethod = deliveryMethod;
         await order.save();
     }
 
-    // Notify Customer about status change
     let notificationType = "ORDER_STATUS_UPDATED";
     let title = "Order Status Updated";
     
@@ -703,18 +631,19 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const { getIO } = require("../../../config/socket");
     const io = getIO();
     if (io) {
+        let finalStatus = status;
         io.to(`user_${order.customer}`).emit('order_status_updated', {
             orderId: order.orderId,
             _id: order._id,
             status: finalStatus
         });
 
-        if (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery' || finalStatus === 'fabric-ready-for-pickup') {
+        if (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery' || finalStatus === 'fabric-ready-for-pickup' || finalStatus === 'ready') {
             io.to('delivery_partners').emit('receive_new_order', {
                 orderId: order.orderId,
                 _id: order._id,
                 status: finalStatus,
-                taskType: (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery') ? 'order-delivery' : 'fabric-pickup'
+                taskType: (finalStatus === 'ready' || finalStatus === 'ready-for-delivery') ? 'order-delivery' : 'fabric-pickup'
             });
             console.log(`📡 Socket: Broadcasted task ${order.orderId} to Delivery Room`);
         }

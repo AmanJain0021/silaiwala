@@ -45,7 +45,11 @@ const DeliveryLayout = () => {
                     setIsOnline(res.data.isAvailable);
                 }
             } catch (error) {
-                console.error('Failed to fetch profile status:', error);
+                import('axios').then(({ default: axios }) => {
+                    if (!axios.isCancel(error)) {
+                        console.error('Failed to fetch profile status:', error);
+                    }
+                });
             }
         };
         const fetchPlatformSettings = async () => {
@@ -56,7 +60,11 @@ const DeliveryLayout = () => {
                     setPlatformSettings(res.data.data);
                 }
             } catch (error) {
-                console.error('Failed to fetch platform settings:', error);
+                import('axios').then(({ default: axios }) => {
+                    if (!axios.isCancel(error)) {
+                        console.error('Failed to fetch platform settings:', error);
+                    }
+                });
             }
         };
         fetchProfileStatus();
@@ -88,7 +96,11 @@ const DeliveryLayout = () => {
                 setUnreadCount(res.unreadCount);
             }
         } catch (error) {
-            console.error('Failed to fetch notifications:', error);
+            import('axios').then(({ default: axios }) => {
+                if (!axios.isCancel(error)) {
+                    console.error('Failed to fetch notifications:', error);
+                }
+            });
         }
     };
 

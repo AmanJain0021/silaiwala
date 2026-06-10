@@ -294,7 +294,7 @@ const AdminFinance = () => {
                                         <thead>
                                             <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
                                                 <th className="px-6 py-4">Payout ID</th>
-                                                <th className="px-6 py-4">Recipient (Tailor)</th>
+                                                <th className="px-6 py-4">Recipient</th>
                                                 <th className="px-6 py-4">Method & Details</th>
                                                 <th className="px-6 py-4">Amount</th>
                                                 <th className="px-6 py-4">Status</th>
@@ -311,12 +311,12 @@ const AdminFinance = () => {
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-black text-gray-900">{payout.tailor?.name}</span>
-                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.tailor?.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                                                    {payout.tailor?.role}
+                                                                <span className="text-xs font-black text-gray-900">{payout.user?.name || 'Unknown User'}</span>
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.user?.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                                                    {payout.user?.role}
                                                                 </span>
                                                             </div>
-                                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">{payout.tailor?.shopName || payout.tailor?.email}</span>
+                                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">{payout.user?.email}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">

@@ -7,7 +7,7 @@ import useCartStore from '../../../store/cartStore';
 const OrderSuccess = () => {
     const [animationDone, setAnimationDone] = useState(false);
     const location = useLocation();
-    const { orderId, orderNumber } = location.state || {};
+    const { orderId, orderNumber, pendingAcceptance, isBulk } = location.state || {};
 
     const clearCheckout = useCheckoutStore(state => state.clearCheckout);
     const clearCart = useCartStore(state => state.clearCart);
@@ -40,11 +40,14 @@ const OrderSuccess = () => {
             </div>
 
             <h1 className="text-2xl font-bold text-gray-900 mb-2 animate-in slide-in-from-bottom-2 duration-700 delay-200">
-                Order Placed Successfully!
+                Order {pendingAcceptance ? 'Requested' : 'Placed'} Successfully!
             </h1>
             <p className="text-sm font-bold text-primary mb-1 font-mono uppercase tracking-widest">{orderNumber}</p>
             <p className="text-xs text-gray-500 mb-8 max-w-xs animate-in slide-in-from-bottom-2 duration-700 delay-300">
-                Thank you for choosing us. We have received your order and our artisan is starting to prepare it.
+                {pendingAcceptance 
+                    ? "Thank you! Your order request has been sent to the tailor. You will be able to make the payment once the tailor accepts it."
+                    : "Thank you for choosing us. We have received your order and our artisan is starting to prepare it."
+                }
             </p>
 
             <div className="w-full max-w-xs space-y-3 animate-in slide-in-from-bottom-2 duration-700 delay-500">
@@ -67,7 +70,7 @@ const OrderSuccess = () => {
 
             <div className="mt-8 text-xs text-gray-400 flex items-center gap-1.5 opacity-60">
                 <Truck size={12} />
-                Tracking is now live for your order
+                {pendingAcceptance ? "Track the acceptance status below" : "Tracking is now live for your order"}
             </div>
         </div>
     );

@@ -124,6 +124,25 @@ const AdminOrders = () => {
         }
     };
 
+    const handleUpdateDeliveryFee = async (orderId, newFee) => {
+        setIsUpdatingStatus(true);
+        try {
+            await api.put(`/admin/orders/${orderId}/status`, { deliveryFee: Number(newFee) });
+            toast.success(`Delivery earning updated to ₹${newFee}`);
+            
+            // Re-fetch order details to immediately reflect changes in the modal
+            const res = await api.get(`/admin/orders/${orderId}`);
+            if (res.data.success) setManageOrderData(res.data.data);
+            
+            fetchOrders();
+        } catch (err) {
+            console.error('Failed to update delivery fee:', err);
+            toast.error('Failed to update delivery fee');
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    };
+
     const handleAssign = async (userId) => {
         setIsUpdatingStatus(true);
         setIsAssignModalOpen(false);
@@ -609,7 +628,7 @@ const AdminOrders = () => {
                                             <p className="text-xs text-orange-500 font-medium">Not yet assigned</p>
                                         )}
                                     </div>
-                                    <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl">
+                                    <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl relative">
                                         <h4 className="text-[10px] font-semibold uppercase text-orange-400 tracking-wider mb-2 flex items-center gap-1.5">
                                             <Truck size={12} /> Delivery Partner
                                         </h4>
@@ -621,6 +640,23 @@ const AdminOrders = () => {
                                         ) : (
                                             <p className="text-xs text-orange-500 font-medium">Not yet assigned</p>
                                         )}
+                                        <div className="mt-3 pt-3 border-t border-orange-200/50 flex justify-between items-center">
+                                            <div>
+                                                <p className="text-[9px] uppercase text-orange-400 font-bold">Delivery Earning</p>
+                                                <p className="text-xs font-bold text-gray-900 mt-0.5">₹{manageOrderData.deliveryFee || 0}</p>
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    const fee = window.prompt("Enter new Delivery Boy Earning (₹):", manageOrderData.deliveryFee || 50);
+                                                    if (fee !== null && fee.trim() !== '' && !isNaN(fee)) {
+                                                        handleUpdateDeliveryFee(manageOrderData.fullId || manageOrderData._id, fee);
+                                                    }
+                                                }}
+                                                className="text-[10px] font-bold text-primary hover:underline bg-white px-2 py-1 rounded border border-gray-200"
+                                            >
+                                                Update
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

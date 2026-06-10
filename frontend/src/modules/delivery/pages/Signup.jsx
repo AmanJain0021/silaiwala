@@ -24,14 +24,26 @@ const DeliverySignup = () => {
         drivingLicenseBack: null,
         aadharCard: null, 
         aadharCardBack: null,
+        profileImage: null,
     });
     const [error, setError] = useState('');
     const fileInputRefs = useRef({});
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
-        if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack'].includes(name)) {
+        if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack', 'profileImage'].includes(name)) {
             setFormData((prev) => ({ ...prev, [name]: files?.[0] || null }));
+            return;
+        }
+        if (name === 'aadharNumber') {
+            const numericValue = value.replace(/\D/g, '');
+            const formatted = numericValue.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            setFormData((prev) => ({ ...prev, [name]: formatted }));
+            return;
+        }
+        if (name === 'phone') {
+            const numericValue = value.replace(/\D/g, '');
+            setFormData((prev) => ({ ...prev, [name]: numericValue }));
             return;
         }
         setFormData({ ...formData, [name]: value });
@@ -40,24 +52,52 @@ const DeliverySignup = () => {
     const validateStep = (step) => {
         setError('');
         if (step === 1) {
-            if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-                setError('All personal details including password are required');
+            if (!formData.profileImage) {
+                setError('Profile photo is required');
                 return false;
             }
-            if (formData.phone.length < 10) {
-                setError('Enter a valid mobile number');
+            if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.aadharNumber) {
+                setError('All personal details are required');
+                return false;
+            }
+            if (formData.name.trim().length < 3) {
+                setError('Name must be at least 3 characters long');
+                return false;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+                setError('Enter a valid email address');
+                return false;
+            }
+            if (!/^6\d{9}$/.test(formData.phone)) {
+                setError('Enter a valid 10-digit mobile number starting with 6');
+                return false;
+            }
+            if (formData.password.length < 6 || !/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+                setError('Password must be at least 6 characters and contain a special character');
+                return false;
+            }
+            if (!/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) {
+                setError('Enter a valid 12-digit Aadhaar Number');
                 return false;
             }
         }
         if (step === 2) {
-            if (!formData.drivingLicense || !formData.aadharCard) {
-                setError('Primary documents (License & Aadhaar) are required');
+            if (!formData.drivingLicense || !formData.drivingLicenseBack || !formData.aadharCard || !formData.aadharCardBack) {
+                setError('All front and back document images are required');
                 return false;
             }
         }
         if (step === 3) {
              if (!formData.vehicleNumber || !formData.address) {
-                setError('Vehicle details and address are required');
+                setError('Vehicle details and residential address are required');
+                return false;
+            }
+            if (formData.address.trim().length < 10) {
+                setError('Please provide a complete residential address');
+                return false;
+            }
+            if (!/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) {
+                setError('Enter a valid vehicle number (e.g. MH 12 AB 1234)');
                 return false;
             }
         }
@@ -104,6 +144,7 @@ const DeliverySignup = () => {
             useAuthStore.setState({ isLoading: true });
 
             const filesToUpload = [
+                { name: 'Profile Image', file: formData.profileImage, isProfile: true },
                 { name: 'Driving License Front', file: formData.drivingLicense },
                 { name: 'Driving License Back', file: formData.drivingLicenseBack },
                 { name: 'Aadhar Front', file: formData.aadharCard },
@@ -112,17 +153,27 @@ const DeliverySignup = () => {
 
             const uploadedUrls = await uploadBulkFiles(filesToUpload);
 
-            const documents = filesToUpload.map((item, index) => ({
-                name: item.name,
-                url: uploadedUrls[index],
-                status: 'pending'
-            })).filter(doc => doc.url);
+            const documents = [];
+            let profileImageUrl = null;
+
+            filesToUpload.forEach((item, index) => {
+                if (item.isProfile) {
+                    profileImageUrl = uploadedUrls[index];
+                } else if (uploadedUrls[index]) {
+                    documents.push({
+                        name: item.name,
+                        url: uploadedUrls[index],
+                        status: 'pending'
+                    });
+                }
+            });
 
             const payloadData = {
                 ...formData,
                 phoneNumber: formData.phone,
                 role: 'delivery',
-                documents
+                documents,
+                ...(profileImageUrl && { profileImage: profileImageUrl })
             };
             
             // Clean up file objects from payload
@@ -130,6 +181,7 @@ const DeliverySignup = () => {
             delete payloadData.drivingLicenseBack;
             delete payloadData.aadharCard;
             delete payloadData.aadharCardBack;
+            delete payloadData.profileImage;
 
             // Note: The backend register function expects 'phoneNumber' or 'phone'
             await signup(payloadData);
@@ -207,6 +259,29 @@ const DeliverySignup = () => {
                             exit={{ opacity: 0, x: 10 }} 
                             className="space-y-2.5"
                         >
+                            <div className="flex flex-col items-center justify-center mb-4">
+                                <div 
+                                    className="relative w-20 h-20 rounded-full border-2 border-dashed border-[#2D2F6F]/30 bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-[#2D2F6F] hover:bg-purple-50/50 transition-all shadow-sm"
+                                    onClick={() => fileInputRefs.current.profileImage?.click()}
+                                >
+                                    <input 
+                                        type="file" 
+                                        name="profileImage" 
+                                        accept="image/*"
+                                        ref={(el) => (fileInputRefs.current.profileImage = el)}
+                                        onChange={handleChange}
+                                        className="hidden" 
+                                    />
+                                    {formData.profileImage ? (
+                                        <img src={URL.createObjectURL(formData.profileImage)} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="flex flex-col items-center">
+                                            <FiCamera className="text-[#2D2F6F]/60 group-hover:text-[#2D2F6F] mb-1" size={20} />
+                                            <span className="text-[9px] font-bold text-[#2D2F6F]/60 uppercase">Photo</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative group">
                                 <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
                                 <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
@@ -217,7 +292,8 @@ const DeliverySignup = () => {
                             </div>
                             <div className="relative group">
                                 <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
-                                <input name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
+                                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">+91</span>
+                                <input name="phone" placeholder="Phone Number" value={formData.phone} maxLength={10} onChange={handleChange} className="w-full pl-16 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
                             </div>
                             <div className="relative group">
                                 <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
@@ -225,7 +301,7 @@ const DeliverySignup = () => {
                             </div>
                             <div className="relative group">
                                 <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
-                                <input name="aadharNumber" placeholder="Aadhaar Number" value={formData.aadharNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
+                                <input name="aadharNumber" placeholder="Aadhaar Number (e.g. 1234 5678 9012)" value={formData.aadharNumber} maxLength={14} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
                             </div>
                         </motion.div>
                     )}

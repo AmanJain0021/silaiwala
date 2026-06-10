@@ -12,7 +12,8 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('tailor_token');
-        if (token) {
+        const hasAuth = config.headers && (config.headers.Authorization || (typeof config.headers.has === 'function' && config.headers.has('Authorization')));
+        if (token && !hasAuth) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
