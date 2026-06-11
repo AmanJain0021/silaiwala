@@ -164,6 +164,39 @@ const DeliveryLayout = () => {
         { name: 'Profile', icon: User, path: '/delivery/profile' },
     ];
 
+    const [currentLocation, setCurrentLocation] = useState('Fetching Location...');
+
+    React.useEffect(() => {
+        if (isLoaded && window.google) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const geocoder = new window.google.maps.Geocoder();
+                        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                const city = results[0].address_components.find(c => c.types.includes('locality'))?.short_name || '';
+                                const area = results[0].address_components.find(c => c.types.includes('sublocality'))?.short_name || '';
+                                if (area && city) setCurrentLocation(`${area}, ${city}`);
+                                else if (city) setCurrentLocation(city);
+                                else setCurrentLocation(results[0].formatted_address.split(',')[0]);
+                            } else {
+                                setCurrentLocation('Location Unknown');
+                            }
+                        });
+                    },
+                    (error) => {
+                        console.warn('Geolocation error:', error);
+                        setCurrentLocation('Location Access Denied');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                setCurrentLocation('Location Not Supported');
+            }
+        }
+    }, [isLoaded]);
+
     return (
         <div className="min-h-[100dvh] bg-[#FAFAFB] flex flex-col font-sans selection:bg-indigo-100 selection:text-primary overflow-x-clip">
             {/* New Task Rapido-Style Alert */}
@@ -333,15 +366,19 @@ const DeliveryLayout = () => {
 
             {/* Top Fixed Header - Elegant Mobile Profile Bar */}
             <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-5 z-50">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-lg shadow-slate-200/50 overflow-hidden border border-gray-100">
-                        <img src={silaiwalaLogo} alt="SewZelaa" className="w-full h-full object-contain p-1" />
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden border border-indigo-100">
+                        {user?.profileImage ? (
+                            <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-indigo-600 font-black text-lg">{user?.name?.charAt(0) || 'S'}</span>
+                        )}
                     </div>
                     <div className="flex flex-col">
-                        <span className="font-black text-slate-900 text-base tracking-tighter leading-none">SewZelaa</span>
-                        <div className="flex items-center gap-1 mt-0.5">
-                            <div className={`w-1 h-1 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                            <span className="text-[8px] font-black uppercase tracking-[0.1em] text-slate-400">Partner Hub</span>
+                        <span className="font-black text-slate-900 text-sm tracking-tight leading-none mb-1">{user?.name || 'SewZelaa Partner'}</span>
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                            <MapPin size={10} className="text-indigo-400" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest max-w-[120px] truncate leading-none mt-[1px]">{currentLocation}</span>
                         </div>
                     </div>
                 </div>

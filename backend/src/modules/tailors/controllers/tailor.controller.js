@@ -598,7 +598,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     
     // Auto-Assignment Logic for Deliveries (Second Cycle)
     if ((status === "ready" || status === "ready-for-delivery") && autoAssign) {
-      const { autoAssignDelivery } = require("../../deliveries/controllers/delivery.controller");
+      const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
       await autoAssignDelivery(order._id, "dropoff");
     }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CreditCard, Lock, ShieldCheck, MapPin, Package } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CreditCard, Lock, ShieldCheck, MapPin, Package, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../../../utils/api';
@@ -449,7 +449,13 @@ const CheckoutSummary = () => {
                             disabled={isProcessing || !selectedAddress}
                             className="hidden lg:flex w-full mt-6 py-4 rounded-xl bg-[#2D2F6E] text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
                         >
-                            {isProcessing ? 'Initializing...' : !selectedAddress ? 'Select Address to Book' : (bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now')} <ArrowRight size={18} />
+                            {isProcessing ? (
+                                <><Loader2 className="w-4 h-4 animate-spin text-white" /> Initializing...</>
+                            ) : !selectedAddress ? (
+                                'Select Address to Book'
+                            ) : (
+                                <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now'} <ArrowRight size={18} /></>
+                            )}
                         </button>
 
                         <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
@@ -468,7 +474,13 @@ const CheckoutSummary = () => {
                     disabled={isProcessing || !selectedAddress}
                     className="w-full py-3.5 rounded-xl bg-[#2D2F6E] text-white text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
                 >
-                    {isProcessing ? 'Wait...' : !selectedAddress ? 'Select Address' : (bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now')} <ArrowRight size={16} />
+                    {isProcessing ? (
+                        <><Loader2 className="w-4 h-4 animate-spin text-white" /> Wait...</>
+                    ) : !selectedAddress ? (
+                        'Select Address'
+                    ) : (
+                        <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now'} <ArrowRight size={16} /></>
+                    )}
                 </button>
             </div>
         </div>

@@ -11,32 +11,47 @@ const DeliveryBoyLiveMap = ({
   currentLocation,
   riderLocation, // keeping for backwards compatibility if passed
   destination,
+  destinationAddress, // Added to support string addresses
   isLoaded,
   height = '400px',
   onRouteCalculated
 }) => {
   const [directions, setDirections] = useState(null);
+  const [routeEndLocation, setRouteEndLocation] = useState(null);
 
   const activeLocation = currentLocation || riderLocation;
 
   useEffect(() => {
-    if (activeLocation?.lat && activeLocation?.lng && destination?.lat && destination?.lng && window.google) {
+    // We need activeLocation, and EITHER destination coordinates OR a destination address
+    if (activeLocation?.lat && activeLocation?.lng && (destinationAddress || (destination?.lat && destination?.lng)) && window.google) {
       const directionsService = new window.google.maps.DirectionsService();
+      
+      // Use string address if provided, otherwise use coordinates
+      const routeDestination = destinationAddress 
+          ? destinationAddress 
+          : { lat: Number(destination.lat), lng: Number(destination.lng) };
+
       directionsService.route(
         {
           origin: { lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) },
-          destination: { lat: Number(destination.lat), lng: Number(destination.lng) },
+          destination: routeDestination,
           travelMode: window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK) {
             setDirections(result);
-            if (onRouteCalculated && result.routes[0]?.legs[0]) {
-              onRouteCalculated({
-                distance: result.routes[0].legs[0].distance.text,
-                duration: result.routes[0].legs[0].duration.text,
-                distanceValue: result.routes[0].legs[0].distance.value // in meters
-              });
+            if (result.routes[0]?.legs[0]) {
+              const leg = result.routes[0].legs[0];
+              // Save the geocoded end location for the marker
+              setRouteEndLocation({ lat: leg.end_location.lat(), lng: leg.end_location.lng() });
+              
+              if (onRouteCalculated) {
+                onRouteCalculated({
+                  distance: leg.distance.text,
+                  duration: leg.duration.text,
+                  distanceValue: leg.distance.value // in meters
+                });
+              }
             }
           } else {
             console.error('Error fetching directions:', result);
@@ -44,7 +59,7 @@ const DeliveryBoyLiveMap = ({
         }
       );
     }
-  }, [activeLocation?.lat, activeLocation?.lng, destination?.lat, destination?.lng]);
+  }, [activeLocation?.lat, activeLocation?.lng, destination?.lat, destination?.lng, destinationAddress]);
 
   if (!isLoaded) {
     return (
@@ -55,6 +70,9 @@ const DeliveryBoyLiveMap = ({
   }
 
   const center = activeLocation?.lat ? activeLocation : defaultCenter;
+  
+  // Use the actual geocoded route end location, or fallback to the provided coordinates
+  const markerDest = routeEndLocation || (destination?.lat ? { lat: Number(destination.lat), lng: Number(destination.lng) } : null);
 
   return (
     <div style={{ height }} className="rounded-2xl overflow-hidden border border-slate-100 relative">
@@ -86,9 +104,9 @@ const DeliveryBoyLiveMap = ({
         )}
         
         {/* Destination Marker */}
-        {destination?.lat && (
+        {markerDest && (
           <Marker
-            position={{ lat: Number(destination.lat), lng: Number(destination.lng) }}
+            position={markerDest}
             label={{ text: '📍', fontSize: '24px' }}
           />
         )}
@@ -98,7 +116,7 @@ const DeliveryBoyLiveMap = ({
           <Marker
             position={{ lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) }}
             icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png', // Custom bike icon
+              url: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png', // Motorcycle/scooter delivery icon
               scaledSize: window.google ? new window.google.maps.Size(40, 40) : null,
               anchor: window.google ? new window.google.maps.Point(20, 20) : null,
             }}

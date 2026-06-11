@@ -64,6 +64,10 @@ const deliverySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    totalEarned: {
+      type: Number,
+      default: 0,
+    },
     totalWithdrawn: {
       type: Number,
       default: 0,

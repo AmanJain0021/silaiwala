@@ -86,6 +86,8 @@ const ServiceDetail = () => {
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
+        
         const fetchData = async () => {
             setIsLoading(true);
             try {
@@ -96,11 +98,14 @@ const ServiceDetail = () => {
                         Promise.resolve(null)
                 ]);
 
+                if (!isMounted) return;
+
                 if (results[0].status === 'fulfilled') {
-                    const service = results[0].value.data.data;
-                    setServiceData(service);
+                    const service = results[0].value?.data?.data;
+                    if (service) setServiceData(service);
+                    
                     // Pre-select tailor if it came directly with the service
-                    if (service.tailor && !results[1].value) {
+                    if (service?.tailor && !results[1].value) {
                         setPreSelectedTailor(service.tailor);
                     }
                 }
@@ -115,26 +120,88 @@ const ServiceDetail = () => {
 
                 // Fetch global settings
                 const settingsRes = await api.get('/cms/settings');
-                if (settingsRes.data.success) {
-                    if (settingsRes.data.data.visitFee) {
+                
+                if (!isMounted) return;
+                
+                if (settingsRes.data?.success) {
+                    if (settingsRes.data.data?.visitFee) {
                         setVisitSettings(settingsRes.data.data.visitFee);
                     }
-                    if (settingsRes.data.data.pricing?.gstPercentage !== undefined) {
+                    if (settingsRes.data.data?.pricing?.gstPercentage !== undefined) {
                         setGstPercentage(settingsRes.data.data.pricing.gstPercentage);
                     }
                 }
             } catch (error) {
-                console.error('Failed to fetch service/tailor detail:', error);
+                if (isMounted) console.error('Failed to fetch service/tailor detail:', error);
             } finally {
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
         fetchData();
+        
+        return () => {
+            isMounted = false;
+        };
     }, [id, location.state]);
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>;
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 pb-40">
+                {/* Header Skeleton */}
+                <div className="sticky top-0 z-50 bg-white/80 pt-safe px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+                        <div>
+                            <div className="w-32 h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                            <div className="w-20 h-2 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="max-w-2xl mx-auto px-4 mt-6 space-y-6">
+                    {/* Stepper Skeleton */}
+                    <div className="flex justify-between px-4 mb-8">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="flex flex-col items-center gap-2">
+                                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+                                <div className="w-12 h-2 bg-gray-200 rounded animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Fabric Option 1 Skeleton */}
+                    <div className="bg-white p-4 rounded-2xl border border-gray-100 flex gap-4">
+                        <div className="w-16 h-16 bg-gray-200 rounded-xl animate-pulse shrink-0" />
+                        <div className="flex-1 space-y-2 py-1">
+                            <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse" />
+                            <div className="w-1/2 h-3 bg-gray-200 rounded animate-pulse" />
+                            <div className="w-1/4 h-3 bg-gray-200 rounded animate-pulse mt-2" />
+                        </div>
+                    </div>
+                    
+                    {/* Fabric Option 2 Skeleton */}
+                    <div className="bg-white p-4 rounded-2xl border border-gray-100 flex gap-4">
+                        <div className="w-16 h-16 bg-gray-200 rounded-xl animate-pulse shrink-0" />
+                        <div className="flex-1 space-y-2 py-1">
+                            <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse" />
+                            <div className="w-1/2 h-3 bg-gray-200 rounded animate-pulse" />
+                            <div className="w-1/4 h-3 bg-gray-200 rounded animate-pulse mt-2" />
+                        </div>
+                    </div>
+
+                    {/* Measurement Skeleton */}
+                    <div className="bg-white p-5 rounded-2xl border border-gray-100 mt-6">
+                        <div className="w-1/3 h-4 bg-gray-200 rounded animate-pulse mb-4" />
+                        <div className="space-y-3">
+                            <div className="w-full h-12 bg-gray-100 rounded-xl animate-pulse" />
+                            <div className="w-full h-12 bg-gray-100 rounded-xl animate-pulse" />
+                            <div className="w-full h-12 bg-gray-100 rounded-xl animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!serviceData) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-xl font-bold text-gray-900">Service Not Found</h2>

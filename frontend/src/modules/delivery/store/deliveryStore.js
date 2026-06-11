@@ -8,7 +8,11 @@ const normalizeDeliveryBoy = (input) => {
   const raw = input.data && input.statusCode ? input.data : input;
   
   const id = raw.id || raw._id;
-  const status = raw.status || (raw.isAvailable === false ? 'offline' : 'available');
+  let status = raw.status;
+  if (status === 'active') status = 'available';
+  if (status === 'inactive') status = 'offline';
+  if (!status) status = raw.isAvailable === false ? 'offline' : 'available';
+
   return { 
     ...raw, 
     id, 
@@ -56,7 +60,7 @@ const normalizeOrder = (raw) => {
   const vendorData = vendorFirst?.vendorId || {};
   
   const tailor = raw?.tailor || vendorData;
-  let vendorAddress = tailor?.location?.address || tailor?.shopAddress || (tailor?.address?.street ? `${tailor.address.street}, ${tailor.address.city || ''}` : (tailor?.shopName || vendorFirst?.vendorName ? 'Address in notes' : 'Address unavailable'));
+  let vendorAddress = tailor?.location?.address || tailor?.shopAddress || (tailor?.address && typeof tailor.address === 'string' ? tailor.address : (tailor?.address?.street ? `${tailor.address.street}, ${tailor.address.city || ''}` : (tailor?.shopName || vendorFirst?.vendorName ? 'Address in notes' : 'Address unavailable')));
 
   const deliveryAddressCoords = raw?.deliveryAddress?.location?.coordinates;
   const dropoffCoords = raw?.dropoffLocation?.coordinates || deliveryAddressCoords;
@@ -81,12 +85,12 @@ const normalizeOrder = (raw) => {
     ...raw,
     id: raw?.orderId || raw?._id || raw?.id,
     orderId: raw?.orderId || raw?._id || raw?.id,
-    customer: customerObj?.name || shippingAddress?.name || guestInfo?.name || 'Customer',
-    phone: customerObj?.phoneNumber || shippingAddress?.phone || shippingAddress?.mobile || guestInfo?.phone || raw?.customerPhone || raw?.phone || '',
-    address: toAddressLine(shippingAddress) || 'Address unavailable',
-    vendorName: tailor?.shopName || tailor?.name || vendorData?.storeName || vendorFirst?.vendorName || 'Tailor',
-    vendorAddress,
-    vendorPhone: tailor?.phone || vendorData?.phone || '',
+    customer: (typeof raw?.customer === 'string' ? raw.customer : customerObj?.name) || shippingAddress?.name || guestInfo?.name || 'Customer',
+    phone: (typeof raw?.phone === 'string' ? raw.phone : customerObj?.phoneNumber) || shippingAddress?.phone || shippingAddress?.mobile || guestInfo?.phone || raw?.customerPhone || '',
+    address: raw?.address || toAddressLine(shippingAddress) || 'Address unavailable',
+    vendorName: raw?.vendorName || tailor?.shopName || tailor?.name || vendorData?.storeName || vendorFirst?.vendorName || 'Tailor',
+    vendorAddress: raw?.vendorAddress || vendorAddress,
+    vendorPhone: raw?.vendorPhone || tailor?.phone || vendorData?.phone || '',
     taskType: raw?.taskType || (['fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered'].includes(backendStatus) ? 'fabric-pickup' : 'order-delivery'),
     total: Number(raw?.total ?? 0),
     deliveryEarnings: Number(raw?.deliveryEarnings ?? 0),
@@ -256,7 +260,7 @@ export const useDeliveryAuthStore = create(
         try {
           const res = await api.patch('/deliveries/status', { 
             isAvailable: status === 'available', 
-            status 
+            status: status === 'available' ? 'active' : (status === 'offline' ? 'inactive' : status)
           });
           const payload = res.data || res;
           set({ 

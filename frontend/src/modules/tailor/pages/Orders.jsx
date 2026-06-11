@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User } from 'lucide-react';
+import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -25,6 +25,8 @@ const Orders = () => {
     // Dispatch Delivery Modal State
     const [dispatchOrder, setDispatchOrder] = useState(null);
     const [isDispatching, setIsDispatching] = useState(false);
+    const [updatingOrders, setUpdatingOrders] = useState({});
+    const [dispatchingMethod, setDispatchingMethod] = useState(null);
 
     const fetchOrders = async () => {
         setIsLoading(true);
@@ -41,6 +43,7 @@ const Orders = () => {
     };
 
     const handleStatusUpdate = async (orderId, status, extraPayload = {}) => {
+        setUpdatingOrders(prev => ({ ...prev, [orderId]: true }));
         try {
             const response = await api.patch(`/tailors/orders/${orderId}/status`, { status, ...extraPayload });
             if (response.data.success) {
@@ -53,14 +56,18 @@ const Orders = () => {
                 if (selectedOrder && selectedOrder._id === orderId) {
                     setSelectedOrder({ ...selectedOrder, status });
                 }
+                return response.data;
             }
         } catch (error) {
             console.error('Error updating status:', error);
+        } finally {
+            setUpdatingOrders(prev => ({ ...prev, [orderId]: false }));
         }
     };
 
     const handleDispatchAction = async (method) => {
         if (!dispatchOrder) return;
+        setDispatchingMethod(method);
         setIsDispatching(true);
         try {
             await handleStatusUpdate(dispatchOrder._id, 'ready-for-pickup', { 
@@ -70,6 +77,7 @@ const Orders = () => {
             setDispatchOrder(null);
         } finally {
             setIsDispatching(false);
+            setDispatchingMethod(null);
         }
     };
 
@@ -327,6 +335,7 @@ const Orders = () => {
                                                         const timeStr = historyEntry ? new Date(historyEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (isCompleted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null);
 
                                                         const handleStepClick = () => {
+                                                            if (updatingOrders[order._id]) return;
                                                             if (step.key === 'ready-for-delivery' || step.key === 'ready-for-pickup') {
                                                                 setDispatchOrder(order);
                                                             } else {
@@ -342,7 +351,9 @@ const Orders = () => {
                                                                     isCompleted ? "border-green-500 text-green-500 shadow-sm" : "border-gray-200 text-gray-300 hover:border-[#2D2F6E] hover:text-[#2D2F6E]",
                                                                     isCurrent && "ring-4 ring-green-100 scale-110 z-20"
                                                                 )}>
-                                                                    {isCompleted ? (
+                                                                    {updatingOrders[order._id] && isCurrent ? (
+                                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500" />
+                                                                    ) : isCompleted ? (
                                                                         <Check size={14} strokeWidth={4} className="animate-in zoom-in duration-300" />
                                                                     ) : (
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -590,16 +601,24 @@ const Orders = () => {
                         /* Bottom Actions for Pending Order */
                         <div className="flex gap-3 pt-4 sticky bottom-0 bg-[#F5F5F5] pb-4 z-10">
                             <button 
-                                onClick={() => handleAction('Reject Order', order)}
-                                className="flex-1 py-4 bg-white border border-gray-200 text-gray-700 text-xs font-black uppercase rounded-2xl active:scale-95 transition-all shadow-sm"
+                                onClick={async () => {
+                                    await handleStatusUpdate(order._id, 'cancelled');
+                                    onClose();
+                                }}
+                                disabled={updatingOrders[order._id]}
+                                className="flex-1 py-4 bg-white border border-gray-200 text-gray-700 text-xs font-black uppercase rounded-2xl active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
-                                Reject
+                                {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-700" /> : 'Reject'}
                             </button>
                             <button 
-                                onClick={() => { handleAction('Accept Order', order); onClose(); }}
-                                className="flex-[2] py-4 bg-[#2D2F6E] text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-[#2D2F6E]/25 active:scale-95 transition-all flex items-center justify-center gap-1"
+                                onClick={async () => {
+                                    await handleStatusUpdate(order._id, 'accepted');
+                                    onClose();
+                                }}
+                                disabled={updatingOrders[order._id]}
+                                className="flex-[2] py-4 bg-[#2D2F6E] text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-[#2D2F6E]/25 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
-                                Accept Order
+                                {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
                             </button>
                         </div>
                     )}
@@ -725,9 +744,10 @@ const Orders = () => {
                                         {isNew ? (
                                             <button 
                                                 onClick={() => handleStatusUpdate(order._id, 'accepted')}
-                                                className="flex-[1.5] py-3 bg-[#2D2F6E] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] active:scale-95 transition-all"
+                                                disabled={updatingOrders[order._id]}
+                                                className="flex-[1.5] py-3 bg-[#2D2F6E] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                             >
-                                                Accept Order
+                                                {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
                                             </button>
                                         ) : (
                                             (() => {
@@ -759,7 +779,7 @@ const Orders = () => {
                                                     // While delivery driver is bringing fabric, next tailor action awaits delivery
                                                     currentStatusForFlow = 'fabric-delivered'; 
                                                 }
-
+ 
                                                 const nextStep = flow.find(f => f.current === currentStatusForFlow);
                                                 
                                                 return (
@@ -776,12 +796,13 @@ const Orders = () => {
                                                                 handleAction('View Detail', order);
                                                             }
                                                         }}
-                                                        className="flex-[1.5] py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all"
+                                                        disabled={updatingOrders[order._id]}
+                                                        className="flex-[1.5] py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                                     >
-                                                        {nextStep ? nextStep.label : 'Update Status'}
+                                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : (nextStep ? nextStep.label : 'Update Status')}
                                                     </button>
                                                 );
-                                            })()
+                            })()
                                         )}
                                     </div>
                                 </div>
@@ -828,10 +849,10 @@ const Orders = () => {
                             <button 
                                 onClick={() => handleDispatchAction('auto')}
                                 disabled={isDispatching}
-                                className="w-full p-4 border border-blue-100 bg-blue-50 hover:bg-blue-100 hover:border-blue-200 rounded-2xl flex items-center gap-4 transition-all text-left group"
+                                className="w-full p-4 border border-blue-100 bg-blue-50 hover:bg-blue-100 hover:border-blue-200 rounded-2xl flex items-center gap-4 transition-all text-left group disabled:opacity-60"
                             >
-                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm">
-                                    <Truck size={20} />
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                    {isDispatching && dispatchingMethod === 'auto' ? <Loader2 className="w-5 h-5 animate-spin text-blue-600" /> : <Truck size={20} />}
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-black text-blue-900 mb-0.5 group-hover:text-blue-700">Auto Assign Partner</h4>
@@ -842,10 +863,10 @@ const Orders = () => {
                             <button 
                                 onClick={() => handleDispatchAction('manual')}
                                 disabled={isDispatching}
-                                className="w-full p-4 border border-amber-100 bg-amber-50 hover:bg-amber-100 hover:border-amber-200 rounded-2xl flex items-center gap-4 transition-all text-left group"
+                                className="w-full p-4 border border-amber-100 bg-amber-50 hover:bg-amber-100 hover:border-amber-200 rounded-2xl flex items-center gap-4 transition-all text-left group disabled:opacity-60"
                             >
-                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm">
-                                    <User size={20} />
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm shrink-0">
+                                    {isDispatching && dispatchingMethod === 'manual' ? <Loader2 className="w-5 h-5 animate-spin text-amber-600" /> : <User size={20} />}
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-black text-amber-900 mb-0.5 group-hover:text-amber-700">Manual Assignment</h4>
@@ -856,10 +877,10 @@ const Orders = () => {
                             <button 
                                 onClick={() => handleDispatchAction('shiprocket')}
                                 disabled={isDispatching}
-                                className="w-full p-4 border border-purple-100 bg-purple-50 hover:bg-purple-100 hover:border-purple-200 rounded-2xl flex items-center gap-4 transition-all text-left group"
+                                className="w-full p-4 border border-purple-100 bg-purple-50 hover:bg-purple-100 hover:border-purple-200 rounded-2xl flex items-center gap-4 transition-all text-left group disabled:opacity-60"
                             >
-                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-purple-600 shadow-sm">
-                                    <Package size={20} />
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-purple-600 shadow-sm shrink-0">
+                                    {isDispatching && dispatchingMethod === 'shiprocket' ? <Loader2 className="w-5 h-5 animate-spin text-purple-600" /> : <Package size={20} />}
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-black text-purple-900 mb-0.5 group-hover:text-purple-700">Shiprocket Delivery</h4>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Truck,
+    Bike,
     Package,
     Navigation,
     Phone,
@@ -365,7 +365,7 @@ const Tasks = () => {
                                     const isFabricPickup = activeTask.taskType === 'fabric-pickup';
                                     
                                     // Robust logic for determining stage:
-                                    const pickupStatuses = ['pending', 'accepted', 'fabric-ready-for-pickup', 'ready-for-pickup'];
+                                    const pickupStatuses = ['pending', 'accepted', 'fabric-ready-for-pickup', 'ready-for-pickup', 'reached-pickup'];
                                     const isPickupStage = pickupStatuses.includes(activeTask.status);
                                     
                                     const stopLabel = isPickupStage ? "Pickup Location" : "Drop-off Location";
@@ -522,7 +522,7 @@ const Tasks = () => {
                                                         <p className="text-[10px] font-bold text-slate-400 tracking-wide italic leading-none mt-0.5">Reward: ₹20</p>
                                                     </div>
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg ${task.taskType === 'fabric-pickup' ? 'bg-amber-600' : 'bg-primary'}`}>
-                                                        <Truck size={18} />
+                                                        <Bike size={18} />
                                                     </div>
                                                 </div>
 

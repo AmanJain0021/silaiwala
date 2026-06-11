@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import logo from "../../../../assets/animations/lottie/logo-removebg.png";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
-import { FiLogOut, FiTruck, FiPackage, FiHome, FiUser, FiMenu, FiBell, FiAlertCircle } from "react-icons/fi";
+import { FiLogOut, FiPackage, FiHome, FiUser, FiMenu, FiBell, FiAlertCircle } from "react-icons/fi";
+import { Bike, MapPin } from "lucide-react";
 import { useDeliveryAuthStore } from "../../store/deliveryStore";
 import { useDeliveryNotificationStore } from "../../store/deliveryNotificationStore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +13,8 @@ import { formatPrice } from "../../../../shared/utils/helpers";
 import socketService from "../../../../shared/utils/socket";
 import NewOrderModal from "../NewOrderModal";
 import { useJsApiLoader } from "@react-google-maps/api";
+import useGoogleLocation from "../../../../hooks/useGoogleLocation";
+
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const DeliveryLayout = () => {
@@ -42,6 +45,26 @@ const DeliveryLayout = () => {
   const { unreadCount, fetchNotifications } = useDeliveryNotificationStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const audioUnlockedRef = useRef(false);
+
+  const { detectLocation, isLocating } = useGoogleLocation();
+  const [partnerLocation, setPartnerLocation] = useState('Detecting location...');
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const data = await detectLocation();
+        if (data && data.address) {
+          const shortAddr = data.address.split(',')[0] + (data.city ? `, ${data.city}` : '');
+          setPartnerLocation(shortAddr);
+        } else {
+          setPartnerLocation('Location unknown');
+        }
+      } catch (err) {
+        setPartnerLocation('Location unknown');
+      }
+    };
+    fetchLocation();
+  }, [detectLocation]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -276,9 +299,18 @@ const DeliveryLayout = () => {
             <FiMenu className="text-white text-xl" />
           </button>
 
-          <div className="flex flex-col ml-1">
-             <h1 className="text-[11px] font-black text-white leading-tight tracking-tighter">CLOSH</h1>
-             <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest -mt-1">PARTNER APP</span>
+          <div className="flex flex-col ml-1 min-w-0 max-w-[140px] sm:max-w-[180px]">
+             <div className="flex items-center gap-1">
+                 <h1 className="text-[12px] font-black text-white leading-tight tracking-tighter capitalize truncate">
+                     {deliveryBoy?.name || "Partner"}
+                 </h1>
+             </div>
+             <div className="flex items-center gap-1 overflow-hidden mt-0.5 text-indigo-200">
+                 <MapPin size={10} className="shrink-0" />
+                 <span className="text-[9px] font-bold tracking-wide truncate">
+                     {isLocating ? 'Detecting location...' : partnerLocation}
+                 </span>
+             </div>
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
@@ -334,7 +366,7 @@ const DeliveryLayout = () => {
                     {deliveryBoy?.avatar ? (
                       <img src={deliveryBoy.avatar} className="w-full h-full object-cover" alt="Profile" />
                     ) : (
-                      <FiTruck className="text-white text-xl" />
+                      <Bike className="text-white w-6 h-6" />
                     )}
                   </div>
                   <div>

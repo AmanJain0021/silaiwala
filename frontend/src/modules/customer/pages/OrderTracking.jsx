@@ -25,38 +25,45 @@ const OrderTracking = () => {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
 
-    const fetchOrderDetails = async () => {
-        try {
-            // Try fetching from standard orders first
-            let response;
-            try {
-                response = await api.get(`/orders/${id}`);
-            } catch (err) {
-                if (err.response?.status === 404) {
-                    // Try bulk orders if not found in standard
-                    response = await api.get(`/bulk-orders/${id}`);
-                    setIsBulk(true);
-                } else {
-                    throw err;
-                }
-            }
-
-            if (response.data.success) {
-                setOrder(response.data.data);
-            }
-        } catch (err) {
-            if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
-                console.error('Error fetching order tracking:', err);
-                setError(err.response?.data?.message || 'Failed to load tracking details.');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const [socketInstance, setSocketInstance] = useState(null);
 
     useEffect(() => {
+        let isMounted = true;
+
+        const fetchOrderDetails = async () => {
+            try {
+                // Try fetching from standard orders first
+                let response;
+                try {
+                    response = await api.get(`/orders/${id}`);
+                } catch (err) {
+                    if (err.response?.status === 404) {
+                        // Try bulk orders if not found in standard
+                        response = await api.get(`/bulk-orders/${id}`);
+                        if (isMounted) setIsBulk(true);
+                    } else {
+                        throw err;
+                    }
+                }
+
+                if (!isMounted) return;
+
+                if (response?.data?.success) {
+                    setOrder(response.data.data);
+                    setError(null); // Clear any previous errors if successful
+                }
+            } catch (err) {
+                if (!isMounted) return;
+                
+                if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+                    console.error('Error fetching order tracking:', err);
+                    setError(err.response?.data?.message || 'Failed to load tracking details.');
+                }
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+
         if (id) {
             fetchOrderDetails();
 
@@ -66,17 +73,18 @@ const OrderTracking = () => {
 
             socket.on('order_status_updated', (data) => {
                 console.log('Real-time tracking update received:', data);
-                fetchOrderDetails();
+                if (isMounted) fetchOrderDetails();
             });
 
             // Also listen for general notifications as fallback
             socket.on('new_notification', (data) => {
                 if (data.data?.orderId === id) {
-                    fetchOrderDetails();
+                    if (isMounted) fetchOrderDetails();
                 }
             });
 
             return () => {
+                isMounted = false;
                 socket.disconnect();
                 setSocketInstance(null);
             };
@@ -436,8 +444,8 @@ const OrderTracking = () => {
 
                 {/* 3.3.5 Live Delivery Tracker */}
                 {(['fabric-ready-for-pickup', 'fabric-picked-up', 'ready-for-delivery', 'out-for-delivery'].includes(order.status) || 
-                  ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus) ||
-                  ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus)) && (
+                  ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus) ||
+                  ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus)) && (
                     <LiveDeliveryTracker order={order} socket={socketInstance} />
                 )}
 
@@ -541,10 +549,13 @@ const OrderTracking = () => {
                     {order.deliveryAddress && (
                         <div className="pt-3 border-t border-gray-100">
                             <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                                <MapPin size={10} /> Delivery Address
+                                <MapPin size={10} /> {order.fabricPickupRequired ? 'Pickup / Delivery Address' : 'Delivery Address'}
                             </h4>
                             <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                                {order.deliveryAddress.street}, {order.deliveryAddress.city}, {order.deliveryAddress.state} - {order.deliveryAddress.zipCode}
+                                {order.deliveryAddress.city === 'Unknown' || !order.deliveryAddress.city
+                                    ? order.deliveryAddress.street
+                                    : `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} - ${order.deliveryAddress.zipCode}`
+                                }
                             </p>
                         </div>
                     )}
@@ -648,19 +659,24 @@ const OrderTracking = () => {
                 {(order.deliveryPartner || order.pickupPartner || order.dropoffPartner) && (() => {
                     let activePartner = order.deliveryPartner;
                     let partnerRole = 'Delivery Partner';
+                    let partnerStatus = order.deliveryStatus;
                     
                     if (['pending', 'accepted', 'paid', 'fabric-ready-for-pickup', 'fabric-pickup-assigned', 'fabric-picked-up'].includes(order.status) && order.pickupPartner) {
                         activePartner = order.pickupPartner;
                         partnerRole = 'Pickup Partner';
+                        partnerStatus = order.pickupDeliveryStatus;
                     } else if (order.dropoffPartner) {
                         activePartner = order.dropoffPartner;
                         partnerRole = 'Delivery Partner';
+                        partnerStatus = order.dropoffDeliveryStatus;
                     } else if (order.pickupPartner && !order.dropoffPartner) {
                         activePartner = order.pickupPartner;
                         partnerRole = 'Pickup Partner';
+                        partnerStatus = order.pickupDeliveryStatus;
                     }
 
-                    if (!activePartner) return null;
+                    // Only show the partner if they have accepted the assignment
+                    if (!activePartner || partnerStatus === 'assigned' || partnerStatus === 'pending') return null;
 
                     return (
                         <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">

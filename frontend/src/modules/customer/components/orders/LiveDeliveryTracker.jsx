@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
-import { Phone, Clock, MapPin, Navigation } from 'lucide-react';
+import { Phone, Clock, MapPin, Navigation, Bike, Loader2 } from 'lucide-react';
 import DeliveryBoyLiveMap from '../../../../shared/components/DeliveryBoyLiveMap';
 
 const LiveDeliveryTracker = ({ order, socket }) => {
@@ -47,8 +47,57 @@ const LiveDeliveryTracker = ({ order, socket }) => {
   }
 
   const rider = isPickupPhase ? order.pickupPartner : order.deliveryPartner;
+  const riderStatus = isPickupPhase ? order.pickupDeliveryStatus : order.dropoffDeliveryStatus;
 
-  if (!rider) return null; // No rider assigned yet
+  const isSearching = !rider || riderStatus === 'assigned' || riderStatus === 'pending';
+
+  if (isSearching) {
+    return (
+      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden">
+        {/* Radar/Pulse circles in background */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute w-40 h-40 bg-indigo-50/40 rounded-full animate-ping opacity-75" style={{ animationDuration: '3s' }} />
+          <div className="absolute w-24 h-24 bg-indigo-50/60 rounded-full animate-ping opacity-50" style={{ animationDuration: '2s' }} />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-tr from-primary to-[#4f46e5] rounded-full flex items-center justify-center shadow-lg relative z-20">
+            <Bike className="text-white w-8 h-8 animate-bounce" />
+            <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow border border-gray-100">
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-bold text-gray-900 tracking-tight">Searching for Delivery Partner</h4>
+            <p className="text-xs text-gray-500 mt-1 max-w-[240px]">
+              {isPickupPhase 
+                ? "Assigning the nearest partner to pick up your fabric from your address." 
+                : "Assigning the nearest partner to deliver your finished garment."
+              }
+            </p>
+          </div>
+
+          {/* Premium loading bar */}
+          <div className="w-full max-w-[180px] h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
+            <div className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-primary to-[#4f46e5] rounded-full animate-[loading-slide_1.5s_infinite_ease-in-out]" />
+          </div>
+        </div>
+
+        {/* Custom CSS Animation for loading slider */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes loading-slide {
+            0% { left: -30%; width: 30%; }
+            50% { left: 35%; width: 40%; }
+            100% { left: 100%; width: 30%; }
+          }
+          .animate-\\[loading-slide_1\\.5s_infinite_ease-in-out\\] {
+            animation: loading-slide 1.5s infinite ease-in-out;
+          }
+        `}} />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">

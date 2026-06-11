@@ -91,7 +91,12 @@ exports.updateStatus = asyncHandler(async (req, res, next) => {
   }
 
   if (isAvailable !== undefined) delivery.isAvailable = isAvailable;
-  if (status) delivery.status = status;
+  if (status) {
+    let finalStatus = status;
+    if (status === 'available') finalStatus = 'active';
+    if (status === 'offline') finalStatus = 'inactive';
+    delivery.status = finalStatus;
+  }
 
   if (lat && lng) {
     delivery.currentLocation = {
@@ -1010,12 +1015,14 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     const profile = await Delivery.findOne({ user: partnerId });
     if (profile) {
       profile.walletBalance += amount;
+      profile.totalEarned = (profile.totalEarned || 0) + amount;
+      profile.totalDeliveries = (profile.totalDeliveries || 0) + 1;
       await profile.save();
       await WalletTransaction.create({
         user: partnerId,
         amount,
         type: "credit",
-        category: "delivery_earnings",
+        category: "order_earnings",
         order: order._id,
         description
       });

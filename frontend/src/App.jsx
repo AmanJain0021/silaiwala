@@ -11,10 +11,7 @@ function SplashManager({ splashConfig, setSplashConfig }) {
 
   useEffect(() => {
     const path = location.pathname;
-    const isSplash = path === '/user' || 
-                    path === '/welcome' || 
-                    path === '/partner' || 
-                    path === '/delivery/dashboard';
+    const isSplash = path === '/partner';
     
     let role = 'customer';
     if (path.startsWith('/partner')) {

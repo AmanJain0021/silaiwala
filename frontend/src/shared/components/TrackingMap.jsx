@@ -60,7 +60,7 @@ const TrackingMap = ({
         {riderLocation?.lat && (
           <Marker
             position={riderLocation}
-            label={{ text: '🛵', fontSize: '24px' }}
+            label={{ text: '🏍️', fontSize: '24px' }}
           />
         )}
         {vendorLocation?.lat && (

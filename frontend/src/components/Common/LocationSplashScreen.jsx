@@ -56,6 +56,13 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                                 longitude,
                                 address
                             }, { headers });
+                        } else if (role === 'delivery') {
+                            await api.patch('/deliveries/status', {
+                                lat: latitude,
+                                lng: longitude,
+                                isAvailable: true,
+                                status: 'active'
+                            }, { headers });
                         } else if (role === 'customer' || role === 'user') {
                             await api.post('/customers/addresses', {
                                 type: 'Home',

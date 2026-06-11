@@ -113,7 +113,7 @@ const SewZellaLanding = React.lazy(() => import('./modules/landing/SewZellaLandi
 
 const AppRoutes = () => {
     return (
-        <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen font-black text-[#2D2F6E] animate-pulse">Loading...</div>}>
+        <React.Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div></div>}>
         <Routes>
             {/* ... Auth Routes ... */}
             <Route element={<AuthLayout />}>

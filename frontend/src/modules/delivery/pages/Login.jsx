@@ -7,7 +7,7 @@ import LocationSplashScreen from '../../../components/Common/LocationSplashScree
 
 const DeliveryLogin = () => {
     const navigate = useNavigate();
-    const { sendOTP, otpLogin, isLoading } = useAuthStore();
+    const { sendOTP, otpLogin, logout, isLoading } = useAuthStore();
 
     const [mobileNumber, setMobileNumber] = useState('');
     const [otp, setOtp] = useState('');
@@ -16,7 +16,6 @@ const DeliveryLogin = () => {
     const [error, setError] = useState('');
     const [showOtp, setShowOtp] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
-    const [loggedInUser, setLoggedInUser] = useState(null);
 
     const handleSendOTP = async () => {
         if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
@@ -47,7 +46,13 @@ const DeliveryLogin = () => {
 
         try {
             const user = await otpLogin(mobileNumber, otp);
-            setLoggedInUser(user);
+            
+            if (user?.role !== 'delivery') {
+                logout();
+                setError('This portal is only for registered delivery partners.');
+                return;
+            }
+
             setIsLocating(true);
         } catch (err) {
             setError(err.message || 'Invalid OTP. Please try again.');
@@ -59,8 +64,8 @@ const DeliveryLogin = () => {
         navigate('/delivery/dashboard');
     };
 
-    if (isLocating && loggedInUser) {
-        return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} />;
+    if (isLocating) {
+        return <LocationSplashScreen onComplete={handleLocationComplete} role="delivery" />;
     }
 
     return (

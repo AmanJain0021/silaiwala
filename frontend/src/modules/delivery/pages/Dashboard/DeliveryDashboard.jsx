@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Truck,
+    Bike,
     Package,
     IndianRupee,
     ArrowUpRight,
@@ -211,7 +211,7 @@ const DeliveryDashboard = () => {
     const { stats: dashboardStats, activeOrders, availableOrders, profile } = dashboardData;
 
     const stats = [
-        { label: 'Active Tasks', value: dashboardStats.activeTasks.toString().padStart(2, '0'), icon: Truck, color: 'bg-primary', trend: 'In Progress' },
+        { label: 'Active Tasks', value: dashboardStats.activeTasks.toString().padStart(2, '0'), icon: Bike, color: 'bg-primary', trend: 'In Progress' },
         { label: 'Wallet Balance', value: `₹${dashboardStats.earnings}`, icon: IndianRupee, color: 'bg-primary', trend: 'Earnings' },
         { label: 'Total Deliveries', value: dashboardStats.totalPickups.toString().padStart(2, '0'), icon: Package, color: 'bg-slate-900', trend: 'Completed' },
     ];
@@ -355,7 +355,7 @@ const DeliveryDashboard = () => {
                                     <h2 className="text-xl font-black tracking-tight text-slate-900 mt-1 capitalize">{getTaskType(currentTask)}</h2>
                                 </div>
                                 <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 mt-1">
-                                    <Truck size={20} className="text-slate-400" />
+                                    <Bike size={20} className="text-slate-400" />
                                 </div>
                             </div>
 
@@ -434,20 +434,15 @@ const DeliveryDashboard = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
-                                                    <Clock size={16} />
-                                                </div>
-                                                <span className="text-[11px] font-bold tracking-wider text-slate-400 capitalize">Arriving Soon</span>
-                                            </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleOpenMap(currentTask); }}
-                                                className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
+                                        <button
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`); 
+                                                }}
+                                                className="w-full bg-primary text-white py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
                                             >
-                                                Open Map
+                                                Detail
                                             </button>
-                                        </>
                                     )}
                                 </div>
                             </div>

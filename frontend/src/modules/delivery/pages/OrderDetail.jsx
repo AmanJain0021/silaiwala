@@ -20,6 +20,7 @@ import {
   FiPlus,
   FiZap,
   FiAlertTriangle,
+  FiLoader,
 } from 'react-icons/fi';
 import CancellationModal from '../components/CancellationModal';
 import TrackingMap from '../../../shared/components/TrackingMap';
@@ -62,9 +63,9 @@ const DeliveryOrderDetail = () => {
   } = useDeliveryAuthStore();
   
   const [order, setOrder] = useState(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [otpValue, setOtpValue] = useState('');
   const [deliveryPhoto, setDeliveryPhoto] = useState(null);
-  const [openBoxPhoto, setOpenBoxPhoto] = useState(null);
   const [pickupPhoto, setPickupPhoto] = useState(null);
   const [eta, setEta] = useState(null);
   const [distanceRemaining, setDistanceRemaining] = useState(null);
@@ -83,8 +84,6 @@ const DeliveryOrderDetail = () => {
   const pickupGalleryRef = useRef(null);
   const deliveryInputRef = useRef(null);
   const deliveryGalleryRef = useRef(null);
-  const openBoxInputRef = useRef(null);
-  const openBoxGalleryRef = useRef(null);
   
   const isReturn = order?.type === 'return';
   const isCod = order?.paymentMethod === 'cod' || order?.paymentMethod === 'cash';
@@ -132,16 +131,38 @@ const DeliveryOrderDetail = () => {
   const isAvailableTask = order && !order.deliveryBoyId && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending');
   
   useEffect(() => {
+    // First try to use live location from hook if available
     if (liveLocation?.lat && liveLocation?.lng) {
       setCurrentLocation(liveLocation);
-    } else if (deliveryBoy?.location?.coordinates?.length >= 2) {
-      setCurrentLocation({
-        lat: deliveryBoy.location.coordinates[1],
-        lng: deliveryBoy.location.coordinates[0]
-      });
     } else {
-      // Fallback for local testing if geolocation is blocked
-      setCurrentLocation({ lat: 22.6891478, lng: 75.8650144 }); // Physics Wallah (For Desktop Testing)
+      // Actively fetch GPS if liveLocation hasn't populated yet
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  setCurrentLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+              },
+              (error) => {
+                  console.warn('Geolocation failed in OrderDetail, falling back.', error);
+                  // Fallback to deliveryBoy location or default
+                  if (deliveryBoy?.location?.coordinates?.length >= 2) {
+                    setCurrentLocation({
+                      lat: deliveryBoy.location.coordinates[1],
+                      lng: deliveryBoy.location.coordinates[0]
+                    });
+                  } else {
+                    setCurrentLocation({ lat: 22.6891478, lng: 75.8650144 }); // Physics Wallah
+                  }
+              },
+              { enableHighAccuracy: true, timeout: 5000 }
+          );
+      } else if (deliveryBoy?.location?.coordinates?.length >= 2) {
+        setCurrentLocation({
+          lat: deliveryBoy.location.coordinates[1],
+          lng: deliveryBoy.location.coordinates[0]
+        });
+      } else {
+        setCurrentLocation({ lat: 22.6891478, lng: 75.8650144 }); // Physics Wallah
+      }
     }
   }, [liveLocation, deliveryBoy]);
 
@@ -151,7 +172,11 @@ const DeliveryOrderDetail = () => {
         const geocoder = new window.google.maps.Geocoder();
         geocoder.geocode({ location: { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) } }, (results, status) => {
           if (status === 'OK' && results[0]) {
-            setCurrentLocationAddress(results[0].formatted_address);
+            // Match the dashboard formatting for a cleaner UI
+            const cityComp = results[0].address_components.find(c => c.types.includes('locality'));
+            const subComp = results[0].address_components.find(c => c.types.includes('sublocality'));
+            const locationName = subComp ? `${subComp.long_name}, ${cityComp ? cityComp.long_name : ''}` : (cityComp ? cityComp.long_name : results[0].formatted_address);
+            setCurrentLocationAddress(locationName.replace(/,\s*$/, ""));
           } else {
             setCurrentLocationAddress('Current GPS Location');
           }
@@ -177,8 +202,14 @@ const DeliveryOrderDetail = () => {
       } else if (response?.items) {
         setSelectedItemIds(new Set(response.items.map(i => i.productId || i._id)));
       }
+      setIsInitialLoading(false);
     } catch (err) {
+      if (err?.name === 'CanceledError' || err?.message === 'Cancelled by a new request') {
+        console.log('Request cancelled, waiting for new request to complete.');
+        return; // Do not update state if the request was cancelled by a newer one
+      }
       setOrder(null);
+      setIsInitialLoading(false);
     }
   }, [id, fetchOrderById]);
 
@@ -223,7 +254,7 @@ const DeliveryOrderDetail = () => {
     }
   };
 
-  const handleArrival = async () => {
+  const handleArrivalUpdate = async () => {
     if (!id) return;
     try {
       const status = currentPhase === 'pickup' ? 'reached-pickup' : 'reached-dropoff';
@@ -308,12 +339,10 @@ const DeliveryOrderDetail = () => {
     if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
     if (isCod && !paymentSelection) return toast.error('Select payment method');
     if (!deliveryPhoto) return toast.error('Delivery photo required');
-    if (isCod && !openBoxPhoto) return toast.error('Open box photo required');
 
     try {
       const updated = await completeDeliveryFlow(id, { 
         otp: otpValue.trim(), 
-        openBoxPhoto, 
         deliveryProofPhoto: deliveryPhoto 
       });
       setOrder(updated);
@@ -330,11 +359,30 @@ const DeliveryOrderDetail = () => {
     reader.readAsDataURL(file);
   };
 
-  if (isLoadingOrder || !isLoaded) {
-    return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-8 h-8 border-3 border-slate-100 border-t-indigo-600 rounded-full animate-spin" /></div>;
+  console.log("OrderDetail Render:", { isInitialLoading, isLoadingOrder, isLoaded, order: !!order, id });
+
+  // We only show "Order not found" if we have finished initial loading, we are not currently loading, and order is still null.
+  if (isInitialLoading || isLoadingOrder || !isLoaded || (!order && isInitialLoading)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-4">
+         <div className="w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin" />
+         <p className="text-xs font-bold text-slate-400 tracking-widest uppercase animate-pulse">Fetching the order...</p>
+      </div>
+    );
   }
 
-  if (!order) return <div className="p-8 text-center text-slate-500 text-sm">Order not found</div>;
+  if (!order) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+          <FiAlertTriangle size={24} />
+        </div>
+        <h2 className="text-lg font-bold text-slate-800">Order Not Found</h2>
+        <p className="text-slate-500 text-xs mt-2 mb-6 text-center max-w-[240px]">We couldn't find the details for this mission. It may have been reassigned or cancelled.</p>
+        <button onClick={() => navigate('/delivery/dashboard')} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest">Return to Dashboard</button>
+      </div>
+    );
+  }
 
   if (showSuccess || order.status === 'delivered') {
     return (
@@ -383,6 +431,7 @@ const DeliveryOrderDetail = () => {
                       ? (pickupLat ? { lat: Number(pickupLat), lng: Number(pickupLng) } : null)
                       : (dropoffLat ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : null)
                   }
+                  destinationAddress={currentPhase === 'pickup' ? pickupAddress : dropoffAddress}
                   isLoaded={isLoaded}
                   height="100%"
                   onRouteCalculated={(data) => {
@@ -447,7 +496,7 @@ const DeliveryOrderDetail = () => {
 
                 <div className="flex gap-2">
                    <a 
-                     href={`https://www.google.com/maps/dir/?api=1&destination=${currentPhase === 'pickup' ? `${pickupLat},${pickupLng}` : `${dropoffLat},${dropoffLng}`}`}
+                     href={`https://www.google.com/maps/dir/?api=1&destination=${currentPhase === 'pickup' ? encodeURIComponent(pickupAddress) : encodeURIComponent(dropoffAddress)}`}
                      target="_blank"
                      rel="noopener noreferrer"
                      className="w-14 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm active:scale-95 transition-all"
@@ -564,8 +613,8 @@ const DeliveryOrderDetail = () => {
                 </div>
              </div>
 
-             {/* Verification and OTP Area - only show if accepted */}
-             {!isAvailableTask && isAssignedToMe && (
+             {/* Verification and OTP Area - only show if accepted and arrived */}
+             {!isAvailableTask && isAssignedToMe && hasArrived && (
                 <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
                      <div>
                         <div className="flex items-center justify-between mb-3">
@@ -579,51 +628,21 @@ const DeliveryOrderDetail = () => {
                                   <>
                                     <img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} className="w-full h-full object-cover" />
                                     <button onClick={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
-                                  </>
-                               ) : (
+                                  </>                               ) : (
                                   <div className="flex flex-col items-center gap-3">
-                                     <button onClick={() => currentPhase === 'pickup' ? pickupInputRef.current.click() : deliveryInputRef.current.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform">
+                                     <button onClick={() => currentPhase === 'pickup' ? pickupInputRef.current?.click() : deliveryInputRef.current?.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform">
                                         <FiCamera size={28}/>
                                         <span className="text-[9px] font-black uppercase tracking-tight">CAMERA</span>
                                      </button>
                                      <div className="w-12 h-px bg-slate-200" />
-                                     <button onClick={() => currentPhase === 'pickup' ? pickupGalleryRef.current.click() : deliveryGalleryRef.current.click()} className="flex flex-col items-center gap-1.5 text-slate-400 active:scale-95 transition-transform">
+                                     <button onClick={() => currentPhase === 'pickup' ? pickupGalleryRef.current?.click() : deliveryGalleryRef.current?.click()} className="flex flex-col items-center gap-1.5 text-slate-400 active:scale-95 transition-transform">
                                         <FiImage size={24}/>
                                         <span className="text-[8px] font-black uppercase tracking-tight">GALLERY</span>
                                      </button>
                                   </div>
                                )}
-                               <input type="file" accept="image/*" capture="environment" ref={currentPhase === 'pickup' ? pickupInputRef : deliveryInputRef} onChange={(e) => handleImage(e.target.files[0], currentPhase === 'pickup' ? setPickupPhoto : setDeliveryPhoto)} className="hidden" />
-                               <input type="file" accept="image/*" ref={currentPhase === 'pickup' ? pickupGalleryRef : deliveryGalleryRef} onChange={(e) => handleImage(e.target.files[0], currentPhase === 'pickup' ? setPickupPhoto : setDeliveryPhoto)} className="hidden" />
                             </div>
-
-                            {currentPhase === 'delivery' && (
-                               <div className="space-y-3 pt-3 border-t border-slate-50">
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter italic opacity-60">Optional: Item Inspection Photo</p>
-                                  <div className="relative aspect-[16/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 flex items-center justify-center group shadow-inner">
-                                     {openBoxPhoto ? (
-                                        <>
-                                          <img src={openBoxPhoto} className="w-full h-full object-cover" />
-                                          <button onClick={() => setOpenBoxPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
-                                        </>
-                                     ) : (
-                                        <div className="flex items-center gap-8">
-                                            <button onClick={() => openBoxInputRef.current.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform">
-                                                <FiCamera size={26}/>
-                                                <span className="text-[8px] font-black uppercase tracking-tight leading-none">CAMERA</span>
-                                            </button>
-                                            <button onClick={() => openBoxGalleryRef.current.click()} className="flex flex-col items-center gap-1.5 text-slate-400 active:scale-95 transition-transform">
-                                                <FiImage size={24}/>
-                                                <span className="text-[8px] font-black uppercase tracking-tight leading-none">GALLERY</span>
-                                            </button>
-                                        </div>
-                                     )}
-                                     <input type="file" accept="image/*" capture="environment" ref={openBoxInputRef} onChange={(e) => handleImage(e.target.files[0], setOpenBoxPhoto)} className="hidden" />
-                                     <input type="file" accept="image/*" ref={openBoxGalleryRef} onChange={(e) => handleImage(e.target.files[0], setOpenBoxPhoto)} className="hidden" />
-                                  </div>
-                               </div>
-                            )}
-                        </div>
+                         </div>
                      </div>
 
                      {/* OTP AREA */}
@@ -666,20 +685,20 @@ const DeliveryOrderDetail = () => {
                                   </div>
                                </div>
                                <div className="grid grid-cols-2 gap-2">
-                                  <button 
-                                    onClick={()=>handlePaymentMethod('cash')} 
-                                    disabled={isUpdatingOrderStatus}
-                                    className={`h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${paymentSelection==='cash' ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-500 border-slate-100'}`}
-                                  >
-                                    {isUpdatingOrderStatus && paymentSelection==='cash' ? 'SELECTING...' : 'CASH'}
-                                  </button>
-                                  <button 
-                                    onClick={()=>handlePaymentMethod('qr')} 
-                                    disabled={isUpdatingOrderStatus}
-                                    className={`h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${paymentSelection==='qr' ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white text-slate-500 border-slate-100'}`}
-                                  >
-                                    {isUpdatingOrderStatus && paymentSelection==='qr' ? 'GENERATING...' : 'UPI QR'}
-                                  </button>
+                                   <button 
+                                     onClick={()=>handlePaymentMethod('cash')} 
+                                     disabled={isUpdatingOrderStatus}
+                                     className={`h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 flex items-center justify-center gap-1.5 ${paymentSelection==='cash' ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-500 border-slate-100'}`}
+                                   >
+                                     {isUpdatingOrderStatus && paymentSelection==='cash' ? <><FiLoader className="w-3.5 h-3.5 animate-spin" /> SELECTING...</> : 'CASH'}
+                                   </button>
+                                   <button 
+                                     onClick={()=>handlePaymentMethod('qr')} 
+                                     disabled={isUpdatingOrderStatus}
+                                     className={`h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 flex items-center justify-center gap-1.5 ${paymentSelection==='qr' ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white text-slate-500 border-slate-100'}`}
+                                   >
+                                     {isUpdatingOrderStatus && paymentSelection==='qr' ? <><FiLoader className="w-3.5 h-3.5 animate-spin" /> GENERATING...</> : 'UPI QR'}
+                                   </button>
                                </div>
                             </div>
                           )}
@@ -707,23 +726,23 @@ const DeliveryOrderDetail = () => {
                       }
                   }}
                   disabled={isUpdatingOrderStatus}
-                  className="flex-1 h-12 bg-white text-slate-700 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] border-2 border-slate-200 active:scale-95 transition-all"
+                  className="flex-1 h-12 bg-white text-slate-700 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] border-2 border-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
-                  {isUpdatingOrderStatus ? 'DECLINING...' : 'Skip'}
+                  {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin" /> DECLINING...</> : 'Skip'}
               </button>
               <button 
                   onClick={handleAcceptMission}
                   disabled={isUpdatingOrderStatus}
-                  className="flex-[2] h-12 bg-amber-400 text-amber-950 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg shadow-amber-200 active:scale-95 transition-all"
+                  className="flex-[2] h-12 bg-amber-400 text-amber-950 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg shadow-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
-                  {isUpdatingOrderStatus ? 'ACCEPTING MISSION...' : 'Accept'}
+                  {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin text-amber-950" /> ACCEPTING...</> : 'Accept'}
               </button>
             </div>
           ) : isAssignedToMe ? (
             <>
               {(!hasArrived && currentPhase === 'delivery') || (currentPhase === 'pickup' && !pickupPhoto) ? (
                  <button 
-                    onClick={currentPhase === 'pickup' ? () => pickupInputRef.current?.click() : handleArrival}
+                    onClick={currentPhase === 'pickup' ? () => pickupInputRef.current?.click() : handleArrivalUpdate}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 active:scale-95 transition-all flex items-center justify-center gap-2"
                  >
                     {currentPhase === 'pickup' ? <><FiCamera size={14}/> Start to pickup (Take Photo)</> : <><FiZap size={14} className="animate-pulse" /> GENERATE OTP (I HAVE ARRIVED)</>}
@@ -735,9 +754,9 @@ const DeliveryOrderDetail = () => {
                         handleUpdateStatus(correctStatus, 'Items picked up!', { pickupPhoto });
                     } : handleFinalize}
                     disabled={isUpdatingOrderStatus || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))))}
-                    className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all"
+                    className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                    {isUpdatingOrderStatus ? 'WAITING...' : (currentPhase === 'pickup' ? 'MARK AS PICKED UP' : 'DELIVERED SUCCESSFULLY')}
+                    {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin text-white" /> WAITING...</> : (currentPhase === 'pickup' ? 'MARK AS PICKED UP' : ((otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'COMPLETE DELIVERY'))}
                 </button>
               )}
               
@@ -796,6 +815,12 @@ const DeliveryOrderDetail = () => {
           onConfirm={confirmCancellation}
           isSubmitting={isCancelling}
         />
+
+        {/* HIDDEN INPUTS FOR FILE UPLOAD */}
+        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImage(e.target.files[0], setPickupPhoto)} className="hidden" />
+        <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImage(e.target.files[0], setPickupPhoto)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImage(e.target.files[0], setDeliveryPhoto)} className="hidden" />
+        <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImage(e.target.files[0], setDeliveryPhoto)} className="hidden" />
       </div>
     </PageTransition>
   );
