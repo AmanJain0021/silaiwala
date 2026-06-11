@@ -245,7 +245,7 @@ const Signup = () => {
                 <p className="text-xs sm:text-sm font-bold text-slate-400">
                     Already have an account?{' '}
                     <button 
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate('/user/login')}
                         className="text-[#2D2F6E] font-black hover:underline ml-1"
                     >
                         Sign In

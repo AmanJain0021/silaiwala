@@ -17,9 +17,9 @@ import AuthLayout from './layouts/AuthLayout';
 import TailorLayout from './layouts/TailorLayout';
 import AdminLayout from './layouts/AdminLayout';
 
-// Auth Pages
-const Login = React.lazy(() => import('./modules/auth/pages/Login'));
-const Signup = React.lazy(() => import('./modules/auth/pages/Signup'));
+// Auth Pages (now under customer module)
+const Login = React.lazy(() => import('./modules/customer/pages/Login'));
+const Signup = React.lazy(() => import('./modules/customer/pages/Signup'));
 
 // Tailor Module Pages
 const TailorLogin = React.lazy(() => import('./modules/tailor/pages/Login'));
@@ -120,8 +120,8 @@ const AppRoutes = () => {
         <Routes>
             {/* ... Auth Routes ... */}
             <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+                <Route path="/user/login" element={<Login />} />
+                <Route path="/user/register" element={<Signup />} />
             </Route>
 
 

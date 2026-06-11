@@ -62,7 +62,7 @@ const ProfilePage = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/user/login');
     };
 
     if (isLoading && !profile) {

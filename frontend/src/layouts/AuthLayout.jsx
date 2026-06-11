@@ -63,8 +63,8 @@ const AuthLayout = () => {
         brand: "SewZella",
         headings: ["STITCH PERFECT", "THREADS OF ART", "MADE FOR YOU", "SILAI MAGIC"],
         subheading: "Stitching Memories Together",
-        loginLink: "/login",
-        signupLink: "/signup"
+        loginLink: "/user/login",
+        signupLink: "/user/register"
     };
 
     const imgRef = useRef(0);

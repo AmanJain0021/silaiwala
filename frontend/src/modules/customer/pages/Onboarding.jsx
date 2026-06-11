@@ -47,12 +47,12 @@ const Onboarding = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      navigate('/login');
+      navigate('/user/login');
     }
   };
 
   const handleSkip = () => {
-    navigate('/login');
+    navigate('/user/login');
   };
 
   return (
