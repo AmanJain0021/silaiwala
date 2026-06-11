@@ -96,6 +96,7 @@ const AdminSettings = React.lazy(() => import('./modules/admin/pages/Settings'))
 const AdminLogin = React.lazy(() => import('./modules/admin/pages/Login'));
 const AdminStyleAddons = React.lazy(() => import('./modules/admin/pages/StyleAddons'));
 const AdminBulkOrders = React.lazy(() => import('./modules/admin/pages/BulkOrders'));
+const AdminSupport = React.lazy(() => import('./modules/admin/pages/Support'));
 import AdminProtectedRoute from './modules/admin/components/AdminProtectedRoute';
 
 const ReferEarn = React.lazy(() => import('./modules/customer/pages/ReferEarn')); // NEW
@@ -110,6 +111,8 @@ const BulkOrderRequest = React.lazy(() => import('./modules/customer/pages/BulkO
 const MyBulkOrders = React.lazy(() => import('./modules/customer/pages/MyBulkOrders')); // NEW
 const EmbroideryPage = React.lazy(() => import('./modules/customer/pages/Embroidery')); // NEW
 const SewZellaLanding = React.lazy(() => import('./modules/landing/SewZellaLanding')); // NEW
+const LandingCMSPage = React.lazy(() => import('./modules/landing/LandingCMSPage')); // NEW
+const LandingSupportPage = React.lazy(() => import('./modules/landing/LandingSupportPage')); // NEW
 
 const AppRoutes = () => {
     return (
@@ -132,6 +135,8 @@ const AppRoutes = () => {
 
             {/* Landing Route */}
             <Route path="/" element={<SewZellaLanding />} />
+            <Route path="/page/support" element={<LandingSupportPage />} />
+            <Route path="/page/:slug" element={<LandingCMSPage />} />
 
             {/* Customer Public Routes */}
             <Route path="/welcome" element={<CustomerOnboarding />} />
@@ -251,6 +256,7 @@ const AppRoutes = () => {
                     <Route path="/admin/reports" element={<AdminReports />} />
                     <Route path="/admin/style-addons" element={<AdminStyleAddons />} />
                     <Route path="/admin/bulk-orders" element={<AdminBulkOrders />} />
+                    <Route path="/admin/support" element={<AdminSupport />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
                 </Route>
             </Route>

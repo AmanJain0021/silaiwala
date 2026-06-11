@@ -33,7 +33,7 @@ const AdminCMS = () => {
     const [notification, setNotification] = useState({ title: '', message: '', targetAudience: 'customer' });
     const [isSending, setIsSending] = useState(false);
 
-    const tabs = ['Banners', 'Notifications', 'Legal Pages', 'FAQs'];
+    const tabs = ['Banners', 'Notifications', 'Pages', 'FAQs'];
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -41,7 +41,7 @@ const AdminCMS = () => {
             if (selectedTab === 'Banners') {
                 const res = await api.get('/admin/cms/banners');
                 setBannersData(res.data.data);
-            } else if (selectedTab === 'Legal Pages') {
+            } else if (selectedTab === 'Pages') {
                 const res = await api.get('/admin/cms/content?type=legal');
                 setCmsContent(res.data.data);
             } else if (selectedTab === 'FAQs') {
@@ -105,7 +105,7 @@ const AdminCMS = () => {
         if (!newContent.title || !newContent.content) return;
         setIsSubmitting(true);
         try {
-            const payload = { ...newContent, type: selectedTab === 'Legal Pages' ? 'legal' : 'faq' };
+            const payload = { ...newContent, type: selectedTab === 'Pages' ? 'legal' : 'faq' };
             if (!payload.slug) payload.slug = payload.title.toLowerCase().replace(/ /g, '-');
 
             if (isEditing) {
@@ -202,7 +202,7 @@ const AdminCMS = () => {
                         <Plus size={16} /> Add Banner
                     </button>
                 )}
-                {(selectedTab === 'Legal Pages' || selectedTab === 'FAQs') && (
+                {(selectedTab === 'Pages' || selectedTab === 'FAQs') && (
                     <button
                         onClick={() => {
                             setIsEditing(false);
@@ -212,7 +212,7 @@ const AdminCMS = () => {
                         }}
                         className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest"
                     >
-                        <Plus size={16} /> Add {selectedTab === 'Legal Pages' ? 'Document' : 'FAQ'}
+                        <Plus size={16} /> Add {selectedTab === 'Pages' ? 'Document' : 'FAQ'}
                     </button>
                 )}
             </div>
@@ -342,7 +342,7 @@ const AdminCMS = () => {
                     </div>
                 )}
 
-                {selectedTab === 'Legal Pages' && (
+                {selectedTab === 'Pages' && (
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                         <table className="w-full text-left whitespace-nowrap">
                             <thead>
@@ -583,7 +583,7 @@ const AdminCMS = () => {
                             >
                                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <h2 className="text-lg font-black tracking-tight text-gray-900">
-                                        {isEditing ? 'Edit' : 'Add'} {selectedTab === 'Legal Pages' ? 'Legal Document' : 'FAQ'}
+                                        {isEditing ? 'Edit' : 'Add'} {selectedTab === 'Pages' ? 'Page Document' : 'FAQ'}
                                     </h2>
                                     <button onClick={() => setIsAddContentModalOpen(false)} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
                                         <X size={20} />
@@ -591,8 +591,8 @@ const AdminCMS = () => {
                                 </div>
                                 <div className="p-6 space-y-5 flex-1 bg-white overflow-y-auto max-h-[70vh]">
                                     <div>
-                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Legal Pages' ? 'Document Title' : 'Question'}</label>
-                                        <input type="text" value={newContent.title} onChange={e => setNewContent({ ...newContent, title: e.target.value })} placeholder={selectedTab === 'Legal Pages' ? "e.g. Privacy Policy" : "e.g. How to track my order?"} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" />
+                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Pages' ? 'Document Title' : 'Question'}</label>
+                                        <input type="text" value={newContent.title} onChange={e => setNewContent({ ...newContent, title: e.target.value })} placeholder={selectedTab === 'Pages' ? "e.g. Privacy Policy" : "e.g. How to track my order?"} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -610,7 +610,7 @@ const AdminCMS = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Legal Pages' ? 'Full Content (Markdown/HTML supported)' : 'Answer Content'}</label>
+                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Pages' ? 'Full Content (Markdown/HTML supported)' : 'Answer Content'}</label>
                                         <textarea rows={8} value={newContent.content} onChange={e => setNewContent({ ...newContent, content: e.target.value })} placeholder="Start typing the content here..." className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors resize-none"></textarea>
                                     </div>
                                 </div>

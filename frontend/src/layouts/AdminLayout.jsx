@@ -17,7 +17,8 @@ import {
     Menu,
     X,
     Sparkles,
-    Package
+    Package,
+    Mail
 } from 'lucide-react';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 
@@ -67,6 +68,7 @@ const AdminLayout = () => {
         { icon: <Megaphone size={20} />, label: 'CMS', path: '/admin/cms' },
         { icon: <BarChart3 size={20} />, label: 'Reports', path: '/admin/reports' },
         { icon: <Sparkles size={20} />, label: 'Style Addons', path: '/admin/style-addons' },
+        { icon: <Mail size={20} />, label: 'Support', path: '/admin/support' },
         { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
     ];
 
