@@ -28,8 +28,12 @@ const AdminSettings = () => {
             const res = await api.get('/admin/settings');
             setSettings(res.data.data);
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message === 'canceled' || error?.message?.includes('Cancelled')) {
+                console.log('Request canceled, ignoring...');
+                return;
+            }
             console.error('Failed to fetch settings:', error);
-            toast.error('Failed to load system settings');
+            import('react-hot-toast').then(module => module.toast.error('Failed to load system settings'));
         } finally {
             setIsLoading(false);
         }
@@ -217,6 +221,49 @@ const AdminSettings = () => {
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                     />
                                     <p className="text-[10px] text-gray-400 font-medium mt-1">Applied universally to all order subtotals.</p>
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-50" />
+
+                            <div>
+                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Wallet Configuration</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Advance Payment (%)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.walletConfig?.advancePercentage ?? 30} 
+                                            onChange={(e) => updateNestedSetting('walletConfig', 'advancePercentage', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">Minimum advance payment for orders.</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Platform Fee (%)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.walletConfig?.platformFeePercentage ?? 5} 
+                                            onChange={(e) => updateNestedSetting('walletConfig', 'platformFeePercentage', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">Platform fee deducted from vendor earnings.</p>
+                                    </div>
+                                </div>
+                                <div className={`mt-6 flex items-center justify-between p-6 rounded-2xl border transition-all ${settings.walletConfig?.withdrawalApprovalRequired ? 'bg-primary/5 border-primary/20 shadow-inner' : 'bg-gray-50 border-gray-100'}`}>
+                                    <div>
+                                        <p className={`text-xs font-black uppercase tracking-wider ${settings.walletConfig?.withdrawalApprovalRequired ? 'text-primary' : 'text-gray-900'}`}>Withdrawal Approvals</p>
+                                        <p className="text-[10px] text-gray-500 font-medium mt-1">Require admin approval for partner withdrawal requests.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer scale-110">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer" 
+                                            checked={settings.walletConfig?.withdrawalApprovalRequired ?? true}
+                                            onChange={(e) => updateNestedSetting('walletConfig', 'withdrawalApprovalRequired', e.target.checked)}
+                                        />
+                                        <div className="w-12 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
                                 </div>
                             </div>
 

@@ -27,7 +27,7 @@ const AdminFinance = () => {
                 const res = await api.get(`/admin/finance/transactions?search=${searchTerm}`);
                 setTransactions(res.data.data);
             } else if (selectedTab === 'Payouts') {
-                const res = await api.get('/admin/finance/payouts');
+                const res = await api.get('/wallet/admin/withdrawals');
                 setPayouts(res.data.data);
             }
         } catch (error) {
@@ -51,8 +51,8 @@ const AdminFinance = () => {
         if (!ref) return;
         
         try {
-            await api.patch(`/admin/finance/payouts/${id}`, { 
-                status: 'completed',
+            await api.patch(`/wallet/admin/withdrawals/${id}`, { 
+                status: 'paid',
                 transactionReference: ref
             });
             toast.success("Payout marked as completed");
@@ -305,23 +305,23 @@ const AdminFinance = () => {
                                             {payouts.map((payout, i) => (
                                                 <tr key={i} className="hover:bg-primary/5 transition-colors group">
                                                     <td className="px-6 py-4">
-                                                        <span className="text-xs font-black text-gray-900">{payout.payoutId}</span>
+                                                        <span className="text-xs font-black text-gray-900">{payout._id.slice(-8).toUpperCase()}</span>
                                                         <p className="text-[9px] text-gray-400 mt-0.5 font-bold">{new Date(payout.createdAt).toLocaleDateString()}</p>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xs font-black text-gray-900">{payout.user?.name || 'Unknown User'}</span>
-                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.user?.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                                                    {payout.user?.role}
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                                                    {payout.role}
                                                                 </span>
                                                             </div>
-                                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">{payout.user?.email}</span>
+                                                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">{payout.user?.email || payout.user?.phoneNumber}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">{payout.method.replace('_', ' ')}</span>
+                                                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">{payout.bankDetails?.bankName || 'Bank Transfer'}</span>
                                                             <span className="text-[9px] font-bold text-gray-400 font-mono mt-0.5">{payout.bankDetails?.accountNumber || payout.bankDetails?.upiId || 'N/A'}</span>
                                                         </div>
                                                     </td>
@@ -330,17 +330,17 @@ const AdminFinance = () => {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider flex items-center w-max gap-1.5 ${getStatusStyle(payout.status)}`}>
-                                                            {payout.status === 'completed' && <CheckCircle2 size={12} />}
+                                                            {payout.status === 'paid' && <CheckCircle2 size={12} />}
                                                             {payout.status}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        {payout.status === 'pending' ? (
+                                                        {payout.status === 'pending' || payout.status === 'approved' ? (
                                                             <button 
                                                                 onClick={() => handleProcessPayout(payout._id)}
                                                                 className="text-[10px] font-black uppercase text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
                                                             >
-                                                                Process Payout
+                                                                Mark as Paid
                                                             </button>
                                                         ) : (
                                                             <button className="text-gray-400 hover:text-primary transition-colors p-2 hover:bg-gray-50 rounded-xl">

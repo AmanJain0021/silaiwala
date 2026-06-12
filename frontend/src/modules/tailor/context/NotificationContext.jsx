@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import { useTailorAuth } from './AuthContext';
 import api from '../services/api';
+import { playNotificationSound } from '../../../utils/audio';
 
 const NotificationContext = createContext();
 
@@ -43,6 +44,8 @@ export const NotificationProvider = ({ children }) => {
             socket.on('new_notification', (notification) => {
                 setNotifications(prev => [notification, ...prev]);
                 setUnreadCount(prev => prev + 1);
+                
+                try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
                 
                 // Native Browser Notification (Optional)
                 if (Notification.permission === "granted") {

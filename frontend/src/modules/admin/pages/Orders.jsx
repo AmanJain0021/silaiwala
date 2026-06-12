@@ -3,8 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Package, Scissors, CreditCard, ChevronRight, Truck, Clock } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../../../config/constants';
+import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 
 const AdminOrders = () => {
+    const [socketInstance, setSocketInstance] = useState(null);
     const [selectedTab, setSelectedTab] = useState('All Orders');
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [ordersData, setOrdersData] = useState([]);
@@ -83,12 +87,17 @@ const AdminOrders = () => {
     };
 
     useEffect(() => {
+        const socket = io(SOCKET_URL);
+        setSocketInstance(socket);
+
         const params = new URLSearchParams(window.location.search);
         const searchVal = params.get('search');
         if (searchVal) setSearchQuery(searchVal);
 
         fetchOrders();
         fetchUsers();
+
+        return () => socket.disconnect();
     }, []);
 
     const handleUpdateStatus = async (orderId, newStatus) => {
@@ -659,6 +668,22 @@ const AdminOrders = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Live Tracking */}
+                                {(() => {
+                                    const isPickupPhaseStatus = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(manageOrderData.status);
+                                    const isDropoffPhaseStatus = ['ready-for-delivery', 'out-for-delivery'].includes(manageOrderData.status);
+                                    const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(manageOrderData.pickupDeliveryStatus);
+                                    const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(manageOrderData.dropoffDeliveryStatus);
+
+                                    const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner) && manageOrderData.fabricDeliveryPreference === 'partner';
+                                    const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner;
+
+                                    if (shouldShowForPickup || shouldShowForDropoff) {
+                                        return <LiveDeliveryTracker order={manageOrderData} socket={socketInstance} />;
+                                    }
+                                    return null;
+                                })()}
 
                                 {/* Order Items */}
                                 <div>

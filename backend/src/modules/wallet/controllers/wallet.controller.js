@@ -1,126 +1,196 @@
+const mongoose = require("mongoose");
 const WalletTransaction = require("../../../models/WalletTransaction");
+const WithdrawalRequest = require("../../../models/WithdrawalRequest");
 const Tailor = require("../../../models/Tailor");
 const Delivery = require("../../../models/Delivery");
-const Payout = require("../../../models/Payout"); // Assuming Payout model exists for withdrawal requests
+const Settings = require("../../../models/Settings");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
-const crypto = require("crypto");
 
 /**
- * @desc    Get current wallet balance and stats
- * @route   GET /api/v1/wallet/balance
+ * @desc    Get current user's wallet dashboard
+ * @route   GET /api/v1/wallet/dashboard
  * @access  Private (Tailor/Delivery)
  */
-exports.getWalletBalance = asyncHandler(async (req, res, next) => {
-  let balance = 0;
-  let totalWithdrawn = 0;
-
-  if (req.user.role === "tailor") {
-    const profile = await Tailor.findOne({ user: req.user.id });
-    if (profile) {
-      balance = profile.walletBalance;
-      totalWithdrawn = profile.totalWithdrawn;
-    }
-  } else if (req.user.role === "delivery") {
-    const profile = await Delivery.findOne({ user: req.user.id });
-    if (profile) {
-      balance = profile.walletBalance;
-      totalWithdrawn = profile.totalWithdrawn;
-    }
+exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
+  const { role, id } = req.user;
+  
+  let profile;
+  if (role === "tailor") {
+    profile = await Tailor.findOne({ user: id });
+  } else if (role === "delivery") {
+    profile = await Delivery.findOne({ user: id });
   }
+
+  if (!profile) {
+    return next(new ErrorResponse("Profile not found", 404));
+  }
+
+  // Get recent transactions
+  const transactions = await WalletTransaction.find({ user: id })
+    .sort("-createdAt")
+    .limit(10)
+    .populate("order", "orderId totalAmount");
+
+  // Get pending withdrawals
+  const withdrawals = await WithdrawalRequest.find({ user: id, status: "pending" });
 
   res.status(200).json({
     success: true,
     data: {
-      balance,
-      totalWithdrawn,
-      currency: "INR"
+      balance: profile.walletBalance || 0,
+      totalEarned: profile.totalEarned || 0, // Tailor might use different field, handled below if needed
+      totalWithdrawn: profile.totalWithdrawn || 0,
+      pendingWithdrawals: withdrawals.reduce((sum, w) => sum + w.amount, 0),
+      recentTransactions: transactions
     }
   });
 });
 
 /**
- * @desc    Get wallet transaction history
- * @route   GET /api/v1/wallet/transactions
- * @access  Private (Tailor/Delivery)
- */
-exports.getWalletTransactions = asyncHandler(async (req, res, next) => {
-  const transactions = await WalletTransaction.find({ user: req.user.id })
-    .sort("-createdAt")
-    .populate("order", "orderId totalAmount");
-
-  res.status(200).json({
-    success: true,
-    count: transactions.length,
-    data: transactions
-  });
-});
-
-/**
- * @desc    Request withdrawal
+ * @desc    Request a withdrawal
  * @route   POST /api/v1/wallet/withdraw
  * @access  Private (Tailor/Delivery)
  */
 exports.requestWithdrawal = asyncHandler(async (req, res, next) => {
-  const { amount, method, bankDetails } = req.body;
+  const { amount, bankDetails } = req.body;
+  const { role, id } = req.user;
 
-  if (!amount || amount <= 0) {
-    return next(new ErrorResponse("Please provide a valid withdrawal amount", 400));
+  if (!amount || amount < 100) {
+    return next(new ErrorResponse("Minimum withdrawal amount is ₹100", 400));
   }
 
   let profile;
-  if (req.user.role === "tailor") {
-    profile = await Tailor.findOne({ user: req.user.id });
-  } else if (req.user.role === "delivery") {
-    profile = await Delivery.findOne({ user: req.user.id });
+  if (role === "tailor") {
+    profile = await Tailor.findOne({ user: id });
+  } else if (role === "delivery") {
+    profile = await Delivery.findOne({ user: id });
   }
 
-  if (!profile || profile.walletBalance < amount) {
+  if (!profile) {
+    return next(new ErrorResponse("Profile not found", 404));
+  }
+
+  if (profile.walletBalance < amount) {
     return next(new ErrorResponse("Insufficient wallet balance", 400));
   }
 
-  // Use a transaction to ensure atomicity
-  const mongoose = require("mongoose");
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Deduct from wallet immediately
+  profile.walletBalance -= amount;
+  await profile.save();
 
-  try {
-    // 1. Deduct from wallet balance immediately (hold)
-    profile.walletBalance -= amount;
-    await profile.save({ session });
+  // Create Request
+  const withdrawal = await WithdrawalRequest.create({
+    user: id,
+    role: role,
+    amount: amount,
+    status: "pending",
+    bankDetails: bankDetails || profile.bankDetails
+  });
 
-    // 2. Create Payout record
-    const payoutId = `PAY-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-    const payout = await Payout.create([{
-      payoutId,
-      tailor: req.user.id, // The model uses 'tailor' field for the user ref, maybe should be generic 'user'
-      amount,
-      method: method || "bank_transfer",
-      bankDetails: bankDetails || profile.bankDetails,
-      status: "pending"
-    }], { session });
+  // Log transaction
+  await WalletTransaction.create({
+    user: id,
+    amount: amount,
+    type: "debit",
+    category: "withdrawal",
+    withdrawalRequest: withdrawal._id,
+    description: "Withdrawal request initiated"
+  });
 
-    // 3. Create Debit Transaction
-    await WalletTransaction.create([{
-      user: req.user.id,
-      amount: amount,
-      type: "debit",
-      category: "withdrawal",
-      status: "pending",
-      description: `Withdrawal request ${payoutId}`
-    }], { session });
+  res.status(200).json({
+    success: true,
+    message: "Withdrawal requested successfully",
+    data: withdrawal
+  });
+});
 
-    await session.commitTransaction();
-    
-    res.status(200).json({
-      success: true,
-      message: "Withdrawal request submitted successfully",
-      data: payout[0]
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    return next(new ErrorResponse("Withdrawal request failed", 500));
-  } finally {
-    session.endSession();
+/**
+ * @desc    Get all withdrawal requests (Admin)
+ * @route   GET /api/v1/wallet/admin/withdrawals
+ * @access  Private (Admin)
+ */
+exports.getAllWithdrawals = asyncHandler(async (req, res, next) => {
+  const { status, role } = req.query;
+  const query = {};
+
+  if (status) query.status = status;
+  if (role) query.role = role;
+
+  const withdrawals = await WithdrawalRequest.find(query)
+    .populate("user", "name email phoneNumber")
+    .sort("-createdAt");
+
+  res.status(200).json({
+    success: true,
+    count: withdrawals.length,
+    data: withdrawals
+  });
+});
+
+/**
+ * @desc    Update withdrawal status (Admin)
+ * @route   PATCH /api/v1/wallet/admin/withdrawals/:id
+ * @access  Private (Admin)
+ */
+exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
+  const { status, transactionReference, adminNotes } = req.body;
+  
+  const withdrawal = await WithdrawalRequest.findById(req.params.id);
+  if (!withdrawal) {
+    return next(new ErrorResponse("Withdrawal request not found", 404));
   }
+
+  if (withdrawal.status === "paid" || withdrawal.status === "rejected") {
+    return next(new ErrorResponse(`Cannot update a ${withdrawal.status} request`, 400));
+  }
+
+  withdrawal.status = status;
+  if (adminNotes) withdrawal.adminNotes = adminNotes;
+  if (transactionReference) withdrawal.transactionReference = transactionReference;
+
+  if (status === "paid") {
+    withdrawal.paidAt = new Date();
+    // Update total withdrawn in profile
+    let profile;
+    if (withdrawal.role === "tailor") {
+      profile = await Tailor.findOne({ user: withdrawal.user });
+    } else {
+      profile = await Delivery.findOne({ user: withdrawal.user });
+    }
+    if (profile) {
+      profile.totalWithdrawn = (profile.totalWithdrawn || 0) + withdrawal.amount;
+      await profile.save();
+    }
+  } else if (status === "rejected") {
+    // Refund to wallet
+    let profile;
+    if (withdrawal.role === "tailor") {
+      profile = await Tailor.findOne({ user: withdrawal.user });
+    } else {
+      profile = await Delivery.findOne({ user: withdrawal.user });
+    }
+    if (profile) {
+      profile.walletBalance += withdrawal.amount;
+      await profile.save();
+      // Log refund
+      await WalletTransaction.create({
+        user: withdrawal.user,
+        amount: withdrawal.amount,
+        type: "credit",
+        category: "withdrawal",
+        withdrawalRequest: withdrawal._id,
+        description: "Withdrawal request rejected - Refunded to wallet"
+      });
+    }
+  } else if (status === "approved") {
+    withdrawal.approvedAt = new Date();
+  }
+
+  await withdrawal.save();
+
+  res.status(200).json({
+    success: true,
+    data: withdrawal
+  });
 });

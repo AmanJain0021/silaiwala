@@ -28,6 +28,7 @@ import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import PageTransition from '../../../shared/components/PageTransition';
 import { formatPrice } from '../../../shared/utils/helpers';
 import toast from 'react-hot-toast';
+import api from '../../../shared/utils/api';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
 import socketService from '../../../shared/utils/socket';
@@ -39,6 +40,7 @@ const DeliveryOrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const outletCtx = useOutletContext();
+  const { layoutLocationStr, layoutLocationCoords } = outletCtx || {};
   
   const { isLoaded: localIsLoaded } = useJsApiLoader({
       id: 'google-map-script',
@@ -72,13 +74,20 @@ const DeliveryOrderDetail = () => {
   const [hasArrived, setHasArrived] = useState(false);
   const [selectedItemIds, setSelectedItemIds] = useState(new Set());
   const [paymentSelection, setPaymentSelection] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [currentLocationAddress, setCurrentLocationAddress] = useState('Current GPS Location');
+  
+  // Use layout location as the initial fallback for faster rendering
+  const [currentLocation, setCurrentLocation] = useState(layoutLocationCoords || null);
+  const [currentLocationAddress, setCurrentLocationAddress] = useState(layoutLocationStr || 'Current GPS Location');
+  
   const [showSuccess, setShowSuccess] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  
+  const [dynamicFee, setDynamicFee] = useState(null);
+  const [totalTripDistanceKm, setTotalTripDistanceKm] = useState(null);
+  const [feeSettings, setFeeSettings] = useState(null);
 
   const pickupInputRef = useRef(null);
   const pickupGalleryRef = useRef(null);
@@ -119,7 +128,9 @@ const DeliveryOrderDetail = () => {
   const dropoffLat = isFabricPickup ? order?.vendorLatitude : order?.latitude;
   const dropoffLng = isFabricPickup ? order?.vendorLongitude : order?.longitude;
   const dropoffPhone = isFabricPickup ? order?.vendorPhone : order?.phone;
-  const liveLocation = useDeliveryTracking(deliveryBoy?.id, order ? [order] : []);
+  
+  // FIXED: Ensure we pass the correct ID (either _id or id)
+  const liveLocation = useDeliveryTracking(deliveryBoy?._id || deliveryBoy?.id, order ? [order] : []);
 
   // Check if this order is actually assigned to the current rider
   const isAssignedToMe = order && (
@@ -131,63 +142,90 @@ const DeliveryOrderDetail = () => {
   const isAvailableTask = order && !order.deliveryBoyId && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending');
   
   useEffect(() => {
-    // First try to use live location from hook if available
+    // Only use live location from hook to ensure accurate tracking
     if (liveLocation?.lat && liveLocation?.lng) {
       setCurrentLocation(liveLocation);
-    } else {
-      // Actively fetch GPS if liveLocation hasn't populated yet
-      if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-              (position) => {
-                  setCurrentLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
-              },
-              (error) => {
-                  console.warn('Geolocation failed in OrderDetail, falling back.', error);
-                  // Fallback to deliveryBoy location or default
-                  if (deliveryBoy?.location?.coordinates?.length >= 2) {
-                    setCurrentLocation({
-                      lat: deliveryBoy.location.coordinates[1],
-                      lng: deliveryBoy.location.coordinates[0]
-                    });
-                  } else {
-                    setCurrentLocation({ lat: 22.6891478, lng: 75.8650144 }); // Physics Wallah
-                  }
-              },
-              { enableHighAccuracy: true, timeout: 5000 }
-          );
-      } else if (deliveryBoy?.location?.coordinates?.length >= 2) {
-        setCurrentLocation({
-          lat: deliveryBoy.location.coordinates[1],
-          lng: deliveryBoy.location.coordinates[0]
-        });
-      } else {
-        setCurrentLocation({ lat: 22.6891478, lng: 75.8650144 }); // Physics Wallah
-      }
+    } else if (layoutLocationCoords?.lat && !currentLocation?.lat) {
+      // Fallback to layout coordinates if live tracking hasn't locked on yet
+      setCurrentLocation(layoutLocationCoords);
     }
-  }, [liveLocation, deliveryBoy]);
+  }, [liveLocation, layoutLocationCoords]);
 
   useEffect(() => {
+    // If we have layoutLocationStr and liveLocation hasn't triggered yet, use layout string
+    if (layoutLocationStr && layoutLocationStr !== 'Fetching Location...' && (!currentLocation?.lat || currentLocationAddress === 'Current GPS Location' || currentLocationAddress === 'Fetching Location...')) {
+      setCurrentLocationAddress(layoutLocationStr);
+    }
+    
     if (currentLocation?.lat && currentLocation?.lng && isLoaded && window.google && window.google.maps && window.google.maps.Geocoder) {
       try {
         const geocoder = new window.google.maps.Geocoder();
         geocoder.geocode({ location: { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) } }, (results, status) => {
           if (status === 'OK' && results[0]) {
-            // Match the dashboard formatting for a cleaner UI
-            const cityComp = results[0].address_components.find(c => c.types.includes('locality'));
-            const subComp = results[0].address_components.find(c => c.types.includes('sublocality'));
-            const locationName = subComp ? `${subComp.long_name}, ${cityComp ? cityComp.long_name : ''}` : (cityComp ? cityComp.long_name : results[0].formatted_address);
-            setCurrentLocationAddress(locationName.replace(/,\s*$/, ""));
+            setCurrentLocationAddress(results[0].formatted_address);
           } else {
-            setCurrentLocationAddress('Current GPS Location');
+            setCurrentLocationAddress(layoutLocationStr || 'Current GPS Location');
           }
         });
       } catch (err) {
         console.error('Geocoder error:', err);
-        setCurrentLocationAddress('Current GPS Location');
+        setCurrentLocationAddress(layoutLocationStr || 'Current GPS Location');
       }
     }
-  }, [currentLocation?.lat, currentLocation?.lng, isLoaded]);
+  }, [currentLocation?.lat, currentLocation?.lng, isLoaded, layoutLocationStr]);
   
+  // Calculate dynamic delivery fee and total trip distance
+  useEffect(() => {
+    if (pickupLat && pickupLng && dropoffLat && dropoffLng && isLoaded && window.google) {
+      const fetchSettingsAndCalculate = async () => {
+        try {
+          const res = await api.get('/cms/settings');
+          const rates = res.data?.data?.deliveryRates || { baseFee: 20, perKmRate: 10 };
+          setFeeSettings(rates);
+          
+          const directionsService = new window.google.maps.DirectionsService();
+          
+          // Total Trip Distance: Current Location -> Pickup -> Dropoff
+          const hasCurrentLocation = currentLocation?.lat && currentLocation?.lng;
+          
+          const request = {
+            origin: hasCurrentLocation 
+              ? { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) }
+              : { lat: Number(pickupLat), lng: Number(pickupLng) },
+            destination: { lat: Number(dropoffLat), lng: Number(dropoffLng) },
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          };
+          
+          if (hasCurrentLocation) {
+            request.waypoints = [
+              { location: { lat: Number(pickupLat), lng: Number(pickupLng) }, stopover: true }
+            ];
+          }
+          
+          directionsService.route(request, (result, status) => {
+              if (status === window.google.maps.DirectionsStatus.OK) {
+                let totalMeters = 0;
+                result.routes[0].legs.forEach(leg => {
+                    totalMeters += leg.distance.value;
+                });
+                
+                const distanceInKm = totalMeters / 1000;
+                setTotalTripDistanceKm(distanceInKm);
+                
+                const calculatedFee = rates.baseFee + (distanceInKm * rates.perKmRate);
+                setDynamicFee(calculatedFee);
+              }
+            }
+          );
+        } catch (err) {
+          console.error("Failed to calculate dynamic fee:", err);
+        }
+      };
+      
+      fetchSettingsAndCalculate();
+    }
+  }, [pickupLat, pickupLng, dropoffLat, dropoffLng, currentLocation?.lat, currentLocation?.lng, isLoaded]);
+
   const loadOrder = useCallback(async () => {
     try {
       const response = await fetchOrderById(id);
@@ -449,22 +487,20 @@ const DeliveryOrderDetail = () => {
                  </div>
                  
                  {/* Distance/ETA Overlay - moved top right for cleaner look */}
-                 {(distanceRemaining || eta) && (
-                  <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-slate-100 flex gap-3">
-                    {distanceRemaining && (
-                      <div className="flex items-center gap-1">
-                        <FiMapPin size={12} className="text-indigo-600" />
-                        <span className="text-[10px] font-bold text-slate-800">{(distanceRemaining / 1000).toFixed(1)} km</span>
-                      </div>
-                    )}
-                    {eta && (
-                      <div className="flex items-center gap-1 border-l border-slate-200 pl-3">
-                        <FiClock size={12} className="text-indigo-600" />
-                        <span className="text-[10px] font-bold text-slate-800">{eta}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                 <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-slate-100 flex gap-3">
+                   <div className="flex items-center gap-1">
+                     <FiMapPin size={12} className="text-indigo-600" />
+                     <span className="text-[10px] font-bold text-slate-800">
+                       {distanceRemaining ? `${(distanceRemaining / 1000).toFixed(1)} km` : <span className="animate-pulse text-slate-400">Wait...</span>}
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-1 border-l border-slate-200 pl-3">
+                     <FiClock size={12} className="text-indigo-600" />
+                     <span className="text-[10px] font-bold text-slate-800">
+                       {eta ? eta : <span className="animate-pulse text-slate-400">Wait...</span>}
+                     </span>
+                   </div>
+                 </div>
              </div>
           )}
 
@@ -560,19 +596,21 @@ const DeliveryOrderDetail = () => {
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-4">TRIP</p>
                 
                 {/* Distance Overview Box */}
-                {(distanceRemaining || eta) && (
-                   <div className="bg-indigo-50/50 rounded-xl p-3 mb-5 border border-indigo-50 flex items-center justify-between">
-                      <div>
-                         <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Distance from you</p>
-                         <p className="text-sm font-black text-indigo-900">{(distanceRemaining / 1000).toFixed(1)} km</p>
-                      </div>
-                      <div className="h-6 w-px bg-indigo-100" />
-                      <div className="text-right">
-                         <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Est. Time</p>
-                         <p className="text-sm font-black text-indigo-900">{eta}</p>
-                      </div>
+                <div className="bg-indigo-50/50 rounded-xl p-3 mb-5 border border-indigo-50 flex items-center justify-between">
+                   <div>
+                      <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Distance from you</p>
+                      <p className="text-sm font-black text-indigo-900">
+                        {distanceRemaining === -1 ? 'Unknown' : distanceRemaining !== null ? `${(distanceRemaining / 1000).toFixed(1)} km` : <span className="text-xs text-indigo-400 font-bold animate-pulse">Calculating...</span>}
+                      </p>
                    </div>
-                )}
+                   <div className="h-6 w-px bg-indigo-100" />
+                   <div className="text-right">
+                      <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Est. Time</p>
+                      <p className="text-sm font-black text-indigo-900">
+                        {eta ? eta : <span className="text-xs text-indigo-400 font-bold animate-pulse">Wait...</span>}
+                      </p>
+                   </div>
+                </div>
 
                 <div className="flex gap-3 relative">
                    <div className="mt-0.5 relative z-10 bg-white"><FiMapPin size={16} className="text-indigo-500" /></div>
@@ -605,10 +643,26 @@ const DeliveryOrderDetail = () => {
                     <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center border border-emerald-100 shrink-0">
                        <FiCreditCard size={14}/>
                     </div>
-                    <div>
+                    <div className="w-full">
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Your earning</p>
-                       <h2 className="text-lg font-black text-slate-800 leading-tight">{formatPrice(order.isTryAndBuy && hasArrived ? calculatedTotal : order.total)}</h2>
-                       <p className="text-[9px] text-slate-400 mt-1 leading-snug">Net amount after platform commission. Credited to your wallet once the trip is completed.</p>
+                       <h2 className="text-lg font-black text-slate-800 leading-tight">
+                          {dynamicFee !== null ? formatPrice(dynamicFee) : formatPrice(order.deliveryFee || order.deliveryEarnings || 0)}
+                       </h2>
+                       
+                       {dynamicFee !== null && totalTripDistanceKm !== null && feeSettings && (
+                         <div className="mt-2 bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col gap-1.5">
+                           <div className="flex justify-between items-center">
+                             <span className="text-[9px] font-bold text-slate-500">Base Fee</span>
+                             <span className="text-[10px] font-black text-slate-700">{formatPrice(feeSettings.baseFee)}</span>
+                           </div>
+                           <div className="flex justify-between items-center">
+                             <span className="text-[9px] font-bold text-slate-500">Distance ({totalTripDistanceKm.toFixed(1)} km × {formatPrice(feeSettings.perKmRate)})</span>
+                             <span className="text-[10px] font-black text-slate-700">{formatPrice(totalTripDistanceKm * feeSettings.perKmRate)}</span>
+                           </div>
+                         </div>
+                       )}
+                       
+                       <p className="text-[9px] text-slate-400 mt-2 leading-snug">Net amount after platform commission. Credited to your wallet once the trip is completed.</p>
                     </div>
                 </div>
              </div>
@@ -646,7 +700,7 @@ const DeliveryOrderDetail = () => {
                      </div>
 
                      {/* OTP AREA */}
-                     {currentPhase === 'delivery' && (
+                     {(currentPhase === 'delivery' || currentPhase === 'pickup') && ((currentPhase === 'pickup' && pickupPhoto) || (currentPhase === 'delivery' && deliveryPhoto)) && (
                        <div className="pt-4 border-t border-slate-100/50 text-center">
                           <p className="text-[9px] font-bold text-slate-800 uppercase tracking-[0.2em] mb-4">Security Terminal</p>
                           
@@ -740,23 +794,23 @@ const DeliveryOrderDetail = () => {
             </div>
           ) : isAssignedToMe ? (
             <>
-              {(!hasArrived && currentPhase === 'delivery') || (currentPhase === 'pickup' && !pickupPhoto) ? (
+              {!hasArrived ? (
                  <button 
-                    onClick={currentPhase === 'pickup' ? () => pickupInputRef.current?.click() : handleArrivalUpdate}
+                    onClick={handleArrivalUpdate}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 active:scale-95 transition-all flex items-center justify-center gap-2"
                  >
-                    {currentPhase === 'pickup' ? <><FiCamera size={14}/> Start to pickup (Take Photo)</> : <><FiZap size={14} className="animate-pulse" /> GENERATE OTP (I HAVE ARRIVED)</>}
+                    <FiZap size={14} className="animate-pulse" /> GENERATE OTP (I HAVE ARRIVED)
                  </button>
               ) : (
                 <button 
                     onClick={currentPhase === 'pickup' ? () => {
                         const correctStatus = (order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup') ? 'fabric-picked-up' : 'picked-up-from-tailor';
-                        handleUpdateStatus(correctStatus, 'Items picked up!', { pickupPhoto });
+                        handleUpdateStatus(correctStatus, 'Items picked up!', { pickupPhoto, otp: otpValue.trim() });
                     } : handleFinalize}
-                    disabled={isUpdatingOrderStatus || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))))}
+                    disabled={isUpdatingOrderStatus || (currentPhase === 'pickup' && (otpValue.length < 6 || !pickupPhoto)) || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))))}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                    {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin text-white" /> WAITING...</> : (currentPhase === 'pickup' ? 'MARK AS PICKED UP' : ((otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'COMPLETE DELIVERY'))}
+                    {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin text-white" /> WAITING...</> : (currentPhase === 'pickup' ? ((otpValue.length < 6 || !pickupPhoto) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'MARK AS PICKED UP') : ((otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'COMPLETE DELIVERY'))}
                 </button>
               )}
               

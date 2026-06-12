@@ -5,9 +5,9 @@ const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 
 exports.getProducts = asyncHandler(async (req, res, next) => {
-  const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10 } = req.query;
+  const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10, productType = 'store_item' } = req.query;
 
-  let query = { isActive: true };
+  let query = { isActive: true, productType };
 
   // 1. Geo-Spatial Search
   if (lat && lng) {
@@ -131,7 +131,7 @@ exports.getProductDetails = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.getFeaturedProducts = asyncHandler(async (req, res, next) => {
-  const products = await Product.find({ isFeatured: true, isActive: true })
+  const products = await Product.find({ isFeatured: true, isActive: true, productType: 'store_item' })
     .populate("category", "name")
     .limit(8)
     .lean();

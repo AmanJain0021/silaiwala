@@ -65,6 +65,47 @@ const sendNotification = async (options) => {
       }
     }
 
+    // 3. Dispatch Firebase Cloud Messaging (FCM) push
+    try {
+      const admin = require('../config/firebase');
+      const User = require('../models/User');
+      
+      let fcmTokens = [];
+      
+      if (recipient === "delivery_partners") {
+        // Send to all active delivery partners
+        const partners = await User.find({ role: 'delivery', isActive: true, fcmTokens: { $exists: true, $not: {$size: 0} } });
+        fcmTokens = partners.flatMap(p => p.fcmTokens);
+      } else {
+        // Send to specific user
+        const targetUser = await User.findById(recipient);
+        if (targetUser && targetUser.fcmTokens && targetUser.fcmTokens.length > 0) {
+          fcmTokens = targetUser.fcmTokens;
+        }
+      }
+
+      if (fcmTokens.length > 0) {
+        const payload = {
+          notification: {
+            title: title,
+            body: message,
+          },
+          data: {
+            type: type || 'SYSTEM',
+            orderId: data?.orderId ? data.orderId.toString() : '',
+            url: data?.targetUrl || ''
+          },
+          tokens: fcmTokens
+        };
+        
+        // Send to multiple devices
+        const response = await admin.messaging().sendEachForMulticast(payload);
+        console.log(`FCM Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
+      }
+    } catch (fcmError) {
+      console.error("❌ FCM Push Error:", fcmError.message);
+    }
+
     return notification;
   } catch (error) {
     console.error("❌ Notification Error:", error.message);

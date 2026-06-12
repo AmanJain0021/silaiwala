@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMapPin, FiPackage, FiClock, FiX, FiNavigation, FiZap, FiTarget } from 'react-icons/fi';
 import { formatPrice } from '../../../shared/utils/helpers';
-import SwipeToAccept from './SwipeToAccept';
 import { createPortal } from 'react-dom';
 
 const NewOrderModal = ({ order, isOpen, onClose, onAccept, isAccepting, riderLocation }) => {
@@ -20,10 +19,26 @@ const NewOrderModal = ({ order, isOpen, onClose, onAccept, isAccepting, riderLoc
                 const pickupLat = pickupCoords[1];
                 const pickupLng = pickupCoords[0];
                 
-                const p1 = new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng);
-                const p2 = new window.google.maps.LatLng(pickupLat, pickupLng);
-                const distMeters = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                setLiveDistance(`${(distMeters / 1000).toFixed(1)} km`);
+                const directionsService = new window.google.maps.DirectionsService();
+                directionsService.route(
+                  {
+                    origin: { lat: riderLocation.lat, lng: riderLocation.lng },
+                    destination: { lat: pickupLat, lng: pickupLng },
+                    travelMode: window.google.maps.TravelMode.DRIVING,
+                  },
+                  (result, status) => {
+                    if (status === window.google.maps.DirectionsStatus.OK) {
+                      const distMeters = result.routes[0].legs[0].distance.value;
+                      setLiveDistance(`${(distMeters / 1000).toFixed(1)} km`);
+                    } else {
+                      // Fallback to straight line
+                      const p1 = new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng);
+                      const p2 = new window.google.maps.LatLng(pickupLat, pickupLng);
+                      const distMeters = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+                      setLiveDistance(`${(distMeters / 1000).toFixed(1)} km`);
+                    }
+                  }
+                );
             }
         }
     }, [riderLocation, order]);
@@ -151,19 +166,21 @@ const NewOrderModal = ({ order, isOpen, onClose, onAccept, isAccepting, riderLoc
                                 </div>
                             </div>
 
-                            {/* Order Total Info */}
-                            <div className="mt-10 py-4 border-y border-slate-50 flex justify-between items-center px-2">
-                                <span className="text-slate-400 text-sm font-bold">Total Order Value</span>
-                                <span className="text-slate-900 font-black text-lg">{formatPrice(order.total || 0)}</span>
+                            {/* Order Earning Info */}
+                            <div className="flex justify-between items-center py-4 border-t border-b border-slate-100 bg-emerald-50 px-4 rounded-xl mb-4 mt-10">
+                                <span className="text-emerald-700 text-sm font-bold">Expected Earning</span>
+                                <span className="text-emerald-900 font-black text-lg">{formatPrice(order.deliveryEarnings || 0)}</span>
                             </div>
 
                             {/* Action Section */}
                             <div className="pt-10 pb-12">
-                                <SwipeToAccept
-                                    onAccept={() => onAccept(order?.id)}
-                                    isLoading={isAccepting}
-                                    color={isReturn ? '#f97316' : '#16a34a'}
-                                />
+                                <button
+                                    onClick={() => onAccept(order?.id || order?._id)}
+                                    disabled={isAccepting}
+                                    className={`w-full py-4 rounded-3xl text-white font-black text-sm uppercase tracking-[0.2em] shadow-lg shadow-${isReturn ? 'orange' : 'green'}-500/30 active:scale-95 transition-all disabled:opacity-70 ${isReturn ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'}`}
+                                >
+                                    {isAccepting ? 'Accepting...' : 'Accept Order'}
+                                </button>
                                 
                                 <button
                                     onClick={onClose}

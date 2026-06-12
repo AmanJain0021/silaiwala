@@ -208,7 +208,7 @@ const DeliveryOrders = () => {
                       <h3 className="font-bold text-slate-800 text-[13px] tracking-tight truncate">{order.customer || 'Guest User'}</h3>
                     </div>
                     <p className={`font-bold text-[13px] shrink-0 ml-2 ${order.status === 'delivered' ? 'text-emerald-600' : 'text-slate-900'}`}>
-                      {order.status === 'delivered' ? `+ ${formatPrice(order.deliveryEarnings || 0)}` : formatPrice(order.total || 0)}
+                      {`+ ${formatPrice(order.deliveryEarnings || 0)}`}
                     </p>
                   </div>
 

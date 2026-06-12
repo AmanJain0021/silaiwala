@@ -26,10 +26,10 @@ const DeliveryBoyLiveMap = ({
     if (activeLocation?.lat && activeLocation?.lng && (destinationAddress || (destination?.lat && destination?.lng)) && window.google) {
       const directionsService = new window.google.maps.DirectionsService();
       
-      // Use string address if provided, otherwise use coordinates
-      const routeDestination = destinationAddress 
-          ? destinationAddress 
-          : { lat: Number(destination.lat), lng: Number(destination.lng) };
+      // Use coordinates if provided, otherwise fallback to string address
+      const routeDestination = (destination?.lat && destination?.lng)
+          ? { lat: Number(destination.lat), lng: Number(destination.lng) }
+          : destinationAddress;
 
       directionsService.route(
         {
@@ -54,12 +54,20 @@ const DeliveryBoyLiveMap = ({
               }
             }
           } else {
-            console.error('Error fetching directions:', result);
+            console.error('Error fetching directions:', status, result);
+            // If route calculation fails (e.g., address not found), pass a fallback so UI doesn't get stuck
+            if (onRouteCalculated) {
+              onRouteCalculated({
+                distance: 'Unknown',
+                duration: 'Unknown',
+                distanceValue: -1 // use -1 to indicate error
+              });
+            }
           }
         }
       );
     }
-  }, [activeLocation?.lat, activeLocation?.lng, destination?.lat, destination?.lng, destinationAddress]);
+  }, [activeLocation?.lat, activeLocation?.lng, destination?.lat, destination?.lng, destinationAddress, isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -69,7 +77,7 @@ const DeliveryBoyLiveMap = ({
     );
   }
 
-  const center = activeLocation?.lat ? activeLocation : defaultCenter;
+  const center = activeLocation?.lat ? activeLocation : (destination?.lat ? { lat: Number(destination.lat), lng: Number(destination.lng) } : defaultCenter);
   
   // Use the actual geocoded route end location, or fallback to the provided coordinates
   const markerDest = routeEndLocation || (destination?.lat ? { lat: Number(destination.lat), lng: Number(destination.lng) } : null);

@@ -19,17 +19,19 @@ const getRequestKey = (config) => {
 // Request interceptor for adding JWT token and handling cancellation
 api.interceptors.request.use(
     (config) => {
-        // Cancel previous pending request if it exists
+        // Cancel previous pending request if it exists (ONLY FOR GET REQUESTS)
         const requestKey = getRequestKey(config);
-        if (activeRequests.has(requestKey)) {
+        if (config.method?.toLowerCase() === 'get' && activeRequests.has(requestKey)) {
             const controller = activeRequests.get(requestKey);
             controller.abort("Cancelled by a new request");
         }
 
-        // Create new AbortController for this request
-        const controller = new AbortController();
-        config.signal = controller.signal;
-        activeRequests.set(requestKey, controller);
+        // Create new AbortController for this request (ONLY FOR GET REQUESTS)
+        if (config.method?.toLowerCase() === 'get') {
+            const controller = new AbortController();
+            config.signal = controller.signal;
+            activeRequests.set(requestKey, controller);
+        }
 
         const token = localStorage.getItem('token');
         const hasAuth = config.headers && (config.headers.Authorization || (typeof config.headers.has === 'function' && config.headers.has('Authorization')));

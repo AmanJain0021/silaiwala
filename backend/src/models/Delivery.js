@@ -31,6 +31,10 @@ const deliverySchema = new mongoose.Schema(
         type: [Number], // [longitude, latitude]
       },
     },
+    currentAddress: {
+      type: String,
+      trim: true,
+    },
     rating: {
       type: Number,
       default: 0,

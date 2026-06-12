@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Delete, Loader2, ArrowUpRight, Check } from 'lucide-react';
+import { ArrowLeft, Delete, Loader2, ArrowUpRight, Check, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 

@@ -530,10 +530,16 @@ exports.updateOrderStatus = async (req, res) => {
     // Handle Delivery Assignment Logic
     if (deliveryPartner && deliveryPartner !== oldOrder.deliveryPartner?.toString()) {
       // Check if partner is online/available
-      const partnerProfile = await Delivery.findOne({ user: deliveryPartner });
+      const partnerProfile = await Delivery.findOne({ user: deliveryPartner }).populate('user', 'name');
       if (!partnerProfile || !partnerProfile.isAvailable) {
         return res.status(400).json({ success: false, message: "Selected delivery partner is not online/available" });
       }
+
+      console.log(`\n================================`);
+      console.log(`🏍️  DELIVERY BOY ASSIGNED (ADMIN)!`);
+      console.log(`Name: ${partnerProfile.user?.name || 'Unknown'}`);
+      console.log(`Order ID: ${oldOrder.orderId}`);
+      console.log(`================================\n`);
 
       updateData.deliveryPartner = deliveryPartner;
       
@@ -684,9 +690,43 @@ exports.deleteBanner = async (req, res) => {
 exports.sendBroadcastNotification = async (req, res) => {
   try {
     const { targetAudience, title, message } = req.body;
-    // In a real app, integrate with Firebase Cloud Messaging (FCM) or similar
-    console.log(`[BROADCAST] To: ${targetAudience} - Title: ${title} - Message: ${message}`);
-    res.status(200).json({ success: true, message: "Broadcast sent successfully (Mocked)" });
+    
+    const User = require('../../../models/User');
+    const admin = require('../../../config/firebase');
+    
+    // Find all active users for the target role who have fcmTokens
+    const users = await User.find({ 
+      role: targetAudience, 
+      fcmTokens: { $exists: true, $not: {$size: 0} } 
+    });
+    
+    const fcmTokens = users.flatMap(u => u.fcmTokens);
+    
+    if (fcmTokens.length > 0) {
+      const payload = {
+        notification: {
+          title: title,
+          body: message,
+        },
+        data: {
+          type: 'BROADCAST',
+        },
+        tokens: fcmTokens
+      };
+      
+      const response = await admin.messaging().sendEachForMulticast(payload);
+      console.log(`FCM Admin Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
+      
+      res.status(200).json({ 
+        success: true, 
+        message: `Broadcast successfully sent to ${response.successCount} devices.` 
+      });
+    } else {
+      res.status(200).json({ 
+        success: true, 
+        message: "No users found with active push notification tokens for this audience." 
+      });
+    }
   } catch (error) {
     console.error("Error in sendBroadcastNotification:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -1176,6 +1216,8 @@ exports.updateSettings = async (req, res) => {
     if (updateData.appConfig) settings.appConfig = updateData.appConfig;
     if (updateData.visitFee) settings.visitFee = updateData.visitFee;
     if (updateData.pricing) settings.pricing = updateData.pricing;
+    if (updateData.walletConfig) settings.walletConfig = updateData.walletConfig;
+    if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
 
     await settings.save();
     res.status(200).json({ success: true, data: settings, message: "Settings updated successfully" });

@@ -72,6 +72,24 @@ const productSchema = new mongoose.Schema(
         hex: String,
       }
     ],
+    subCategory: { type: String, trim: true },
+    brand: { type: String, trim: true },
+    discountPrice: { type: Number },
+    variants: [
+      {
+        size: String,
+        color: String,
+        stock: { type: Number, default: 0 },
+        sku: String,
+      }
+    ],
+    fabric: { type: String, trim: true },
+    gender: { type: String, enum: ["Men", "Women", "Kids", "Unisex"], default: "Unisex" },
+    occasion: { type: String, trim: true },
+    fitType: { type: String, trim: true },
+    pattern: { type: String, trim: true },
+    washCare: { type: String, trim: true },
+    tags: [String],
     details: [
       {
         title: String,

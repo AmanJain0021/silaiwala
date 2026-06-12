@@ -84,3 +84,29 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
     data: {},
   });
 });
+
+/**
+ * @desc    Register or update FCM Token for user
+ * @route   POST /api/v1/notifications/fcm-token
+ * @access  Private
+ */
+exports.registerFcmToken = asyncHandler(async (req, res, next) => {
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    return next(new ErrorResponse("Please provide an FCM token", 400));
+  }
+
+  const user = req.user;
+
+  // Add token if it doesn't exist
+  if (!user.fcmTokens.includes(fcmToken)) {
+    user.fcmTokens.push(fcmToken);
+    await user.save();
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "FCM Token registered successfully",
+  });
+});

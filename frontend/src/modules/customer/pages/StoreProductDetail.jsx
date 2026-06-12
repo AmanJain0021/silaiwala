@@ -4,6 +4,7 @@ import { ArrowLeft, Share2, ShoppingCart, Heart } from 'lucide-react';
 import useCartStore from '../../../store/cartStore';
 import useWishlistStore from '../../../store/wishlistStore';
 import { PRODUCTS } from '../data/products';
+import api from '../../../utils/api';
 
 // Components
 import ProductGallery from '../components/store-detail/ProductGallery';
@@ -28,9 +29,19 @@ const StoreProductDetail = () => {
         // Scroll to top
         window.scrollTo(0, 0);
 
-        // Find product
-        const found = PRODUCTS.find(p => p.id === parseInt(id));
-        setProductData(found || null);
+        const fetchProduct = async () => {
+            try {
+                const res = await api.get(`/products/${id}`);
+                if (res.data.success) {
+                    setProductData(res.data.data);
+                }
+            } catch (error) {
+                console.error("Error fetching product details:", error);
+                showToast("Failed to load product details", "error");
+            }
+        };
+
+        fetchProduct();
     }, [id]);
 
     if (!productData) {
@@ -143,8 +154,7 @@ const StoreProductDetail = () => {
                     <div className="h-px bg-gray-100 my-6" />
 
                     <VariantSelector
-                        sizes={productData.sizes}
-                        colors={productData.colors}
+                        variants={productData.variants || []}
                         onSizeSelect={setSelectedSize}
                         onColorSelect={setSelectedColor}
                     />

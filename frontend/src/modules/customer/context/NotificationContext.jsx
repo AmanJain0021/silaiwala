@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
+import { playNotificationSound } from '../../../utils/audio';
 
 const NotificationContext = createContext();
 
@@ -45,6 +46,8 @@ export const NotificationProvider = ({ children }) => {
             socket.on('new_notification', (notification) => {
                 setNotifications(prev => [notification, ...prev]);
                 setUnreadCount(prev => prev + 1);
+                
+                try { playNotificationSound('customer'); } catch(e) { console.error(e); }
                 
                 // Show floating toast or browser notification
                 if ("Notification" in window && Notification.permission === "granted") {

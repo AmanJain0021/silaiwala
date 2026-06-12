@@ -473,6 +473,7 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
       path: 'items.selectedFabric',
       select: 'title image'
     })
+    .select('+pickupDeliveryOtp +dropoffDeliveryOtp')
     .sort('-createdAt')
     .skip(skip)
     .limit(Number(limit))
@@ -576,6 +577,28 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   // LOGIC: Status just becomes the new status. 
   // We don't auto-change to fabric-ready-for-pickup on "accepted" because we wait for payment.
+  
+  if (status === "accepted") {
+    // 1. Fetch Admin Settings for Wallet Config
+    const Settings = require("../../../models/Settings");
+    const adminSettings = await Settings.findOne() || await Settings.create({});
+    const advancePercentage = adminSettings.walletConfig?.advancePercentage || 30;
+    
+    // 2. Calculate partial payments
+    order.advancePaymentAmount = Math.round(order.totalAmount * (advancePercentage / 100));
+    order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+    order.advancePaymentStatus = "pending";
+    order.remainingPaymentStatus = "pending";
+    order.paymentStatus = "pending"; // Overall status
+  }
+
+  if (status === "ready-for-delivery" || status === "ready") {
+    // Tell Customer the remaining amount is due
+    if (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== "paid") {
+       order.remainingPaymentMethod = "pending"; // Reset to ensure customer selects cash/online
+    }
+  }
+
   order.status = status;
   order.trackingHistory.push({
     status: status,
@@ -613,10 +636,14 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     
     if (status === "accepted") {
       notificationType = "ORDER_ACCEPTED";
-      title = "Order Accepted!";
+      title = "Order Accepted - Advance Payment Required";
+      message = `Your order ${order.orderId} has been accepted by the tailor. Please pay the advance amount of ₹${order.advancePaymentAmount} to proceed.`;
     } else if (status === "cancelled") {
       notificationType = "ORDER_REJECTED";
       title = "Order Cancelled";
+    } else if (status === "ready-for-delivery" || status === "ready") {
+      title = "Order Ready - Final Payment Due";
+      message = `Your order ${order.orderId} is ready for delivery. Please complete your remaining payment of ₹${order.remainingPaymentAmount}.`;
     }
 
     await sendNotification({

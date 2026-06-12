@@ -11,7 +11,7 @@ import TrackingTimeline from '../components/orders/TrackingTimeline';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import ReviewModal from '../components/orders/ReviewModal';
-import LiveDeliveryTracker from '../components/orders/LiveDeliveryTracker';
+import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 const OrderTracking = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -27,43 +27,37 @@ const OrderTracking = () => {
 
     const [socketInstance, setSocketInstance] = useState(null);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchOrderDetails = async () => {
+    const fetchOrderDetails = async () => {
+        try {
+            // Try fetching from standard orders first
+            let response;
             try {
-                // Try fetching from standard orders first
-                let response;
-                try {
-                    response = await api.get(`/orders/${id}`);
-                } catch (err) {
-                    if (err.response?.status === 404) {
-                        // Try bulk orders if not found in standard
-                        response = await api.get(`/bulk-orders/${id}`);
-                        if (isMounted) setIsBulk(true);
-                    } else {
-                        throw err;
-                    }
-                }
-
-                if (!isMounted) return;
-
-                if (response?.data?.success) {
-                    setOrder(response.data.data);
-                    setError(null); // Clear any previous errors if successful
-                }
+                response = await api.get(`/orders/${id}`);
             } catch (err) {
-                if (!isMounted) return;
-                
-                if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
-                    console.error('Error fetching order tracking:', err);
-                    setError(err.response?.data?.message || 'Failed to load tracking details.');
+                if (err.response?.status === 404) {
+                    // Try bulk orders if not found in standard
+                    response = await api.get(`/bulk-orders/${id}`);
+                    setIsBulk(true);
+                } else {
+                    throw err;
                 }
-            } finally {
-                if (isMounted) setIsLoading(false);
             }
-        };
 
+            if (response?.data?.success) {
+                setOrder(response.data.data);
+                setError(null); // Clear any previous errors if successful
+            }
+        } catch (err) {
+            if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+                console.error('Error fetching order tracking:', err);
+                setError(err.response?.data?.message || 'Failed to load tracking details.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (id) {
             fetchOrderDetails();
 
@@ -73,18 +67,17 @@ const OrderTracking = () => {
 
             socket.on('order_status_updated', (data) => {
                 console.log('Real-time tracking update received:', data);
-                if (isMounted) fetchOrderDetails();
+                fetchOrderDetails();
             });
 
             // Also listen for general notifications as fallback
             socket.on('new_notification', (data) => {
                 if (data.data?.orderId === id) {
-                    if (isMounted) fetchOrderDetails();
+                    fetchOrderDetails();
                 }
             });
 
             return () => {
-                isMounted = false;
                 socket.disconnect();
                 setSocketInstance(null);
             };
@@ -115,10 +108,12 @@ const OrderTracking = () => {
         );
     }
 
-    const handlePayment = async () => {
+    const handlePayment = async (paymentType) => {
         setIsProcessingPayment(true);
         try {
-            const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: order.totalAmount });
+            const amountToPay = paymentType === 'advance' ? order.advancePaymentAmount : order.remainingPaymentAmount;
+            
+            const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: amountToPay });
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
             const rzpOrder = rzpOrderRes.data.data;
 
@@ -127,7 +122,7 @@ const OrderTracking = () => {
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "SilaiWala",
-                description: "Order Payment",
+                description: paymentType === 'advance' ? "Advance Payment" : "Remaining Payment",
                 order_id: rzpOrder.id,
                 handler: async function (response) {
                     try {
@@ -135,7 +130,8 @@ const OrderTracking = () => {
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
-                            orderObjectId: order._id
+                            orderObjectId: order._id,
+                            paymentType: paymentType
                         });
 
                         if (verifyRes.data.success) {
@@ -162,9 +158,10 @@ const OrderTracking = () => {
                 alert('Payment failed: ' + response.error.description);
             });
             rzp.open();
+
         } catch (error) {
             console.error('Payment process failed:', error);
-            alert(error.response?.data?.message || 'Payment initialization failed. Please try again.');
+            alert('Payment initialization failed. Please try again.');
             setIsProcessingPayment(false);
         }
     };
@@ -435,6 +432,40 @@ const OrderTracking = () => {
                             {React.createElement(timelineStates[actualCurrentIndex]?.icon || Package, { size: 48 })}
                         </div>
                     </div>
+                    
+                    {/* OTP Display for Customer */}
+                    {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['pending', 'assigned', 'fabric-ready-for-pickup', 'processing'].includes(order.status) && (
+                        <div className="mb-4 p-3 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white border border-indigo-100 flex items-center justify-center">
+                                    <ShieldCheck size={20} className="text-primary" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Pickup OTP</p>
+                                    <p className="text-xs text-gray-600 font-medium">Share with delivery partner for fabric pickup</p>
+                                </div>
+                            </div>
+                            <div className="text-xl font-black text-primary tracking-widest bg-white px-4 py-2 rounded-xl border border-indigo-100">
+                                {order.pickupDeliveryOtp}
+                            </div>
+                        </div>
+                    )}
+                    {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['out-for-delivery'].includes(order.status) && (
+                        <div className="mb-4 p-3 bg-green-50 rounded-2xl border border-green-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white border border-green-100 flex items-center justify-center">
+                                    <ShieldCheck size={20} className="text-green-600" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Delivery OTP</p>
+                                    <p className="text-xs text-gray-600 font-medium">Share with delivery partner to receive order</p>
+                                </div>
+                            </div>
+                            <div className="text-xl font-black text-green-700 tracking-widest bg-white px-4 py-2 rounded-xl border border-green-100">
+                                {order.dropoffDeliveryOtp}
+                            </div>
+                        </div>
+                    )}
 
                     <TrackingTimeline 
                         states={timelineStates} 
@@ -443,33 +474,61 @@ const OrderTracking = () => {
                 </div>
 
                 {/* 3.3.5 Live Delivery Tracker */}
-                {(['fabric-ready-for-pickup', 'fabric-picked-up', 'ready-for-delivery', 'out-for-delivery'].includes(order.status) || 
-                  ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus) ||
-                  ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus)) && (
-                    <LiveDeliveryTracker order={order} socket={socketInstance} />
-                )}
+                {(() => {
+                    const isPickupPhaseStatus = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
+                    const isDropoffPhaseStatus = ['ready-for-delivery', 'out-for-delivery'].includes(order.status);
+                    const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
+                    const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
 
-                {/* 3.4 Payment CTA (If accepted but not paid) */}
-                {order.status === 'accepted' && order.paymentStatus === 'pending' && (
+                    const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner) && order.fabricDeliveryPreference === 'partner';
+                    const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner;
+
+                    if (shouldShowForPickup || shouldShowForDropoff) {
+                        return <LiveDeliveryTracker order={order} socket={socketInstance} />;
+                    }
+                    return null;
+                })()}
+
+                {/* 3.4 Advance Payment CTA */}
+                {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && (
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-3">
-                        <h3 className="text-sm font-bold text-gray-900">Payment Required</h3>
+                        <h3 className="text-sm font-bold text-gray-900">Advance Payment Required</h3>
                         <p className="text-xs text-gray-600 max-w-xs">
-                            Tailor accepted the order. Pay to confirm.
+                            Tailor accepted the order. Pay ₹{order.advancePaymentAmount} advance to confirm.
                         </p>
                         <button
-                            onClick={handlePayment}
+                            onClick={() => handlePayment('advance')}
                             disabled={isProcessingPayment}
                             className={`w-full max-w-xs py-3 rounded-full font-bold text-white text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
                                 isProcessingPayment ? 'bg-indigo-400' : 'bg-primary hover:bg-primary-dark'
                             }`}
                         >
-                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : 'Pay Now'}
+                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay ₹${order.advancePaymentAmount}`}
                         </button>
                     </div>
                 )}
 
-                {/* 3.4.5 Delivery Preference (After Payment) */}
-                {order.fabricPickupRequired && order.paymentStatus === 'paid' && order.fabricDeliveryPreference === 'pending' && (
+                {/* 3.4.1 Remaining Payment CTA */}
+                {order.status === 'ready-for-delivery' && order.remainingPaymentStatus === 'pending' && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl p-5 border border-emerald-100 shadow-sm flex flex-col items-center text-center space-y-3">
+                        <h3 className="text-sm font-bold text-gray-900">Final Payment</h3>
+                        <p className="text-xs text-gray-600 max-w-xs">
+                            Your order is ready! Pay the remaining balance of ₹{order.remainingPaymentAmount}. You can pay online now or pay cash to the delivery partner.
+                        </p>
+                        <button
+                            onClick={() => handlePayment('remaining')}
+                            disabled={isProcessingPayment}
+                            className={`w-full max-w-xs py-3 rounded-full font-bold text-white text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
+                                isProcessingPayment ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700'
+                            }`}
+                        >
+                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay Online ₹${order.remainingPaymentAmount}`}
+                        </button>
+                    </div>
+                )}
+
+                {/* 3.4.5 Delivery Preference (After Advance Payment) */}
+                {order.fabricPickupRequired && order.advancePaymentStatus === 'paid' && order.fabricDeliveryPreference === 'pending' && (
                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
                         <div className="bg-white p-3 rounded-full shadow-sm">
                             <Package size={24} className="text-orange-500" />
@@ -580,10 +639,34 @@ const OrderTracking = () => {
                                 <span className="font-medium text-green-600">-₹{order.discountAmount}</span>
                             </div>
                         )}
-                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
-                            <span className="text-sm font-black text-gray-900">Total Paid</span>
-                            <span className="text-sm font-black text-primary">₹{order.totalAmount}</span>
+                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200 text-xs">
+                            <span className="font-bold text-gray-900">Total Order Value</span>
+                            <span className="font-bold text-gray-900">₹{order.totalAmount}</span>
                         </div>
+                        {order.advancePaymentAmount > 0 && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-500">Advance Paid</span>
+                                <span className="font-medium text-green-600">-₹{order.advancePaymentAmount}</span>
+                            </div>
+                        )}
+                        {order.remainingPaymentStatus === 'pending' && order.remainingPaymentAmount > 0 && (
+                            <div className="flex justify-between items-center pt-2 border-t border-dashed border-red-200">
+                                <span className="text-sm font-black text-red-600">Remaining Balance</span>
+                                <span className="text-sm font-black text-red-600">₹{order.remainingPaymentAmount}</span>
+                            </div>
+                        )}
+                        {order.remainingPaymentStatus === 'paid' && (
+                            <div className="flex justify-between items-center pt-2 border-t border-dashed border-emerald-200">
+                                <span className="text-sm font-black text-emerald-600">Remaining Paid ({order.remainingPaymentMethod})</span>
+                                <span className="text-sm font-black text-emerald-600">₹{order.remainingPaymentAmount}</span>
+                            </div>
+                        )}
+                        {(order.paymentStatus === 'paid' || (order.advancePaymentAmount === 0 && order.totalAmount > 0)) && (
+                            <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
+                                <span className="text-sm font-black text-gray-900">Total Paid</span>
+                                <span className="text-sm font-black text-primary">₹{order.totalAmount}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

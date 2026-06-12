@@ -53,20 +53,11 @@ const DeliveryLogin = () => {
                 return;
             }
 
-            setIsLocating(true);
+            navigate('/delivery/dashboard');
         } catch (err) {
             setError(err.message || 'Invalid OTP. Please try again.');
         }
     };
-
-    const handleLocationComplete = () => {
-        setIsLocating(false);
-        navigate('/delivery/dashboard');
-    };
-
-    if (isLocating) {
-        return <LocationSplashScreen onComplete={handleLocationComplete} role="delivery" />;
-    }
 
     return (
         <motion.div

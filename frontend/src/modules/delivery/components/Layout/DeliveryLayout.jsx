@@ -213,6 +213,20 @@ const DeliveryLayout = () => {
     socketService.on('order_ready_for_pickup', handleNewOrder);
     socketService.on('return_ready_for_pickup', handleNewReturn);
     
+    // Listen for direct assignments from Admin
+    socketService.on('new_notification', (data) => {
+      if (data && data.type === 'NEW_DELIVERY_TASK') {
+        const fakeOrder = {
+           _id: data.data?.orderId,
+           id: data.data?.orderId,
+           isReturn: data.data?.type === 'return',
+           ...data.data
+        };
+        if (fakeOrder.isReturn) handleNewReturn(fakeOrder);
+        else handleNewOrder(fakeOrder);
+      }
+    });
+    
     const onOrderTaken = (data) => {
       // Use ref-like logic or fresh state from store inside the callback
       const currentModalOpen = showNewOrderModal; // This might be stale if not careful
