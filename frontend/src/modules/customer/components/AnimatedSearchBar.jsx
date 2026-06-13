@@ -78,7 +78,7 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch }) => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleSearch}
                 placeholder={`Search ${text}|`}
-                className={`w-full bg-gray-100 border border-transparent rounded-[1.25rem] pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D2F6E]/5 focus:border-[#2D2F6E]/20 transition-all placeholder:text-gray-400 shadow-inner ${className.includes('py-') ? '' : 'py-2 sm:py-2.5'}`}
+                className={`w-full bg-white border border-transparent rounded-[1.25rem] pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-white/20 focus:border-white transition-all placeholder:text-gray-400 shadow-inner ${className.includes('py-') ? '' : 'py-2 sm:py-2.5'}`}
             />
         </div>
     );

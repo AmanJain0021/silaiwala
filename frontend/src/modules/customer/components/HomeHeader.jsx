@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, ShoppingBag, X, User, MapPin, ChevronDown, Check, Loader2, Navigation } from 'lucide-react';
+import { Search, Bell, ShoppingBag, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
 import useCheckoutStore from '../../../store/checkoutStore';
@@ -56,17 +56,18 @@ const HomeHeader = ({ user }) => {
     };
 
     return (
-        <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-2 transition-all duration-300 md:hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pt-safe">
-                {/* Greeting */}
+        <>
+            <div className="bg-[#2D2F6E] pt-2 transition-all duration-300 md:hidden overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pb-2 pt-safe">
+                    {/* Greeting */}
                 <div className="mb-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <h2 className="text-lg font-black text-[#2D2F6E] tracking-tight flex items-center gap-2">
-                        {getGreeting()}, <span className="text-primary capitalize">{userName}</span> <span className="origin-bottom-right animate-bounce">👋</span>
+                    <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                        {getGreeting()}, <span className="text-white capitalize">{userName}</span> <span className="origin-bottom-right animate-bounce">👋</span>
                     </h2>
                 </div>
 
                 {/* Top Row: Brand & Icons */}
-                <div className="flex justify-between items-center mb-2 sm:mb-4">
+                <div className="flex justify-between items-center">
                     <div className="flex-1 min-w-0 mr-4">
                         <AnimatePresence mode="wait">
                             {isEditing ? (
@@ -112,19 +113,19 @@ const HomeHeader = ({ user }) => {
                                         setIsEditing(true);
                                     }}
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[#2D2F6E] shrink-0 border border-gray-100 shadow-sm">
+                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0 shadow-sm">
                                         <MapPin size={14} className="group-hover:scale-110 transition-transform" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
+                                        <p className="text-[9px] text-white/70 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
                                         <div className="flex items-center gap-1 overflow-hidden">
-                                            <span className="text-[11px] font-black text-gray-900 truncate tracking-tight">{location}</span>
-                                            <ChevronDown size={10} className="text-[#2D2F6E] opacity-50" />
+                                            <span className="text-[11px] font-black text-white truncate tracking-tight">{location}</span>
+                                            <ChevronDown size={10} className="text-white opacity-70" />
                                         </div>
                                     </div>
                                     <div className="hidden sm:flex items-center gap-2 shrink-0">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#2D2F6E] animate-pulse"></div>
-                                        <span className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest opacity-70">Riders Online</span>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                                        <span className="text-[9px] font-black text-white uppercase tracking-widest opacity-90">Riders Online</span>
                                     </div>
                                 </motion.div>
                             )}
@@ -134,29 +135,29 @@ const HomeHeader = ({ user }) => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative p-2 sm:p-2.5 bg-gray-50 rounded-xl sm:rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90"
+                            className="relative p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90"
                         >
                             <Bell size={18} />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-white animate-pulse shadow-sm"></span>
+                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-[#2D2F6E] animate-pulse shadow-sm"></span>
                             )}
                         </button>
 
                         <Link
                             to={serviceItems.length > 0 && productCartItems.length === 0 ? "/user/checkout/summary" : "/user/cart"}
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
-                            className="p-2 sm:p-2.5 bg-gray-50 rounded-xl sm:rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
+                            className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
                         >
                             <ShoppingBag size={18} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#2D2F6E] text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#2D2F6E] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#2D2F6E] shadow-md">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
 
                         <Link to="/user/profile" className="ml-0.5 active:scale-90 transition-transform">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-[#2D2F6E]/10 p-0.5 overflow-hidden shadow-sm">
+                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-white/20 p-0.5 overflow-hidden shadow-sm">
                                 <img
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
                                     className="w-full h-full object-cover bg-gray-100 rounded-[0.8rem] sm:rounded-[1rem]"
@@ -166,12 +167,45 @@ const HomeHeader = ({ user }) => {
                         </Link>
                     </div>
                 </div>
-
-                {/* Search Bar - Modernized */}
-                <AnimatedSearchBar />
             </div>
+        </div>
 
-            {/* Notification Dropdown Portal-like */}
+            {/* Sticky Search and Marquee Section */}
+            <div className="sticky top-0 z-[100] bg-[#2D2F6E] backdrop-blur-md border-b border-[#2D2F6E]/50 transition-all duration-300 md:hidden overflow-hidden shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 pb-0">
+                    {/* Search Bar - Modernized */}
+                    <AnimatedSearchBar />
+
+                {/* Scrolling Services Line */}
+                <div className="mt-4 -mx-4 pt-2.5 pb-2.5 border-t border-white/10 overflow-hidden relative flex bg-black/10 backdrop-blur-sm">
+                    <motion.div 
+                        animate={{ x: [0, -700] }}
+                        transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                        className="flex gap-6 whitespace-nowrap text-[10px] font-bold text-white tracking-widest uppercase px-4"
+                    >
+                        <span className="flex items-center gap-1.5"><Scissors size={12} /> Custom Stitching</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        <span className="flex items-center gap-1.5"><Shirt size={12} /> Expert Tailors</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        <span className="flex items-center gap-1.5"><Star size={12} /> Perfect Fit Guarantee</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        <span className="flex items-center gap-1.5"><Truck size={12} /> Doorstep Delivery</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        {/* Repeat */}
+                        <span className="flex items-center gap-1.5"><Scissors size={12} /> Custom Stitching</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        <span className="flex items-center gap-1.5"><Shirt size={12} /> Expert Tailors</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        <span className="flex items-center gap-1.5"><Star size={12} /> Perfect Fit Guarantee</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                        <span className="flex items-center gap-1.5"><Truck size={12} /> Doorstep Delivery</span>
+                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
+                    </motion.div>
+                </div>
+            </div>
+        </div>
+
+        {/* Notification Dropdown Portal-like */}
             <AnimatePresence>
                 {showNotifications && (
                     <>
@@ -228,7 +262,7 @@ const HomeHeader = ({ user }) => {
                     </>
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
 };
 
