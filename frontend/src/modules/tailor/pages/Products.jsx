@@ -3,11 +3,13 @@ import { Plus, Trash2, Edit3, Search, Scissors, Layers, ShoppingBag, Package, Ch
 import { Button } from '../components/UIElements';
 import api from '../services/api';
 import SafeImage from '../../../components/Common/SafeImage';
+import GarmentForm from '../components/GarmentForm';
 
 const Products = () => {
     const [activeTab, setActiveTab] = useState('samples'); // 'samples' | 'fabrics'
     const [samples, setSamples] = useState([]);
     const [fabrics, setFabrics] = useState([]);
+    const [garments, setGarments] = useState([]);
     const [categories, setCategories] = useState([]); // These will be top-level categories
     const [subcategories, setSubcategories] = useState([]); // Tracks subcategories for selected parent
     const [selectedParent, setSelectedParent] = useState(''); // Tracking parent category for Fabrics
@@ -29,7 +31,9 @@ const Products = () => {
         stock: '',
         category: '',
         serviceType: 'STITCHING',
-        tags: ''
+        tags: '',
+        sizes: '',
+        colors: ''
     });
 
     const fetchData = async () => {
@@ -45,7 +49,8 @@ const Products = () => {
             setSamples(sRaw);
 
             const pRaw = productsRes.data.data || (Array.isArray(productsRes.data) ? productsRes.data : []);
-            setFabrics(pRaw);
+            setFabrics(pRaw.filter(p => p.productType === 'fabric' || !p.productType)); // fallback for old data
+            setGarments(pRaw.filter(p => p.productType === 'store_item'));
 
             // Fetch top-level categories
             if (catsRes.data.success) {
@@ -135,6 +140,19 @@ const Products = () => {
                     stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
                     productType: 'fabric'
                 };
+            } else if (activeTab === 'garments') {
+                endpoint = isEditing ? `/tailors/products/${editId}` : '/tailors/products';
+                const finalName = newItem.name || newItem.title || '';
+                payload = { 
+                    ...newItem, 
+                    title: finalName,
+                    name: finalName,
+                    ...(newItem.category ? { category: newItem.category } : {}),
+                    stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
+                    productType: 'store_item',
+                    sizes: typeof newItem.sizes === 'string' ? newItem.sizes.split(',').map(s => s.trim()).filter(Boolean) : newItem.sizes,
+                    colors: typeof newItem.colors === 'string' ? newItem.colors.split(',').map(c => ({ name: c.trim(), hex: '#000000' })).filter(c => c.name) : newItem.colors
+                };
             }
 
             const res = isEditing
@@ -168,7 +186,6 @@ const Products = () => {
                 tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
             });
         } else {
-            // For fabrics, we might need to find the parent category
             setNewItem({
                 ...newItem,
                 name: item.name || item.title,
@@ -176,7 +193,9 @@ const Products = () => {
                 image: item.image || (item.images && item.images[0]),
                 price: item.price,
                 stock: item.stock,
-                category: item.category?._id || item.category
+                category: item.category?._id || item.category,
+                sizes: item.sizes ? item.sizes.join(', ') : '',
+                colors: item.colors ? item.colors.map(c => c.name).join(', ') : ''
             });
 
             // If it's a subcategory, we try to set the parent
@@ -198,7 +217,7 @@ const Products = () => {
             title: '', name: '', description: '', image: '',
             basePrice: '', price: '', deliveryTime: '2-4 DAYS',
             stock: '', category: '', serviceType: 'STITCHING',
-            tags: ''
+            tags: '', sizes: '', colors: ''
         });
         setSelectedParent('');
         setSubcategories([]);
@@ -213,7 +232,7 @@ const Products = () => {
             try {
                 let endpoint = '';
                 if (type === 'samples') endpoint = `/tailors/services/${id}`;
-                else if (type === 'fabrics') endpoint = `/tailors/products/${id}`;
+                else endpoint = `/tailors/products/${id}`;
 
                 await api.delete(endpoint);
                 fetchData();
@@ -223,7 +242,7 @@ const Products = () => {
         }
     };
 
-    const itemsToShow = activeTab === 'samples' ? samples : fabrics;
+    const itemsToShow = activeTab === 'samples' ? samples : activeTab === 'fabrics' ? fabrics : garments;
     const filteredItems = itemsToShow.filter(item =>
         (item.title || item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.category?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -234,10 +253,10 @@ const Products = () => {
             <div className="flex justify-between items-center mb-4">
                 <div>
                     <h3 className="text-[20px] font-black text-[#2D2F6E] tracking-tighter leading-none">
-                        {activeTab === 'samples' ? 'Stitching Services' : 'Fabric Inventory'}
+                        {activeTab === 'samples' ? 'Stitching Services' : activeTab === 'fabrics' ? 'Fabric Inventory' : 'Ready-made Garments'}
                     </h3>
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-                        {activeTab === 'samples' ? 'Manage your bookable services' : 'Manage your fabric materials'}
+                        {activeTab === 'samples' ? 'Manage your bookable services' : activeTab === 'fabrics' ? 'Manage your fabric materials' : 'Manage your ready-made store items'}
                     </p>
                 </div>
                 <button
@@ -265,13 +284,19 @@ const Products = () => {
                 >
                     <ShoppingBag size={13} /> Fabrics
                 </button>
+                <button
+                    onClick={() => setActiveTab('garments')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'garments' ? 'bg-[#2D2F6E] text-white shadow-sm' : 'text-gray-400'}`}
+                >
+                    <Package size={13} /> Garments
+                </button>
             </div>
 
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={17} />
                 <input
                     type="text"
-                    placeholder={`Search ${activeTab === 'samples' ? 'samples' : 'fabrics'}...`}
+                    placeholder={`Search ${activeTab}...`}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] shadow-sm text-[12px] transition-colors"
@@ -298,7 +323,11 @@ const Products = () => {
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                         {filteredItems.map((item) => (
-                            <div key={item._id} className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden flex flex-col group transition-all hover:shadow-xl hover:-translate-y-1 duration-500 animate-in fade-in zoom-in-95">
+                            <div 
+                                key={item._id} 
+                                onClick={() => handleEdit(item)}
+                                className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden flex flex-col group transition-all hover:shadow-xl hover:-translate-y-1 duration-500 animate-in fade-in zoom-in-95 cursor-pointer"
+                            >
                                 {/* Image Container */}
                                 <div className="aspect-[4/5] bg-gray-100 relative overflow-hidden">
                                     <SafeImage
@@ -310,13 +339,13 @@ const Products = () => {
                                     
                                     <div className="absolute top-3 right-3 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
                                         <button
-                                            onClick={() => handleEdit(item)}
+                                            onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
                                             className="p-2 bg-white/90 backdrop-blur-md shadow-xl rounded-xl text-gray-900 hover:bg-[#2D2F6E] hover:text-white transition-all scale-90 group-hover:scale-100"
                                         >
                                             <Edit3 size={16} />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(item._id, activeTab)}
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(item._id, activeTab); }}
                                             className="p-2 bg-white/90 backdrop-blur-md shadow-xl rounded-xl text-rose-500 hover:bg-rose-500 hover:text-white transition-all scale-90 group-hover:scale-100 delay-75"
                                         >
                                             <Trash2 size={16} />
@@ -339,15 +368,17 @@ const Products = () => {
                                             <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1">
                                                 {activeTab === 'samples' ? (
                                                     <><Clock size={10} className="text-[#2D2F6E]" /> {item.deliveryTime || '2-4 DAYS'}</>
+                                                ) : activeTab === 'garments' ? (
+                                                    <><Package size={10} className="text-[#2D2F6E]" /> {item.stock || 0} IN STOCK</>
                                                 ) : (
-                                                    <><Package size={10} className="text-[#2D2F6E]" /> {item.stock || 0}M Left</>
+                                                    <><Package size={10} className="text-[#2D2F6E]" /> {item.stock || 0}M LEFT</>
                                                 )}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                            {activeTab === 'samples' ? 'Starting' : 'Per Meter'}
+                                            {activeTab === 'samples' ? 'Starting' : activeTab === 'garments' ? 'Price' : 'Per Meter'}
                                         </span>
                                         <p className="text-[18px] font-black text-[#2D2F6E] tracking-tighter">
                                             ₹{(item.basePrice || item.price || item.laborPrice || 0).toLocaleString()}
@@ -360,8 +391,18 @@ const Products = () => {
                 )}
             </div>
 
-            {/* Compact Modal */}
-            {showModal && (
+            {/* Modal */}
+            {showModal && activeTab === 'garments' ? (
+                <GarmentForm 
+                    initialData={isEditing ? garments.find(g => g._id === editId) : null}
+                    categories={categories.filter(c => c.type === 'product')}
+                    onClose={closeModal}
+                    onSubmitSuccess={() => {
+                        closeModal();
+                        fetchData();
+                    }}
+                />
+            ) : showModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A0A0A]/40 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-500 max-h-[90vh]">
                         
@@ -369,7 +410,7 @@ const Products = () => {
                         <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-gray-50">
                             <div>
                                 <h4 className="text-2xl font-black text-[#2D2F6E] tracking-tight leading-none">
-                                    {isEditing ? 'Update' : 'Add New'} {activeTab === 'samples' ? 'Service' : 'Fabric'}
+                                    {isEditing ? 'Update' : 'Add New'} {activeTab === 'samples' ? 'Service' : activeTab === 'fabrics' ? 'Fabric' : 'Garment'}
                                 </h4>
                                 <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
                                     Fill in the details to list your product
@@ -451,6 +492,30 @@ const Products = () => {
                                             onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                                         />
                                     </div>
+
+                                    {activeTab === 'garments' && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sizes (comma separated)</label>
+                                                <input
+                                                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 focus:border-[#2D2F6E]/30 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                    placeholder="e.g. S, M, L, XL"
+                                                    value={newItem.sizes}
+                                                    onChange={(e) => setNewItem({ ...newItem, sizes: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Colors (comma separated)</label>
+                                                <input
+                                                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 focus:border-[#2D2F6E]/30 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                    placeholder="e.g. Red, Blue, Black"
+                                                    value={newItem.colors}
+                                                    onChange={(e) => setNewItem({ ...newItem, colors: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
                                 </div>
 
                                 {/* Right Side: Media & Categories */}

@@ -4,7 +4,7 @@ import AddToCartModal from './AddToCartModal';
 import api from '../../../../utils/api';
 import useGeoLocation from '../../../../hooks/useLocation';
 
-const ProductGrid = ({ filters, categoryId, categoryName, searchQuery }) => {
+const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productType = 'fabric' }) => {
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -15,7 +15,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery }) => {
             const params = {
                 category: categoryId || undefined,
                 search: searchQuery || undefined,
-                productType: 'fabric',
+                productType: productType,
                 ...filters
             };
             const response = await api.get('/products', { params });

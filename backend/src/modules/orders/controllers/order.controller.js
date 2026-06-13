@@ -52,7 +52,8 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
     razorpay_order_id, 
     razorpay_payment_id, 
     razorpay_signature,
-    orderObjectId // This is the MongoDB Order ID
+    orderObjectId, // This is the MongoDB Order ID
+    paymentType    // 'advance' or 'remaining'
   } = req.body;
 
   const sign = razorpay_order_id + "|" + razorpay_payment_id;
@@ -68,38 +69,77 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Order not found during verification", 404));
     }
 
-    // Calculate fees (Example logic: 10% platform, 50 delivery)
-    const platformFee = Math.round(order.totalAmount * 0.1);
-    const deliveryFee = 50; // Fixed delivery fee for now
+    if (paymentType === 'advance') {
+       order.advancePaymentStatus = "paid";
+       order.advancePaymentId = razorpay_payment_id;
+       order.razorpayOrderId = razorpay_order_id;
+       
+       // Change status to trigger pickup
+       const fabricPickupRequired = order.items.some(item => item.fabricSource === 'customer');
+       order.status = fabricPickupRequired ? 'fabric-ready-for-pickup' : 'in-progress';
+       order.trackingHistory.push({
+         status: order.status,
+         timestamp: new Date(),
+         message: `Advance payment of ₹${order.advancePaymentAmount} successful. Order confirmed.`,
+       });
 
-    order.paymentStatus = "paid";
-    order.paymentId = razorpay_payment_id;
-    order.razorpayOrderId = razorpay_order_id;
-    order.platformFee = platformFee;
-    order.deliveryFee = deliveryFee;
-    
+       await sendNotification({
+           recipient: order.tailor,
+           type: "ORDER_CREATED",
+           title: "Advance Paid - Start Order!",
+           message: `Customer has paid the advance for ${order.orderId}. ${fabricPickupRequired ? 'Wait for fabric delivery.' : 'You can start processing.'}`,
+           data: { orderId: order._id, targetUrl: "/orders" }
+       });
+       
+       // Emit socket
+       const { getIO } = require("../../../config/socket");
+       const io = getIO();
+       if (io) {
+           io.to(`user_${order.tailor}`).emit('order_status_updated', {
+               orderId: order.orderId,
+               status: order.status
+           });
+       }
+
+    } else if (paymentType === 'remaining') {
+       order.remainingPaymentStatus = "paid";
+       order.remainingPaymentMethod = "online";
+       order.remainingPaymentId = razorpay_payment_id;
+       
+       // Calculate fees
+       const platformFee = Math.round(order.totalAmount * 0.1);
+       const deliveryFee = order.deliveryFee || 50; 
+       order.platformFee = platformFee;
+       order.deliveryFee = deliveryFee;
+       
+       // Note: Final order delivery completion might happen later or be triggered by delivery partner.
+       // The remaining payment is usually paid when the rider is at the door, 
+       // but completing the delivery itself is handled by Delivery Controller.
+       
+       order.paymentStatus = "paid"; // Overall payment complete
+
+       order.trackingHistory.push({
+         status: order.status,
+         timestamp: new Date(),
+         message: `Remaining payment of ₹${order.remainingPaymentAmount} successful.`,
+       });
+
+       await sendNotification({
+           recipient: order.tailor,
+           type: "PAYMENT_COMPLETED",
+           title: "Final Payment Received",
+           message: `Customer has paid the remaining balance for ${order.orderId}.`,
+           data: { orderId: order._id, targetUrl: "/orders" }
+       });
+    } else {
+       // Legacy fallback or fully upfront payment
+       order.paymentStatus = "paid";
+       order.paymentId = razorpay_payment_id;
+       order.razorpayOrderId = razorpay_order_id;
+       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'fabric-ready-for-pickup' : 'in-progress';
+    }
+
     await order.save();
-    
-    // Send Notification only AFTER successful payment validation
-    const fabricPickupRequired = order.items.some(item => item.fabricSource === 'customer');
-    
-    // Update master order status based on payment
-    order.status = fabricPickupRequired ? 'fabric-ready-for-pickup' : 'in-progress';
-    order.trackingHistory.push({
-      status: order.status,
-      timestamp: new Date(),
-      message: "Payment successful. Order confirmed.",
-    });
-
-    await order.save();
-
-    await sendNotification({
-        recipient: order.tailor,
-        type: "ORDER_CREATED",
-        title: "New Request Received!",
-        message: `You have received a new order ${order.orderId}. ${fabricPickupRequired ? 'Wait for fabric delivery from customer.' : 'You can start processing once accepted.'}`,
-        data: { orderId: order._id, targetUrl: "/partner/orders" }
-    });
 
     await sendNotification({
         recipient: order.customer,
@@ -189,7 +229,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
  * @access  Private (Customer)
  */
 exports.createOrder = asyncHandler(async (req, res, next) => {
-  const { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId } = req.body;
+  const { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee } = req.body;
 
   // Determine correct customer ID
   const finalCustomerId = (req.user.role === 'admin' && customerId) ? customerId : req.user.id;
@@ -269,6 +309,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     tailor: targetTailorUserId,
     items: formattedItems,
     totalAmount: finalAmount,
+    deliveryFee: deliveryFee || 0,
     discountAmount,
     couponCode: promoCode,
     deliveryAddress,
@@ -324,13 +365,46 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
     .populate("items.service", "title image")
     .populate("items.product", "name image images")
     .populate("items.selectedFabric", "name image images")
+    .select('+pickupDeliveryOtp +dropoffDeliveryOtp')
     .sort("-createdAt")
     .lean();
 
+  // Populate tracking coordinates for all orders
+  const enhancedOrders = await Promise.all(orders.map(async (order) => {
+    let vendorLatitude, vendorLongitude, customerLatitude, customerLongitude;
+    
+    if (order.tailor?._id) {
+      const tailorDoc = await Tailor.findOne({ user: order.tailor._id }).lean();
+      if (tailorDoc?.location?.coordinates?.length >= 2) {
+        vendorLongitude = tailorDoc.location.coordinates[0];
+        vendorLatitude = tailorDoc.location.coordinates[1];
+      }
+    }
+
+    if (order.customer?._id) {
+      const customerDoc = await Customer.findOne({ user: order.customer._id }).lean();
+      if (customerDoc?.addresses?.length > 0) {
+        const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+        if (defaultAddress?.location?.coordinates?.length >= 2) {
+          customerLongitude = defaultAddress.location.coordinates[0];
+          customerLatitude = defaultAddress.location.coordinates[1];
+        }
+      }
+    }
+    
+    return {
+      ...order,
+      vendorLatitude,
+      vendorLongitude,
+      customerLatitude,
+      customerLongitude
+    };
+  }));
+
   res.status(200).json({
     success: true,
-    count: orders.length,
-    data: orders,
+    count: enhancedOrders.length,
+    data: enhancedOrders,
   });
 });
 
@@ -341,6 +415,7 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
  */
 exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   const order = await Order.findById(req.params.id)
+    .select('+pickupDeliveryOtp +dropoffDeliveryOtp')
     .populate("customer", "name phoneNumber")
     .populate("tailor", "name shopName phoneNumber")
     .populate("deliveryPartner", "name phoneNumber profileImage")
@@ -365,9 +440,38 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not authorized to view this order", 403));
   }
 
+  // Fetch coordinates for live map tracking
+  let vendorLatitude, vendorLongitude, customerLatitude, customerLongitude;
+  
+  if (order.tailor?._id) {
+    const tailorDoc = await Tailor.findOne({ user: order.tailor._id }).lean();
+    if (tailorDoc?.location?.coordinates?.length >= 2) {
+      vendorLongitude = tailorDoc.location.coordinates[0];
+      vendorLatitude = tailorDoc.location.coordinates[1];
+    }
+  }
+
+  if (order.customer?._id) {
+    const customerDoc = await Customer.findOne({ user: order.customer._id }).lean();
+    if (customerDoc?.addresses?.length > 0) {
+      // Find the address that matches the delivery address or default
+      const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+      if (defaultAddress?.location?.coordinates?.length >= 2) {
+        customerLongitude = defaultAddress.location.coordinates[0];
+        customerLatitude = defaultAddress.location.coordinates[1];
+      }
+    }
+  }
+
   res.status(200).json({
     success: true,
-    data: order,
+    data: {
+      ...order,
+      vendorLatitude,
+      vendorLongitude,
+      customerLatitude,
+      customerLongitude
+    },
   });
 });
 

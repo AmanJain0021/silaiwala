@@ -4,6 +4,7 @@ import HomeHeader from '../components/HomeHeader';
 import LocationBar from '../components/LocationBar';
 import QuickActions from '../components/QuickActions';
 import PopularTailors from '../components/PopularTailors';
+import BestSellingGarments from '../components/BestSellingGarments';
 import ServiceGrid from '../components/ServiceGrid';
 import BottomNav from '../components/BottomNav';
 import PromoBanner from '../components/PromoBanner';
@@ -41,6 +42,7 @@ const Home = () => {
             {activeOrder && <ActiveOrderBanner order={activeOrder} />}
 
             <PopularTailors />
+            <BestSellingGarments />
 
             <ServiceGrid />
             <WhyChooseUs />

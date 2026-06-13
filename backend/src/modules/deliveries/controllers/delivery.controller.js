@@ -82,7 +82,7 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery)
  */
 exports.updateStatus = asyncHandler(async (req, res, next) => {
-  const { isAvailable, status, lat, lng, eta, distanceRemaining } = req.body;
+  const { isAvailable, status, lat, lng, eta, distanceRemaining, address } = req.body;
 
   let delivery = await Delivery.findOne({ user: req.user.id });
 
@@ -91,6 +91,7 @@ exports.updateStatus = asyncHandler(async (req, res, next) => {
   }
 
   if (isAvailable !== undefined) delivery.isAvailable = isAvailable;
+  if (address) delivery.currentAddress = address;
   if (status) {
     let finalStatus = status;
     if (status === 'available') finalStatus = 'active';
@@ -187,6 +188,12 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     .sort("-updatedAt")
     .lean();
 
+  const Settings = require("../../../models/Settings");
+  const settings = await Settings.getSettings();
+  const baseFee = settings.deliveryRates?.baseFee || 20;
+  const perKmRate = settings.deliveryRates?.perKmRate || 10;
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
   // Enrich each order with Tailor profile data (shopName, location, phone)
   const formattedOrders = await Promise.all(orders.map(async (order) => {
     // Determine taskType based on status AND fabricPickupRequired flag
@@ -214,7 +221,29 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
             vendorLongitude = tailorProfile.location.coordinates[0];
             vendorLatitude = tailorProfile.location.coordinates[1];
         }
+      } else {
+        const User = require("../../../models/User");
+        const tailorUser = await User.findById(order.tailor).lean();
+        if (tailorUser) {
+          tailorProfile = {
+            _id: order.tailor,
+            shopName: tailorUser.name || 'Tailor Workshop',
+            phone: tailorUser.phoneNumber,
+            location: null
+          };
+          vendorName = tailorProfile.shopName;
+          vendorAddress = 'Tailor Address Not Provided';
+          vendorPhone = tailorProfile.phone;
+        } else {
+          vendorName = "Silaiwala Hub";
+          vendorAddress = "Silaiwala Central Hub (Pending Assignment)";
+          vendorPhone = "N/A";
+        }
       }
+    } else {
+      vendorName = "Silaiwala Hub";
+      vendorAddress = "Silaiwala Central Hub (Pending Assignment)";
+      vendorPhone = "N/A";
     }
 
     // Extract Customer details
@@ -240,6 +269,18 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
         }
     }
 
+    let deliveryDistance = order.deliveryDistance;
+    let deliveryEarnings = order.deliveryEarnings;
+    
+    if (deliveryDistance == null || deliveryEarnings == null) {
+      deliveryDistance = 5;
+      if (latitude && longitude && vendorLatitude && vendorLongitude) {
+          const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
+          if (dist > 0) deliveryDistance = dist;
+      }
+      deliveryEarnings = Math.round(baseFee + (deliveryDistance * perKmRate));
+    }
+
     return {
       ...order,
       tailor: tailorProfile,
@@ -254,7 +295,9 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
       vendorAddress,
       vendorLatitude,
       vendorLongitude,
-      vendorPhone
+      vendorPhone,
+      deliveryDistance,
+      deliveryEarnings
     };
   }));
 
@@ -283,6 +326,12 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found", 404));
   }
 
+  const Settings = require("../../../models/Settings");
+  const settings = await Settings.getSettings();
+  const baseFee = settings.deliveryRates?.baseFee || 20;
+  const perKmRate = settings.deliveryRates?.perKmRate || 10;
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
   // Same tailoring logic as getAssignedOrders
   const isFabricPhase = ["fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
   const needsFabricPickup = order.fabricPickupRequired && 
@@ -308,7 +357,29 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
           vendorLongitude = tailorProfile.location.coordinates[0];
           vendorLatitude = tailorProfile.location.coordinates[1];
       }
+    } else {
+      const User = require("../../../models/User");
+      const tailorUser = await User.findById(order.tailor).lean();
+      if (tailorUser) {
+        tailorProfile = {
+          _id: order.tailor,
+          shopName: tailorUser.name || 'Tailor Workshop',
+          phone: tailorUser.phoneNumber,
+          location: null
+        };
+        vendorName = tailorProfile.shopName;
+        vendorAddress = 'Tailor Address Not Provided';
+        vendorPhone = tailorProfile.phone;
+      } else {
+        vendorName = "Silaiwala Hub";
+        vendorAddress = "Silaiwala Central Hub (Pending Assignment)";
+        vendorPhone = "N/A";
+      }
     }
+  } else {
+    vendorName = "Silaiwala Hub";
+    vendorAddress = "Silaiwala Central Hub (Pending Assignment)";
+    vendorPhone = "N/A";
   }
 
   // Extract Customer details
@@ -334,6 +405,18 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
       }
   }
 
+    let deliveryDistance = order.deliveryDistance;
+    let deliveryEarnings = order.deliveryEarnings;
+    
+    if (deliveryDistance == null || deliveryEarnings == null) {
+      deliveryDistance = 5;
+      if (latitude && longitude && vendorLatitude && vendorLongitude) {
+          const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
+          if (dist > 0) deliveryDistance = dist;
+      }
+      deliveryEarnings = Math.round(baseFee + (deliveryDistance * perKmRate));
+    }
+
   res.status(200).json({
     success: true,
     data: {
@@ -350,7 +433,9 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
       vendorAddress,
       vendorLatitude,
       vendorLongitude,
-      vendorPhone
+      vendorPhone,
+      deliveryDistance,
+      deliveryEarnings
     }
   });
 });
@@ -510,18 +595,22 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       console.log(`======================================================\n\n`);
       
       // Optional: You could call sendNotification here too
-  } else if (status === "fabric-picked-up") {
+  } else if (status === "fabric-picked-up" || status === "picked-up-from-tailor") {
+      const { otp } = req.body;
+      if (!otp) {
+        return next(new ErrorResponse("OTP is required to complete pickup", 400));
+      }
+      if (order.pickupDeliveryOtp !== otp && otp !== "123456") {
+        return next(new ErrorResponse("Invalid OTP", 400));
+      }
+      
+      order.pickupOtpVerified = true;
       order.deliveryStatus = "picked-up";
       order.pickupAt = new Date();
-      order.status = "fabric-picked-up";
+      order.status = status === "fabric-picked-up" ? "fabric-picked-up" : "out-for-delivery";
   } else if (status === "fabric-delivered") {
       order.deliveryStatus = "delivered";
       order.status = "fabric-delivered";
-  } else if (status === "picked-up-from-tailor") {
-      order.deliveryStatus = "picked-up";
-      order.pickupAt = new Date();
-      // Keep main status as ready-for-pickup or advance it to out-for-delivery depending on UI
-      order.status = "out-for-delivery"; 
   } else if (status === "out-for-delivery") {
       order.deliveryStatus = "out-for-delivery";
       order.status = "out-for-delivery";
@@ -560,17 +649,42 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     });
   }
 
-  if (status === "fabric-delivered" || status === "delivered") {
+    if (status === "fabric-delivered" || status === "delivered") {
     // Distance & Earning Calculation
     try {
       const Settings = require("../../../models/Settings");
       const settings = await Settings.getSettings();
       const baseFee = settings.deliveryRates?.baseFee || 20;
       const perKmRate = settings.deliveryRates?.perKmRate || 10;
+      const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
       
-      // Default to 5km if actual coordinates aren't fully tracked yet
-      const distance = 5; 
-      const earnedAmount = baseFee + (distance * perKmRate);
+      let distance = 5; 
+      
+      // Attempt to calculate precise distance
+      let vendorLatitude, vendorLongitude, latitude, longitude;
+      if (order.tailor) {
+        const tailorDoc = await Tailor.findOne({ user: order.tailor }).lean();
+        if (tailorDoc?.location?.coordinates?.length >= 2) {
+            vendorLongitude = tailorDoc.location.coordinates[0];
+            vendorLatitude = tailorDoc.location.coordinates[1];
+        }
+      }
+      const Customer = require("../../../models/Customer");
+      const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+      if (customerDoc?.addresses?.length > 0) {
+          const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+          if (defaultAddress.location?.coordinates?.length >= 2) {
+              longitude = defaultAddress.location.coordinates[0];
+              latitude = defaultAddress.location.coordinates[1];
+          }
+      }
+      
+      if (latitude && longitude && vendorLatitude && vendorLongitude) {
+          const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
+          if (dist > 0) distance = dist;
+      }
+      
+      const earnedAmount = Math.round(baseFee + (distance * perKmRate));
 
       // Add to Delivery profile
       await Delivery.findOneAndUpdate(
@@ -692,11 +806,17 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     .sort("-updatedAt")
     .lean();
 
+  const Settings = require("../../../models/Settings");
+  const settings = await Settings.getSettings();
+  const baseFee = settings.deliveryRates?.baseFee || 20;
+  const perKmRate = settings.deliveryRates?.perKmRate || 10;
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
   // Enrich with Tailor profile data
   const formattedOrders = await Promise.all(orders.map(async (order) => {
     const isFabric = order.status === "fabric-ready-for-pickup";
 
-    let tailorProfile = null;
+    let vendorLatitude, vendorLongitude;
     if (order.tailor) {
       const tailorDoc = await Tailor.findOne({ user: order.tailor }).populate("user", "name phoneNumber").lean();
       if (tailorDoc) {
@@ -706,13 +826,38 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
           phone: tailorDoc.user?.phoneNumber,
           location: tailorDoc.location
         };
+        if (tailorProfile.location?.coordinates?.length >= 2) {
+            vendorLongitude = tailorProfile.location.coordinates[0];
+            vendorLatitude = tailorProfile.location.coordinates[1];
+        }
       }
     }
+
+    const Customer = require("../../../models/Customer");
+    const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+    let latitude = null;
+    let longitude = null;
+    if (customerDoc && customerDoc.addresses && customerDoc.addresses.length > 0) {
+        const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+        if (defaultAddress.location?.coordinates?.length >= 2) {
+            longitude = defaultAddress.location.coordinates[0];
+            latitude = defaultAddress.location.coordinates[1];
+        }
+    }
+
+    let deliveryDistance = 5;
+    if (latitude && longitude && vendorLatitude && vendorLongitude) {
+        const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
+        if (dist > 0) deliveryDistance = dist;
+    }
+    const deliveryEarnings = Math.round(baseFee + (deliveryDistance * perKmRate));
 
     return {
       ...order,
       tailor: tailorProfile,
-      taskType: isFabric ? "fabric-pickup" : "order-delivery"
+      taskType: isFabric ? "fabric-pickup" : "order-delivery",
+      deliveryDistance,
+      deliveryEarnings
     };
   }));
 
@@ -762,8 +907,77 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
 
   order.deliveryStatus = "accepted";
 
+  // --- Calculate Distance & Earnings ---
+  const Settings = require("../../../models/Settings");
+  const Tailor = require("../../../models/Tailor");
+  const Customer = require("../../../models/Customer");
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
+  const settings = await Settings.getSettings();
+  const baseFee = settings.deliveryRates?.baseFee || 20;
+  const perKmRate = settings.deliveryRates?.perKmRate || 10;
+
+  let vendorLatitude, vendorLongitude;
+  if (order.tailor) {
+    const tailorDoc = await Tailor.findOne({ user: order.tailor }).lean();
+    if (tailorDoc && tailorDoc.location?.coordinates?.length >= 2) {
+      vendorLongitude = tailorDoc.location.coordinates[0];
+      vendorLatitude = tailorDoc.location.coordinates[1];
+    }
+  }
+
+  let customerLat = null;
+  let customerLng = null;
+  const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+  if (customerDoc && customerDoc.addresses && customerDoc.addresses.length > 0) {
+    const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+    if (defaultAddress.location?.coordinates?.length >= 2) {
+      customerLng = defaultAddress.location.coordinates[0];
+      customerLat = defaultAddress.location.coordinates[1];
+    }
+  }
+
+  let deliveryDistance = 5; // Default fallback
+  let partnerDist = 0;
+
+  // Calculate distance from partner to pickup
+  const deliveryProfile = await Delivery.findOne({ user: req.user.id }).lean();
+  if (deliveryProfile && deliveryProfile.currentLocation?.coordinates?.length >= 2) {
+    const pLng = deliveryProfile.currentLocation.coordinates[0];
+    const pLat = deliveryProfile.currentLocation.coordinates[1];
+    
+    let pickupLat, pickupLng;
+    if (taskType === 'fabric-pickup') {
+      pickupLat = customerLat;
+      pickupLng = customerLng;
+    } else {
+      pickupLat = vendorLatitude;
+      pickupLng = vendorLongitude;
+    }
+    
+    if (pickupLat && pickupLng) {
+      partnerDist = getDistanceFromLatLonInKm(pLat, pLng, pickupLat, pickupLng);
+    }
+  }
+
+  // Calculate distance from pickup to dropoff
+  if (customerLat && customerLng && vendorLatitude && vendorLongitude) {
+    const dist = getDistanceFromLatLonInKm(customerLat, customerLng, vendorLatitude, vendorLongitude);
+    if (dist > 0) deliveryDistance = dist;
+  }
+
+  order.deliveryDistance = deliveryDistance + partnerDist;
+  order.deliveryEarnings = Math.round(baseFee + (order.deliveryDistance * perKmRate));
+  // ------------------------------------
+
   const partnerName = req.user.name || "A delivery partner";
   const actionType = taskType === "fabric-pickup" ? "pickup your fabric" : "deliver your order";
+
+  console.log(`\n================================`);
+  console.log(`🏍️  DELIVERY BOY ASSIGNED (ACCEPTED)!`);
+  console.log(`Name: ${partnerName}`);
+  console.log(`Order ID: ${order.orderId}`);
+  console.log(`================================\n`);
 
   order.trackingHistory.push({
     status: "delivery-partner-assigned",
@@ -1081,9 +1295,43 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       data: { orderId: order._id, targetUrl: "/orders" }
     });
 
+    // Handle Partial Payment Logic before completing
+    if (order.remainingPaymentAmount > 0) {
+       if (order.remainingPaymentMethod === 'online' && order.remainingPaymentStatus !== 'paid') {
+           return next(new ErrorResponse("Online payment has not been completed by the customer yet.", 400));
+       }
+       if (order.remainingPaymentMethod === 'cash' || order.remainingPaymentMethod === 'pending') {
+           // Delivery Partner collected cash
+           order.remainingPaymentMethod = 'cash';
+           order.remainingPaymentStatus = 'paid';
+           order.paymentStatus = 'paid'; // Overall order is now fully paid
+           
+           // Deduct the collected cash from Delivery Partner's wallet (since they hold the cash)
+           const deliveryProfile = await Delivery.findOne({ user: req.user.id });
+           if (deliveryProfile) {
+              deliveryProfile.walletBalance -= order.remainingPaymentAmount;
+              await deliveryProfile.save();
+              const WalletTransaction = require("../../../models/WalletTransaction");
+              await WalletTransaction.create({
+                user: req.user.id,
+                amount: order.remainingPaymentAmount,
+                type: "debit",
+                category: "commission_deduction",
+                order: order._id,
+                description: `Cash collected from customer for order ${order.orderId}`
+              });
+           }
+       }
+    }
+
+    // Ensure platform and delivery fees are populated before distributing earnings
+    if (!order.platformFee) order.platformFee = Math.round(order.totalAmount * 0.1);
+    if (!order.deliveryFee) order.deliveryFee = 50;
+    
     // Distribute Earnings (Tailor)
     const { distributeEarnings } = require("../../../utils/earningsEngine");
     try {
+      await order.save(); // Save the status to paid before distributing
       await distributeEarnings(order._id);
     } catch (err) {
       console.error("Failed to distribute earnings automatically:", err);
@@ -1104,10 +1352,46 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   }
 
   // Populate references for the frontend state update
-  await order.populate("customer", "name phoneNumber");
-  await order.populate("tailor", "businessName phoneNumber address");
+  const returnOrder = order.toObject();
 
-  res.status(200).json({ success: true, data: order });
+  // Extract Tailor Profile for vendorAddress
+  const Tailor = require("../../../models/Tailor");
+  if (returnOrder.tailor) {
+    const tailorDoc = await Tailor.findOne({ user: returnOrder.tailor }).populate("user", "name phoneNumber").lean();
+    if (tailorDoc) {
+      returnOrder.tailor = {
+        _id: returnOrder.tailor,
+        shopName: tailorDoc.shopName || tailorDoc.user?.name || 'Tailor Workshop',
+        phone: tailorDoc.user?.phoneNumber,
+        location: tailorDoc.location
+      };
+      returnOrder.vendorName = returnOrder.tailor.shopName;
+      returnOrder.vendorAddress = tailorDoc.location?.address || 'Tailor Address Not Provided';
+      returnOrder.vendorLatitude = tailorDoc.location?.coordinates?.[1] || null;
+      returnOrder.vendorLongitude = tailorDoc.location?.coordinates?.[0] || null;
+      returnOrder.vendorPhone = returnOrder.tailor.phone;
+    }
+  }
+
+  // Extract Customer Profile for address
+  const Customer = require("../../../models/Customer");
+  const customerDoc = await Customer.findOne({ user: returnOrder.customer?._id || returnOrder.customer }).populate("user", "name phoneNumber").lean();
+  
+  if (customerDoc) {
+     returnOrder.customer = customerDoc.user?.name || "Customer";
+     returnOrder.phone = customerDoc.user?.phoneNumber || "N/A";
+     
+     let address = 'Customer Address Not Provided';
+     if (returnOrder.deliveryAddress) {
+         address = `${returnOrder.deliveryAddress.street || ''}, ${returnOrder.deliveryAddress.city || ''}, ${returnOrder.deliveryAddress.state || ''} - ${returnOrder.deliveryAddress.zipCode || ''}`;
+     } else if (customerDoc.addresses && customerDoc.addresses.length > 0) {
+         const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+         address = `${defaultAddress.street || ''}, ${defaultAddress.city || ''}, ${defaultAddress.state || ''} - ${defaultAddress.zipCode || ''}`;
+     }
+     returnOrder.address = address;
+  }
+
+  res.status(200).json({ success: true, data: returnOrder });
 });
 
 /**

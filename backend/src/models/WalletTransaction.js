@@ -25,6 +25,10 @@ const walletTransactionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
     },
+    withdrawalRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WithdrawalRequest",
+    },
     status: {
       type: String,
       enum: ["pending", "completed", "failed"],

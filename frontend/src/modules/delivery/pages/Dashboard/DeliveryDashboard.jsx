@@ -136,6 +136,7 @@ const DeliveryDashboard = () => {
     }, [user?._id]);
 
     const handleAcceptTask = async (orderId) => {
+        console.log("Accepting Task with ID:", orderId);
         setIsAccepting(true);
         try {
             const res = await deliveryService.acceptOrder(orderId);
@@ -148,7 +149,8 @@ const DeliveryDashboard = () => {
             }
         } catch (error) {
             console.error('Error accepting task:', error);
-            toast.error('Failed to accept task');
+            const errMsg = error.response?.data?.message || error.message || 'Failed to accept task';
+            toast.error(errMsg);
         } finally {
             setIsAccepting(false);
         }
@@ -631,29 +633,17 @@ const DeliveryDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Swipe to Accept - Rapido Style */}
-                            <div className="relative h-16 bg-slate-100 rounded-2xl border border-slate-200 p-1.5 overflow-hidden mb-4">
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                                        Swipe to Accept <ArrowUpRight size={12} />
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleAcceptTask(selectedAvailableTask._id); }}
+                                disabled={isAccepting}
+                                className="w-full h-16 bg-primary hover:bg-primary-dark rounded-2xl flex items-center justify-center text-white shadow-xl active:scale-95 transition-all disabled:opacity-70 mb-4"
+                            >
+                                {isAccepting ? <Loader2 className="animate-spin" size={24} /> : (
+                                    <span className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                                        Accept Order <ArrowUpRight size={16} />
                                     </span>
-                                </div>
-
-                                <motion.div
-                                    drag="x"
-                                    dragConstraints={{ left: 0, right: 260 }}
-                                    dragSnapToOrigin={true}
-                                    dragElastic={0.1}
-                                    onDragEnd={(e, info) => {
-                                        if (info.offset.x > 150) {
-                                            handleAcceptTask(selectedAvailableTask._id);
-                                        }
-                                    }}
-                                    className="w-[52px] h-[52px] bg-primary rounded-xl flex items-center justify-center text-white shadow-xl cursor-grab active:cursor-grabbing z-10"
-                                >
-                                    {isAccepting ? <Loader2 className="animate-spin" size={20} /> : <ArrowUpRight size={24} />}
-                                </motion.div>
-                            </div>
+                                )}
+                            </button>
 
                             <p className="text-center text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
                                 Please reach pickup location within 15 mins.<br />Earnings will be credited after delivery.

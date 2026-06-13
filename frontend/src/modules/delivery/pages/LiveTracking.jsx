@@ -29,21 +29,24 @@ const LiveTracking = () => {
   const [orderDetails, setOrderDetails] = useState(null);
   const [destination, setDestination] = useState(null);
 
+  const [routeDistance, setRouteDistance] = useState(0);
+
   // Start location tracking
   useDeliveryTracking(deliveryBoy?.id, orderDetails ? [orderDetails] : []);
 
   const handleRouteCalculated = (routeData) => {
+    if (routeData && routeData.distanceValue) {
+      setRouteDistance(routeData.distanceValue);
+    }
     if (currentLocation?.lat && currentLocation?.lng) {
       updateLocation(currentLocation.lat, currentLocation.lng, routeData.duration, routeData.distanceValue);
     }
   };
 
-  // Start distance tracking
-  const { distance } = useDistanceTracker(currentLocation);
   const isTracking = !!currentLocation;
   
-  // Calculate total distance in km
-  const totalDistance = distance ? distance / 1000 : 0;
+  // Calculate total distance in km from route calculation
+  const totalDistance = routeDistance ? routeDistance / 1000 : 0;
   const earnings = Math.round(totalDistance * 10); // Example: Rs 10 per km
   const path = []; // Mock path length if needed, or track locations
 

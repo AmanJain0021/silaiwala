@@ -51,6 +51,12 @@ const settingsSchema = new mongoose.Schema(
     deliveryRates: {
       baseFee: { type: Number, default: 20 },
       perKmRate: { type: Number, default: 10 },
+    },
+    walletConfig: {
+      advancePercentage: { type: Number, default: 30 },
+      platformFeePercentage: { type: Number, default: 5 },
+      minDeliveryFee: { type: Number, default: 20 },
+      withdrawalApprovalRequired: { type: Boolean, default: true },
     }
   },
   {

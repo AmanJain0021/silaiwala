@@ -26,6 +26,8 @@ import { SOCKET_URL } from '../../../config/constants';
 import useAuthStore from '../../../store/authStore';
 
 import api from '../../../utils/api';
+import { playNotificationSound } from '../../../utils/audio';
+import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
 
 const silaiwalaLogo = '/sewzella_logo-removebg-preview.png';
 
@@ -141,12 +143,14 @@ const DeliveryLayout = () => {
         }
 
         socket.on('new_notification', (data) => {
+            try { playNotificationSound('delivery'); } catch(e) { console.error(e); }
             setNotifications(prev => [data, ...prev]);
             setUnreadCount(prev => prev + 1);
             toast(data.message, { icon: '🔔' });
         });
 
         socket.on('new_task', (data) => {
+            try { playNotificationSound('delivery'); } catch(e) { console.error(e); }
             // NewTaskAlert handles the UI, but we can also refresh notifications
             fetchNotifications();
         });
@@ -164,38 +168,32 @@ const DeliveryLayout = () => {
         { name: 'Profile', icon: User, path: '/delivery/profile' },
     ];
 
-    const [currentLocation, setCurrentLocation] = useState('Fetching Location...');
+    const [currentLocationStr, setCurrentLocationStr] = useState('Fetching Location...');
+    const [headerLocationCoords, setHeaderLocationCoords] = useState(null);
+
+    const { detectLocation } = useGoogleLocation();
 
     React.useEffect(() => {
-        if (isLoaded && window.google) {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords;
-                        const geocoder = new window.google.maps.Geocoder();
-                        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-                            if (status === 'OK' && results[0]) {
-                                const city = results[0].address_components.find(c => c.types.includes('locality'))?.short_name || '';
-                                const area = results[0].address_components.find(c => c.types.includes('sublocality'))?.short_name || '';
-                                if (area && city) setCurrentLocation(`${area}, ${city}`);
-                                else if (city) setCurrentLocation(city);
-                                else setCurrentLocation(results[0].formatted_address.split(',')[0]);
-                            } else {
-                                setCurrentLocation('Location Unknown');
-                            }
-                        });
-                    },
-                    (error) => {
-                        console.warn('Geolocation error:', error);
-                        setCurrentLocation('Location Access Denied');
-                    },
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            } else {
-                setCurrentLocation('Location Not Supported');
+        const fetchAndSyncLocation = async () => {
+            try {
+                const data = await detectLocation();
+                if (data && data.address) {
+                    setCurrentLocationStr(data.address);
+                    setHeaderLocationCoords({ lat: data.latitude, lng: data.longitude });
+                    // Sync this formatted address to the delivery partner's profile
+                    deliveryService.updateStatus({ 
+                        address: data.address,
+                        lat: data.latitude,
+                        lng: data.longitude
+                    }).catch(err => console.error("Failed to sync delivery address:", err));
+                }
+            } catch (error) {
+                console.warn('Geolocation error:', error);
+                setCurrentLocationStr('Location Unknown');
             }
-        }
-    }, [isLoaded]);
+        };
+        fetchAndSyncLocation();
+    }, [detectLocation]);
 
     return (
         <div className="min-h-[100dvh] bg-[#FAFAFB] flex flex-col font-sans selection:bg-indigo-100 selection:text-primary overflow-x-clip">
@@ -378,7 +376,7 @@ const DeliveryLayout = () => {
                         <span className="font-black text-slate-900 text-sm tracking-tight leading-none mb-1">{user?.name || 'SewZelaa Partner'}</span>
                         <div className="flex items-center gap-1.5 text-slate-500">
                             <MapPin size={10} className="text-indigo-400" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest max-w-[120px] truncate leading-none mt-[1px]">{currentLocation}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest max-w-[120px] truncate leading-none mt-[1px]">{currentLocationStr}</span>
                         </div>
                     </div>
                 </div>
@@ -430,7 +428,7 @@ const DeliveryLayout = () => {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                     >
-                        <Outlet context={{ isOnline, setIsOnline, isLoaded }} />
+                        <Outlet context={{ isOnline, setIsOnline, isLoaded, layoutLocationStr: currentLocationStr, layoutLocationCoords: headerLocationCoords }} />
                     </motion.div>
                 </AnimatePresence>
             </main>

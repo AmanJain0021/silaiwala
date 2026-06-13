@@ -1,24 +1,17 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from "firebase/app";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyBqPY08wpsJp6EWrOmigkmE90JmTlx6iWg",
+  authDomain: "silaiwala-c2efd.firebaseapp.com",
+  projectId: "silaiwala-c2efd",
+  storageBucket: "silaiwala-c2efd.firebasestorage.app",
+  messagingSenderId: "681027877595",
+  appId: "1:681027877595:web:2e7cd04ebea623f1b3eafe",
+  measurementId: "G-P2W2WKE5BC"
 };
 
-// Initialize Firebase
-console.log("Initializing Firebase with config:", firebaseConfig);
-export let auth;
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
 
-// try {
-//     const app = initializeApp(firebaseConfig);
-//     auth = getAuth(app);
-//     console.log("Firebase initialized successfully");
-// } catch (error) {
-//     console.error("Firebase initialization failed", error);
-// }
+export { messaging, getToken, onMessage };

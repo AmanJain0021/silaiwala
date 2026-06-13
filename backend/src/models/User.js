@@ -40,6 +40,22 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    walletBalance: {
+      type: Number,
+      default: 0,
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0,
+    },
+    pendingWithdrawals: {
+      type: Number,
+      default: 0,
+    },
+    fcmTokens: [{
+      type: String,
+      trim: true
+    }],
     isVerified: {
       type: Boolean,
       default: false,

@@ -6,6 +6,7 @@ import { SOCKET_URL } from '../../../config/constants';
 import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { cn } from '../../../utils/cn';
+import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 
 const Orders = () => {
     const { user } = useTailorAuth();
@@ -81,8 +82,11 @@ const Orders = () => {
         }
     };
 
+    const [socketInstance, setSocketInstance] = useState(null);
+
     useEffect(() => {
         const socket = io(SOCKET_URL);
+        setSocketInstance(socket);
         if (user?._id) socket.emit('join', `user_${user._id}`);
         socket.on('new_order', () => { if (activeTab === 'new') fetchOrders(); });
         return () => socket.disconnect();
@@ -567,6 +571,30 @@ const Orders = () => {
                         </div>
                     )}
 
+                    {/* OTP Display for Tailor */}
+                    {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['ready-for-pickup'].includes(order.status) && (
+                        <div className="mb-4 p-4 bg-indigo-50 rounded-3xl border border-indigo-100 flex items-center justify-between">
+                            <div>
+                                <p className="text-[11px] font-black uppercase text-[#2D2F6E] tracking-wider">Pickup OTP</p>
+                                <p className="text-[12px] text-gray-600 font-medium">Share with delivery partner for final product pickup</p>
+                            </div>
+                            <div className="text-2xl font-black text-[#2D2F6E] tracking-widest bg-white px-4 py-2 rounded-xl border border-indigo-100">
+                                {order.pickupDeliveryOtp}
+                            </div>
+                        </div>
+                    )}
+                    {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['fabric-picked-up'].includes(order.status) && (
+                        <div className="mb-4 p-4 bg-green-50 rounded-3xl border border-green-100 flex items-center justify-between">
+                            <div>
+                                <p className="text-[11px] font-black uppercase text-green-700 tracking-wider">Delivery OTP</p>
+                                <p className="text-[12px] text-gray-600 font-medium">Share with delivery partner to receive fabric</p>
+                            </div>
+                            <div className="text-2xl font-black text-green-700 tracking-widest bg-white px-4 py-2 rounded-xl border border-green-100">
+                                {order.dropoffDeliveryOtp}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Delivery Partner Details */}
                     {order.deliveryPartner && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
@@ -596,6 +624,21 @@ const Orders = () => {
                             </div>
                         </div>
                     )}
+
+                    {(() => {
+                        const isPickupPhaseStatus = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
+                        const isDropoffPhaseStatus = ['ready-for-delivery', 'out-for-delivery'].includes(order.status);
+                        const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
+                        const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
+
+                        const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner) && order.fabricDeliveryPreference === 'partner';
+                        const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner;
+
+                        if (shouldShowForPickup || shouldShowForDropoff) {
+                            return <LiveDeliveryTracker order={order} socket={socketInstance} />;
+                        }
+                        return null;
+                    })()}
 
                     {isPending && (
                         /* Bottom Actions for Pending Order */

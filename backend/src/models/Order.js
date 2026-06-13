@@ -133,11 +133,42 @@ const orderSchema = new mongoose.Schema(
         enum: ['pending', 'self', 'partner'],
         default: 'pending'
     },
+    deliveryDistance: {
+      type: Number,
+    },
+    deliveryEarnings: {
+      type: Number,
+    },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "refunded", "failed"],
       default: "pending",
     },
+    advancePaymentAmount: {
+      type: Number,
+      default: 0,
+    },
+    remainingPaymentAmount: {
+      type: Number,
+      default: 0,
+    },
+    advancePaymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "refunded", "failed"],
+      default: "pending",
+    },
+    remainingPaymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "refunded", "failed"],
+      default: "pending",
+    },
+    remainingPaymentMethod: {
+      type: String,
+      enum: ["online", "cash", "pending"],
+      default: "pending",
+    },
+    advancePaymentId: String,
+    remainingPaymentId: String,
     tailorTimeoutNotified: {
       type: Boolean,
       default: false,

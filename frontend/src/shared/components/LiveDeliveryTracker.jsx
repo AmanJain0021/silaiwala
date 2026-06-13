@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Phone, Clock, MapPin, Navigation, Bike, Loader2 } from 'lucide-react';
-import DeliveryBoyLiveMap from '../../../../shared/components/DeliveryBoyLiveMap';
+import DeliveryBoyLiveMap from './DeliveryBoyLiveMap';
 
 const LiveDeliveryTracker = ({ order, socket }) => {
   const [riderLocation, setRiderLocation] = useState(null);
@@ -37,13 +37,11 @@ const LiveDeliveryTracker = ({ order, socket }) => {
   const isPickupPhase = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status) || 
                         ['assigned', 'accepted', 'reached-pickup', 'picked-up'].includes(order.pickupDeliveryStatus);
 
-  const destinationCoords = isPickupPhase 
-    ? order.pickupLocation?.coordinates || order.deliveryAddress?.location?.coordinates
-    : order.dropoffLocation?.coordinates || order.deliveryAddress?.location?.coordinates;
-
   let destination = null;
-  if (Array.isArray(destinationCoords) && destinationCoords.length === 2) {
-    destination = { lat: destinationCoords[1], lng: destinationCoords[0] };
+  if (isPickupPhase && order.vendorLatitude && order.vendorLongitude) {
+    destination = { lat: Number(order.vendorLatitude), lng: Number(order.vendorLongitude) };
+  } else if (!isPickupPhase && order.customerLatitude && order.customerLongitude) {
+    destination = { lat: Number(order.customerLatitude), lng: Number(order.customerLongitude) };
   }
 
   const rider = isPickupPhase ? order.pickupPartner : order.deliveryPartner;

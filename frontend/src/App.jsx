@@ -4,14 +4,29 @@ import AppRoutes from './routes';
 import useSocketStore from './store/socketStore';
 import { Toaster } from 'react-hot-toast';
 import SplashScreen from './components/Common/SplashScreen';
+import { usePushNotifications } from './hooks/usePushNotifications';
 // import LocationSplashScreen from './components/Common/LocationSplashScreen';
+
+function PushNotificationManager() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr && userStr !== 'undefined') {
+      setUser(JSON.parse(userStr));
+    }
+  }, []);
+
+  usePushNotifications(user);
+  return null;
+}
 
 function SplashManager({ splashConfig, setSplashConfig }) {
   const location = useLocation();
 
   useEffect(() => {
     const path = location.pathname;
-    const isSplash = path === '/partner';
+    const isSplash = false; // Disabled splash screen as requested
     
     let role = 'customer';
     if (path.startsWith('/partner')) {
@@ -106,6 +121,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <PushNotificationManager />
       <SplashManager splashConfig={splashConfig} setSplashConfig={setSplashConfig} />
       <Toaster position="top-right" />
       <AppRoutes />

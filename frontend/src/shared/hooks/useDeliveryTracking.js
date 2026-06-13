@@ -8,9 +8,21 @@ import { useDeliveryAuthStore } from '../../modules/delivery/store/deliveryStore
  * @returns {{ lat: number|null, lng: number|null }} - Current location
  */
 export const useDeliveryTracking = (riderId, activeTasks = []) => {
-  const [location, setLocation] = useState({ lat: null, lng: null });
-  const watchIdRef = useRef(null);
+  const deliveryBoy = useDeliveryAuthStore?.getState?.()?.deliveryBoy;
   const updateLocation = useDeliveryAuthStore?.getState?.()?.updateLocation;
+
+  // Initialize with DB location as an immediate fallback to prevent map hangs
+  const [location, setLocation] = useState(() => {
+    if (deliveryBoy?.location?.coordinates?.length === 2) {
+      return { 
+        lat: deliveryBoy.location.coordinates[1], 
+        lng: deliveryBoy.location.coordinates[0] 
+      };
+    }
+    return { lat: null, lng: null };
+  });
+
+  const watchIdRef = useRef(null);
 
   const handlePosition = useCallback((position) => {
     const { latitude, longitude } = position.coords;
@@ -25,10 +37,23 @@ export const useDeliveryTracking = (riderId, activeTasks = []) => {
   useEffect(() => {
     if (!riderId || !navigator.geolocation) return;
 
-    // Get initial position
-    navigator.geolocation.getCurrentPosition(handlePosition, (err) => {
-      console.warn('[useDeliveryTracking] Initial position error:', err.message);
-    }, { enableHighAccuracy: true, timeout: 10000 });
+    // Get initial position quickly, fallback to standard accuracy if needed
+    navigator.geolocation.getCurrentPosition(
+      handlePosition, 
+      (err) => {
+        console.warn('[useDeliveryTracking] High accuracy position failed:', err.message);
+        // If high accuracy fails or times out, immediately fallback to standard accuracy
+        navigator.geolocation.getCurrentPosition(
+          handlePosition,
+          (fallbackErr) => {
+            console.error('[useDeliveryTracking] Fallback position also failed:', fallbackErr.message);
+            // If both fail, we rely on the DB initialization and the ongoing watchPosition
+          }, 
+          { enableHighAccuracy: false, timeout: 5000 }
+        );
+      }, 
+      { enableHighAccuracy: true, timeout: 5000 } // Short timeout for rapid UX
+    );
 
     // Watch for continuous updates
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -38,8 +63,8 @@ export const useDeliveryTracking = (riderId, activeTasks = []) => {
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 5000,
+        timeout: 10000,
+        maximumAge: 10000,
       }
     );
 
