@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { getToken, setToken as saveToken, removeToken } from '../../../utils/auth';
 
 const AuthContext = createContext();
 
@@ -13,7 +14,7 @@ export const TAILOR_STATUS = {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('tailor_user')));
-    const [token, setToken] = useState(localStorage.getItem('tailor_token'));
+    const [token, setToken] = useState(getToken());
     const [status, setStatus] = useState(localStorage.getItem('tailor_status') || TAILOR_STATUS.NOT_REGISTERED);
     const [loading, setLoading] = useState(true);
 
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = (userData, userToken) => {
-        localStorage.setItem('tailor_token', userToken);
+        saveToken(userToken);
         
         // Determine status immediately from login payload
         let currentStatus = TAILOR_STATUS.NOT_REGISTERED;
@@ -92,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        localStorage.removeItem('tailor_token');
+        removeToken();
         localStorage.removeItem('tailor_user');
         localStorage.removeItem('tailor_status');
         setToken(null);

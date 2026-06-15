@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, MarkerF, Polyline } from '@react-google-maps/api';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 28.6139, lng: 77.2090 }; // Delhi
@@ -58,19 +58,19 @@ const TrackingMap = ({
         }}
       >
         {riderLocation?.lat && (
-          <Marker
+          <MarkerF
             position={riderLocation}
             label={{ text: '🏍️', fontSize: '24px' }}
           />
         )}
         {vendorLocation?.lat && (
-          <Marker
+          <MarkerF
             position={vendorLocation}
             label={{ text: '🏪', fontSize: '20px' }}
           />
         )}
         {customerLocation?.lat && (
-          <Marker
+          <MarkerF
             position={customerLocation}
             label={{ text: '📍', fontSize: '20px' }}
           />

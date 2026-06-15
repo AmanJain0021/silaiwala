@@ -15,6 +15,7 @@ const CheckoutAddress = () => {
     }, [fetchAddresses]);
 
     const [isAddingNew, setIsAddingNew] = useState(false);
+    const [editingAddress, setEditingAddress] = useState(null);
 
     const handleSelect = (id) => {
         selectAddress(id);
@@ -61,11 +62,18 @@ const CheckoutAddress = () => {
                 )}
 
                 {/* 3. Logic: Show Form OR List */}
-                {isAddingNew ? (
+                {(isAddingNew || editingAddress) ? (
                     <div className="mt-2">
                         <AddressForm
-                            onCancel={() => setIsAddingNew(false)}
-                            onSuccess={() => setIsAddingNew(false)}
+                            initialData={editingAddress}
+                            onCancel={() => {
+                                setIsAddingNew(false);
+                                setEditingAddress(null);
+                            }}
+                            onSuccess={() => {
+                                setIsAddingNew(false);
+                                setEditingAddress(null);
+                            }}
                         />
                     </div>
                 ) : (
@@ -88,6 +96,7 @@ const CheckoutAddress = () => {
                                             address={addr}
                                             isSelected={selectedAddressId === addr._id}
                                             onSelect={() => handleSelect(addr._id)}
+                                            onEdit={() => setEditingAddress(addr)}
                                         />
                                     ))}
                                 </div>
@@ -98,7 +107,7 @@ const CheckoutAddress = () => {
             </div>
 
             {/* 4. Solid Sticky Footer */}
-            {!isAddingNew && (
+            {!(isAddingNew || editingAddress) && (
                 <div className="fixed bottom-0 left-0 right-0 px-4 pt-3 pb-4 bg-white border-t border-gray-100 z-40">
                     <button
                         onClick={handleProceed}

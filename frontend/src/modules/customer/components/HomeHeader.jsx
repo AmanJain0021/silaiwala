@@ -6,7 +6,7 @@ import useCheckoutStore from '../../../store/checkoutStore';
 import useLocationStore from '../../../store/locationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedSearchBar from './AnimatedSearchBar';
-import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 import silaiwalaLogo from '/sewzella_logo.jpeg';
 
@@ -22,7 +22,7 @@ const HomeHeader = ({ user }) => {
     const { address: location, setLocation } = useLocationStore();
     const [isEditing, setIsEditing] = useState(false);
     const [tempLocation, setTempLocation] = useState('');
-    const { detectLocation, isLocating: isLoading } = useGoogleLocation();
+    const { detectLocation, isLocating: isLoading } = useUnifiedLocation({ fetchAddress: true });
 
     const getGreeting = () => {
         const hour = new Date().getHours();

@@ -6,6 +6,7 @@ import BottomNav from '../components/BottomNav';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import useAuthStore from '../../../store/authStore';
+import { getToken } from '../../../utils/auth';
 
 const OrdersPage = () => {
     const { orders, fetchOrders, isLoading } = useOrderStore();
@@ -14,7 +15,11 @@ const OrdersPage = () => {
     useEffect(() => {
         fetchOrders();
 
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
 
         if (user?.id || user?._id) {
             const userId = user.id || user._id;

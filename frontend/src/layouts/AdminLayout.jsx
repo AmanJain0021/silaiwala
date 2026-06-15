@@ -26,6 +26,7 @@ const silaiwalaLogo = '/sewzella_logo.jpeg';
 import useAuthStore from '../store/authStore';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
+import { getToken } from '../utils/auth';
 import { toast } from 'react-hot-toast';
 const AdminLayout = () => {
     const location = useLocation();
@@ -34,7 +35,11 @@ const AdminLayout = () => {
     const [hasUnread, setHasUnread] = useState(false);
 
     React.useEffect(() => {
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
 
         socket.on('new_order', (data) => {
             setHasUnread(true);

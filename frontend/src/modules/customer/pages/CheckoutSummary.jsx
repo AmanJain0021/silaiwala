@@ -23,9 +23,22 @@ const CheckoutSummary = () => {
         removeServiceItem
     } = useCheckoutStore(state => state);
     const { items: cartItems, getTotalPrice, clearCart } = useCartStore(state => state);
-    const selectedAddress = useAddressStore(state => state.getSelectedAddress());
-
     const addOrder = useOrderStore(state => state.addOrder);
+    
+    // Properly select state to ensure reactivity
+    const addresses = useAddressStore(state => state.addresses);
+    const selectedAddressId = useAddressStore(state => state.selectedAddressId);
+    const fetchAddresses = useAddressStore(state => state.fetchAddresses);
+    
+    // Derive selected address
+    const selectedAddress = addresses.find(addr => addr._id === selectedAddressId) || addresses[0];
+
+    // Fetch addresses if they are empty (e.g., on page refresh)
+    useEffect(() => {
+        if (addresses.length === 0) {
+            fetchAddresses();
+        }
+    }, [addresses.length, fetchAddresses]);
 
     const currentCheckoutItems = isBuyNowMode && buyNowItem ? [buyNowItem] : serviceItems;
     const isServiceCheckout = currentCheckoutItems.length > 0;
@@ -39,6 +52,22 @@ const CheckoutSummary = () => {
 
     const [roadDistances, setRoadDistances] = useState({});
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+    const [advancePercentage, setAdvancePercentage] = useState(50);
+
+    // Fetch Admin Settings
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await api.get('/cms/settings');
+                if (res.data.success && res.data.data?.walletConfig?.advancePercentage) {
+                    setAdvancePercentage(res.data.data.walletConfig.advancePercentage);
+                }
+            } catch (err) {
+                console.error("Failed to fetch settings:", err);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     // Redirect if cart becomes empty
     useEffect(() => {
@@ -66,12 +95,15 @@ const CheckoutSummary = () => {
                         setIsCalculatingDistance(true);
                         try {
                             const [tLng, tLat] = item.serviceDetails.tailorCoordinates;
+                            console.log(`🛣️ [CheckoutSummary] Calculating distance for Basket ${item.basketId}`, { origin: [tLat, tLng], destination: [uLat, uLng] });
+                            
                             const res = await api.post('/distance/calculate', {
                                 origin: [tLat, tLng],
                                 destination: [uLat, uLng]
                             });
 
                             if (res.data.success) {
+                                console.log(`📏 [CheckoutSummary] Distance API Response for Basket ${item.basketId}:`, res.data.data);
                                 const distanceKm = res.data.data.distance;
                                 const visitSettings = { baseFee: 299, perKmFee: 20, freeKm: 5 };
                                 let fee = visitSettings.baseFee;
@@ -425,7 +457,7 @@ const CheckoutSummary = () => {
 
                 <div className="w-full lg:w-96 space-y-4">
                     {/* 4. Bill Details */}
-                    <BillDetails pricing={currentPricing} />
+                    <BillDetails pricing={currentPricing} advancePercentage={advancePercentage} />
 
                     {/* 5. Payment Method */}
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">

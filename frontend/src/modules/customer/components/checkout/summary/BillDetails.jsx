@@ -1,10 +1,13 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
 
-const BillDetails = ({ pricing }) => {
+const BillDetails = ({ pricing, advancePercentage = 50 }) => {
     if (!pricing) return null;
 
     const { base, delivery, taxes, total } = pricing;
+    const finalTotal = total + 10;
+    const advanceAmount = Math.round(finalTotal * (advancePercentage / 100));
+    const remainingAmount = finalTotal - advanceAmount;
 
     return (
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-4">
@@ -59,7 +62,22 @@ const BillDetails = ({ pricing }) => {
 
                 <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-gray-900">Total Amount</span>
-                    <span className="text-sm font-bold text-primary">₹{total + 10}</span>
+                    <span className="text-sm font-black text-[#2D2F6E]">₹{finalTotal}</span>
+                </div>
+
+                <div className="w-full border-t border-dashed border-gray-200 my-3"></div>
+
+                <div className="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100">
+                    <div>
+                        <span className="text-xs font-bold text-[#2D2F6E] block">Advance Payable ({advancePercentage}%)</span>
+                        <span className="text-[9px] text-[#2D2F6E]/70 font-semibold uppercase tracking-wider">Required to confirm order</span>
+                    </div>
+                    <span className="text-sm font-black text-[#2D2F6E]">₹{advanceAmount}</span>
+                </div>
+
+                <div className="flex justify-between items-center px-2.5 pt-1">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">To Pay on Delivery</span>
+                    <span className="text-xs font-bold text-gray-600">₹{remainingAmount}</span>
                 </div>
             </div>
 

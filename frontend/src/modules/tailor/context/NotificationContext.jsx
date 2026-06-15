@@ -4,6 +4,7 @@ import { SOCKET_URL } from '../../../config/constants';
 import { useTailorAuth } from './AuthContext';
 import api from '../services/api';
 import { playNotificationSound } from '../../../utils/audio';
+import { getToken } from '../../../utils/auth';
 
 const NotificationContext = createContext();
 
@@ -35,7 +36,11 @@ export const NotificationProvider = ({ children }) => {
         if (token) {
             fetchNotifications();
             
-            const socket = io(SOCKET_URL);
+            const socket = io(SOCKET_URL, {
+                auth: {
+                    token: getToken()
+                }
+            });
             
             if (user?._id) {
                 socket.emit('join_user_room', user._id);

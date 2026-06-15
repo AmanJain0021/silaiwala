@@ -10,6 +10,7 @@ const defaultCenter = { lat: 28.6139, lng: 77.2090 };
 const DeliveryBoyLiveMap = ({
   currentLocation,
   riderLocation, // keeping for backwards compatibility if passed
+  fallbackOrigin, // used to draw full trip if live location is missing
   destination,
   destinationAddress, // Added to support string addresses
   isLoaded,
@@ -19,7 +20,8 @@ const DeliveryBoyLiveMap = ({
   const [directions, setDirections] = useState(null);
   const [routeEndLocation, setRouteEndLocation] = useState(null);
 
-  const activeLocation = currentLocation || riderLocation;
+  // If we have a live location, use it. Otherwise, use the fallback origin (e.g. pickup location)
+  const activeLocation = currentLocation?.lat ? currentLocation : (riderLocation?.lat ? riderLocation : fallbackOrigin);
 
   useEffect(() => {
     // We need activeLocation, and EITHER destination coordinates OR a destination address

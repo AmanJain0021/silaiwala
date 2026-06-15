@@ -7,7 +7,7 @@ import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import ImageUploader from '../../../components/Common/ImageUploader';
-import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 const ProfileSettings = () => {
     const navigate = useNavigate();
@@ -29,7 +29,7 @@ const ProfileSettings = () => {
         profileImage: ''
     });
 
-    const { detectLocation, isLocating } = useGoogleLocation();
+    const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
 
     useEffect(() => {
         const fetchProfile = async () => {

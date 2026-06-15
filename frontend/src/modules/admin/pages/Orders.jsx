@@ -5,6 +5,7 @@ import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
+import { getToken } from '../../../utils/auth';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 
 const AdminOrders = () => {
@@ -87,7 +88,11 @@ const AdminOrders = () => {
     };
 
     useEffect(() => {
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
         setSocketInstance(socket);
 
         const params = new URLSearchParams(window.location.search);

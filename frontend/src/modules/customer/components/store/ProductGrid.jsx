@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import ProductCard from './ProductCard';
 import AddToCartModal from './AddToCartModal';
 import api from '../../../../utils/api';
-import useGeoLocation from '../../../../hooks/useLocation';
 
 const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productType = 'fabric' }) => {
     const [items, setItems] = useState([]);

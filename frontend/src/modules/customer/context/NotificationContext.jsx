@@ -5,12 +5,13 @@ import { SOCKET_URL } from '../../../config/constants';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
 import { playNotificationSound } from '../../../utils/audio';
+import { getToken } from '../../../utils/auth';
 
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
     const { user, isAuthenticated } = useAuthStore();
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -37,7 +38,11 @@ export const NotificationProvider = ({ children }) => {
         if (isAuthenticated) {
             fetchNotifications();
             
-            const socket = io(SOCKET_URL);
+            const socket = io(SOCKET_URL, {
+                auth: {
+                    token: getToken()
+                }
+            });
             
             if (user?._id || user?.id) {
                 socket.emit('join_user_room', user._id || user.id);

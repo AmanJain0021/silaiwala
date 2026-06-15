@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../config/constants';
+import { getToken, removeToken } from './auth';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -33,7 +34,7 @@ api.interceptors.request.use(
             activeRequests.set(requestKey, controller);
         }
 
-        const token = localStorage.getItem('token');
+        const token = getToken();
         const hasAuth = config.headers && (config.headers.Authorization || (typeof config.headers.has === 'function' && config.headers.has('Authorization')));
         if (token && !hasAuth) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -62,7 +63,7 @@ api.interceptors.response.use(
 
         // Global error handling: e.g., redirect to login if 401
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token');
+            removeToken();
             // Optional: window.location.href = '/login';
         }
         return Promise.reject(error);

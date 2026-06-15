@@ -116,18 +116,30 @@ const DeliveryOrderDetail = () => {
   const currentPhase = getPhase();
   const isFabricPickup = order?.taskType === 'fabric-pickup';
 
-  // Define source and destination dynamically based on task type
-  const pickupName = isFabricPickup ? order?.customer : order?.vendorName;
-  const pickupAddress = isFabricPickup ? order?.address : order?.vendorAddress;
-  const pickupLat = isFabricPickup ? order?.latitude : order?.vendorLatitude;
-  const pickupLng = isFabricPickup ? order?.longitude : order?.vendorLongitude;
-  const pickupPhone = isFabricPickup ? order?.phone : order?.vendorPhone;
+  // Extract coordinates safely from the nested location arrays [lng, lat]
+  const tailorLat = order?.tailor?.location?.coordinates?.[1];
+  const tailorLng = order?.tailor?.location?.coordinates?.[0];
+  const customerLat = order?.deliveryAddress?.location?.coordinates?.[1];
+  const customerLng = order?.deliveryAddress?.location?.coordinates?.[0];
 
-  const dropoffName = isFabricPickup ? order?.vendorName : order?.customer;
-  const dropoffAddress = isFabricPickup ? order?.vendorAddress : order?.address;
-  const dropoffLat = isFabricPickup ? order?.vendorLatitude : order?.latitude;
-  const dropoffLng = isFabricPickup ? order?.vendorLongitude : order?.longitude;
-  const dropoffPhone = isFabricPickup ? order?.vendorPhone : order?.phone;
+  const tailorAddress = order?.tailor?.location?.address;
+  const customerAddress = order?.deliveryAddress?.street;
+
+  const tailorPhone = order?.tailor?.phone;
+  const customerPhone = order?.customerPhone || order?.phone; // fallback if needed
+
+  // Define source and destination dynamically based on task type
+  const pickupName = isFabricPickup ? order?.customerName : order?.tailor?.shopName;
+  const pickupAddress = isFabricPickup ? customerAddress : tailorAddress;
+  const pickupLat = isFabricPickup ? customerLat : tailorLat;
+  const pickupLng = isFabricPickup ? customerLng : tailorLng;
+  const pickupPhone = isFabricPickup ? customerPhone : tailorPhone;
+
+  const dropoffName = isFabricPickup ? order?.tailor?.shopName : order?.customerName;
+  const dropoffAddress = isFabricPickup ? tailorAddress : customerAddress;
+  const dropoffLat = isFabricPickup ? tailorLat : customerLat;
+  const dropoffLng = isFabricPickup ? tailorLng : customerLng;
+  const dropoffPhone = isFabricPickup ? tailorPhone : customerPhone;
   
   // FIXED: Ensure we pass the correct ID (either _id or id)
   const liveLocation = useDeliveryTracking(deliveryBoy?._id || deliveryBoy?.id, order ? [order] : []);
@@ -154,21 +166,25 @@ const DeliveryOrderDetail = () => {
   useEffect(() => {
     // If we have layoutLocationStr and liveLocation hasn't triggered yet, use layout string
     if (layoutLocationStr && layoutLocationStr !== 'Fetching Location...' && (!currentLocation?.lat || currentLocationAddress === 'Current GPS Location' || currentLocationAddress === 'Fetching Location...')) {
+      console.log('📍 [OrderDetail] Using layoutLocationStr as fallback:', layoutLocationStr);
       setCurrentLocationAddress(layoutLocationStr);
     }
     
     if (currentLocation?.lat && currentLocation?.lng && isLoaded && window.google && window.google.maps && window.google.maps.Geocoder) {
+      console.log('🗺️ [OrderDetail] Geocoding actual currentLocation:', { lat: currentLocation.lat, lng: currentLocation.lng });
       try {
         const geocoder = new window.google.maps.Geocoder();
         geocoder.geocode({ location: { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) } }, (results, status) => {
+          console.log(`📏 [OrderDetail] Geocoder Status: ${status}`, results);
           if (status === 'OK' && results[0]) {
             setCurrentLocationAddress(results[0].formatted_address);
           } else {
+            console.warn('⚠️ [OrderDetail] Geocoder failed or returned no results, using fallback');
             setCurrentLocationAddress(layoutLocationStr || 'Current GPS Location');
           }
         });
       } catch (err) {
-        console.error('Geocoder error:', err);
+        console.error('❌ [OrderDetail] Geocoder exception:', err);
         setCurrentLocationAddress(layoutLocationStr || 'Current GPS Location');
       }
     }
@@ -202,18 +218,36 @@ const DeliveryOrderDetail = () => {
             ];
           }
           
+          console.log(`🛣️ [OrderDetail] Requesting Google Directions...`, {
+            origin: request.origin,
+            destination: request.destination,
+            waypoints: request.waypoints
+          });
+          
           directionsService.route(request, (result, status) => {
+              console.log(`📏 [OrderDetail] Directions Status: ${status}`, result);
               if (status === window.google.maps.DirectionsStatus.OK) {
                 let totalMeters = 0;
                 result.routes[0].legs.forEach(leg => {
                     totalMeters += leg.distance.value;
                 });
                 
+                // Get the first leg (current location -> pickup/dropoff)
+                const firstLeg = result.routes[0].legs[0];
+                if (firstLeg) {
+                    setDistanceRemaining(firstLeg.distance.value);
+                    setEta(firstLeg.duration.text);
+                }
+                
                 const distanceInKm = totalMeters / 1000;
+                console.log(`📏 [OrderDetail] Total Trip Distance Calculated: ${distanceInKm} km`);
                 setTotalTripDistanceKm(distanceInKm);
                 
                 const calculatedFee = rates.baseFee + (distanceInKm * rates.perKmRate);
+                console.log(`💰 [OrderDetail] Dynamic Fee Calculated: ₹${calculatedFee} (Base: ₹${rates.baseFee}, Rate/Km: ₹${rates.perKmRate})`);
                 setDynamicFee(calculatedFee);
+              } else {
+                console.warn('⚠️ [OrderDetail] DirectionsService failed:', status);
               }
             }
           );
@@ -464,6 +498,11 @@ const DeliveryOrderDetail = () => {
              <div className="w-full h-[260px] bg-white relative">
                  <DeliveryBoyLiveMap 
                   currentLocation={currentLocation} 
+                  fallbackOrigin={
+                    currentPhase === 'pickup' 
+                      ? (dropoffLat && dropoffLng ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : null)
+                      : (pickupLat && pickupLng ? { lat: Number(pickupLat), lng: Number(pickupLng) } : null)
+                  }
                   destination={
                     currentPhase === 'pickup' 
                       ? (pickupLat ? { lat: Number(pickupLat), lng: Number(pickupLng) } : null)
@@ -621,6 +660,11 @@ const DeliveryOrderDetail = () => {
                        <p className="text-xs font-semibold text-slate-700 leading-snug">
                            {currentPhase === 'pickup' ? currentLocationAddress : pickupAddress}
                        </p>
+                       {currentPhase === 'pickup' && currentLocation?.lat && (
+                           <p className="text-[9px] font-mono text-indigo-400 font-medium mt-1 uppercase tracking-tighter bg-indigo-50 inline-block px-1.5 py-0.5 rounded border border-indigo-100">
+                               Lat: {Number(currentLocation.lat).toFixed(5)}, Lng: {Number(currentLocation.lng).toFixed(5)}
+                           </p>
+                       )}
                    </div>
                    <div className="absolute left-2 top-5 bottom-[-20px] w-px border-l-2 border-dashed border-slate-200 z-0" />
                 </div>

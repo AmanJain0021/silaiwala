@@ -3,6 +3,7 @@ import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2,
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
+import { getToken } from '../../../utils/auth';
 import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { cn } from '../../../utils/cn';
@@ -85,7 +86,11 @@ const Orders = () => {
     const [socketInstance, setSocketInstance] = useState(null);
 
     useEffect(() => {
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
         setSocketInstance(socket);
         if (user?._id) socket.emit('join', `user_${user._id}`);
         socket.on('new_order', () => { if (activeTab === 'new') fetchOrders(); });

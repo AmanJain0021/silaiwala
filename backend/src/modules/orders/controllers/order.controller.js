@@ -12,6 +12,44 @@ const razorpay = require("../../../config/razorpay");
 
 const PromoCode = require("../../../models/PromoCode");
 const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+const axios = require("axios");
+
+const autoGeocode = async (addressObj) => {
+  if (!addressObj) return addressObj;
+  // If coordinates already exist, skip
+  if (addressObj.location && addressObj.location.coordinates && addressObj.location.coordinates.length === 2 && addressObj.location.coordinates[0] !== null) {
+      return addressObj; 
+  }
+  
+  try {
+      const addressString = `${addressObj.street || ''}, ${addressObj.city || ''}, ${addressObj.state || ''}, ${addressObj.zipCode || ''}, India`;
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      
+      if (apiKey && apiKey !== 'your_google_maps_api_key' && apiKey !== 'your_backend_google_maps_api_key_here') {
+          console.log(`📍 [order.controller] Auto-geocoding typed address: ${addressString}`);
+          const geoResponse = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+              params: {
+                  address: addressString,
+                  key: apiKey
+              }
+          });
+          
+          if (geoResponse.data.status === 'OK' && geoResponse.data.results.length > 0) {
+              const location = geoResponse.data.results[0].geometry.location;
+              console.log(`🗺️ [order.controller] Successfully geocoded to Lat: ${location.lat}, Lng: ${location.lng}`);
+              addressObj.location = {
+                  type: 'Point',
+                  coordinates: [location.lng, location.lat]
+              };
+          } else {
+              console.warn(`⚠️ [order.controller] Google Geocode API returned status: ${geoResponse.data.status}`);
+          }
+      }
+  } catch (err) {
+      console.error(`❌ [order.controller] Google Geocode API Error:`, err.message);
+  }
+  return addressObj;
+};
 
 /**
  * @desc    Create a new order in Razorpay
@@ -229,7 +267,10 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
  * @access  Private (Customer)
  */
 exports.createOrder = asyncHandler(async (req, res, next) => {
-  const { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee } = req.body;
+  let { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee } = req.body;
+
+  // Failsafe: Geocode delivery address if it's missing coordinates (e.g. old saved address)
+  deliveryAddress = await autoGeocode(deliveryAddress);
 
   // Determine correct customer ID
   const finalCustomerId = (req.user.role === 'admin' && customerId) ? customerId : req.user.id;
@@ -323,7 +364,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
   // Auto-assignment is now deferred until after payment in verifyPayment.
 
-  // 7. Socket Emission for Tailor (if order is created - e.g. COD or during development)
+  // 7. Socket Emission and Notification for Tailor
   try {
     const io = getIO();
     if (io) {
@@ -335,8 +376,16 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         });
         console.log(`📡 Socket: Notified Tailor ${targetTailorUserId} of new order creation`);
     }
+
+    await sendNotification({
+        recipient: targetTailorUserId,
+        type: "ORDER_CREATED",
+        title: "New Order Placed",
+        message: `A new order ${order.orderId} has been placed. Please accept or reject it.`,
+        data: { orderId: order._id, targetUrl: "/orders" }
+    });
   } catch (err) {
-    console.error("Socket emission failed in createOrder:", err.message);
+    console.error("Socket/Notification emission failed in createOrder:", err.message);
   }
 
   res.status(201).json({

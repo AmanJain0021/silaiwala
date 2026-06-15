@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import api from '../../../shared/utils/api';
+import { getToken, setToken, removeToken } from '../../../utils/auth';
 
 const normalizeDeliveryBoy = (input) => {
   if (!input) return null;
@@ -165,7 +166,7 @@ export const useDeliveryAuthStore = create(
           const res = await api.post('/delivery/auth/verify-otp', { phone, otp });
           const payload = res.data || res;
           const user = normalizeDeliveryBoy(payload.deliveryBoy);
-          localStorage.setItem('delivery-token', payload.accessToken);
+          setToken(payload.accessToken);
           localStorage.setItem('delivery-refresh-token', payload.refreshToken);
           set({ deliveryBoy: user, token: payload.accessToken, refreshToken: payload.refreshToken, isAuthenticated: true, isLoading: false });
           return { success: true, deliveryBoy: user };
@@ -177,7 +178,7 @@ export const useDeliveryAuthStore = create(
           const res = await api.post('/delivery/auth/login', { email, password });
           const payload = res.data || res;
           const user = normalizeDeliveryBoy(payload.deliveryBoy);
-          localStorage.setItem('delivery-token', payload.accessToken);
+          setToken(payload.accessToken);
           localStorage.setItem('delivery-refresh-token', payload.refreshToken);
           set({ deliveryBoy: user, token: payload.accessToken, refreshToken: payload.refreshToken, isAuthenticated: true, isLoading: false });
           return { success: true, deliveryBoy: user };
@@ -219,7 +220,7 @@ export const useDeliveryAuthStore = create(
         const rt = localStorage.getItem('delivery-refresh-token');
         if (rt) api.post('/delivery/auth/logout', { refreshToken: rt }).catch(() => { });
         set({ deliveryBoy: null, token: null, refreshToken: null, isAuthenticated: false, orders: [], returns: [] });
-        localStorage.removeItem('delivery-token');
+        removeToken();
         localStorage.removeItem('delivery-refresh-token');
         localStorage.removeItem('delivery-auth-storage');
         window.location.href = '/delivery/login';
@@ -489,7 +490,7 @@ export const useDeliveryAuthStore = create(
       },
 
       initialize: () => {
-        const token = localStorage.getItem('delivery-token');
+        const token = getToken();
         if (token) {
           const stored = JSON.parse(localStorage.getItem('delivery-auth-storage') || '{}');
           if (stored.state?.deliveryBoy) {

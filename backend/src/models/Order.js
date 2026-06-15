@@ -180,6 +180,16 @@ const orderSchema = new mongoose.Schema(
       city: String,
       state: String,
       zipCode: String,
+      location: {
+        type: {
+          type: String,
+          enum: ["Point"],
+          default: "Point",
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+        },
+      },
     },
     trackingHistory: [
       {

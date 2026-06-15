@@ -9,6 +9,7 @@ import { useNotifications } from '../context/NotificationContext';
 import api from '../services/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
+import { getToken } from '../../../utils/auth';
 
 const Overview = () => {
     const { user } = useTailorAuth();
@@ -30,7 +31,11 @@ const Overview = () => {
 
     useEffect(() => {
         fetchDashboardData();
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
         if (user?._id) socket.emit('join', `user_${user._id}`);
         socket.on('new_order', () => fetchDashboardData());
         return () => socket.disconnect();

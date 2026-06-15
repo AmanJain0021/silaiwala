@@ -3,11 +3,16 @@ import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../../../utils/cn';
 import useWishlistStore from '../../../../store/wishlistStore';
+import { getImageUrl } from '../../../../utils/imageUrl';
 
 const ProductCard = ({ product, onAddClick }) => {
     const [isHovered, setIsHovered] = useState(false);
     const { toggleWishlist, isInWishlist } = useWishlistStore(state => state);
     const isWishlisted = isInWishlist(product._id || product.id);
+
+    const currentPrice = Number(product.price) || 0;
+    const originalPrice = Number(product.discountPrice || product.originalPrice) || 0;
+    const discount = product.discount || (originalPrice > currentPrice ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0);
 
     return (
         <div
@@ -20,9 +25,9 @@ const ProductCard = ({ product, onAddClick }) => {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Discount Badge */}
-            {product.discount > 0 && (
+            {discount > 0 && (
                 <div className="absolute top-2 left-2 z-20 bg-[#FFBC00] text-[#2D2F6E] text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
-                    -{product.discount}%
+                    -{discount}%
                 </div>
             )}
 
@@ -44,7 +49,7 @@ const ProductCard = ({ product, onAddClick }) => {
             {/* Image Box */}
             <div className="relative aspect-square overflow-hidden bg-gray-50/50">
                 <img
-                    src={product.image}
+                    src={getImageUrl(product.image || product.images?.[0])}
                     alt={product.name}
                     className={cn(
                         "object-cover w-full h-full transition-transform duration-700 ease-out",
@@ -80,8 +85,8 @@ const ProductCard = ({ product, onAddClick }) => {
                     <span className="text-[14px] sm:text-[15px] font-black text-[#2D2F6E]">₹{product.price}</span>
                     <div className="flex items-center gap-1">
                         <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">/ m</span>
-                        {product.originalPrice && (
-                            <span className="text-[10px] text-gray-400 font-bold line-through opacity-60">₹{product.originalPrice}</span>
+                        {originalPrice > currentPrice && (
+                            <span className="text-[10px] text-gray-400 font-bold line-through opacity-60">₹{originalPrice}</span>
                         )}
                     </div>
                 </div>

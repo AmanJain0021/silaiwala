@@ -19,6 +19,7 @@ import {
 import api from '../../../utils/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
+import { getToken } from '../../../utils/auth';
 
 const AdminDashboard = () => {
     const [statsData, setStatsData] = useState({
@@ -102,7 +103,11 @@ const AdminDashboard = () => {
         fetchDashboardData();
 
         // Socket setup for real-time updates
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
 
         socket.on('new_order', () => {
             fetchDashboardData();

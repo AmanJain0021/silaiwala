@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api from '../utils/api';
 import { ROLES } from '../config/roles';
+import { getToken, setToken, removeToken } from '../utils/auth';
 
 const getInitialUser = () => {
     try {
@@ -15,7 +16,7 @@ const getInitialUser = () => {
 
 const useAuthStore = create((set) => ({
     user: getInitialUser(),
-    isAuthenticated: !!localStorage.getItem('token'),
+    isAuthenticated: !!getToken(),
     role: getInitialUser()?.role || null,
     isLoading: false,
     error: null,
@@ -33,7 +34,7 @@ const useAuthStore = create((set) => ({
                 throw new Error('User data not found in response');
             }
 
-            localStorage.setItem('token', token);
+            setToken(token);
             localStorage.setItem('user', JSON.stringify(user));
 
             set({
@@ -77,7 +78,7 @@ const useAuthStore = create((set) => ({
             const user = response.data.data || response.data.user || response.data;
             const token = response.data.token;
 
-            localStorage.setItem('token', token);
+            setToken(token);
             localStorage.setItem('user', JSON.stringify(user));
 
             set({
@@ -96,7 +97,7 @@ const useAuthStore = create((set) => ({
     },
 
     logout: () => {
-        localStorage.removeItem('token');
+        removeToken();
         localStorage.removeItem('user');
         set({ user: null, isAuthenticated: false, role: null });
     },
@@ -115,7 +116,7 @@ const useAuthStore = create((set) => ({
                 throw new Error('User object not found in the response');
             }
 
-            localStorage.setItem('token', token);
+            setToken(token);
             localStorage.setItem('user', JSON.stringify(user));
 
             set({
@@ -136,7 +137,7 @@ const useAuthStore = create((set) => ({
 
     checkAuth: () => {
         const user = getInitialUser();
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (user && token) {
             set({ user, isAuthenticated: true, role: user.role });
         } else {
