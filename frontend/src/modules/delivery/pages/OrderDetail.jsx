@@ -227,17 +227,22 @@ const DeliveryOrderDetail = () => {
           directionsService.route(request, (result, status) => {
               console.log(`📏 [OrderDetail] Directions Status: ${status}`, result);
               if (status === window.google.maps.DirectionsStatus.OK) {
+                if (hasCurrentLocation) {
+                  const firstLeg = result.routes[0].legs[0];
+                  if (firstLeg) {
+                    setDistanceRemaining(firstLeg.distance.value);
+                    setEta(firstLeg.duration.text);
+                  }
+                } else {
+                  // Explicitly reset UI to null so it shows 'Waiting for GPS...'
+                  setDistanceRemaining(null);
+                  setEta(null);
+                }
+                
                 let totalMeters = 0;
                 result.routes[0].legs.forEach(leg => {
                     totalMeters += leg.distance.value;
                 });
-                
-                // Get the first leg (current location -> pickup/dropoff)
-                const firstLeg = result.routes[0].legs[0];
-                if (firstLeg) {
-                    setDistanceRemaining(firstLeg.distance.value);
-                    setEta(firstLeg.duration.text);
-                }
                 
                 const distanceInKm = totalMeters / 1000;
                 console.log(`📏 [OrderDetail] Total Trip Distance Calculated: ${distanceInKm} km`);
