@@ -4,6 +4,7 @@
     --font-sans: "Poppins", system-ui, sans-serif;
     --font-serif: "Libre Caslon Text", serif;
     --font-body: "Manrope", sans-serif;
+    --font-jakarta: "Plus Jakarta Sans", sans-serif;
     
     /* Existing Colors */
     --color-primary: #2D2F6E;
@@ -17,6 +18,28 @@
     --color-alabaster: #FAF9F7;
     --color-stone: #EFEEEC;
     --color-gold: #B18D48;
+
+    /* NEW: Premium Atelier Purple Theme */
+    --color-sw-primary: #4a0581;
+    --color-sw-primary-container: #622999;
+    --color-sw-on-primary: #ffffff;
+    --color-sw-on-primary-container: #d2a4ff;
+    --color-sw-surface: #fcf9f8;
+    --color-sw-surface-container: #f0eded;
+    --color-sw-surface-container-low: #f6f3f2;
+    --color-sw-surface-container-high: #eae7e7;
+    --color-sw-on-surface: #1c1b1b;
+    --color-sw-on-surface-variant: #4c4451;
+    --color-sw-outline: #7d7483;
+    --color-sw-outline-variant: #cec3d3;
+    --color-sw-surface-tint: #7a42b1;
+    --color-sw-secondary: #635b6e;
+    --color-sw-secondary-container: #e9def5;
+    --color-sw-tertiary: #4a0085;
+    --color-sw-tertiary-container: #651baa;
+    --color-sw-inverse-primary: #dcb8ff;
+    --color-sw-primary-fixed: #f0dbff;
+    --color-sw-primary-fixed-dim: #dcb8ff;
     
     /* Layout utilities */
     --spacing-18: 4.5rem;

@@ -15,11 +15,6 @@ const actions = [
         path: '/user/tailors'
     },
     {
-        label: 'Store',
-        icon: <ShoppingBag size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
-        path: '/user/store'
-    },
-    {
         label: 'My Orders',
         icon: <ClipboardList size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/user/orders'

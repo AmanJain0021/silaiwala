@@ -59,12 +59,7 @@ const HomeHeader = ({ user }) => {
         <>
             <div className="bg-[#2D2F6E] pt-2 transition-all duration-300 md:hidden overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pb-2 pt-safe">
-                    {/* Greeting */}
-                <div className="mb-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                        {getGreeting()}, <span className="text-white capitalize">{userName}</span> <span className="origin-bottom-right animate-bounce">👋</span>
-                    </h2>
-                </div>
+    
 
                 {/* Top Row: Brand & Icons */}
                 <div className="flex justify-between items-center">
@@ -156,15 +151,7 @@ const HomeHeader = ({ user }) => {
                             )}
                         </Link>
 
-                        <Link to="/user/profile" className="ml-0.5 active:scale-90 transition-transform">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[1rem] sm:rounded-[1.25rem] border-2 border-white/20 p-0.5 overflow-hidden shadow-sm">
-                                <img
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
-                                    className="w-full h-full object-cover bg-gray-100 rounded-[0.8rem] sm:rounded-[1rem]"
-                                    alt="User"
-                                />
-                            </div>
-                        </Link>
+
                     </div>
                 </div>
             </div>
