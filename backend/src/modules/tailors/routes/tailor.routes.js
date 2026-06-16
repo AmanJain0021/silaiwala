@@ -9,7 +9,6 @@ const {
   getOrders,
   getDeliveryDetails,
   updateOrderStatus,
-  withdrawFunds,
   updateDocuments
 } = require("../controllers/tailor.controller");
 const {
@@ -67,7 +66,6 @@ router.use(protect, authorize("tailor"));
 
 router.patch("/profile", updateProfile);
 router.patch("/documents", updateDocuments);
-router.post("/withdraw", withdrawFunds);
 router.patch("/orders/:id/status", updateOrderStatus);
 
 // Work Samples Actions

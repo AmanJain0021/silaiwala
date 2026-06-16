@@ -42,7 +42,13 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (sendingOtp) return;
         setError('');
+
+        if (!otpSent) {
+            handleSendOtp();
+            return;
+        }
 
         if (!mobileNumber || !otp) {
             setError('Please fill in all fields');

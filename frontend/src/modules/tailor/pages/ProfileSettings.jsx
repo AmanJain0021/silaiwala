@@ -8,11 +8,16 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
+import PlacesAutocompleteField from '../../../shared/components/PlacesAutocompleteField';
+import { useJsApiLoader } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_LIBRARIES = ['places'];
 
 const ProfileSettings = () => {
     const navigate = useNavigate();
     const { logout } = useTailorAuth();
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingPickup, setIsEditingPickup] = useState(false);
     const [activeModal, setActiveModal] = useState(null); // 'pickup', 'terms', 'privacy'
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +35,12 @@ const ProfileSettings = () => {
     });
 
     const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
+
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+        libraries: GOOGLE_MAPS_LIBRARIES,
+    });
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -141,12 +152,91 @@ const ProfileSettings = () => {
             case 'pickup':
                 return (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-black text-gray-900">Pick Up Information</h3>
-                        <p className="text-sm text-gray-600">Default pickup location is your registered shop address. Delivery partners will arrive between 10 AM - 6 PM.</p>
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Current Address</p>
-                            <p className="text-sm font-medium text-gray-800">{formData.address}</p>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-black text-gray-900">Pick Up Information</h3>
+                            {!isEditingPickup && (
+                                <button 
+                                    onClick={() => setIsEditingPickup(true)}
+                                    className="p-2 bg-indigo-50 text-primary rounded-xl hover:bg-indigo-100 transition-colors"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                            )}
                         </div>
+                        <p className="text-sm text-gray-600">Default pickup location is your registered shop address. Delivery partners will arrive between 10 AM - 6 PM.</p>
+                        
+                        {isEditingPickup ? (
+                            <form onSubmit={(e) => {
+                                handleSave(e);
+                                setIsEditingPickup(false);
+                            }} className="space-y-4 mt-4 animate-in fade-in zoom-in-95 duration-200">
+                                {isLoaded ? (
+                                    <PlacesAutocompleteField
+                                        label="Shop Address"
+                                        name="address"
+                                        placeholder="Start typing your shop address..."
+                                        required
+                                        value={formData.address}
+                                        onChange={(val) => setFormData({ ...formData, address: val })}
+                                        onClear={() => setFormData({ ...formData, address: '', latitude: null, longitude: null })}
+                                        onPlaceSelect={(placeData) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                address: placeData.address,
+                                                latitude: placeData.latitude,
+                                                longitude: placeData.longitude
+                                            }));
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-2">Shop Address</label>
+                                        <input 
+                                            className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 focus:border-primary rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-semibold text-gray-900"
+                                            value={formData.address} 
+                                            onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                        />
+                                    </div>
+                                )}
+                                
+                                {formData.latitude && formData.longitude && (
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className="text-[9px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1.5">
+                                            <MapPin size={10} className="text-emerald-500" />
+                                            GPS: {Number(formData.latitude).toFixed(5)}, {Number(formData.longitude).toFixed(5)}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsEditingPickup(false)}
+                                        className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-lg hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isSaving ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 relative group">
+                                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Current Address</p>
+                                <p className="text-sm font-medium text-gray-800">{formData.address}</p>
+                                {formData.latitude && formData.longitude && (
+                                    <p className="text-[10px] font-mono text-emerald-600 font-bold mt-2 flex items-center gap-1">
+                                        <MapPin size={10} />
+                                        GPS Logged
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 );
             case 'terms':

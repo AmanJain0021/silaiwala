@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
     ShoppingBag, Star, Gift, ArrowUpRight, Menu,
-    Loader2, ChevronRight
+    Loader2, ChevronRight, X, Send
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useTailorAuth } from '../context/AuthContext';
@@ -17,6 +19,54 @@ const TailorEarnings = () => {
     const [stats, setStats]         = useState({ balance: 0, totalWithdrawn: 0 });
     const [transactions, setTxns]   = useState([]);
     const [earningsData, setEarningsData] = useState(null);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [upiId, setUpiId] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleWithdrawRequest = async (e) => {
+        e.preventDefault();
+
+        const amount = parseFloat(withdrawAmount);
+        if (!amount || amount <= 0) {
+            return toast.error('Please enter a valid amount');
+        }
+
+        if (amount > stats.balance) {
+            return toast.error('Insufficient balance');
+        }
+
+        if (!upiId) {
+            return toast.error('Please enter UPI ID');
+        }
+
+        setIsSubmitting(true);
+        try {
+            const res = await api.post('/wallet/withdraw', {
+                amount,
+                method: 'upi',
+                upiId,
+                bankDetails: { upiId }
+            });
+
+            if (res.data.success) {
+                toast.success('Withdrawal request submitted!');
+                setShowWithdrawModal(false);
+                setWithdrawAmount('');
+                setUpiId('');
+                
+                // Refresh stats
+                const balRes = await api.get('/wallet/dashboard');
+                setStats(balRes.data.data);
+                setTxns(balRes.data.data.recentTransactions || []);
+            }
+        } catch (error) {
+            console.error('Withdrawal failed:', error);
+            toast.error(error.response?.data?.message || 'Withdrawal request failed');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const tabs = ['Daily', 'Weekly', 'Monthly'];
 
@@ -26,17 +76,17 @@ const TailorEarnings = () => {
                 let periodMap = { 'Daily': 'day', 'Weekly': 'week', 'Monthly': 'month' };
                 const period = periodMap[activeTab] || 'week';
                 
-                const [balRes, txRes, earnRes] = await Promise.all([
-                    api.get('/wallet/balance'),
-                    api.get('/wallet/transactions'),
+                const [balRes, earnRes] = await Promise.all([
+                    api.get('/wallet/dashboard'),
                     api.get(`/tailors/earnings?period=${period}`)
                 ]);
                 setStats(balRes.data.data);
-                setTxns(txRes.data.data || []);
+                setTxns(balRes.data.data.recentTransactions || []);
                 setEarningsData(earnRes.data.data);
-            } catch (e) {
-                console.error('Earnings fetch error:', e);
-            } finally {
+                setIsLoading(false);
+            } catch (error) {
+                if (error?.name === 'CanceledError') return;
+                console.error('Earnings fetch error:', error);
                 setIsLoading(false);
             }
         };
@@ -146,7 +196,7 @@ const TailorEarnings = () => {
                                         <span className="text-[11px] font-black text-green-500">+12.5%</span>
                                     </div>
                                     <button 
-                                        onClick={() => navigate('/partner/withdraw')}
+                                        onClick={() => setShowWithdrawModal(true)}
                                         className="bg-[#FDE5D2] text-[#2D2F6E] px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-xl shadow-black/20"
                                     >
                                         Withdraw Funds
@@ -245,6 +295,99 @@ const TailorEarnings = () => {
 
                 </div>
             </div>
+
+            {/* Withdrawal Modal */}
+            <AnimatePresence>
+                {showWithdrawModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-slate-900/60 backdrop-blur-sm md:items-center"
+                        onClick={() => !isSubmitting && setShowWithdrawModal(false)}
+                    >
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative"
+                        >
+                            <button
+                                onClick={() => setShowWithdrawModal(false)}
+                                disabled={isSubmitting}
+                                className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-14 h-14 bg-indigo-50 text-[#2D2F6E] rounded-2xl flex items-center justify-center shrink-0">
+                                    <Send size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Withdraw Funds</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Directly to UPI</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleWithdrawRequest} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Amount (₹)</label>
+                                    <input
+                                        type="number"
+                                        value={withdrawAmount}
+                                        onChange={(e) => setWithdrawAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
+                                        min="100"
+                                        max={stats.balance}
+                                        disabled={isSubmitting}
+                                    />
+                                    <div className="flex items-center justify-between mt-2 px-2">
+                                        <p className="text-[10px] font-bold text-slate-500">Available: ₹{stats.balance?.toLocaleString()}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setWithdrawAmount(stats.balance)}
+                                            className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest"
+                                        >
+                                            Max
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">UPI ID</label>
+                                    <input
+                                        type="text"
+                                        value={upiId}
+                                        onChange={(e) => setUpiId(e.target.value)}
+                                        placeholder="username@bank"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting || !withdrawAmount || !upiId}
+                                    className="w-full bg-[#2D2F6E] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        'Request Withdrawal'
+                                    )}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

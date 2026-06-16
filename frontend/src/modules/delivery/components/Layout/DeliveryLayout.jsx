@@ -303,12 +303,13 @@ const DeliveryLayout = () => {
 
   return (
     <div id="delivery-layout-root" className="flex flex-col h-screen overflow-hidden bg-white">
-      {/* Mobile Header */}
-      <header className="sticky top-0 left-0 z-50 bg-[#0f172a] backdrop-blur-lg border-b border-white/5 shadow-none shrink-0">
-        <div className="flex items-center gap-3 px-4 py-2">
+      {/* Mobile Header (Hidden on Wallet Page) */}
+      {!location.pathname.includes('/delivery/wallet') && (
+        <header className="sticky top-0 left-0 z-50 bg-[#2D2F6E] backdrop-blur-lg border-b border-indigo-400/20 shadow-lg shadow-indigo-900/10 shrink-0">
+          <div className="flex items-center gap-3 px-4 py-2">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95 border border-white/5"
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95 border border-white/10"
             aria-label="Open menu">
             <FiMenu className="text-white text-xl" />
           </button>
@@ -330,33 +331,34 @@ const DeliveryLayout = () => {
           <div className="flex items-center gap-4 ml-auto">
             {/* Premium Status Toggle */}
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isOnline ? 'text-emerald-400' : 'text-slate-500'}`}>
+              <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isOnline ? 'text-emerald-300' : 'text-indigo-200'}`}>
                 {isOnline ? 'Live' : 'Off'}
               </span>
               <button 
                 onClick={handleToggleOnline} 
                 disabled={isUpdatingStatus}
-                className={`group relative h-5 w-10 flex-shrink-0 items-center rounded-full transition-all duration-500 border border-white/10 ${isOnline ? 'bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-slate-800'}`}
+                className={`group relative h-5 w-10 flex-shrink-0 items-center rounded-full transition-all duration-500 border border-white/10 ${isOnline ? 'bg-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-indigo-900/50'}`}
               >
                 <div className={`absolute inset-0 rounded-full transition-opacity duration-500 ${isOnline ? 'opacity-100 bg-emerald-500/20 animate-pulse' : 'opacity-0'}`} />
                 <motion.div 
                   animate={{ x: isOnline ? 22 : 2 }} 
                   transition={{ type: "spring", stiffness: 600, damping: 30 }}
-                  className={`relative h-3.5 w-3.5 rounded-full shadow-lg flex items-center justify-center transition-colors duration-300 ${isOnline ? 'bg-emerald-400' : 'bg-slate-500'}`}
+                  className={`relative h-3.5 w-3.5 rounded-full shadow-lg flex items-center justify-center transition-colors duration-300 ${isOnline ? 'bg-emerald-400' : 'bg-indigo-300'}`}
                 >
                   {isOnline && <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-25" />}
                 </motion.div>
               </button>
             </div>
 
-            <div className="flex items-center gap-2 pl-3 border-l border-white/10">
-              <div className="w-10 h-10 bg-[#1e293b] rounded-xl flex items-center justify-center p-1 shadow-2xl border border-white/10 overflow-hidden">
+            <div className="flex items-center gap-2 pl-3 border-l border-indigo-400/30">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1 shadow-2xl border border-indigo-100 overflow-hidden">
                 <img src={logo} alt="CLOSH" className="w-full h-full object-cover" />
               </div>
             </div>
           </div>
         </div>
       </header>
+      )}
 
       <AnimatePresence>
         {sidebarOpen && (

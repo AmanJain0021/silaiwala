@@ -345,6 +345,9 @@ const Orders = () => {
 
                                                         const handleStepClick = () => {
                                                             if (updatingOrders[order._id]) return;
+                                                            // Prevent backwards or redundant updates
+                                                            if (idx <= currentIdx) return;
+                                                            
                                                             if (step.key === 'ready-for-delivery' || step.key === 'ready-for-pickup') {
                                                                 setDispatchOrder(order);
                                                             } else {
@@ -353,7 +356,7 @@ const Orders = () => {
                                                         };
 
                                                         return (
-                                                            <div key={step.key} className="flex items-start gap-3 group cursor-pointer" onClick={handleStepClick}>
+                                                            <div key={step.key} className={`flex items-start gap-3 group ${idx <= currentIdx ? 'cursor-default' : 'cursor-pointer'}`} onClick={handleStepClick}>
                                                                 {/* Dot / Icon Container */}
                                                                 <div className={cn(
                                                                     "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-700 bg-white border-2 shrink-0",

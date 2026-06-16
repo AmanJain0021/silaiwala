@@ -194,40 +194,6 @@ exports.updateDocuments = asyncHandler(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Withdrawal request from tailor
- * @route   POST /api/v1/tailors/withdraw
- * @access  Private (Tailor)
- */
-exports.withdrawFunds = asyncHandler(async (req, res, next) => {
-  const { amount } = req.body;
-
-  if (!amount || amount <= 0) {
-    return next(new ErrorResponse("Please provide a valid amount", 400));
-  }
-
-  const tailor = await Tailor.findOne({ user: req.user.id });
-
-  if (amount > tailor.walletBalance) {
-    return next(new ErrorResponse("Insufficient balance", 400));
-  }
-
-  // Process withdrawal (In real app, this would trigger a payment gateway or admin notification)
-  tailor.walletBalance -= amount;
-  tailor.totalWithdrawn += amount;
-  await tailor.save();
-
-  // Logic to create a Transaction record would go here...
-
-  res.status(200).json({
-    success: true,
-    message: "Withdrawal request initiated successfully",
-    data: {
-      amount,
-      newBalance: tailor.walletBalance
-    }
-  });
-});
 
 /**
  * @desc    Get comprehensive tailor dashboard data (Stats + Recent Activity)

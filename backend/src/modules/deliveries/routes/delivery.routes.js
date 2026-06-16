@@ -13,9 +13,7 @@ const {
   submitDocuments,
   rejectOrder,
   resendDeliveryOtp,
-  completeDeliveryFlow,
-  requestPayout,
-  getPayouts,
+  completeDeliveryFlow
 } = require("../controllers/delivery.controller");
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
 
@@ -36,7 +34,5 @@ router.patch("/orders/:id/status", updateDeliveryStatus);
 router.post("/orders/:id/resend-delivery-otp", resendDeliveryOtp);
 router.patch("/orders/:id/complete", completeDeliveryFlow);
 router.post("/documents", submitDocuments);
-router.post("/payouts/request", requestPayout);
-router.get("/payouts", getPayouts);
 
 module.exports = router;

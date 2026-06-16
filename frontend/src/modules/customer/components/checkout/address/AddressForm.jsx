@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { Home, Briefcase, ChevronRight, Navigation } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Home, Briefcase, ChevronRight, Navigation, MapPin, X } from 'lucide-react';
 import useAddressStore from '../../../../../store/userStore';
 import { validateName, validatePhone, validatePincode } from '../../../../../utils/validation';
 import useAuthStore from '../../../../../store/authStore';
 import useLocationStore from '../../../../../store/locationStore';
 import useUnifiedLocation from '../../../../../shared/hooks/useUnifiedLocation';
+import { useJsApiLoader } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_LIBRARIES = ['places'];
 
 const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors, maxLength, prefix }) => (
     <div className="mb-3">
@@ -37,6 +40,8 @@ const InputField = ({ label, name, placeholder, type = "text", required, form, e
     </div>
 );
 
+import PlacesAutocompleteField from '../../../../../shared/components/PlacesAutocompleteField';
+
 const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
     const addAddress = useAddressStore((state) => state.addAddress);
     const updateAddress = useAddressStore((state) => state.updateAddress);
@@ -44,10 +49,25 @@ const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
     const user = useAuthStore((state) => state.user);
     const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
 
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+        libraries: GOOGLE_MAPS_LIBRARIES,
+    });
+
+    const cleanPhone = (p) => {
+        if (!p) return '';
+        let cleaned = p.toString().replace(/\D/g, '');
+        if (cleaned.startsWith('91') && cleaned.length > 10) {
+            cleaned = cleaned.substring(2);
+        }
+        return cleaned;
+    };
+
     const [form, setForm] = useState(initialData ? {
         ...initialData,
         receiverName: initialData.receiverName || '',
-        phone: initialData.phone || '',
+        phone: cleanPhone(initialData.phone) || '',
         zipCode: initialData.zipCode || '',
         street: initialData.street || '',
         city: initialData.city || '',
@@ -56,7 +76,7 @@ const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
         location: initialData.location || null
     } : {
         receiverName: user?.name || user?.fullName || '',
-        phone: user?.phone || user?.phoneNumber || '',
+        phone: cleanPhone(user?.phone || user?.phoneNumber) || '',
         zipCode: '',
         street: '', city: '', state: '', type: 'Home',
         location: null
@@ -87,6 +107,23 @@ const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
             alert("Could not fetch address details automatically. Please enter manually.");
         }
     };
+
+    const handlePlaceSelect = useCallback((placeData) => {
+        setForm(prev => ({
+            ...prev,
+            street: placeData.address, // Note: the shared component returns 'address'
+            city: placeData.city || prev.city,
+            state: placeData.state || prev.state,
+            zipCode: placeData.pincode || prev.zipCode,
+            location: {
+                type: 'Point',
+                coordinates: [placeData.longitude, placeData.latitude]
+            }
+        }));
+
+        // Clear any street errors
+        setErrors(prev => ({ ...prev, street: null }));
+    }, []);
 
     const validate = () => {
         const newErrors = {};
@@ -159,7 +196,38 @@ const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
                     <InputField label="City" name="city" placeholder="New Delhi" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
                 </div>
 
-                <InputField label="Address (House No, Area, Landmark)" name="street" placeholder="Flat 402, Block A, Main Road" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
+                {/* Google Places Autocomplete Address Field */}
+                {isLoaded ? (
+                    <PlacesAutocompleteField
+                        label="Address (House No, Area, Landmark)"
+                        name="street"
+                        placeholder="Start typing your address..."
+                        required
+                        value={form.street}
+                        error={errors.street}
+                        onChange={(val) => {
+                            setForm({ ...form, street: val });
+                            if (errors.street) setErrors({ ...errors, street: null });
+                        }}
+                        onClear={() => {
+                            setForm({ ...form, street: '' });
+                        }}
+                        onPlaceSelect={handlePlaceSelect}
+                    />
+                ) : (
+                    <InputField label="Address (House No, Area, Landmark)" name="street" placeholder="Flat 402, Block A, Main Road" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
+                )}
+
+                {/* Show coordinates badge if location is set */}
+                {form.location?.coordinates?.[0] && form.location?.coordinates?.[1] && (
+                    <div className="mb-3 flex items-center gap-2">
+                        <span className="text-[9px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1.5">
+                            <MapPin size={10} className="text-emerald-500" />
+                            GPS: {Number(form.location.coordinates[1]).toFixed(5)}, {Number(form.location.coordinates[0]).toFixed(5)}
+                        </span>
+                    </div>
+                )}
+
                 <InputField label="State" name="state" placeholder="Delhi" required form={form} errors={errors} setForm={setForm} setErrors={setErrors} />
 
                 {/* Type Selection */}

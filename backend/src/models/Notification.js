@@ -30,7 +30,11 @@ const notificationSchema = new mongoose.Schema(
         "PARTNER_ASSIGNED",
         "ACCOUNT_APPROVED",
         "ACCOUNT_REJECTED",
-        "TASK_ASSIGNED"
+        "TASK_ASSIGNED",
+        "WITHDRAWAL_REQUESTED",
+        "WITHDRAWAL_APPROVED",
+        "WITHDRAWAL_REJECTED",
+        "WITHDRAWAL_PAID"
       ],
       required: true,
     },

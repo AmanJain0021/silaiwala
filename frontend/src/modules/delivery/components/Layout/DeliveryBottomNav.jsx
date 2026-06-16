@@ -29,11 +29,11 @@ const DeliveryBottomNav = () => {
   const iconVariants = {
     inactive: {
       scale: 1,
-      color: "#878787",
+      color: "#94a3b8", // slate-400
     },
     active: {
       scale: 1.1,
-      color: "#2874F0", // Primary color
+      color: "#ffffff",
       transition: {
         duration: 0.3,
         ease: "easeOut",
@@ -42,8 +42,8 @@ const DeliveryBottomNav = () => {
   };
 
   const navContent = (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-l border-r border-accent-200/30 z-[9999] safe-area-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center justify-around h-16 px-1">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#2D2F6E] text-white rounded-t-[2rem] z-[9999] safe-area-bottom shadow-[0_-10px_40px_rgba(45,47,110,0.5)]">
+      <div className="flex items-center justify-around h-20 px-2 pb-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -52,37 +52,37 @@ const DeliveryBottomNav = () => {
             <Link
               key={item.path}
               to={item.path}
-              className="flex flex-col items-center justify-center flex-1 h-full gap-1">
+              className="flex flex-col items-center justify-center flex-1 h-full gap-1 pt-2">
               <motion.div
-                className="relative flex items-center justify-center"
+                className={`relative flex items-center justify-center w-12 h-12 rounded-[1.2rem] transition-colors duration-300 ${active ? 'bg-white/20 text-white shadow-inner' : 'bg-transparent text-indigo-200/70'}`}
                 variants={iconVariants}
                 initial="inactive"
                 animate={active ? "active" : "inactive"}>
                 {item.path === "/delivery/profile" && deliveryBoy?.avatar ? (
-                  <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-colors ${active ? 'border-primary-500' : 'border-gray-300'}`}>
+                  <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-colors ${active ? 'border-white' : 'border-indigo-200/50'}`}>
                     <img src={deliveryBoy.avatar} className="w-full h-full object-cover" alt="P" />
                   </div>
                 ) : (
                   <Icon
-                    className="text-2xl"
+                    className="text-xl"
                     style={{
                       fill: "none",
                       stroke: "currentColor",
-                      strokeWidth: 2,
+                      strokeWidth: active ? 2.5 : 2,
                     }}
                   />
                 )}
                 {item.path === "/delivery/notifications" && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-2 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold text-center leading-4">
+                  <span className="absolute -top-1 right-0 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black text-center leading-4 border-2 border-[#2D2F6E]">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </motion.div>
-              <span
-                className={`text-xs font-medium ${active ? "text-primary-600" : "text-gray-500"
-                  }`}>
-                {item.label}
-              </span>
+              {active && (
+                <span className="text-[9px] font-black tracking-widest uppercase text-white mt-1 drop-shadow-sm">
+                  {item.label}
+                </span>
+              )}
             </Link>
           );
         })}

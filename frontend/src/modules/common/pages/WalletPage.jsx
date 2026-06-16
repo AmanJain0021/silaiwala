@@ -20,16 +20,14 @@ const WalletPage = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [balanceRes, transactionsRes] = await Promise.all([
-                api.get('/wallet/balance'),
-                api.get('/wallet/transactions')
-            ]);
+            const balanceRes = await api.get('/wallet/dashboard');
             setStats(balanceRes.data.data);
-            setTransactions(transactionsRes.data.data);
+            setTransactions(balanceRes.data.data.recentTransactions || []);
+            setIsLoading(false);
         } catch (error) {
+            if (error?.name === 'CanceledError') return;
             console.error('Failed to fetch wallet data:', error);
             toast.error('Could not load wallet details');
-        } finally {
             setIsLoading(false);
         }
     };

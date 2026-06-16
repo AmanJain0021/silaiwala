@@ -333,7 +333,7 @@ export const useDeliveryAuthStore = create(
           set({ selectedOrder: order, isLoadingOrder: false }); return order;
         } catch (e) { set({ isLoadingOrder: false }); throw e; }
       },
-      acceptOrder: async (id) => {
+      acceptOrder: async (id, opt = {}) => {
         const currentOrders = get().orders || [];
         const targetedOrder = currentOrders.find(o => o.id === id || o._id === id || o.orderId === id);
 
@@ -346,7 +346,7 @@ export const useDeliveryAuthStore = create(
 
         set({ isUpdatingOrderStatus: true });
         try {
-          const res = await api.post(`/deliveries/orders/${id}/accept`);
+          const res = await api.post(`/deliveries/orders/${id}/accept`, opt);
           const payload = res.data?.data || res.data || res;
           const order = normalizeOrder(payload.order || payload);
 
@@ -439,10 +439,10 @@ export const useDeliveryAuthStore = create(
           set({ isUpdatingOrderStatus: false, selectedOrder: order }); return data;
         } catch (e) { set({ isUpdatingOrderStatus: false }); throw e; }
       },
-      completeDeliveryFlow: async (id, { otp, openBoxPhoto, deliveryProofPhoto }) => {
+      completeDeliveryFlow: async (id, { otp, openBoxPhoto, deliveryProofPhoto, paymentMethod }) => {
         set({ isUpdatingOrderStatus: true });
         try {
-          const res = await api.patch(`/deliveries/orders/${id}/complete`, { otp, openBoxPhoto, deliveryProofPhoto });
+          const res = await api.patch(`/deliveries/orders/${id}/complete`, { otp, openBoxPhoto, deliveryProofPhoto, paymentMethod });
           const data = res.data?.data || res.data || res;
           const order = normalizeOrder(data.order || data);
           if (data.rider) set({ deliveryBoy: normalizeDeliveryBoy({ ...get().deliveryBoy, ...data.rider }) });

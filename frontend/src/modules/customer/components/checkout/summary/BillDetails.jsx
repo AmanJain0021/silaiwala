@@ -38,7 +38,7 @@ const BillDetails = ({ pricing, advancePercentage = 50 }) => {
 
                 {delivery > 0 ? (
                     <div className="flex justify-between text-xs text-gray-600">
-                        <span>Express Delivery Fee</span>
+                        <span>Delivery Charges</span>
                         <span>₹{delivery}</span>
                     </div>
                 ) : (

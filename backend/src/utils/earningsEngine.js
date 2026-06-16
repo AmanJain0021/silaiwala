@@ -27,24 +27,31 @@ const distributeEarnings = async (orderId) => {
     const { tailor, deliveryPartner, totalAmount, platformFee, deliveryFee } = order;
 
     // 1. Calculate Tailor Share
-    const tailorShare = totalAmount - platformFee - deliveryFee;
+    let tailorShare = totalAmount - platformFee - deliveryFee;
 
-    // 2. Credit Tailor
-    const tailorProfile = await Tailor.findOne({ user: tailor }).session(session);
-    if (tailorProfile) {
-      tailorProfile.walletBalance += tailorShare;
-      await tailorProfile.save({ session });
+    // Deduct any advance payment they already received in their wallet
+    if (order.advancePaymentStatus === 'paid' && order.advancePaymentAmount > 0) {
+       tailorShare -= order.advancePaymentAmount;
+    }
 
-      await WalletTransaction.create([
-        {
-          user: tailor,
-          amount: tailorShare,
-          type: "credit",
-          category: "order_earnings",
-          order: orderId,
-          description: `Earnings for order ${order.orderId}`,
-        },
-      ], { session });
+    // 2. Credit Tailor (Only if there's a remaining balance to pay)
+    if (tailorShare > 0) {
+      const tailorProfile = await Tailor.findOne({ user: tailor }).session(session);
+      if (tailorProfile) {
+        tailorProfile.walletBalance += tailorShare;
+        await tailorProfile.save({ session });
+
+        await WalletTransaction.create([
+          {
+            user: tailor,
+            amount: tailorShare,
+            type: "credit",
+            category: "order_earnings",
+            order: orderId,
+            description: `Final settlement for order ${order.orderId}`,
+          },
+        ], { session });
+      }
     }
 
     // Note: Delivery partner payouts are now handled per-phase inside delivery.controller.js

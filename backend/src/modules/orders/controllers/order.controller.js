@@ -139,6 +139,29 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            });
        }
 
+       // --- Credit Tailor Wallet for Advance Payment ---
+       try {
+           const tailorProfile = await Tailor.findOne({ user: order.tailor });
+           if (tailorProfile) {
+               const advanceAmount = order.advancePaymentAmount || 0;
+               tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + advanceAmount;
+               await tailorProfile.save();
+
+               await WalletTransaction.create({
+                   user: order.tailor,
+                   amount: advanceAmount,
+                   type: "credit",
+                   category: "advance_payment",
+                   order: order._id,
+                   description: `Advance payment received for order ${order.orderId}`
+               });
+               console.log(`Credited ₹${advanceAmount} advance to Tailor ${order.tailor}`);
+           }
+       } catch (err) {
+           console.error("Failed to credit advance payment to Tailor:", err);
+       }
+       // -----------------------------------------------
+
     } else if (paymentType === 'remaining') {
        order.remainingPaymentStatus = "paid";
        order.remainingPaymentMethod = "online";

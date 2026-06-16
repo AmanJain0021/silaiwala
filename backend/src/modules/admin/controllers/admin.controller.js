@@ -484,6 +484,8 @@ exports.getOrderById = async (req, res) => {
       .populate("customer", "name email phoneNumber")
       .populate("tailor", "name shopName phoneNumber")
       .populate("deliveryPartner", "name phoneNumber")
+      .populate("pickupPartner", "name phoneNumber")
+      .populate("dropoffPartner", "name phoneNumber")
       .populate("items.service", "title")
       .populate("items.product", "name");
       

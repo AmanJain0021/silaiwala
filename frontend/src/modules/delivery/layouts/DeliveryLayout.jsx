@@ -368,6 +368,7 @@ const DeliveryLayout = () => {
             </AnimatePresence>
 
             {/* Top Fixed Header - Elegant Mobile Profile Bar */}
+            {!location.pathname.includes('/delivery/wallet') && (
             <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-5 z-50">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden border border-indigo-100">
@@ -422,9 +423,10 @@ const DeliveryLayout = () => {
                     </button>
                 </div>
             </header>
+            )}
 
             {/* Main Dynamic Viewport */}
-            <main className="flex-1 pb-24 md:pb-12 pt-[74px] px-4 md:px-10 max-w-lg mx-auto w-full">
+            <main className={`flex-1 pb-24 md:pb-12 max-w-lg mx-auto w-full ${location.pathname.includes('/delivery/wallet') ? '' : 'pt-[74px] px-4 md:px-10'}`}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
@@ -439,7 +441,7 @@ const DeliveryLayout = () => {
             </main>
 
             {/* Bottom Mobile Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 h-[80px] bg-black backdrop-blur-xl rounded-t-[1.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] flex items-center justify-around px-2 z-50 border-t border-white/5 md:max-w-md md:mx-auto pb-safe">
+            <nav className="fixed bottom-0 left-0 right-0 h-[80px] bg-white backdrop-blur-xl rounded-t-[1.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] flex items-center justify-around px-2 z-50 border-t border-white/5 md:max-w-md md:mx-auto pb-safe">
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (

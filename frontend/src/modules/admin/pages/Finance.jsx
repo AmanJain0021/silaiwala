@@ -14,8 +14,10 @@ const AdminFinance = () => {
     const [transactions, setTransactions] = useState([]);
     const [payouts, setPayouts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [processingPayoutId, setProcessingPayoutId] = useState(null);
+    const [payoutRef, setPayoutRef] = useState('');
 
-    const tabs = ['Overview', 'Transactions', 'Payouts', 'GST & Taxes'];
+    const tabs = ['Overview', 'Transactions', 'Tailor Payouts', 'Delivery Payouts', 'GST & Taxes'];
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -26,11 +28,18 @@ const AdminFinance = () => {
             } else if (selectedTab === 'Transactions') {
                 const res = await api.get(`/admin/finance/transactions?search=${searchTerm}`);
                 setTransactions(res.data.data);
-            } else if (selectedTab === 'Payouts') {
-                const res = await api.get('/wallet/admin/withdrawals');
+            } else if (selectedTab === 'Tailor Payouts') {
+                const res = await api.get('/wallet/admin/withdrawals?role=tailor');
+                setPayouts(res.data.data);
+            } else if (selectedTab === 'Delivery Payouts') {
+                const res = await api.get('/wallet/admin/withdrawals?role=delivery');
                 setPayouts(res.data.data);
             }
         } catch (error) {
+            if (error.name === 'CanceledError') {
+                console.log('Request canceled by strict mode cleanup');
+                return;
+            }
             console.error('Failed to fetch finance data:', error);
             toast.error('Failed to load financial data');
         } finally {
@@ -47,15 +56,19 @@ const AdminFinance = () => {
     };
 
     const handleProcessPayout = async (id) => {
-        const ref = window.prompt("Enter Transaction Reference / Bank ID:");
-        if (!ref) return;
+        if (!payoutRef.trim()) {
+            toast.error("Transaction Reference is required");
+            return;
+        }
         
         try {
             await api.patch(`/wallet/admin/withdrawals/${id}`, { 
                 status: 'paid',
-                transactionReference: ref
+                transactionReference: payoutRef
             });
             toast.success("Payout marked as completed");
+            setProcessingPayoutId(null);
+            setPayoutRef('');
             fetchData();
         } catch (error) {
             toast.error("Failed to update payout");
@@ -207,7 +220,7 @@ const AdminFinance = () => {
                                         </div>
                                         
                                         <button 
-                                            onClick={() => setSelectedTab('Payouts')}
+                                            onClick={() => setSelectedTab('Tailor Payouts')}
                                             className="mt-8 w-full py-3 bg-white text-primary font-black rounded-xl text-[10px] uppercase tracking-[0.2em] hover:bg-gray-100 transition-all shadow-lg"
                                         >
                                             Process All Now
@@ -287,7 +300,7 @@ const AdminFinance = () => {
                             </div>
                         )}
 
-                        {selectedTab === 'Payouts' && (
+                        {(selectedTab === 'Tailor Payouts' || selectedTab === 'Delivery Payouts') && (
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left whitespace-nowrap">
@@ -320,9 +333,23 @@ const AdminFinance = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">{payout.bankDetails?.bankName || 'Bank Transfer'}</span>
-                                                            <span className="text-[9px] font-bold text-gray-400 font-mono mt-0.5">{payout.bankDetails?.accountNumber || payout.bankDetails?.upiId || 'N/A'}</span>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-black text-primary uppercase tracking-tighter bg-primary/10 w-max px-2 py-0.5 rounded-md">
+                                                                {payout.method === 'qr_code' ? 'QR Code' : payout.method === 'bank_transfer' ? 'Bank Transfer' : 'UPI'}
+                                                            </span>
+                                                            {payout.method === 'qr_code' ? (
+                                                                <a href={payout.bankDetails?.qrCodeImage} target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-1">
+                                                                    <ArrowUpRight size={12} /> View QR Code
+                                                                </a>
+                                                            ) : payout.method === 'bank_transfer' ? (
+                                                                <div className="flex flex-col text-[9px] font-bold text-gray-500 font-mono">
+                                                                    <span>A/C: {payout.bankDetails?.accountNumber}</span>
+                                                                    <span>IFSC: {payout.bankDetails?.ifscCode}</span>
+                                                                    <span>Name: {payout.bankDetails?.accountName}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[10px] font-bold text-gray-600 font-mono">{payout.bankDetails?.upiId || 'N/A'}</span>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
@@ -336,12 +363,36 @@ const AdminFinance = () => {
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         {payout.status === 'pending' || payout.status === 'approved' ? (
-                                                            <button 
-                                                                onClick={() => handleProcessPayout(payout._id)}
-                                                                className="text-[10px] font-black uppercase text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
-                                                            >
-                                                                Mark as Paid
-                                                            </button>
+                                                            processingPayoutId === payout._id ? (
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Transaction Ref..."
+                                                                        value={payoutRef}
+                                                                        onChange={(e) => setPayoutRef(e.target.value)}
+                                                                        className="px-3 py-1.5 text-[10px] font-bold border border-gray-200 rounded-lg outline-none focus:border-primary w-32"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleProcessPayout(payout._id)}
+                                                                        className="text-[10px] font-black uppercase text-white bg-primary px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-all"
+                                                                    >
+                                                                        Confirm
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => { setProcessingPayoutId(null); setPayoutRef(''); }}
+                                                                        className="text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button 
+                                                                    onClick={() => setProcessingPayoutId(payout._id)}
+                                                                    className="text-[10px] font-black uppercase text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
+                                                                >
+                                                                    Mark as Paid
+                                                                </button>
+                                                            )
                                                         ) : (
                                                             <button className="text-gray-400 hover:text-primary transition-colors p-2 hover:bg-gray-50 rounded-xl">
                                                                 <FileText size={16} />

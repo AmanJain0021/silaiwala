@@ -44,8 +44,20 @@ const LiveDeliveryTracker = ({ order, socket }) => {
     destination = { lat: Number(order.customerLatitude), lng: Number(order.customerLongitude) };
   }
 
-  const rider = isPickupPhase ? order.pickupPartner : order.deliveryPartner;
+  const rider = isPickupPhase ? order.pickupPartner : (order.dropoffPartner || order.deliveryPartner);
   const riderStatus = isPickupPhase ? order.pickupDeliveryStatus : order.dropoffDeliveryStatus;
+
+  console.log("LiveDeliveryTracker rider logic:", {
+    isPickupPhase,
+    status: order.status,
+    pickupDeliveryStatus: order.pickupDeliveryStatus,
+    dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+    pickupPartner: order.pickupPartner,
+    dropoffPartner: order.dropoffPartner,
+    deliveryPartner: order.deliveryPartner,
+    rider,
+    riderStatus
+  });
 
   const isSearching = !rider || riderStatus === 'assigned' || riderStatus === 'pending';
 
