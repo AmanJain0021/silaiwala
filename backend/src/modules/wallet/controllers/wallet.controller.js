@@ -3,9 +3,12 @@ const WalletTransaction = require("../../../models/WalletTransaction");
 const WithdrawalRequest = require("../../../models/WithdrawalRequest");
 const Tailor = require("../../../models/Tailor");
 const Delivery = require("../../../models/Delivery");
+const Customer = require("../../../models/Customer");
 const Settings = require("../../../models/Settings");
+const User = require("../../../models/User");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
+const { sendNotification } = require("../../../utils/notification");
 
 /**
  * @desc    Get current user's wallet dashboard
@@ -20,6 +23,8 @@ exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
     profile = await Tailor.findOne({ user: id });
   } else if (role === "delivery") {
     profile = await Delivery.findOne({ user: id });
+  } else if (role === "user" || role === "customer") {
+    profile = await Customer.findOne({ user: id });
   }
 
   if (!profile) {
@@ -53,11 +58,12 @@ exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
  * @access  Private (Tailor/Delivery)
  */
 exports.requestWithdrawal = asyncHandler(async (req, res, next) => {
-  const { amount, bankDetails } = req.body;
+  const amount = parseFloat(req.body.amount);
+  const { method, bankDetails } = req.body;
   const { role, id } = req.user;
 
-  if (!amount || amount < 100) {
-    return next(new ErrorResponse("Minimum withdrawal amount is ₹100", 400));
+  if (!amount || amount < 50) {
+    return next(new ErrorResponse("Minimum withdrawal amount is ₹50", 400));
   }
 
   let profile;
@@ -65,6 +71,8 @@ exports.requestWithdrawal = asyncHandler(async (req, res, next) => {
     profile = await Tailor.findOne({ user: id });
   } else if (role === "delivery") {
     profile = await Delivery.findOne({ user: id });
+  } else if (role === "user" || role === "customer") {
+    profile = await Customer.findOne({ user: id });
   }
 
   if (!profile) {
@@ -75,18 +83,19 @@ exports.requestWithdrawal = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Insufficient wallet balance", 400));
   }
 
-  // Deduct from wallet immediately
-  profile.walletBalance -= amount;
-  await profile.save();
-
-  // Create Request
+  // Create Request first to validate schema constraints before deducting
   const withdrawal = await WithdrawalRequest.create({
     user: id,
     role: role,
     amount: amount,
+    method: method || "upi",
     status: "pending",
     bankDetails: bankDetails || profile.bankDetails
   });
+
+  // Deduct from wallet immediately only after successful creation
+  profile.walletBalance -= amount;
+  await profile.save();
 
   // Log transaction
   await WalletTransaction.create({
@@ -97,6 +106,18 @@ exports.requestWithdrawal = asyncHandler(async (req, res, next) => {
     withdrawalRequest: withdrawal._id,
     description: "Withdrawal request initiated"
   });
+
+  // Notify Admins
+  const adminUsers = await User.find({ role: 'admin' });
+  for (const adminUser of adminUsers) {
+    await sendNotification({
+      recipient: adminUser._id,
+      type: "WITHDRAWAL_REQUESTED",
+      title: "New Withdrawal Request",
+      message: `A new withdrawal of ₹${amount} was requested by a ${role}.`,
+      data: { targetUrl: '/admin/finance' }
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -155,8 +176,10 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
     let profile;
     if (withdrawal.role === "tailor") {
       profile = await Tailor.findOne({ user: withdrawal.user });
-    } else {
+    } else if (withdrawal.role === "delivery") {
       profile = await Delivery.findOne({ user: withdrawal.user });
+    } else if (withdrawal.role === "user" || withdrawal.role === "customer") {
+      profile = await Customer.findOne({ user: withdrawal.user });
     }
     if (profile) {
       profile.totalWithdrawn = (profile.totalWithdrawn || 0) + withdrawal.amount;
@@ -167,8 +190,10 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
     let profile;
     if (withdrawal.role === "tailor") {
       profile = await Tailor.findOne({ user: withdrawal.user });
-    } else {
+    } else if (withdrawal.role === "delivery") {
       profile = await Delivery.findOne({ user: withdrawal.user });
+    } else if (withdrawal.role === "user" || withdrawal.role === "customer") {
+      profile = await Customer.findOne({ user: withdrawal.user });
     }
     if (profile) {
       profile.walletBalance += withdrawal.amount;
@@ -183,11 +208,34 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
         description: "Withdrawal request rejected - Refunded to wallet"
       });
     }
+
+    await sendNotification({
+      recipient: withdrawal.user,
+      type: "WITHDRAWAL_REJECTED",
+      title: "Withdrawal Rejected",
+      message: `Your withdrawal request of ₹${withdrawal.amount} has been rejected. The amount has been refunded to your wallet.`,
+    });
   } else if (status === "approved") {
     withdrawal.approvedAt = new Date();
+
+    await sendNotification({
+      recipient: withdrawal.user,
+      type: "WITHDRAWAL_APPROVED",
+      title: "Withdrawal Approved",
+      message: `Your withdrawal request of ₹${withdrawal.amount} has been approved and is being processed.`,
+    });
   }
 
   await withdrawal.save();
+
+  if (status === "paid") {
+    await sendNotification({
+      recipient: withdrawal.user,
+      type: "WITHDRAWAL_PAID",
+      title: "Payout Completed",
+      message: `Your withdrawal of ₹${withdrawal.amount} has been successfully transferred to your account.`,
+    });
+  }
 
   res.status(200).json({
     success: true,

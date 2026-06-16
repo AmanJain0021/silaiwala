@@ -15,12 +15,17 @@ const withdrawalRequestSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
-      min: 100, // Minimum withdrawal amount
+      min: 50, // Minimum withdrawal amount
     },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected", "paid"],
       default: "pending",
+    },
+    method: {
+      type: String,
+      enum: ["upi", "bank_transfer", "qr_code"],
+      default: "upi",
     },
     bankDetails: {
       accountName: String,
@@ -28,6 +33,7 @@ const withdrawalRequestSchema = new mongoose.Schema(
       ifscCode: String,
       upiId: String,
       bankName: String,
+      qrCodeImage: String,
     },
     adminNotes: {
       type: String,

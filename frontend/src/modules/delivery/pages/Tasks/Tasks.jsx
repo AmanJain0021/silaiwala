@@ -51,10 +51,11 @@ const Tasks = () => {
             if (availableRes.success) {
                 setAvailableTasks(availableRes.data);
             }
+            setLoading(false);
         } catch (error) {
+            if (error?.name === 'CanceledError') return;
             console.error('Error fetching tasks:', error);
             toast.error('Failed to load tasks');
-        } finally {
             setLoading(false);
         }
     };

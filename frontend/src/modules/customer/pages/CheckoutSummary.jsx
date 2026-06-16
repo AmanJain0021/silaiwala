@@ -53,14 +53,20 @@ const CheckoutSummary = () => {
     const [roadDistances, setRoadDistances] = useState({});
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
     const [advancePercentage, setAdvancePercentage] = useState(50);
+    const [deliveryRates, setDeliveryRates] = useState({ baseFee: 20, perKmRate: 10 });
 
     // Fetch Admin Settings
     useEffect(() => {
         const fetchSettings = async () => {
             try {
                 const res = await api.get('/cms/settings');
-                if (res.data.success && res.data.data?.walletConfig?.advancePercentage) {
-                    setAdvancePercentage(res.data.data.walletConfig.advancePercentage);
+                if (res.data.success) {
+                    if (res.data.data?.walletConfig?.advancePercentage) {
+                        setAdvancePercentage(res.data.data.walletConfig.advancePercentage);
+                    }
+                    if (res.data.data?.deliveryRates) {
+                        setDeliveryRates(res.data.data.deliveryRates);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch settings:", err);
@@ -86,7 +92,7 @@ const CheckoutSummary = () => {
             let fetching = false;
 
             for (const item of currentCheckoutItems) {
-                if (item.configuration.isTailorAtHome && item.serviceDetails?.tailorCoordinates) {
+                if (item.serviceDetails?.tailorCoordinates) {
                     const [uLng, uLat] = selectedAddress.location.coordinates;
                     const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
 
@@ -105,12 +111,14 @@ const CheckoutSummary = () => {
                             if (res.data.success) {
                                 console.log(`📏 [CheckoutSummary] Distance API Response for Basket ${item.basketId}:`, res.data.data);
                                 const distanceKm = res.data.data.distance;
+                                
                                 const visitSettings = { baseFee: 299, perKmFee: 20, freeKm: 5 };
-                                let fee = visitSettings.baseFee;
+                                let visitFee = visitSettings.baseFee;
                                 if (distanceKm > visitSettings.freeKm) {
-                                    fee = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
+                                    visitFee = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
                                 }
-                                newDistances[item.basketId] = { key: cacheKey, fee };
+                                
+                                newDistances[item.basketId] = { key: cacheKey, fee: visitFee, distanceKm };
                                 needsUpdate = true;
                             }
                         } catch (err) {
@@ -131,49 +139,65 @@ const CheckoutSummary = () => {
         fetchDistances();
     }, [selectedAddress, currentCheckoutItems, isServiceCheckout]);
 
-    // Pricing Logic
     const getServicePricing = () => {
         if (currentCheckoutItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 };
-        return currentCheckoutItems.reduce((acc, item) => {
+        
+        let orderDeliveryFee = 0;
+
+        const pricing = currentCheckoutItems.reduce((acc, item, index) => {
             const itemBase = item.pricing.base > 10000 ? 499 : item.pricing.base;
             let dynamicTailorAtHome = item.pricing.tailorAtHome || 0;
 
-            if (item.configuration.isTailorAtHome && selectedAddress?.location?.coordinates && item.serviceDetails?.tailorCoordinates) {
+            if (selectedAddress?.location?.coordinates && item.serviceDetails?.tailorCoordinates) {
                 const [uLng, uLat] = selectedAddress.location.coordinates;
                 const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
+                let distanceKm = 0;
                 
                 if (roadDistances[item.basketId] && roadDistances[item.basketId].key === cacheKey) {
-                    dynamicTailorAtHome = roadDistances[item.basketId].fee;
+                    if (item.configuration.isTailorAtHome) {
+                        dynamicTailorAtHome = roadDistances[item.basketId].fee;
+                    }
+                    distanceKm = roadDistances[item.basketId].distanceKm;
                 } else {
                     try {
                         const [tLng, tLat] = item.serviceDetails.tailorCoordinates;
-                        const distance = calculateDistance(uLat, uLng, tLat, tLng);
-                        const visitSettings = { baseFee: 299, perKmFee: 20, freeKm: 5 };
-                        if (distance <= visitSettings.freeKm) {
-                            dynamicTailorAtHome = visitSettings.baseFee;
-                        } else {
-                            dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distance - visitSettings.freeKm) * visitSettings.perKmFee);
+                        distanceKm = calculateDistance(uLat, uLng, tLat, tLng);
+                        if (item.configuration.isTailorAtHome) {
+                            const visitSettings = { baseFee: 299, perKmFee: 20, freeKm: 5 };
+                            if (distanceKm <= visitSettings.freeKm) {
+                                dynamicTailorAtHome = visitSettings.baseFee;
+                            } else {
+                                dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
+                            }
                         }
                     } catch (err) {
                         console.error("Distance recalculation failed:", err);
                     }
                 }
+
+                if (index === 0 && distanceKm > 0) {
+                    orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
+                }
             }
 
             const itemTaxes = item.pricing.taxes || 0;
-            const itemDelivery = item.pricing.delivery || 0;
             const itemAddons = item.pricing.addons || 0;
-            const newTotal = itemBase + itemTaxes + itemDelivery + itemAddons + dynamicTailorAtHome;
+            const newTotal = itemBase + itemTaxes + itemAddons + dynamicTailorAtHome;
 
             return {
                 total: acc.total + newTotal,
                 base: acc.base + itemBase,
                 taxes: acc.taxes + itemTaxes,
-                delivery: acc.delivery + itemDelivery,
+                delivery: 0,
                 addons: acc.addons + itemAddons,
                 tailorAtHome: acc.tailorAtHome + dynamicTailorAtHome
             };
         }, { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 });
+        
+        pricing.delivery = orderDeliveryFee;
+        pricing.total += orderDeliveryFee;
+        
+        return pricing;
     };
 
     const currentPricing = bulkOrder
@@ -221,6 +245,7 @@ const CheckoutSummary = () => {
                             addons: item.configuration.addons
                         })),
                         totalAmount: finalTotal,
+                        deliveryFee: currentPricing.delivery,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,
@@ -238,6 +263,7 @@ const CheckoutSummary = () => {
                             price: item.price
                         })),
                         totalAmount: finalTotal,
+                        deliveryFee: currentPricing.delivery,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,

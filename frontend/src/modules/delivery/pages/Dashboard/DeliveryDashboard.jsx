@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bike,
     Package,
@@ -20,7 +19,14 @@ import {
     ShieldCheck,
     PhoneCall,
     Info,
-    Bell
+    Bell,
+    Wallet,
+    Star,
+    Box,
+    ScanLine,
+    Headset,
+    FileText,
+    ShieldAlert
 } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { SOCKET_URL } from '../../../../config/constants';
@@ -28,18 +34,13 @@ import useAuthStore from '../../../../store/authStore';
 import { getToken } from '../../../../utils/auth';
 import deliveryService from '../../services/deliveryService';
 import { io } from 'socket.io-client';
-import { Power, MapPin as MapPinIcon } from 'lucide-react';
+import { Power } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useDeliveryTracking } from "../../../../shared/hooks/useDeliveryTracking";
-import DashboardMap from '../../components/DashboardMap';
 
 const DeliveryDashboard = () => {
     const navigate = useNavigate();
-    const { isOnline, isLoaded } = useOutletContext() || { isOnline: true, isLoaded: false };
+    const { isLoaded } = useOutletContext() || { isOnline: true, isLoaded: false };
     const { user } = useAuthStore();
-    const [showMapModal, setShowMapModal] = useState(false);
-    const [selectedAvailableTask, setSelectedAvailableTask] = useState(null);
-    const [isAccepting, setIsAccepting] = useState(false);
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState({
         profile: null,
@@ -51,26 +52,6 @@ const DeliveryDashboard = () => {
             totalPickups: 0
         }
     });
-
-    // --- Real-time Delivery Tracking ---
-    const activeTasksList = dashboardData.activeOrders || [];
-    const primaryOrder = activeTasksList[0];
-    const currentLocation = useDeliveryTracking(user?._id, activeTasksList);
-
-    // --- Scroll Visibility for Map ---
-    const [scrollOpacity, setScrollOpacity] = useState(1);
-    
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollY = window.scrollY;
-            // Map starts fading after 50px and is fully gone by 300px
-            const newOpacity = Math.max(0, 1 - (scrollY / 300));
-            setScrollOpacity(newOpacity);
-        };
-        
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const fetchDashboardData = async () => {
         try {
@@ -119,13 +100,12 @@ const DeliveryDashboard = () => {
             }
         });
 
-        // Join delivery fleet and personal room
         socket.emit('join', 'delivery_partners');
         if (user?._id) {
             socket.emit('join', `user_${user._id}`);
         }
 
-        socket.on('new_task', (data) => {
+        socket.on('new_task', () => {
             toast.success('New delivery task available!', { icon: '🚚' });
             fetchDashboardData();
         });
@@ -140,88 +120,15 @@ const DeliveryDashboard = () => {
         };
     }, [user?._id]);
 
-    const handleAcceptTask = async (orderId) => {
-        console.log("Accepting Task with ID:", orderId);
-        setIsAccepting(true);
-        try {
-            const res = await deliveryService.acceptOrder(orderId);
-            if (res.success) {
-                toast.success('Task accepted successfully!');
-                setSelectedAvailableTask(null);
-                fetchDashboardData();
-            } else {
-                toast.error(res.message || 'Failed to accept task');
-            }
-        } catch (error) {
-            console.error('Error accepting task:', error);
-            const errMsg = error.response?.data?.message || error.message || 'Failed to accept task';
-            toast.error(errMsg);
-        } finally {
-            setIsAccepting(false);
-        }
-    };
-
-    const handleRejectTask = async (orderId) => {
-        setIsAccepting(true);
-        try {
-            const res = await deliveryService.rejectOrder(orderId);
-            if (res.success) {
-                toast.success('Task rejected and reassigned!');
-                fetchDashboardData();
-            } else {
-                toast.error(res.message || 'Failed to reject task');
-            }
-        } catch (error) {
-            console.error('Error rejecting task:', error);
-            toast.error('Failed to reject task');
-        } finally {
-            setIsAccepting(false);
-        }
-    };
-
-    const handleOpenMap = (task) => {
-        if (!task) return;
-
-        // Logic to determine destination address
-        const isFabricPickup = task.taskType === 'fabric-pickup';
-        const isPickupStage = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(task.status);
-
-        let destination;
-        if (isPickupStage) {
-            destination = isFabricPickup ? task.deliveryAddress : task.tailor?.location?.address;
-        } else {
-            destination = isFabricPickup ? task.tailor?.location?.address : task.deliveryAddress;
-        }
-
-        if (!destination) {
-            toast.error("Destination address not found");
-            return;
-        }
-
-        const addressStr = typeof destination === 'string'
-            ? destination
-            : `${destination.street || ''}, ${destination.city || ''}, ${destination.state || ''} ${destination.zipCode || ''}`;
-
-        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addressStr)}`;
-        window.open(mapsUrl, '_blank');
-    };
-
     if (loading) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Dashboard...</p>
             </div>
         );
     }
 
     const { stats: dashboardStats, activeOrders, availableOrders, profile } = dashboardData;
-
-    const stats = [
-        { label: 'Active Tasks', value: dashboardStats.activeTasks.toString().padStart(2, '0'), icon: Bike, color: 'bg-primary', trend: 'In Progress' },
-        { label: 'Wallet Balance', value: `₹${dashboardStats.earnings}`, icon: IndianRupee, color: 'bg-primary', trend: 'Earnings' },
-        { label: 'Total Deliveries', value: dashboardStats.totalPickups.toString().padStart(2, '0'), icon: Package, color: 'bg-slate-900', trend: 'Completed' },
-    ];
 
     const formatAddress = (addr) => {
         if (!addr) return 'Address not specified';
@@ -237,477 +144,192 @@ const DeliveryDashboard = () => {
         return 'Dispatch Task';
     };
 
-    const getTaskLabel = (status) => {
-        if (status === 'fabric-ready-for-pickup') return 'PICKUP FROM CUSTOMER';
-        if (status === 'ready-for-pickup') return 'PICKUP FROM TAILOR';
-        if (status === 'out-for-delivery') return 'DROP TO CUSTOMER';
-        return status.replace(/-/g, ' ').toUpperCase();
-    };
-
-    const getTaskAddress = (task) => {
-        const isFabricPickup = task.taskType === 'fabric-pickup';
-        const isPickupStage = ['fabric-ready-for-pickup', 'ready-for-pickup'].includes(task.status);
-
-        if (isPickupStage) {
-            // Where to pick up
-            return isFabricPickup
-                ? formatAddress(task.deliveryAddress) // Customer house
-                : (task.tailor?.shopName || 'Tailor Workshop');
-        } else {
-            // Where to drop off
-            return isFabricPickup
-                ? (task.tailor?.shopName || 'Tailor Workshop')
-                : formatAddress(task.deliveryAddress); // Customer house
-        }
-    };
-
     const currentTask = activeOrders.length > 0 ? activeOrders[0] : null;
-    const upcomingTasks = activeOrders.slice(1);
-
-    const needsAcceptance = currentTask ? (currentTask.pickupDeliveryStatus === 'assigned' || currentTask.dropoffDeliveryStatus === 'assigned' || currentTask.deliveryStatus === 'assigned') : false;
 
     return (
-        <div className="animate-in fade-in duration-700 relative w-full h-full -mt-2">
-            {/* Operational Map - Full Viewport Background (Starts below header) */}
-            <div 
-                className="fixed inset-x-0 bottom-0 top-[64px] z-0 bg-slate-100 transition-opacity duration-300 ease-out"
-                style={{ 
-                    opacity: scrollOpacity,
-                    pointerEvents: scrollOpacity > 0 ? 'auto' : 'none'
-                }}
-            >
-                <DashboardMap 
-                    currentLocation={currentLocation} 
-                    activeOrder={currentTask}
-                    isOnline={isOnline} 
-                    isLoaded={isLoaded}
-                    height="100%"
-                    hideHeader={true}
-                />
-            </div>
-
-            <div className="relative z-10 w-full pt-[calc(100vh-220px)] pb-10 pointer-events-none">
-                <div className="space-y-3 pointer-events-auto px-3">
-                    {/* Today's Stats Hero Card */}
-                    <div className="bg-white rounded-[2rem] p-5 shadow-2xl shadow-slate-200/50 border border-slate-50 relative overflow-hidden group mx-1">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-full -z-0 opacity-50"></div>
-
-                <div className="relative z-10">
-                    <div className="flex justify-between items-center mb-3">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Today's Earnings</p>
-                        <button onClick={() => navigate('/delivery/wallet')} className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline">Details</button>
+        <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">
+            <div className="px-5 space-y-6">
+                {/* Main Earnings Card */}
+                <div className="w-full bg-gradient-to-br from-[#3b3db0] to-[#2D2F6E] rounded-[2rem] p-6 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl -translate-y-10 translate-x-10 pointer-events-none"></div>
+                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#3b3db0] opacity-50 rounded-full blur-2xl translate-y-10 translate-x-10 pointer-events-none"></div>
+                    
+                    <div className="relative z-10 flex flex-col items-start w-[60%]">
+                        <p className="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-2">Today's Earnings</p>
+                        <h3 className="text-5xl font-black tracking-tighter mb-3 drop-shadow-sm">₹{dashboardStats.todayEarnings || 0}</h3>
+                        <p className="text-[10px] text-indigo-100 font-medium leading-relaxed mb-5 max-w-[200px]">
+                            Earnings will update once you complete a delivery.
+                        </p>
+                        <button onClick={() => navigate('/delivery/wallet')} className="bg-white text-[#2D2F6E] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors flex items-center gap-1 shadow-sm">
+                            View Details <ChevronRight size={14} />
+                        </button>
                     </div>
 
-                    <div className="flex items-end gap-1.5 mb-5">
-                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">
-                            ₹{dashboardStats.todayEarnings || 0}
-                        </h3>
-                        {dashboardStats.growth !== 0 && (
-                            <div className={`flex items-center gap-1 ${dashboardStats.growth >= 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'} px-1.5 py-0.5 rounded-full mb-0.5 border scale-75`}>
-                                <TrendingUp
-                                    size={10}
-                                    strokeWidth={3}
-                                    className={dashboardStats.growth < 0 ? 'rotate-180' : ''}
-                                />
-                                <span className="text-[8px] font-black">
-                                    {dashboardStats.growth >= 0 ? '+' : ''}{dashboardStats.growth}%
-                                </span>
+                    {/* Graphic Elements mimicking the wallet */}
+                    <div className="absolute -right-4 bottom-0 h-[120%] w-[50%] pointer-events-none flex items-end justify-center pb-2">
+                        <div className="relative w-32 h-24">
+                            {/* Coins */}
+                            <div className="absolute -left-6 bottom-4 w-8 h-8 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow-md flex items-center justify-center transform -rotate-12 z-0">
+                                <IndianRupee size={12} className="text-yellow-700" />
                             </div>
+                            <div className="absolute right-0 top-0 w-10 h-10 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow-md flex items-center justify-center transform rotate-12 z-0">
+                                <IndianRupee size={16} className="text-yellow-700" />
+                            </div>
+                            <div className="absolute left-6 -bottom-2 w-10 h-10 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow-md flex items-center justify-center transform rotate-6 z-20">
+                                <IndianRupee size={16} className="text-yellow-700" />
+                            </div>
+                            
+                            {/* Wallet Body */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl shadow-xl border border-indigo-400/50 z-10 flex items-center p-2">
+                                {/* Wallet Flap */}
+                                <div className="absolute top-0 right-0 left-0 h-1/2 bg-indigo-500 rounded-t-2xl opacity-50 border-b border-indigo-400"></div>
+                                {/* Button */}
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 bg-indigo-300 rounded-full shadow-inner border border-indigo-400 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
+                                </div>
+                            </div>
+                            {/* Trend Arrow */}
+                            <div className="absolute -top-10 -right-8 text-indigo-400/30 transform rotate-12 z-0">
+                                <TrendingUp size={80} strokeWidth={4} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-4 gap-3 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="flex flex-col items-center justify-center text-center space-y-1">
+                        <div className="w-10 h-10 bg-indigo-50 text-[#2D2F6E] rounded-2xl flex items-center justify-center mb-1 border border-indigo-100">
+                            <Box size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today</span>
+                        <span className="text-sm font-black text-slate-900">{dashboardStats.todayCount || 0}</span>
+                        <span className="text-[8px] text-slate-500">Deliveries</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center justify-center text-center space-y-1">
+                        <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-1 border border-amber-100">
+                            <Wallet size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Wallet</span>
+                        <span className="text-sm font-black text-slate-900">₹{dashboardStats.earnings || 0}</span>
+                        <span className="text-[8px] text-slate-500">Balance</span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center text-center space-y-1">
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-1 border border-emerald-100">
+                            <Package size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                        <span className="text-sm font-black text-slate-900">{profile?.totalDeliveries || 0}</span>
+                        <span className="text-[8px] text-slate-500">Deliveries</span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center text-center space-y-1">
+                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-1 border border-blue-100">
+                            <Star size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Rating</span>
+                        <span className="text-sm font-black text-slate-900">{profile?.rating || '4.8'}</span>
+                        <span className="text-[8px] text-emerald-500 font-bold">Excellent</span>
+                    </div>
+                </div>
+
+                {/* Active Dispatch / Tasks */}
+                {currentTask ? (
+                    <div 
+                        className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer"
+                        onClick={() => navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`)}
+                    >
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-[#2D2F6E] rounded-full animate-pulse"></div>
+                                <span className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">Active Dispatch</span>
+                            </div>
+                            <div className="w-10 h-10 bg-indigo-50 text-[#2D2F6E] rounded-xl flex items-center justify-center border border-indigo-100">
+                                <Bike size={20} />
+                            </div>
+                        </div>
+
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight capitalize mb-6">{getTaskType(currentTask)}</h3>
+
+                        <div className="relative pl-6 space-y-6">
+                            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-indigo-100 border-l border-dashed border-[#2D2F6E]/20"></div>
+                            
+                            {/* Source */}
+                            <div className="relative">
+                                <div className="absolute -left-[30px] top-1 w-4 h-4 bg-white border-2 border-[#2D2F6E] rounded-full flex items-center justify-center z-10 shadow-sm">
+                                    <div className="w-1.5 h-1.5 bg-[#2D2F6E] rounded-full"></div>
+                                </div>
+                                <div className="flex justify-between items-start gap-4">
+                                    <div>
+                                        <p className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest mb-1">Pickup (Source)</p>
+                                        <p className="text-sm font-medium text-slate-600 leading-snug">
+                                            {(() => {
+                                                const isFabric = currentTask.taskType === 'fabric-pickup';
+                                                return isFabric ? formatAddress(currentTask.deliveryAddress) : formatAddress(currentTask.tailor?.location?.address);
+                                            })()}
+                                        </p>
+                                    </div>
+                                    <div className="bg-indigo-50 px-2 py-1 rounded text-[9px] font-black text-[#2D2F6E] shrink-0 uppercase tracking-widest">
+                                        Pickup
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Destination */}
+                            <div className="relative">
+                                <div className="absolute -left-[30px] top-1 w-4 h-4 bg-white border-2 border-[#2D2F6E] rounded-full flex items-center justify-center z-10 shadow-sm"></div>
+                                <div className="flex justify-between items-start gap-4">
+                                    <div>
+                                        <p className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest mb-1">Drop-off (Destination)</p>
+                                        <p className="text-sm font-black text-slate-900 leading-snug mb-1">
+                                            {(() => {
+                                                const isFabric = currentTask.taskType === 'fabric-pickup';
+                                                return isFabric ? currentTask.tailor?.shopName : currentTask.customer?.name;
+                                            })()}
+                                        </p>
+                                        <p className="text-[11px] text-slate-500 font-medium leading-snug">
+                                            {(() => {
+                                                const isFabric = currentTask.taskType === 'fabric-pickup';
+                                                return isFabric ? formatAddress(currentTask.tailor?.location?.address) : formatAddress(currentTask.deliveryAddress);
+                                            })()}
+                                        </p>
+                                    </div>
+                                    <div className="bg-indigo-50 px-2 py-1 rounded text-[9px] font-black text-[#2D2F6E] shrink-0 uppercase tracking-widest">
+                                        Drop-off
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button className="w-full bg-[#2D2F6E] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
+                            View Dispatch Details <ChevronRight size={14} />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
+                            <Package size={32} />
+                        </div>
+                        {availableOrders?.length > 0 ? (
+                            <>
+                                <p className="text-slate-600 font-bold mb-4">You have no active tasks, but there are <span className="text-[#2D2F6E]">{availableOrders.length} live orders</span> waiting!</p>
+                                <button
+                                    onClick={() => navigate('/delivery/tasks')}
+                                    className="px-6 py-3 bg-[#2D2F6E] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20 active:scale-95"
+                                >
+                                    View Live Pool
+                                </button>
+                            </>
+                        ) : (
+                            <p className="text-slate-500 font-bold text-sm">No active tasks at the moment.</p>
                         )}
                     </div>
-
-                    <div className="grid grid-cols-3 gap-1.5 pt-3.5 border-t border-slate-50">
-                        <div className="text-center space-y-1.5">
-                            <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mx-auto shadow-sm">
-                                <Package size={16} strokeWidth={2.5} />
-                            </div>
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Today</p>
-                            <p className="text-xs font-black text-slate-900">{dashboardStats.todayCount || 0}</p>
-                        </div>
-                        <div className="text-center space-y-1.5 relative">
-                            <div className="absolute inset-y-0 left-0 w-px bg-slate-100"></div>
-                            <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mx-auto shadow-sm">
-                                <TrendingUp size={16} strokeWidth={2.5} />
-                            </div>
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Wallet</p>
-                            <p className="text-xs font-black text-slate-900">₹{dashboardStats.earnings || 0}</p>
-                            <div className="absolute inset-y-0 right-0 w-px bg-slate-100"></div>
-                        </div>
-                        <div className="text-center space-y-1.5">
-                            <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mx-auto shadow-sm">
-                                <Package size={16} strokeWidth={2.5} />
-                            </div>
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total</p>
-                            <p className="text-xs font-black text-slate-900">{profile?.totalDeliveries || 0}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Active Task Hero Card */}
-            {currentTask ? (
-                <div 
-                    className="relative group w-full cursor-pointer"
-                    onClick={() => navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`)}
-                >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-slate-100 to-slate-200 rounded-[2rem] blur-lg opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                    <div className="relative bg-white rounded-[2rem] overflow-hidden text-slate-900 shadow-xl mx-1 border border-slate-100">
-                        <div className="p-5 lg:p-7">
-                            <div className="flex justify-between items-start mb-5">
-                                <div className="space-y-1">
-                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-md border border-indigo-100">
-                                        <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
-                                        <span className="text-[9px] font-black tracking-widest text-primary uppercase">Active Dispatch</span>
-                                    </div>
-                                    <h2 className="text-xl font-black tracking-tight text-slate-900 mt-1 capitalize">{getTaskType(currentTask)}</h2>
-                                </div>
-                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 mt-1">
-                                    <Bike size={20} className="text-slate-400" />
-                                </div>
-                            </div>
-
-                            <div className="relative z-10 flex flex-col mt-2">
-                                <div className="flex gap-4 mb-6 relative">
-                                    <div className="flex flex-col items-center pt-1.5 shrink-0">
-                                        <div className="w-3.5 h-3.5 rounded-full border-2 border-primary bg-white z-10 shadow-sm flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary/40"></div>
-                                        </div>
-                                        <div className="w-0.5 h-14 bg-slate-100 border-dashed border-l-2 border-slate-200 -my-0.5"></div>
-                                        <motion.div
-                                            animate={{ scale: [1, 1.2, 1] }}
-                                            transition={{ repeat: Infinity, duration: 2 }}
-                                            className="w-3.5 h-3.5 rounded-full bg-primary z-10 border-2 border-white shadow-md flex items-center justify-center"
-                                        >
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
-                                        </motion.div>
-                                    </div>
-                                    <div className="flex-1 min-w-0 space-y-4">
-                                        {/* Source */}
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">
-                                                Pickup (Source)
-                                            </span>
-                                            <p className="text-[14px] font-black text-slate-900 truncate leading-tight">
-                                                {(() => {
-                                                    const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    return isFabric ? currentTask.customer?.name : currentTask.tailor?.shopName;
-                                                })()}
-                                            </p>
-                                            <p className="text-[10px] text-slate-400 font-bold truncate leading-tight mt-0.5">
-                                                {(() => {
-                                                    const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    return isFabric ? formatAddress(currentTask.deliveryAddress) : formatAddress(currentTask.tailor?.location?.address);
-                                                })()}
-                                            </p>
-                                        </div>
-
-                                        {/* Destination */}
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1.5">
-                                                Drop-off (Destination)
-                                            </span>
-                                            <p className="text-[14px] font-black text-slate-900 truncate leading-tight">
-                                                {(() => {
-                                                    const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    return isFabric ? currentTask.tailor?.shopName : currentTask.customer?.name;
-                                                })()}
-                                            </p>
-                                            <p className="text-[10px] text-slate-500 font-bold truncate leading-tight mt-0.5">
-                                                {(() => {
-                                                    const isFabric = currentTask.taskType === 'fabric-pickup';
-                                                    return isFabric ? formatAddress(currentTask.tailor?.location?.address) : formatAddress(currentTask.deliveryAddress);
-                                                })()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-5 border-t border-slate-50 mt-0">
-                                    {needsAcceptance ? (
-                                        <div className="flex items-center w-full gap-3">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleRejectTask(currentTask._id); }}
-                                                disabled={isAccepting}
-                                                className="flex-1 bg-slate-100 text-slate-500 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition-all disabled:opacity-50"
-                                            >
-                                                Reject
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleAcceptTask(currentTask._id); }}
-                                                disabled={isAccepting}
-                                                className="flex-[2] bg-primary text-white py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50"
-                                            >
-                                                {isAccepting ? 'Accepting...' : 'Accept Task'}
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`); 
-                                                }}
-                                                className="w-full bg-primary text-white py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
-                                            >
-                                                Detail
-                                            </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[1.25rem] p-8 text-center overscroll-none">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-slate-300 mx-auto mb-3 shadow-sm">
-                        <Package size={24} />
-                    </div>
-                    {availableOrders.length > 0 ? (
-                        <div className="space-y-4">
-                            <p className="text-slate-600 font-bold text-sm">You have no active tasks, but there are <span className="text-primary">{availableOrders.length} live orders</span> waiting!</p>
-                            <button
-                                onClick={() => navigate('/delivery/tasks')}
-                                className="px-6 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20"
-                            >
-                                View Live Pool
-                            </button>
-                        </div>
-                    ) : (
-                        <>
-                            <p className="text-slate-500 font-bold text-sm">No active tasks at the moment.</p>
-                            <p className="text-slate-400 text-xs mt-1">Check back later for new dispatches.</p>
-                        </>
-                    )}
-                </div>
-            )}
-
-            {/* Live Orders Available section (Horizontal scroll) */}
-            {availableOrders.length > 0 && (
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                            <h2 className="text-lg font-black text-white tracking-tight capitalize">Live <span className="text-white">Available</span> Tasks</h2>
-                        </div>
-                        <button onClick={() => navigate('/delivery/tasks')} className="text-[10px] font-black text-white uppercase tracking-widest hover:underline">See All</button>
-                    </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-1 -mx-1">
-                        {availableOrders.slice(0, 5).map((order) => (
-                            <motion.div
-                                key={order._id}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setSelectedAvailableTask(order)}
-                                className="min-w-[240px] bg-gradient-to-br from-white to-slate-50/50 p-4 rounded-[1.25rem] border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-indigo-200 hover:shadow-md transition-all"
-                            >
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-[9px] font-black bg-indigo-100 text-primary px-2 py-0.5 rounded uppercase tracking-wider">{getTaskType(order)}</span>
-                                        <span className="text-[9px] font-bold text-slate-400">₹{order.totalAmount || '--'}</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pickup From</p>
-                                        <p className="text-xs font-bold text-slate-800 truncate">{order.taskType === 'fabric-pickup' ? order.customer?.name : order.tailor?.shopName}</p>
-                                    </div>
-                                </div>
-                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                                        <Navigation size={12} className="text-primary" /> Nearby
-                                    </div>
-                                    <span className="text-[10px] font-black text-primary group-hover:translate-x-1 transition-transform">View Details →</span>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            )}
-            </div>
-
-            {/* Available Task Detail Modal */}
-            <AnimatePresence>
-                {selectedAvailableTask && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-                        onClick={() => setSelectedAvailableTask(null)}
-                    >
-                        <motion.div
-                            initial={{ y: "100%", opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: "100%", opacity: 0 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto"
-                        >
-                            <button
-                                type="button"
-                                onClick={() => setSelectedAvailableTask(null)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-all z-20 cursor-pointer"
-                            >
-                                <X size={16} />
-                            </button>
-
-                            <div className="mb-8">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedAvailableTask.taskType === 'fabric-pickup' ? 'bg-indigo-50 text-primary border border-indigo-100' : 'bg-indigo-50 text-primary border border-indigo-100'}`}>
-                                        {getTaskType(selectedAvailableTask)}
-                                    </div>
-                                    <h2 className="text-xl font-black text-slate-900">₹{selectedAvailableTask.totalAmount}</h2>
-                                </div>
-                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Order #{selectedAvailableTask.orderId?.slice(-6) || selectedAvailableTask._id.slice(-6)}</h3>
-                                <p className="text-xs font-bold text-slate-400 tracking-widest mt-1 uppercase">Dispatch Available Now</p>
-                            </div>
-
-                            <div className="space-y-6 mb-8">
-                                {/* Route Info */}
-                                <div className="relative pl-6 space-y-6">
-                                    <div className="absolute left-[7px] top-[10px] bottom-[10px] w-0.5 border-l-2 border-dashed border-slate-100"></div>
-
-                                    <div className="relative">
-                                        <div className="absolute -left-[23px] top-1 w-4 h-4 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                                        </div>
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pickup From ({selectedAvailableTask.taskType === 'fabric-pickup' ? 'Customer' : 'Artisan'})</p>
-                                                <p className="text-sm font-bold text-slate-800">
-                                                    {selectedAvailableTask.taskType === 'fabric-pickup'
-                                                        ? selectedAvailableTask.customer?.name
-                                                        : selectedAvailableTask.tailor?.shopName}
-                                                </p>
-                                                <p className="text-xs text-slate-500 mt-0.5 italic">
-                                                    {selectedAvailableTask.taskType === 'fabric-pickup'
-                                                        ? formatAddress(selectedAvailableTask.deliveryAddress)
-                                                        : formatAddress(selectedAvailableTask.tailor?.location?.address)}
-                                                </p>
-                                            </div>
-                                            {(selectedAvailableTask.status.includes('fabric') ? selectedAvailableTask.customer?.phoneNumber : selectedAvailableTask.tailor?.phone) && (
-                                                <div className="text-right">
-                                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Contact</p>
-                                                    <p className="text-[10px] font-bold text-slate-600">
-                                                        {selectedAvailableTask.taskType === 'fabric-pickup' ? selectedAvailableTask.customer?.phoneNumber : selectedAvailableTask.tailor?.phone}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="relative">
-                                        <div className="absolute -left-[23px] top-1 w-4 h-4 rounded-full bg-white border-2 border-primary flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                                        </div>
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Drop To ({selectedAvailableTask.taskType === 'fabric-pickup' ? 'Artisan' : 'Customer'})</p>
-                                                <p className="text-sm font-bold text-slate-800">
-                                                    {selectedAvailableTask.taskType === 'fabric-pickup'
-                                                        ? selectedAvailableTask.tailor?.shopName
-                                                        : selectedAvailableTask.customer?.name}
-                                                </p>
-                                                <p className="text-xs text-slate-500 mt-0.5 italic">
-                                                    {selectedAvailableTask.taskType === 'fabric-pickup'
-                                                        ? formatAddress(selectedAvailableTask.tailor?.location?.address)
-                                                        : formatAddress(selectedAvailableTask.deliveryAddress)}
-                                                </p>
-                                            </div>
-                                            {(selectedAvailableTask.status.includes('fabric') ? selectedAvailableTask.tailor?.phone : selectedAvailableTask.customer?.phoneNumber) && (
-                                                <div className="text-right">
-                                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Contact</p>
-                                                    <p className="text-[10px] font-bold text-slate-600">
-                                                        {selectedAvailableTask.taskType === 'fabric-pickup' ? selectedAvailableTask.tailor?.phone : selectedAvailableTask.customer?.phoneNumber}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Order Content */}
-                                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Package size={14} className="text-slate-400" />
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Order Content</span>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {selectedAvailableTask.items.map((item, i) => (
-                                            <div key={i} className="flex justify-between items-center text-xs font-bold text-slate-800">
-                                                <span>{item.service?.title || item.product?.name || 'Item'}</span>
-                                                <span className="text-slate-400 font-medium">x{item.quantity}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleAcceptTask(selectedAvailableTask._id); }}
-                                disabled={isAccepting}
-                                className="w-full h-16 bg-primary hover:bg-primary-dark rounded-2xl flex items-center justify-center text-white shadow-xl active:scale-95 transition-all disabled:opacity-70 mb-4 cursor-pointer relative z-20"
-                            >
-                                {isAccepting ? <Loader2 className="animate-spin" size={24} /> : (
-                                    <span className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                                        Accept Order <ArrowUpRight size={16} />
-                                    </span>
-                                )}
-                            </button>
-
-                            <p className="text-center text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
-                                Please reach pickup location within 15 mins.<br />Earnings will be credited after delivery.
-                            </p>
-                        </motion.div>
-                    </motion.div>
                 )}
-            </AnimatePresence>
-
-            {/* Map Preview Modal */}
-            <AnimatePresence>
-                {showMapModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[150] bg-white flex flex-col"
-                    >
-                        <div className="p-4 flex items-center justify-between border-b bg-white relative z-10">
-                            <button onClick={() => setShowMapModal(false)} className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600">
-                                <ChevronLeft size={20} />
-                            </button>
-                            <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Task Route</h2>
-                            <div className="w-10 h-10" />
-                        </div>
-
-                        <div className="flex-1 bg-slate-50 relative overflow-hidden">
-                            {/* Detailed Map View - Currently Placeholder */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
-                                <div className="w-20 h-20 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-primary mb-4">
-                                    <Navigation size={40} className="animate-bounce" />
-                                </div>
-                                <h3 className="text-xl font-black text-slate-900 mb-2">Live Navigation</h3>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed mb-8">
-                                    Calculating fastest route to <br />
-                                    {getTaskAddress(currentTask)}
-                                </p>
-
-                                <button
-                                    onClick={() => {
-                                        handleOpenMap(currentTask);
-                                        setShowMapModal(false);
-                                    }}
-                                    className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3"
-                                >
-                                    Launch External Map
-                                    <ArrowUpRight size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
             </div>
         </div>
     );
 };
 
 export default DeliveryDashboard;
-

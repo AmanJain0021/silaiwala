@@ -188,11 +188,7 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     .sort("-updatedAt")
     .lean();
 
-  const Settings = require("../../../models/Settings");
-  const settings = await Settings.getSettings();
-  const baseFee = settings.deliveryRates?.baseFee || 20;
-  const perKmRate = settings.deliveryRates?.perKmRate || 10;
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
 
   // Enrich each order with Tailor profile data (shopName, location, phone)
   const formattedOrders = await Promise.all(orders.map(async (order) => {
@@ -272,14 +268,7 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     let deliveryDistance = order.deliveryDistance;
     let deliveryEarnings = order.deliveryEarnings;
     
-    if (deliveryDistance == null || deliveryEarnings == null) {
-      deliveryDistance = 5;
-      if (latitude && longitude && vendorLatitude && vendorLongitude) {
-          const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
-          if (dist > 0) deliveryDistance = dist;
-      }
-      deliveryEarnings = Math.round(baseFee + (deliveryDistance * perKmRate));
-    }
+
 
     return {
       ...order,
@@ -320,17 +309,18 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
 
   const order = await Order.findOne(query)
     .populate("customer", "name phoneNumber profileImage email")
+    .populate("pickupPartner", "name phoneNumber profileImage")
+    .populate("dropoffPartner", "name phoneNumber profileImage")
+    .populate("items.service", "title image")
+    .populate("items.product", "name image images")
+    .populate("items.selectedFabric", "name image images")
     .lean();
 
   if (!order) {
     return next(new ErrorResponse("Order not found", 404));
   }
 
-  const Settings = require("../../../models/Settings");
-  const settings = await Settings.getSettings();
-  const baseFee = settings.deliveryRates?.baseFee || 20;
-  const perKmRate = settings.deliveryRates?.perKmRate || 10;
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
 
   // Same tailoring logic as getAssignedOrders
   const isFabricPhase = ["fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
@@ -408,14 +398,7 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
     let deliveryDistance = order.deliveryDistance;
     let deliveryEarnings = order.deliveryEarnings;
     
-    if (deliveryDistance == null || deliveryEarnings == null) {
-      deliveryDistance = 5;
-      if (latitude && longitude && vendorLatitude && vendorLongitude) {
-          const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
-          if (dist > 0) deliveryDistance = dist;
-      }
-      deliveryEarnings = Math.round(baseFee + (deliveryDistance * perKmRate));
-    }
+
 
   res.status(200).json({
     success: true,
@@ -471,7 +454,7 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
           {
             $group: {
               _id: null,
-              totalDeliveries: { $sum: { $cond: [{ $in: ["$status", ["delivered", "fabric-delivered"]] }, 1, 0] } },
+              totalDeliveries: { $sum: { $cond: [{ $in: ["$status", ["delivered", "fabric-delivered", "fabric-received"]] }, 1, 0] } },
               activeDeliveries: { 
                 $sum: { 
                   $cond: [
@@ -480,16 +463,16 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
                   ] 
                 } 
               },
-              totalEarnings: { $sum: { $cond: [{ $in: ["$status", ["delivered", "fabric-delivered"]] }, "$deliveryFee", 0] } }
+              totalEarnings: { $sum: { $cond: [{ $in: ["$status", ["delivered", "fabric-delivered", "fabric-received"]] }, "$deliveryFee", 0] } }
             }
           }
         ],
         today: [
-          { $match: { updatedAt: { $gte: todayStart }, status: { $in: ["delivered", "fabric-delivered"] } } },
+          { $match: { updatedAt: { $gte: todayStart }, status: { $in: ["delivered", "fabric-delivered", "fabric-received"] } } },
           { $group: { _id: null, earnings: { $sum: "$deliveryFee" }, count: { $sum: 1 } } }
         ],
         yesterday: [
-          { $match: { updatedAt: { $gte: yesterdayStart, $lt: todayStart }, status: { $in: ["delivered", "fabric-delivered"] } } },
+          { $match: { updatedAt: { $gte: yesterdayStart, $lt: todayStart }, status: { $in: ["delivered", "fabric-delivered", "fabric-received"] } } },
           { $group: { _id: null, earnings: { $sum: "$deliveryFee" } } }
         ]
       }
@@ -650,66 +633,49 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   }
 
     if (status === "fabric-delivered" || status === "delivered") {
-    // Distance & Earning Calculation
     try {
-      const Settings = require("../../../models/Settings");
-      const settings = await Settings.getSettings();
-      const baseFee = settings.deliveryRates?.baseFee || 20;
-      const perKmRate = settings.deliveryRates?.perKmRate || 10;
-      const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
-      
-      let distance = 5; 
-      
-      // Attempt to calculate precise distance
-      let vendorLatitude, vendorLongitude, latitude, longitude;
-      if (order.tailor) {
-        const tailorDoc = await Tailor.findOne({ user: order.tailor }).lean();
-        if (tailorDoc?.location?.coordinates?.length >= 2) {
-            vendorLongitude = tailorDoc.location.coordinates[0];
-            vendorLatitude = tailorDoc.location.coordinates[1];
+      const earnedAmount = order.deliveryEarnings;
+
+      if (!earnedAmount || earnedAmount <= 0) {
+        console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId}. Wallet will not be credited.`);
+      } else {
+        const WalletTransaction = require("../../../models/WalletTransaction");
+        // Prevent duplicate credit
+        const existingTx = await WalletTransaction.findOne({
+          user: req.user.id,
+          order: order._id,
+          category: "order_earnings",
+          description: { $regex: status, $options: "i" }
+        });
+
+        if (existingTx) {
+          console.warn(`DUPLICATE CREDIT PREVENTED: Wallet already credited for status ${status} on order ${order._id}`);
+        } else {
+          // Add to Delivery profile
+          await Delivery.findOneAndUpdate(
+            { user: req.user.id },
+            { 
+              $inc: { 
+                walletBalance: earnedAmount,
+                totalEarned: earnedAmount,
+                totalDeliveries: 1
+              } 
+            }
+          );
+
+          // Create a WalletTransaction record
+          await WalletTransaction.create({
+            user: req.user.id,
+            amount: earnedAmount,
+            type: "credit",
+            category: "order_earnings",
+            order: order._id,
+            description: `Delivery payout for ${status} (${order.deliveryDistance}km)`,
+          });
+
+          console.log(`Credited ₹${earnedAmount} to Delivery Partner ${req.user.id}`);
         }
       }
-      const Customer = require("../../../models/Customer");
-      const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
-      if (customerDoc?.addresses?.length > 0) {
-          const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
-          if (defaultAddress.location?.coordinates?.length >= 2) {
-              longitude = defaultAddress.location.coordinates[0];
-              latitude = defaultAddress.location.coordinates[1];
-          }
-      }
-      
-      if (latitude && longitude && vendorLatitude && vendorLongitude) {
-          const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
-          if (dist > 0) distance = dist;
-      }
-      
-      const earnedAmount = Math.round(baseFee + (distance * perKmRate));
-
-      // Add to Delivery profile
-      await Delivery.findOneAndUpdate(
-        { user: req.user.id },
-        { 
-          $inc: { 
-            walletBalance: earnedAmount,
-            totalEarned: earnedAmount,
-            totalDeliveries: 1
-          } 
-        }
-      );
-
-      // Create a WalletTransaction record
-      const WalletTransaction = require("../../../models/WalletTransaction");
-      await WalletTransaction.create({
-        user: req.user.id,
-        amount: earnedAmount,
-        type: "credit",
-        category: "order_earnings",
-        order: order._id,
-        description: `Delivery payout for ${status} (${distance}km)`,
-      });
-
-      console.log(`Credited ₹${earnedAmount} to Delivery Partner ${req.user.id}`);
     } catch (err) {
       console.error("Failed to process delivery payout:", err);
     }
@@ -806,11 +772,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     .sort("-updatedAt")
     .lean();
 
-  const Settings = require("../../../models/Settings");
-  const settings = await Settings.getSettings();
-  const baseFee = settings.deliveryRates?.baseFee || 20;
-  const perKmRate = settings.deliveryRates?.perKmRate || 10;
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
 
   // Enrich with Tailor profile data
   const formattedOrders = await Promise.all(orders.map(async (order) => {
@@ -845,12 +807,8 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
         }
     }
 
-    let deliveryDistance = 5;
-    if (latitude && longitude && vendorLatitude && vendorLongitude) {
-        const dist = getDistanceFromLatLonInKm(latitude, longitude, vendorLatitude, vendorLongitude);
-        if (dist > 0) deliveryDistance = dist;
-    }
-    const deliveryEarnings = Math.round(baseFee + (deliveryDistance * perKmRate));
+    let deliveryDistance = order.deliveryDistance;
+    let deliveryEarnings = order.deliveryEarnings;
 
     return {
       ...order,
@@ -907,11 +865,17 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
 
   order.deliveryStatus = "accepted";
 
+  const { calculatedDistance, calculatedFee } = req.body;
+
   // --- Calculate Distance & Earnings ---
-  const Settings = require("../../../models/Settings");
-  const Tailor = require("../../../models/Tailor");
-  const Customer = require("../../../models/Customer");
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+  if (calculatedDistance != null && calculatedFee != null) {
+      order.deliveryDistance = Number(calculatedDistance);
+      order.deliveryEarnings = Number(calculatedFee);
+  } else {
+      const Settings = require("../../../models/Settings");
+      const Tailor = require("../../../models/Tailor");
+      const Customer = require("../../../models/Customer");
+      const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
 
   const settings = await Settings.getSettings();
   const baseFee = settings.deliveryRates?.baseFee || 20;
@@ -960,14 +924,15 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Calculate distance from pickup to dropoff
-  if (customerLat && customerLng && vendorLatitude && vendorLongitude) {
-    const dist = getDistanceFromLatLonInKm(customerLat, customerLng, vendorLatitude, vendorLongitude);
-    if (dist > 0) deliveryDistance = dist;
-  }
+    // Calculate distance from pickup to dropoff
+    if (customerLat && customerLng && vendorLatitude && vendorLongitude) {
+      const dist = getDistanceFromLatLonInKm(customerLat, customerLng, vendorLatitude, vendorLongitude);
+      if (dist > 0) deliveryDistance = dist;
+    }
 
-  order.deliveryDistance = deliveryDistance + partnerDist;
-  order.deliveryEarnings = Math.round(baseFee + (order.deliveryDistance * perKmRate));
+    order.deliveryDistance = deliveryDistance + partnerDist;
+    order.deliveryEarnings = Math.round(baseFee + (order.deliveryDistance * perKmRate));
+  }
   // ------------------------------------
 
   const partnerName = req.user.name || "A delivery partner";
@@ -1121,12 +1086,10 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
 
   if (!order) return next(new ErrorResponse("Order not found or not assigned to you", 404));
 
-  const isPickupCycle = order.pickupPartner?.toString() === req.user.id;
-  const isDropoffCycle = order.dropoffPartner?.toString() === req.user.id;
-  // Fallback for legacy
-  const isLegacy = order.deliveryPartner?.toString() === req.user.id;
-
-  const cycle = isPickupCycle ? 'pickup' : (isDropoffCycle || isLegacy) ? 'dropoff' : 'dropoff';
+  let cycle = 'dropoff';
+  if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) || (!order.dropoffPartner && order.pickupPartner?.toString() === req.user.id)) {
+      cycle = 'pickup';
+  }
   
   // Generate 6 digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1180,7 +1143,7 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery Partner)
  */
 exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
-  const { otp, openBoxPhoto, deliveryProofPhoto } = req.body;
+  const { otp, openBoxPhoto, deliveryProofPhoto, paymentMethod } = req.body;
   if (!otp) return next(new ErrorResponse("OTP is required", 400));
 
   const isObjectId = mongoose.isValidObjectId(req.params.id);
@@ -1197,38 +1160,42 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
 
   if (!order) return next(new ErrorResponse("Order not found or not assigned to you", 404));
 
-  const isPickupCycle = order.pickupPartner?.toString() === req.user.id;
-  const isDropoffCycle = order.dropoffPartner?.toString() === req.user.id;
-  const isLegacy = order.deliveryPartner?.toString() === req.user.id;
-
-  const cycle = isPickupCycle ? 'pickup' : (isDropoffCycle || isLegacy) ? 'dropoff' : 'dropoff';
+  let cycle = 'dropoff';
+  if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) || (!order.dropoffPartner && order.pickupPartner?.toString() === req.user.id)) {
+      cycle = 'pickup';
+  }
 
   const { sendNotification } = require("../../../utils/notification");
   const Settings = require("../../../models/Settings");
   const WalletTransaction = require("../../../models/WalletTransaction");
   
   // Calculate delivery earnings
-  let earnings = 0;
-  try {
-    const settings = await Settings.getSettings();
-    const baseFee = settings.deliveryRates?.baseFee || 20;
-    const perKmRate = settings.deliveryRates?.perKmRate || 10;
-    
-    // For now, flat rate or simple estimation if distance is unknown
-    // In a full map integration, you would use order.deliveryDistance if saved at assignment
-    // For now we assume a standard 5km average if no precise coordinates are calculable
-    let distanceInKm = 5; 
-    earnings = Math.round(baseFee + (distanceInKm * perKmRate));
-  } catch (e) {
-    console.error('Error calculating delivery fee:', e);
-    earnings = 70; // Fallback Rs 70
+  let earnings = order.deliveryEarnings;
+  if (!earnings || earnings <= 0) {
+    console.error(`CRITICAL: Delivery Fee missing for Order ${order.orderId}. Wallet will NOT be credited.`);
+    earnings = 0;
   }
 
   // Helper to credit wallet
   const creditDeliveryWallet = async (partnerId, amount, description) => {
+    if (!amount || amount <= 0) return;
+    
+    // Prevent duplicate credit
+    const existingTx = await WalletTransaction.findOne({
+      user: partnerId,
+      order: order._id,
+      category: "order_earnings",
+      description: description
+    });
+    
+    if (existingTx) {
+      console.warn(`DUPLICATE CREDIT PREVENTED: Wallet already credited for partner ${partnerId} on order ${order._id}`);
+      return;
+    }
+
     const profile = await Delivery.findOne({ user: partnerId });
     if (profile) {
-      profile.walletBalance += amount;
+      profile.walletBalance = (profile.walletBalance || 0) + amount;
       profile.totalEarned = (profile.totalEarned || 0) + amount;
       profile.totalDeliveries = (profile.totalDeliveries || 0) + 1;
       await profile.save();
@@ -1296,22 +1263,23 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     });
 
     // Handle Partial Payment Logic before completing
-    if (order.remainingPaymentAmount > 0) {
-       if (order.remainingPaymentMethod === 'online' && order.remainingPaymentStatus !== 'paid') {
-           return next(new ErrorResponse("Online payment has not been completed by the customer yet.", 400));
-       }
-       if (order.remainingPaymentMethod === 'cash' || order.remainingPaymentMethod === 'pending') {
+    if (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== 'paid') {
+       if (paymentMethod === 'qr' || paymentMethod === 'online') {
+           // Delivery Partner verified UPI payment to Admin
+           order.remainingPaymentMethod = 'online';
+           order.remainingPaymentStatus = 'paid';
+           order.paymentStatus = 'paid';
+       } else if (paymentMethod === 'cash') {
            // Delivery Partner collected cash
            order.remainingPaymentMethod = 'cash';
            order.remainingPaymentStatus = 'paid';
-           order.paymentStatus = 'paid'; // Overall order is now fully paid
+           order.paymentStatus = 'paid';
            
-           // Deduct the collected cash from Delivery Partner's wallet (since they hold the cash)
+           // Deduct the collected cash from Delivery Partner's wallet
            const deliveryProfile = await Delivery.findOne({ user: req.user.id });
            if (deliveryProfile) {
               deliveryProfile.walletBalance -= order.remainingPaymentAmount;
               await deliveryProfile.save();
-              const WalletTransaction = require("../../../models/WalletTransaction");
               await WalletTransaction.create({
                 user: req.user.id,
                 amount: order.remainingPaymentAmount,
@@ -1321,12 +1289,15 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
                 description: `Cash collected from customer for order ${order.orderId}`
               });
            }
+       } else {
+           // Fallback if frontend didn't send payment method but there's a remaining amount
+           return next(new ErrorResponse("Please select a payment method for the remaining amount.", 400));
        }
     }
 
     // Ensure platform and delivery fees are populated before distributing earnings
     if (!order.platformFee) order.platformFee = Math.round(order.totalAmount * 0.1);
-    if (!order.deliveryFee) order.deliveryFee = 50;
+
     
     // Distribute Earnings (Tailor)
     const { distributeEarnings } = require("../../../utils/earningsEngine");
@@ -1394,72 +1365,3 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, data: returnOrder });
 });
 
-/**
- * @desc    Request withdrawal from wallet
- * @route   POST /api/v1/deliveries/payouts/request
- * @access  Private (Delivery)
- */
-exports.requestPayout = asyncHandler(async (req, res, next) => {
-  const { amount, method, bankDetails } = req.body;
-  
-  if (!amount || amount < 100) {
-    return next(new ErrorResponse("Minimum withdrawal amount is ₹100", 400));
-  }
-
-  const deliveryProfile = await Delivery.findOne({ user: req.user.id });
-  if (!deliveryProfile) {
-    return next(new ErrorResponse("Delivery profile not found", 404));
-  }
-
-  if (deliveryProfile.walletBalance < amount) {
-    return next(new ErrorResponse("Insufficient wallet balance", 400));
-  }
-
-  const Payout = require("../../../models/Payout");
-  const WalletTransaction = require("../../../models/WalletTransaction");
-  
-  // Deduct from wallet balance
-  deliveryProfile.walletBalance -= amount;
-  await deliveryProfile.save();
-
-  // Create Payout Request
-  const payout = await Payout.create({
-    payoutId: `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-    user: req.user.id,
-    amount,
-    method: method || "bank_transfer",
-    bankDetails: bankDetails || deliveryProfile.bankDetails,
-    status: "pending",
-  });
-
-  // Create Wallet Transaction
-  await WalletTransaction.create({
-    user: req.user.id,
-    amount,
-    type: "debit",
-    category: "withdrawal",
-    description: `Requested withdrawal of ₹${amount}`,
-  });
-
-  res.status(201).json({
-    success: true,
-    data: payout,
-    message: "Withdrawal requested successfully",
-  });
-});
-
-/**
- * @desc    Get payout history for delivery partner
- * @route   GET /api/v1/deliveries/payouts
- * @access  Private (Delivery)
- */
-exports.getPayouts = asyncHandler(async (req, res, next) => {
-  const Payout = require("../../../models/Payout");
-  
-  const payouts = await Payout.find({ user: req.user.id }).sort("-createdAt");
-
-  res.status(200).json({
-    success: true,
-    data: payouts,
-  });
-});

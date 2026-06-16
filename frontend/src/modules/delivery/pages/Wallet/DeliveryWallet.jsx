@@ -3,21 +3,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Wallet,
     ArrowLeft,
-    ArrowUpRight,
-    ArrowDownRight,
     CreditCard,
     History,
     Loader2,
-    CheckCircle2,
     X,
     AlertCircle,
     Info,
     ChevronRight,
-    Send
+    Send,
+    Building2,
+    QrCode,
+    Smartphone,
+    UploadCloud,
+    Image as ImageIcon,
+    HelpCircle,
+    ArrowDownCircle,
+    Clock,
+    ArrowDown,
+    Landmark,
+    ShieldCheck,
+    Menu
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../../utils/api';
 import { toast } from 'react-hot-toast';
+import wallet3DImage from '../../../../assets/images/3d_wallet.png';
 
 const DeliveryWallet = () => {
     const navigate = useNavigate();
@@ -25,33 +35,39 @@ const DeliveryWallet = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [walletData, setWalletData] = useState({
         balance: 0,
+        totalEarned: 0,
         totalWithdrawn: 0,
-        currency: 'INR'
+        pendingWithdrawals: 0,
+        recentTransactions: []
     });
     const [transactions, setTransactions] = useState([]);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [withdrawMethod, setWithdrawMethod] = useState('upi');
     const [upiId, setUpiId] = useState('');
-    const [activeTab, setActiveTab] = useState('history'); // 'history' | 'status'
+    const [bankDetails, setBankDetails] = useState({
+        accountName: '',
+        accountNumber: '',
+        ifscCode: '',
+        bankName: ''
+    });
+    const [qrFile, setQrFile] = useState(null);
+    const [qrPreview, setQrPreview] = useState(null);
 
     const fetchWalletData = async () => {
         setIsLoading(true);
         try {
-            const [balanceRes, transactionsRes] = await Promise.all([
-                api.get('/wallet/balance'),
-                api.get('/wallet/transactions')
-            ]);
+            const balanceRes = await api.get('/wallet/dashboard');
 
             if (balanceRes.data.success) {
                 setWalletData(balanceRes.data.data);
+                setTransactions(balanceRes.data.data.recentTransactions || []);
             }
-            if (transactionsRes.data.success) {
-                setTransactions(transactionsRes.data.data);
-            }
+            setIsLoading(false);
         } catch (error) {
+            if (error?.name === 'CanceledError') return;
             console.error('Failed to fetch wallet data:', error);
             toast.error('Failed to load wallet details');
-        } finally {
             setIsLoading(false);
         }
     };
@@ -64,30 +80,66 @@ const DeliveryWallet = () => {
         e.preventDefault();
 
         const amount = parseFloat(withdrawAmount);
-        if (!amount || amount <= 0) {
-            return toast.error('Please enter a valid amount');
+        if (!amount || amount < 50) {
+            return toast.error('Minimum withdrawal amount is ₹50');
         }
-        if (amount > walletData.balance) {
+        if (amount > calculatedBalance) {
             return toast.error('Insufficient balance');
         }
-        if (!upiId || !upiId.includes('@')) {
-            return toast.error('Please enter a valid UPI ID');
+        
+        let uploadedQrUrl = '';
+
+        if (withdrawMethod === 'upi') {
+            if (!upiId || !upiId.includes('@')) {
+                return toast.error('Please enter a valid UPI ID');
+            }
+        } else if (withdrawMethod === 'bank_transfer') {
+            if (!bankDetails.accountName || !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName) {
+                return toast.error('Please fill all bank details');
+            }
+        } else if (withdrawMethod === 'qr_code') {
+            if (!qrFile) {
+                return toast.error('Please upload a QR Code image');
+            }
+            setIsSubmitting(true);
+            try {
+                const formData = new FormData();
+                formData.append('image', qrFile);
+                const uploadRes = await api.post('/upload/public', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (uploadRes.data.success) {
+                    uploadedQrUrl = uploadRes.data.data;
+                } else {
+                    setIsSubmitting(false);
+                    return toast.error('Failed to upload QR Code');
+                }
+            } catch (err) {
+                setIsSubmitting(false);
+                return toast.error('Error uploading QR Code');
+            }
         }
 
         setIsSubmitting(true);
         try {
-            const res = await api.post('/wallet/withdraw', {
+            const payload = {
                 amount,
-                method: 'upi',
-                bankDetails: {
-                    upiId: upiId
-                }
-            });
+                method: withdrawMethod,
+                bankDetails: withdrawMethod === 'upi' ? { upiId } 
+                           : withdrawMethod === 'bank_transfer' ? { ...bankDetails }
+                           : { qrCodeImage: uploadedQrUrl }
+            };
+
+            const res = await api.post('/wallet/withdraw', payload);
 
             if (res.data.success) {
                 toast.success('Withdrawal request submitted!');
                 setShowWithdrawModal(false);
                 setWithdrawAmount('');
+                setUpiId('');
+                setBankDetails({ accountName: '', accountNumber: '', ifscCode: '', bankName: '' });
+                setQrFile(null);
+                setQrPreview(null);
                 fetchWalletData();
             }
         } catch (error) {
@@ -98,143 +150,156 @@ const DeliveryWallet = () => {
         }
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setQrFile(file);
+            setQrPreview(URL.createObjectURL(file));
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            </div>
+        );
+    }
+
+    const calculatedBalance = Math.max(0, (walletData.totalEarned || 0) - (walletData.totalWithdrawn || 0) - (walletData.pendingWithdrawals || 0));
+
     return (
-        <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500 -mt-2">
-            {/* Header */}
-            <div className="bg-[#2D2F6E] text-white p-5 pb-16 rounded-b-[2rem] relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                    <Wallet size={100} />
+        <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">
+            {/* Top Indigo Background Area */}
+            <div className="bg-[#3C1A9B] pt-4 px-5 pb-32 rounded-b-[2rem] relative">
+                {/* Header */}
+                <div className="flex items-center justify-between text-white mb-8">
+                    <div className="flex items-center gap-4">
+                        <Menu size={28} className="opacity-90" onClick={() => navigate(-1)} />
+                        <h1 className="text-[22px] font-black tracking-tight">Wallet</h1>
+                    </div>
+                    <HelpCircle size={24} className="opacity-90" />
                 </div>
 
-                <div className="flex items-center gap-3 mb-6">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-colors border border-white/10 backdrop-blur-md"
-                    >
-                        <ArrowLeft size={18} strokeWidth={3} />
-                    </button>
-                    <h1 className="text-xl font-black tracking-tight uppercase italic drop-shadow-md">Payout Wallet</h1>
-                </div>
+                {/* Main Balance Card */}
+                <div className="absolute left-5 right-5 top-[5.5rem] bg-[#4026ab] rounded-[2rem] p-6 text-white shadow-[0_20px_40px_rgba(41,23,122,0.4)] overflow-hidden border border-white/10 z-10">
+                    {/* Background Pattern */}
+                    <div className="absolute right-0 top-0 opacity-10 scale-150 translate-x-10 -translate-y-4">
+                        <Wallet size={200} strokeWidth={1} />
+                    </div>
 
-                <div className="text-center space-y-1">
-                    <p className="text-indigo-100/60 text-[9px] font-black uppercase tracking-[0.3em] italic">Available Liquidity</p>
-                    <h2 className="text-5xl font-black tracking-tighter drop-shadow-2xl italic">₹{walletData.balance.toLocaleString()}</h2>
-                    <div className="flex items-center justify-center gap-2 pt-1.5">
-                        <div className="px-3 py-1 bg-white/10 rounded-full border border-white/5 backdrop-blur-sm">
-                            <span className="text-[9px] font-black tracking-widest text-indigo-300 uppercase">Settled Earnings</span>
-                        </div>
+                    <div className="relative z-10 w-[60%]">
+                        <p className="text-[11px] font-medium text-indigo-200 mb-1">Current Balance</p>
+                        <h2 className="text-4xl font-black tracking-tight mb-2 flex items-center">
+                            ₹{calculatedBalance.toLocaleString()}
+                        </h2>
+                        <p className="text-[10px] font-medium text-indigo-200 mb-5">Available for withdrawal</p>
+                        
+                        <button
+                            onClick={() => setShowWithdrawModal(true)}
+                            className="bg-white text-[#29177a] px-5 py-2.5 rounded-xl font-bold text-[11px] flex items-center gap-2 hover:bg-indigo-50 transition-colors shadow-sm"
+                        >
+                            Withdraw Money <ChevronRight size={14} strokeWidth={3} />
+                        </button>
+                    </div>
+
+                    {/* 3D Wallet Graphic */}
+                    <div className="absolute -right-4 bottom-0 w-44 h-44 drop-shadow-2xl">
+                        <img src={wallet3DImage} alt="Wallet" className="w-full h-full object-contain" />
                     </div>
                 </div>
             </div>
 
-            {/* Quick Stats & Action */}
-            <div className="px-4 -mt-10 space-y-3">
-                <div className="bg-white p-5 rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-50 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform"></div>
-                    <div className="relative z-10">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Lifetime Withdrawn</p>
-                        <p className="text-lg font-black text-slate-900 tracking-tight">₹{walletData.totalWithdrawn.toLocaleString()}</p>
-                    </div>
-                    <button
-                        onClick={() => setShowWithdrawModal(true)}
-                        className="relative z-10 bg-[#2D2F6E] text-white px-6 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/10"
-                    >
-                        Withdraw
-                    </button>
-                </div>
-
-                {/* Info Card */}
-                <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex gap-3">
-                    <Info size={18} className="text-amber-600 shrink-0" />
-                    <p className="text-[11px] font-bold text-amber-700 leading-relaxed">
-                        Withdrawals are processed manually via UPI within 24-48 hours. Ensure your UPI ID is correct to avoid payment failure.
-                    </p>
-                </div>
-
-                {/* Tabs */}
-                <div className="pt-4">
-                    <div className="flex gap-4 border-b border-slate-200 mb-6">
-                        <button
-                            onClick={() => setActiveTab('history')}
-                            className={`pb-2 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'history' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'}`}
-                        >
-                            History
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('status')}
-                            className={`pb-2 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'status' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'}`}
-                        >
-                            Requests
-                        </button>
+            {/* Content Area */}
+            <div className="px-5 mt-28 space-y-5">
+                
+                {/* Stats Grid */}
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-5 flex items-center justify-between">
+                    <div className="flex flex-col items-center justify-center flex-1 text-center border-r border-slate-100 px-2">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
+                            <Wallet size={18} />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-500 mb-1">Total Earnings</p>
+                        <p className="text-sm font-black text-slate-900 mb-0.5">₹{(walletData.totalEarned || 0).toLocaleString()}</p>
+                        <p className="text-[8px] text-slate-400 font-medium">This Month</p>
                     </div>
 
-                    {isLoading ? (
-                        <div className="py-20 flex flex-col items-center justify-center space-y-4">
-                            <Loader2 className="w-8 h-8 text-slate-300 animate-spin" />
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Loading Ledger...</p>
+                    <div className="flex flex-col items-center justify-center flex-1 text-center border-r border-slate-100 px-2">
+                        <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                            <ArrowDownCircle size={18} />
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {activeTab === 'history' ? (
-                                transactions.filter(t => t.status === 'completed' || t.category === 'order_earnings').length > 0 ? (
-                                    transactions
-                                        .filter(t => t.status === 'completed' || t.category === 'order_earnings')
-                                        .map((txn, idx) => (
-                                            <div key={txn._id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.type === 'credit' ? 'bg-indigo-50 text-[#2D2F6E]' : 'bg-rose-50 text-rose-600'}`}>
-                                                        {txn.type === 'credit' ? <ArrowDownRight size={20} /> : <ArrowUpRight size={20} />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[13px] font-black text-slate-900">{txn.description || (txn.category === 'order_earnings' ? 'Order Earning' : 'Withdrawal')}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(txn.createdAt).toLocaleDateString()} • {txn.category.replace('_', ' ')}</p>
-                                                    </div>
-                                                </div>
-                                                <p className={`text-[15px] font-black ${txn.type === 'credit' ? 'text-[#2D2F6E]' : 'text-rose-600'}`}>
-                                                    {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
-                                                </p>
-                                            </div>
-                                        ))
-                                ) : (
-                                    <div className="py-12 bg-white rounded-3xl border-2 border-dashed border-slate-100 text-center">
-                                        <History size={32} className="mx-auto text-slate-200 mb-2" />
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No transaction history</p>
-                                    </div>
-                                )
-                            ) : (
-                                transactions.filter(t => t.category === 'withdrawal' && t.status === 'pending').length > 0 ? (
-                                    transactions
-                                        .filter(t => t.category === 'withdrawal' && t.status === 'pending')
-                                        .map((txn, idx) => (
-                                            <div key={txn._id} className="bg-white p-4 rounded-2xl border border-amber-100 shadow-sm flex items-center justify-between bg-amber-50/20">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center animate-pulse">
-                                                        <Clock size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[13px] font-black text-slate-900">Withdrawal Request</p>
-                                                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">{txn.status}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-[15px] font-black text-slate-900">-₹{txn.amount}</p>
-                                                    <p className="text-[9px] font-medium text-slate-400">{new Date(txn.createdAt).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        ))
-                                ) : (
-                                    <div className="py-12 bg-white rounded-3xl border-2 border-dashed border-slate-100 text-center">
-                                        <AlertCircle size={32} className="mx-auto text-slate-200 mb-2" />
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No pending requests</p>
-                                    </div>
-                                )
-                            )}
+                        <p className="text-[10px] font-bold text-slate-500 mb-1">Withdrawn</p>
+                        <p className="text-sm font-black text-slate-900 mb-0.5">₹{(walletData.totalWithdrawn || 0).toLocaleString()}</p>
+                        <p className="text-[8px] text-slate-400 font-medium">This Month</p>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center flex-1 text-center px-2">
+                        <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mb-2">
+                            <Clock size={18} />
                         </div>
-                    )}
+                        <p className="text-[10px] font-bold text-slate-500 mb-1">Pending Balance</p>
+                        <p className="text-sm font-black text-slate-900 mb-0.5">₹{(walletData.pendingWithdrawals || 0).toLocaleString()}</p>
+                        <p className="text-[8px] text-slate-400 font-medium">Will be cleared soon</p>
+                    </div>
                 </div>
+
+                {/* Info Banner */}
+                
+
+                {/* Transaction History */}
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-5">
+                    <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-sm font-black text-slate-900">Transaction History</h3>
+                        <button className="text-[11px] font-bold text-indigo-700 flex items-center gap-1">
+                            View All <ChevronRight size={14} />
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {transactions.length > 0 ? (
+                            transactions.map((txn, idx) => (
+                                <div key={txn._id || idx} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${txn.type === 'credit' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-500 border-orange-100'}`}>
+                                            {txn.type === 'credit' ? <ArrowDown size={18} strokeWidth={2.5} /> : <Landmark size={18} strokeWidth={2.5} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-[12px] font-bold text-slate-900 mb-0.5">
+                                                {txn.order?.orderId ? `Order #${txn.order.orderId}` : (txn.category === 'withdrawal' ? 'Weekly Payout' : txn.description)}
+                                            </p>
+                                            <p className="text-[10px] font-medium text-slate-500 capitalize">
+                                                {txn.category.replace('_', ' ')}
+                                            </p>
+                                            <p className="text-[9px] text-slate-400 mt-0.5">
+                                                {new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(txn.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1.5">
+                                        <div className={`flex items-center gap-2 ${txn.type === 'credit' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                                            <span className="text-sm font-black">{txn.type === 'credit' ? '+' : '-'} ₹{txn.amount}</span>
+                                            <ChevronRight size={14} className="text-slate-300" />
+                                        </div>
+                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${txn.type === 'credit' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                                            {txn.type === 'credit' ? 'Credit' : 'Debit'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="py-10 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                                <History size={32} className="text-slate-300 mb-2" />
+                                <p className="text-xs font-bold text-slate-500">No transactions yet</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Performance Banner */}
+               
             </div>
 
-            {/* Withdrawal Modal */}
+            {/* Withdrawal Modal (Kept unchanged) */}
             <AnimatePresence>
                 {showWithdrawModal && (
                     <motion.div
@@ -266,7 +331,7 @@ const DeliveryWallet = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Withdraw Funds</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Directly to UPI</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Select Transfer Method</p>
                                 </div>
                             </div>
 
@@ -280,13 +345,13 @@ const DeliveryWallet = () => {
                                         placeholder="0.00"
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
                                         required
-                                        max={walletData.balance}
+                                        max={calculatedBalance}
                                     />
                                     <div className="flex justify-between mt-2">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Available: ₹{walletData.balance}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Available: ₹{calculatedBalance}</p>
                                         <button
                                             type="button"
-                                            onClick={() => setWithdrawAmount(walletData.balance)}
+                                            onClick={() => setWithdrawAmount(calculatedBalance)}
                                             className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest"
                                         >
                                             Max
@@ -294,21 +359,87 @@ const DeliveryWallet = () => {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">UPI ID</label>
-                                    <input
-                                        type="text"
-                                        value={upiId}
-                                        onChange={(e) => setUpiId(e.target.value)}
-                                        placeholder="yourname@upi"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-base font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all uppercase placeholder:normal-case"
-                                        required
-                                    />
+                                <div className="space-y-3 mt-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Withdrawal Method</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button type="button" onClick={() => setWithdrawMethod('upi')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'upi' ? 'border-[#2D2F6E] bg-indigo-50 text-[#2D2F6E]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                                            <Smartphone size={20} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest">UPI ID</span>
+                                        </button>
+                                        <button type="button" onClick={() => setWithdrawMethod('bank_transfer')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'bank_transfer' ? 'border-[#2D2F6E] bg-indigo-50 text-[#2D2F6E]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                                            <Building2 size={20} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest">Bank A/C</span>
+                                        </button>
+                                        <button type="button" onClick={() => setWithdrawMethod('qr_code')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'qr_code' ? 'border-[#2D2F6E] bg-indigo-50 text-[#2D2F6E]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                                            <QrCode size={20} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest">QR Image</span>
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {withdrawMethod === 'upi' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">UPI ID</label>
+                                        <input
+                                            type="text"
+                                            value={upiId}
+                                            onChange={(e) => setUpiId(e.target.value)}
+                                            placeholder="yourname@upi"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all uppercase placeholder:normal-case"
+                                        />
+                                    </motion.div>
+                                )}
+
+                                {withdrawMethod === 'bank_transfer' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Bank Name</label>
+                                            <input type="text" value={bankDetails.bankName} onChange={(e) => setBankDetails({...bankDetails, bankName: e.target.value})} placeholder="e.g. HDFC Bank" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] transition-all" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Account Name</label>
+                                            <input type="text" value={bankDetails.accountName} onChange={(e) => setBankDetails({...bankDetails, accountName: e.target.value})} placeholder="Name on Account" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] transition-all" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">A/C Number</label>
+                                                <input type="text" value={bankDetails.accountNumber} onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})} placeholder="000011112222" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] transition-all" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">IFSC Code</label>
+                                                <input type="text" value={bankDetails.ifscCode} onChange={(e) => setBankDetails({...bankDetails, ifscCode: e.target.value})} placeholder="HDFC0000123" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] uppercase transition-all" />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {withdrawMethod === 'qr_code' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Upload Payment QR Code</label>
+                                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors relative cursor-pointer overflow-hidden group">
+                                            <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                            {qrPreview ? (
+                                                <div className="relative w-full aspect-square max-w-[150px] mx-auto rounded-xl overflow-hidden shadow-sm border border-slate-200">
+                                                    <img src={qrPreview} alt="QR Preview" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <ImageIcon className="text-white w-8 h-8" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center text-slate-400">
+                                                    <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                                        <UploadCloud size={24} className="text-[#2D2F6E]" />
+                                                    </div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tap to browse image</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
 
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting || !withdrawAmount || !upiId}
+                                    disabled={isSubmitting || !withdrawAmount || (withdrawMethod === 'upi' && !upiId) || (withdrawMethod === 'bank_transfer' && (!bankDetails.bankName || !bankDetails.accountName || !bankDetails.accountNumber || !bankDetails.ifscCode)) || (withdrawMethod === 'qr_code' && !qrFile)}
                                     className="w-full bg-[#2D2F6E] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
                                 >
                                     {isSubmitting ? (
