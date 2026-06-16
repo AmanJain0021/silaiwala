@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Scissors, Ruler, Shirt, CheckCircle, Mail, MapPin, Phone, Instagram, Facebook, Twitter, Truck } from 'lucide-react';
+import { ChevronRight, Scissors, Ruler, Shirt, CheckCircle, Mail, MapPin, Phone, Instagram, Facebook, Twitter, Truck, User, Star, Clock, Leaf, ShieldCheck } from 'lucide-react';
 
 const SewZellaLanding = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -27,14 +27,19 @@ const SewZellaLanding = () => {
           </Link>
           
           <div className="hidden md:flex gap-10 items-center">
-            {['Services', 'Artisans', 'Portfolio', 'Contact'].map((item) => (
-              item === 'Contact' ? (
-                <Link key={item} to="/page/contact-us" className={`text-sm tracking-widest uppercase transition-colors hover:text-white ${scrolled ? 'text-white/80' : 'text-[var(--color-gold)]/90'}`}>
-                  {item}
+            {[
+              { label: 'Services', path: '#services' },
+              { label: 'Artisans', path: '#artisans' },
+              { label: 'Why Choose Us', path: '#why-choose-us' },
+              { label: 'Contact', path: '/page/contact-us', isLink: true }
+            ].map((item) => (
+              item.isLink ? (
+                <Link key={item.label} to={item.path} className={`text-sm tracking-widest uppercase transition-colors hover:text-white ${scrolled ? 'text-white/80' : 'text-[var(--color-gold)]/90'}`}>
+                  {item.label}
                 </Link>
               ) : (
-                <a key={item} href={`#${item.toLowerCase()}`} className={`text-sm tracking-widest uppercase transition-colors hover:text-white ${scrolled ? 'text-white/80' : 'text-[var(--color-gold)]/90'}`}>
-                  {item}
+                <a key={item.label} href={item.path} className={`text-sm tracking-widest uppercase transition-colors hover:text-white ${scrolled ? 'text-white/80' : 'text-[var(--color-gold)]/90'}`}>
+                  {item.label}
                 </a>
               )
             ))}
@@ -66,7 +71,7 @@ const SewZellaLanding = () => {
             transition={{ duration: 0.8 }}
             className="text-[var(--color-gold)] uppercase tracking-[0.3em] text-sm mb-6 font-semibold"
           >
-            Hand-Crafted Excellence Since 1952
+            Premium Custom Tailoring Since 1952
           </motion.p>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -74,7 +79,7 @@ const SewZellaLanding = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="font-serif text-5xl md:text-7xl lg:text-[80px] text-white leading-[1.1] mb-8"
           >
-            Transform Your Presence<br/>With Bespoke Artistry
+            Transform Your Style<br/>With Perfect Fitting
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -82,7 +87,7 @@ const SewZellaLanding = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-white/80 text-lg md:text-xl max-w-2xl font-light leading-relaxed mb-10"
           >
-            Experience the fine art of artisanal tailoring, where every stitch is a testament to heritage, precision, and your unique identity.
+            Experience the joy of custom-made clothes, where every stitch is crafted with care to give you the perfect fit and look.
           </motion.p>
           
           <motion.div 
@@ -94,8 +99,8 @@ const SewZellaLanding = () => {
             <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="bg-[var(--color-gold)] text-[var(--color-evergreen)] px-8 py-4 rounded text-sm tracking-widest uppercase font-bold hover:bg-white transition-all duration-300 flex items-center justify-center gap-2">
               Book Consultation <ChevronRight size={16} />
             </a>
-            <a href="#portfolio" className="border border-white/30 text-white px-8 py-4 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white/10 hover:border-white transition-all duration-300 flex items-center justify-center">
-              View Portfolio
+            <a href="#why-choose-us" className="border border-white/30 text-white px-8 py-4 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white/10 hover:border-white transition-all duration-300 flex items-center justify-center">
+              Why Choose Us
             </a>
           </motion.div>
         </div>
@@ -103,10 +108,10 @@ const SewZellaLanding = () => {
         {/* Bottom Trust Indicators */}
         <div className="absolute bottom-0 w-full border-t border-white/10 bg-[var(--color-evergreen)]/40 backdrop-blur-md hidden md:block">
           <div className="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center text-white/70 text-xs uppercase tracking-widest">
-            <span className="flex items-center gap-2"><CheckCircle size={14} className="text-[var(--color-gold)]" /> Ethically Sourced</span>
-            <span className="flex items-center gap-2"><Scissors size={14} className="text-[var(--color-gold)]" /> Master Tailors</span>
-            <span className="flex items-center gap-2"><Ruler size={14} className="text-[var(--color-gold)]" /> Precision Fitting</span>
-            <span className="flex items-center gap-2"><Shirt size={14} className="text-[var(--color-gold)]" /> Sustainable Silks</span>
+            <span className="flex items-center gap-2"><CheckCircle size={14} className="text-[var(--color-gold)]" /> High Quality Fabrics</span>
+            <span className="flex items-center gap-2"><Scissors size={14} className="text-[var(--color-gold)]" /> Expert Tailors</span>
+            <span className="flex items-center gap-2"><Ruler size={14} className="text-[var(--color-gold)]" /> Perfect Fitting</span>
+            <span className="flex items-center gap-2"><Shirt size={14} className="text-[var(--color-gold)]" /> Premium Materials</span>
           </div>
         </div>
       </section>
@@ -116,20 +121,20 @@ const SewZellaLanding = () => {
         <div className="max-w-7xl mx-auto px-8 md:px-16">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-xl">
-              <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)] mb-4">Our Curated Services</h2>
-              <p className="text-[var(--color-sage)] text-lg leading-relaxed">From the formal structure of a bespoke suit to the delicate flow of bridal silk, we provide specialized tailoring services for every milestone.</p>
+              <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)] mb-4">Our Premium Services</h2>
+              <p className="text-[var(--color-sage)] text-lg leading-relaxed">From well-fitted custom suits to beautiful bridal wear, we provide expert tailoring services for all your special occasions.</p>
             </div>
-            <Link to="/user/services" className="text-[var(--color-evergreen)] border-b border-[var(--color-evergreen)] pb-1 text-sm tracking-widest uppercase font-medium hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
+            <Link to="/" className="text-[var(--color-evergreen)] border-b border-[var(--color-evergreen)] pb-1 text-sm tracking-widest uppercase font-medium hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
               View All Services
             </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { title: "Men's Suits", desc: "Precision-engineered garments for the modern gentleman.", img: "/landing/service_suit_1779536603895.png" },
-              { title: "Bridal Wear", desc: "Ethereal designs meticulously crafted for your special day.", img: "/landing/service_bridal_1779536675225.png" },
-              { title: "Alterations", desc: "Renewing and refining your favorite wardrobe pieces.", img: "/landing/landing_hero_1779536482633.png" }, 
-              { title: "Ethnic Wear", desc: "Celebrating heritage through bespoke traditional tailoring.", img: "/landing/service_suit_1779536603895.png" } 
+              { title: "Men's Custom Suits", desc: "Perfectly fitted custom suits for the modern man.", img: "/landing/service_suit_1779536603895.png" },
+              { title: "Bridal Wear", desc: "Beautiful and elegant designs crafted specially for your big day.", img: "/landing/service_bridal_1779536675225.png" },
+              { title: "Alterations & Fitting", desc: "Perfecting the fit of your favorite clothes.", img: "/landing/landing_hero_1779536482633.png" }, 
+              { title: "Traditional Ethnic Wear", desc: "Custom tailoring for your favorite traditional and festive wear.", img: "/landing/service_suit_1779536603895.png" } 
             ].map((service, idx) => (
               <div key={idx} className="group cursor-pointer">
                 <div className="aspect-[4/5] overflow-hidden rounded-lg mb-6 bg-[var(--color-stone)]">
@@ -150,18 +155,18 @@ const SewZellaLanding = () => {
       <section className="py-24 md:py-32 bg-[var(--color-stone)]">
         <div className="max-w-7xl mx-auto px-8 md:px-16">
           <div className="text-center mb-20">
-            <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">The Process</span>
-            <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)]">A Seamless Bespoke Journey</h2>
+            <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">How It Works</span>
+            <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)]">Our Simple Custom Process</h2>
           </div>
 
           <div className="relative">
             <div className="hidden md:block absolute top-1/2 left-0 w-full h-[1px] bg-[var(--color-sage)]/20 -translate-y-1/2 z-0"></div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-6 relative z-10">
               {[
-                { step: "01", title: "Consult", desc: "Discuss your vision and material preferences with our design team.", icon: <CheckCircle className="w-6 h-6" /> },
-                { step: "02", title: "Measure", desc: "Expert measurements to ensure a flawless, custom-fit silhouette.", icon: <Ruler className="w-6 h-6" /> },
-                { step: "03", title: "Stitch", desc: "Artisans bring your garment to life using traditional hand-finishing.", icon: <Scissors className="w-6 h-6" /> },
-                { step: "04", title: "Deliver", desc: "Your masterpiece is inspected and delivered to your doorstep.", icon: <Shirt className="w-6 h-6" /> }
+                { step: "01", title: "Consult", desc: "Share your ideas and choose your favorite fabrics with our team.", icon: <CheckCircle className="w-6 h-6" /> },
+                { step: "02", title: "Measure", desc: "We take exact measurements so your clothes fit perfectly.", icon: <Ruler className="w-6 h-6" /> },
+                { step: "03", title: "Stitch", desc: "Our expert tailors stitch your clothes with great care and perfection.", icon: <Scissors className="w-6 h-6" /> },
+                { step: "04", title: "Deliver", desc: "Your custom-made outfit is checked for quality and delivered to you.", icon: <Shirt className="w-6 h-6" /> }
               ].map((item, idx) => (
                 <div key={idx} className="flex flex-col items-center text-center">
                   <div className="w-16 h-16 rounded bg-[var(--color-evergreen)] text-[var(--color-gold)] flex items-center justify-center mb-6 shadow-xl">
@@ -186,40 +191,86 @@ const SewZellaLanding = () => {
               </div>
               <div className="absolute -bottom-8 -right-8 md:-bottom-12 md:-right-12 bg-[var(--color-evergreen)] text-[var(--color-alabaster)] p-8 md:p-12 rounded-lg max-w-sm shadow-2xl hidden sm:block">
                 <p className="font-serif text-xl md:text-2xl italic leading-relaxed mb-4 text-[var(--color-gold)]">
-                  "Tailoring is not just about measurements; it's about translating a person's character into fabric."
+                  "Tailoring is not just about measurements; it's about bringing your personal style to life."
                 </p>
-                <span className="text-xs tracking-widest uppercase text-white/60">— Elias Thorne, Lead Artisan</span>
+                <span className="text-xs tracking-widest uppercase text-white/60">— Elias Thorne, Head Tailor</span>
               </div>
             </div>
             
             <div className="w-full lg:w-1/2 lg:pl-12 mt-12 lg:mt-0">
-              <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">The Hands Behind SewZella</span>
-              <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)] mb-8">Master Artisans</h2>
+              <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">The Experts Behind SewZella</span>
+              <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)] mb-8">Our Expert Tailors</h2>
               <p className="text-[var(--color-sage)] text-lg leading-relaxed mb-8">
-                Our collective consists of second and third-generation tailors who have dedicated their lives to the craft. Each artisan specializes in a specific textile family, ensuring that your linen, silk, or wool is handled with expert knowledge.
+                We work with experienced tailors who have dedicated their lives to clothing and design. They specialize in handling premium fabrics like cotton, silk, and wool with expert care.
               </p>
               
               <div className="flex flex-col gap-6 mb-10">
                 <div className="flex gap-4">
                   <CheckCircle className="text-[var(--color-gold)] shrink-0 mt-1" size={20} />
                   <div>
-                    <h4 className="text-[var(--color-evergreen)] font-semibold mb-1 text-sm tracking-wider uppercase">Heritage Techniques</h4>
-                    <p className="text-[var(--color-sage)] text-sm">We preserve traditional methods like hand-canvassing and pick-stitching.</p>
+                    <h4 className="text-[var(--color-evergreen)] font-semibold mb-1 text-sm tracking-wider uppercase">Traditional Techniques</h4>
+                    <p className="text-[var(--color-sage)] text-sm">We use trusted traditional methods to ensure your clothes last longer and look better.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <CheckCircle className="text-[var(--color-gold)] shrink-0 mt-1" size={20} />
                   <div>
-                    <h4 className="text-[var(--color-evergreen)] font-semibold mb-1 text-sm tracking-wider uppercase">Sustainable Makers</h4>
-                    <p className="text-[var(--color-sage)] text-sm">Our artisans are committed to zero-waste cutting and natural dyes.</p>
+                    <h4 className="text-[var(--color-evergreen)] font-semibold mb-1 text-sm tracking-wider uppercase">Quality Craftsmanship</h4>
+                    <p className="text-[var(--color-sage)] text-sm">Our tailors focus on the best cutting techniques to minimize waste and deliver top quality.</p>
                   </div>
                 </div>
               </div>
               
               <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="bg-[var(--color-evergreen)] text-white px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-[var(--color-evergreen-container)] transition-colors inline-block">
-                Meet the Collective
+                Meet Our Tailors
               </a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose SewZella Section */}
+      <section id="why-choose-us" className="py-24 md:py-32 bg-[var(--color-stone)] relative border-t border-[var(--color-evergreen)]/10">
+        <div className="max-w-7xl mx-auto px-8 md:px-16">
+          <div className="text-center mb-20">
+            <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">Why We Are Better</span>
+            <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)]">Why Choose Us?</h2>
+            <p className="text-[var(--color-sage)] text-lg max-w-2xl mx-auto mt-6">
+              We bring premium custom tailoring to your doorstep, combining great quality with modern convenience.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { 
+                icon: <Star className="w-8 h-8 text-[var(--color-gold)]" />, 
+                title: "Expert Tailoring", 
+                desc: "We partner with highly skilled tailors, ensuring every stitch is perfect and durable." 
+              },
+              { 
+                icon: <Clock className="w-8 h-8 text-[var(--color-gold)]" />, 
+                title: "Ultimate Convenience", 
+                desc: "From home measurements to doorstep delivery, enjoy an easy and smooth process." 
+              },
+              { 
+                icon: <Leaf className="w-8 h-8 text-[var(--color-gold)]" />, 
+                title: "Trusted Quality", 
+                desc: "We are committed to using high-quality materials and fair practices for all our tailors." 
+              },
+              { 
+                icon: <ShieldCheck className="w-8 h-8 text-[var(--color-gold)]" />, 
+                title: "Perfect Fit Guarantee", 
+                desc: "Our exact measurements and free alterations make sure your clothes fit you flawlessly." 
+              }
+            ].map((feature, idx) => (
+              <div key={idx} className="bg-white p-10 rounded-lg shadow-sm border border-[var(--color-evergreen)]/5 hover:shadow-md transition-shadow group">
+                <div className="w-16 h-16 rounded-full bg-[var(--color-evergreen-container)]/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
+                  {feature.icon}
+                </div>
+                <h3 className="font-serif text-xl text-[var(--color-evergreen)] mb-3">{feature.title}</h3>
+                <p className="text-[var(--color-sage)] text-sm leading-relaxed">{feature.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -228,11 +279,11 @@ const SewZellaLanding = () => {
       <section className="py-24 bg-[var(--color-evergreen)] text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
         <div className="max-w-7xl mx-auto px-8 md:px-16 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-[var(--color-evergreen-container)] p-12 md:p-16 rounded-lg border border-white/10 relative overflow-hidden group">
               <Scissors className="absolute -right-8 -bottom-8 w-64 h-64 text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500 transform -rotate-12" />
-              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-[var(--color-gold)]">Join as an Artisan</h3>
-              <p className="text-white/70 mb-10 text-lg max-w-md">Are you a master of the needle? Join our global network of elite tailors and reach a discerning clientele.</p>
+              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-[var(--color-gold)]">Join as a Tailor</h3>
+              <p className="text-white/70 mb-10 text-lg max-w-md">Are you an expert in stitching? Join our network of top tailors and reach more customers easily.</p>
               <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="border border-[var(--color-gold)] text-[var(--color-gold)] px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-[var(--color-gold)] hover:text-[var(--color-evergreen)] transition-all">
                 Apply Now
               </a>
@@ -240,10 +291,19 @@ const SewZellaLanding = () => {
             
             <div className="bg-[var(--color-sage)]/20 p-12 md:p-16 rounded-lg border border-white/10 relative overflow-hidden group">
               <Truck className="absolute -right-8 -bottom-8 w-64 h-64 text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500" />
-              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-white">Join as a Partner</h3>
-              <p className="text-white/70 mb-10 text-lg max-w-md">Become a logistics partner and help us deliver artisanal excellence to customers worldwide with white-glove service.</p>
+              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-white">Join as a Delivery Partner</h3>
+              <p className="text-white/70 mb-10 text-lg max-w-md">Become a delivery partner and help us deliver custom-made clothes to our customers safely and on time.</p>
               <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="border border-white/30 text-white px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white hover:text-[var(--color-evergreen)] transition-all">
                 Partner With Us
+              </a>
+            </div>
+
+            <div className="bg-[var(--color-sage)]/20 p-12 md:p-16 rounded-lg border border-white/10 relative overflow-hidden group">
+              <User className="absolute -right-8 -bottom-8 w-64 h-64 text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500" />
+              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-white">Join as a Customer</h3>
+              <p className="text-white/70 mb-10 text-lg max-w-md">Experience the best custom tailoring. Join us today to get clothes that are made perfectly just for you.</p>
+              <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="border border-white/30 text-white px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white hover:text-[var(--color-evergreen)] transition-all">
+                Sign Up Now
               </a>
             </div>
           </div>
@@ -253,8 +313,8 @@ const SewZellaLanding = () => {
       {/* 10. Newsletter CTA */}
       <section className="py-24 bg-[var(--color-stone)] border-b border-[var(--color-evergreen)]/10">
         <div className="max-w-5xl mx-auto px-8 text-center">
-          <h2 className="font-serif text-3xl md:text-4xl text-[var(--color-evergreen)] mb-6">Plan Your Next Masterpiece</h2>
-          <p className="text-[var(--color-sage)] mb-10 text-lg max-w-2xl mx-auto">Subscribe to receive seasonal textile guides, style inspiration, and exclusive invitations to our traveling tailor events.</p>
+          <h2 className="font-serif text-3xl md:text-4xl text-[var(--color-evergreen)] mb-6">Stay Updated</h2>
+          <p className="text-[var(--color-sage)] mb-10 text-lg max-w-2xl mx-auto">Subscribe to our newsletter for the latest style inspiration, fashion tips, and exclusive offers.</p>
           
           <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto" onSubmit={(e) => e.preventDefault()}>
             <input 
@@ -276,7 +336,7 @@ const SewZellaLanding = () => {
             <div className="lg:col-span-1">
               <h2 className="font-serif text-3xl text-[var(--color-gold)] mb-6">SewZella</h2>
               <p className="text-white/60 text-sm leading-relaxed mb-8">
-                Defining the future of bespoke tailoring through sustainable practices and heritage craftsmanship.
+                Bringing you the best of custom tailoring with expert craftsmanship and top quality.
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-10 h-10 rounded border border-white/20 flex items-center justify-center text-white/60 hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
@@ -294,8 +354,8 @@ const SewZellaLanding = () => {
             <div>
               <h4 className="text-sm tracking-widest uppercase font-semibold mb-6 text-white">Discover</h4>
               <ul className="space-y-4">
-                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Artisans</a></li>
-                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Materials</a></li>
+                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Our Tailors</a></li>
+                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Fabrics</a></li>
                 <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Sustainability</a></li>
               </ul>
             </div>
@@ -321,7 +381,7 @@ const SewZellaLanding = () => {
           
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/40 text-xs tracking-wider uppercase">
-              &copy; {new Date().getFullYear()} SewZella Bespoke Tailoring. Handcrafted Excellence.
+              &copy; {new Date().getFullYear()} SewZella Custom Tailoring. Perfect Fit Every Time.
             </p>
             <div className="flex gap-6 text-white/40 text-xs tracking-wider uppercase">
               <Link to="/page/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>

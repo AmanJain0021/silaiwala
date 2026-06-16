@@ -743,42 +743,42 @@ const Orders = () => {
                         <p className="text-gray-400 font-black uppercase tracking-widest text-xs">No orders found in this section</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-3 md:px-0">
                         {filteredOrders.map((order) => {
                             const isNew = order.status === 'pending';
                             return (
-                                <div key={order._id} className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#2D2F6E]/10 transition-all flex flex-col group">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-black uppercase bg-[#FDE5D2] text-[#2D2F6E] px-3 py-1 rounded-lg border border-[#2D2F6E]/10 w-fit">
+                                <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#2D2F6E]/10 transition-all flex flex-col group">
+                                    <div className="flex justify-between items-start mb-3 md:mb-4">
+                                        <div className="flex flex-col gap-0.5 md:gap-1">
+                                            <span className="text-[9px] md:text-[10px] font-black uppercase bg-[#FDE5D2] text-[#2D2F6E] px-2 md:px-3 py-1 rounded-md md:rounded-lg border border-[#2D2F6E]/10 w-fit">
                                                 #{order.orderId || 'ALT123456'}
                                             </span>
-                                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">Received {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-tighter">Received {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
-                                        <div className="w-10 h-10 bg-gray-900 rounded-2xl flex items-center justify-center text-white font-black text-xs group-hover:scale-110 transition-transform">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-900 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-black text-xs group-hover:scale-110 transition-transform">
                                             {order.customer?.name?.charAt(0) || 'C'}
                                         </div>
                                     </div>
 
-                                    <h4 className="text-base font-black text-gray-900 leading-tight mb-4">
+                                    <h4 className="text-sm md:text-base font-black text-gray-900 leading-tight mb-3 md:mb-4">
                                         {order.customer?.name}
                                     </h4>
 
-                                    <div className="flex-1 bg-gray-50 p-3 rounded-[1.5rem] border border-gray-100 mb-5 flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
+                                    <div className="flex-1 bg-gray-50 p-2.5 md:p-3 rounded-xl md:rounded-[1.5rem] border border-gray-100 mb-3 md:mb-5 flex items-center gap-2.5 md:gap-3">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg md:rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
                                             {order.items?.[0]?.selectedFabric?.image || order.items?.[0]?.selectedFabric?.images?.[0] || order.items?.[0]?.service?.image || order.items?.[0]?.service?.images?.[0] ? (
                                                 <img src={order.items[0].selectedFabric?.image || order.items[0].selectedFabric?.images?.[0] || order.items[0].service?.image || order.items[0].service?.images?.[0]} className="w-full h-full object-cover" />
                                             ) : (
-                                                <Scissors size={18} className="text-[#2D2F6E]" />
+                                                <Scissors size={16} className="md:w-[18px] md:h-[18px] text-[#2D2F6E]" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-black text-gray-900 truncate">
+                                            <p className="text-[11px] md:text-xs font-black text-gray-900 truncate">
                                                 {order.items?.[0]?.service?.title || 'Custom Design'}
                                             </p>
-                                            <div className="flex items-center gap-1 mt-1 text-gray-400">
+                                            <div className="flex items-center gap-1 mt-0.5 md:mt-1 text-gray-400">
                                                 <MapPin size={10} className="shrink-0" />
-                                                <p className="text-[10px] font-bold truncate">
+                                                <p className="text-[9px] md:text-[10px] font-bold truncate">
                                                     {order.deliveryAddress?.street || 'Local Pick-up'}
                                                 </p>
                                             </div>
@@ -788,7 +788,7 @@ const Orders = () => {
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={() => handleAction('View Detail', order)}
-                                            className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                                            className="flex-1 py-2.5 md:py-3 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
                                         >
                                             Details
                                         </button>
@@ -796,7 +796,7 @@ const Orders = () => {
                                             <button 
                                                 onClick={() => handleStatusUpdate(order._id, 'accepted')}
                                                 disabled={updatingOrders[order._id]}
-                                                className="flex-[1.5] py-3 bg-[#2D2F6E] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                className="flex-[1.5] py-2.5 md:py-3 bg-[#2D2F6E] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                             >
                                                 {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
                                             </button>
@@ -848,7 +848,7 @@ const Orders = () => {
                                                             }
                                                         }}
                                                         disabled={updatingOrders[order._id]}
-                                                        className="flex-[1.5] py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                        className="flex-[1.5] py-2.5 md:py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                                     >
                                                         {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : (nextStep ? nextStep.label : 'Update Status')}
                                                     </button>
