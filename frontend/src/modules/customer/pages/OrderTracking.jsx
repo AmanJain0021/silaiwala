@@ -10,6 +10,7 @@ import api from '../../../utils/api';
 import TrackingTimeline from '../components/orders/TrackingTimeline';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
+import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 const OrderTracking = () => {
@@ -61,7 +62,11 @@ const OrderTracking = () => {
         if (id) {
             fetchOrderDetails();
 
-            const socket = io(SOCKET_URL);
+            const socket = io(SOCKET_URL, {
+                auth: {
+                    token: getToken()
+                }
+            });
             setSocketInstance(socket);
             socket.emit('join_order_room', id);
 

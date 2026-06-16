@@ -3,13 +3,13 @@ import { MapPin, ChevronDown, Check, Loader2, Navigation, Search } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion';
 
 import useLocationStore from '../../../store/locationStore';
-import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 const LocationBar = () => {
     const { address: location, setLocation, coordinates } = useLocationStore();
     const [isEditing, setIsEditing] = useState(false);
     const [tempLocation, setTempLocation] = useState('');
-    const { detectLocation, isLocating: isLoading } = useGoogleLocation();
+    const { detectLocation, isLocating: isLoading } = useUnifiedLocation({ fetchAddress: true });
 
     const handleSave = () => {
         if (tempLocation.trim()) {

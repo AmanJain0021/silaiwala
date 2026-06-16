@@ -13,7 +13,7 @@ import { formatPrice } from "../../../../shared/utils/helpers";
 import socketService from "../../../../shared/utils/socket";
 import NewOrderModal from "../NewOrderModal";
 import { useJsApiLoader } from "@react-google-maps/api";
-import useGoogleLocation from "../../../../hooks/useGoogleLocation";
+import useUnifiedLocation from "../../../../shared/hooks/useUnifiedLocation";
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
@@ -46,7 +46,7 @@ const DeliveryLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const audioUnlockedRef = useRef(false);
 
-  const { detectLocation, isLocating } = useGoogleLocation();
+  const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
   const [partnerLocation, setPartnerLocation] = useState('Detecting location...');
 
   useEffect(() => {

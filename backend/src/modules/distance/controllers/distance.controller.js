@@ -45,6 +45,7 @@ exports.calculateDistance = asyncHandler(async (req, res, next) => {
     }
 
     try {
+        console.log(`🛣️ [distance.controller] Calling Google Distance Matrix for origin: ${origLat},${origLng} -> dest: ${destLat},${destLng}`);
         const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
             params: {
                 origins: `${origLat},${origLng}`,
@@ -55,9 +56,9 @@ exports.calculateDistance = asyncHandler(async (req, res, next) => {
 
         const data = response.data;
         if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
-            // distance in meters
             const distanceMeters = data.rows[0].elements[0].distance.value;
             const distanceKm = distanceMeters / 1000;
+            console.log(`📏 [distance.controller] Distance Matrix returned ${distanceKm} km.`);
             return res.status(200).json({
                 success: true,
                 data: {
@@ -112,6 +113,7 @@ exports.geocode = asyncHandler(async (req, res, next) => {
     }
 
     try {
+        console.log(`📍 [distance.controller] Calling Google Geocoding for lat/lng: ${lat},${lng}`);
         const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
             params: {
                 latlng: `${lat},${lng}`,
@@ -123,6 +125,7 @@ exports.geocode = asyncHandler(async (req, res, next) => {
         if (data.status === 'OK' && data.results.length > 0) {
             const result = data.results[0];
             const address = result.formatted_address;
+            console.log(`🗺️ [distance.controller] Geocoded Address: ${address}`);
             
             let city = "";
             let state = "";

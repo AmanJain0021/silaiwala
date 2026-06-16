@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation } from 'lucide-react';
 import api from '../../utils/api';
+import { getToken } from '../../utils/auth';
 
 const LocationSplashScreen = ({ onComplete, role, token }) => {
     const [status, setStatus] = useState('finding'); // finding, success, error
@@ -46,7 +47,7 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                             module.default.getState().setLocation(address, latitude, longitude);
                         }).catch(err => console.error("Could not load locationStore", err));
 
-                        const activeToken = token || localStorage.getItem('token');
+                        const activeToken = token || getToken();
                         const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
 
                         // Save location to backend

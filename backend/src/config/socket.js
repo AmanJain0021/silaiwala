@@ -29,8 +29,27 @@ const initSocket = (httpServer) => {
     pingTimeout: 60000,
   });
 
+  const jwt = require("jsonwebtoken");
+  
+  // Middleware to authenticate socket connections via JWT
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(" ")[1];
+    if (!token) {
+      console.log(`🔌 [SOCKET AUTH ERROR] No token provided for socket: ${socket.id}`);
+      return next(new Error("Authentication error: Token required"));
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.user = decoded;
+      next();
+    } catch (err) {
+      console.log(`🔌 [SOCKET AUTH ERROR] Invalid token for socket: ${socket.id} | Error: ${err.message}`);
+      return next(new Error("Authentication error: Invalid token"));
+    }
+  });
+
   io.on("connection", (socket) => {
-    console.log(`🔌 Socket connected: ${socket.id}`);
+    console.log(`🔌 Socket connected: ${socket.id} | User: ${socket.user?.id}`);
 
     // ── Join a room by userId for targeted notifications ─────────────────────
     socket.on("join_user_room", (userId) => {

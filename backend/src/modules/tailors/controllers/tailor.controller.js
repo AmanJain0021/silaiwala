@@ -610,12 +610,30 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   // --- All post-save notifications (non-critical, should not block response) ---
   try {
+    let notificationType = "ORDER_STATUS_UPDATED";
+    let title = "Order Update";
+    let notificationMessage = message || `Your order ${order.orderId} status has been updated to ${status.replace(/-/g, ' ')}.`;
+    
+    if (status === "accepted") {
+      notificationType = "ORDER_ACCEPTED";
+      title = "Order Accepted - Advance Payment Required";
+      notificationMessage = `Your order ${order.orderId} has been accepted by the tailor. Please pay the advance amount of ₹${order.advancePaymentAmount} to proceed.`;
+    } else if (status === "cancelled") {
+      notificationType = "ORDER_REJECTED";
+      title = "Order Cancelled";
+      notificationMessage = `Your order ${order.orderId} was cancelled.`;
+    } else if (status === "ready-for-delivery" || status === "ready") {
+      notificationType = "ORDER_STATUS_UPDATED";
+      title = "Order Ready - Final Payment Due";
+      notificationMessage = `Your order ${order.orderId} is ready for delivery. Please complete your remaining payment of ₹${order.remainingPaymentAmount}.`;
+    }
+
     // Notify Customer about status update
     await sendNotification({
       recipient: order.customer,
-      type: "ORDER_STATUS_UPDATED",
-      title: "Order Update",
-      message: `Your order ${order.orderId} status has been updated to ${status.replace(/-/g, ' ')}.`,
+      type: notificationType,
+      title,
+      message: notificationMessage,
       data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
     });
     
@@ -630,29 +648,6 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
         order.deliveryMethod = deliveryMethod;
         await order.save();
     }
-
-    let notificationType = "ORDER_STATUS_UPDATED";
-    let title = "Order Status Updated";
-    
-    if (status === "accepted") {
-      notificationType = "ORDER_ACCEPTED";
-      title = "Order Accepted - Advance Payment Required";
-      message = `Your order ${order.orderId} has been accepted by the tailor. Please pay the advance amount of ₹${order.advancePaymentAmount} to proceed.`;
-    } else if (status === "cancelled") {
-      notificationType = "ORDER_REJECTED";
-      title = "Order Cancelled";
-    } else if (status === "ready-for-delivery" || status === "ready") {
-      title = "Order Ready - Final Payment Due";
-      message = `Your order ${order.orderId} is ready for delivery. Please complete your remaining payment of ₹${order.remainingPaymentAmount}.`;
-    }
-
-    await sendNotification({
-      recipient: order.customer,
-      type: notificationType,
-      title,
-      message: message || `Your order ${order.orderId} status is now: ${status}`,
-      data: { orderId: order._id, targetUrl: "/orders" }
-    });
 
     // --- Socket Emission for Customer & Delivery ---
     const { getIO } = require("../../../config/socket");

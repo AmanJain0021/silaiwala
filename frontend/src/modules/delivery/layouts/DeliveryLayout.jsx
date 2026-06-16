@@ -23,11 +23,12 @@ import deliveryService from '../services/deliveryService';
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
+import { getToken } from '../../../utils/auth';
 import useAuthStore from '../../../store/authStore';
 
 import api from '../../../utils/api';
 import { playNotificationSound } from '../../../utils/audio';
-import { useGoogleLocation } from '../../../hooks/useGoogleLocation';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 const silaiwalaLogo = '/sewzella_logo-removebg-preview.png';
 
@@ -135,11 +136,15 @@ const DeliveryLayout = () => {
     React.useEffect(() => {
         fetchNotifications();
 
-        const socket = io(SOCKET_URL);
-        
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
         socket.emit('join', 'delivery_partners');
-        if (user?._id) {
-            socket.emit('join', `user_${user._id}`);
+        const userId = user?._id || user?.id;
+        if (userId) {
+            socket.emit('join', `user_${userId}`);
         }
 
         socket.on('new_notification', (data) => {
@@ -171,7 +176,7 @@ const DeliveryLayout = () => {
     const [currentLocationStr, setCurrentLocationStr] = useState('Fetching Location...');
     const [headerLocationCoords, setHeaderLocationCoords] = useState(null);
 
-    const { detectLocation } = useGoogleLocation();
+    const { detectLocation } = useUnifiedLocation({ fetchAddress: true });
 
     React.useEffect(() => {
         const fetchAndSyncLocation = async () => {

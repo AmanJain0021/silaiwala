@@ -4,7 +4,7 @@ import ImageUploader from '../../../../components/Common/ImageUploader';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { Navigation } from 'lucide-react';
-import { useGoogleLocation } from '../../../../hooks/useGoogleLocation';
+import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 
 export const Step1Basic = ({ register, errors, setValue, watch }) => {
     const profileImage = watch('profileImage');
@@ -133,7 +133,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
 };
 
 export const Step2Business = ({ register, errors, setValue }) => {
-    const { detectLocation, isLocating } = useGoogleLocation();
+    const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
 
     const handleAutoLocation = async () => {
         try {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
+import { getImageUrl } from '../../../../utils/imageUrl';
 
 const ProductGallery = ({ images = [] }) => {
     const [activeIndex, setActiveIndex] = useState(0);
@@ -12,7 +13,7 @@ const ProductGallery = ({ images = [] }) => {
             {/* Main Image (Mobile: Slider, Desktop: Zoomable) */}
             <div className="relative aspect-[3/4] md:aspect-square bg-gray-100 rounded-2xl overflow-hidden flex-1 group">
                 <img
-                    src={displayImages[activeIndex]}
+                    src={getImageUrl(displayImages[activeIndex])}
                     alt="Product Main"
                     className="w-full h-full object-cover md:group-hover:scale-110 transition-transform duration-500 cursor-zoom-in"
                 />
@@ -53,7 +54,7 @@ const ProductGallery = ({ images = [] }) => {
                             activeIndex === idx ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
                         )}
                     >
-                        <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                        <img src={getImageUrl(img)} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
                     </div>
                 ))}
             </div>

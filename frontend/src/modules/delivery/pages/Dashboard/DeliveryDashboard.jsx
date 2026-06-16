@@ -25,6 +25,7 @@ import {
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { SOCKET_URL } from '../../../../config/constants';
 import useAuthStore from '../../../../store/authStore';
+import { getToken } from '../../../../utils/auth';
 import deliveryService from '../../services/deliveryService';
 import { io } from 'socket.io-client';
 import { Power, MapPin as MapPinIcon } from 'lucide-react';
@@ -112,7 +113,11 @@ const DeliveryDashboard = () => {
     useEffect(() => {
         fetchDashboardData();
 
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
 
         // Join delivery fleet and personal room
         socket.emit('join', 'delivery_partners');
@@ -523,7 +528,7 @@ const DeliveryDashboard = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
                         onClick={() => setSelectedAvailableTask(null)}
                     >
                         <motion.div
@@ -535,8 +540,9 @@ const DeliveryDashboard = () => {
                             className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto"
                         >
                             <button
+                                type="button"
                                 onClick={() => setSelectedAvailableTask(null)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-all z-20"
+                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-all z-20 cursor-pointer"
                             >
                                 <X size={16} />
                             </button>
@@ -634,9 +640,10 @@ const DeliveryDashboard = () => {
                             </div>
 
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAcceptTask(selectedAvailableTask._id); }}
                                 disabled={isAccepting}
-                                className="w-full h-16 bg-primary hover:bg-primary-dark rounded-2xl flex items-center justify-center text-white shadow-xl active:scale-95 transition-all disabled:opacity-70 mb-4"
+                                className="w-full h-16 bg-primary hover:bg-primary-dark rounded-2xl flex items-center justify-center text-white shadow-xl active:scale-95 transition-all disabled:opacity-70 mb-4 cursor-pointer relative z-20"
                             >
                                 {isAccepting ? <Loader2 className="animate-spin" size={24} /> : (
                                     <span className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">

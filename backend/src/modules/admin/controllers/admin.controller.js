@@ -583,12 +583,20 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     if (deliveryPartner && deliveryPartner !== oldOrder.deliveryPartner?.toString()) {
+      const isPickup = order.status === 'fabric-ready-for-pickup' || (order.fabricPickupRequired && order.status === 'pending');
       await sendNotification({
         recipient: deliveryPartner,
         type: "TASK_ASSIGNED",
-        title: "New Delivery Assigned 📦",
-        message: `Dispatch ${order.orderId || id} has been assigned to you.`,
-        data: { orderId: id, targetUrl: "/delivery/tasks" }
+        title: isPickup ? "New Fabric Task Assigned! 📍" : "New Final Delivery Task! 📍",
+        message: isPickup 
+          ? `Order ${order.orderId || id} has been assigned to you for fabric pickup.`
+          : `Order ${order.orderId || id} has been assigned to you for final delivery.`,
+        data: { 
+          orderId: id, 
+          type: order.status,
+          taskType: isPickup ? 'fabric-pickup' : 'final-delivery',
+          targetUrl: "/delivery/tasks" 
+        }
       });
 
       // Clear from general fleet

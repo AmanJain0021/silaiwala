@@ -4,6 +4,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { FiArrowLeft, FiNavigation, FiPackage, FiMapPin } from 'react-icons/fi';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
+import { getToken } from '../../../utils/auth';
 import { useDistanceTracker } from '../../../shared/hooks/useDistanceTracker';
 import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import PageTransition from '../../../shared/components/PageTransition';
@@ -88,7 +89,7 @@ const LiveTracking = () => {
           `${import.meta.env.VITE_API_URL}/deliveries/orders/${orderId}`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('deliveryToken')}`
+              Authorization: `Bearer ${getToken()}`
             }
           }
         );

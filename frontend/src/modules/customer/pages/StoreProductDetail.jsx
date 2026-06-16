@@ -84,7 +84,7 @@ const StoreProductDetail = () => {
             showToast("Please select size and color", "error");
             return;
         }
-        addToCart(productData, { size: selectedSize, color: selectedColor.name });
+        addToCart(productData, { size: selectedSize, color: selectedColor });
         showToast("Added to Cart!");
     };
 
@@ -93,7 +93,7 @@ const StoreProductDetail = () => {
             showToast("Please select size and color", "error");
             return;
         }
-        addToCart(productData, { size: selectedSize, color: selectedColor.name });
+        addToCart(productData, { size: selectedSize, color: selectedColor });
         navigate('/user/cart');
     };
 
@@ -163,8 +163,14 @@ const StoreProductDetail = () => {
 
                     {/* Product Details Accordion */}
                     <div className="mt-8">
-                        <h3 className="text-sm font-bold text-gray-900 mb-2">Product Specifications</h3>
-                        {productData.details.map((item, idx) => (
+                        <h3 className="text-sm font-bold text-gray-900 mb-2">Product Details</h3>
+                        {productData.description && (
+                            <AccordionItem
+                                title="Description"
+                                content={productData.description}
+                            />
+                        )}
+                        {productData.details && productData.details.map((item, idx) => (
                             <AccordionItem key={idx} title={item.title} content={item.content} />
                         ))}
                         <AccordionItem

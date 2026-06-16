@@ -3,7 +3,7 @@ import { Home, Briefcase, MapPin, MoreVertical, Trash2, Edit2, CheckCircle2 } fr
 import { cn } from '../../../../../utils/cn';
 import useAddressStore from '../../../../../store/userStore';
 
-const AddressCard = ({ address, isSelected, onSelect }) => {
+const AddressCard = ({ address, isSelected, onSelect, onEdit }) => {
     const removeAddress = useAddressStore((state) => state.removeAddress);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -49,17 +49,29 @@ const AddressCard = ({ address, isSelected, onSelect }) => {
                 Phone: {address.phone}
             </div>
 
-            {/* Actions Menu (Hidden for now unless needed) */}
-            <div className="absolute top-4 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Actions Menu */}
+            <div className="absolute top-4 right-4 flex gap-2">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        removeAddress(address.id);
+                        onEdit && onEdit();
                     }}
-                    className="p-1.5 hover:bg-indigo-50 text-error rounded-full"
+                    className="p-2 bg-indigo-50 hover:bg-indigo-100 text-primary rounded-full transition-colors shadow-sm"
+                    title="Edit Address"
+                >
+                    <Edit2 size={16} />
+                </button>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if(window.confirm('Are you sure you want to delete this address?')) {
+                            removeAddress(address._id);
+                        }
+                    }}
+                    className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-full transition-colors shadow-sm"
                     title="Delete Address"
                 >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                 </button>
             </div>
         </div>

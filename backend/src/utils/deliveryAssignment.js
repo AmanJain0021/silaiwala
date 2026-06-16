@@ -73,10 +73,20 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
             
             if (validOrigins.length > 0) {
                 const originsStr = validOrigins.map(r => `${r.currentLocation.coordinates[1]},${r.currentLocation.coordinates[0]}`).join('|');
+                
+                console.log(`🛣️ [deliveryAssignment] Calling Distance Matrix API...`);
+                console.log(`   Origins (${validOrigins.length} Riders):`, originsStr);
+                console.log(`   Destination:`, `${destLat},${destLng}`);
+
                 const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originsStr}&destinations=${destLat},${destLng}&key=${apiKey}`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
+                
+                console.log(`📏 [deliveryAssignment] Distance Matrix Response Status:`, data.status);
+                if (data.status === "OK") {
+                    console.log(`   Distance Matrix Rows:`, JSON.stringify(data.rows, null, 2));
+                }
                 
                 if (data.status === "OK" && data.rows?.length > 0) {
                     let bestRider = null;

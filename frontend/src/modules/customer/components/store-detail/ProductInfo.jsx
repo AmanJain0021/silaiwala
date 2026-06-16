@@ -2,7 +2,7 @@ import React from 'react';
 import { Star, Share2, Heart, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const ProductInfo = ({ product }) => {
-    const originalPrice = product.originalPrice || product.basePrice || product.price;
+    const originalPrice = product.discountPrice || product.originalPrice || product.basePrice || product.price;
     const discount = originalPrice > product.price 
         ? Math.round(((originalPrice - product.price) / originalPrice) * 100) 
         : 0;

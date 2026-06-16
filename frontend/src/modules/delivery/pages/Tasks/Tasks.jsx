@@ -24,6 +24,7 @@ import { io } from 'socket.io-client';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { SOCKET_URL } from '../../../../config/constants';
 import useAuthStore from '../../../../store/authStore';
+import { getToken } from '../../../../utils/auth';
 
 const Tasks = () => {
     const { isOnline } = useOutletContext() || { isOnline: true };
@@ -61,7 +62,11 @@ const Tasks = () => {
     useEffect(() => {
         fetchTasks();
 
-        const socket = io(SOCKET_URL);
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
         
         // Join general delivery fleet room and personal room
         socket.emit('join', 'delivery_partners');

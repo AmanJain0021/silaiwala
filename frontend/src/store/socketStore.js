@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
+import { getToken } from '../utils/auth';
 
 const useSocketStore = create((set, get) => ({
     socket: null,
@@ -22,6 +23,9 @@ const useSocketStore = create((set, get) => ({
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
+            auth: {
+                token: getToken()
+            }
         });
 
         newSocket.on('connect', () => {

@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../config/constants';
+import { getToken } from '../../utils/auth';
 
 class SocketService {
   constructor() {
@@ -14,6 +15,9 @@ class SocketService {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
+        auth: {
+          token: getToken()
+        }
       });
     }
     return this.socket;

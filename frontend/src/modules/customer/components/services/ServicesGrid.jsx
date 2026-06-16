@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle2, Star, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
-import useGeoLocation from '../../../../hooks/useLocation';
+import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 
 const ServiceCard = ({ service }) => {
     const navigate = useNavigate();
@@ -88,6 +88,7 @@ const ServicesGrid = () => {
     const [isLoading, setIsLoading] = useState(true);
 
 
+    const { location: { lat, lng }, error: locationError } = useUnifiedLocation({ autoDetect: true, fetchAddress: false });
     const routeLocation = useRouteLocation();
     const tailorId = routeLocation.state?.tailorId;
 

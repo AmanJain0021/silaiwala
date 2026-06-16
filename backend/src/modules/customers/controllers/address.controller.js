@@ -1,6 +1,43 @@
 const Customer = require("../../../models/Customer");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
+const axios = require("axios");
+
+const autoGeocode = async (body) => {
+  // If coordinates already exist from frontend GPS detection, skip
+  if (body.location && body.location.coordinates && body.location.coordinates.length === 2 && body.location.coordinates[0] !== null) {
+      return body; 
+  }
+  
+  try {
+      const addressString = `${body.street || ''}, ${body.city || ''}, ${body.state || ''}, ${body.zipCode || ''}, ${body.country || 'India'}`;
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      
+      if (apiKey && apiKey !== 'your_google_maps_api_key' && apiKey !== 'your_backend_google_maps_api_key_here') {
+          console.log(`📍 [address.controller] Auto-geocoding typed address: ${addressString}`);
+          const geoResponse = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+              params: {
+                  address: addressString,
+                  key: apiKey
+              }
+          });
+          
+          if (geoResponse.data.status === 'OK' && geoResponse.data.results.length > 0) {
+              const location = geoResponse.data.results[0].geometry.location;
+              console.log(`🗺️ [address.controller] Successfully geocoded to Lat: ${location.lat}, Lng: ${location.lng}`);
+              body.location = {
+                  type: 'Point',
+                  coordinates: [location.lng, location.lat]
+              };
+          } else {
+              console.warn(`⚠️ [address.controller] Google Geocode API returned status: ${geoResponse.data.status}`);
+          }
+      }
+  } catch (err) {
+      console.error(`❌ [address.controller] Google Geocode API Error:`, err.message);
+  }
+  return body;
+};
 
 /**
  * @desc    Get all saved addresses for customer
@@ -55,6 +92,9 @@ exports.addAddress = asyncHandler(async (req, res, next) => {
     req.body.isDefault = true; // First address is always default
   }
 
+  // Auto-geocode if coordinates are missing
+  req.body = await autoGeocode(req.body);
+
   customer.addresses.push(req.body);
   await customer.save();
 
@@ -84,6 +124,9 @@ exports.updateAddress = asyncHandler(async (req, res, next) => {
   if (req.body.isDefault) {
     customer.addresses.forEach(addr => addr.isDefault = false);
   }
+
+  // Auto-geocode if coordinates are missing or updated without GPS
+  req.body = await autoGeocode(req.body);
 
   Object.assign(address, req.body);
   await customer.save();

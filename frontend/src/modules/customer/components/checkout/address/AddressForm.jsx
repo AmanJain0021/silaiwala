@@ -4,7 +4,7 @@ import useAddressStore from '../../../../../store/userStore';
 import { validateName, validatePhone, validatePincode } from '../../../../../utils/validation';
 import useAuthStore from '../../../../../store/authStore';
 import useLocationStore from '../../../../../store/locationStore';
-import { useGoogleLocation } from '../../../../../hooks/useGoogleLocation';
+import useUnifiedLocation from '../../../../../shared/hooks/useUnifiedLocation';
 
 const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors, maxLength, prefix }) => (
     <div className="mb-3">
@@ -37,13 +37,24 @@ const InputField = ({ label, name, placeholder, type = "text", required, form, e
     </div>
 );
 
-const AddressForm = ({ onCancel, onSuccess }) => {
+const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
     const addAddress = useAddressStore((state) => state.addAddress);
+    const updateAddress = useAddressStore((state) => state.updateAddress);
     const isLoading = useAddressStore((state) => state.isLoading);
     const user = useAuthStore((state) => state.user);
-    const { detectLocation, isLocating } = useGoogleLocation();
+    const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
 
-    const [form, setForm] = useState({
+    const [form, setForm] = useState(initialData ? {
+        ...initialData,
+        receiverName: initialData.receiverName || '',
+        phone: initialData.phone || '',
+        zipCode: initialData.zipCode || '',
+        street: initialData.street || '',
+        city: initialData.city || '',
+        state: initialData.state || '',
+        type: initialData.type || 'Home',
+        location: initialData.location || null
+    } : {
         receiverName: user?.name || user?.fullName || '',
         phone: user?.phone || user?.phoneNumber || '',
         zipCode: '',
@@ -100,10 +111,14 @@ const AddressForm = ({ onCancel, onSuccess }) => {
         e.preventDefault();
         if (validate()) {
             try {
-                await addAddress(form);
+                if (initialData && initialData._id) {
+                    await updateAddress(initialData._id, form);
+                } else {
+                    await addAddress(form);
+                }
                 onSuccess && onSuccess();
             } catch (err) {
-                console.error("Add address failed", err);
+                console.error("Save address failed", err);
             }
         }
     };
@@ -114,7 +129,7 @@ const AddressForm = ({ onCancel, onSuccess }) => {
                 <div className="flex justify-between items-center">
                     <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
                         <div className="w-1.5 h-6 bg-primary rounded-full" />
-                        New Address Details
+                        {initialData ? 'Edit Address Details' : 'New Address Details'}
                     </h3>
                 </div>
                 
