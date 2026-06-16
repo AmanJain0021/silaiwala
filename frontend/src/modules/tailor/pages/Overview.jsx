@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     ShoppingBag, Clock, CheckCircle, ChevronRight,
-    Bell, Plus, Ruler, TrendingUp, ArrowUpRight, Menu, ShieldAlert
+    Bell, Plus, Ruler, TrendingUp, ArrowUpRight, Menu, ShieldAlert, Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTailorAuth } from '../context/AuthContext';
@@ -51,68 +51,103 @@ const Overview = () => {
                     <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
                 </button>
                 <h1 className="text-[16px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
-                <button
-                    onClick={() => navigate('/partner/notifications')}
-                    className="relative"
-                >
-                    <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs">
-                        {user?.name?.charAt(0)?.toUpperCase() || 'T'}
-                    </div>
-                    {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 h-2 w-2 bg-[#2D2F6E] rounded-full border-2 border-white" />
-                    )}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate('/partner/notifications')}
+                        className="relative text-gray-400 hover:text-[#2D2F6E] transition-colors"
+                    >
+                        <Bell size={20} />
+                        {unreadCount > 0 && <span className="absolute -top-1 -right-1 h-2 w-2 bg-[#2D2F6E] rounded-full border border-white"></span>}
+                    </button>
+                    <button
+                        onClick={() => navigate('/partner/settings')}
+                        className="relative"
+                    >
+                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs">
+                            {user?.name?.charAt(0)?.toUpperCase() || 'T'}
+                        </div>
+                    </button>
+                </div>
             </div>
 
             {/* ── CONTENT AREA ── */}
-            <div className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
+            <div className="flex-1 p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
                 
-                {/* ── WELCOME SECTION ── */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* ── WELCOME SECTION (DESKTOP) ── */}
+                <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-2">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Dashboard Overview</p>
-                        <h2 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5 md:mb-1">Dashboard Overview</p>
+                        <h2 className="text-xl md:text-3xl font-black text-gray-900 leading-tight">
                             Welcome back, {dashboardData?.tailorName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Partner'}
                         </h2>
                     </div>
-                    <div className="flex items-center gap-4 bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm self-start md:self-auto">
-                        <div className="flex flex-col items-end">
-                            <div className="flex items-center gap-1">
-                                <span className="text-amber-400 text-xs">⭐</span>
-                                <span className="text-sm font-black text-gray-900">4.9</span>
-                            </div>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">124 Reviews</span>
+                    <div className="flex items-center gap-4 bg-gray-900 px-5 py-3 rounded-[1.25rem] shadow-xl shadow-[#2D2F6E]/10 border border-[#2D2F6E]/30 self-start md:self-auto">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                            <Star size={20} className="text-amber-400 fill-amber-400" />
                         </div>
-                        <div className="h-8 w-px bg-gray-100 mx-1"></div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-0.5">Your Rating</span>
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-white leading-none">4.9</span>
+                                <span className="text-xs font-bold text-amber-400 leading-none">/ 5.0</span>
+                            </div>
+                        </div>
+                        <div className="h-10 w-px bg-white/10 mx-1"></div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-lg font-black text-white leading-none">124</span>
+                            <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1">Reviews</span>
+                        </div>
+                        <div className="h-10 w-px bg-white/10 mx-1"></div>
                         <button 
                             onClick={() => navigate('/partner/notifications')}
-                            className="p-2 bg-gray-50 rounded-xl text-gray-400 hover:text-[#2D2F6E] transition-colors relative"
+                            className="p-2.5 bg-white/10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all relative border border-white/5"
                         >
                             <Bell size={20} />
-                            {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#2D2F6E] rounded-full border-2 border-white"></span>}
+                            {unreadCount > 0 && <span className="absolute top-1 right-1 h-2 w-2 bg-rose-500 rounded-full border border-gray-900"></span>}
                         </button>
+                    </div>
+                </div>
+
+                {/* ── MOBILE RATING BAR ── */}
+                <div className="md:hidden w-full flex items-center justify-between bg-gradient-to-r from-gray-900 to-[#2D2F6E] p-3 rounded-2xl shadow-lg shadow-[#2D2F6E]/10 border border-[#2D2F6E]/30 text-white mb-2">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                            <Star size={20} className="text-amber-400 fill-amber-400" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">Your Rating</span>
+                            <div className="flex items-end gap-1 leading-none mt-0.5">
+                                <span className="text-xl font-black text-white">4.9</span>
+                                <span className="text-[10px] font-bold text-amber-400 pb-0.5">/ 5.0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="h-8 w-px bg-white/10 mx-2"></div>
+                    <div className="flex flex-col items-end pr-1">
+                        <span className="text-sm font-black text-white leading-none">124</span>
+                        <span className="text-[8px] font-bold text-white/50 uppercase tracking-widest mt-1">Total Reviews</span>
                     </div>
                 </div>
 
                 {/* ── VERIFICATION STATUS BANNER ── */}
                 {(dashboardData?.registrationStatus === 'pending' || dashboardData?.registrationStatus === 'rejected') && (
-                    <div className={`rounded-2xl p-4 border flex items-start gap-4 ${
+                    <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 border flex items-start gap-3 md:gap-4 ${
                         dashboardData.registrationStatus === 'rejected' 
                             ? 'bg-red-500/10 border-red-500/20' 
                             : 'bg-amber-500/10 border-amber-500/20'
                     }`}>
-                        <div className={`p-2 rounded-xl mt-0.5 ${
+                        <div className={`p-1.5 md:p-2 rounded-lg md:rounded-xl mt-0.5 ${
                             dashboardData.registrationStatus === 'rejected' ? 'bg-red-500/20 text-red-500' : 'bg-amber-500/20 text-amber-500'
                         }`}>
-                            <ShieldAlert size={20} />
+                            <ShieldAlert size={16} className="md:w-5 md:h-5" />
                         </div>
                         <div className="flex-1">
-                            <h3 className={`text-sm font-black ${
+                            <h3 className={`text-xs md:text-sm font-black ${
                                 dashboardData.registrationStatus === 'rejected' ? 'text-red-700' : 'text-amber-700'
                             }`}>
                                 {dashboardData.registrationStatus === 'rejected' ? 'Profile Rejected' : 'Profile Under Review'}
                             </h3>
-                            <p className={`text-xs font-medium mt-1 ${
+                            <p className={`text-[10px] md:text-xs font-medium mt-0.5 md:mt-1 ${
                                 dashboardData.registrationStatus === 'rejected' ? 'text-red-600' : 'text-amber-600'
                             }`}>
                                 {dashboardData.registrationStatus === 'rejected' 
@@ -124,7 +159,7 @@ const Overview = () => {
                         {dashboardData.registrationStatus === 'rejected' && (
                             <button
                                 onClick={() => navigate('/partner/under-review')}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors shrink-0"
+                                className="px-3 md:px-4 py-1.5 md:py-2 bg-red-600 hover:bg-red-700 text-white text-[10px] md:text-xs font-bold rounded-lg md:rounded-xl transition-colors shrink-0"
                             >
                                 Update Documents
                             </button>
@@ -133,51 +168,51 @@ const Overview = () => {
                 )}
 
                 {/* ── KEY METRICS ── */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                     {/* Total Earnings */}
-                    <div className="bg-gray-900 rounded-[2rem] p-6 relative overflow-hidden group">
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#2D2F6E]/20 rounded-full blur-3xl group-hover:bg-[#2D2F6E]/40 transition-all"></div>
-                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Total Earnings</p>
-                        <p className="text-3xl font-black text-white tracking-tight leading-none mb-2">
+                    <div className="bg-gray-900 rounded-2xl md:rounded-[2rem] p-4 md:p-6 relative overflow-hidden group">
+                        <div className="absolute -right-4 -bottom-4 w-16 h-16 md:w-24 md:h-24 bg-[#2D2F6E]/20 rounded-full blur-2xl md:blur-3xl group-hover:bg-[#2D2F6E]/40 transition-all"></div>
+                        <p className="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 md:mb-2">Total Earnings</p>
+                        <p className="text-xl md:text-3xl font-black text-white tracking-tight leading-none mb-1.5 md:mb-2">
                             ₹{summary.totalEarnings.toLocaleString('en-IN') || '0'}
                         </p>
-                        <div className="flex items-center gap-1.5">
-                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-500">
-                                <ArrowUpRight size={12} strokeWidth={3} />
+                        <div className="flex items-center gap-1 md:gap-1.5">
+                            <div className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/10 text-emerald-500">
+                                <ArrowUpRight size={10} className="md:w-3 md:h-3" strokeWidth={3} />
                             </div>
-                            <span className="text-[11px] font-black text-emerald-500">View Details</span>
+                            <span className="text-[9px] md:text-[11px] font-black text-emerald-500">View Details</span>
                         </div>
                     </div>
 
                     {/* New Orders */}
-                    <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center mb-4 text-[#2D2F6E]">
-                            <ShoppingBag size={20} />
+                    <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-[#2D2F6E]">
+                            <ShoppingBag size={16} className="md:w-5 md:h-5" />
                         </div>
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">New Orders</p>
-                        <p className="text-3xl font-black text-gray-900 leading-none">
+                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">New Orders</p>
+                        <p className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
                             {String(summary.pendingOrders || 0).padStart(2, '0')}
                         </p>
                     </div>
 
                     {/* In Progress */}
-                    <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-4 text-blue-600">
-                            <Clock size={20} />
+                    <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-blue-600">
+                            <Clock size={16} className="md:w-5 md:h-5" />
                         </div>
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">In Progress</p>
-                        <p className="text-3xl font-black text-gray-900 leading-none">
+                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">In Progress</p>
+                        <p className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
                             {String(Math.max(summary.totalOrders - summary.completedThisWeek, 0)).padStart(2, '0')}
                         </p>
                     </div>
 
                     {/* Completed */}
-                    <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-4 text-emerald-600">
-                            <CheckCircle size={20} />
+                    <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-emerald-600">
+                            <CheckCircle size={16} className="md:w-5 md:h-5" />
                         </div>
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Completed</p>
-                        <p className="text-3xl font-black text-gray-900 leading-none">
+                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Completed</p>
+                        <p className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
                             {summary.completedThisWeek || 0}
                         </p>
                     </div>
@@ -247,24 +282,24 @@ const Overview = () => {
                     {/* RIGHT COLUMN (1/3) */}
                     <div className="space-y-6">
                         {/* Quick Actions */}
-                        <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
-                            <h3 className="text-lg font-black text-gray-900 mb-5 tracking-tight">Quick Actions</h3>
-                            <div className="grid grid-cols-1 gap-3">
+                        <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm">
+                            <h3 className="text-sm md:text-lg font-black text-gray-900 mb-3 md:mb-5 tracking-tight">Quick Actions</h3>
+                            <div className="grid grid-cols-1 gap-2 md:gap-3">
                                 <button
                                     onClick={() => navigate('/partner/orders')}
-                                    className="flex items-center gap-4 bg-[#2D2F6E] text-white p-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#2D2F6E]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                    className="flex items-center gap-3 bg-[#2D2F6E] text-white px-4 py-2.5 md:p-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:scale-[1.02] active:scale-95 transition-all"
                                 >
-                                    <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
-                                        <Plus size={18} strokeWidth={3} />
+                                    <div className="w-7 h-7 md:w-8 md:h-8 bg-white/10 rounded-lg md:rounded-xl flex items-center justify-center shrink-0">
+                                        <Plus size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={3} />
                                     </div>
                                     New Order
                                 </button>
                                 <button
                                     onClick={() => navigate('/partner/measurements')}
-                                    className="flex items-center gap-4 bg-gray-50 border border-gray-100 text-gray-900 p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-100 hover:scale-[1.02] active:scale-95 transition-all"
+                                    className="flex items-center gap-3 bg-gray-50 border border-gray-100 text-gray-900 px-4 py-2.5 md:p-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-gray-100 hover:scale-[1.02] active:scale-95 transition-all"
                                 >
-                                    <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm text-[#2D2F6E]">
-                                        <Ruler size={18} />
+                                    <div className="w-7 h-7 md:w-8 md:h-8 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm text-[#2D2F6E] shrink-0">
+                                        <Ruler size={16} className="md:w-[18px] md:h-[18px]" />
                                     </div>
                                     Measurement
                                 </button>
