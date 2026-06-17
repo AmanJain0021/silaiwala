@@ -42,7 +42,7 @@ const DeliveryBottomNav = () => {
   };
 
   const navContent = (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#2D2F6E] text-white rounded-t-[2rem] z-[9999] safe-area-bottom shadow-[0_-10px_40px_rgba(45,47,110,0.5)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#843D9B] text-white rounded-t-[2rem] z-[9999] safe-area-bottom shadow-[0_-10px_40px_rgba(45,47,110,0.5)]">
       <div className="flex items-center justify-around h-20 px-2 pb-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -73,7 +73,7 @@ const DeliveryBottomNav = () => {
                   />
                 )}
                 {item.path === "/delivery/notifications" && unreadCount > 0 && (
-                  <span className="absolute -top-1 right-0 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black text-center leading-4 border-2 border-[#2D2F6E]">
+                  <span className="absolute -top-1 right-0 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black text-center leading-4 border-2 border-[#843D9B]">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}

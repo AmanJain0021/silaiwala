@@ -108,10 +108,10 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                             }}
                             className={`flex flex-col items-center gap-1.5 min-w-[70px] snap-center transition-all duration-300 ${activeCategory === "All" ? 'scale-105' : 'opacity-80 hover:opacity-100'}`}
                         >
-                            <div className={`w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-gray-50 ${activeCategory === "All" ? 'border-[#2D2F6E] shadow-lg' : 'border-gray-100'}`}>
-                                <span className="text-[10px] font-black uppercase text-[#2D2F6E]">All</span>
+                            <div className={`w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-gray-50 ${activeCategory === "All" ? 'border-[#843D9B] shadow-lg' : 'border-gray-100'}`}>
+                                <span className="text-[10px] font-black uppercase text-[#843D9B]">All</span>
                             </div>
-                            <span className={`text-[10px] font-medium text-center ${activeCategory === "All" ? 'text-[#2D2F6E] font-bold' : 'text-gray-600'}`}>
+                            <span className={`text-[10px] font-medium text-center ${activeCategory === "All" ? 'text-[#843D9B] font-bold' : 'text-gray-600'}`}>
                                 All Fabrics
                             </span>
                         </button>
@@ -131,7 +131,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                                 onClick={() => handleCategoryClick(category)}
                                 className={`flex flex-col items-center gap-1.5 min-w-[70px] snap-center transition-all duration-300 ${activeCategory === category.name ? 'scale-105' : 'opacity-80 hover:opacity-100'}`}
                             >
-                                <div className={`w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-gray-50 ${activeCategory === category.name ? 'border-[#2D2F6E] shadow-lg' : 'border-gray-100'}`}>
+                                <div className={`w-14 h-14 rounded-full overflow-hidden border flex items-center justify-center bg-gray-50 ${activeCategory === category.name ? 'border-[#843D9B] shadow-lg' : 'border-gray-100'}`}>
                                     <SafeImage
                                         src={getImageUrl(category.image)}
                                         alt={category.name}
@@ -139,7 +139,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                                         fallback={`https://placehold.co/150x150/FFF0F4/FD0053?text=${category.name.charAt(0)}`}
                                     />
                                 </div>
-                                <span className={`text-[10px] font-medium text-center whitespace-nowrap ${activeCategory === category.name ? 'text-[#2D2F6E] font-bold' : 'text-gray-600'}`}>
+                                <span className={`text-[10px] font-medium text-center whitespace-nowrap ${activeCategory === category.name ? 'text-[#843D9B] font-bold' : 'text-gray-600'}`}>
                                     {category.name}
                                 </span>
                             </button>

@@ -118,7 +118,7 @@ const VerificationStatus = () => {
     if (isLoading) {
         return (
             <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-[#0A0A0A]">
-                <Loader2 className="animate-spin text-[#2D2F6E]" size={32} />
+                <Loader2 className="animate-spin text-[#843D9B]" size={32} />
                 <p className="text-[10px] font-black text-white/25 uppercase tracking-widest">Checking Documents...</p>
             </div>
         );
@@ -144,7 +144,7 @@ const VerificationStatus = () => {
             )}
 
             {/* Progress Card */}
-            <div className="bg-[#2D2F6E] p-7 rounded-3xl text-white relative overflow-hidden">
+            <div className="bg-[#843D9B] p-7 rounded-3xl text-white relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 h-40 w-40 bg-white/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute right-5 bottom-5 w-20 h-20 bg-white/5 rounded-full pointer-events-none" />
                 <h4 className="text-[11px] font-black tracking-widest uppercase opacity-60">Verification Status</h4>
@@ -234,15 +234,15 @@ const VerificationStatus = () => {
             {documents.length > 0 && !isEditing && (hasRejected || profile?.registrationStatus === 'pending' || profile?.registrationStatus === 'rejected') && (
                 <button 
                     onClick={() => setIsEditing(true)}
-                    className="w-full bg-[#111111] border border-[#1E1E1E] p-4 rounded-3xl flex items-center justify-between hover:border-[#2D2F6E]/30 transition-all group"
+                    className="w-full bg-[#111111] border border-[#1E1E1E] p-4 rounded-3xl flex items-center justify-between hover:border-[#843D9B]/30 transition-all group"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 bg-[#2D2F6E]/10 rounded-2xl flex items-center justify-center text-[#2D2F6E]">
+                        <div className="h-9 w-9 bg-[#843D9B]/10 rounded-2xl flex items-center justify-center text-[#843D9B]">
                             <FileText size={16} />
                         </div>
                         <span className="text-xs font-black text-white/60 uppercase tracking-widest">Update Documents</span>
                     </div>
-                    <ChevronRight size={16} className="text-white/20 group-hover:text-[#2D2F6E] transition-colors" />
+                    <ChevronRight size={16} className="text-white/20 group-hover:text-[#843D9B] transition-colors" />
                 </button>
             )}
 
@@ -250,7 +250,7 @@ const VerificationStatus = () => {
                 <button 
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="w-full bg-[#2D2F6E] p-4 rounded-3xl flex items-center justify-center gap-2 hover:bg-[#1e204c] transition-all disabled:opacity-50"
+                    className="w-full bg-[#843D9B] p-4 rounded-3xl flex items-center justify-center gap-2 hover:bg-[#1e204c] transition-all disabled:opacity-50"
                 >
                     {isSaving ? (
                         <>
@@ -271,8 +271,8 @@ const VerificationStatus = () => {
                 .dark-theme-uploader .bg-gray-50 { background-color: #1A1A1A; border-color: #2A2A2A; }
                 .dark-theme-uploader .text-gray-700 { color: rgba(255,255,255,0.8); }
                 .dark-theme-uploader .text-gray-400 { color: rgba(255,255,255,0.4); }
-                .dark-theme-uploader .bg-indigo-50 { background-color: #2D2F6E20; }
-                .dark-theme-uploader .text-indigo-500 { color: #2D2F6E; }
+                .dark-theme-uploader .bg-indigo-50 { background-color: #843D9B20; }
+                .dark-theme-uploader .text-indigo-500 { color: #843D9B; }
                 .dark-theme-uploader .hover\\:bg-\\[\\#F8F9FD\\]:hover { background-color: #1a1a24; }
             `}</style>
         </div>

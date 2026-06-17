@@ -326,7 +326,7 @@ const DeliveryWallet = () => {
                             </button>
 
                             <div className="mb-8 flex items-center gap-4">
-                                <div className="w-14 h-14 bg-indigo-50 text-[#2D2F6E] rounded-2xl flex items-center justify-center">
+                                <div className="w-14 h-14 bg-indigo-50 text-[#843D9B] rounded-2xl flex items-center justify-center">
                                     <Send size={28} />
                                 </div>
                                 <div>
@@ -343,7 +343,7 @@ const DeliveryWallet = () => {
                                         value={withdrawAmount}
                                         onChange={(e) => setWithdrawAmount(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white transition-all"
                                         required
                                         max={calculatedBalance}
                                     />
@@ -352,7 +352,7 @@ const DeliveryWallet = () => {
                                         <button
                                             type="button"
                                             onClick={() => setWithdrawAmount(calculatedBalance)}
-                                            className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest"
+                                            className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest"
                                         >
                                             Max
                                         </button>
@@ -362,15 +362,15 @@ const DeliveryWallet = () => {
                                 <div className="space-y-3 mt-4">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Withdrawal Method</label>
                                     <div className="grid grid-cols-3 gap-2">
-                                        <button type="button" onClick={() => setWithdrawMethod('upi')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'upi' ? 'border-[#2D2F6E] bg-indigo-50 text-[#2D2F6E]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                                        <button type="button" onClick={() => setWithdrawMethod('upi')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'upi' ? 'border-[#843D9B] bg-indigo-50 text-[#843D9B]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
                                             <Smartphone size={20} />
                                             <span className="text-[9px] font-black uppercase tracking-widest">UPI ID</span>
                                         </button>
-                                        <button type="button" onClick={() => setWithdrawMethod('bank_transfer')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'bank_transfer' ? 'border-[#2D2F6E] bg-indigo-50 text-[#2D2F6E]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                                        <button type="button" onClick={() => setWithdrawMethod('bank_transfer')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'bank_transfer' ? 'border-[#843D9B] bg-indigo-50 text-[#843D9B]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
                                             <Building2 size={20} />
                                             <span className="text-[9px] font-black uppercase tracking-widest">Bank A/C</span>
                                         </button>
-                                        <button type="button" onClick={() => setWithdrawMethod('qr_code')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'qr_code' ? 'border-[#2D2F6E] bg-indigo-50 text-[#2D2F6E]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                                        <button type="button" onClick={() => setWithdrawMethod('qr_code')} className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${withdrawMethod === 'qr_code' ? 'border-[#843D9B] bg-indigo-50 text-[#843D9B]' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
                                             <QrCode size={20} />
                                             <span className="text-[9px] font-black uppercase tracking-widest">QR Image</span>
                                         </button>
@@ -385,7 +385,7 @@ const DeliveryWallet = () => {
                                             value={upiId}
                                             onChange={(e) => setUpiId(e.target.value)}
                                             placeholder="yourname@upi"
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all uppercase placeholder:normal-case"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white transition-all uppercase placeholder:normal-case"
                                         />
                                     </motion.div>
                                 )}
@@ -394,20 +394,20 @@ const DeliveryWallet = () => {
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Bank Name</label>
-                                            <input type="text" value={bankDetails.bankName} onChange={(e) => setBankDetails({...bankDetails, bankName: e.target.value})} placeholder="e.g. HDFC Bank" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] transition-all" />
+                                            <input type="text" value={bankDetails.bankName} onChange={(e) => setBankDetails({...bankDetails, bankName: e.target.value})} placeholder="e.g. HDFC Bank" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Account Name</label>
-                                            <input type="text" value={bankDetails.accountName} onChange={(e) => setBankDetails({...bankDetails, accountName: e.target.value})} placeholder="Name on Account" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] transition-all" />
+                                            <input type="text" value={bankDetails.accountName} onChange={(e) => setBankDetails({...bankDetails, accountName: e.target.value})} placeholder="Name on Account" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">A/C Number</label>
-                                                <input type="text" value={bankDetails.accountNumber} onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})} placeholder="000011112222" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] transition-all" />
+                                                <input type="text" value={bankDetails.accountNumber} onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})} placeholder="000011112222" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all" />
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">IFSC Code</label>
-                                                <input type="text" value={bankDetails.ifscCode} onChange={(e) => setBankDetails({...bankDetails, ifscCode: e.target.value})} placeholder="HDFC0000123" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] uppercase transition-all" />
+                                                <input type="text" value={bankDetails.ifscCode} onChange={(e) => setBankDetails({...bankDetails, ifscCode: e.target.value})} placeholder="HDFC0000123" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] uppercase transition-all" />
                                             </div>
                                         </div>
                                     </motion.div>
@@ -428,7 +428,7 @@ const DeliveryWallet = () => {
                                             ) : (
                                                 <div className="flex flex-col items-center text-slate-400">
                                                     <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                                        <UploadCloud size={24} className="text-[#2D2F6E]" />
+                                                        <UploadCloud size={24} className="text-[#843D9B]" />
                                                     </div>
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tap to browse image</span>
                                                 </div>
@@ -440,7 +440,7 @@ const DeliveryWallet = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !withdrawAmount || (withdrawMethod === 'upi' && !upiId) || (withdrawMethod === 'bank_transfer' && (!bankDetails.bankName || !bankDetails.accountName || !bankDetails.accountNumber || !bankDetails.ifscCode)) || (withdrawMethod === 'qr_code' && !qrFile)}
-                                    className="w-full bg-[#2D2F6E] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+                                    className="w-full bg-[#843D9B] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
                                 >
                                     {isSubmitting ? (
                                         <>

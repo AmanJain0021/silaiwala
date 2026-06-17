@@ -163,7 +163,7 @@ const AdminStyleAddons = () => {
                 </div>
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#2D2F6E] text-white text-xs font-semibold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#2D2F6E]/20 transition-all uppercase tracking-wider"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[#843D9B] text-white text-xs font-semibold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider"
                 >
                     <Plus size={16} /> Add Add-on
                 </button>
@@ -201,7 +201,7 @@ const AdminStyleAddons = () => {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex-1 overflow-hidden flex flex-col">
                 {isLoading ? (
                     <div className="flex-1 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#2D2F6E]"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#843D9B]"></div>
                     </div>
                 ) : filteredAddons.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400 space-y-3 p-12">
@@ -225,7 +225,7 @@ const AdminStyleAddons = () => {
                                 {filteredAddons.map((addon) => (
                                     <tr
                                         key={addon._id}
-                                        className="hover:bg-[#2D2F6E]/5 transition-colors group"
+                                        className="hover:bg-[#843D9B]/5 transition-colors group"
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
@@ -245,12 +245,12 @@ const AdminStyleAddons = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-indigo-50 text-[#2D2F6E] border border-indigo-100">
+                                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-indigo-50 text-[#843D9B] border border-indigo-100">
                                                 {addon.category}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-sm font-bold text-[#2D2F6E]">₹{addon.price}</span>
+                                            <span className="text-sm font-bold text-[#843D9B]">₹{addon.price}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <button
@@ -322,7 +322,7 @@ const AdminStyleAddons = () => {
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                                         placeholder="e.g. Collar Design, Side Slit, Piping"
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#2D2F6E] transition-colors shadow-sm"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
                                     />
                                 </div>
 
@@ -334,7 +334,7 @@ const AdminStyleAddons = () => {
                                             value={formData.price}
                                             onChange={e => setFormData({ ...formData, price: e.target.value })}
                                             placeholder="150"
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#2D2F6E] transition-colors shadow-sm"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
                                         />
                                     </div>
                                     <div>
@@ -342,7 +342,7 @@ const AdminStyleAddons = () => {
                                         <select
                                             value={formData.category}
                                             onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#2D2F6E] transition-colors shadow-sm"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
                                         >
                                             <option value="">Select Category</option>
                                             {categoryOptions.map(c => (
@@ -359,7 +359,7 @@ const AdminStyleAddons = () => {
                                         value={formData.description}
                                         onChange={e => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="Describe the style enhancement..."
-                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#2D2F6E] transition-colors shadow-sm resize-none"
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm resize-none"
                                     />
                                 </div>
 
@@ -384,7 +384,7 @@ const AdminStyleAddons = () => {
                                                 />
                                                 <div className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-500 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
                                                     {isImageUploading ? (
-                                                        <div className="w-4 h-4 border-2 border-[#2D2F6E] border-t-transparent animate-spin rounded-full" />
+                                                        <div className="w-4 h-4 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" />
                                                     ) : (
                                                         <Plus size={14} />
                                                     )}
@@ -413,7 +413,7 @@ const AdminStyleAddons = () => {
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="px-6 py-3 bg-[#2D2F6E] text-white text-xs font-semibold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#2D2F6E]/20 transition-all uppercase tracking-wider disabled:opacity-50"
+                                    className="px-6 py-3 bg-[#843D9B] text-white text-xs font-semibold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Saving...' : (editingAddon ? 'Update Add-on' : 'Save Add-on')}
                                 </button>

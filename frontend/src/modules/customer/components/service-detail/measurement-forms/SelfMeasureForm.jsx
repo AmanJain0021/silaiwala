@@ -177,7 +177,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
                 <textarea
                     value={values.notes}
                     onChange={(e) => setValues(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold text-[#2D2F6E] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-gray-300 resize-none shadow-sm"
+                    className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold text-[#843D9B] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-gray-300 resize-none shadow-sm"
                     rows={3}
                     placeholder="E.g., I prefer a loose fit around the waist. Please add pockets."
                 />

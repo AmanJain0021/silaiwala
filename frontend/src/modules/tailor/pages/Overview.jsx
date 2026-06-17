@@ -49,20 +49,20 @@ const Overview = () => {
     const recentActivity = dashboardData?.recentActivity || [];
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
             {/* ── HEADER (MOBILE ONLY) ── */}
             <div className="md:hidden bg-white px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
                 <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
                     <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
                 </button>
-                <h1 className="text-[16px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
+                <h1 className="text-[16px] font-black text-[#843D9B] tracking-tight">SEWZELLA</h1>
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => navigate('/partner/notifications')}
-                        className="relative text-gray-400 hover:text-[#2D2F6E] transition-colors"
+                        className="relative text-gray-400 hover:text-[#843D9B] transition-colors"
                     >
                         <Bell size={20} />
-                        {unreadCount > 0 && <span className="absolute -top-1 -right-1 h-2 w-2 bg-[#2D2F6E] rounded-full border border-white"></span>}
+                        {unreadCount > 0 && <span className="absolute -top-1 -right-1 h-2 w-2 bg-[#843D9B] rounded-full border border-white"></span>}
                     </button>
                     <button
                         onClick={() => navigate('/partner/settings')}
@@ -86,7 +86,7 @@ const Overview = () => {
                             Welcome back, {dashboardData?.tailorName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Partner'}
                         </h2>
                     </div>
-                    <div className="flex items-center gap-4 bg-gray-900 px-5 py-3 rounded-[1.25rem] shadow-xl shadow-[#2D2F6E]/10 border border-[#2D2F6E]/30 self-start md:self-auto">
+                    <div className="flex items-center gap-4 bg-gray-900 px-5 py-3 rounded-[1.25rem] shadow-xl shadow-[#843D9B]/10 border border-[#843D9B]/30 self-start md:self-auto">
                         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                             <Star size={20} className="text-amber-400 fill-amber-400" />
                         </div>
@@ -114,7 +114,7 @@ const Overview = () => {
                 </div>
 
                 {/* ── MOBILE RATING BAR ── */}
-                <div className="md:hidden w-full flex items-center justify-between bg-gradient-to-r from-gray-900 to-[#2D2F6E] p-3 rounded-2xl shadow-lg shadow-[#2D2F6E]/10 border border-[#2D2F6E]/30 text-white mb-2">
+                <div className="md:hidden w-full flex items-center justify-between bg-gradient-to-r from-gray-900 to-[#843D9B] p-3 rounded-2xl shadow-lg shadow-[#843D9B]/10 border border-[#843D9B]/30 text-white mb-2">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                             <Star size={20} className="text-amber-400 fill-amber-400" />
@@ -176,7 +176,7 @@ const Overview = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                     {/* Total Earnings */}
                     <div className="bg-gray-900 rounded-2xl md:rounded-[2rem] p-4 md:p-6 relative overflow-hidden group">
-                        <div className="absolute -right-4 -bottom-4 w-16 h-16 md:w-24 md:h-24 bg-[#2D2F6E]/20 rounded-full blur-2xl md:blur-3xl group-hover:bg-[#2D2F6E]/40 transition-all"></div>
+                        <div className="absolute -right-4 -bottom-4 w-16 h-16 md:w-24 md:h-24 bg-[#843D9B]/20 rounded-full blur-2xl md:blur-3xl group-hover:bg-[#843D9B]/40 transition-all"></div>
                         <p className="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 md:mb-2">Total Earnings</p>
                         <p className="text-xl md:text-3xl font-black text-white tracking-tight leading-none mb-1.5 md:mb-2">
                             ₹{summary.totalEarnings.toLocaleString('en-IN') || '0'}
@@ -191,7 +191,7 @@ const Overview = () => {
 
                     {/* New Orders */}
                     <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-[#2D2F6E]">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-[#843D9B]">
                             <ShoppingBag size={16} className="md:w-5 md:h-5" />
                         </div>
                         <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">New Orders</p>
@@ -234,7 +234,7 @@ const Overview = () => {
                                 <h3 className="text-lg font-black text-gray-900 tracking-tight">Upcoming Pickups</h3>
                                 <button
                                     onClick={() => navigate('/partner/orders')}
-                                    className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest bg-indigo-50 px-4 py-1.5 rounded-full hover:bg-[#2D2F6E] hover:text-white transition-all"
+                                    className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest bg-indigo-50 px-4 py-1.5 rounded-full hover:bg-[#843D9B] hover:text-white transition-all"
                                 >
                                     View All
                                 </button>
@@ -258,7 +258,7 @@ const Overview = () => {
                                         <button
                                             key={order._id}
                                             onClick={() => navigate('/partner/orders', { state: { highlightOrderTitle: order.orderId } })}
-                                            className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm flex items-center gap-4 hover:border-[#2D2F6E]/20 transition-all text-left group"
+                                            className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm flex items-center gap-4 hover:border-[#843D9B]/20 transition-all text-left group"
                                         >
                                             <div className="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center text-white font-black text-xs shrink-0 group-hover:scale-110 transition-transform">
                                                 {order.customer?.name?.charAt(0) || 'C'}
@@ -268,7 +268,7 @@ const Overview = () => {
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Order #{order.orderId}</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[10px] text-[#2D2F6E] font-black mb-1">₹{order.totalAmount || 0}</p>
+                                                <p className="text-[10px] text-[#843D9B] font-black mb-1">₹{order.totalAmount || 0}</p>
                                                 <span className={`text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${
                                                     order.status === 'pending'
                                                         ? 'text-rose-600 bg-rose-50 border-rose-100'
@@ -292,7 +292,7 @@ const Overview = () => {
                             <div className="grid grid-cols-1 gap-2 md:gap-3">
                                 <button
                                     onClick={() => navigate('/partner/orders')}
-                                    className="flex items-center gap-3 bg-[#2D2F6E] text-white px-4 py-2.5 md:p-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                    className="flex items-center gap-3 bg-[#843D9B] text-white px-4 py-2.5 md:p-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-[#843D9B]/20 hover:scale-[1.02] active:scale-95 transition-all"
                                 >
                                     <div className="w-7 h-7 md:w-8 md:h-8 bg-white/10 rounded-lg md:rounded-xl flex items-center justify-center shrink-0">
                                         <Plus size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={3} />
@@ -303,7 +303,7 @@ const Overview = () => {
                                     onClick={() => navigate('/partner/measurements')}
                                     className="flex items-center gap-3 bg-gray-50 border border-gray-100 text-gray-900 px-4 py-2.5 md:p-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-gray-100 hover:scale-[1.02] active:scale-95 transition-all"
                                 >
-                                    <div className="w-7 h-7 md:w-8 md:h-8 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm text-[#2D2F6E] shrink-0">
+                                    <div className="w-7 h-7 md:w-8 md:h-8 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm text-[#843D9B] shrink-0">
                                         <Ruler size={16} className="md:w-[18px] md:h-[18px]" />
                                     </div>
                                     Measurement
@@ -322,13 +322,13 @@ const Overview = () => {
                                 <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm relative overflow-hidden group">
                                     <div className="absolute right-3 bottom-0 opacity-10 pointer-events-none group-hover:scale-110 transition-transform">
                                         <svg width="60" height="80" viewBox="0 0 70 100" fill="none">
-                                            <ellipse cx="35" cy="18" rx="12" ry="12" fill="#2D2F6E" />
-                                            <path d="M10 40 Q35 30 60 40 L65 90 H5 Z" fill="#2D2F6E" />
+                                            <ellipse cx="35" cy="18" rx="12" ry="12" fill="#843D9B" />
+                                            <path d="M10 40 Q35 30 60 40 L65 90 H5 Z" fill="#843D9B" />
                                         </svg>
                                     </div>
 
                                     <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-2 h-2 bg-[#2D2F6E] rounded-full animate-ping" />
+                                        <div className="w-2 h-2 bg-[#843D9B] rounded-full animate-ping" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Workflow</p>
                                     </div>
                                     
@@ -340,10 +340,10 @@ const Overview = () => {
                                     <div className="mb-6">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{activeOrder.status.replace(/-/g, ' ')}</span>
-                                            <span className="text-xs font-black text-[#2D2F6E]">{progress}%</span>
+                                            <span className="text-xs font-black text-[#843D9B]">{progress}%</span>
                                         </div>
                                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-[#2D2F6E] rounded-full shadow-[0_0_10px_rgba(45,47,110,0.3)] transition-all" style={{ width: `${progress}%` }} />
+                                            <div className="h-full bg-[#843D9B] rounded-full shadow-[0_0_10px_rgba(45,47,110,0.3)] transition-all" style={{ width: `${progress}%` }} />
                                         </div>
                                     </div>
 

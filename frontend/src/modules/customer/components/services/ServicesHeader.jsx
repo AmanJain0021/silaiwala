@@ -11,7 +11,7 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
                 <Link to="/user" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700 active:scale-90 transition-transform">
                     <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-xl font-black text-[#2D2F6E] tracking-tight">Stitching Services</h1>
+                <h1 className="text-xl font-black text-[#843D9B] tracking-tight">Stitching Services</h1>
             </div>
 
             {/* Search & Filter */}
@@ -37,8 +37,8 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
                         onClick={() => setActiveFilter && setActiveFilter(filter)}
                         className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-medium transition-all whitespace-nowrap snap-start ${
                             activeFilter === filter 
-                                ? 'bg-[#2D2F6E] text-white border-[#2D2F6E]' 
-                                : 'bg-white border-gray-200 text-gray-600 hover:border-[#2D2F6E] hover:text-[#2D2F6E]'
+                                ? 'bg-[#843D9B] text-white border-[#843D9B]' 
+                                : 'bg-white border-gray-200 text-gray-600 hover:border-[#843D9B] hover:text-[#843D9B]'
                         }`}
                     >
                         {filter}

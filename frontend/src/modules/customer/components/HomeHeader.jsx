@@ -57,7 +57,7 @@ const HomeHeader = ({ user }) => {
 
     return (
         <>
-            <div className="bg-[#2D2F6E] pt-2 transition-all duration-300 md:hidden overflow-hidden">
+            <div className="bg-[#843D9B] pt-2 transition-all duration-300 md:hidden overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pb-2 pt-safe">
     
 
@@ -80,19 +80,19 @@ const HomeHeader = ({ user }) => {
                                             value={tempLocation}
                                             onChange={(e) => setTempLocation(e.target.value)}
                                             placeholder="Enter area..."
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl py-1.5 pl-7 pr-2 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-[#2D2F6E]/10 transition-all shadow-sm"
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl py-1.5 pl-7 pr-2 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-[#843D9B]/10 transition-all shadow-sm"
                                             autoFocus
                                         />
                                     </div>
                                     <button
                                         onClick={handleDetectLocation}
-                                        className="p-1.5 bg-[#2D2F6E]/5 text-[#2D2F6E] rounded-lg"
+                                        className="p-1.5 bg-[#843D9B]/5 text-[#843D9B] rounded-lg"
                                     >
                                         {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
                                     </button>
                                     <button
                                         onClick={handleSave}
-                                        className="p-1.5 bg-[#2D2F6E] text-white rounded-lg shadow-md"
+                                        className="p-1.5 bg-[#843D9B] text-white rounded-lg shadow-md"
                                     >
                                         <Check size={12} />
                                     </button>
@@ -130,22 +130,22 @@ const HomeHeader = ({ user }) => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90"
+                            className="relative p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90"
                         >
                             <Bell size={18} />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-[#2D2F6E] animate-pulse shadow-sm"></span>
+                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-[#843D9B] animate-pulse shadow-sm"></span>
                             )}
                         </button>
 
                         <Link
                             to={serviceItems.length > 0 && productCartItems.length === 0 ? "/user/checkout/summary" : "/user/cart"}
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
-                            className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#2D2F6E] transition-all active:scale-90 relative"
+                            className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
                         >
                             <ShoppingBag size={18} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#2D2F6E] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#2D2F6E] shadow-md">
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#843D9B] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#843D9B] shadow-md">
                                     {cartCount}
                                 </span>
                             )}
@@ -158,7 +158,7 @@ const HomeHeader = ({ user }) => {
         </div>
 
             {/* Sticky Search and Marquee Section */}
-            <div className="sticky top-0 z-[100] bg-[#2D2F6E] backdrop-blur-md border-b border-[#2D2F6E]/50 transition-all duration-300 md:hidden overflow-hidden shadow-sm">
+            <div className="sticky top-0 z-[100] bg-[#843D9B] backdrop-blur-md border-b border-[#843D9B]/50 transition-all duration-300 md:hidden overflow-hidden shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 pb-0">
                     {/* Search Bar - Modernized */}
                     <AnimatedSearchBar />
@@ -242,7 +242,7 @@ const HomeHeader = ({ user }) => {
                                 )}
                             </div>
 
-                            <button className="w-full mt-6 py-3 text-xs font-black text-[#2D2F6E] uppercase tracking-widest border border-[#2D2F6E]/10 rounded-2xl hover:bg-[#2D2F6E]/5 transition-all">
+                            <button className="w-full mt-6 py-3 text-xs font-black text-[#843D9B] uppercase tracking-widest border border-[#843D9B]/10 rounded-2xl hover:bg-[#843D9B]/5 transition-all">
                                 View Activity History
                             </button>
                         </motion.div>

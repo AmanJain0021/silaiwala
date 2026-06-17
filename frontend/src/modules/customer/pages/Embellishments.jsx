@@ -62,7 +62,7 @@ const Embellishments = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F7F8FC] pb-40 font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-screen bg-[#F7F8FC] pb-40 font-sans selection:bg-[#843D9B] selection:text-white">
             {/* Header */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
                 <div className="px-5 py-6 flex items-center justify-between">

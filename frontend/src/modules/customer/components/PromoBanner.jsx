@@ -14,7 +14,7 @@ const PromoBanner = () => {
             title: "FLAT 20% OFF",
             subtitle: "On your first custom stitching order",
             badge: "LIMITED OFFER",
-            color: "bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]",
+            color: "bg-gradient-to-br from-[#843D9B] to-[#ff85a2]",
             image: "https://cdn-icons-png.flaticon.com/128/9284/9284227.png"
         },
         {
@@ -38,7 +38,7 @@ const PromoBanner = () => {
                         title: b.title || "Special Offer",
                         subtitle: b.subtitle || "Premium custom tailoring services",
                         badge: b.badge || "FEATURED",
-                        color: b.color || "bg-gradient-to-br from-[#2D2F6E] to-[#ff85a2]",
+                        color: b.color || "bg-gradient-to-br from-[#843D9B] to-[#ff85a2]",
                         image: b.image || "https://cdn-icons-png.flaticon.com/128/9284/9284227.png"
                     }));
                     setBanners(activeBanners);
@@ -116,7 +116,7 @@ const PromoBanner = () => {
                             <p className="text-[10px] sm:text-sm lg:text-base text-white/90 mt-0.5 sm:mt-3 font-bold tracking-tight drop-shadow-md leading-tight">{currentBanner.subtitle}</p>
                         </div>
                         <div className="flex items-center gap-4 mt-2 sm:mt-6">
-                            <button className="bg-[#2D2F6E] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-indigo-900/20 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest">
+                            <button className="bg-[#843D9B] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-indigo-900/20 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest">
                                 Book Now <ArrowRight size={12} />
                             </button>
                         </div>

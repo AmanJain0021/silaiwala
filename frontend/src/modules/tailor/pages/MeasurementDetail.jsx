@@ -74,7 +74,7 @@ const MeasurementDetail = () => {
                 
                 {/* Back Button */}
                 <div className="flex items-center gap-2.5 mb-1">
-                    <button onClick={() => navigate('/partner/measurements')} className="p-2 bg-white rounded-xl border border-gray-100 text-gray-600 shadow-sm hover:text-[#2D2F6E] transition-all">
+                    <button onClick={() => navigate('/partner/measurements')} className="p-2 bg-white rounded-xl border border-gray-100 text-gray-600 shadow-sm hover:text-[#843D9B] transition-all">
                         <ArrowLeft size={16} strokeWidth={2.5} />
                     </button>
                     <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Back to Profiles</span>
@@ -91,7 +91,7 @@ const MeasurementDetail = () => {
                             <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">ID: {finalProfile.clientId}</p>
                             <div className="flex gap-1 mt-2">
                                 {finalProfile.tags.map((tag, idx) => (
-                                    <span key={idx} className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${idx === 1 ? 'bg-red-50 text-[#2D2F6E]' : 'bg-blue-50 text-blue-600'}`}>
+                                    <span key={idx} className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${idx === 1 ? 'bg-red-50 text-[#843D9B]' : 'bg-blue-50 text-blue-600'}`}>
                                         {tag}
                                     </span>
                                 ))}
@@ -111,7 +111,7 @@ const MeasurementDetail = () => {
                             onClick={() => setActiveTab(tab)}
                             className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${
                                 activeTab === tab
-                                    ? 'bg-white text-[#2D2F6E] shadow-sm'
+                                    ? 'bg-white text-[#843D9B] shadow-sm'
                                     : 'text-gray-400 hover:text-gray-600'
                             }`}
                         >
@@ -161,7 +161,7 @@ const MeasurementDetail = () => {
                 {/* Add New Measurement Button */}
                 <button 
                     onClick={() => alert('Add feature coming soon')}
-                    className="w-full py-3.5 bg-[#2D2F6E] rounded-2xl text-[12px] font-black uppercase text-white shadow-lg shadow-[#2D2F6E]/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-[#843D9B] rounded-2xl text-[12px] font-black uppercase text-white shadow-lg shadow-[#843D9B]/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                     <Plus size={16} strokeWidth={3} /> Add Measurement
                 </button>

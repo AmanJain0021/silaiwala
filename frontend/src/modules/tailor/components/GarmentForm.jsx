@@ -142,7 +142,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                 {/* Modal Header */}
                 <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-gray-100/60">
                     <div>
-                        <h4 className="text-2xl font-black text-[#2D2F6E] tracking-tight leading-none">
+                        <h4 className="text-2xl font-black text-[#843D9B] tracking-tight leading-none">
                             {initialData ? 'Update Garment' : 'Add New Garment'}
                         </h4>
                         <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
@@ -162,23 +162,23 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                     
                     {/* Basic Info */}
                     <section className="space-y-4">
-                        <h5 className="text-xs font-black uppercase tracking-wider text-[#2D2F6E] border-b border-gray-100 pb-2">1. Basic Information</h5>
+                        <h5 className="text-xs font-black uppercase tracking-wider text-[#843D9B] border-b border-gray-100 pb-2">1. Basic Information</h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Garment Name</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Garment Name</label>
                                 <input
                                     required
-                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="e.g. Designer Wedding Sherwani"
                                     value={formData.name}
                                     onChange={e => setFormData({...formData, name: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Category</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Category</label>
                                 <select
                                     required
-                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-sm"
+                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-sm"
                                     value={formData.category}
                                     onChange={e => setFormData({...formData, category: e.target.value})}
                                 >
@@ -189,9 +189,9 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                                 </select>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Brand</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Brand</label>
                                 <input
-                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="Brand Name"
                                     value={formData.brand}
                                     onChange={e => setFormData({...formData, brand: e.target.value})}
@@ -199,21 +199,21 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Selling Price</label>
+                                    <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Selling Price</label>
                                     <input
                                         required
                                         type="number"
-                                        className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
+                                        className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
                                         placeholder="₹"
                                         value={formData.price}
                                         onChange={e => setFormData({...formData, price: e.target.value})}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">MRP (Discount Price)</label>
+                                    <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">MRP (Discount Price)</label>
                                     <input
                                         type="number"
-                                        className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
+                                        className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
                                         placeholder="₹"
                                         value={formData.discountPrice}
                                         onChange={e => setFormData({...formData, discountPrice: e.target.value})}
@@ -222,11 +222,11 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                             </div>
                         </div>
                         <div className="space-y-1.5 mt-4">
-                            <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Description</label>
+                            <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Description</label>
                             <textarea
                                 required
                                 rows="3"
-                                className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 resize-none shadow-sm placeholder:text-gray-300"
+                                className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 resize-none shadow-sm placeholder:text-gray-300"
                                 placeholder="Describe the garment..."
                                 value={formData.description}
                                 onChange={e => setFormData({...formData, description: e.target.value})}
@@ -236,12 +236,12 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
 
                     {/* Detailed Specifications */}
                     <section className="space-y-4">
-                        <h5 className="text-xs font-black uppercase tracking-wider text-[#2D2F6E] border-b border-gray-100 pb-2">2. Specifications</h5>
+                        <h5 className="text-xs font-black uppercase tracking-wider text-[#843D9B] border-b border-gray-100 pb-2">2. Specifications</h5>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Gender</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Gender</label>
                                 <select
-                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm appearance-none cursor-pointer"
+                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm appearance-none cursor-pointer"
                                     value={formData.gender}
                                     onChange={e => setFormData({...formData, gender: e.target.value})}
                                 >
@@ -252,45 +252,45 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                                 </select>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Fabric</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Fabric</label>
                                 <input
-                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="e.g. Cotton Blend"
                                     value={formData.fabric}
                                     onChange={e => setFormData({...formData, fabric: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Fit Type</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Fit Type</label>
                                 <input
-                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="e.g. Regular Fit"
                                     value={formData.fitType}
                                     onChange={e => setFormData({...formData, fitType: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Pattern</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Pattern</label>
                                 <input
-                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="e.g. Solid"
                                     value={formData.pattern}
                                     onChange={e => setFormData({...formData, pattern: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Occasion</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Occasion</label>
                                 <input
-                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="e.g. Casual"
                                     value={formData.occasion}
                                     onChange={e => setFormData({...formData, occasion: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-1.5 md:col-span-3">
-                                <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Wash Care</label>
+                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Wash Care</label>
                                 <input
-                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
+                                    className="w-full px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm"
                                     placeholder="e.g. Dry Clean Only"
                                     value={formData.washCare}
                                     onChange={e => setFormData({...formData, washCare: e.target.value})}
@@ -301,33 +301,33 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
 
                     {/* Variants */}
                     <section className="space-y-4">
-                        <h5 className="text-xs font-black uppercase tracking-wider text-[#2D2F6E] border-b border-gray-100 pb-2">3. Variants & Stock</h5>
+                        <h5 className="text-xs font-black uppercase tracking-wider text-[#843D9B] border-b border-gray-100 pb-2">3. Variants & Stock</h5>
                         
                         <div className="bg-gray-50/50 rounded-[2rem] p-6 border border-gray-100/80 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
                             <div className="flex gap-4 items-end mb-6">
                                 <div className="flex-1 space-y-1.5">
-                                    <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Size</label>
+                                    <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Size</label>
                                     <input
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-100 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl text-xs font-semibold text-gray-900 shadow-sm"
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-100 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl text-xs font-semibold text-gray-900 shadow-sm"
                                         placeholder="S, M, L"
                                         value={newVariant.size}
                                         onChange={e => setNewVariant({...newVariant, size: e.target.value})}
                                     />
                                 </div>
                                 <div className="flex-1 space-y-1.5">
-                                    <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Color</label>
+                                    <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Color</label>
                                     <input
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-100 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl text-xs font-semibold text-gray-900 shadow-sm"
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-100 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl text-xs font-semibold text-gray-900 shadow-sm"
                                         placeholder="Red, Blue"
                                         value={newVariant.color}
                                         onChange={e => setNewVariant({...newVariant, color: e.target.value})}
                                     />
                                 </div>
                                 <div className="flex-1 space-y-1.5">
-                                    <label className="text-[10px] font-black text-[#2D2F6E]/80 uppercase tracking-widest ml-1">Stock</label>
+                                    <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Stock</label>
                                     <input
                                         type="number"
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-100 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl text-xs font-semibold text-gray-900 shadow-sm"
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-100 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl text-xs font-semibold text-gray-900 shadow-sm"
                                         placeholder="Qty"
                                         value={newVariant.stock}
                                         onChange={e => setNewVariant({...newVariant, stock: e.target.value})}
@@ -336,7 +336,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                                 <button
                                     type="button"
                                     onClick={addVariant}
-                                    className="h-[38px] px-5 bg-[#2D2F6E] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#1f2152] transition-colors cursor-pointer shadow-md shadow-[#2D2F6E]/15"
+                                    className="h-[38px] px-5 bg-[#843D9B] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#1f2152] transition-colors cursor-pointer shadow-md shadow-[#843D9B]/15"
                                 >
                                     Add
                                 </button>
@@ -349,7 +349,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                                             <div className="flex gap-4 text-xs font-bold text-gray-700">
                                                 <span>Size: <span className="text-gray-900 font-extrabold uppercase">{v.size || 'N/A'}</span></span>
                                                 <span>Color: <span className="text-gray-900 font-extrabold uppercase">{v.color || 'N/A'}</span></span>
-                                                <span className="text-[#2D2F6E]">Stock: <span className="font-extrabold">{v.stock}</span></span>
+                                                <span className="text-[#843D9B]">Stock: <span className="font-extrabold">{v.stock}</span></span>
                                             </div>
                                             <button type="button" onClick={() => removeVariant(i)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all cursor-pointer">
                                                 <Trash2 size={15} />
@@ -363,7 +363,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
 
                     {/* Images */}
                     <section className="space-y-4">
-                        <h5 className="text-xs font-black uppercase tracking-wider text-[#2D2F6E] border-b border-gray-100 pb-2">4. Multiple Images</h5>
+                        <h5 className="text-xs font-black uppercase tracking-wider text-[#843D9B] border-b border-gray-100 pb-2">4. Multiple Images</h5>
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                             {formData.images.map((img, i) => (
@@ -388,7 +388,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 />
                                 {isImageUploading ? (
-                                    <div className="h-6 w-6 border-2 border-[#2D2F6E] border-t-transparent animate-spin rounded-full" />
+                                    <div className="h-6 w-6 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" />
                                 ) : (
                                     <>
                                         <ImageIcon size={24} className="text-gray-400 mb-2" />
@@ -400,7 +400,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
 
                         <div className="flex gap-2">
                             <input
-                                className="flex-1 px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#2D2F6E] focus:ring-2 focus:ring-[#2D2F6E]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm placeholder:text-gray-400"
+                                className="flex-1 px-4 py-2.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none text-xs font-semibold text-gray-900 shadow-sm placeholder:text-gray-400"
                                 placeholder="Or Paste Image URL"
                                 value={newImageUrl}
                                 onChange={e => setNewImageUrl(e.target.value)}
@@ -430,7 +430,7 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                         type="submit"
                         form="garment-form"
                         disabled={isSubmitting}
-                        className="px-8 py-3 rounded-2xl text-xs font-black text-white bg-[#2D2F6E] hover:bg-[#1f2152] transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-[#2D2F6E]/10"
+                        className="px-8 py-3 rounded-2xl text-xs font-black text-white bg-[#843D9B] hover:bg-[#1f2152] transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-[#843D9B]/10"
                     >
                         {isSubmitting && <div className="h-3 w-3 border-2 border-white border-t-transparent animate-spin rounded-full" />}
                         {initialData ? 'Save Changes' : 'Publish Garment'}

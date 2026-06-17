@@ -156,7 +156,7 @@ const SplashScreen = ({ role = 'customer', onComplete }) => {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5, ease: "easeInOut" }}
                     className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-                    style={{ background: 'linear-gradient(170deg, #252660 0%, #2D2F6E 35%, #1E1F4D 100%)' }}
+                    style={{ background: 'linear-gradient(170deg, #252660 0%, #843D9B 35%, #1E1F4D 100%)' }}
                 >
                     {/* ── Subtle fabric texture overlay ── */}
                     <div

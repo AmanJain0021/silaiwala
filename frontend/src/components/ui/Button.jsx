@@ -5,11 +5,11 @@ const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', 
     const baseStyles = 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
 
     const variants = {
-        primary: 'bg-[#2D2F6E] text-white hover:bg-black shadow-sm', // Deep Pink & High Contrast Black
-        secondary: 'bg-indigo-50 text-[#2D2F6E] hover:bg-indigo-100',
-        outline: 'border border-[#2D2F6E]/20 bg-background hover:bg-indigo-50 hover:text-[#2D2F6E]',
-        ghost: 'hover:bg-indigo-50 hover:text-[#2D2F6E]',
-        link: 'text-[#2D2F6E] underline-offset-4 hover:underline',
+        primary: 'bg-[#843D9B] text-white hover:bg-black shadow-sm', // Deep Pink & High Contrast Black
+        secondary: 'bg-indigo-50 text-[#843D9B] hover:bg-indigo-100',
+        outline: 'border border-[#843D9B]/20 bg-background hover:bg-indigo-50 hover:text-[#843D9B]',
+        ghost: 'hover:bg-indigo-50 hover:text-[#843D9B]',
+        link: 'text-[#843D9B] underline-offset-4 hover:underline',
     };
 
     const sizes = {

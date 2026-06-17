@@ -176,7 +176,7 @@ const DeliveryProfile = () => {
     if (loading) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="w-10 h-10 text-[#2D2F6E] animate-spin" />
+                <Loader2 className="w-10 h-10 text-[#843D9B] animate-spin" />
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Scanning Profile...</p>
             </div>
         );
@@ -223,7 +223,7 @@ const DeliveryProfile = () => {
             <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center justify-between relative z-20 mx-0.5">
                 <div className="text-left">
                     <h2 className="text-base font-black text-slate-900 tracking-tight">Availability</h2>
-                    <p className={`text-[8px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#2D2F6E]' : 'text-slate-400'}`}>
+                    <p className={`text-[8px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#843D9B]' : 'text-slate-400'}`}>
                         {isOnline ? 'Active & Receiving Tasks' : 'Currently Off Duty'}
                     </p>
                 </div>
@@ -231,12 +231,12 @@ const DeliveryProfile = () => {
                 {/* Interactive Toggle Switch */}
                 <button
                     onClick={handleToggleDuty}
-                    className={`w-12 h-7 rounded-full p-0.5 transition-colors duration-500 relative flex items-center shadow-inner ${isOnline ? 'bg-[#2D2F6E]' : 'bg-slate-200'}`}
+                    className={`w-12 h-7 rounded-full p-0.5 transition-colors duration-500 relative flex items-center shadow-inner ${isOnline ? 'bg-[#843D9B]' : 'bg-slate-200'}`}
                 >
                     <div
                         className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-500 ${isOnline ? 'translate-x-5' : 'translate-x-0'}`}
                     >
-                        {isOnline && <div className="w-1.5 h-1.5 bg-[#2D2F6E] rounded-full animate-pulse"></div>}
+                        {isOnline && <div className="w-1.5 h-1.5 bg-[#843D9B] rounded-full animate-pulse"></div>}
                     </div>
                 </button>
             </div>            {/* 1. Identity & Duty */}
@@ -245,14 +245,14 @@ const DeliveryProfile = () => {
                 <div className="space-y-1">
                     <MenuOption
                         icon={User}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Identity Profile"
                         subLabel={deliveryProfile?.user?.isVerified ? "Verified Partner" : "Update details"}
                         onClick={() => setIsEditing('personal')}
                     />
                     <MenuOption
                         icon={Star}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Performance Rating"
                         subLabel="Your service score"
                         extra={<span className="bg-orange-50 text-[10px] font-black px-2.5 py-1 rounded-full text-orange-600 border border-orange-100 italic">4.8</span>}
@@ -267,7 +267,7 @@ const DeliveryProfile = () => {
                 <div className="space-y-1">
                     <MenuOption
                         icon={Wallet}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Wallet & Earnings"
                         subLabel="Check your balance"
                         extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 1,240</span>}
@@ -275,7 +275,7 @@ const DeliveryProfile = () => {
                     />
                     <MenuOption
                         icon={CreditCard}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Financial Routing"
                         subLabel="Bank details"
                         onClick={() => setIsEditing('bank')}
@@ -289,28 +289,28 @@ const DeliveryProfile = () => {
                 <div className="space-y-1">
                     <MenuOption
                         icon={Bell}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Notifications"
                         subLabel="Alert preferences"
                         to="/delivery/notifications"
                     />
                     <MenuOption
                         icon={Globe}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Language"
                         extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
                         to="/delivery/language"
                     />
                     <MenuOption
                         icon={FileText}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="KYC Documents"
                         subLabel={kycStatus}
                         onClick={() => setShowKYCModal(true)}
                     />
                     <MenuOption
                         icon={LifeBuoy}
-                        color="bg-[#2D2F6E]"
+                        color="bg-[#843D9B]"
                         label="Help & Support"
                         onClick={() => setShowSupport(true)}
                     />
@@ -327,7 +327,7 @@ const DeliveryProfile = () => {
                     className="w-full bg-red-50/50 p-3 rounded-[1.5rem] border border-red-100 flex items-center justify-between group active:scale-[0.98] transition-all"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-[#2D2F6E] rounded-2xl flex items-center justify-center text-[#E2C17D] shadow-md shadow-indigo-100 group-hover:rotate-6 transition-transform">
+                        <div className="h-10 w-10 bg-[#843D9B] rounded-2xl flex items-center justify-center text-[#E2C17D] shadow-md shadow-indigo-100 group-hover:rotate-6 transition-transform">
                             <LogOut size={18} strokeWidth={2.5} />
                         </div>
                         <div className="text-left">
@@ -502,7 +502,7 @@ const DeliveryProfile = () => {
                                         {aadharImage ? (
                                             <div className="absolute inset-0 w-full h-full bg-slate-900/10 flex items-center justify-center backdrop-blur-sm">
                                                 <img src={aadharImage} alt="Aadhar" className="w-full h-full object-cover opacity-60" />
-                                                <CheckCircle2 size={32} className="text-[#2D2F6E] absolute drop-shadow-md bg-white rounded-full" />
+                                                <CheckCircle2 size={32} className="text-[#843D9B] absolute drop-shadow-md bg-white rounded-full" />
                                             </div>
                                         ) : (
                                             <>
@@ -538,7 +538,7 @@ const DeliveryProfile = () => {
                                         {licenseImage ? (
                                             <div className="absolute inset-0 w-full h-full bg-slate-900/10 flex items-center justify-center backdrop-blur-sm">
                                                 <img src={licenseImage} alt="License" className="w-full h-full object-cover opacity-60" />
-                                                <CheckCircle2 size={32} className="text-[#2D2F6E] absolute drop-shadow-md bg-white rounded-full" />
+                                                <CheckCircle2 size={32} className="text-[#843D9B] absolute drop-shadow-md bg-white rounded-full" />
                                             </div>
                                         ) : (
                                             <>
@@ -554,7 +554,7 @@ const DeliveryProfile = () => {
                                 onClick={handleKYCSubmit}
                                 className="w-full bg-slate-900 text-white rounded-2xl p-4 font-black tracking-widest text-xs hover:bg-black active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 uppercase"
                             >
-                                <CheckCircle2 size={16} className="text-[#2D2F6E]" /> Submit To Admin
+                                <CheckCircle2 size={16} className="text-[#843D9B]" /> Submit To Admin
                             </button>
 
                             <p className="text-center mt-4 text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">

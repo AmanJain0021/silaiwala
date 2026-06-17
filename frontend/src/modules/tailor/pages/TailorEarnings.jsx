@@ -125,20 +125,20 @@ const TailorEarnings = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#2D2F6E]" />
+                <Loader2 size={32} className="animate-spin text-[#843D9B]" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
 
             {/* ── MOBILE HEADER ── */}
             <div className="md:hidden bg-white px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
                 <button onClick={() => navigate('/partner/settings')} className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
                     <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
                 </button>
-                <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
+                <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight">SEWZELLA</h1>
                 <div className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center text-white font-black text-sm">
                     {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                 </div>
@@ -166,7 +166,7 @@ const TailorEarnings = () => {
                                     onClick={() => setActiveTab(tab)}
                                     className={`px-8 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                         activeTab === tab
-                                            ? 'text-[#2D2F6E] bg-white shadow-md shadow-black/5'
+                                            ? 'text-[#843D9B] bg-white shadow-md shadow-black/5'
                                             : 'text-gray-500 hover:bg-gray-100'
                                     }`}
                                 >
@@ -197,7 +197,7 @@ const TailorEarnings = () => {
                                     </div>
                                     <button 
                                         onClick={() => setShowWithdrawModal(true)}
-                                        className="bg-[#FDE5D2] text-[#2D2F6E] px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-xl shadow-black/20"
+                                        className="bg-[#FDE5D2] text-[#843D9B] px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-xl shadow-black/20"
                                     >
                                         Withdraw Funds
                                     </button>
@@ -207,9 +207,9 @@ const TailorEarnings = () => {
 
                         {/* ── BREAKDOWN GRID ── */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex items-center gap-5 group hover:border-[#2D2F6E]/20 transition-all">
+                            <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex items-center gap-5 group hover:border-[#843D9B]/20 transition-all">
                                 <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                    <ShoppingBag size={24} className="text-[#2D2F6E]" />
+                                    <ShoppingBag size={24} className="text-[#843D9B]" />
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Order Earnings</p>
@@ -221,7 +221,7 @@ const TailorEarnings = () => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm group hover:border-[#2D2F6E]/20 transition-all">
+                                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm group hover:border-[#843D9B]/20 transition-all">
                                     <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
                                         <Star size={18} className="text-indigo-600" fill="currentColor" />
                                     </div>
@@ -230,7 +230,7 @@ const TailorEarnings = () => {
                                         ₹{incentives.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </p>
                                 </div>
-                                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm group hover:border-[#2D2F6E]/20 transition-all">
+                                <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm group hover:border-[#843D9B]/20 transition-all">
                                     <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
                                         <Gift size={18} className="text-emerald-600" />
                                     </div>
@@ -251,7 +251,7 @@ const TailorEarnings = () => {
                                     <h3 className="text-xl font-black text-gray-900 tracking-tight">Activity Log</h3>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Real-time transaction history</p>
                                 </div>
-                                <button className="text-[11px] font-black text-[#2D2F6E] hover:underline uppercase tracking-widest">View All</button>
+                                <button className="text-[11px] font-black text-[#843D9B] hover:underline uppercase tracking-widest">View All</button>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
@@ -323,7 +323,7 @@ const TailorEarnings = () => {
                             </button>
 
                             <div className="flex items-center gap-4 mb-8">
-                                <div className="w-14 h-14 bg-indigo-50 text-[#2D2F6E] rounded-2xl flex items-center justify-center shrink-0">
+                                <div className="w-14 h-14 bg-indigo-50 text-[#843D9B] rounded-2xl flex items-center justify-center shrink-0">
                                     <Send size={24} />
                                 </div>
                                 <div>
@@ -340,7 +340,7 @@ const TailorEarnings = () => {
                                         value={withdrawAmount}
                                         onChange={(e) => setWithdrawAmount(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white transition-all"
                                         min="100"
                                         max={stats.balance}
                                         disabled={isSubmitting}
@@ -350,7 +350,7 @@ const TailorEarnings = () => {
                                         <button
                                             type="button"
                                             onClick={() => setWithdrawAmount(stats.balance)}
-                                            className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest"
+                                            className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest"
                                         >
                                             Max
                                         </button>
@@ -364,7 +364,7 @@ const TailorEarnings = () => {
                                         value={upiId}
                                         onChange={(e) => setUpiId(e.target.value)}
                                         placeholder="username@bank"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#2D2F6E] focus:bg-white transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white transition-all"
                                         disabled={isSubmitting}
                                     />
                                 </div>
@@ -372,7 +372,7 @@ const TailorEarnings = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !withdrawAmount || !upiId}
-                                    className="w-full bg-[#2D2F6E] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+                                    className="w-full bg-[#843D9B] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
                                 >
                                     {isSubmitting ? (
                                         <>

@@ -62,7 +62,7 @@ const EmbroideryPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans selection:bg-[#843D9B] selection:text-white">
             {/* Header */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-4 pt-safe flex items-center gap-4">
                 <button 
@@ -73,9 +73,9 @@ const EmbroideryPage = () => {
                 </button>
                 <div className="flex-1">
                     <h1 className="text-lg font-black text-gray-900 leading-none">Embroidery Hub</h1>
-                    <p className="text-[10px] text-[#2D2F6E] font-bold uppercase tracking-widest mt-1">Custom Art for your outfits</p>
+                    <p className="text-[10px] text-[#843D9B] font-bold uppercase tracking-widest mt-1">Custom Art for your outfits</p>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-[#2D2F6E] flex items-center justify-center text-[#E2C17D] shadow-lg shadow-[#2D2F6E]/20">
+                <div className="w-10 h-10 rounded-2xl bg-[#843D9B] flex items-center justify-center text-[#E2C17D] shadow-lg shadow-[#843D9B]/20">
                     <Feather size={20} />
                 </div>
             </div>
@@ -86,7 +86,7 @@ const EmbroideryPage = () => {
                 <section>
                     <div className="flex items-center justify-between mb-4 px-2">
                         <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] italic">Work Categories</h2>
-                        <span className="text-[10px] font-bold text-[#2D2F6E]">Browse All</span>
+                        <span className="text-[10px] font-bold text-[#843D9B]">Browse All</span>
                     </div>
                     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                         {categories.map((cat) => (
@@ -95,7 +95,7 @@ const EmbroideryPage = () => {
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`flex flex-col items-center gap-2 px-6 py-4 rounded-3xl transition-all shrink-0 border ${
                                     selectedCategory.id === cat.id 
-                                    ? 'bg-[#2D2F6E] text-white border-[#2D2F6E] shadow-xl' 
+                                    ? 'bg-[#843D9B] text-white border-[#843D9B] shadow-xl' 
                                     : 'bg-white text-gray-600 border-gray-100 shadow-sm'
                                 }`}
                             >
@@ -109,7 +109,7 @@ const EmbroideryPage = () => {
                 {/* 2. Featured Designs Gallery */}
                 <section>
                     <div className="flex items-center gap-2 mb-4 px-2">
-                        <Palette size={16} className="text-[#2D2F6E]" />
+                        <Palette size={16} className="text-[#843D9B]" />
                         <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest">Design Gallery</h2>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -127,7 +127,7 @@ const EmbroideryPage = () => {
                 {/* 3. Customization Options */}
                 <section className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-indigo-50 rounded-xl text-[#2D2F6E]">
+                        <div className="p-2 bg-indigo-50 rounded-xl text-[#843D9B]">
                             <Sparkles size={20} />
                         </div>
                         <h2 className="text-base font-black text-gray-900 uppercase tracking-tight">Your Custom Touch</h2>
@@ -145,7 +145,7 @@ const EmbroideryPage = () => {
                 </section>
 
                 {/* 4. Pricing Guide */}
-                <section className="bg-[#2D2F6E] rounded-[2rem] p-6 text-white shadow-2xl relative overflow-hidden">
+                <section className="bg-[#843D9B] rounded-[2rem] p-6 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
                         <DollarSign size={80} />
                     </div>
@@ -197,10 +197,10 @@ const EmbroideryPage = () => {
                             <textarea rows="3" placeholder="Specific colors, patterns, or urgent requirements..." className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-xs focus:bg-white transition-all outline-none resize-none"></textarea>
                         </div>
                         <div className="p-4 bg-indigo-50/50 border border-dashed border-indigo-200 rounded-2xl flex flex-col items-center gap-2 group cursor-pointer hover:bg-indigo-50 transition-all">
-                            <Camera size={24} className="text-[#2D2F6E]" />
-                            <p className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest">Upload Reference Design</p>
+                            <Camera size={24} className="text-[#843D9B]" />
+                            <p className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest">Upload Reference Design</p>
                         </div>
-                        <button className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#2D2F6E]/20 active:scale-[0.98] transition-all">
+                        <button className="w-full bg-[#843D9B] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#843D9B]/20 active:scale-[0.98] transition-all">
                             Send Request
                         </button>
                     </form>
@@ -219,7 +219,7 @@ const EmbroideryPage = () => {
                     </div>
                     <div className="space-y-6 relative ml-4 border-l border-gray-100 pl-8">
                         <div className="relative">
-                            <div className="absolute -left-10 top-0 w-4 h-4 bg-[#2D2F6E] rounded-full border-4 border-white shadow-sm" />
+                            <div className="absolute -left-10 top-0 w-4 h-4 bg-[#843D9B] rounded-full border-4 border-white shadow-sm" />
                             <h4 className="text-[11px] font-black text-gray-900 uppercase">Consultation</h4>
                             <p className="text-[10px] text-gray-400 font-bold">Within 24 Hours</p>
                         </div>
@@ -239,7 +239,7 @@ const EmbroideryPage = () => {
                 {/* 7. Before & After */}
                 <section>
                     <div className="flex items-center gap-2 mb-4 px-2">
-                        <Sparkles size={16} className="text-[#2D2F6E]" />
+                        <Sparkles size={16} className="text-[#843D9B]" />
                         <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest italic">Transformation</h2>
                     </div>
                     <div className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm flex flex-col sm:flex-row">
@@ -249,7 +249,7 @@ const EmbroideryPage = () => {
                         </div>
                         <div className="flex-1 relative aspect-square">
                             <img src="https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&q=80&w=400" className="w-full h-full object-cover" />
-                            <div className="absolute top-4 right-4 bg-[#2D2F6E] text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg">Expert Finish</div>
+                            <div className="absolute top-4 right-4 bg-[#843D9B] text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg">Expert Finish</div>
                         </div>
                     </div>
                 </section>

@@ -107,6 +107,7 @@ app.use("/api/v1/bulk-orders", require("./modules/bulk-orders/routes/bulkOrder.r
 app.use("/api/v1/style-addons", require("./modules/styleAddons/routes/styleAddon.routes"));
 app.use("/api/v1/cms", require("./modules/public/routes/cms.routes"));
 app.use("/api/v1/support", require("./modules/support/routes/support.routes"));
+app.use("/api/v1/subscriptions", require("./modules/subscriptions/routes/subscription.routes"));
 app.use("/api/v1/upload", require("./routes/upload.routes"));
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 

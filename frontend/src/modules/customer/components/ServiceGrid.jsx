@@ -32,7 +32,7 @@ const ServiceGrid = () => {
     if (isLoading) {
         return (
             <div className="px-4 py-8 flex flex-col items-center justify-center gap-2">
-                <Loader2 size={24} className="animate-spin text-[#2D2F6E]" />
+                <Loader2 size={24} className="animate-spin text-[#843D9B]" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Finding Best Designs...</p>
             </div>
         );
@@ -47,7 +47,7 @@ const ServiceGrid = () => {
                     <h2 className="text-xl font-bold text-gray-900">Popular Services</h2>
                     <p className="text-xs text-gray-500">Custom fitted for you</p>
                 </div>
-                <Link to="/user/services" state={location.state} className="text-xs font-semibold text-[#2D2F6E] flex items-center gap-1 hover:underline">
+                <Link to="/user/services" state={location.state} className="text-xs font-semibold text-[#843D9B] flex items-center gap-1 hover:underline">
                     View All <ArrowRight size={12} />
                 </Link>
             </div>
@@ -72,7 +72,7 @@ const ServiceGrid = () => {
                         </div>
                         <div className="px-1">
                             <h3 className="font-semibold text-gray-900 text-sm truncate">{service.title}</h3>
-                            <p className="text-xs text-gray-500 mt-1">Starts from <span className="font-bold text-[#2D2F6E]">₹{service.basePrice}</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Starts from <span className="font-bold text-[#843D9B]">₹{service.basePrice}</span></p>
                         </div>
                     </div>
                 ))}

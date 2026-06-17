@@ -156,7 +156,7 @@ const Orders = () => {
                     <button onClick={onClose} className="p-1 text-gray-600 hover:text-gray-900">
                         <ArrowLeft size={22} />
                     </button>
-                    <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight">SEWZELLA</h1>
+                    <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight">SEWZELLA</h1>
                     <div className="w-9 h-9 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-sm">
                         {order.customer?.name?.charAt(0) || 'C'}
                     </div>
@@ -173,7 +173,7 @@ const Orders = () => {
                                 <Clock size={12} /> {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                         </div>
-                        <span className={`text-[11px] font-black uppercase px-3 py-1 rounded-full ${isPending ? 'bg-red-50 text-[#2D2F6E]' : 'bg-green-50 text-green-600'}`}>
+                        <span className={`text-[11px] font-black uppercase px-3 py-1 rounded-full ${isPending ? 'bg-red-50 text-[#843D9B]' : 'bg-green-50 text-green-600'}`}>
                             {isPending ? 'Pending Accept' : 'In Progress'}
                         </span>
                     </div>
@@ -194,17 +194,17 @@ const Orders = () => {
                                             <p className="text-[12px] text-gray-400 font-medium mt-0.5">{order.customer?.phoneNumber}</p>
                                         </div>
                                     </div>
-                                    <button className="w-10 h-10 bg-[#FDE5D2] border border-[#2D2F6E]/20 text-[#2D2F6E] rounded-2xl flex items-center justify-center">
+                                    <button className="w-10 h-10 bg-[#FDE5D2] border border-[#843D9B]/20 text-[#843D9B] rounded-2xl flex items-center justify-center">
                                         <MessageSquare size={18} />
                                     </button>
                                 </div>
                                 <div className="pt-3 border-t border-gray-50 flex items-start gap-2">
-                                    <MapPin size={16} className="text-[#2D2F6E] mt-0.5 shrink-0" />
+                                    <MapPin size={16} className="text-[#843D9B] mt-0.5 shrink-0" />
                                     <div className="flex-1">
                                         <p className="text-[12px] text-gray-700 font-medium leading-relaxed">
                                             {[order.deliveryAddress?.street, order.deliveryAddress?.city, order.deliveryAddress?.state, order.deliveryAddress?.zipCode].filter(Boolean).join(', ')}
                                         </p>
-                                        <button className="text-[11px] font-black text-[#2D2F6E] uppercase tracking-wider mt-1 block">View Map</button>
+                                        <button className="text-[11px] font-black text-[#843D9B] uppercase tracking-wider mt-1 block">View Map</button>
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +215,7 @@ const Orders = () => {
                                     {/* Map Graphic Mock */}
                                     <div className="absolute inset-0 bg-[#E2E8F0] opacity-80" />
                                     <div className="relative w-12 h-12 bg-[#FDE5D2] border-4 border-white rounded-full flex items-center justify-center shadow-lg">
-                                        <MapPin size={24} className="text-[#2D2F6E]" />
+                                        <MapPin size={24} className="text-[#843D9B]" />
                                     </div>
                                 </div>
                             </div>
@@ -295,7 +295,7 @@ const Orders = () => {
                                         <div className="relative">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-[13px] font-black text-gray-900 flex items-center gap-2">
-                                                    <Package size={16} className="text-[#2D2F6E]" />
+                                                    <Package size={16} className="text-[#843D9B]" />
                                                     Live Tracking
                                                 </h3>
                                                 <div className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-100 animate-pulse">
@@ -304,7 +304,7 @@ const Orders = () => {
                                             </div>
 
                                             {/* Status Progress Banner */}
-                                            <div className="mb-4 p-3 bg-gradient-to-br from-[#2D2F6E] to-blue-900 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                                            <div className="mb-4 p-3 bg-gradient-to-br from-[#843D9B] to-blue-900 rounded-2xl text-white shadow-lg relative overflow-hidden">
                                                 <div className="relative z-10">
                                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Current Milestone</p>
                                                     <h2 className="text-xl font-black tracking-tight leading-none mb-2 capitalize">
@@ -360,7 +360,7 @@ const Orders = () => {
                                                                 {/* Dot / Icon Container */}
                                                                 <div className={cn(
                                                                     "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-700 bg-white border-2 shrink-0",
-                                                                    isCompleted ? "border-green-500 text-green-500 shadow-sm" : "border-gray-200 text-gray-300 hover:border-[#2D2F6E] hover:text-[#2D2F6E]",
+                                                                    isCompleted ? "border-green-500 text-green-500 shadow-sm" : "border-gray-200 text-gray-300 hover:border-[#843D9B] hover:text-[#843D9B]",
                                                                     isCurrent && "ring-4 ring-green-100 scale-110 z-20"
                                                                 )}>
                                                                     {updatingOrders[order._id] && isCurrent ? (
@@ -415,12 +415,12 @@ const Orders = () => {
                                     value={noteInput}
                                     onChange={(e) => setNoteInput(e.target.value)}
                                     placeholder="Add a technical note for this order..."
-                                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs text-gray-700 outline-none focus:border-[#2D2F6E] resize-none h-20"
+                                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs text-gray-700 outline-none focus:border-[#843D9B] resize-none h-20"
                                 />
                                 <div className="flex justify-end">
                                     <button 
                                         onClick={() => handleAddNote(order._id)}
-                                        className="text-xs font-black text-[#2D2F6E] uppercase tracking-wider flex items-center gap-1"
+                                        className="text-xs font-black text-[#843D9B] uppercase tracking-wider flex items-center gap-1"
                                     >
                                         + Add Note
                                     </button>
@@ -428,8 +428,8 @@ const Orders = () => {
 
                                 <div className="space-y-2 mt-2">
                                     {(productionNotes[order._id] || []).map((note, i) => (
-                                        <div key={i} className="bg-red-50/50 border-l-4 border-[#2D2F6E] p-3 rounded-r-xl">
-                                            <p className="text-[10px] font-bold text-[#2D2F6E]">{note.time}</p>
+                                        <div key={i} className="bg-red-50/50 border-l-4 border-[#843D9B] p-3 rounded-r-xl">
+                                            <p className="text-[10px] font-bold text-[#843D9B]">{note.time}</p>
                                             <p className="text-[12px] text-gray-700 mt-0.5 leading-relaxed font-medium">{note.text}</p>
                                         </div>
                                     ))}
@@ -463,7 +463,7 @@ const Orders = () => {
                                         <span className="text-[9px] font-black uppercase bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
                                             Size: {item.measurements?.type === 'slip' ? 'Slip' : 'Custom'}
                                         </span>
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${item.deliveryType === 'express' ? 'bg-red-50 text-[#2D2F6E] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${item.deliveryType === 'express' ? 'bg-red-50 text-[#843D9B] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                             {item.deliveryType || 'Standard'}
                                         </span>
                                     </div>
@@ -497,7 +497,7 @@ const Orders = () => {
                                 return (
                                     <div key={idx} className="space-y-3">
                                         {order.items.length > 1 && (
-                                            <p className="text-[10px] font-bold text-[#2D2F6E] uppercase tracking-wider">
+                                            <p className="text-[10px] font-bold text-[#843D9B] uppercase tracking-wider">
                                                 Item {idx + 1}: {item.service?.title || 'Custom Garment'}
                                             </p>
                                         )}
@@ -505,7 +505,7 @@ const Orders = () => {
                                         {/* Measurement Type Badge */}
                                         {measurements.type && (
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-[9px] font-black uppercase bg-indigo-50 text-[#2D2F6E] px-2.5 py-1 rounded-full border border-indigo-100">
+                                                <span className="text-[9px] font-black uppercase bg-indigo-50 text-[#843D9B] px-2.5 py-1 rounded-full border border-indigo-100">
                                                     {measurements.type === 'slip' ? '📎 Uploaded Slip' : 
                                                      measurements.type === 'saved' ? '💾 Saved Profile' : 
                                                      measurements.type === 'home' ? '🏠 Tailor at Home' : 
@@ -583,10 +583,10 @@ const Orders = () => {
                     {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['ready-for-pickup'].includes(order.status) && (
                         <div className="mb-4 p-4 bg-indigo-50 rounded-3xl border border-indigo-100 flex items-center justify-between">
                             <div>
-                                <p className="text-[11px] font-black uppercase text-[#2D2F6E] tracking-wider">Pickup OTP</p>
+                                <p className="text-[11px] font-black uppercase text-[#843D9B] tracking-wider">Pickup OTP</p>
                                 <p className="text-[12px] text-gray-600 font-medium">Share with delivery partner for final product pickup</p>
                             </div>
-                            <div className="text-2xl font-black text-[#2D2F6E] tracking-widest bg-white px-4 py-2 rounded-xl border border-indigo-100">
+                            <div className="text-2xl font-black text-[#843D9B] tracking-widest bg-white px-4 py-2 rounded-xl border border-indigo-100">
                                 {order.pickupDeliveryOtp}
                             </div>
                         </div>
@@ -612,7 +612,7 @@ const Orders = () => {
                                     {order.deliveryPartner.profileImage ? (
                                         <img src={order.deliveryPartner.profileImage} alt={order.deliveryPartner.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Truck size={16} className="text-[#2D2F6E]" />
+                                        <Truck size={16} className="text-[#843D9B]" />
                                     )}
                                 </div>
                                 <div className="flex-1">
@@ -624,7 +624,7 @@ const Orders = () => {
                                 {order.deliveryPartner.phoneNumber && (
                                     <a 
                                         href={`tel:${order.deliveryPartner.phoneNumber}`}
-                                        className="w-8 h-8 bg-indigo-50 text-[#2D2F6E] rounded-full flex items-center justify-center border border-indigo-100 shrink-0"
+                                        className="w-8 h-8 bg-indigo-50 text-[#843D9B] rounded-full flex items-center justify-center border border-indigo-100 shrink-0"
                                     >
                                         <Phone size={14} />
                                     </a>
@@ -667,7 +667,7 @@ const Orders = () => {
                                     onClose();
                                 }}
                                 disabled={updatingOrders[order._id]}
-                                className="flex-[2] py-4 bg-[#2D2F6E] text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-[#2D2F6E]/25 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                className="flex-[2] py-4 bg-[#843D9B] text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-[#843D9B]/25 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
                                 {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
                             </button>
@@ -680,7 +680,7 @@ const Orders = () => {
     };
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white pb-24 md:pb-0">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-24 md:pb-0">
             
             {/* ── HEADER ── */}
             <div className="md:hidden bg-white pt-3 pb-2 border-b border-gray-100 text-left px-4">
@@ -707,7 +707,7 @@ const Orders = () => {
                             placeholder="Search Order ID or Customer..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#2D2F6E] text-[12px] text-gray-900 shadow-sm"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#843D9B] text-[12px] text-gray-900 shadow-sm"
                         />
                     </div>
 
@@ -718,7 +718,7 @@ const Orders = () => {
                                 onClick={() => setActiveTab(tab)}
                                 className={cn(
                                     "px-4 md:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-                                    activeTab === tab ? "bg-white text-[#2D2F6E] shadow-md shadow-black/5" : "text-gray-500 hover:bg-gray-100"
+                                    activeTab === tab ? "bg-white text-[#843D9B] shadow-md shadow-black/5" : "text-gray-500 hover:bg-gray-100"
                                 )}
                             >
                                 {tab === 'all' ? 'All' : tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
@@ -732,7 +732,7 @@ const Orders = () => {
             <div className="flex-1">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-24 gap-3">
-                        <div className="h-8 w-8 border-[3px] border-[#2D2F6E] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="h-8 w-8 border-[3px] border-[#843D9B] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Synchronizing orders...</p>
                     </div>
                 ) : filteredOrders.length === 0 ? (
@@ -747,10 +747,10 @@ const Orders = () => {
                         {filteredOrders.map((order) => {
                             const isNew = order.status === 'pending';
                             return (
-                                <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#2D2F6E]/10 transition-all flex flex-col group">
+                                <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#843D9B]/10 transition-all flex flex-col group">
                                     <div className="flex justify-between items-start mb-3 md:mb-4">
                                         <div className="flex flex-col gap-0.5 md:gap-1">
-                                            <span className="text-[9px] md:text-[10px] font-black uppercase bg-[#FDE5D2] text-[#2D2F6E] px-2 md:px-3 py-1 rounded-md md:rounded-lg border border-[#2D2F6E]/10 w-fit">
+                                            <span className="text-[9px] md:text-[10px] font-black uppercase bg-[#FDE5D2] text-[#843D9B] px-2 md:px-3 py-1 rounded-md md:rounded-lg border border-[#843D9B]/10 w-fit">
                                                 #{order.orderId || 'ALT123456'}
                                             </span>
                                             <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-tighter">Received {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -769,7 +769,7 @@ const Orders = () => {
                                             {order.items?.[0]?.selectedFabric?.image || order.items?.[0]?.selectedFabric?.images?.[0] || order.items?.[0]?.service?.image || order.items?.[0]?.service?.images?.[0] ? (
                                                 <img src={order.items[0].selectedFabric?.image || order.items[0].selectedFabric?.images?.[0] || order.items[0].service?.image || order.items[0].service?.images?.[0]} className="w-full h-full object-cover" />
                                             ) : (
-                                                <Scissors size={16} className="md:w-[18px] md:h-[18px] text-[#2D2F6E]" />
+                                                <Scissors size={16} className="md:w-[18px] md:h-[18px] text-[#843D9B]" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -796,7 +796,7 @@ const Orders = () => {
                                             <button 
                                                 onClick={() => handleStatusUpdate(order._id, 'accepted')}
                                                 disabled={updatingOrders[order._id]}
-                                                className="flex-[1.5] py-2.5 md:py-3 bg-[#2D2F6E] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                className="flex-[1.5] py-2.5 md:py-3 bg-[#843D9B] rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-[#843D9B]/20 hover:bg-[#4E2460] active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                             >
                                                 {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
                                             </button>

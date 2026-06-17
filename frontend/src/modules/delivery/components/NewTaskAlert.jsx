@@ -248,7 +248,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                     icon: '🚀',
                     style: {
                         borderRadius: '1rem',
-                        background: '#2D2F6E',
+                        background: '#843D9B',
                         color: '#fff',
                         fontWeight: '900',
                         fontSize: '12px',

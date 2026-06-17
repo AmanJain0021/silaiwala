@@ -31,7 +31,7 @@ const CustomerMainLayout = () => {
                         </div>
                         <div>
                             <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-none tracking-tight">
-                                SewZ<span className="text-[#2D2F6E]">ella</span>
+                                SewZ<span className="text-[#843D9B]">ella</span>
                             </h1>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">Modern Stitching</p>
                         </div>
@@ -39,14 +39,14 @@ const CustomerMainLayout = () => {
 
                     {/* Location Selector - Desktop */}
                     <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-gray-50/50 rounded-2xl border border-gray-100/50 cursor-pointer hover:bg-white hover:shadow-sm transition-all group ml-4">
-                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-[#2D2F6E] shadow-sm border border-gray-50 group-hover:scale-110 transition-transform">
+                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-[#843D9B] shadow-sm border border-gray-50 group-hover:scale-110 transition-transform">
                             <MapPin size={16} />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">Delivering To</span>
                             <div className="flex items-center gap-1">
                                 <span className="text-xs font-bold text-gray-900 truncate max-w-[120px]">{deliveryAddress || 'Select Area'}</span>
-                                <ChevronDown size={12} className="text-[#2D2F6E]" />
+                                <ChevronDown size={12} className="text-[#843D9B]" />
                             </div>
                         </div>
                     </div>
@@ -61,8 +61,8 @@ const CustomerMainLayout = () => {
                                     to={item.to}
                                     className={`px-5 py-2 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
                                         isActive 
-                                            ? 'bg-[#2D2F6E] text-white shadow-lg shadow-[#2D2F6E]/20' 
-                                            : 'text-gray-500 hover:text-[#2D2F6E] hover:bg-indigo-50'
+                                            ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20' 
+                                            : 'text-gray-500 hover:text-[#843D9B] hover:bg-indigo-50'
                                     }`}
                                 >
                                     {item.label}
@@ -73,19 +73,19 @@ const CustomerMainLayout = () => {
 
                     {/* Right Actions */}
                     <div className="flex items-center gap-4">
-                        <button className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all relative">
+                        <button className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#843D9B] transition-all relative">
                             <Search size={20} />
                         </button>
-                        <Link to="/user/cart" className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#2D2F6E] transition-all relative">
+                        <Link to="/user/cart" className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#843D9B] transition-all relative">
                             <ShoppingBag size={20} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#2D2F6E] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
                         <Link to="/user/profile" className="flex items-center gap-3 pl-2 border-l border-gray-100 ml-2">
-                            <div className="w-10 h-10 rounded-xl border-2 border-[#2D2F6E]/10 p-0.5 overflow-hidden shadow-sm hover:border-[#2D2F6E]/30 transition-all">
+                            <div className="w-10 h-10 rounded-xl border-2 border-[#843D9B]/10 p-0.5 overflow-hidden shadow-sm hover:border-[#843D9B]/30 transition-all">
                                 <img
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
                                     className="w-full h-full object-cover bg-gray-100 rounded-lg"

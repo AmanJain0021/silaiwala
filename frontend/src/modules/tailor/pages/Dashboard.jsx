@@ -56,7 +56,7 @@ const Dashboard = () => {
             icon: <ShoppingBag size={20} />,
             change: summary.totalOrders > 0 ? '+1' : '0',
             sub: 'this week',
-            accent: '#2D2F6E',
+            accent: '#843D9B',
         },
         {
             label: 'Pending',
@@ -80,13 +80,13 @@ const Dashboard = () => {
             icon: <TrendingUp size={20} />,
             change: `Bal: ₹${(summary.walletBalance || 0).toLocaleString()}`,
             sub: 'wallet',
-            accent: '#2D2F6E',
+            accent: '#843D9B',
         },
     ];
 
     const getStatusStyle = (status) => {
         switch (status.toLowerCase()) {
-            case 'measuring': return { bg: 'bg-[#2D2F6E]/10', text: 'text-[#2D2F6E]', dot: 'bg-[#2D2F6E]' };
+            case 'measuring': return { bg: 'bg-[#843D9B]/10', text: 'text-[#843D9B]', dot: 'bg-[#843D9B]' };
             case 'cutting': return { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400' };
             case 'stitching': return { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' };
             case 'ironing': return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' };
@@ -96,7 +96,7 @@ const Dashboard = () => {
 
     const getPriorityStyle = (priority) => {
         switch (priority.toLowerCase()) {
-            case 'urgent': return 'text-[#2D2F6E] font-black';
+            case 'urgent': return 'text-[#843D9B] font-black';
             case 'high': return 'text-amber-400 font-bold';
             default: return 'text-white/30 font-medium';
         }
@@ -110,12 +110,12 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mb-6">
                     {/* Logo + Name */}
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white border-2 border-[#2D2F6E]/10 rounded-2xl flex items-center justify-center p-1.5 overflow-hidden shadow-sm">
+                        <div className="w-12 h-12 bg-white border-2 border-[#843D9B]/10 rounded-2xl flex items-center justify-center p-1.5 overflow-hidden shadow-sm">
                             <img src={silaiwalaLogo} alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">Partner Panel</p>
-                            <h2 className="text-[18px] font-black text-[#2D2F6E] leading-none tracking-tight">
+                            <h2 className="text-[18px] font-black text-[#843D9B] leading-none tracking-tight">
                                 {dashboardData?.shopName || user?.name || 'Partner Shop'}
                             </h2>
                         </div>
@@ -124,18 +124,18 @@ const Dashboard = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => navigate('/partner/settings')}
-                            className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 hover:text-[#2D2F6E] hover:bg-white transition-all active:scale-95 shadow-sm"
+                            className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 hover:text-[#843D9B] hover:bg-white transition-all active:scale-95 shadow-sm"
                         >
                             <Settings size={18} />
                         </button>
-                        <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-[#2D2F6E] font-black text-lg shadow-sm">
+                        <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-[#843D9B] font-black text-lg shadow-sm">
                             {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                         </div>
                     </div>
                 </div>
 
                 {/* Greeting Banner */}
-                <div className="bg-[#2D2F6E] rounded-3xl p-5 relative overflow-hidden mb-1">
+                <div className="bg-[#843D9B] rounded-3xl p-5 relative overflow-hidden mb-1">
                     {/* Decorative circles */}
                     <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
                     <div className="absolute right-8 -bottom-8 w-20 h-20 rounded-full bg-white/5 pointer-events-none" />
@@ -151,7 +151,7 @@ const Dashboard = () => {
                         </p>
                         <button
                             onClick={() => navigate('/partner/orders')}
-                            className="bg-white text-[#2D2F6E] text-[10px] font-black uppercase px-4 py-2 rounded-xl tracking-wider flex items-center gap-1"
+                            className="bg-white text-[#843D9B] text-[10px] font-black uppercase px-4 py-2 rounded-xl tracking-wider flex items-center gap-1"
                         >
                             View All <ChevronRight size={13} />
                         </button>
@@ -204,7 +204,7 @@ const Dashboard = () => {
                     <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Active Work Orders</h3>
                     <button
                         onClick={() => navigate('/partner/orders')}
-                        className="flex items-center gap-1 text-[#2D2F6E] text-[10px] font-black uppercase tracking-widest hover:underline"
+                        className="flex items-center gap-1 text-[#843D9B] text-[10px] font-black uppercase tracking-widest hover:underline"
                     >
                         See all <ChevronRight size={13} />
                     </button>
@@ -247,7 +247,7 @@ const Dashboard = () => {
                                 {/* Update Button */}
                                 <button
                                     onClick={() => navigate('/partner/orders', { state: { highlightOrderTitle: order.id } })}
-                                    className="shrink-0 w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:bg-[#2D2F6E] hover:text-white transition-all hover:border-[#2D2F6E]"
+                                    className="shrink-0 w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:bg-[#843D9B] hover:text-white transition-all hover:border-[#843D9B]"
                                 >
                                     <ChevronRight size={14} />
                                 </button>

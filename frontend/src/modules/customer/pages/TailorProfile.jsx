@@ -61,18 +61,18 @@ const TailorProfile = () => {
     }, [id]);
 
     if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-10 h-10 border-4 border-[#2D2F6E] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[#843D9B] border-t-transparent rounded-full animate-spin" />
     </div>;
 
     if (!tailor) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-xl font-bold text-gray-900">Tailor Not Found</h2>
-        <button onClick={() => navigate(-1)} className="mt-4 text-[#2D2F6E] font-bold">Go Back</button>
+        <button onClick={() => navigate(-1)} className="mt-4 text-[#843D9B] font-bold">Go Back</button>
     </div>;
 
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans overflow-x-hidden">
             {/* 1. Dynamic Header with Parallax-like feel */}
-            <div className="relative h-44 w-full overflow-hidden bg-[#2D2F6E]">
+            <div className="relative h-44 w-full overflow-hidden bg-[#843D9B]">
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/10 z-10"></div>
                 <SafeImage
                     src={tailor.user?.profileImage}
@@ -115,7 +115,7 @@ const TailorProfile = () => {
                                 <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName} className="w-full h-full group-hover:scale-110 transition-transform duration-700" />
                             </div>
                             {tailor.isApproved && (
-                                <div className="absolute -bottom-1 -right-1 bg-[#2D2F6E] p-1.5 rounded-full border-2 border-white shadow-lg ring-4 ring-[#2D2F6E]/10">
+                                <div className="absolute -bottom-1 -right-1 bg-[#843D9B] p-1.5 rounded-full border-2 border-white shadow-lg ring-4 ring-[#843D9B]/10">
                                     <ShieldCheck size={14} className="text-white" />
                                 </div>
                             )}
@@ -125,18 +125,18 @@ const TailorProfile = () => {
                                 <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{tailor.shopName || tailor.user?.name}</h2>
                             </div>
                             <div className="flex items-center gap-1.5 mb-3">
-                                <div className="bg-[#2D2F6E] text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Expert Artisan</div>
+                                <div className="bg-[#843D9B] text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Expert Artisan</div>
                                 <div className="h-1 w-1 bg-gray-300 rounded-full"></div>
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{tailor.specializations?.[0] || 'Expert Tailor'}</span>
                             </div>
                             <div className="flex items-center gap-4 text-xs">
                                 <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-1 rounded-lg">
-                                    <Star size={12} className="fill-[#2D2F6E] text-[#2D2F6E]" />
-                                    <span className="font-black text-[#2D2F6E]">{tailor.rating || 0}</span>
-                                    <span className="text-[#2D2F6E]/40 text-[10px] font-bold">({tailor.totalReviews || 0})</span>
+                                    <Star size={12} className="fill-[#843D9B] text-[#843D9B]" />
+                                    <span className="font-black text-[#843D9B]">{tailor.rating || 0}</span>
+                                    <span className="text-[#843D9B]/40 text-[10px] font-bold">({tailor.totalReviews || 0})</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-gray-400 font-bold">
-                                    <MapPin size={12} className="text-[#2D2F6E]/30" />
+                                    <MapPin size={12} className="text-[#843D9B]/30" />
                                     <span>Near you</span>
                                 </div>
                             </div>
@@ -146,7 +146,7 @@ const TailorProfile = () => {
                     {/* Stats Row */}
                     <div className="mt-5 grid grid-cols-3 gap-2">
                         <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-50 text-center">
-                            <Award size={18} className="mx-auto mb-1 text-[#2D2F6E]" />
+                            <Award size={18} className="mx-auto mb-1 text-[#843D9B]" />
                             <span className="block text-xs font-black text-gray-900 leading-none">{tailor.experienceInYears || 0}y</span>
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-1 block">Experience</span>
                         </div>
@@ -197,8 +197,8 @@ const TailorProfile = () => {
                             <h3 className="text-xl font-black text-gray-900 tracking-tight">Artisan's Collection</h3>
                             <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Exclusive fabrics available in-store</p>
                         </div>
-                        <div className="p-2.5 bg-[#2D2F6E]/5 rounded-2xl border border-[#2D2F6E]/5">
-                            <Tag size={18} className="text-[#2D2F6E]" />
+                        <div className="p-2.5 bg-[#843D9B]/5 rounded-2xl border border-[#843D9B]/5">
+                            <Tag size={18} className="text-[#843D9B]" />
                         </div>
                     </div>
 
@@ -222,7 +222,7 @@ const TailorProfile = () => {
                                         <SafeImage src={fabric.images?.[0] || fabric.image} alt={fabric.name} className="w-full h-full group-hover:scale-110 transition-transform duration-1000" />
                                         <div className="absolute top-3 left-3">
                                             <div className="bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg border border-white shadow-sm">
-                                                <span className="text-[8px] font-black text-[#2D2F6E] uppercase">{fabric.category?.name || 'Fabric'}</span>
+                                                <span className="text-[8px] font-black text-[#843D9B] uppercase">{fabric.category?.name || 'Fabric'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -230,10 +230,10 @@ const TailorProfile = () => {
                                         <h4 className="text-[13px] font-black text-gray-800 truncate mb-1">{fabric.name}</h4>
                                         <div className="flex justify-between items-center">
                                             <div className="flex flex-col">
-                                                <p className="text-sm font-black text-[#2D2F6E]">₹{fabric.price}</p>
+                                                <p className="text-sm font-black text-[#843D9B]">₹{fabric.price}</p>
                                                 <p className="text-[9px] text-gray-400 font-bold uppercase">Incl. Taxes</p>
                                             </div>
-                                            <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-[#2D2F6E] shadow-sm transform group-hover:rotate-12 transition-transform">
+                                            <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-[#843D9B] shadow-sm transform group-hover:rotate-12 transition-transform">
                                                 <Scissors size={14} />
                                             </div>
                                         </div>
@@ -278,12 +278,12 @@ const TailorProfile = () => {
                                     <h4 className="text-xs font-black text-gray-900 truncate">{sample.title}</h4>
                                     <div className="flex items-center justify-between mt-1">
                                         <p className="text-[9px] text-gray-400 font-bold uppercase">{sample.category?.name || 'Design'}</p>
-                                        <p className="text-[10px] font-black text-[#2D2F6E]">₹{sample.laborPrice || sample.basePrice}</p>
+                                        <p className="text-[10px] font-black text-[#843D9B]">₹{sample.laborPrice || sample.basePrice}</p>
                                     </div>
                                     <div className="flex items-center justify-between mt-2">
                                         <div className="flex flex-wrap gap-1">
                                             {sample.tags && sample.tags.slice(0, 2).map((tag, i) => (
-                                                <span key={i} className="px-1.5 py-0.5 bg-[#2D2F6E]/5 text-[#2D2F6E] text-[7px] font-black rounded-md uppercase tracking-tighter">
+                                                <span key={i} className="px-1.5 py-0.5 bg-[#843D9B]/5 text-[#843D9B] text-[7px] font-black rounded-md uppercase tracking-tighter">
                                                     #{tag}
                                                 </span>
                                             ))}
@@ -311,7 +311,7 @@ const TailorProfile = () => {
                             setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
                             navigate('/user/services', { state: { fabricSource: 'customer' } });
                         }}
-                        className="flex-1 bg-white border-2 border-[#2D2F6E] text-[#2D2F6E] py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-sm"
+                        className="flex-1 bg-white border-2 border-[#843D9B] text-[#843D9B] py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-sm"
                     >
                         <Scissors size={14} />
                         <span>Stitch Mine</span>
@@ -321,7 +321,7 @@ const TailorProfile = () => {
                             const fabricSection = document.querySelector('.mt-10');
                             fabricSection?.scrollIntoView({ behavior: 'smooth' });
                         }}
-                        className="flex-[1.2] bg-[#2D2F6E] text-white py-2.5 rounded-xl shadow-lg shadow-[#2D2F6E]/20 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5"
+                        className="flex-[1.2] bg-[#843D9B] text-white py-2.5 rounded-xl shadow-lg shadow-[#843D9B]/20 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5"
                     >
                         <ShoppingBag size={14} />
                         <span>Pick Tailor's</span>

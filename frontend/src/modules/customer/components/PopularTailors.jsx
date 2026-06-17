@@ -28,7 +28,7 @@ const PopularTailors = () => {
                     <h2 className="text-[19px] md:text-xl font-black text-gray-900 tracking-tight leading-none">Expert Tailors Near You</h2>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Stitching experts at your doorstep</p>
                 </div>
-                <Link to="/user/tailors" className="text-xs font-black text-[#2D2F6E] bg-indigo-50 px-3 py-1.5 rounded-full border border-[#2D2F6E]/10 hover:shadow-sm transition-all">
+                <Link to="/user/tailors" className="text-xs font-black text-[#843D9B] bg-indigo-50 px-3 py-1.5 rounded-full border border-[#843D9B]/10 hover:shadow-sm transition-all">
                     See All
                 </Link>
             </div>
@@ -54,14 +54,14 @@ const PopularTailors = () => {
                                         className="h-full w-full group-hover:scale-110 transition-transform duration-500"
                                     />
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 bg-[#2D2F6E] text-white p-1 rounded-lg border-2 border-white shadow-sm">
+                                <div className="absolute -bottom-1 -right-1 bg-[#843D9B] text-white p-1 rounded-lg border-2 border-white shadow-sm">
                                     <ShieldCheck size={10} />
                                 </div>
                             </div>
 
                             <div className="flex-1 pt-1 min-w-0">
                                 <div className="flex justify-between items-start gap-2 mb-0.5">
-                                    <h3 className="text-[13px] sm:text-sm font-black text-gray-900 leading-tight group-hover:text-[#2D2F6E] transition-colors truncate">
+                                    <h3 className="text-[13px] sm:text-sm font-black text-gray-900 leading-tight group-hover:text-[#843D9B] transition-colors truncate">
                                         {tailor.shopName || tailor.user?.name}
                                     </h3>
                                     {tailor.isAvailable && (
@@ -70,13 +70,13 @@ const PopularTailors = () => {
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-[10px] text-[#2D2F6E] font-bold mt-1.5 bg-indigo-50 w-fit px-2 py-0.5 rounded-full border border-[#2D2F6E]/5 italic truncate max-w-full">
+                                <p className="text-[10px] text-[#843D9B] font-bold mt-1.5 bg-indigo-50 w-fit px-2 py-0.5 rounded-full border border-[#843D9B]/5 italic truncate max-w-full">
                                     {tailor.specializations?.[0] || 'Expert Tailor'}
                                 </p>
 
                                 <div className="flex items-center gap-3 mt-3 text-[10px] text-gray-400 font-bold uppercase">
-                                    <div className="flex items-center gap-1 text-[#2D2F6E]">
-                                        <Star size={10} className="fill-[#2D2F6E]" />
+                                    <div className="flex items-center gap-1 text-[#843D9B]">
+                                        <Star size={10} className="fill-[#843D9B]" />
                                         {tailor.rating || 0}
                                     </div>
                                     <div className="flex items-center gap-1">

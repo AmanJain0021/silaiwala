@@ -58,7 +58,7 @@ const Withdraw = () => {
     if (isLoading) {
         return (
             <div className="min-h-full bg-[#0A0A0A] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2D2F6E]" />
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#843D9B]" />
             </div>
         );
     }
@@ -68,7 +68,7 @@ const Withdraw = () => {
         return (
             <div className="min-h-full bg-[#0A0A0A] flex items-center justify-center p-6 animate-in zoom-in duration-300">
                 <div className="bg-[#111111] border border-[#1E1E1E] rounded-[2.5rem] p-10 w-full max-w-sm text-center flex flex-col items-center">
-                    <div className="h-24 w-24 bg-[#2D2F6E] rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-[#2D2F6E]/40">
+                    <div className="h-24 w-24 bg-[#843D9B] rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-[#843D9B]/40">
                         <Check size={40} strokeWidth={3} className="text-white" />
                     </div>
                     <h2 className="text-2xl font-black text-white tracking-tight">Withdrawal Sent</h2>
@@ -77,7 +77,7 @@ const Withdraw = () => {
                     </p>
                     <button
                         onClick={() => navigate('/partner')}
-                        className="mt-10 w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#2D2F6E]/30 active:scale-95 transition-all"
+                        className="mt-10 w-full bg-[#843D9B] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#843D9B]/30 active:scale-95 transition-all"
                     >
                         Return to Home
                     </button>
@@ -88,14 +88,14 @@ const Withdraw = () => {
 
     /* ── MAIN SCREEN ─── */
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
 
             {/* ── MOBILE HEADER ── */}
             <div className="md:hidden bg-white px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
-                <button onClick={() => navigate(-1)} className="p-1.5 -ml-2 text-gray-400 hover:text-[#2D2F6E] transition-colors">
+                <button onClick={() => navigate(-1)} className="p-1.5 -ml-2 text-gray-400 hover:text-[#843D9B] transition-colors">
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight uppercase">Withdrawal</h1>
+                <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight uppercase">Withdrawal</h1>
                 <div className="w-10" />
             </div>
 
@@ -170,7 +170,7 @@ const Withdraw = () => {
                             <button
                                 onClick={handleWithdrawRequest}
                                 disabled={numAmount === 0 || numAmount > availableBalance || isSubmitting}
-                                className="w-full bg-[#2D2F6E] text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-[#2D2F6E]/30 active:scale-95 transition-all disabled:opacity-20 disabled:grayscale flex items-center justify-center gap-4 hover:bg-[#1e1f4a]"
+                                className="w-full bg-[#843D9B] text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-[#843D9B]/30 active:scale-95 transition-all disabled:opacity-20 disabled:grayscale flex items-center justify-center gap-4 hover:bg-[#4E2460]"
                             >
                                 {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <ArrowUpRight size={20} strokeWidth={3} />}
                                 {isSubmitting ? 'Processing Request...' : 'Confirm Withdrawal'}

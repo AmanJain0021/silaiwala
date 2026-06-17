@@ -56,7 +56,7 @@ const StorePage = () => {
     const [activeTab, setActiveTab] = useState('store_item');
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans text-[#2D2F6E]">
+        <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans text-[#843D9B]">
             {/* 1. Unified Sticky Header */}
             <div className="sticky top-0 md:top-20 z-[100] shadow-md bg-white">
                 <StoreHeader
@@ -65,8 +65,8 @@ const StorePage = () => {
                     onOpenFilter={() => setIsFilterOpen(true)}
                 />
                 <div className="flex px-4 pt-2 gap-2">
-                    <button onClick={() => setActiveTab('store_item')} className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'store_item' ? 'bg-[#2D2F6E] text-white' : 'bg-gray-100 text-gray-500'}`}>Garments</button>
-                    <button onClick={() => setActiveTab('fabric')} className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'fabric' ? 'bg-[#2D2F6E] text-white' : 'bg-gray-100 text-gray-500'}`}>Fabrics</button>
+                    <button onClick={() => setActiveTab('store_item')} className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'store_item' ? 'bg-[#843D9B] text-white' : 'bg-gray-100 text-gray-500'}`}>Garments</button>
+                    <button onClick={() => setActiveTab('fabric')} className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'fabric' ? 'bg-[#843D9B] text-white' : 'bg-gray-100 text-gray-500'}`}>Fabrics</button>
                 </div>
                 <CategoryScroll
                     activeCategory={activeCategory.name}
