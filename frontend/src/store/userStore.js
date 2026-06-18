@@ -1,13 +1,16 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import api from '../utils/api';
 import axios from 'axios';
 
-const useUserStore = create((set, get) => ({
-    profile: null,
-    addresses: [],
-    selectedAddressId: null,
-    isLoading: false,
-    error: null,
+const useUserStore = create(
+    persist(
+        (set, get) => ({
+            profile: null,
+            addresses: [],
+            selectedAddressId: null,
+            isLoading: false,
+            error: null,
 
     fetchProfile: async () => {
         if (get().isLoading) return;
@@ -120,6 +123,12 @@ const useUserStore = create((set, get) => ({
             }
         }
     }
-}));
+        }),
+        {
+            name: 'user-storage',
+            partialize: (state) => ({ selectedAddressId: state.selectedAddressId }), // Only persist selectedAddressId
+        }
+    )
+);
 
 export default useUserStore;

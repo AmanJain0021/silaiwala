@@ -34,7 +34,7 @@ const LiveDeliveryTracker = ({ order, socket }) => {
   }, [socket, order]);
 
   // Determine Destination based on Order phase
-  const isPickupPhase = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status) || 
+  const isPickupPhase = ['fabric-ready-for-pickup', 'fabric-picked-up', 'pickup-assigned'].includes(order.status) || 
                         ['assigned', 'accepted', 'reached-pickup', 'picked-up'].includes(order.pickupDeliveryStatus);
 
   let destination = null;
@@ -59,7 +59,11 @@ const LiveDeliveryTracker = ({ order, socket }) => {
     riderStatus
   });
 
-  const isSearching = !rider || riderStatus === 'assigned' || riderStatus === 'pending';
+  // If no rider is assigned at all — don't render anything (outer component should gate this)
+  if (!rider) return null;
+
+  // Show searching animation only when rider is assigned but hasn't accepted yet
+  const isSearching = riderStatus === 'assigned' || riderStatus === 'pending' || !riderStatus;
 
   if (isSearching) {
     return (

@@ -47,14 +47,14 @@ const OrderTracking = () => {
             if (response?.data?.success) {
                 setOrder(response.data.data);
                 setError(null); // Clear any previous errors if successful
+                setIsLoading(false);
             }
         } catch (err) {
             if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
                 console.error('Error fetching order tracking:', err);
                 setError(err.response?.data?.message || 'Failed to load tracking details.');
+                setIsLoading(false);
             }
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -91,9 +91,66 @@ const OrderTracking = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-                <Loader2 size={48} className="text-primary animate-spin mb-4" />
-                <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Fetching live status...</p>
+            <div className="min-h-screen bg-gray-50 pb-12 font-sans text-gray-900">
+                <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe pt-8 flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+                        <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                            <div className="h-2 bg-gray-200 rounded animate-pulse w-24"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="max-w-xl mx-auto p-4 space-y-4">
+                    {/* Skeleton Order Quick Summary */}
+                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gray-200 animate-pulse shrink-0"></div>
+                        <div className="flex-1 space-y-3">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                            <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                        </div>
+                    </div>
+
+                    {/* Skeleton Live Tracking / Status */}
+                    <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                            <div className="w-16 h-6 rounded-full bg-gray-200 animate-pulse"></div>
+                        </div>
+                        <div className="h-24 bg-gray-200 rounded-2xl animate-pulse mb-6"></div>
+                        
+                        {/* Skeleton Timeline Items */}
+                        <div className="space-y-6 px-2">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse shrink-0"></div>
+                                    <div className="flex-1 space-y-2 py-1">
+                                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                                        <div className="h-2 bg-gray-200 rounded animate-pulse w-1/4"></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Skeleton Order Details */}
+                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-2"></div>
+                        <div className="flex gap-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-xl animate-pulse shrink-0"></div>
+                            <div className="flex-1 space-y-2 py-1">
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                                <div className="h-2 bg-gray-200 rounded animate-pulse w-1/4"></div>
+                            </div>
+                        </div>
+                        <div className="pt-3 border-t border-gray-100 space-y-2">
+                            <div className="h-2 bg-gray-200 rounded animate-pulse w-full"></div>
+                            <div className="h-2 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                            <div className="h-2 bg-gray-200 rounded animate-pulse w-4/6"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -221,31 +278,16 @@ const OrderTracking = () => {
             { key: 'shipped', label: 'In Transit', icon: Truck },
             { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
         ]
-        : order.fabricPickupRequired
-            ? [
-                { key: 'pending', label: 'Placed', icon: Package },
-                { key: 'fabric-pickup', label: 'Fabric', icon: Truck }, // corresponds to fabric-delivered/received
-                { key: 'measurement-verification', label: 'Verify', icon: ShieldCheck },
-                { key: 'cutting', label: 'Cutting', icon: Scissors },
-                { key: 'stitching', label: 'Stitching', icon: Calendar },
-                { key: 'finishing', label: 'Finishing', icon: CheckCircle2 },
-                { key: 'quality-check', label: 'QC', icon: ShieldCheck },
-                { key: 'ready-for-delivery', label: 'Ready', icon: CheckCircle2 },
-                { key: 'out-for-delivery', label: 'Dispatch', icon: Truck },
-                { key: 'delivered', label: 'Arrived', icon: CheckCircle2 }
-            ]
-            : [
-                { key: 'pending', label: 'Placed', icon: Package },
-                { key: 'order-received', label: 'Received', icon: ShieldCheck },
-                { key: 'fabric-selected', label: 'Fabric', icon: Package },
-                { key: 'cutting', label: 'Cutting', icon: Scissors },
-                { key: 'stitching', label: 'Stitching', icon: Calendar },
-                { key: 'finishing', label: 'Finishing', icon: CheckCircle2 },
-                { key: 'quality-check', label: 'QC', icon: ShieldCheck },
-                { key: 'ready-for-delivery', label: 'Ready', icon: CheckCircle2 },
-                { key: 'out-for-delivery', label: 'Dispatch', icon: Truck },
-                { key: 'delivered', label: 'Arrived', icon: CheckCircle2 }
-            ];
+        : [
+            { key: 'pending', label: 'Order Received', icon: Package },
+            { key: 'fabric-received', label: 'Fabric Received', icon: Package },
+            { key: 'cutting', label: 'Cutting', icon: Scissors },
+            { key: 'stitching', label: 'Stitching', icon: Scissors },
+            { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
+            { key: 'ready-for-delivery', label: 'Ready For Delivery', icon: Package },
+            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
+            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+        ];
 
     const getStageStatus = (stageKey) => {
         const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
@@ -267,20 +309,22 @@ const OrderTracking = () => {
         const statusOrder = [
             'pending',
             'accepted',
-            'waiting-for-customer-dropoff',
+            'pickup-assigned',
             'fabric-ready-for-pickup',
             'fabric-picked-up',
             'fabric-delivered',
-            'fabric-received',
             'order-received',
+            'fabric-received',
             'fabric-selected',
             'measurement-verification',
+            'pattern-making',
             'cutting',
             'stitching',
             'finishing',
             'quality-check',
             'ready-for-pickup',
             'ready-for-delivery',
+            'delivery-assigned',
             'out-for-delivery',
             'delivered',
             'product-delivered',
@@ -289,22 +333,21 @@ const OrderTracking = () => {
 
         // Map stage keys to their equivalent status weights for comparison
         let equivalentStageKey = stageKey;
-        if (stageKey === 'fabric-pickup') equivalentStageKey = 'fabric-received';
-        if (stageKey === 'accepted') equivalentStageKey = 'order-received';
-        if (stageKey === 'in-production') equivalentStageKey = 'cutting';
         if (stageKey === 'shipped') equivalentStageKey = 'out-for-delivery';
 
-        const currentIndex = statusOrder.indexOf(status);
+        let mappedStatus = status;
+        if (status === 'in-progress') mappedStatus = 'cutting';
+        const currentIndex = statusOrder.indexOf(mappedStatus);
         const stageIndex = statusOrder.indexOf(equivalentStageKey);
 
         const isCompleted = currentIndex >= stageIndex && stageIndex !== -1;
 
         // Try to find exact timestamp from history
         let historyEntry = history.find(h => {
-            if (stageKey === 'fabric-pickup') return ['fabric-delivered', 'fabric-received', 'delivery-fabric-delivered'].includes(h.status);
+            if (stageKey === 'fabric-received') return ['fabric-delivered', 'fabric-received', 'delivery-fabric-delivered'].includes(h.status);
             if (stageKey === 'ready-for-delivery') return ['ready-for-pickup', 'ready-for-delivery'].includes(h.status);
             if (stageKey === 'out-for-delivery') return ['out-for-delivery', 'shipped'].includes(h.status);
-            if (stageKey === 'accepted') return ['accepted', 'order-received'].includes(h.status);
+            if (stageKey === 'quality-check') return ['finishing', 'quality-check'].includes(h.status);
             return h.status === stageKey;
         });
 
@@ -323,8 +366,8 @@ const OrderTracking = () => {
         let validStatuses = [];
         let timeConstraint = null; // 'before-cutting', 'after-ready'
 
-        if (stageKey === 'fabric-pickup') {
-            validStatuses = ['delivery-accepted', 'delivery-reached-pickup', 'delivery-fabric-picked-up', 'reached-pickup', 'fabric-picked-up', 'fabric-delivered', 'delivery-fabric-delivered'];
+        if (stageKey === 'fabric-received') {
+            validStatuses = ['pickup-assigned', 'fabric-ready-for-pickup', 'delivery-accepted', 'delivery-reached-pickup', 'delivery-fabric-picked-up', 'reached-pickup', 'fabric-picked-up', 'fabric-delivered', 'delivery-fabric-delivered'];
             timeConstraint = 'before-cutting';
         } else if (stageKey === 'out-for-delivery') {
             validStatuses = ['delivery-accepted', 'delivery-reached-pickup', 'delivery-picked-up-from-tailor', 'delivery-reached-dropoff', 'delivery-delivered', 'out-for-delivery', 'shipped'];
@@ -478,15 +521,25 @@ const OrderTracking = () => {
                     />
                 </div>
 
-                {/* 3.3.5 Live Delivery Tracker */}
+                {/* 3.3.5 Live Delivery Tracker - only show when a partner is actually assigned */}
                 {(() => {
-                    const isPickupPhaseStatus = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
+                    // Only show the tracker/searching animation when a delivery partner has been assigned
+                    const hasPickupPartner = !!order.pickupPartner;
+                    const hasDropoffPartner = !!order.dropoffPartner;
+
+                    const isPickupPhaseStatus = ['pickup-assigned', 'fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
                     const isDropoffPhaseStatus = ['ready-for-delivery', 'out-for-delivery'].includes(order.status);
                     const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
                     const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
 
-                    const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner) && order.fabricDeliveryPreference === 'partner';
-                    const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner;
+                    // For "searching" state: partner is assigned but status is pending
+                    const isSearchingPickup = hasPickupPartner && order.pickupDeliveryStatus === 'pending';
+                    const isSearchingDropoff = hasDropoffPartner && order.dropoffDeliveryStatus === 'pending';
+
+                    // Show for pickup: partner assigned (pending or active) and in pickup phase
+                    const shouldShowForPickup = (isPickupPhaseStatus && hasPickupPartner) || hasActivePickupPartner || isSearchingPickup;
+                    // Show for dropoff: partner assigned (pending or active) and in dropoff phase
+                    const shouldShowForDropoff = ((isDropoffPhaseStatus && hasDropoffPartner) || hasActiveDropoffPartner || isSearchingDropoff);
 
                     if (shouldShowForPickup || shouldShowForDropoff) {
                         return <LiveDeliveryTracker order={order} socket={socketInstance} />;

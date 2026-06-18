@@ -64,6 +64,11 @@ const deliverySchema = new mongoose.Schema(
       ifscCode: String,
       upiId: String
     },
+    partnerRoles: [{
+      type: String,
+      enum: ["delivery", "measurement"],
+      default: ["delivery"]
+    }],
     walletBalance: {
       type: Number,
       default: 0,

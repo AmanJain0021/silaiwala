@@ -5,6 +5,7 @@ const Tailor = require("../../../models/Tailor");
 const Delivery = require("../../../models/Delivery");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
+const { sendNotification } = require("../../../utils/notification");
 
 /**
  * Generate JWT Token
@@ -146,6 +147,15 @@ exports.register = asyncHandler(async (req, res, next) => {
           },
           documents: req.body.documents || [] // Save documents if provided
         });
+
+        // Notify admins about new tailor registration
+        await sendNotification({
+          recipient: "admins",
+          type: "NEW_REGISTRATION",
+          title: "New Tailor Registration",
+          message: `${name} has registered as a Tailor and is pending approval.`,
+          data: { targetUrl: "/users/tailors/pending" }
+        });
         break;
       case "delivery":
         profile = await Delivery.create({ 
@@ -159,7 +169,23 @@ exports.register = asyncHandler(async (req, res, next) => {
             type: "Point",
             coordinates: coordinates || [0, 0]
           },
-          documents: req.body.documents || [] // Save documents if provided
+          documents: req.body.documents || [], // Save documents if provided
+          partnerRoles: req.body.partnerRoles || ["delivery"],
+          bankDetails: (req.body.accountNumber || req.body.accountName || req.body.ifscCode) ? { 
+            accountNumber: req.body.accountNumber,
+            accountName: req.body.accountName,
+            bankName: req.body.bankName,
+            ifscCode: req.body.ifscCode
+          } : undefined
+        });
+
+        // Notify admins about new delivery partner registration
+        await sendNotification({
+          recipient: "admins",
+          type: "NEW_REGISTRATION",
+          title: "New Delivery Partner",
+          message: `${name} has registered as a Delivery Partner and is pending approval.`,
+          data: { targetUrl: "/users/delivery/pending" }
         });
         break;
     }

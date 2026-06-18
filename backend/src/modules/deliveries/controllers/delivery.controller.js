@@ -180,7 +180,8 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     query.status = status;
   } else {
     // Default show active deliveries (both fabric pickup and final delivery)
-    query.status = { $in: ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "ready-for-pickup", "out-for-delivery"] };
+    // Include 'ready-for-delivery' so partners can see tasks awaiting acceptance
+    query.status = { $in: ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"] };
   }
 
   const orders = await Order.find(query)
@@ -644,7 +645,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         const existingTx = await WalletTransaction.findOne({
           user: req.user.id,
           order: order._id,
-          category: "order_earnings",
+          category: { $in: ["order_earnings", "delivery_earnings"] },
           description: { $regex: status, $options: "i" }
         });
 
@@ -668,10 +669,15 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
             user: req.user.id,
             amount: earnedAmount,
             type: "credit",
-            category: "order_earnings",
+            category: "delivery_earnings",
             order: order._id,
             description: `Delivery payout for ${status} (${order.deliveryDistance}km)`,
           });
+
+          // Store deliveryPartnerEarning on Order for audit trail
+          const currentEarning = order.deliveryPartnerEarning || 0;
+          order.deliveryPartnerEarning = currentEarning + earnedAmount;
+          // Save will happen below with other order changes
 
           console.log(`Credited ₹${earnedAmount} to Delivery Partner ${req.user.id}`);
         }
@@ -759,13 +765,35 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery)
  */
 exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
+  const deliveryProfile = await Delivery.findOne({ user: req.user.id }).lean();
+  if (!deliveryProfile) {
+    return next(new ErrorResponse("Delivery profile not found", 404));
+  }
+
+  const roles = deliveryProfile.partnerRoles || ["delivery"];
+  const isDelivery = roles.includes("delivery");
+  const isMeasurement = roles.includes("measurement");
+
+  let allowedStatuses = [];
+  if (isDelivery) {
+    allowedStatuses.push("fabric-ready-for-pickup", "ready", "ready-for-delivery");
+  }
+  if (isMeasurement) {
+    allowedStatuses.push("measurement-verification", "pending-measurement"); // Add measurement statuses here
+  }
+
+  if (allowedStatuses.length === 0) {
+    return res.status(200).json({ success: true, count: 0, data: [] });
+  }
+
   const orders = await Order.find({
-    status: { $in: ["fabric-ready-for-pickup", "ready", "ready-for-delivery"] },
+    status: { $in: allowedStatuses },
     $or: [
       { deliveryPartner: null },
       { deliveryPartner: { $exists: false } },
       { pickupPartner: null, status: "fabric-ready-for-pickup" },
-      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery"] } }
+      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery"] } },
+      { status: { $in: ["measurement-verification", "pending-measurement"] } } // For measurement tasks
     ]
   })
     .populate("customer", "name phoneNumber profileImage")
@@ -779,6 +807,8 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     const isFabric = order.status === "fabric-ready-for-pickup";
 
     let vendorLatitude, vendorLongitude;
+    let tailorProfile = null;
+    
     if (order.tailor) {
       const tailorDoc = await Tailor.findOne({ user: order.tailor }).populate("user", "name phoneNumber").lean();
       if (tailorDoc) {
@@ -848,92 +878,55 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
       ? "fabric-pickup" : "order-delivery";
 
   if (taskType === "fabric-pickup") {
+    // If pre-assigned pending, or claiming an available task
     if (order.pickupPartner && order.pickupPartner.toString() !== req.user.id) {
       return next(new ErrorResponse("Order already has a pickup partner assigned", 400));
     }
+    
+    // Atomic lock (handles both claiming fresh and accepting pre-assigned)
+    const lockResult = await Order.updateOne(
+      { _id: order._id, $or: [{ pickupPartner: null }, { pickupPartner: { $exists: false } }, { pickupPartner: req.user.id }] },
+      { $set: { pickupPartner: req.user.id } }
+    );
+    if (lockResult.modifiedCount === 0 && (!order.pickupPartner || order.pickupPartner.toString() !== req.user.id)) {
+      return next(new ErrorResponse("This order has already been accepted by another partner", 400));
+    }
+    
     order.pickupPartner = req.user.id;
-    order.pickupDeliveryStatus = "accepted";
+    order.pickupDeliveryStatus = "accepted"; // Upgrade from pending to accepted
     if (!order.deliveryPartner) order.deliveryPartner = req.user.id;
   } else {
+    // If pre-assigned pending, or claiming an available task
     if (order.dropoffPartner && order.dropoffPartner.toString() !== req.user.id) {
       return next(new ErrorResponse("Order already has a dropoff partner assigned", 400));
     }
+    
+    // Atomic lock (handles both claiming fresh and accepting pre-assigned)
+    const lockResult = await Order.updateOne(
+      { _id: order._id, $or: [{ dropoffPartner: null }, { dropoffPartner: { $exists: false } }, { dropoffPartner: req.user.id }] },
+      { $set: { dropoffPartner: req.user.id } }
+    );
+    if (lockResult.modifiedCount === 0 && (!order.dropoffPartner || order.dropoffPartner.toString() !== req.user.id)) {
+      return next(new ErrorResponse("This order has already been accepted by another partner", 400));
+    }
+    
     order.dropoffPartner = req.user.id;
-    order.dropoffDeliveryStatus = "accepted";
+    order.dropoffDeliveryStatus = "accepted"; // Upgrade from pending to accepted
     if (!order.deliveryPartner) order.deliveryPartner = req.user.id;
   }
 
   order.deliveryStatus = "accepted";
 
-  const { calculatedDistance, calculatedFee } = req.body;
-
+  const { calculatedDistance } = req.body;
   // --- Calculate Distance & Earnings ---
-  if (calculatedDistance != null && calculatedFee != null) {
+  if (calculatedDistance != null) {
       order.deliveryDistance = Number(calculatedDistance);
-      order.deliveryEarnings = Number(calculatedFee);
-  } else {
-      const Settings = require("../../../models/Settings");
-      const Tailor = require("../../../models/Tailor");
-      const Customer = require("../../../models/Customer");
-      const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
-
-  const settings = await Settings.getSettings();
-  const baseFee = settings.deliveryRates?.baseFee || 20;
-  const perKmRate = settings.deliveryRates?.perKmRate || 10;
-
-  let vendorLatitude, vendorLongitude;
-  if (order.tailor) {
-    const tailorDoc = await Tailor.findOne({ user: order.tailor }).lean();
-    if (tailorDoc && tailorDoc.location?.coordinates?.length >= 2) {
-      vendorLongitude = tailorDoc.location.coordinates[0];
-      vendorLatitude = tailorDoc.location.coordinates[1];
-    }
   }
-
-  let customerLat = null;
-  let customerLng = null;
-  const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
-  if (customerDoc && customerDoc.addresses && customerDoc.addresses.length > 0) {
-    const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
-    if (defaultAddress.location?.coordinates?.length >= 2) {
-      customerLng = defaultAddress.location.coordinates[0];
-      customerLat = defaultAddress.location.coordinates[1];
-    }
-  }
-
-  let deliveryDistance = 5; // Default fallback
-  let partnerDist = 0;
-
-  // Calculate distance from partner to pickup
-  const deliveryProfile = await Delivery.findOne({ user: req.user.id }).lean();
-  if (deliveryProfile && deliveryProfile.currentLocation?.coordinates?.length >= 2) {
-    const pLng = deliveryProfile.currentLocation.coordinates[0];
-    const pLat = deliveryProfile.currentLocation.coordinates[1];
-    
-    let pickupLat, pickupLng;
-    if (taskType === 'fabric-pickup') {
-      pickupLat = customerLat;
-      pickupLng = customerLng;
-    } else {
-      pickupLat = vendorLatitude;
-      pickupLng = vendorLongitude;
-    }
-    
-    if (pickupLat && pickupLng) {
-      partnerDist = getDistanceFromLatLonInKm(pLat, pLng, pickupLat, pickupLng);
-    }
-  }
-
-    // Calculate distance from pickup to dropoff
-    if (customerLat && customerLng && vendorLatitude && vendorLongitude) {
-      const dist = getDistanceFromLatLonInKm(customerLat, customerLng, vendorLatitude, vendorLongitude);
-      if (dist > 0) deliveryDistance = dist;
-    }
-
-    order.deliveryDistance = deliveryDistance + partnerDist;
-    order.deliveryEarnings = Math.round(baseFee + (order.deliveryDistance * perKmRate));
-  }
-  // ------------------------------------
+  
+  // Ensure we use the exact fee that the customer was charged, unless there's an active override
+  // DO NOT recalculate this on the fly so the driver sees exactly what was charged.
+  order.deliveryEarnings = order.deliveryPartnerEarning || order.deliveryFee || 0;
+  // --------------------------------------------
 
   const partnerName = req.user.name || "A delivery partner";
   const actionType = taskType === "fabric-pickup" ? "pickup your fabric" : "deliver your order";
@@ -962,14 +955,38 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
     data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
   });
 
+  // Notify tailor that partner accepted (so their panel updates)
+  await sendNotification({
+    recipient: order.tailor,
+    type: "PARTNER_ACCEPTED",
+    title: "Delivery Partner Accepted",
+    message: `${partnerName} has accepted the delivery task for order ${order.orderId}.`,
+    data: { orderId: order._id, targetUrl: "/partner/orders" }
+  });
+
   // Notify other partners that this task is no longer available
   const { getIO } = require("../../../config/socket");
   const io = getIO();
   if (io) {
     io.to("delivery_partners").emit("task_claimed", { orderId: order._id });
     
-    // Also join the delivery partner to the order room for live tracking if needed later
-    // socket.join(`order_${order._id}`); // Note: context of 'socket' not available in controller usually
+    // Update tailor panel to show partner name instead of "Searching"
+    io.to(`user_${order.tailor}`).emit('order_status_updated', {
+      orderId: order.orderId,
+      _id: order._id,
+      status: order.status,
+      pickupDeliveryStatus: order.pickupDeliveryStatus,
+      dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+      deliveryPartner: req.user.id
+    });
+
+    // Update customer tracking page
+    io.to(`user_${order.customer}`).emit('order_status_updated', {
+      orderId: order.orderId,
+      _id: order._id,
+      status: order.status,
+      deliveryPartner: req.user.id
+    });
   }
 
   res.status(200).json({

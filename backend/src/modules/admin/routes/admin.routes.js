@@ -39,14 +39,24 @@ const {
   createCoupon,
   updateCoupon,
   deleteCoupon,
-  getFinancialStats,
-  getTransactions,
   getAllPayouts,
   updatePayoutStatus,
   getSettings,
   updateSettings,
   generateReport,
 } = require("../controllers/admin.controller");
+
+const {
+  getFinanceDashboard,
+  getFinancialStats,
+  getTransactions,
+  getOrderFinancials,
+  getGSTReport,
+  getTailorEarnings,
+  getDeliveryEarnings,
+  getWalletAudit,
+  getPaymentLedger,
+} = require("../controllers/finance.controller");
 
 const router = express.Router();
 
@@ -119,8 +129,15 @@ router.put("/store/coupons/:id", updateCoupon);
 router.delete("/store/coupons/:id", deleteCoupon);
 
 // Finance Management
+router.get("/finance/dashboard", getFinanceDashboard);
 router.get("/finance/stats", getFinancialStats);
 router.get("/finance/transactions", getTransactions);
+router.get("/finance/orders/:id", getOrderFinancials);
+router.get("/finance/gst", getGSTReport);
+router.get("/finance/tailor-earnings", getTailorEarnings);
+router.get("/finance/delivery-earnings", getDeliveryEarnings);
+router.get("/finance/wallet-audit", getWalletAudit);
+router.get("/finance/ledger", getPaymentLedger);
 router.get("/finance/payouts", getAllPayouts);
 router.patch("/finance/payouts/:id", updatePayoutStatus);
 

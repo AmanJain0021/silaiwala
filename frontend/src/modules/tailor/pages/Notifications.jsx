@@ -92,7 +92,24 @@ const Notifications = () => {
                             return (
                                 <div
                                     key={notif._id}
-                                    onClick={() => isNew && markAsRead(notif._id)}
+                                    onClick={() => {
+                                        if (isNew) markAsRead(notif._id);
+                                        
+                                        if (notif.data?.targetUrl) {
+                                            let url = notif.data.targetUrl;
+                                            if (url.includes('/orders')) {
+                                                navigate('/partner/orders', { state: { highlightOrderId: notif.data.orderId } });
+                                            } else if (url.includes('finance') || url.includes('wallet') || url.includes('withdraw')) {
+                                                navigate('/partner/wallet');
+                                            } else {
+                                                navigate(url);
+                                            }
+                                        } else if (notif.type === 'ORDER_CREATED' || notif.type === 'ORDER_STATUS_UPDATED') {
+                                            navigate('/partner/orders', { state: { highlightOrderId: notif.data?.orderId } });
+                                        } else if (notif.type.includes('WITHDRAWAL')) {
+                                            navigate('/partner/wallet');
+                                        }
+                                    }}
                                     className={`group p-5 md:p-6 rounded-[2rem] border transition-all flex gap-5 cursor-pointer relative ${
                                         isNew
                                             ? 'bg-white border-[#2D2F6E]/10 shadow-[0_10px_30px_rgba(45,47,110,0.05)]'

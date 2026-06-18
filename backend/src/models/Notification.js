@@ -34,7 +34,9 @@ const notificationSchema = new mongoose.Schema(
         "WITHDRAWAL_REQUESTED",
         "WITHDRAWAL_APPROVED",
         "WITHDRAWAL_REJECTED",
-        "WITHDRAWAL_PAID"
+        "WITHDRAWAL_PAID",
+        "NEW_REGISTRATION",
+        "SUPPORT_TICKET"
       ],
       required: true,
     },

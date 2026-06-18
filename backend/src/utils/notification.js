@@ -14,10 +14,25 @@ const sendNotification = async (options) => {
   try {
     const { recipient, type, title, message, data } = options;
 
-    // 1. Save to Database (Skip if broadcast to delivery_partners)
-    let notification = null;
-    if (recipient !== "delivery_partners") {
-      notification = await Notification.create({
+    // 1. Save to Database
+    let notificationsToCreate = [];
+    if (recipient === "admins") {
+      const User = require('../models/User');
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        notificationsToCreate.push({
+          recipient: admin._id,
+          type,
+          title,
+          message,
+          data
+        });
+      }
+      if (notificationsToCreate.length > 0) {
+        await Notification.insertMany(notificationsToCreate);
+      }
+    } else if (recipient !== "delivery_partners") {
+      await Notification.create({
         recipient,
         type,
         title,
@@ -29,15 +44,40 @@ const sendNotification = async (options) => {
     // 2. Emit Real-time via Socket.io
     const io = getIO();
     if (io) {
-      const recipientId = recipient.toString();
-      io.to(`user_${recipientId}`).emit("new_notification", notification);
-      
-      // Also emit specific type events if needed
-      if (type === "ORDER_CREATED") {
-          io.to(`user_${recipientId}`).emit("new_order", {
-              orderId: data?.orderId,
-              message: title
+      if (recipient === "admins") {
+        const User = require('../models/User');
+        const admins = await User.find({ role: 'admin' });
+        admins.forEach(admin => {
+          io.to(`user_${admin._id.toString()}`).emit("new_notification", {
+             title, message, type, data, createdAt: new Date()
           });
+        });
+      } else if (recipient === "delivery_partners") {
+          io.to("delivery_partners").emit("new_notification", {
+              title,
+              message,
+              type,
+              data,
+              createdAt: new Date()
+          });
+          io.to("delivery_partners").emit("new_task", {
+              title,
+              message,
+              data
+          });
+      } else {
+        const recipientId = recipient.toString();
+        io.to(`user_${recipientId}`).emit("new_notification", {
+           title, message, type, data, createdAt: new Date()
+        });
+        
+        // Also emit specific type events if needed
+        if (type === "ORDER_CREATED") {
+            io.to(`user_${recipientId}`).emit("new_order", {
+                orderId: data?.orderId,
+                message: title
+            });
+        }
       }
 
       // Real-time tracking for a specific order
@@ -46,21 +86,6 @@ const sendNotification = async (options) => {
               status: type, // Using type or status from data
               message: message,
               orderId: data.orderId
-          });
-      }
-
-      // Fleet-wide broadcast for delivery partners
-      if (recipient === "delivery_partners") {
-          io.to("delivery_partners").emit("new_notification", {
-              title,
-              message,
-              type,
-              data
-          });
-          io.to("delivery_partners").emit("new_task", {
-              title,
-              message,
-              data
           });
       }
     }
@@ -72,7 +97,10 @@ const sendNotification = async (options) => {
       
       let fcmTokens = [];
       
-      if (recipient === "delivery_partners") {
+      if (recipient === "admins") {
+        const admins = await User.find({ role: 'admin', fcmTokens: { $exists: true, $not: {$size: 0} } });
+        fcmTokens = admins.flatMap(a => a.fcmTokens);
+      } else if (recipient === "delivery_partners") {
         // Send to all active delivery partners
         const partners = await User.find({ role: 'delivery', isActive: true, fcmTokens: { $exists: true, $not: {$size: 0} } });
         fcmTokens = partners.flatMap(p => p.fcmTokens);

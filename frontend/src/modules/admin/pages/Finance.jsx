@@ -2,57 +2,133 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Search, Filter, ArrowUpRight, ArrowDownRight, CreditCard, 
-    Banknote, FileText, Download, CheckCircle2, Loader2, IndianRupee 
+    Banknote, FileText, Download, CheckCircle2, Loader2, IndianRupee,
+    Wallet, TrendingUp, X, Eye, Calendar
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import OrderFinancialDetailModal from './OrderFinancialDetailModal';
+import FinanceDashboardOverview from '../components/FinanceDashboardOverview';
 
 const AdminFinance = () => {
     const [selectedTab, setSelectedTab] = useState('Overview');
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState(null);
-    const [transactions, setTransactions] = useState([]);
-    const [payouts, setPayouts] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [data, setData] = useState({
+        dashboard: null,
+        transactions: [],
+        tailorEarnings: [],
+        deliveryEarnings: [],
+        gstReport: [],
+        walletAudit: [],
+        paymentLedger: [],
+        tailorPayouts: [],
+        deliveryPayouts: []
+    });
+    
+    // Pagination & Filtering
+    const [pagination, setPagination] = useState({ page: 1, limit: 20, totalPages: 1 });
+    const [filters, setFilters] = useState({ search: '', status: '', startDate: '', endDate: '' });
+    
+    // UI State
     const [processingPayoutId, setProcessingPayoutId] = useState(null);
     const [payoutRef, setPayoutRef] = useState('');
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-    const tabs = ['Overview', 'Transactions', 'Tailor Payouts', 'Delivery Payouts', 'GST & Taxes'];
+    const tabs = [
+        'Overview', 
+        'Transactions', 
+        'Payment Ledger', 
+        'Wallet Audit',
+        'Tailor Earnings', 
+        'Delivery Earnings', 
+        'Tailor Payouts',
+        'Delivery Payouts',
+        'GST Report'
+    ];
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            if (selectedTab === 'Overview') {
-                const res = await api.get('/admin/finance/stats');
-                setStats(res.data.data);
-            } else if (selectedTab === 'Transactions') {
-                const res = await api.get(`/admin/finance/transactions?search=${searchTerm}`);
-                setTransactions(res.data.data);
-            } else if (selectedTab === 'Tailor Payouts') {
-                const res = await api.get('/wallet/admin/withdrawals?role=tailor');
-                setPayouts(res.data.data);
-            } else if (selectedTab === 'Delivery Payouts') {
-                const res = await api.get('/wallet/admin/withdrawals?role=delivery');
-                setPayouts(res.data.data);
+            const queryParams = new URLSearchParams({
+                page: pagination.page,
+                limit: pagination.limit,
+                ...(filters.search && { search: filters.search }),
+                ...(filters.status && { status: filters.status }),
+                ...(filters.startDate && { startDate: filters.startDate }),
+                ...(filters.endDate && { endDate: filters.endDate })
+            }).toString();
+
+            let res;
+            switch (selectedTab) {
+                case 'Overview':
+                    res = await api.get('/admin/finance/dashboard');
+                    setData(prev => ({ ...prev, dashboard: res.data.data }));
+                    break;
+                case 'Transactions':
+                    res = await api.get(`/admin/finance/transactions?${queryParams}`);
+                    setData(prev => ({ ...prev, transactions: res.data.data }));
+                    setPagination(prev => ({ ...prev, totalPages: res.data.pages }));
+                    break;
+                case 'Payment Ledger':
+                    res = await api.get(`/admin/finance/ledger?${queryParams}`);
+                    setData(prev => ({ ...prev, paymentLedger: res.data.data }));
+                    setPagination(prev => ({ ...prev, totalPages: res.data.pages }));
+                    break;
+                case 'Wallet Audit':
+                    res = await api.get(`/admin/finance/wallet-audit?${queryParams}`);
+                    setData(prev => ({ ...prev, walletAudit: res.data.data.transactions }));
+                    setPagination(prev => ({ ...prev, totalPages: res.data.pages }));
+                    break;
+                case 'Tailor Earnings':
+                    res = await api.get(`/admin/finance/tailor-earnings?${queryParams}`);
+                    setData(prev => ({ ...prev, tailorEarnings: res.data.data.transactions }));
+                    setPagination(prev => ({ ...prev, totalPages: res.data.pages }));
+                    break;
+                case 'Delivery Earnings':
+                    res = await api.get(`/admin/finance/delivery-earnings?${queryParams}`);
+                    setData(prev => ({ ...prev, deliveryEarnings: res.data.data.transactions }));
+                    setPagination(prev => ({ ...prev, totalPages: res.data.pages }));
+                    break;
+                case 'Tailor Payouts':
+                    res = await api.get(`/wallet/admin/withdrawals?role=tailor`);
+                    setData(prev => ({ ...prev, tailorPayouts: res.data.data }));
+                    break;
+                case 'Delivery Payouts':
+                    res = await api.get(`/wallet/admin/withdrawals?role=delivery`);
+                    setData(prev => ({ ...prev, deliveryPayouts: res.data.data }));
+                    break;
+                case 'GST Report':
+                    res = await api.get(`/admin/finance/gst?${queryParams}`);
+                    setData(prev => ({ ...prev, gstReport: res.data.data.entries }));
+                    setPagination(prev => ({ ...prev, totalPages: res.data.pages }));
+                    break;
+                default:
+                    break;
             }
         } catch (error) {
-            if (error.name === 'CanceledError') {
-                console.log('Request canceled by strict mode cleanup');
-                return;
+            if (error.name !== 'CanceledError') {
+                console.error('Failed to fetch finance data:', error);
+                toast.error('Failed to load financial data');
             }
-            console.error('Failed to fetch finance data:', error);
-            toast.error('Failed to load financial data');
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
+        setPagination(prev => ({ ...prev, page: 1 }));
+        setFilters({ search: '', status: '', startDate: '', endDate: '' });
     }, [selectedTab]);
 
+    useEffect(() => {
+        fetchData();
+    }, [selectedTab, pagination.page]);
+
     const handleSearch = (e) => {
-        if (e.key === 'Enter') fetchData();
+        if (e.key === 'Enter') {
+            setPagination(prev => ({ ...prev, page: 1 }));
+            fetchData();
+        }
     };
 
     const handleProcessPayout = async (id) => {
@@ -86,24 +162,61 @@ const AdminFinance = () => {
                 return 'bg-yellow-100 text-yellow-700 border-yellow-200';
             case 'refunded':
             case 'failed':
+            case 'debit':
                 return 'bg-red-100 text-red-700 border-red-200';
+            case 'credit':
+                return 'bg-green-100 text-green-700 border-green-200';
             default: return 'bg-gray-100 text-gray-700 border-gray-200';
         }
     };
 
-    const maxRevenue = stats?.revenueTrend ? Math.max(...stats.revenueTrend.map(d => d.revenue), 1) : 1;
+    const renderPagination = () => {
+        if (pagination.totalPages <= 1) return null;
+        return (
+            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-100 bg-white mt-auto">
+                <span className="text-xs text-gray-500 font-medium">
+                    Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                        disabled={pagination.page === 1}
+                        className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                    >
+                        Previous
+                    </button>
+                    <button 
+                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
+                        disabled={pagination.page === pagination.totalPages}
+                        className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="h-full flex flex-col space-y-6 relative">
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Finance</h1>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Manage platform revenue, vendor payouts, and transaction history</p>
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Payment & Delivery Tracking</h1>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Complete payment flow, wallet tracking, and earnings overview</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 text-gray-700 border border-gray-200 text-xs font-black rounded-xl hover:bg-gray-100 transition-all uppercase tracking-widest hidden sm:flex">
-                    <Download size={16} /> Export Report
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">
+                        <Calendar size={14} className="text-gray-400" />
+                        01 May 2024 - 31 May 2024
+                    </div>
+                    <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all">
+                        <Filter size={14} /> Filters
+                    </button>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 transition-all uppercase tracking-widest hidden sm:flex">
+                        Export Report <Download size={14} />
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -122,191 +235,277 @@ const AdminFinance = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto space-y-6 pb-6 custom-scrollbar">
-                {isLoading ? (
+            <div className="flex-1 overflow-y-auto space-y-6 pb-6 custom-scrollbar flex flex-col">
+                {isLoading && (!data.dashboard && selectedTab === 'Overview') ? (
                     <div className="flex-1 min-h-[400px] flex flex-col items-center justify-center text-gray-400">
                         <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                        <span className="text-xs font-black uppercase tracking-[0.2em]">Analyzing Finances...</span>
+                        <span className="text-xs font-black uppercase tracking-[0.2em]">Loading Ledger...</span>
                     </div>
                 ) : (
                     <>
-                        {selectedTab === 'Overview' && stats && (
-                            <>
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {[
-                                        { label: 'Total Revenue', value: stats.totalRevenue, icon: <Banknote size={20} />, change: '+12.5%', positive: true },
-                                        { label: 'Platform Commission', value: stats.platformCommission, icon: <ArrowUpRight size={20} />, change: '+15.2%', positive: true },
-                                        { label: 'Pending Payouts', value: stats.pendingPayouts, icon: <CreditCard size={20} />, change: '-2.4%', positive: false },
-                                        { label: 'Refunds Processed', value: stats.refundsProcessed, icon: <ArrowDownRight size={20} />, change: '+1.1%', positive: false },
-                                    ].map((stat, idx) => (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            key={idx}
-                                            className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm"
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div className="p-2 bg-primary/10 text-primary rounded-xl">
-                                                    {stat.icon}
-                                                </div>
-                                                <div className={`flex items-center gap-1 text-[9px] font-black px-2 py-1 rounded-lg ${stat.positive ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                                                    {stat.change}
-                                                </div>
-                                            </div>
-                                            <div className="mt-4">
-                                                <p className="text-xl font-black text-gray-900">₹{stat.value.toLocaleString()}</p>
-                                                <h3 className="text-gray-400 font-bold text-[9px] uppercase tracking-widest mt-1">{stat.label}</h3>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Chart */}
-                                    <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                                        <div className="flex justify-between items-center mb-10">
-                                            <h3 className="text-sm font-black text-gray-900 tracking-tight uppercase tracking-widest">Revenue Trend</h3>
-                                            <select className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-[10px] font-black text-gray-600 outline-none uppercase tracking-wider">
-                                                <option>This Week</option>
-                                            </select>
-                                        </div>
-                                        <div className="h-56 flex items-end justify-between gap-4 pb-4 border-b border-gray-50 relative">
-                                            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                                                {[...Array(4)].map((_, i) => (
-                                                    <div key={i} className="w-full border-b border-gray-50 flex items-end pb-1"></div>
-                                                ))}
-                                            </div>
-                                            {stats.revenueTrend.map((data, idx) => (
-                                                <div key={idx} className="flex flex-col items-center flex-1 z-10 group">
-                                                    <div className="relative w-full max-w-[40px] flex justify-center flex-1 items-end">
-                                                        <motion.div
-                                                            initial={{ height: 0 }}
-                                                            animate={{ height: `${(data.revenue / maxRevenue) * 100}%` }}
-                                                            className="w-[70%] bg-[#d4e9e2] rounded-t-lg group-hover:bg-primary transition-colors relative"
-                                                        >
-                                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg pointer-events-none whitespace-nowrap z-20">
-                                                                ₹{data.revenue}
-                                                            </div>
-                                                        </motion.div>
-                                                    </div>
-                                                    <span className="text-[9px] font-black text-gray-400 mt-4 uppercase tracking-tighter">{data.name}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Sidebar Info - Pending Action */}
-                                    <div className="bg-primary p-6 rounded-2xl shadow-xl text-white relative overflow-hidden flex flex-col justify-between">
-                                        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                                            <IndianRupee size={150} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-black tracking-widest uppercase">Action Required</h3>
-                                            <p className="text-[10px] text-white/60 font-medium mt-2">There are pending payouts that need processing.</p>
-                                            
-                                            <div className="mt-8 space-y-4">
-                                                <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <p className="text-xs font-black uppercase tracking-wider">Total Pending</p>
-                                                            <p className="text-2xl font-black mt-1">₹{stats.pendingPayouts.toLocaleString()}</p>
-                                                        </div>
-                                                        <CreditCard className="text-white/40" size={24} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <button 
-                                            onClick={() => setSelectedTab('Tailor Payouts')}
-                                            className="mt-8 w-full py-3 bg-white text-primary font-black rounded-xl text-[10px] uppercase tracking-[0.2em] hover:bg-gray-100 transition-all shadow-lg"
-                                        >
-                                            Process All Now
-                                        </button>
-                                    </div>
-                                </div>
-                            </>
+                        {/* OVERVIEW TAB */}
+                        {selectedTab === 'Overview' && data.dashboard && (
+                            <FinanceDashboardOverview data={data.dashboard} />
                         )}
 
+                        {/* TRANSACTIONS TAB */}
                         {selectedTab === 'Transactions' && (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
                                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                    <h3 className="text-xs font-black text-gray-900 tracking-widest uppercase">Transaction Ledger</h3>
-                                    <div className="relative">
-                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input 
-                                            type="text" 
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            onKeyDown={handleSearch}
-                                            placeholder="Search Txn ID..." 
-                                            className="pl-9 pr-4 py-2 text-xs font-bold bg-white border border-gray-200 rounded-xl outline-none focus:border-primary transition-colors" 
-                                        />
+                                    <div className="flex gap-2">
+                                        <div className="relative">
+                                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                            <input 
+                                                type="text" 
+                                                value={filters.search}
+                                                onChange={(e) => setFilters({...filters, search: e.target.value})}
+                                                onKeyDown={handleSearch}
+                                                placeholder="Search Order/Txn ID..." 
+                                                className="pl-9 pr-4 py-2 text-xs font-bold bg-white border border-gray-200 rounded-xl outline-none focus:border-primary transition-colors" 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left whitespace-nowrap">
                                         <thead>
                                             <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
-                                                <th className="px-6 py-4">Transaction ID</th>
-                                                <th className="px-6 py-4">Order Ref</th>
-                                                <th className="px-6 py-4">Customer</th>
-                                                <th className="px-6 py-4">Amount</th>
-                                                <th className="px-6 py-4">Method</th>
+                                                <th className="px-6 py-4">Transaction / Date</th>
+                                                <th className="px-6 py-4">Order / Customer</th>
+                                                <th className="px-6 py-4">Type</th>
+                                                <th className="px-6 py-4">Total Amt</th>
+                                                <th className="px-6 py-4">Platform Net</th>
                                                 <th className="px-6 py-4">Status</th>
-                                                <th className="px-6 py-4 text-right">Receipt</th>
+                                                <th className="px-6 py-4 text-right">Details</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
-                                            {transactions.map((txn, i) => (
-                                                <tr key={i} className="hover:bg-primary/5 transition-colors group">
+                                            {data.transactions.map((txn, i) => (
+                                                <tr key={i} className="hover:bg-primary/5 transition-colors">
                                                     <td className="px-6 py-4">
-                                                        <span className="text-xs font-black text-primary">{txn.id}</span>
-                                                        <p className="text-[9px] text-gray-400 mt-0.5 font-bold uppercase">{new Date(txn.date).toLocaleDateString()}</p>
-                                                    </td>
-                                                    <td className="px-6 py-4 font-bold text-xs text-gray-600">#{txn.orderId}</td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="text-xs font-bold text-gray-700">{txn.customer}</span>
+                                                        <span className="text-xs font-black text-primary">{txn.transactionId}</span>
+                                                        <p className="text-[9px] text-gray-400 mt-0.5 font-bold uppercase">{new Date(txn.date).toLocaleString()}</p>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-1.5">
-                                                            {txn.type === 'Credit' ? <ArrowUpRight size={14} className="text-green-500" /> : <ArrowDownRight size={14} className="text-red-500" />}
-                                                            <span className={`text-xs font-black ${txn.type === 'Credit' ? 'text-green-600' : 'text-red-600'}`}>₹{txn.amount.toLocaleString()}</span>
-                                                        </div>
+                                                        <span className="font-black text-xs text-gray-800">#{txn.orderId}</span>
+                                                        <p className="text-[10px] text-gray-500 font-bold mt-0.5">{txn.customer}</p>
                                                     </td>
-                                                    <td className="px-6 py-4 font-bold text-[10px] text-gray-500 uppercase">{txn.method}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{txn.paymentType}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`text-xs font-black ${txn.type === 'Credit' ? 'text-green-600' : 'text-red-600'}`}>₹{txn.totalAmount.toLocaleString()}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs font-black text-blue-600">₹{txn.netPlatformEarning.toLocaleString()}</span>
+                                                    </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${getStatusStyle(txn.status)}`}>
                                                             {txn.status}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <button className="text-gray-400 hover:text-primary transition-colors p-1.5 hover:bg-gray-50 rounded-xl">
-                                                            <Download size={16} />
+                                                        <button 
+                                                            onClick={() => setSelectedOrderId(txn._id)}
+                                                            className="text-gray-400 hover:text-primary transition-colors p-1.5 hover:bg-gray-50 rounded-xl"
+                                                        >
+                                                            <Eye size={16} />
                                                         </button>
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {transactions.length === 0 && (
+                                            {data.transactions.length === 0 && !isLoading && (
                                                 <tr>
-                                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">No transactions recorded</td>
+                                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">No transactions found</td>
                                                 </tr>
                                             )}
                                         </tbody>
                                     </table>
                                 </div>
+                                {renderPagination()}
                             </div>
                         )}
 
-                        {(selectedTab === 'Tailor Payouts' || selectedTab === 'Delivery Payouts') && (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                        {/* PAYMENT LEDGER TAB */}
+                        {selectedTab === 'Payment Ledger' && (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
+                                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                                    <h3 className="text-xs font-black text-gray-900 tracking-widest uppercase mb-1">Master Payment Ledger</h3>
+                                    <p className="text-[10px] text-gray-500 font-medium">Immutable record of all payment events and corresponding splits.</p>
+                                </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left whitespace-nowrap">
                                         <thead>
                                             <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
-                                                <th className="px-6 py-4">Payout ID</th>
+                                                <th className="px-4 py-4">Ledger ID / Date</th>
+                                                <th className="px-4 py-4">Order Ref</th>
+                                                <th className="px-4 py-4">Type</th>
+                                                <th className="px-4 py-4">Total Paid</th>
+                                                <th className="px-4 py-4">Order Amt</th>
+                                                <th className="px-4 py-4">GST</th>
+                                                <th className="px-4 py-4">Platform Fee</th>
+                                                <th className="px-4 py-4">Tailor Share</th>
+                                                <th className="px-4 py-4">Delivery Share</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {data.paymentLedger.map((ledger, i) => (
+                                                <tr key={i} className="hover:bg-primary/5 transition-colors text-[11px] font-medium">
+                                                    <td className="px-4 py-3">
+                                                        <span className="font-black text-primary block">{ledger.ledgerId}</span>
+                                                        <span className="text-[9px] text-gray-400 font-bold uppercase">{new Date(ledger.paidAt || ledger.createdAt).toLocaleString()}</span>
+                                                    </td>
+                                                    <td className="px-4 py-3 font-bold text-gray-800">#{ledger.orderId}</td>
+                                                    <td className="px-4 py-3"><span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">{ledger.paymentType}</span></td>
+                                                    <td className="px-4 py-3 font-black text-green-600">₹{ledger.totalPaid}</td>
+                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.orderAmount}</td>
+                                                    <td className="px-4 py-3 text-red-500">₹{ledger.gstAmount}</td>
+                                                    <td className="px-4 py-3 text-blue-600 font-bold">₹{ledger.platformFee}</td>
+                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.tailorEarning}</td>
+                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.deliveryPartnerEarning}</td>
+                                                </tr>
+                                            ))}
+                                            {data.paymentLedger.length === 0 && !isLoading && (
+                                                <tr><td colSpan="9" className="px-6 py-12 text-center text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">No ledger entries found</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {renderPagination()}
+                            </div>
+                        )}
+
+                        {/* WALLET AUDIT TAB */}
+                        {selectedTab === 'Wallet Audit' && (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
+                                                <th className="px-6 py-4">Date</th>
+                                                <th className="px-6 py-4">User</th>
+                                                <th className="px-6 py-4">Category</th>
+                                                <th className="px-6 py-4">Description</th>
+                                                <th className="px-6 py-4">Amount</th>
+                                                <th className="px-6 py-4">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {data.walletAudit.map((txn, i) => (
+                                                <tr key={i} className="hover:bg-primary/5 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-[10px] text-gray-500 font-bold uppercase">{new Date(txn.date).toLocaleString()}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs font-black text-gray-800 block">{txn.user}</span>
+                                                        <span className="text-[9px] font-bold text-gray-400 uppercase">{txn.userRole}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{txn.category}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-medium text-gray-600 truncate max-w-[200px]">{txn.description}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`text-xs font-black ${txn.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {txn.type === 'credit' ? '+' : '-'}₹{txn.amount.toLocaleString()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${getStatusStyle(txn.status)}`}>
+                                                            {txn.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {renderPagination()}
+                            </div>
+                        )}
+
+                        {/* GST REPORT TAB */}
+                        {selectedTab === 'GST Report' && (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
+                                <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-xs font-black text-gray-900 tracking-widest uppercase mb-1">GST Collection Report</h3>
+                                        <p className="text-[10px] text-gray-500 font-medium">Per-order GST breakdown for tax filing</p>
+                                    </div>
+                                    <button className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white text-[10px] font-black rounded-lg hover:bg-primary-dark transition-all uppercase tracking-widest">
+                                        <Download size={14} /> Export CSV
+                                    </button>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
+                                                <th className="px-6 py-4">Date</th>
+                                                <th className="px-6 py-4">Order Ref</th>
+                                                <th className="px-6 py-4">Taxable Amount</th>
+                                                <th className="px-6 py-4">GST Rate</th>
+                                                <th className="px-6 py-4">GST Collected</th>
+                                                <th className="px-6 py-4">Total Invoice</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {data.gstReport.map((gst, i) => (
+                                                <tr key={i} className="hover:bg-primary/5 transition-colors">
+                                                    <td className="px-6 py-4 text-[10px] text-gray-500 font-bold uppercase">{new Date(gst.date).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 font-black text-xs text-gray-800">#{gst.orderId}</td>
+                                                    <td className="px-6 py-4 text-xs font-bold text-gray-600">₹{gst.taxableAmount}</td>
+                                                    <td className="px-6 py-4 text-xs font-bold text-gray-500">{gst.gstPercentage}%</td>
+                                                    <td className="px-6 py-4 text-xs font-black text-primary">₹{gst.gstAmount}</td>
+                                                    <td className="px-6 py-4 text-xs font-black text-gray-900">₹{gst.totalWithGST}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {renderPagination()}
+                            </div>
+                        )}
+
+                        {/* EARNINGS TABS (Tailor / Delivery) */}
+                        {(selectedTab === 'Tailor Earnings' || selectedTab === 'Delivery Earnings') && (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
+                                                <th className="px-6 py-4">Date</th>
+                                                <th className="px-6 py-4">Partner</th>
+                                                <th className="px-6 py-4">Order Ref</th>
+                                                <th className="px-6 py-4">Category</th>
+                                                <th className="px-6 py-4">Earned Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {(selectedTab === 'Tailor Earnings' ? data.tailorEarnings : data.deliveryEarnings).map((txn, i) => (
+                                                <tr key={i} className="hover:bg-primary/5 transition-colors">
+                                                    <td className="px-6 py-4 text-[10px] text-gray-500 font-bold uppercase">{new Date(txn.creditDate).toLocaleString()}</td>
+                                                    <td className="px-6 py-4 font-black text-xs text-gray-800">{txn.tailorName || txn.partnerName}</td>
+                                                    <td className="px-6 py-4 font-bold text-xs text-gray-600">#{txn.orderId}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{txn.category}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-black text-green-600">₹{txn.amount.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {renderPagination()}
+                            </div>
+                        )}
+
+                        {/* PAYOUTS TABS (Tailor / Delivery) */}
+                        {(selectedTab === 'Tailor Payouts' || selectedTab === 'Delivery Payouts') && (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-gray-400 font-bold text-[9px] uppercase tracking-[0.2em] border-b border-gray-100">
+                                                <th className="px-6 py-4">Payout ID / Date</th>
                                                 <th className="px-6 py-4">Recipient</th>
                                                 <th className="px-6 py-4">Method & Details</th>
                                                 <th className="px-6 py-4">Amount</th>
@@ -315,7 +514,7 @@ const AdminFinance = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
-                                            {payouts.map((payout, i) => (
+                                            {(selectedTab === 'Tailor Payouts' ? data.tailorPayouts : data.deliveryPayouts).map((payout, i) => (
                                                 <tr key={i} className="hover:bg-primary/5 transition-colors group">
                                                     <td className="px-6 py-4">
                                                         <span className="text-xs font-black text-gray-900">{payout._id.slice(-8).toUpperCase()}</span>
@@ -367,7 +566,7 @@ const AdminFinance = () => {
                                                                 <div className="flex items-center justify-end gap-2">
                                                                     <input
                                                                         type="text"
-                                                                        placeholder="Transaction Ref..."
+                                                                        placeholder="Txn Ref..."
                                                                         value={payoutRef}
                                                                         onChange={(e) => setPayoutRef(e.target.value)}
                                                                         className="px-3 py-1.5 text-[10px] font-bold border border-gray-200 rounded-lg outline-none focus:border-primary w-32"
@@ -390,7 +589,7 @@ const AdminFinance = () => {
                                                                     onClick={() => setProcessingPayoutId(payout._id)}
                                                                     className="text-[10px] font-black uppercase text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
                                                                 >
-                                                                    Mark as Paid
+                                                                    Mark Paid
                                                                 </button>
                                                             )
                                                         ) : (
@@ -401,37 +600,27 @@ const AdminFinance = () => {
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {payouts.length === 0 && (
-                                                <tr>
-                                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">No payouts found</td>
-                                                </tr>
+                                            {(selectedTab === 'Tailor Payouts' ? data.tailorPayouts : data.deliveryPayouts).length === 0 && !isLoading && (
+                                                <tr><td colSpan="6" className="px-6 py-12 text-center text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">No payouts found</td></tr>
                                             )}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         )}
-
-                        {selectedTab === 'GST & Taxes' && (
-                            <div className="p-16 text-center flex flex-col items-center justify-center bg-white rounded-3xl border border-gray-100 shadow-sm">
-                                <div className="p-4 bg-gray-50 text-gray-300 rounded-3xl mb-6">
-                                    <FileText size={56} />
-                                </div>
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight">Taxation & Compliance</h3>
-                                <p className="text-xs text-gray-500 mt-3 max-w-sm leading-relaxed font-medium">Generate automated GST reports, TDS summaries and monthly tax records for platform earnings and payouts.</p>
-                                <div className="mt-10 flex gap-3">
-                                    <button className="px-8 py-3 bg-primary text-white text-[10px] font-black rounded-xl hover:bg-primary-dark uppercase tracking-[0.2em] shadow-lg shadow-green-900/20 transition-all">
-                                        Download GST Report
-                                    </button>
-                                    <button className="px-8 py-3 bg-white border border-gray-200 text-gray-500 text-[10px] font-black rounded-xl hover:bg-gray-50 uppercase tracking-[0.2em] transition-all">
-                                        View Settings
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </>
                 )}
             </div>
+
+            {/* Order Financial Detail Modal */}
+            <AnimatePresence>
+                {selectedOrderId && (
+                    <OrderFinancialDetailModal 
+                        orderId={selectedOrderId} 
+                        onClose={() => setSelectedOrderId(null)} 
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

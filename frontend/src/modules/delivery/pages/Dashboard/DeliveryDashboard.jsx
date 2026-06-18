@@ -314,7 +314,7 @@ const DeliveryDashboard = () => {
                         </div>
                         {availableOrders?.length > 0 ? (
                             <>
-                                <p className="text-slate-600 font-bold mb-4">You have no active tasks, but there are <span className="text-[#2D2F6E]">{availableOrders.length} live orders</span> waiting!</p>
+                                <p className="text-slate-600 font-bold mb-4">You have no active tasks, but there {availableOrders.length === 1 ? 'is' : 'are'} <span className="text-[#2D2F6E]">{availableOrders.length} live order{availableOrders.length === 1 ? '' : 's'}</span> waiting!</p>
                                 <button
                                     onClick={() => navigate('/delivery/tasks')}
                                     className="px-6 py-3 bg-[#2D2F6E] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20 active:scale-95"

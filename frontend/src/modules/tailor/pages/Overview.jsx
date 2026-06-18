@@ -10,6 +10,7 @@ import api from '../services/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
+import { toast } from 'react-hot-toast';
 
 const Overview = () => {
     const { user } = useTailorAuth();
@@ -37,7 +38,22 @@ const Overview = () => {
             }
         });
         if (user?._id) socket.emit('join', `user_${user._id}`);
-        socket.on('new_order', () => fetchDashboardData());
+        socket.on('new_order', (data) => {
+            fetchDashboardData();
+            if (data?.orderId) {
+                toast.success(`New Order Received: #${data.orderId}`, {
+                    icon: '👕',
+                    style: {
+                        borderRadius: '16px',
+                        background: '#333',
+                        color: '#fff',
+                        fontWeight: 'bold'
+                    },
+                });
+            } else {
+                toast.success('You have received a new order!');
+            }
+        });
         return () => socket.disconnect();
     }, [user?._id]);
 
@@ -59,10 +75,14 @@ const Overview = () => {
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => navigate('/partner/notifications')}
-                        className="relative text-gray-400 hover:text-[#2D2F6E] transition-colors"
+                        className="relative text-gray-400 hover:text-[#2D2F6E] transition-colors flex items-center justify-center p-1"
                     >
-                        <Bell size={20} />
-                        {unreadCount > 0 && <span className="absolute -top-1 -right-1 h-2 w-2 bg-[#2D2F6E] rounded-full border border-white"></span>}
+                        <Bell size={22} />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 h-4 w-4 bg-[#2D2F6E] rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
                     </button>
                     <button
                         onClick={() => navigate('/partner/settings')}
@@ -93,22 +113,26 @@ const Overview = () => {
                         <div className="flex flex-col">
                             <span className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-0.5">Your Rating</span>
                             <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl font-black text-white leading-none">4.9</span>
+                                <span className="text-xl font-black text-white leading-none">{(summary.rating || 0).toFixed(1)}</span>
                                 <span className="text-xs font-bold text-amber-400 leading-none">/ 5.0</span>
                             </div>
                         </div>
                         <div className="h-10 w-px bg-white/10 mx-1"></div>
                         <div className="flex flex-col items-end">
-                            <span className="text-lg font-black text-white leading-none">124</span>
+                            <span className="text-lg font-black text-white leading-none">{summary.totalReviews || 0}</span>
                             <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1">Reviews</span>
                         </div>
                         <div className="h-10 w-px bg-white/10 mx-1"></div>
                         <button 
                             onClick={() => navigate('/partner/notifications')}
-                            className="p-2.5 bg-white/10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all relative border border-white/5"
+                            className="p-2.5 bg-white/10 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-all relative border border-white/5 flex items-center justify-center"
                         >
                             <Bell size={20} />
-                            {unreadCount > 0 && <span className="absolute top-1 right-1 h-2 w-2 bg-rose-500 rounded-full border border-gray-900"></span>}
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-2 -right-2 h-5 w-5 bg-rose-500 rounded-full border-[2px] border-gray-900 flex items-center justify-center text-[10px] font-black text-white shadow-lg">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -122,14 +146,14 @@ const Overview = () => {
                         <div className="flex flex-col">
                             <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">Your Rating</span>
                             <div className="flex items-end gap-1 leading-none mt-0.5">
-                                <span className="text-xl font-black text-white">4.9</span>
+                                <span className="text-xl font-black text-white">{(summary.rating || 0).toFixed(1)}</span>
                                 <span className="text-[10px] font-bold text-amber-400 pb-0.5">/ 5.0</span>
                             </div>
                         </div>
                     </div>
                     <div className="h-8 w-px bg-white/10 mx-2"></div>
                     <div className="flex flex-col items-end pr-1">
-                        <span className="text-sm font-black text-white leading-none">124</span>
+                        <span className="text-sm font-black text-white leading-none">{summary.totalReviews || 0}</span>
                         <span className="text-[8px] font-bold text-white/50 uppercase tracking-widest mt-1">Total Reviews</span>
                     </div>
                 </div>
@@ -246,15 +270,15 @@ const Overview = () => {
                                         <div key={i} className="bg-white rounded-3xl h-20 animate-pulse border border-gray-100" />
                                     ))
                                 ) : (() => {
-                                    const activePickups = recentActivity.filter(o => o.status !== 'pending');
+                                    const activePickups = dashboardData?.upcomingPickups || [];
                                     if (activePickups.length === 0) {
                                         return (
                                             <div className="col-span-full p-8 text-center text-gray-400 text-sm font-bold bg-white rounded-3xl border border-gray-100 border-dashed">
-                                                No recent pickups available.
+                                                No upcoming pickups scheduled.
                                             </div>
                                         );
                                     }
-                                    return activePickups.slice(0, 4).map((order) => (
+                                    return activePickups.map((order) => (
                                         <button
                                             key={order._id}
                                             onClick={() => navigate('/partner/orders', { state: { highlightOrderTitle: order.orderId } })}

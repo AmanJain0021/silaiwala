@@ -35,7 +35,6 @@ const DeliveryDetails = React.lazy(() => import('./modules/tailor/pages/Delivery
 const VerificationStatus = React.lazy(() => import('./modules/tailor/pages/VerificationStatus'));
 const SubscriptionSettings = React.lazy(() => import('./modules/tailor/pages/Subscription'));
 const ProfileSettings = React.lazy(() => import('./modules/tailor/pages/ProfileSettings'));
-const TailorWithdraw = React.lazy(() => import('./modules/tailor/pages/Withdraw'));
 const TailorNotifications = React.lazy(() => import('./modules/tailor/pages/Notifications'));
 const WalletPage = React.lazy(() => import('./modules/common/pages/WalletPage'));
 const TailorEarnings = React.lazy(() => import('./modules/tailor/pages/TailorEarnings'));
@@ -222,7 +221,7 @@ const AppRoutes = () => {
                         <Route path="/partner/measurements/:id" element={<MeasurementDetail />} />
                     </Route>
                     {/* Full screen tailor views separated from layout nav */}
-                    <Route path="/partner/withdraw" element={<TailorWithdraw />} />
+
                     <Route path="/partner/notifications" element={<TailorNotifications />} />
                 </Route>
             </Route>

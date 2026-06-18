@@ -462,7 +462,7 @@ const ProfileSettings = () => {
                                 label="Wallet & Payouts"
                                 subLabel="Check your balance"
                                 extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100">₹ 0</span>}
-                                to="/partner/withdraw"
+                                to="/partner/wallet"
                             />
                             <MenuOption
                                 icon={Ticket}

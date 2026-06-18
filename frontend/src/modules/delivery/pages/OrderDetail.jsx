@@ -85,7 +85,6 @@ const DeliveryOrderDetail = () => {
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   
-  const [dynamicFee, setDynamicFee] = useState(null);
   const [totalTripDistanceKm, setTotalTripDistanceKm] = useState(null);
   const [feeSettings, setFeeSettings] = useState(null);
 
@@ -228,7 +227,6 @@ const DeliveryOrderDetail = () => {
                 if (tripLeg) {
                   const km = tripLeg.distance.value / 1000;
                   setTotalTripDistanceKm(km);
-                  setDynamicFee(rates.baseFee + (km * rates.perKmRate));
                   
                   // If no GPS, fallback to using this trip distance for the display
                   if (!hasCurrentLocation) {
@@ -324,8 +322,7 @@ const DeliveryOrderDetail = () => {
     try {
       // Use stable id from useParams
       await useDeliveryAuthStore.getState().acceptOrder(id, {
-        calculatedDistance: totalTripDistanceKm,
-        calculatedFee: dynamicFee
+        calculatedDistance: totalTripDistanceKm
       });
       await loadOrder();
       toast.success('MISSION ACCEPTED! GO TO PICKUP');
@@ -774,10 +771,10 @@ const DeliveryOrderDetail = () => {
                     <div className="w-full">
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Your earning</p>
                        <h2 className="text-lg font-black text-slate-800 leading-tight">
-                          {dynamicFee !== null ? formatPrice(dynamicFee) : formatPrice(order.deliveryFee || order.deliveryEarnings || 0)}
+                          {formatPrice(order.deliveryFee || order.deliveryEarnings || 0)}
                        </h2>
                        
-                       {dynamicFee !== null && totalTripDistanceKm !== null && feeSettings && (
+                       {totalTripDistanceKm !== null && feeSettings && (
                          <div className="mt-2 bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col gap-1.5">
                            <div className="flex justify-between items-center">
                              <span className="text-[9px] font-bold text-slate-500">Base Fee</span>
@@ -785,7 +782,7 @@ const DeliveryOrderDetail = () => {
                            </div>
                            <div className="flex justify-between items-center">
                              <span className="text-[9px] font-bold text-slate-500">Distance ({totalTripDistanceKm.toFixed(1)} km × {formatPrice(feeSettings.perKmRate)})</span>
-                             <span className="text-[10px] font-black text-slate-700">{formatPrice(totalTripDistanceKm * feeSettings.perKmRate)}</span>
+                             <span className="text-[10px] font-black text-slate-700">{formatPrice(Math.round(totalTripDistanceKm * feeSettings.perKmRate))}</span>
                            </div>
                          </div>
                        )}

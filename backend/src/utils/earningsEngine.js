@@ -24,10 +24,10 @@ const distributeEarnings = async (orderId) => {
       return;
     }
 
-    const { tailor, deliveryPartner, totalAmount, platformFee, deliveryFee } = order;
+    const { tailor, deliveryPartner, totalAmount, platformFee, deliveryFee, gstAmount } = order;
 
     // 1. Calculate Tailor Share
-    let tailorShare = totalAmount - platformFee - deliveryFee;
+    let tailorShare = totalAmount - (platformFee || 0) - (deliveryFee || 0) - (gstAmount || 0);
 
     // Deduct any advance payment they already received in their wallet
     if (order.advancePaymentStatus === 'paid' && order.advancePaymentAmount > 0) {
@@ -53,6 +53,13 @@ const distributeEarnings = async (orderId) => {
         ], { session });
       }
     }
+
+    // 3. Store earnings on Order for audit trail
+    const totalTailorEarning = tailorShare + (order.advancePaymentAmount || 0);
+    order.tailorEarning = Math.max(totalTailorEarning, 0);
+    order.deliveryPartnerEarning = order.deliveryPartnerEarning || (deliveryFee || 0);
+    order.netPlatformEarning = (platformFee || 0) + (gstAmount || 0);
+    await order.save({ session });
 
     // Note: Delivery partner payouts are now handled per-phase inside delivery.controller.js
     // to correctly support distance-based payouts for both fabric pickup and product delivery.

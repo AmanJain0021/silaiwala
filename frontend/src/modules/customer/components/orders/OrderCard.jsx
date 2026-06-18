@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Calendar, Package, MapPin } from 'lucide-react';
 import { getImageUrl } from '../../../../utils/imageUrl';
+import ReviewModal from './ReviewModal';
 
 const OrderCard = ({ order }) => {
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    
     const serviceTitle = order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || "Custom Stitching";
     const deliveryType = order.items?.[0]?.deliveryType || "Standard";
     const displayId = order.orderId || "ORD-0000";
@@ -25,8 +28,8 @@ const OrderCard = ({ order }) => {
     }) : "Date Unknown";
 
     return (
-        <Link to={`/user/orders/${order._id}/track`} className="block bg-white rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-            <div className="flex gap-3 sm:gap-4">
+        <div className="block bg-white rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+            <Link to={`/user/orders/${order._id || order.orderId}/track`} className="flex gap-3 sm:gap-4">
                 {/* 1. Image */}
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-gray-50 border border-gray-100">
                     <img
@@ -109,8 +112,39 @@ const OrderCard = ({ order }) => {
                 <div className="self-center text-gray-300 group-hover:text-[#2D2F6E] transition-colors shrink-0">
                     <ChevronRight size={16} className="sm:w-5 sm:h-5" />
                 </div>
-            </div>
-        </Link>
+            </Link>
+
+            {/* Review Button & Logic */}
+            {(order.status === 'delivered' || order.status === 'product-delivered' || order.status === 'order-completed') && !order.isReviewed && (
+                <div className="mt-3 pt-3 border-t border-gray-50 flex justify-end">
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsReviewModalOpen(true);
+                        }}
+                        className="text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors"
+                    >
+                        Rate Experience
+                    </button>
+                </div>
+            )}
+
+            <ReviewModal 
+                isOpen={isReviewModalOpen}
+                onClose={() => setIsReviewModalOpen(false)}
+                orderId={order._id || order.orderId}
+                tailorId={order.tailor?._id || order.tailor}
+                deliveryPartnerId={order.deliveryPartner?._id || order.deliveryPartner}
+                onSuccess={() => {
+                    // Refresh order list via store or locally
+                    setIsReviewModalOpen(false);
+                    if (window.location.pathname.includes('/user/orders')) {
+                        window.location.reload();
+                    }
+                }}
+            />
+        </div>
     );
 };
 

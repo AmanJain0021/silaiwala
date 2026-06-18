@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -13,15 +13,59 @@ import {
 import { motion } from 'framer-motion';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 import { useTailorAuth } from '../modules/tailor/context/AuthContext';
+import api from '../modules/tailor/services/api';
+import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../config/constants';
+import { getToken } from '../utils/auth';
 
 const TailorLayout = () => {
     const location = useLocation();
     const { user, status } = useTailorAuth();
     const isOverview = location.pathname === '/partner';
+    const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+    useEffect(() => {
+        if (!user?._id) return;
+        
+        const fetchDashboardData = async () => {
+            try {
+                const response = await api.get('/tailors/dashboard');
+                if (response.data.success && response.data.data.summary) {
+                    setPendingOrdersCount(response.data.data.summary.pendingOrders || 0);
+                }
+            } catch (error) {
+                console.error("Failed to fetch pending orders count:", error);
+            }
+        };
+
+        fetchDashboardData();
+
+        const token = getToken();
+        if (!token) return;
+
+        const socket = io(SOCKET_URL, {
+            auth: { token },
+            transports: ['websocket'],
+            reconnection: true
+        });
+
+        socket.on('connect', () => {
+            socket.emit('join_tailor_room', user._id);
+        });
+
+        socket.on('new_order', () => {
+            // Optional: You can either fetch the count again or increment
+            fetchDashboardData();
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [user?._id]);
 
     const menuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Home', path: '/partner' },
-        { icon: <ClipboardList size={20} />, label: 'Orders', path: '/partner/orders' },
+        { icon: <ClipboardList size={20} />, label: 'Orders', path: '/partner/orders', badge: pendingOrdersCount },
         { icon: <Wallet size={20} />, label: 'Wallet', path: '/partner/wallet' },
         { icon: <ShoppingBag size={20} />, label: 'Services', path: '/partner/products' },
         { icon: <UserCircle size={20} />, label: 'Profile', path: '/partner/settings' },
@@ -59,7 +103,12 @@ const TailorLayout = () => {
                                 }`}
                             >
                                 {React.cloneElement(item.icon, { size: 18, strokeWidth: isActive ? 2.5 : 2 })}
-                                {item.label}
+                                <span className="flex-1">{item.label}</span>
+                                {item.badge > 0 && (
+                                    <span className="h-5 min-w-[20px] px-1.5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-rose-500/20">
+                                        {item.badge > 99 ? '99+' : item.badge}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}
@@ -138,11 +187,16 @@ const TailorLayout = () => {
                                         className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#2D2F6E] rounded-full" 
                                     />
                                 )}
-                                <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center ${
+                                <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
                                     isActive
                                         ? 'bg-[#2D2F6E] text-white shadow-lg shadow-[#2D2F6E]/30 scale-110'
                                         : 'text-[#555555] active:scale-90'
                                 }`}>
+                                    {item.badge > 0 && (
+                                        <span className="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-1 bg-rose-500 rounded-full border-[1.5px] border-[#0A0A0A] flex items-center justify-center text-[7px] font-black text-white shadow-lg z-10">
+                                            {item.badge > 99 ? '99+' : item.badge}
+                                        </span>
+                                    )}
                                     {React.cloneElement(item.icon, {
                                         size: 20,
                                         strokeWidth: isActive ? 2.5 : 2

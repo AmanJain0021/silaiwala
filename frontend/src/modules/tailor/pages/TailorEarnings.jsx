@@ -255,13 +255,13 @@ const TailorEarnings = () => {
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                                {(transactions.length === 0 ? [
-                                    { id: 'AL-9302', time: 'Today, 2:45 PM',    amount: '85.00',  badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'suit'  },
-                                    { id: 'AL-9298', time: 'Today, 11:20 AM',   amount: '120.00', badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'fabric'},
-                                    { id: 'Peak Hour Bonus', time: 'Today, 9:00 AM', amount: '15.00', badge: 'INCENTIVE', badgeColor: 'text-blue-600 bg-blue-50', img: 'bonus' },
-                                    { id: 'AL-9285', time: 'Yesterday, 5:15 PM', amount: '75.00', badge: 'COMPLETED', badgeColor: 'text-green-700 bg-green-50',  img: 'shirt' },
-                                ] : transactions.slice(0, 15)).map((item, i) => {
-                                    const isCredit = item.type === 'credit' || !item.id.startsWith('Peak');
+                                {transactions.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center h-full">
+                                        <ShoppingBag size={32} className="text-gray-200 mb-3" />
+                                        <p className="text-sm font-bold text-gray-400">No recent activity.</p>
+                                    </div>
+                                ) : transactions.slice(0, 15).map((item, i) => {
+                                    const isCredit = item.type === 'credit' || (item.id && !item.id.startsWith('Peak')) || (item.badge === 'INCENTIVE');
                                     return (
                                         <div key={i} className="group p-4 bg-white hover:bg-gray-50 rounded-3xl border border-transparent hover:border-gray-100 transition-all flex items-center gap-4">
                                             <div className="w-12 h-12 bg-[#1A1A1A] rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">

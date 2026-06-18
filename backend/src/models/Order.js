@@ -70,6 +70,7 @@ const orderSchema = new mongoose.Schema(
         "fabric-selected",
         "accepted", 
         "measurement-verification",
+        "pattern-making",
         "in-progress", 
         "cutting",
         "stitching",
@@ -217,6 +218,30 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    gstAmount: {
+      type: Number,
+      default: 0,
+    },
+    gstPercentage: {
+      type: Number,
+      default: 0,
+    },
+    tailorEarning: {
+      type: Number,
+      default: 0,
+    },
+    deliveryPartnerEarning: {
+      type: Number,
+      default: 0,
+    },
+    netPlatformEarning: {
+      type: Number,
+      default: 0,
+    },
+    transactionId: {
+      type: String,
+    },
+    paidAt: Date,
     deliveredAt: Date,
     isReviewed: {
       type: Boolean,

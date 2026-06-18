@@ -226,7 +226,8 @@ const Products = () => {
     const handleDelete = async (id, type) => {
         const typeLabels = {
             samples: 'service',
-            fabrics: 'fabric'
+            fabrics: 'fabric',
+            garments: 'garment'
         };
         if (window.confirm(`Are you sure you want to delete this ${typeLabels[type]}?`)) {
             try {
@@ -361,23 +362,6 @@ const Products = () => {
                                             )}
                                         </div>
 
-                                        {/* Actions Hover Overlay */}
-                                        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 z-10">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
-                                                className="p-3 bg-white hover:bg-[#2D2F6E] text-[#2D2F6E] hover:text-white rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95"
-                                                title="Edit Product"
-                                            >
-                                                <Edit3 size={15} strokeWidth={2.5} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(item._id, activeTab); }}
-                                                className="p-3 bg-white hover:bg-rose-500 text-rose-500 hover:text-white rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95 delay-75"
-                                                title="Delete Product"
-                                            >
-                                                <Trash2 size={15} strokeWidth={2.5} />
-                                            </button>
-                                        </div>
                                     </div>
 
                                     {/* Compact details matching E-commerce style */}
@@ -425,8 +409,21 @@ const Products = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="h-6 w-6 rounded-lg bg-gray-50 group-hover:bg-[#2D2F6E]/10 flex items-center justify-center text-gray-400 group-hover:text-[#2D2F6E] transition-all">
-                                                <ChevronRight size={14} strokeWidth={3} />
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                    className="p-2 rounded-lg bg-indigo-50 text-[#2D2F6E] hover:bg-[#2D2F6E] hover:text-white transition-all duration-300"
+                                                    title="Edit Product"
+                                                >
+                                                    <Edit3 size={14} strokeWidth={2.5} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item._id, activeTab); }}
+                                                    className="p-2 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300"
+                                                    title="Delete Product"
+                                                >
+                                                    <Trash2 size={14} strokeWidth={2.5} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

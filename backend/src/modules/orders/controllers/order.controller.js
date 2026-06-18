@@ -3,6 +3,8 @@ const User = require("../../../models/User");
 const Tailor = require("../../../models/Tailor");
 const Customer = require("../../../models/Customer");
 const WalletTransaction = require("../../../models/WalletTransaction");
+const Settings = require("../../../models/Settings");
+const PaymentLedger = require("../../../models/PaymentLedger");
 const { getIO } = require("../../../config/socket");
 const crypto = require("crypto");
 const asyncHandler = require("../../../utils/asyncHandler");
@@ -167,15 +169,20 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        order.remainingPaymentMethod = "online";
        order.remainingPaymentId = razorpay_payment_id;
        
-       // Calculate fees
-       const platformFee = Math.round(order.totalAmount * 0.1);
-       const deliveryFee = order.deliveryFee || 50; 
+       // Calculate fees from Settings (not hardcoded)
+       const settings = await Settings.getSettings();
+       const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
+       const platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
+       const deliveryFee = order.deliveryFee || 0; 
        order.platformFee = platformFee;
        order.deliveryFee = deliveryFee;
        
-       // Note: Final order delivery completion might happen later or be triggered by delivery partner.
-       // The remaining payment is usually paid when the rider is at the door, 
-       // but completing the delivery itself is handled by Delivery Controller.
+       // Compute earnings distribution
+       const tailorEarning = order.totalAmount - platformFee - deliveryFee - (order.gstAmount || 0);
+       order.tailorEarning = Math.max(tailorEarning, 0);
+       order.deliveryPartnerEarning = deliveryFee;
+       order.netPlatformEarning = platformFee + (order.gstAmount || 0);
+       order.paidAt = new Date();
        
        order.paymentStatus = "paid"; // Overall payment complete
 
@@ -184,6 +191,39 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
          timestamp: new Date(),
          message: `Remaining payment of ₹${order.remainingPaymentAmount} successful.`,
        });
+
+       // Create PaymentLedger entry for remaining payment
+       try {
+         const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+         await PaymentLedger.create({
+           ledgerId,
+           order: order._id,
+           orderId: order.orderId,
+           customer: order.customer,
+           tailor: order.tailor,
+           deliveryPartner: order.deliveryPartner || null,
+           paymentId: razorpay_payment_id,
+           razorpayOrderId: razorpay_order_id,
+           transactionId: order.transactionId || ledgerId,
+           orderAmount: order.totalAmount - (order.gstAmount || 0) - (order.deliveryFee || 0),
+           gstAmount: order.gstAmount || 0,
+           gstPercentage: order.gstPercentage || 0,
+           deliveryFee: order.deliveryFee || 0,
+           platformFee: order.platformFee,
+           discountAmount: order.discountAmount || 0,
+           couponCode: order.couponCode || null,
+           tailorEarning: order.tailorEarning,
+           deliveryPartnerEarning: order.deliveryPartnerEarning,
+           netPlatformEarning: order.netPlatformEarning,
+           totalPaid: order.remainingPaymentAmount || 0,
+           paymentType: "remaining",
+           paymentMethod: "online",
+           paymentStatus: "paid",
+           paidAt: new Date(),
+         });
+       } catch (ledgerErr) {
+         console.error("Failed to create PaymentLedger entry:", ledgerErr);
+       }
 
        await sendNotification({
            recipient: order.tailor,
@@ -197,7 +237,50 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        order.paymentStatus = "paid";
        order.paymentId = razorpay_payment_id;
        order.razorpayOrderId = razorpay_order_id;
+       order.paidAt = new Date();
        order.status = order.items.some(item => item.fabricSource === 'customer') ? 'fabric-ready-for-pickup' : 'in-progress';
+       
+       // Calculate and store fees for full payment
+       const settings = await Settings.getSettings();
+       const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
+       const platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
+       order.platformFee = platformFee;
+       const tailorEarning = order.totalAmount - platformFee - (order.deliveryFee || 0) - (order.gstAmount || 0);
+       order.tailorEarning = Math.max(tailorEarning, 0);
+       order.deliveryPartnerEarning = order.deliveryFee || 0;
+       order.netPlatformEarning = platformFee + (order.gstAmount || 0);
+
+       // Create PaymentLedger for full payment
+       try {
+         const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+         await PaymentLedger.create({
+           ledgerId,
+           order: order._id,
+           orderId: order.orderId,
+           customer: order.customer,
+           tailor: order.tailor,
+           paymentId: razorpay_payment_id,
+           razorpayOrderId: razorpay_order_id,
+           transactionId: order.transactionId || ledgerId,
+           orderAmount: order.totalAmount - (order.gstAmount || 0) - (order.deliveryFee || 0),
+           gstAmount: order.gstAmount || 0,
+           gstPercentage: order.gstPercentage || 0,
+           deliveryFee: order.deliveryFee || 0,
+           platformFee: order.platformFee,
+           discountAmount: order.discountAmount || 0,
+           couponCode: order.couponCode || null,
+           tailorEarning: order.tailorEarning,
+           deliveryPartnerEarning: order.deliveryPartnerEarning,
+           netPlatformEarning: order.netPlatformEarning,
+           totalPaid: order.totalAmount,
+           paymentType: "full",
+           paymentMethod: "online",
+           paymentStatus: "paid",
+           paidAt: new Date(),
+         });
+       } catch (ledgerErr) {
+         console.error("Failed to create PaymentLedger entry:", ledgerErr);
+       }
     }
 
     await order.save();
@@ -366,7 +449,16 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 6. Create Order with optimized object
+  // 6. Compute GST from Settings
+  const settings = await Settings.getSettings();
+  const gstPct = settings?.pricing?.gstPercentage || 5;
+  const baseAmountForGST = finalAmount - (deliveryFee || 0); // GST on order amount, not delivery
+  const gstAmount = Math.round((baseAmountForGST * gstPct) / (100 + gstPct)); // GST inclusive extraction
+
+  // 7. Generate transaction ID
+  const transactionId = `TXN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+
+  // 8. Create Order with optimized object
   const order = await Order.create({
     orderId,
     customer: finalCustomerId,
@@ -374,6 +466,9 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     items: formattedItems,
     totalAmount: finalAmount,
     deliveryFee: deliveryFee || 0,
+    gstAmount,
+    gstPercentage: gstPct,
+    transactionId,
     discountAmount,
     couponCode: promoCode,
     deliveryAddress,
@@ -659,6 +754,7 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
       message: "Customer opted for self delivery of fabric.",
     });
   } else if (preference === 'partner') {
+    order.status = 'fabric-ready-for-pickup';
     // If partner, trigger auto-assignment
     const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
     await autoAssignDelivery(order._id, "pickup");
@@ -671,6 +767,19 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
   }
 
   await order.save();
+
+  try {
+    const { getIO } = require("../../../config/socket");
+    const io = getIO();
+    if (io && order.tailor) {
+      io.to(`user_${order.tailor}`).emit('order_status_updated', {
+          orderId: order.orderId,
+          status: order.status
+      });
+    }
+  } catch (err) {
+    console.error("Socket emission failed:", err);
+  }
 
   res.status(200).json({
     success: true,

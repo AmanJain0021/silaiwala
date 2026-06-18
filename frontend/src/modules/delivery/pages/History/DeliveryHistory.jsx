@@ -38,9 +38,10 @@ const DeliveryHistory = () => {
                         stats: statsRes.data
                     });
                 }
+                setLoading(false);
             } catch (error) {
+                if (error.name === 'CanceledError') return;
                 console.error('Failed to fetch history:', error);
-            } finally {
                 setLoading(false);
             }
         };

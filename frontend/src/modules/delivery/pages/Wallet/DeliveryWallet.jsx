@@ -166,7 +166,7 @@ const DeliveryWallet = () => {
         );
     }
 
-    const calculatedBalance = Math.max(0, (walletData.totalEarned || 0) - (walletData.totalWithdrawn || 0) - (walletData.pendingWithdrawals || 0));
+    const calculatedBalance = walletData.balance || 0;
 
     return (
         <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">

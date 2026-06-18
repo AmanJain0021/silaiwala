@@ -123,7 +123,7 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
 
     if (nearestRider && nearestRider.user) {
        console.log(`\n================================`);
-       console.log(`🏍️  DELIVERY BOY ASSIGNED!`);
+       console.log(`🏍️  DELIVERY PARTNER NOTIFIED (Pending Accept)`);
        console.log(`Name: ${nearestRider.user.name}`);
        console.log(`Order ID: ${order.orderId}`);
        console.log(`Cycle: ${cycle}`);
@@ -133,28 +133,29 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
        const partnerId = nearestRider.user._id;
        order.deliveryPartner = partnerId; // Keep for legacy compatibility
        
+       // Set status to PENDING (not assigned) so partner must explicitly accept
        if (cycle === "pickup") {
          order.pickupPartner = partnerId;
-         order.pickupDeliveryStatus = "assigned";
+         order.pickupDeliveryStatus = "pending";
        } else {
          order.dropoffPartner = partnerId;
-         order.dropoffDeliveryStatus = "assigned";
+         order.dropoffDeliveryStatus = "pending";
        }
 
-       order.deliveryStatus = 'assigned';
+       order.deliveryStatus = 'pending';
        order.assignedAt = new Date();
        order.trackingHistory.push({
-          status: "Assigning Delivery Partner",
-          message: `Delivery partner auto-assigned for ${cycle}.`,
+          status: "searching-delivery-partner",
+          message: `Searching for delivery partner for ${cycle}. Notification sent to nearest available partner.`,
           timestamp: new Date()
        });
        await order.save();
 
-       // Notify assigned rider
-       const title = cycle === "pickup" ? "New Fabric Task Assigned! 📍" : "New Final Delivery Task! 📍";
+       // Notify assigned rider — they must accept or reject
+       const title = cycle === "pickup" ? "New Fabric Pickup Request! 🛵" : "New Delivery Request! 🛵";
        const message = cycle === "pickup" 
-          ? `Order ${order.orderId} has been auto-assigned to you for fabric pickup from Customer.`
-          : `Order ${order.orderId} has been auto-assigned to you for final delivery to Customer.`;
+          ? `New job: Fabric pickup for order ${order.orderId}. Please accept or reject.`
+          : `New job: Final delivery for order ${order.orderId}. Please accept or reject.`;
           
        await sendNotification({
          recipient: partnerId,
@@ -163,14 +164,46 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
          message,
          data: { 
            orderId: order._id, 
+           orderId_str: order.orderId,
            type: cycle === "pickup" ? "fabric-ready-for-pickup" : "ready-for-delivery", 
            taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
+           requiresAcceptance: true,
            targetUrl: "/delivery/tasks" 
          }
        });
        
+       // Emit socket notification directly to the partner
        const io = getIO();
-       if (io) io.to("delivery_partners").emit("task_claimed", { orderId: order._id });
+       if (io) {
+         // Notify assigned partner of the new task request
+         io.to(`user_${partnerId}`).emit('new_notification', {
+           type: 'NEW_DELIVERY_TASK',
+           title,
+           message,
+           data: { 
+             orderId: order._id,
+             requiresAcceptance: true,
+             taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
+             targetUrl: "/delivery/tasks" 
+           }
+         });
+
+         // Notify tailor panel to show "Searching" state
+         io.to(`user_${order.tailor?._id || order.tailor}`).emit('order_status_updated', {
+           orderId: order.orderId,
+           _id: order._id,
+           status: order.status,
+           pickupDeliveryStatus: order.pickupDeliveryStatus,
+           dropoffDeliveryStatus: order.dropoffDeliveryStatus
+         });
+
+         // Also notify customer tracking page
+         io.to(`user_${order.customer?._id || order.customer}`).emit('order_status_updated', {
+           orderId: order.orderId,
+           _id: order._id,
+           status: order.status
+         });
+       }
        
        return true;
     } else {

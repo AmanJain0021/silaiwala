@@ -8,6 +8,7 @@ import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { cn } from '../../../utils/cn';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
+import toast from 'react-hot-toast';
 
 const Orders = () => {
     const { user } = useTailorAuth();
@@ -72,7 +73,7 @@ const Orders = () => {
         setDispatchingMethod(method);
         setIsDispatching(true);
         try {
-            await handleStatusUpdate(dispatchOrder._id, 'ready-for-pickup', { 
+            await handleStatusUpdate(dispatchOrder.order._id, dispatchOrder.targetStatus, { 
                 autoAssign: method === 'auto',
                 deliveryMethod: method 
             });
@@ -94,6 +95,26 @@ const Orders = () => {
         setSocketInstance(socket);
         if (user?._id) socket.emit('join', `user_${user._id}`);
         socket.on('new_order', () => { if (activeTab === 'new') fetchOrders(); });
+        
+        // Refresh orders when delivery partner accepts/rejects (real-time update)
+        socket.on('order_status_updated', (data) => {
+            fetchOrders();
+            // If the updated order is currently open in modal, refresh it
+            setSelectedOrder(prev => {
+                if (prev && (prev._id === data._id || prev.orderId === data.orderId)) {
+                    return { ...prev, ...data };
+                }
+                return prev;
+            });
+        });
+
+        socket.on('new_notification', (data) => {
+            // Refresh if a delivery partner accepted or rejected our task
+            if (['PARTNER_ACCEPTED', 'PARTNER_ASSIGNED'].includes(data.type)) {
+                fetchOrders();
+            }
+        });
+
         return () => socket.disconnect();
     }, [activeTab, user?._id]);
 
@@ -111,6 +132,19 @@ const Orders = () => {
             }
         }
     }, [location]);
+
+    // Handle auto-opening order detail modal from notifications
+    useEffect(() => {
+        if (location.state?.highlightOrderId && orders.length > 0) {
+            const targetOrder = orders.find(o => o._id === location.state.highlightOrderId);
+            if (targetOrder) {
+                setSelectedOrder(targetOrder);
+                setIsModalOpen(true);
+                // Clear the state so it doesn't re-open on refresh
+                window.history.replaceState({}, document.title);
+            }
+        }
+    }, [location.state, orders]);
 
     const filteredOrders = orders.filter(order => {
         const orderId = order.orderId || '';
@@ -238,42 +272,34 @@ const Orders = () => {
                             <div className="bg-white rounded-3xl p-5 border border-gray-100">
                                 {/* Production Status UI Removed (Title Removed) */}
                                 {(() => {
-                                    const steps = order.fabricPickupRequired 
-                                        ? [
-                                            { key: 'fabric-received',          label: 'Fabric Received' },
-                                            { key: 'measurement-verification', label: 'Verification' },
-                                            { key: 'cutting',                  label: 'Cutting' },
-                                            { key: 'stitching',                label: 'Stitching' },
-                                            { key: 'finishing',                label: 'Finishing' },
-                                            { key: 'quality-check',            label: 'QC' },
-                                            { key: 'ready-for-delivery',       label: 'Ready' }
-                                        ]
-                                        : [
-                                            { key: 'order-received',           label: 'Received' },
-                                            { key: 'fabric-selected',          label: 'Fabric Picked' },
-                                            { key: 'cutting',                  label: 'Cutting' },
-                                            { key: 'stitching',                label: 'Stitching' },
-                                            { key: 'finishing',                label: 'Finishing' },
-                                            { key: 'quality-check',            label: 'QC' },
-                                            { key: 'ready-for-delivery',       label: 'Ready' }
-                                        ];
+                                    const steps = [
+                                        { key: 'order-received',     label: 'Order Received' },
+                                        { key: 'fabric-received',    label: 'Fabric Received' },
+                                        { key: 'cutting',            label: 'Cutting' },
+                                        { key: 'stitching',          label: 'Stitching' },
+                                        { key: 'quality-check',      label: 'Completed' },
+                                        { key: 'ready-for-delivery', label: 'Ready For Delivery' }
+                                    ];
                                     
                                     const statusOrder = [
                                         'pending',
                                         'accepted',
+                                        'pickup-assigned',
                                         'fabric-ready-for-pickup',
                                         'fabric-picked-up',
                                         'fabric-delivered',
-                                        'fabric-received',
                                         'order-received',
+                                        'fabric-received',
                                         'fabric-selected',
                                         'measurement-verification',
+                                        'pattern-making',
                                         'cutting',
                                         'stitching',
                                         'finishing',
                                         'quality-check',
                                         'ready-for-pickup',
                                         'ready-for-delivery',
+                                        'delivery-assigned',
                                         'out-for-delivery',
                                         'delivered',
                                         'product-delivered',
@@ -319,6 +345,16 @@ const Orders = () => {
                                                 </div>
                                             </div>
 
+                                            {/* Instructional Note */}
+                                            <div className="mb-4 bg-amber-50/80 border border-amber-100 rounded-xl p-3">
+                                                <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                                                    <span className="text-amber-500">ℹ️</span> Update Instructions
+                                                </p>
+                                                <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                                                    Click on the next stage to update the order status. <strong className="font-black">Note:</strong> Once you update a status, you cannot go back.
+                                                </p>
+                                            </div>
+
                                             {/* Vertical Timeline */}
                                             <div className="relative pl-2 py-2">
                                                 {/* Vertical Progress Line */}
@@ -348,8 +384,17 @@ const Orders = () => {
                                                             // Prevent backwards or redundant updates
                                                             if (idx <= currentIdx) return;
                                                             
+                                                            // Enforce strictly sequential updates (only the next immediate stage)
+                                                            if (idx !== currentIdx + 1) {
+                                                                toast.error("Please update stages in sequential order.", {
+                                                                    icon: '⚠️',
+                                                                    style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                                                });
+                                                                return;
+                                                            }
+                                                            
                                                             if (step.key === 'ready-for-delivery' || step.key === 'ready-for-pickup') {
-                                                                setDispatchOrder(order);
+                                                                setDispatchOrder({ order, targetStatus: step.key });
                                                             } else {
                                                                 handleStatusUpdate(order._id, step.key);
                                                             }
@@ -604,7 +649,7 @@ const Orders = () => {
                     )}
 
                     {/* Delivery Partner Details */}
-                    {order.deliveryPartner && (
+                    {order.deliveryPartner && (['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.pickupDeliveryStatus) || ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.dropoffDeliveryStatus)) && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
                             <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Delivery Partner</p>
                             <div className="flex items-center gap-3">
@@ -638,9 +683,12 @@ const Orders = () => {
                         const isDropoffPhaseStatus = ['ready-for-delivery', 'out-for-delivery'].includes(order.status);
                         const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
                         const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
+                        // Also show "Searching" state when partner has been notified (pending) but not yet accepted
+                        const isSearchingPickup = order.pickupPartner && order.pickupDeliveryStatus === 'pending';
+                        const isSearchingDropoff = order.dropoffPartner && order.dropoffDeliveryStatus === 'pending';
 
-                        const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner) && order.fabricDeliveryPreference === 'partner';
-                        const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner;
+                        const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner || isSearchingPickup) && order.fabricDeliveryPreference === 'partner';
+                        const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner || isSearchingDropoff;
 
                         if (shouldShowForPickup || shouldShowForDropoff) {
                             return <LiveDeliveryTracker order={order} socket={socketInstance} />;
@@ -805,21 +853,17 @@ const Orders = () => {
                                                 const flow = order.fabricPickupRequired 
                                                     ? [
                                                         { current: 'fabric-delivered', next: 'fabric-received', label: 'Receive Fabric' },
-                                                        { current: 'fabric-received', next: 'measurement-verification', label: 'Verify Measurements' },
-                                                        { current: 'measurement-verification', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'fabric-received', next: 'cutting', label: 'Start Cutting' },
                                                         { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
-                                                        { current: 'stitching', next: 'finishing', label: 'Start Finishing' },
-                                                        { current: 'finishing', next: 'quality-check', label: 'Start QC' },
+                                                        { current: 'stitching', next: 'quality-check', label: 'Mark Completed' },
                                                         { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
                                                         { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' }
                                                     ]
                                                     : [
-                                                        { current: 'accepted', next: 'order-received', label: 'Receive Order' },
-                                                        { current: 'order-received', next: 'fabric-selected', label: 'Select Fabric' },
-                                                        { current: 'fabric-selected', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'accepted', next: 'fabric-received', label: 'Receive Fabric/Order' },
+                                                        { current: 'fabric-received', next: 'cutting', label: 'Start Cutting' },
                                                         { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
-                                                        { current: 'stitching', next: 'finishing', label: 'Start Finishing' },
-                                                        { current: 'finishing', next: 'quality-check', label: 'Start QC' },
+                                                        { current: 'stitching', next: 'quality-check', label: 'Mark Completed' },
                                                         { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
                                                         { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' }
                                                     ];
@@ -839,7 +883,7 @@ const Orders = () => {
                                                             e.stopPropagation();
                                                             if (nextStep) {
                                                                 if (nextStep.current === 'quality-check' || order.status === 'ready-for-pickup' || order.status === 'ready-for-delivery') {
-                                                                    setDispatchOrder(order);
+                                                                    setDispatchOrder({ order, targetStatus: nextStep.next });
                                                                 } else {
                                                                     handleStatusUpdate(order._id, nextStep.next);
                                                                 }

@@ -111,7 +111,17 @@ const Tasks = () => {
     }, []);
 
     const activeTask = tasks.find(t => t._id === activeTaskId);
-    const pendingTasks = tasks.filter(t => ['pending', 'accepted', 'ready-for-pickup', 'fabric-ready-for-pickup'].includes(t.status));
+    // Tasks needing acceptance (pending = partner notified but not yet accepted)
+    const pendingAcceptanceTasks = tasks.filter(t => 
+        (t.pickupDeliveryStatus === 'pending' || t.dropoffDeliveryStatus === 'pending') &&
+        !['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(t.pickupDeliveryStatus) &&
+        !['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(t.dropoffDeliveryStatus)
+    );
+    const pendingTasks = tasks.filter(t => 
+        ['pending', 'accepted', 'ready-for-pickup', 'fabric-ready-for-pickup'].includes(t.status) &&
+        (t.pickupDeliveryStatus === 'accepted' || t.dropoffDeliveryStatus === 'accepted' || 
+         t.pickupDeliveryStatus === 'reached-pickup' || t.dropoffDeliveryStatus === 'reached-pickup')
+    );
 
     const handleAcceptOrder = async (orderId) => {
         try {
@@ -326,7 +336,12 @@ const Tasks = () => {
                             onClick={() => setActiveTab('assigned')}
                             className={`flex-1 py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'assigned' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            My Tasks ({tasks.length})
+                            My Tasks ({pendingAcceptanceTasks.length + pendingTasks.length})
+                            {pendingAcceptanceTasks.length > 0 && (
+                                <span className="ml-1 bg-green-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full animate-pulse">
+                                    {pendingAcceptanceTasks.length} New!
+                                </span>
+                            )}
                         </button>
                         <button
                             onClick={() => setActiveTab('available')}
@@ -460,6 +475,75 @@ const Tasks = () => {
                         >
                             {activeTab === 'assigned' ? (
                                 <>
+                                    {/* Tasks awaiting acceptance (partner was notified, needs to Accept/Reject) */}
+                                    {pendingAcceptanceTasks.map((task) => (
+                                        <div key={task._id} className="bg-white p-4 rounded-[1.25rem] border-2 border-primary/30 shadow-lg relative overflow-hidden animate-pulse-border">
+                                            {/* Pulsing notification dot */}
+                                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-ping absolute" />
+                                                <div className="w-2 h-2 bg-green-500 rounded-full relative" />
+                                                <span className="text-[8px] font-black text-green-700 uppercase tracking-widest ml-2">New Request!</span>
+                                            </div>
+
+                                            <div className="mb-3 mt-1">
+                                                <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest mb-1 ${task.taskType === 'fabric-pickup' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-primary'}`}>
+                                                    {task.taskType === 'fabric-pickup' ? '📦 Fabric Collection' : '🛵 Final Delivery'}
+                                                </div>
+                                                <h3 className="text-sm font-black text-slate-900 tracking-tight">New Delivery Task</h3>
+                                                <p className="text-[9px] font-bold text-slate-400 mt-0.5">Order #{task.orderId} • Please accept or reject</p>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-3 rounded-xl space-y-2 border border-slate-100 mb-3">
+                                                <div className="flex gap-2">
+                                                    <MapPin size={12} className="text-primary-dark mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Pickup</p>
+                                                        <p className="text-[11px] font-bold text-primary-dark leading-tight">
+                                                            {task.taskType === 'fabric-pickup'
+                                                                ? formatAddress(task.deliveryAddress)
+                                                                : (task.tailor?.shopName || 'Tailor Workshop')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 pt-2 border-t border-slate-200/50">
+                                                    <Navigation size={12} className="text-green-600 mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Drop-off</p>
+                                                        <p className="text-[11px] font-bold text-slate-600 leading-tight">
+                                                            {task.taskType === 'fabric-pickup'
+                                                                ? (task.tailor?.shopName || 'Tailor Workshop')
+                                                                : formatAddress(task.deliveryAddress)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await deliveryService.rejectOrder(task._id);
+                                                            toast.success('Task rejected');
+                                                            fetchTasks();
+                                                        } catch (e) {
+                                                            toast.error('Failed to reject task');
+                                                        }
+                                                    }}
+                                                    className="py-2.5 bg-slate-100 text-slate-700 rounded-xl font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-1.5 hover:bg-red-50 hover:text-red-600 active:scale-95 transition-all"
+                                                >
+                                                    <X size={12} /> Reject
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAcceptOrder(task._id)}
+                                                    className="py-2.5 bg-primary text-white rounded-xl font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-1.5 shadow-lg shadow-primary/25 hover:bg-primary-dark active:scale-95 transition-all"
+                                                >
+                                                    <Check size={12} /> Accept
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Already accepted tasks (just waiting to start) */}
                                     {pendingTasks.map((task) => (
                                         <div key={task._id} className="bg-white p-4 rounded-[1.25rem] border-2 border-slate-100 shadow-sm transition-all hover:border-slate-100">
                                             <div className="flex justify-between items-start mb-3">
@@ -472,8 +556,8 @@ const Tasks = () => {
                                                         {task.taskType === 'fabric-pickup' ? `From: ${task.customer?.name}` : `From: ${task.tailor?.shopName}`}
                                                     </p>
                                                 </div>
-                                                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">
-                                                    Standard
+                                                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-green-50 text-green-700 border border-green-100">
+                                                    Accepted
                                                 </span>
                                             </div>
 
@@ -485,8 +569,8 @@ const Tasks = () => {
                                                     <div className="flex-1">
                                                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Pickup Location</p>
                                                         <p className="text-[11px] font-bold text-primary-dark leading-tight capitalize">
-                                                            {task.taskType === 'fabric-pickup' 
-                                                                ? formatAddress(task.deliveryAddress) 
+                                                            {task.taskType === 'fabric-pickup'
+                                                                ? formatAddress(task.deliveryAddress)
                                                                 : formatAddress(task.tailor?.location?.address || task.tailor?.address)}
                                                         </p>
                                                     </div>
@@ -502,7 +586,7 @@ const Tasks = () => {
                                         </div>
                                     ))}
 
-                                    {pendingTasks.length === 0 && (
+                                    {pendingAcceptanceTasks.length === 0 && pendingTasks.length === 0 && (
                                         <div className="text-center py-16 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200">
                                             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-slate-300 mx-auto mb-3">
                                                 <CheckCircle2 size={24} />

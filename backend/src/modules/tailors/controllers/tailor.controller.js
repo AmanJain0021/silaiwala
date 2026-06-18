@@ -291,6 +291,34 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
               items: 1
             }
           }
+        ],
+        // 5. Upcoming Pickups (orders needing fabric pickup or final delivery)
+        upcomingPickups: [
+          { 
+            $match: { 
+              status: { $in: ["fabric-ready-for-pickup", "fabric-picked-up", "ready", "ready-for-delivery", "ready-for-pickup"] } 
+            } 
+          },
+          { $sort: { updatedAt: -1 } },
+          { $limit: 4 },
+          {
+            $lookup: {
+              from: "users",
+              localField: "customer",
+              foreignField: "_id",
+              as: "customerInfo"
+            }
+          },
+          { $unwind: "$customerInfo" },
+          {
+            $project: {
+              orderId: 1,
+              totalAmount: 1,
+              status: 1,
+              customerName: "$customerInfo.name",
+              customer: { name: "$customerInfo.name" }
+            }
+          }
         ]
       }
     }
@@ -327,9 +355,12 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
         pendingOrders: stats.activeOrders,
         completedThisWeek: weekly,
         avgDeliveryTime: parseFloat(avgHours),
-        walletBalance: tailorProfile?.walletBalance || 0
+        walletBalance: tailorProfile?.walletBalance || 0,
+        rating: tailorProfile?.rating || 0,
+        totalReviews: tailorProfile?.totalReviews || 0
       },
-      recentActivity: dashboardData[0].recentActivity
+      recentActivity: dashboardData[0].recentActivity,
+      upcomingPickups: dashboardData[0].upcomingPickups || []
     },
   });
 });

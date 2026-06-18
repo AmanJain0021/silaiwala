@@ -1,4 +1,5 @@
 const SupportTicket = require('../../../models/SupportTicket');
+const { sendNotification } = require('../../../utils/notification');
 
 exports.createTicket = async (req, res) => {
   try {
@@ -9,6 +10,16 @@ exports.createTicket = async (req, res) => {
     }
 
     const ticket = await SupportTicket.create({ name, email, subject, message });
+
+    // Notify admins
+    await sendNotification({
+      recipient: 'admins',
+      type: 'SUPPORT_TICKET',
+      title: 'New Support Ticket',
+      message: `${name} has submitted a new support ticket regarding "${subject}".`,
+      data: { targetUrl: '/admin/support' }
+    });
+
     res.status(201).json({ success: true, data: ticket, message: 'Message sent successfully. We will get back to you soon.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

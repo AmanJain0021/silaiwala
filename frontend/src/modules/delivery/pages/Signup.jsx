@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX } from 'react-icons/fi';
 import useAuthStore from '../../../store/authStore';
 
 const DeliverySignup = () => {
@@ -25,6 +25,11 @@ const DeliverySignup = () => {
         aadharCard: null, 
         aadharCardBack: null,
         profileImage: null,
+        accountNumber: '',
+        accountName: '',
+        bankName: '',
+        ifscCode: '',
+        partnerRoles: ['delivery'],
     });
     const [error, setError] = useState('');
     const fileInputRefs = useRef({});
@@ -49,6 +54,16 @@ const DeliverySignup = () => {
         setFormData({ ...formData, [name]: value });
     };
 
+    const handleRoleToggle = (role) => {
+        setFormData(prev => {
+            const roles = prev.partnerRoles.includes(role)
+                ? prev.partnerRoles.filter(r => r !== role)
+                : [...prev.partnerRoles, role];
+            if (roles.length === 0) return prev; // prevent unchecking both
+            return { ...prev, partnerRoles: roles };
+        });
+    };
+
     const validateStep = (step) => {
         setError('');
         if (step === 1) {
@@ -68,8 +83,8 @@ const DeliverySignup = () => {
                 setError('Enter a valid email address');
                 return false;
             }
-            if (!/^6\d{9}$/.test(formData.phone)) {
-                setError('Enter a valid 10-digit mobile number starting with 6');
+            if (!/^[6-9]\d{9}$/.test(formData.phone)) {
+                setError('Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9');
                 return false;
             }
             if (formData.password.length < 6 || !/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
@@ -183,6 +198,10 @@ const DeliverySignup = () => {
             delete payloadData.aadharCardBack;
             delete payloadData.profileImage;
 
+            if (profileImageUrl) {
+                payloadData.profileImage = profileImageUrl;
+            }
+
             // Note: The backend register function expects 'phoneNumber' or 'phone'
             await signup(payloadData);
             // If signup is successful, redirect to a "waiting for approval" or dashboard
@@ -196,11 +215,11 @@ const DeliverySignup = () => {
 
     const DocUpload = ({ name, label }) => (
         <div
-            onClick={() => fileInputRefs.current[name]?.click()}
-            className={`flex-1 flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${
+            onClick={() => !formData[name] && fileInputRefs.current[name]?.click()}
+            className={`relative flex-1 flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${
                 formData[name] 
-                ? 'bg-purple-50/50 border-purple-200/50 text-purple-600' 
-                : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-[#2D2F6F] hover:bg-purple-50/50/30'
+                ? 'border-purple-200/50' 
+                : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-[#2D2F6F] hover:bg-purple-50/50'
             }`}
         >
             <input
@@ -208,14 +227,38 @@ const DeliverySignup = () => {
                 type="file" name={name} accept="image/*" onChange={handleChange} className="hidden"
             />
             {formData[name] ? (
-                <>
-                    <FiCheck size={24} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Uploaded</span>
-                </>
+                <div className="relative w-full h-full group">
+                    <img src={URL.createObjectURL(formData[name])} alt={label} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button 
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                fileInputRefs.current[name]?.click();
+                            }}
+                            className="bg-white text-[#2D2F6F] p-2 rounded-full hover:bg-gray-100 shadow-md"
+                        >
+                            <FiCamera size={16} />
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData(prev => ({ ...prev, [name]: null }));
+                                if (fileInputRefs.current[name]) {
+                                    fileInputRefs.current[name].value = '';
+                                }
+                            }}
+                            className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-md"
+                        >
+                            <FiX size={16} />
+                        </button>
+                    </div>
+                </div>
             ) : (
                 <>
                     <FiCamera size={24} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-center">{label}</span>
                 </>
             )}
         </div>
@@ -303,6 +346,19 @@ const DeliverySignup = () => {
                                 <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
                                 <input name="aadharNumber" placeholder="Aadhaar Number (e.g. 1234 5678 9012)" value={formData.aadharNumber} maxLength={14} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
                             </div>
+                            <div className="space-y-2 mt-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Select Your Role(s)</p>
+                                <div className="flex gap-3">
+                                    <label className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.partnerRoles.includes('delivery') ? 'border-[#2D2F6F] bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+                                        <input type="checkbox" className="hidden" checked={formData.partnerRoles.includes('delivery')} onChange={() => handleRoleToggle('delivery')} />
+                                        <span className="text-xs font-bold text-gray-700 text-center">Delivery Partner</span>
+                                    </label>
+                                    <label className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.partnerRoles.includes('measurement') ? 'border-[#2D2F6F] bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+                                        <input type="checkbox" className="hidden" checked={formData.partnerRoles.includes('measurement')} onChange={() => handleRoleToggle('measurement')} />
+                                        <span className="text-xs font-bold text-gray-700 text-center">Measurement</span>
+                                    </label>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
 
@@ -355,6 +411,22 @@ const DeliverySignup = () => {
                             <div className="relative group">
                                 <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
                                 <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
+                            </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
+                                <input name="accountName" placeholder="Account Holder Name (Optional)" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
+                            </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
+                                <input name="bankName" placeholder="Bank Name (Optional)" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
+                            </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
+                                <input name="accountNumber" placeholder="Bank Account Number (Optional)" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm" />
+                            </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2D2F6F]" />
+                                <input name="ifscCode" placeholder="IFSC Code (Optional)" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#2D2F6F] focus:ring-1 focus:ring-[#2D2F6F] outline-none transition-all font-medium text-sm uppercase" />
                             </div>
                         </motion.div>
                     )}
