@@ -51,10 +51,10 @@ const OrderCard = ({ order }) => {
                     </div>
 
                     <div className="flex justify-between items-start gap-2 mb-1.5">
-                        <h3 className="text-xs sm:text-sm font-black text-gray-900 line-clamp-1 group-hover:text-[#2D2F6E] transition-colors uppercase tracking-tight">
+                        <h3 className="text-xs sm:text-sm font-black text-gray-900 line-clamp-1 group-hover:text-[#843D9B] transition-colors uppercase tracking-tight">
                             {serviceTitle}
                         </h3>
-                        <span className="text-xs sm:text-sm font-black text-[#2D2F6E] shrink-0">₹{order.totalAmount || 0}</span>
+                        <span className="text-xs sm:text-sm font-black text-[#843D9B] shrink-0">₹{order.totalAmount || 0}</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[9px] sm:text-[10px] text-gray-500 mt-2 font-bold uppercase tracking-wide">
@@ -109,7 +109,7 @@ const OrderCard = ({ order }) => {
                 </div>
 
                 {/* 3. Arrow */}
-                <div className="self-center text-gray-300 group-hover:text-[#2D2F6E] transition-colors shrink-0">
+                <div className="self-center text-gray-300 group-hover:text-[#843D9B] transition-colors shrink-0">
                     <ChevronRight size={16} className="sm:w-5 sm:h-5" />
                 </div>
             </Link>

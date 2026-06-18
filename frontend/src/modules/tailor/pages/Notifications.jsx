@@ -24,7 +24,7 @@ const Notifications = () => {
             case 'ORDER_CREATED':
                 return { icon: <ShoppingBag size={18} />, bg: 'bg-emerald-500/10', color: 'text-emerald-400' };
             case 'ORDER_STATUS_UPDATED':
-                return { icon: <Bell size={18} />, bg: 'bg-[#2D2F6E]/10', color: 'text-[#2D2F6E]' };
+                return { icon: <Bell size={18} />, bg: 'bg-[#843D9B]/10', color: 'text-[#843D9B]' };
             case 'SYSTEM_NOTICE':
                 return { icon: <AlertCircle size={18} />, bg: 'bg-amber-500/10', color: 'text-amber-400' };
             default:
@@ -33,20 +33,20 @@ const Notifications = () => {
     };
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
 
             {/* ── MOBILE HEADER ── */}
             <div className="md:hidden bg-white px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="p-1.5 -ml-2 text-gray-400 hover:text-[#2D2F6E] transition-colors">
+                    <button onClick={() => navigate(-1)} className="p-1.5 -ml-2 text-gray-400 hover:text-[#843D9B] transition-colors">
                         <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-[17px] font-black text-[#2D2F6E] tracking-tight uppercase">Alerts</h1>
+                    <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight uppercase">Alerts</h1>
                 </div>
                 {unreadCount > 0 && (
                     <button
                         onClick={markAllRead}
-                        className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                        className="text-[9px] font-black text-[#843D9B] uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
                     >
                         Mark All Read
                     </button>
@@ -64,7 +64,7 @@ const Notifications = () => {
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllRead}
-                            className="bg-white text-[#2D2F6E] border border-gray-100 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all active:scale-95"
+                            className="bg-white text-[#843D9B] border border-gray-100 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all active:scale-95"
                         >
                             Clear All Unread
                         </button>
@@ -112,12 +112,12 @@ const Notifications = () => {
                                     }}
                                     className={`group p-5 md:p-6 rounded-[2rem] border transition-all flex gap-5 cursor-pointer relative ${
                                         isNew
-                                            ? 'bg-white border-[#2D2F6E]/10 shadow-[0_10px_30px_rgba(45,47,110,0.05)]'
+                                            ? 'bg-white border-[#843D9B]/10 shadow-[0_10px_30px_rgba(45,47,110,0.05)]'
                                             : 'bg-white/60 border-gray-100 opacity-60 grayscale-[0.5]'
                                     }`}
                                 >
                                     {isNew && (
-                                        <div className="absolute top-6 right-6 h-2 w-2 bg-[#2D2F6E] rounded-full ring-4 ring-indigo-50" />
+                                        <div className="absolute top-6 right-6 h-2 w-2 bg-[#843D9B] rounded-full ring-4 ring-indigo-50" />
                                     )}
                                     
                                     <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-500 ${bg} ${color.replace('text-', 'text- opacity-80')}`}>

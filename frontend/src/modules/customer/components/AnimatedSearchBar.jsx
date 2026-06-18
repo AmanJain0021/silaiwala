@@ -70,7 +70,7 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch }) => {
     return (
         <div className={`relative group ${className}`}>
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Search className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-[#2D2F6E] transition-colors" />
+                <Search className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-[#843D9B] transition-colors" />
             </div>
             <input
                 type="text"

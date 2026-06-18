@@ -36,6 +36,22 @@ const subscriptionPlanSchema = new mongoose.Schema(
       enum: ["basic", "premium", "elite"],
       default: "basic",
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    maxOrdersPerMonth: {
+      type: Number,
+      default: -1, // -1 means unlimited
+    },
+    sortOrder: {
+      type: Number,
+      default: 0,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

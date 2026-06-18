@@ -4,11 +4,12 @@
     --font-sans: "Poppins", system-ui, sans-serif;
     --font-serif: "Libre Caslon Text", serif;
     --font-body: "Manrope", sans-serif;
+    --font-jakarta: "Plus Jakarta Sans", sans-serif;
     
     /* Existing Colors */
-    --color-primary: #2D2F6E;
-    --color-secondary: #5A4FCF;
-    --color-accent: #F4A261;
+    --color-primary: #843D9B;
+    --color-secondary: #5D2A73;
+    --color-accent: #D4AF37;
 
     /* Landing Page Specific Colors */
     --color-evergreen: #061B0E;
@@ -17,6 +18,28 @@
     --color-alabaster: #FAF9F7;
     --color-stone: #EFEEEC;
     --color-gold: #B18D48;
+
+    /* NEW: Premium Atelier Purple Theme */
+    --color-sw-primary: #4a0581;
+    --color-sw-primary-container: #622999;
+    --color-sw-on-primary: #ffffff;
+    --color-sw-on-primary-container: #d2a4ff;
+    --color-sw-surface: #fcf9f8;
+    --color-sw-surface-container: #f0eded;
+    --color-sw-surface-container-low: #f6f3f2;
+    --color-sw-surface-container-high: #eae7e7;
+    --color-sw-on-surface: #1c1b1b;
+    --color-sw-on-surface-variant: #4c4451;
+    --color-sw-outline: #7d7483;
+    --color-sw-outline-variant: #cec3d3;
+    --color-sw-surface-tint: #7a42b1;
+    --color-sw-secondary: #635b6e;
+    --color-sw-secondary-container: #e9def5;
+    --color-sw-tertiary: #4a0085;
+    --color-sw-tertiary-container: #651baa;
+    --color-sw-inverse-primary: #dcb8ff;
+    --color-sw-primary-fixed: #f0dbff;
+    --color-sw-primary-fixed-dim: #dcb8ff;
     
     /* Layout utilities */
     --spacing-18: 4.5rem;
@@ -29,7 +52,7 @@ body {
 
 /* Custom Utilities */
 .wavy-bg {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%232D2F6E' fill-opacity='0.6' d='M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,202.7C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23843D9B' fill-opacity='0.6' d='M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,202.7C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: bottom;
     background-size: cover;

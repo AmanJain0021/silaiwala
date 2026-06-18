@@ -117,7 +117,7 @@ const TrackingMap = ({
           <Polyline
             path={path}
             options={{
-              strokeColor: '#2D2F6E',
+              strokeColor: '#843D9B',
               strokeWeight: 3,
               strokeOpacity: 0.7,
             }}

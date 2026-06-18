@@ -72,7 +72,7 @@ const TailorLayout = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F5F5F5] flex font-sans selection:bg-[#2D2F6E] selection:text-white">
+        <div className="min-h-screen bg-[#F5F5F5] flex font-sans selection:bg-[#843D9B] selection:text-white">
             {/* ── SIDEBAR (DESKTOP ONLY) ── */}
             <aside className="hidden md:flex flex-col w-72 bg-[#0A0A0A] border-r border-[#1C1C1C] sticky top-0 h-screen z-50">
                 <div className="p-8">
@@ -82,7 +82,7 @@ const TailorLayout = () => {
                         </div>
                         <div>
                             <h1 className="text-xl font-black text-white leading-none tracking-tight">
-                                SewZ<span className="text-[#2D2F6E]">ella</span>
+                                SewZ<span className="text-[#843D9B]">ella</span>
                             </h1>
                             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">Partner Portal</p>
                         </div>
@@ -98,7 +98,7 @@ const TailorLayout = () => {
                                 to={item.path}
                                 className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
                                     isActive 
-                                        ? 'bg-[#2D2F6E] text-white shadow-xl shadow-[#2D2F6E]/20' 
+                                        ? 'bg-[#843D9B] text-white shadow-xl shadow-[#843D9B]/20' 
                                         : 'text-gray-500 hover:text-white hover:bg-white/5'
                                 }`}
                             >
@@ -116,15 +116,15 @@ const TailorLayout = () => {
 
                 <div className="p-6">
                     <div className="bg-[#1C1C1C] rounded-[2rem] p-5 border border-white/5 relative overflow-hidden group">
-                        <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-[#2D2F6E]/10 rounded-full blur-2xl group-hover:bg-[#2D2F6E]/20 transition-all"></div>
+                        <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-[#843D9B]/10 rounded-full blur-2xl group-hover:bg-[#843D9B]/20 transition-all"></div>
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="h-10 w-10 rounded-xl bg-[#2D2F6E] flex items-center justify-center text-white font-black text-sm shadow-md">
+                            <div className="h-10 w-10 rounded-xl bg-[#843D9B] flex items-center justify-center text-white font-black text-sm shadow-md">
                                 {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                             </div>
                             <div className="min-w-0">
                                 <p className="text-xs font-black text-white truncate">{user?.name || 'Partner'}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-[#2D2F6E]' : 'bg-orange-400'} animate-pulse`}></span>
+                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-[#843D9B]' : 'bg-orange-400'} animate-pulse`}></span>
                                     <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest leading-none">{status}</span>
                                 </div>
                             </div>
@@ -150,12 +150,12 @@ const TailorLayout = () => {
                                     {menuItems.find(i => i.path === location.pathname)?.label || 'SewZella'}
                                 </h2>
                                 <div className="flex items-center gap-1.5 mt-1">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-[#2D2F6E]' : 'bg-orange-400'}`}></span>
+                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-[#843D9B]' : 'bg-orange-400'}`}></span>
                                     <span className="text-[9px] font-bold uppercase text-gray-400 tracking-widest leading-none">{status}</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="h-9 w-9 rounded-2xl bg-[#2D2F6E] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[#2D2F6E]/20">
+                        <div className="h-9 w-9 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[#843D9B]/20">
                             {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                         </div>
                     </header>
@@ -184,12 +184,12 @@ const TailorLayout = () => {
                                 {isActive && (
                                     <motion.span 
                                         layoutId="bottomNavActive"
-                                        className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#2D2F6E] rounded-full" 
+                                        className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#843D9B] rounded-full" 
                                     />
                                 )}
                                 <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
                                     isActive
-                                        ? 'bg-[#2D2F6E] text-white shadow-lg shadow-[#2D2F6E]/30 scale-110'
+                                        ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/30 scale-110'
                                         : 'text-[#555555] active:scale-90'
                                 }`}>
                                     {item.badge > 0 && (
@@ -203,7 +203,7 @@ const TailorLayout = () => {
                                     })}
                                 </div>
                                 <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${
-                                    isActive ? 'text-[#2D2F6E]' : 'text-[#444444]'
+                                    isActive ? 'text-[#843D9B]' : 'text-[#444444]'
                                 }`}>
                                     {item.label}
                                 </span>

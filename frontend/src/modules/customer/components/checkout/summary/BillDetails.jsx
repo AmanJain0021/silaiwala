@@ -62,17 +62,17 @@ const BillDetails = ({ pricing, advancePercentage = 50 }) => {
 
                 <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-gray-900">Total Amount</span>
-                    <span className="text-sm font-black text-[#2D2F6E]">₹{finalTotal}</span>
+                    <span className="text-sm font-black text-[#843D9B]">₹{finalTotal}</span>
                 </div>
 
                 <div className="w-full border-t border-dashed border-gray-200 my-3"></div>
 
                 <div className="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100">
                     <div>
-                        <span className="text-xs font-bold text-[#2D2F6E] block">Advance Payable ({advancePercentage}%)</span>
-                        <span className="text-[9px] text-[#2D2F6E]/70 font-semibold uppercase tracking-wider">Required to confirm order</span>
+                        <span className="text-xs font-bold text-[#843D9B] block">Advance Payable ({advancePercentage}%)</span>
+                        <span className="text-[9px] text-[#843D9B]/70 font-semibold uppercase tracking-wider">Required to confirm order</span>
                     </div>
-                    <span className="text-sm font-black text-[#2D2F6E]">₹{advanceAmount}</span>
+                    <span className="text-sm font-black text-[#843D9B]">₹{advanceAmount}</span>
                 </div>
 
                 <div className="flex justify-between items-center px-2.5 pt-1">

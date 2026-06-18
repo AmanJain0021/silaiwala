@@ -34,7 +34,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productTy
 
     return (
         <div className="bg-gray-50 pb-8 min-h-[50vh]">
-            <h2 className="text-xl md:text-2xl font-bold text-[#2D2F6E] px-4 md:px-6 lg:px-8 py-4">
+            <h2 className="text-xl md:text-2xl font-bold text-[#843D9B] px-4 md:px-6 lg:px-8 py-4">
                 {categoryName && categoryName !== 'All' ? `${categoryName} Collection` : 'Explore Fabrics'}
             </h2>
 
@@ -56,7 +56,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productTy
 
             {isLoading && (
                 <div className="flex justify-center p-6">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2D2F6E]"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#843D9B]"></div>
                 </div>
             )}
 

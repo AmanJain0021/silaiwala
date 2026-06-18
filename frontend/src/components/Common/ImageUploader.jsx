@@ -65,7 +65,7 @@ const ImageUploader = ({
                 className={`relative overflow-hidden group rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer
                     ${preview 
                         ? 'border-indigo-200 bg-indigo-50/30' 
-                        : 'border-gray-300 bg-gray-50 hover:border-[#2D2F6E] hover:bg-[#F8F9FD]'
+                        : 'border-gray-300 bg-gray-50 hover:border-[#843D9B] hover:bg-[#F8F9FD]'
                     }`}
             >
                 {preview ? (
@@ -95,7 +95,7 @@ const ImageUploader = ({
                         <div className="w-12 h-12 mb-3 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform duration-300">
                             <ImageIcon size={24} />
                         </div>
-                        <p className="text-sm font-bold text-gray-700 group-hover:text-[#2D2F6E] transition-colors">
+                        <p className="text-sm font-bold text-gray-700 group-hover:text-[#843D9B] transition-colors">
                             Click to upload image
                         </p>
                         <p className="text-[10px] text-gray-400 font-medium mt-1 uppercase tracking-wider">

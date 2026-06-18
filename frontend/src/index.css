@@ -3,12 +3,12 @@
 @theme {
     /* === PRIMARY BRAND COLORS (Dark Navy/Purple) === */
     --color-primary: #2D2F6F;
-    --color-primary-light: #4A4C8C;
+    --color-primary-light: #B35BCB;
     --color-primary-dark: #1E1F4D;
     --color-primary-soft: #F0F1FF;
 
     /* === ACCENT COLORS (Gold/Peach) === */
-    --color-accent: #F4A261;
+    --color-accent: #D4AF37;
     --color-accent-soft: #FDE5D2;
 
 
@@ -43,8 +43,8 @@
 :root {
     --brand-color: #2D2F6F;
     --brand-gradient-start: #2D2F6F;
-    --brand-gradient-end: #4A4C8C;
-    --accent-color: #F4A261;
+    --brand-gradient-end: #B35BCB;
+    --accent-color: #D4AF37;
     --page-bg: #F8F9FD;
     --card-bg: #FFFFFF;
     --text-primary: #1A1A1A;
@@ -69,7 +69,7 @@ body {
 }
 
 .gradient-brand {
-    background: linear-gradient(135deg, #2D2F6F 0%, #4A4C8C 100%);
+    background: linear-gradient(135deg, #2D2F6F 0%, #B35BCB 100%);
 }
 
 /* ===== CARD STYLE ===== */
@@ -84,14 +84,14 @@ body {
 .custom-scrollbar::-webkit-scrollbar { width: 3px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #5A4FCF;
+    background: #5D2A73;
     border-radius: 999px;
 }
 
 /* ===== STATUS BADGE ===== */
 .badge-primary {
     background: #FDE5D2;
-    color: #2D2F6E;
+    color: #843D9B;
     border: 1px solid rgba(45, 47, 110, 0.15);
 }
 
@@ -132,7 +132,7 @@ body {
 }
 
 ::selection {
-  background-color: #2D2F6E;
+  background-color: #843D9B;
   color: white;
 }
 

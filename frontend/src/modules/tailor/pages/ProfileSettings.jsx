@@ -271,10 +271,10 @@ const ProfileSettings = () => {
     };
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#2D2F6E] selection:text-white pb-20">
+        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-20">
             
             {/* ── MOBILE HEADER ── */}
-            <div className={`md:hidden relative bg-[#2D2F6E] pt-4 ${isEditing ? 'pb-12' : 'pb-16'} px-5 text-white overflow-hidden shrink-0 shadow-xl transition-all duration-300`}>
+            <div className={`md:hidden relative bg-[#843D9B] pt-4 ${isEditing ? 'pb-12' : 'pb-16'} px-5 text-white overflow-hidden shrink-0 shadow-xl transition-all duration-300`}>
                 <div className="absolute inset-0 z-0 opacity-20 mix-blend-overlay pointer-events-none">
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full fill-white">
                         <path d="M0,100 C40,80 60,0 100,0 L100,100 Z" />
@@ -311,11 +311,11 @@ const ProfileSettings = () => {
                         {/* Profile Overview Card */}
                         <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Shield size={120} className="text-[#2D2F6E]" />
+                                <Shield size={120} className="text-[#843D9B]" />
                             </div>
                             
                             <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                                <div className="h-24 w-24 bg-[#1A1A1A] rounded-[2rem] flex items-center justify-center text-[#FDE5D2] shadow-2xl shadow-[#2D2F6E]/20 relative group-hover:scale-105 transition-transform duration-500">
+                                <div className="h-24 w-24 bg-[#1A1A1A] rounded-[2rem] flex items-center justify-center text-[#FDE5D2] shadow-2xl shadow-[#843D9B]/20 relative group-hover:scale-105 transition-transform duration-500">
                                     {(profile?.user?.profileImage && profile?.user?.profileImage !== 'default_profile.png') ? (
                                         <img src={profile.user.profileImage} alt="Profile" className="w-full h-full object-cover rounded-[2rem]" />
                                     ) : (
@@ -323,7 +323,7 @@ const ProfileSettings = () => {
                                     )}
                                     <button 
                                         onClick={() => setIsEditing(true)}
-                                        className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-gray-100 text-[#2D2F6E] hover:bg-[#2D2F6E] hover:text-white transition-all"
+                                        className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-gray-100 text-[#843D9B] hover:bg-[#843D9B] hover:text-white transition-all"
                                     >
                                         <Edit2 size={14} />
                                     </button>
@@ -331,7 +331,7 @@ const ProfileSettings = () => {
                                 <div className="text-center md:text-left">
                                     <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">{profile?.shopName || 'Luxury Stitches'}</h2>
                                     <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
-                                        <span className="bg-indigo-50 text-[#2D2F6E] px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                                        <span className="bg-indigo-50 text-[#843D9B] px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
                                             Verified Partner
                                         </span>
                                         <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100">
@@ -356,7 +356,7 @@ const ProfileSettings = () => {
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Shop Name</label>
                                             <input 
-                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
                                                 value={formData.shopName} 
                                                 onChange={(e) => setFormData({...formData, shopName: e.target.value})}
                                             />
@@ -364,7 +364,7 @@ const ProfileSettings = () => {
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Owner Name</label>
                                             <input 
-                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
                                                 value={formData.name} 
                                                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                                             />
@@ -372,7 +372,7 @@ const ProfileSettings = () => {
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Email Address</label>
                                             <input 
-                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
                                                 type="email" 
                                                 value={formData.email} 
                                                 onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -381,7 +381,7 @@ const ProfileSettings = () => {
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Contact Number</label>
                                             <input 
-                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
                                                 type="tel" 
                                                 value={formData.phoneNumber} 
                                                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
@@ -406,7 +406,7 @@ const ProfileSettings = () => {
                                             </button>
                                         </div>
                                         <input 
-                                            className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#2D2F6E]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                            className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
                                             value={formData.address} 
                                             onChange={(e) => setFormData({...formData, address: e.target.value})}
                                             placeholder="Detect exact location or enter address"
@@ -423,7 +423,7 @@ const ProfileSettings = () => {
                                         <button 
                                             type="submit" 
                                             disabled={isSaving}
-                                            className="flex-[2] py-4 bg-[#2D2F6E] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#2D2F6E]/20 hover:bg-[#1e1f4a] transition-all"
+                                            className="flex-[2] py-4 bg-[#843D9B] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#843D9B]/20 hover:bg-[#4E2460] transition-all"
                                         >
                                             {isSaving ? 'Saving Changes...' : 'Update Profile'}
                                         </button>
@@ -458,7 +458,7 @@ const ProfileSettings = () => {
                             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-3 mb-3">Quick Navigation</h3>
                             <MenuOption
                                 icon={Wallet}
-                                color="bg-[#2D2F6E]"
+                                color="bg-[#843D9B]"
                                 label="Wallet & Payouts"
                                 subLabel="Check your balance"
                                 extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100">₹ 0</span>}
@@ -466,21 +466,21 @@ const ProfileSettings = () => {
                             />
                             <MenuOption
                                 icon={Ticket}
-                                color="bg-[#2D2F6E]"
+                                color="bg-[#843D9B]"
                                 label="Subscription Plan"
                                 subLabel="Manage your plan"
                                 to="/partner/subscription"
                             />
                             <MenuOption
                                 icon={MapPin}
-                                color="bg-[#2D2F6E]"
+                                color="bg-[#843D9B]"
                                 label="Pick Up Info"
                                 subLabel="Manage addresses"
                                 onClick={() => setActiveModal('pickup')}
                             />
                             <MenuOption
                                 icon={Shield}
-                                color="bg-[#2D2F6E]"
+                                color="bg-[#843D9B]"
                                 label="Privacy & Terms"
                                 subLabel="Legal guidelines"
                                 onClick={() => setActiveModal('privacy')}
@@ -531,7 +531,7 @@ const ProfileSettings = () => {
                         <div className="p-8 border-t border-gray-50">
                             <button 
                                 onClick={() => setActiveModal(null)} 
-                                className="w-full bg-[#2D2F6E] text-white rounded-2xl py-4 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-[#2D2F6E]/20 active:scale-95 transition-all"
+                                className="w-full bg-[#843D9B] text-white rounded-2xl py-4 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-[#843D9B]/20 active:scale-95 transition-all"
                             >
                                 Close Information
                             </button>

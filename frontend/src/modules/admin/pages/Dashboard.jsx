@@ -224,7 +224,7 @@ const AdminDashboard = () => {
                                 <div key={idx} className="flex flex-col items-center flex-1 z-10 group">
                                     <div className="relative w-full max-w-[40px] flex justify-center flex-1 items-end">
                                         <div
-                                            className="w-full bg-indigo-100/50 rounded-t-lg group-hover:bg-[#2D2F6E] transition-all duration-300 relative"
+                                            className="w-full bg-indigo-100/50 rounded-t-lg group-hover:bg-[#843D9B] transition-all duration-300 relative"
                                             style={{ height: `${(data.revenue / (maxRevenue || 1)) * 100}%` }}
                                         >
                                             <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap transition-all z-20">
@@ -326,7 +326,7 @@ const AdminDashboard = () => {
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-[#2D2F6E] p-6 lg:p-8 rounded-[2rem] shadow-xl text-white relative overflow-hidden group border border-pink-400/20"
+                        className="bg-[#843D9B] p-6 lg:p-8 rounded-[2rem] shadow-xl text-white relative overflow-hidden group border border-pink-400/20"
                     >
                         <div className="absolute -top-4 -right-4 p-4 opacity-10 group-hover:opacity-20 transition-all duration-500 transform group-hover:rotate-12 group-hover:scale-110">
                             <Scissors size={120} />
@@ -338,7 +338,7 @@ const AdminDashboard = () => {
                                 You have <span className="text-white font-black underline decoration-white/30 underline-offset-4">{statsData.pendingTailorsCount || 0} applications</span> waiting for document KYC verification.
                             </p>
                         </div>
-                        <Link to="/admin/tailors" className="mt-8 w-full py-4 bg-white text-[#2D2F6E] font-black rounded-2xl text-[11px] uppercase tracking-widest hover:bg-indigo-50 hover:shadow-xl transition-all active:scale-95 relative z-10 flex items-center justify-center shadow-lg shadow-indigo-900/10">
+                        <Link to="/admin/tailors" className="mt-8 w-full py-4 bg-white text-[#843D9B] font-black rounded-2xl text-[11px] uppercase tracking-widest hover:bg-indigo-50 hover:shadow-xl transition-all active:scale-95 relative z-10 flex items-center justify-center shadow-lg shadow-indigo-900/10">
                             Review Applications
                         </Link>
                     </motion.div>

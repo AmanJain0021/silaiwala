@@ -18,21 +18,21 @@ const Onboarding = () => {
       description: "Experience the legacy of family tailoring and handmade precision.",
       image: "/F0221177-Man_sewing_suit_by_hand_in_family_tailor_business.jpg",
       icon: <Sparkles className="w-8 h-8" />,
-      color: "#2D2F6E"
+      color: "#843D9B"
     },
     {
       title: "Premium Tailoring",
       description: "Experience the art of custom tailoring from the comfort of your home.",
       image: img_8e608,
       icon: <Scissors className="w-8 h-8" />,
-      color: "#2D2F6E"
+      color: "#843D9B"
     },
     {
       title: "Perfect Fit, Always",
       description: "Our expert tailors ensure every stitch is made to your exact measurements.",
       image: "/47b2d585cfdbab4f494276a8665dea99.jpg",
       icon: <Ruler className="w-8 h-8" />,
-      color: "#2D2F6E"
+      color: "#843D9B"
     },
     {
       title: "Master Your Style",
@@ -67,7 +67,7 @@ const Onboarding = () => {
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: idx <= currentStep ? "100%" : "0%" }}
-              className="h-full bg-[#2D2F6E]"
+              className="h-full bg-[#843D9B]"
             />
           </div>
         ))}
@@ -116,7 +116,7 @@ const Onboarding = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
-                className="w-12 h-12 rounded-2xl bg-[#2D2F6E]/10 text-[#2D2F6E] flex items-center justify-center mb-4 shadow-sm shrink-0"
+                className="w-12 h-12 rounded-2xl bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center mb-4 shadow-sm shrink-0"
               >
                 {/* Clone the icon element to override its size classes safely without mutating the original object */}
                 {React.cloneElement(steps[currentStep].icon, { className: "w-6 h-6" })}
@@ -149,7 +149,7 @@ const Onboarding = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleNext}
-            className="w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-[#2D2F6E]/20 transition-all bg-[#2D2F6E] text-white"
+            className="w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-[#843D9B]/20 transition-all bg-[#843D9B] text-white"
           >
             {currentStep === steps.length - 1 ? (
               <>Get Started <Sparkles className="w-5 h-5" /></>
@@ -164,7 +164,7 @@ const Onboarding = () => {
               <div 
                 key={idx} 
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentStep ? "w-6 bg-[#2D2F6E]" : "w-1.5 bg-gray-200"
+                  idx === currentStep ? "w-6 bg-[#843D9B]" : "w-1.5 bg-gray-200"
                 }`}
               />
             ))}

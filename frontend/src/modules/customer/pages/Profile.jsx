@@ -31,7 +31,7 @@ const LegalLinks = () => {
     return (
         <div className="mt-8 space-y-4">
             <div className="flex items-center gap-2 mb-2 px-1">
-                <div className="p-1 px-1.5 bg-[#2D2F6E] rounded text-[#E2C17D] italic">
+                <div className="p-1 px-1.5 bg-[#843D9B] rounded text-[#E2C17D] italic">
                     <FileText size={12} strokeWidth={3} />
                 </div>
                 <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] italic">Legal & Policies</h3>
@@ -88,28 +88,28 @@ const ProfilePage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                         <MenuOption
                             icon={ShoppingBag}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="My Orders"
                             subLabel="Track, Return, Feedback"
                             to="/user/orders"
                         />
                         <MenuOption
                             icon={MapPin}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Saved Addresses"
                             subLabel="Manage Pickup & Delivery locations"
                             to="/user/profile/addresses"
                         />
                         <MenuOption
                             icon={Ruler}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="My Measurements"
                             subLabel="Saved Body Profiles"
                             to="/user/profile/measurements"
                         />
                         <MenuOption
                             icon={Package}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Bulk Inquiries"
                             subLabel="Wholesale & Corporate Tracking"
                             to="/user/bulk-orders"
@@ -123,7 +123,7 @@ const ProfilePage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                         <MenuOption
                             icon={Star}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Loyalty Points"
                             subLabel="Redeem your rewards"
                             extra={<span className="bg-gray-100 text-[10px] font-black px-2.5 py-1 rounded-full text-gray-900 border border-gray-200">0</span>}
@@ -131,7 +131,7 @@ const ProfilePage = () => {
                         />
                         <MenuOption
                             icon={Wallet}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Wallet"
                             subLabel="Your balance"
                             extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 0</span>}
@@ -139,17 +139,17 @@ const ProfilePage = () => {
                         />
                         <MenuOption
                             icon={Ticket}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Coupons"
                             subLabel="View available offers"
                             to="/user/coupons"
                         />
                         <MenuOption
                             icon={Share2}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Refer & Earn"
                             subLabel="Invite friends, earn rewards"
-                            extra={<span className="bg-[#2D2F6E] text-[8px] font-black px-2 py-0.5 rounded-full text-white animate-pulse">NEW</span>}
+                            extra={<span className="bg-[#843D9B] text-[8px] font-black px-2 py-0.5 rounded-full text-white animate-pulse">NEW</span>}
                             to="/user/refer"
                         />
                     </div>
@@ -161,7 +161,7 @@ const ProfilePage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                         <MenuOption
                             icon={Globe}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Language"
                             subLabel="Change app language"
                             extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
@@ -169,14 +169,14 @@ const ProfilePage = () => {
                         />
                         <MenuOption
                             icon={Bell}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Notifications"
                             subLabel="Manage preferences"
                             to="/user/settings/notifications"
                         />
                         <MenuOption
                             icon={MessageSquare}
-                            color="bg-[#2D2F6E]"
+                            color="bg-[#843D9B]"
                             label="Support"
                             subLabel="Get help & chat with us"
                             to="/user/support"
@@ -192,7 +192,7 @@ const ProfilePage = () => {
                         className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 group hover:bg-red-50 transition-all duration-300 active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-[#2D2F6E] flex items-center justify-center text-[#E2C17D] shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
+                            <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-[#E2C17D] shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
                                 <LogOut size={20} strokeWidth={2.5} />
                             </div>
                             <div className="text-left">

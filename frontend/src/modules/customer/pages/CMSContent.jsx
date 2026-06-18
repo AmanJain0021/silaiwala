@@ -116,7 +116,7 @@ const CMSContentPage = () => {
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .cms-content-render h1, .cms-content-render h2, .cms-content-render h3 {
-                    color: #2D2F6E;
+                    color: #843D9B;
                     font-weight: 900;
                     margin-top: 1.5em;
                     margin-bottom: 0.5em;
@@ -142,7 +142,7 @@ const CMSContentPage = () => {
                     top: 0.6rem;
                     width: 0.5rem;
                     height: 1px;
-                    background: #2D2F6E;
+                    background: #843D9B;
                 }
             `}} />
         </div>

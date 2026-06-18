@@ -167,7 +167,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                                 e.stopPropagation();
                                                 setCurrentImageIndex(prev => (prev === 0 ? displayImages.length - 1 : prev - 1));
                                             }}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#2D2F6E] p-1.5 rounded-full transition shadow-md hover:scale-105 active:scale-95 cursor-pointer z-20"
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#843D9B] p-1.5 rounded-full transition shadow-md hover:scale-105 active:scale-95 cursor-pointer z-20"
                                         >
                                             <ChevronLeft size={16} strokeWidth={2.5} />
                                         </button>
@@ -177,7 +177,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                                 e.stopPropagation();
                                                 setCurrentImageIndex(prev => (prev === displayImages.length - 1 ? 0 : prev + 1));
                                             }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#2D2F6E] p-1.5 rounded-full transition shadow-md hover:scale-105 active:scale-95 cursor-pointer z-20"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#843D9B] p-1.5 rounded-full transition shadow-md hover:scale-105 active:scale-95 cursor-pointer z-20"
                                         >
                                             <ChevronRight size={16} strokeWidth={2.5} />
                                         </button>
@@ -205,7 +205,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                             {/* Close Button (Top-Right) */}
                             <button
                                 onClick={onClose}
-                                className="absolute top-4 right-4 bg-white/80 hover:bg-[#2D2F6E] text-[#2D2F6E] hover:text-white backdrop-blur-md p-2 rounded-full transition shadow-lg cursor-pointer z-20"
+                                className="absolute top-4 right-4 bg-white/80 hover:bg-[#843D9B] text-[#843D9B] hover:text-white backdrop-blur-md p-2 rounded-full transition shadow-lg cursor-pointer z-20"
                             >
                                 <X size={16} strokeWidth={2.5} />
                             </button>
@@ -239,7 +239,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                                 }}
                                                 className={cn(
                                                     "w-12 h-16 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer",
-                                                    currentImageIndex === idx ? "border-[#2D2F6E]" : "border-transparent opacity-85 hover:opacity-100"
+                                                    currentImageIndex === idx ? "border-[#843D9B]" : "border-transparent opacity-85 hover:opacity-100"
                                                 )}
                                             >
                                                 <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
@@ -267,7 +267,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                                 className={cn(
                                                     "w-12 h-10 rounded-xl border text-xs font-black transition-all flex items-center justify-center cursor-pointer",
                                                     selectedSize === size
-                                                        ? "bg-white text-gray-900 border-[#2D2F6E] ring-2 ring-[#2D2F6E]/20"
+                                                        ? "bg-white text-gray-900 border-[#843D9B] ring-2 ring-[#843D9B]/20"
                                                         : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                                                 )}
                                             >
@@ -287,7 +287,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                     {product.name}
                                 </h2>
                                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mt-1.5">
-                                    Store: <span className="text-[#2D2F6E] font-black">{storeName}</span>
+                                    Store: <span className="text-[#843D9B] font-black">{storeName}</span>
                                 </p>
                             </div>
 
@@ -322,7 +322,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                     <span className="text-gray-300">|</span>
                                     <span>Stitching: <strong className="text-gray-800">₹{estStitching}</strong></span>
                                     <span className="text-gray-300">|</span>
-                                    <span>Total: <strong className="text-[#2D2F6E]">₹{totalPrice}*</strong></span>
+                                    <span>Total: <strong className="text-[#843D9B]">₹{totalPrice}*</strong></span>
                                 </div>
                             </div>
 

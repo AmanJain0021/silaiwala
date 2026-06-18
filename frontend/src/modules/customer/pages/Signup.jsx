@@ -103,7 +103,7 @@ const Signup = () => {
             className="w-full"
         >
             <div className="text-left mb-3 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2D2F6E] tracking-tight leading-tight">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#843D9B] tracking-tight leading-tight">
                     Welcome to <br className="hidden md:block"/> Sewzella
                 </h2>
                 <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1 sm:mt-4 max-w-[250px]">
@@ -178,7 +178,7 @@ const Signup = () => {
                                     placeholder="Referral Code (Optional)"
                                     value={formData.referralCode}
                                     onChange={handleChange}
-                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#2D2F6E] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider py-1.5 sm:py-2"
+                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#843D9B] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider py-1.5 sm:py-2"
                                 />
                             </div>
                         </>
@@ -192,14 +192,14 @@ const Signup = () => {
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
                                     Verification Code Sent to
                                 </p>
-                                <p className="text-xs font-black text-[#2D2F6E] mt-1">
+                                <p className="text-xs font-black text-[#843D9B] mt-1">
                                     {formData.phoneNumber}
                                 </p>
                             </div>
 
                             <div className="flex justify-between gap-2 px-1">
                                 {otp.map((digit, index) => (
-                                    <div key={index} className="flex-1 max-w-[45px] aspect-square bg-[#F8FAFC] rounded-xl border-2 border-slate-100 shadow-inner overflow-hidden focus-within:border-[#2D2F6E] focus-within:ring-2 focus-within:ring-[#2D2F6E]/10 transition-all duration-200">
+                                    <div key={index} className="flex-1 max-w-[45px] aspect-square bg-[#F8FAFC] rounded-xl border-2 border-slate-100 shadow-inner overflow-hidden focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-[#843D9B]/10 transition-all duration-200">
                                         <input
                                             ref={(el) => (otpRefs.current[index] = el)}
                                             type="text"
@@ -218,7 +218,7 @@ const Signup = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStep('info')}
-                                    className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#2D2F6E] transition-colors flex items-center justify-center gap-2 mx-auto"
+                                    className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#843D9B] transition-colors flex items-center justify-center gap-2 mx-auto"
                                 >
                                     <span className="text-sm">←</span> Edit information
                                 </button>
@@ -230,7 +230,7 @@ const Signup = () => {
                 <div className="pt-1 sm:pt-2">
                     <Button
                         type="submit"
-                        className="w-full h-10 sm:h-12 rounded-full bg-[#2D2F6E] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#2D2F6E]/10"
+                        className="w-full h-10 sm:h-12 rounded-full bg-[#843D9B] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#843D9B]/10"
                         disabled={isLoading}
                     >
                         {isLoading ? (step === 'info' ? 'Sending...' : 'Verifying...') : (
@@ -246,7 +246,7 @@ const Signup = () => {
                     Already have an account?{' '}
                     <button 
                         onClick={() => navigate('/user/login')}
-                        className="text-[#2D2F6E] font-black hover:underline ml-1"
+                        className="text-[#843D9B] font-black hover:underline ml-1"
                     >
                         Sign In
                     </button>

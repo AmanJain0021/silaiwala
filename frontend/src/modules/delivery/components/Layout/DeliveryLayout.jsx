@@ -305,7 +305,7 @@ const DeliveryLayout = () => {
     <div id="delivery-layout-root" className="flex flex-col h-screen overflow-hidden bg-white">
       {/* Mobile Header (Hidden on Wallet Page) */}
       {!location.pathname.includes('/delivery/wallet') && (
-        <header className="sticky top-0 left-0 z-50 bg-[#2D2F6E] backdrop-blur-lg border-b border-indigo-400/20 shadow-lg shadow-indigo-900/10 shrink-0">
+        <header className="sticky top-0 left-0 z-50 bg-[#843D9B] backdrop-blur-lg border-b border-indigo-400/20 shadow-lg shadow-indigo-900/10 shrink-0">
           <div className="flex items-center gap-3 px-4 py-2">
           <button
             onClick={() => setSidebarOpen(true)}

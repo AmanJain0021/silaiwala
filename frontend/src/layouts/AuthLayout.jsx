@@ -107,7 +107,7 @@ const AuthLayout = () => {
     // NEW CUSTOMER SPLIT LAYOUT
     if (isCustomerAuth) {
         return (
-            <div className="min-h-screen bg-white flex flex-col-reverse justify-end md:justify-start md:flex-row font-sans selection:bg-[#2D2F6E]/20 overflow-x-hidden">
+            <div className="min-h-screen bg-white flex flex-col-reverse justify-end md:justify-start md:flex-row font-sans selection:bg-[#843D9B]/20 overflow-x-hidden">
                 {/* Left Side: Auth Content */}
                 <div className="w-full md:w-3/5 lg:w-[55%] flex flex-col flex-1 min-h-0">
                     <div className="p-4 md:p-10 flex flex-col flex-1 max-w-[550px] mx-auto w-full">
@@ -132,7 +132,7 @@ const AuthLayout = () => {
                             <div className="flex flex-col items-center justify-center gap-4">
                                 <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest text-center">
                                     Trusted by 10,000+ <br/>
-                                    <span className="text-[#2D2F6E]">Certified Tailors</span>
+                                    <span className="text-[#843D9B]">Certified Tailors</span>
                                 </div>
                             </div>
                         </div>
@@ -187,7 +187,7 @@ const AuthLayout = () => {
     // LEGACY CARD LAYOUT (For Delivery/Partner)
     return (
         <div
-            className="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 font-sans selection:bg-[#2D2F6E]/20 transition-all duration-[1500ms] ease-in-out"
+            className="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 font-sans selection:bg-[#843D9B]/20 transition-all duration-[1500ms] ease-in-out"
             style={{ background: bgGradients[currentImage] }}
         >
             <motion.div
@@ -249,7 +249,7 @@ const AuthLayout = () => {
                                 style={{
                                     width: idx === currentImage ? 18 : 5,
                                     height: 5,
-                                    backgroundColor: idx === currentImage ? '#2D2F6E' : 'rgba(255,255,255,0.5)',
+                                    backgroundColor: idx === currentImage ? '#843D9B' : 'rgba(255,255,255,0.5)',
                                 }}
                             />
                         ))}
@@ -274,13 +274,13 @@ const AuthLayout = () => {
                     <div className="bg-[#F7F8FC] p-1 rounded-[1.5rem] flex items-center relative mb-5 sm:mb-6 shadow-inner border border-pink-50/50">
                         <Link
                             to={config.loginLink}
-                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${isLogin ? 'text-[#2D2F6E]' : 'text-indigo-300'}`}
+                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${isLogin ? 'text-[#843D9B]' : 'text-indigo-300'}`}
                         >
                             LOGIN
                         </Link>
                         <Link
                             to={config.signupLink}
-                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${!isLogin ? 'text-[#2D2F6E]' : 'text-indigo-300'}`}
+                            className={`flex-1 text-center py-2.5 text-xs sm:text-sm font-black tracking-wide z-10 transition-colors duration-300 ${!isLogin ? 'text-[#843D9B]' : 'text-indigo-300'}`}
                         >
                             SIGN UP
                         </Link>

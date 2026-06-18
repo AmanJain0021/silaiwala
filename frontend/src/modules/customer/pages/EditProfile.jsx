@@ -64,7 +64,7 @@ const EditProfile = () => {
                 <button
                     type="button"
                     onClick={handleSubmit}
-                    className="p-2 text-[#2D2F6E] hover:bg-indigo-50 rounded-full transition-colors font-black"
+                    className="p-2 text-[#843D9B] hover:bg-indigo-50 rounded-full transition-colors font-black"
                     disabled={isLoading}
                 >
                     <Save size={20} />
@@ -86,7 +86,7 @@ const EditProfile = () => {
                 <div className="space-y-6">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.name ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#2D2F6E] focus-within:bg-white transition-all`}>
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.name ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#843D9B] focus-within:bg-white transition-all`}>
                             <User size={18} className="text-gray-400" />
                             <input
                                 type="text"
@@ -101,7 +101,7 @@ const EditProfile = () => {
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.email ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#2D2F6E] focus-within:bg-white transition-all`}>
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.email ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#843D9B] focus-within:bg-white transition-all`}>
                             <Mail size={18} className="text-gray-400" />
                             <input
                                 type="email"
@@ -116,7 +116,7 @@ const EditProfile = () => {
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.phone ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#2D2F6E] focus-within:bg-white transition-all`}>
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.phone ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#843D9B] focus-within:bg-white transition-all`}>
                             <Phone size={18} className="text-gray-400" />
                             <input
                                 type="tel"
@@ -131,7 +131,7 @@ const EditProfile = () => {
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">City / Location</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#2D2F6E] focus-within:bg-white transition-all">
+                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:bg-white transition-all">
                             <MapPin size={18} className="text-gray-400" />
                             <input
                                 type="text"
@@ -147,7 +147,7 @@ const EditProfile = () => {
                 <div className="pt-6">
                     <button
                         type="submit"
-                        className="w-full bg-[#2D2F6E] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all hover:bg-[#1E1F4D] active:scale-95"
+                        className="w-full bg-[#843D9B] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all hover:bg-[#1E1F4D] active:scale-95"
                         disabled={isLoading}
                     >
                         {isLoading ? (

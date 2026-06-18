@@ -61,7 +61,7 @@ const Subscription = () => {
 
             {/* Current Plan Card */}
             {activePlan ? (
-                <div className="bg-[#2D2F6E] p-7 rounded-3xl text-white relative overflow-hidden shadow-xl shadow-[#2D2F6E]/20">
+                <div className="bg-[#843D9B] p-7 rounded-3xl text-white relative overflow-hidden shadow-xl shadow-[#843D9B]/20">
                     <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
                         <Zap size={100} />
                     </div>
@@ -147,13 +147,13 @@ const Subscription = () => {
 
                     if (plan.theme === 'premium') {
                         return (
-                            <div key={plan._id} className={`bg-gradient-to-b from-[#2D2F6E]/40 to-[#111111] border ${isCurrentPlan ? 'border-[#2D2F6E]' : 'border-[#2D2F6E]/50'} p-5 rounded-3xl relative overflow-hidden group`}>
+                            <div key={plan._id} className={`bg-gradient-to-b from-[#843D9B]/40 to-[#111111] border ${isCurrentPlan ? 'border-[#843D9B]' : 'border-[#843D9B]/50'} p-5 rounded-3xl relative overflow-hidden group`}>
                                 <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                                     <Zap size={64} />
                                 </div>
                                 <div className="flex justify-between items-start mb-3 relative z-10">
                                     <div>
-                                        {plan.isPopular && <span className="bg-[#2D2F6E] text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md mb-2 inline-block">Popular</span>}
+                                        {plan.isPopular && <span className="bg-[#843D9B] text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md mb-2 inline-block">Popular</span>}
                                         <p className="text-[16px] font-black text-white">{plan.name}</p>
                                         <p className="text-[10px] text-indigo-300 font-bold mt-0.5 tracking-wide">{plan.commissionRange}</p>
                                     </div>
@@ -171,7 +171,7 @@ const Subscription = () => {
                                 <button 
                                     onClick={() => handleSubscribe(plan._id)}
                                     disabled={isCurrentPlan}
-                                    className={`w-full mt-4 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${isCurrentPlan ? 'bg-[#2D2F6E]/50 text-indigo-200 cursor-not-allowed border border-[#2D2F6E]' : 'bg-[#2D2F6E] text-white shadow-lg shadow-[#2D2F6E]/25 hover:bg-[#383a85]'}`}>
+                                    className={`w-full mt-4 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${isCurrentPlan ? 'bg-[#843D9B]/50 text-indigo-200 cursor-not-allowed border border-[#843D9B]' : 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/25 hover:bg-[#383a85]'}`}>
                                     {isCurrentPlan ? 'Current Plan' : 'Select Plan'}
                                 </button>
                             </div>

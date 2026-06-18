@@ -37,20 +37,20 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
                 </div>
 
                 <div className="flex justify-between items-end mt-2">
-                    <div className="font-bold text-[#2D2F6E]">₹{item.price}</div>
+                    <div className="font-bold text-[#843D9B]">₹{item.price}</div>
 
                     {/* Quantity Control */}
                     <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-gray-200">
                         <button
                             onClick={() => onUpdateQuantity(item.cartId, item.quantity - 1)}
-                            className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-[#2D2F6E] active:scale-90 transition-all"
+                            className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-[#843D9B] active:scale-90 transition-all"
                         >
                             <Minus size={12} />
                         </button>
                         <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                         <button
                             onClick={() => onUpdateQuantity(item.cartId, item.quantity + 1)}
-                            className="w-6 h-6 flex items-center justify-center bg-[#2D2F6E] rounded shadow-sm text-white hover:bg-[#1E1F4D] active:scale-90 transition-all"
+                            className="w-6 h-6 flex items-center justify-center bg-[#843D9B] rounded shadow-sm text-white hover:bg-[#1E1F4D] active:scale-90 transition-all"
                         >
                             <Plus size={12} />
                         </button>

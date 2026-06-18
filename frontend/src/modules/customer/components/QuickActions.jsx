@@ -15,11 +15,6 @@ const actions = [
         path: '/user/tailors'
     },
     {
-        label: 'Store',
-        icon: <ShoppingBag size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
-        path: '/user/store'
-    },
-    {
         label: 'My Orders',
         icon: <ClipboardList size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/user/orders'
@@ -98,7 +93,7 @@ const QuickActions = () => {
                     <div className="w-full border-t border-dashed border-gray-300"></div>
                 </div>
                 <div className="relative bg-[#F7F8FC] px-4">
-                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#2D2F6E] uppercase tracking-[0.4em] whitespace-nowrap">What We Offer</h2>
+                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.4em] whitespace-nowrap">What We Offer</h2>
                 </div>
             </div>
 
@@ -116,7 +111,7 @@ const QuickActions = () => {
                                 whileTap={{ scale: 0.92 }}
                                 onClick={() => handleActionClick(action)}
                             >
-                                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#2D2F6E] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl mx-auto shadow-md">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#843D9B] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl mx-auto shadow-md">
                                     {action.icon}
                                 </div>
                                 <span className="text-[8px] sm:text-[9px] font-bold text-center text-gray-500 uppercase tracking-[0.2em] leading-none truncate w-full px-1">
@@ -171,7 +166,7 @@ const QuickActions = () => {
                                             type="date"
                                             required
                                             min={new Date().toISOString().split('T')[0]}
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#2D2F6E] focus:ring-1 focus:ring-[#2D2F6E]/20 transition-all outline-none"
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B]/20 transition-all outline-none"
                                             value={bookingData.date}
                                             onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
                                         />
@@ -185,7 +180,7 @@ const QuickActions = () => {
                                         <input
                                             type="time"
                                             required
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#2D2F6E] focus:ring-1 focus:ring-[#2D2F6E]/20 transition-all outline-none"
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B]/20 transition-all outline-none"
                                             value={bookingData.time}
                                             onChange={(e) => setBookingData({ ...bookingData, time: e.target.value })}
                                         />
@@ -197,7 +192,7 @@ const QuickActions = () => {
                                     <textarea
                                         placeholder="Specific requests, dress type, etc."
                                         rows="2"
-                                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs focus:bg-white focus:border-[#2D2F6E] focus:ring-1 focus:ring-[#2D2F6E]/20 transition-all outline-none resize-none"
+                                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs focus:bg-white focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B]/20 transition-all outline-none resize-none"
                                         value={bookingData.notes}
                                         onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
                                     ></textarea>
@@ -206,7 +201,7 @@ const QuickActions = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full py-4 rounded-xl bg-[#2D2F6E] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-[#2D2F6E]/20 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all disabled:opacity-70 mt-2"
+                                    className="w-full py-4 rounded-xl bg-[#843D9B] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-[#843D9B]/20 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all disabled:opacity-70 mt-2"
                                 >
                                     {isSubmitting ? 'Requesting...' : 'Request Booking'}
                                 </button>

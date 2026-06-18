@@ -116,7 +116,7 @@ const LiveDeliveryTracker = ({ order, socket }) => {
   return (
     <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
       <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
-        <Navigation size={16} className="text-[#2D2F6E]" />
+        <Navigation size={16} className="text-[#843D9B]" />
         Live Tracking
       </h3>
 
@@ -151,8 +151,8 @@ const LiveDeliveryTracker = ({ order, socket }) => {
       {/* Rider Info Section */}
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#2D2F6E]/10 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-xl font-black text-[#2D2F6E]">{rider.name?.charAt(0) || 'R'}</span>
+          <div className="w-12 h-12 bg-[#843D9B]/10 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-xl font-black text-[#843D9B]">{rider.name?.charAt(0) || 'R'}</span>
           </div>
           <div>
             <h4 className="text-sm font-bold text-gray-900">{rider.name || 'Delivery Partner'}</h4>

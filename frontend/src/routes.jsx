@@ -90,6 +90,7 @@ const AdminServices = React.lazy(() => import('./modules/admin/pages/Services'))
 const AdminStore = React.lazy(() => import('./modules/admin/pages/Store'));
 const AdminFinance = React.lazy(() => import('./modules/admin/pages/Finance'));
 const AdminCMS = React.lazy(() => import('./modules/admin/pages/CMS'));
+const AdminSubscriptions = React.lazy(() => import('./modules/admin/pages/Subscriptions'));
 const AdminReports = React.lazy(() => import('./modules/admin/pages/Reports'));
 const AdminSettings = React.lazy(() => import('./modules/admin/pages/Settings'));
 const AdminLogin = React.lazy(() => import('./modules/admin/pages/Login'));
@@ -252,6 +253,7 @@ const AppRoutes = () => {
                     <Route path="/admin/store" element={<AdminStore />} />
                     <Route path="/admin/finance" element={<AdminFinance />} />
                     <Route path="/admin/cms" element={<AdminCMS />} />
+                    <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
                     <Route path="/admin/reports" element={<AdminReports />} />
                     <Route path="/admin/style-addons" element={<AdminStyleAddons />} />
                     <Route path="/admin/bulk-orders" element={<AdminBulkOrders />} />

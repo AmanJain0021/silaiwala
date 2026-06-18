@@ -86,7 +86,7 @@ const Login = () => {
             className="w-full"
         >
             <div className="text-left mb-10 sm:mb-12">
-                <h2 className="text-2xl md:text-4xl font-black text-[#2D2F6E] tracking-tight leading-tight">
+                <h2 className="text-2xl md:text-4xl font-black text-[#843D9B] tracking-tight leading-tight">
                     Welcome to <br className="hidden md:block" />
                     Sewzella
                 </h2>
@@ -132,7 +132,7 @@ const Login = () => {
                             disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
                             className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || sendingOtp
                                     ? 'bg-gray-200 text-gray-500'
-                                    : 'bg-[#2D2F6E] hover:bg-[#E04D79] text-white shadow-[#2D2F6E]/20 hover:shadow-lg'
+                                    : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20 hover:shadow-lg'
                                 }`}
                         >
                             {sendingOtp ? 'Sending...' : (
@@ -168,7 +168,7 @@ const Login = () => {
 
                             <Button
                                 type="submit"
-                                className="w-full h-11 sm:h-12 rounded-full bg-[#2D2F6E] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#2D2F6E]/20"
+                                className="w-full h-11 sm:h-12 rounded-full bg-[#843D9B] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#843D9B]/20"
                                 disabled={isLoading}
                             >
                                 {isLoading ? 'Verifying...' : (
@@ -194,7 +194,7 @@ const Login = () => {
                     Don't have an account?{' '}
                     <button 
                         onClick={() => navigate('/user/register')}
-                        className="text-[#2D2F6E] font-black hover:underline ml-1"
+                        className="text-[#843D9B] font-black hover:underline ml-1"
                     >
                         Create Account
                     </button>

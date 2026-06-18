@@ -211,7 +211,7 @@ const OrderTracking = () => {
                     name: order.customer?.name || "",
                     contact: order.customer?.phoneNumber || ""
                 },
-                theme: { color: "#2D2F6E" }
+                theme: { color: "#843D9B" }
             };
 
             const rzp = new window.Razorpay(options);
@@ -621,7 +621,7 @@ const OrderTracking = () => {
                 {/* 3.5 Order Details (Added by Request) */}
                 <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
                     <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
-                        <Package size={16} className="text-[#2D2F6E]" />
+                        <Package size={16} className="text-[#843D9B]" />
                         Order Details
                     </h3>
                     
@@ -636,7 +636,7 @@ const OrderTracking = () => {
                                     <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.service?.title || item.product?.name}</h4>
                                     <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Qty: {item.quantity}</p>
                                 </div>
-                                <span className="text-xs font-bold text-[#2D2F6E]">₹{item.price}</span>
+                                <span className="text-xs font-bold text-[#843D9B]">₹{item.price}</span>
                             </div>
                         ))}
                         {isBulk && (
@@ -823,7 +823,7 @@ const OrderTracking = () => {
                         <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
                             <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assigned {partnerRole}</h4>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-[#2D2F6E] border border-indigo-100 font-black text-xs overflow-hidden shrink-0">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-[#843D9B] border border-indigo-100 font-black text-xs overflow-hidden shrink-0">
                                     {activePartner.profileImage ? (
                                         <img src={activePartner.profileImage} alt={activePartner.name} className="w-full h-full object-cover" />
                                     ) : (
@@ -839,7 +839,7 @@ const OrderTracking = () => {
                                 {activePartner.phoneNumber && (
                                     <a 
                                         href={`tel:${activePartner.phoneNumber}`}
-                                        className="w-8 h-8 bg-indigo-50 text-[#2D2F6E] rounded-full flex items-center justify-center border border-indigo-100 shrink-0 hover:bg-indigo-100 transition-colors"
+                                        className="w-8 h-8 bg-indigo-50 text-[#843D9B] rounded-full flex items-center justify-center border border-indigo-100 shrink-0 hover:bg-indigo-100 transition-colors"
                                     >
                                         <Phone size={14} />
                                     </a>

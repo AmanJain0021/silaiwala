@@ -42,7 +42,7 @@ const BestSellingGarments = () => {
         <div className="py-6 bg-white my-2 rounded-3xl mx-2 shadow-sm border border-gray-50">
             <div className="flex justify-between items-end px-4 md:px-6 lg:px-8 mb-5">
                 <div>
-                    <h2 className="text-xl md:text-2xl font-black text-[#2D2F6E] leading-tight">
+                    <h2 className="text-xl md:text-2xl font-black text-[#843D9B] leading-tight">
                         Ready-made Garments
                     </h2>
                     <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
@@ -92,7 +92,7 @@ const BestSellingGarments = () => {
                                     <span className="text-[9px] text-gray-400">({item.reviews || 0})</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-base font-black text-[#2D2F6E]">₹{item.price}</span>
+                                    <span className="text-base font-black text-[#843D9B]">₹{item.price}</span>
                                     <button className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
                                         <ShoppingBag size={14} />
                                     </button>

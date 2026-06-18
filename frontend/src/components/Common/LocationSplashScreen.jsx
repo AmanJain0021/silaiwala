@@ -117,7 +117,7 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
         <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#2D2F6E] to-[#1a1b41] overflow-hidden"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#843D9B] to-[#1a1b41] overflow-hidden"
         >
             {/* Background decorative elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
@@ -180,7 +180,7 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                         </p>
                         <button 
                             onClick={() => onComplete && onComplete()}
-                            className="w-full py-3.5 bg-white text-[#2D2F6E] rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg"
+                            className="w-full py-3.5 bg-white text-[#843D9B] rounded-full font-black text-xs uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg"
                         >
                             Skip for Now
                         </button>

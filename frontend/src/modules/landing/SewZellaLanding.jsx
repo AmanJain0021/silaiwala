@@ -1,396 +1,815 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Scissors, Ruler, Shirt, CheckCircle, Mail, MapPin, Phone, Instagram, Facebook, Twitter, Truck, User, Star, Clock, Leaf, ShieldCheck } from 'lucide-react';
+import {
+  Download, ChevronRight, ChevronLeft, Scissors, Ruler, Shirt, Star,
+  CheckCircle, Truck, Eye, Smartphone, Shield, ShieldCheck, Clock, Zap,
+  Users, BarChart3, Package, Globe, Quote, Scan, MapPin
+} from 'lucide-react';
+import LandingNavbar from './components/LandingNavbar';
+import LandingFooter from './components/LandingFooter';
+
+/* ─── Animation Variants ─── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }
+  })
+};
+
+const stagger = {
+  visible: { transition: { staggerChildren: 0.12 } }
+};
+
+/* ─── Data ─── */
+const TRUST_FEATURES = [
+  { icon: <CheckCircle size={24} />, title: 'Perfect Fit Every Time', desc: 'Custom-stitched outfits made for you.' },
+  { icon: <Scan size={24} />, title: 'AI Measurement Assistant', desc: 'Get accurate measurements instantly using AI.' },
+  { icon: <ShieldCheck size={24} />, title: 'Verified Tailors', desc: 'Experienced & trusted tailoring professionals.' },
+  { icon: <Truck size={24} />, title: 'Doorstep Pickup & Delivery', desc: 'We pick up, stitch & deliver to your door.' },
+  { icon: <Eye size={24} />, title: 'Live Order Tracking', desc: 'Track your order from stitching to delivery.' },
+  { icon: <Smartphone size={24} />, title: 'Real-Time Updates', desc: 'Get stitching updates & photos from your tailor.' },
+];
+
+/* Illustrated SVG icons for "How It Works" section */
+const StepIconChooseStyle = () => (
+  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    {/* Hanger */}
+    <path d="M40 12 L40 20" stroke="#7a42b1" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="40" cy="10" r="3" stroke="#7a42b1" strokeWidth="2" fill="none"/>
+    <path d="M27 32 L40 20 L53 32" stroke="#7a42b1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    {/* Dress body */}
+    <path d="M27 32 L24 62 Q24 66 28 66 L52 66 Q56 66 56 62 L53 32" fill="#e9a84c" stroke="#c4872e" strokeWidth="1.5"/>
+    {/* Dress waist belt */}
+    <rect x="28" y="42" width="24" height="4" rx="2" fill="#c4872e"/>
+    {/* Dress pattern lines */}
+    <path d="M32 48 L32 62" stroke="#c4872e" strokeWidth="1" opacity="0.4"/>
+    <path d="M40 48 L40 62" stroke="#c4872e" strokeWidth="1" opacity="0.4"/>
+    <path d="M48 48 L48 62" stroke="#c4872e" strokeWidth="1" opacity="0.4"/>
+    {/* Dupatta/scarf flowing */}
+    <path d="M53 32 Q60 38 58 50 Q56 58 62 62" stroke="#d44a4a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M55 36 Q62 42 60 52" stroke="#d44a4a" strokeWidth="1.5" fill="none" opacity="0.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const StepIconMeasurements = () => (
+  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    {/* Dress form stand */}
+    <line x1="40" y1="56" x2="40" y2="70" stroke="#8B7355" strokeWidth="2"/>
+    <line x1="32" y1="70" x2="48" y2="70" stroke="#8B7355" strokeWidth="2" strokeLinecap="round"/>
+    {/* Dress form body */}
+    <path d="M30 18 Q30 14 34 12 L46 12 Q50 14 50 18 L52 34 Q52 40 48 44 L46 56 L34 56 L32 44 Q28 40 28 34 Z" fill="#e9a84c" stroke="#c4872e" strokeWidth="1.5"/>
+    {/* Neckline */}
+    <path d="M34 12 Q37 16 40 16 Q43 16 46 12" stroke="#c4872e" strokeWidth="1.5" fill="none"/>
+    {/* Measuring tape wrapping around */}
+    <path d="M22 24 Q26 20 30 22 Q34 24 36 28 Q38 32 34 36 Q30 40 26 38" stroke="#f0c040" strokeWidth="3" fill="none" strokeLinecap="round"/>
+    {/* Tape markings */}
+    <line x1="23" y1="24" x2="25" y2="23" stroke="#d4a030" strokeWidth="1"/>
+    <line x1="28" y1="21" x2="29" y2="23" stroke="#d4a030" strokeWidth="1"/>
+    <line x1="33" y1="24" x2="34" y2="26" stroke="#d4a030" strokeWidth="1"/>
+    {/* Measuring tape hanging */}
+    <path d="M50 28 Q56 26 58 30 Q60 34 56 38 Q52 42 54 46" stroke="#f0c040" strokeWidth="3" fill="none" strokeLinecap="round"/>
+    <line x1="56" y1="27" x2="57" y2="29" stroke="#d4a030" strokeWidth="1"/>
+    <line x1="59" y1="32" x2="57" y2="33" stroke="#d4a030" strokeWidth="1"/>
+  </svg>
+);
+
+const StepIconStitching = () => (
+  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    {/* Sewing machine base */}
+    <rect x="14" y="54" width="52" height="6" rx="3" fill="#1c1b1b" stroke="#1c1b1b" strokeWidth="1"/>
+    {/* Machine body */}
+    <path d="M18 54 L18 32 Q18 28 22 28 L38 28 Q42 28 42 32 L42 54" fill="#4a0581" stroke="#3a0461" strokeWidth="1.5"/>
+    {/* Machine top arm */}
+    <path d="M18 32 L18 24 Q18 20 22 20 L54 20 Q58 20 58 24 L58 36 Q58 40 54 40 L50 40" fill="#5c17a0" stroke="#3a0461" strokeWidth="1.5"/>
+    {/* Needle area */}
+    <line x1="50" y1="40" x2="50" y2="50" stroke="#7d7483" strokeWidth="1.5"/>
+    <line x1="50" y1="50" x2="50" y2="54" stroke="#ccc" strokeWidth="0.8"/>
+    {/* Wheel */}
+    <circle cx="22" cy="24" r="4" fill="#dcb8ff" stroke="#4a0581" strokeWidth="1.5"/>
+    <circle cx="22" cy="24" r="1.5" fill="#4a0581"/>
+    {/* Thread spool */}
+    <rect x="30" y="14" width="6" height="8" rx="1" fill="#d44a4a" stroke="#b33030" strokeWidth="1"/>
+    <line x1="33" y1="22" x2="33" y2="28" stroke="#d44a4a" strokeWidth="0.8"/>
+    {/* Fabric under needle */}
+    <path d="M42 52 L58 52 Q62 52 62 48 L62 44" stroke="#e9a84c" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    {/* Stitch marks */}
+    <line x1="44" y1="52" x2="46" y2="50" stroke="#c4872e" strokeWidth="0.8"/>
+    <line x1="48" y1="52" x2="50" y2="50" stroke="#c4872e" strokeWidth="0.8"/>
+    <line x1="52" y1="52" x2="54" y2="50" stroke="#c4872e" strokeWidth="0.8"/>
+  </svg>
+);
+
+const StepIconTrackProgress = () => (
+  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    {/* Phone body */}
+    <rect x="22" y="8" width="36" height="64" rx="6" fill="#1c1b1b" stroke="#333" strokeWidth="1.5"/>
+    {/* Screen */}
+    <rect x="25" y="14" width="30" height="50" rx="3" fill="white"/>
+    {/* Status bar */}
+    <rect x="25" y="14" width="30" height="6" rx="3" fill="#4a0581"/>
+    <circle cx="40" cy="17" r="1" fill="white" opacity="0.8"/>
+    {/* Tracking content - shirt icon */}
+    <rect x="30" y="24" width="20" height="14" rx="2" fill="#f0dbff" stroke="#dcb8ff" strokeWidth="1"/>
+    <path d="M35 28 L40 26 L45 28 L45 34 L35 34 Z" fill="#4a0581" opacity="0.6"/>
+    {/* Progress bar */}
+    <rect x="30" y="42" width="20" height="3" rx="1.5" fill="#eae7e7"/>
+    <rect x="30" y="42" width="14" height="3" rx="1.5" fill="#4a0581"/>
+    {/* Status dots */}
+    <circle cx="32" cy="50" r="2" fill="#4a0581"/>
+    <circle cx="37" cy="50" r="2" fill="#4a0581"/>
+    <circle cx="42" cy="50" r="2" fill="#dcb8ff"/>
+    <circle cx="47" cy="50" r="2" fill="#eae7e7"/>
+    {/* Check marks */}
+    <path d="M31 50 L32 51 L33 49" stroke="white" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M36 50 L37 51 L38 49" stroke="white" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round"/>
+    {/* Bottom text lines */}
+    <rect x="30" y="55" width="15" height="2" rx="1" fill="#eae7e7"/>
+    <rect x="30" y="59" width="10" height="2" rx="1" fill="#eae7e7"/>
+    {/* Notification bell */}
+    <circle cx="56" cy="14" r="8" fill="#f0dbff" stroke="#dcb8ff" strokeWidth="1"/>
+    <path d="M53 13 Q53 10 56 10 Q59 10 59 13 L59.5 15 L52.5 15 Z" fill="#4a0581"/>
+    <circle cx="56" cy="16" r="1" fill="#4a0581"/>
+  </svg>
+);
+
+const StepIconDelivered = () => (
+  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    {/* Gift box body */}
+    <rect x="16" y="34" width="48" height="34" rx="4" fill="#d44a4a" stroke="#b33030" strokeWidth="1.5"/>
+    {/* Box lid */}
+    <rect x="13" y="26" width="54" height="10" rx="4" fill="#e55555" stroke="#b33030" strokeWidth="1.5"/>
+    {/* Vertical ribbon */}
+    <rect x="37" y="26" width="6" height="42" fill="#f0c040" opacity="0.9"/>
+    {/* Horizontal ribbon */}
+    <rect x="13" y="28" width="54" height="6" fill="#f0c040" opacity="0.9"/>
+    {/* Ribbon bow center */}
+    <circle cx="40" cy="24" r="4" fill="#f0c040" stroke="#d4a030" strokeWidth="1"/>
+    {/* Bow left loop */}
+    <path d="M36 24 Q28 16 32 12 Q36 10 38 14 Q40 18 36 24" fill="#f0c040" stroke="#d4a030" strokeWidth="1"/>
+    {/* Bow right loop */}
+    <path d="M44 24 Q52 16 48 12 Q44 10 42 14 Q40 18 44 24" fill="#f0c040" stroke="#d4a030" strokeWidth="1"/>
+    {/* Sparkles */}
+    <path d="M62 18 L64 14 L66 18 L64 22 Z" fill="#f0c040" opacity="0.7"/>
+    <path d="M10 40 L12 38 L14 40 L12 42 Z" fill="#f0c040" opacity="0.5"/>
+    <circle cx="68" cy="40" r="2" fill="#f0c040" opacity="0.6"/>
+    <circle cx="14" cy="20" r="1.5" fill="#dcb8ff" opacity="0.8"/>
+  </svg>
+);
+
+const HOW_STEPS = [
+  { num: 1, title: 'Choose Your Style', desc: 'Browse from a wide range of outfits and select your fabric and style with our AI assistant.', icon: <StepIconChooseStyle /> },
+  { num: 2, title: 'Share Measurements', desc: 'Enter your measurements manually or use our AI Assistant.', icon: <StepIconMeasurements /> },
+  { num: 3, title: 'Tailor Starts Stitching', desc: 'Your order is assigned to a verified tailor who starts stitching.', icon: <StepIconStitching /> },
+  { num: 4, title: 'Track Progress', desc: 'Receive real-time updates and photos of your stitching progress.', icon: <StepIconTrackProgress /> },
+  { num: 5, title: 'Get It Delivered', desc: 'Your perfect outfit is quality checked and delivered to your doorstep.', icon: <StepIconDelivered /> },
+];
+
+const CATEGORIES = [
+  { title: "Women's Wear", desc: "Designer blouses, suits, kurtis, lehengas & more", img: '/landing/category_womens_wear.png' },
+  { title: "Men's Wear", desc: "Kurtas, shirts, pathani suits, formal wear", img: '/landing/category_mens_wear.png' },
+  { title: "Kids Wear", desc: "Adorable outfits for every occasion", img: '/landing/category_kids_wear.png' },
+  { title: "Bridal Wear", desc: "Wedding & festive custom stitching", img: '/landing/category_bridal_wear.png' },
+  { title: "Alterations", desc: "Perfect fitting for your existing outfits", img: '/landing/category_alterations.png' },
+  { title: "Bulk Stitching", desc: "For boutiques, schools, companies & more", img: '/landing/category_bulk_stitching.png' },
+];
+
+const TESTIMONIALS = [
+  { text: "Sewzella made custom stitching effortless. The fitting was absolutely perfect and the delivery was on time.", name: "Sara Madhav", avatar: null },
+  { text: "Real-time updates and doorstep delivery were amazing. I highly recommend Sewzella to everyone!", name: "Ayesha Patel", avatar: null },
+  { text: "Finally a modern solution for tailoring. The AI measurement assistant is incredibly accurate!", name: "Rohan Dev", avatar: null },
+];
+
+const ORDER_STEPS = [
+  { label: 'Measurements Received', date: '15 Jun, 2025', done: true },
+  { label: 'Tailor Assigned', date: '16 Jun, 2025', done: true },
+  { label: 'Stitching in Progress', date: '', done: false, active: true },
+  { label: 'Out For Delivery', date: '', done: false },
+  { label: 'Delivered', date: '', done: false },
+];
+
+const PARTNER_FEATURES = [
+  { icon: <Package size={18} />, label: 'Receive more orders' },
+  { icon: <Users size={18} />, label: 'Manage customers digitally' },
+  { icon: <BarChart3 size={18} />, label: 'Track earnings and growth' },
+  { icon: <Truck size={18} />, label: 'Get delivery support' },
+  { icon: <Globe size={18} />, label: 'Build your online presence' },
+];
 
 const SewZellaLanding = () => {
-  const [scrolled, setScrolled] = useState(false);
+  const [testimonialIdx, setTestimonialIdx] = useState(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.scrollTo(0, 0);
   }, []);
 
+  const nextTestimonial = () => setTestimonialIdx((prev) => (prev + 1) % TESTIMONIALS.length);
+  const prevTestimonial = () => setTestimonialIdx((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
+
   return (
-    <div className="font-body bg-[var(--color-alabaster)] text-[var(--color-evergreen)] min-h-screen selection:bg-[var(--color-evergreen)] selection:text-[var(--color-gold)] overflow-x-hidden">
-      
-      {/* 1. Transparent Luxury Navbar */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 border-b ${scrolled ? 'bg-[var(--color-evergreen)] border-[var(--color-evergreen-container)] py-4 shadow-lg' : 'bg-transparent border-transparent py-6'}`}>
-        <div className="max-w-7xl mx-auto px-8 md:px-16 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2 group">
-            <h1 className={`font-serif text-2xl tracking-wide transition-colors ${scrolled ? 'text-white' : 'text-[var(--color-gold)]'}`}>
-              SewZella
-            </h1>
-          </Link>
-          
-          <div className="hidden md:flex gap-10 items-center">
-            {[
-              { label: 'Services', path: '#services' },
-              { label: 'Artisans', path: '#artisans' },
-              { label: 'Why Choose Us', path: '#why-choose-us' },
-              { label: 'Contact', path: '/page/contact-us', isLink: true }
-            ].map((item) => (
-              item.isLink ? (
-                <Link key={item.label} to={item.path} className={`text-sm tracking-widest uppercase transition-colors hover:text-white ${scrolled ? 'text-white/80' : 'text-[var(--color-gold)]/90'}`}>
-                  {item.label}
-                </Link>
-              ) : (
-                <a key={item.label} href={item.path} className={`text-sm tracking-widest uppercase transition-colors hover:text-white ${scrolled ? 'text-white/80' : 'text-[var(--color-gold)]/90'}`}>
-                  {item.label}
-                </a>
-              )
-            ))}
-          </div>
+    <div
+      className="min-h-screen bg-[#fcf9f8] text-[#1c1b1b] overflow-x-hidden"
+      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+    >
+      <LandingNavbar />
 
-          <div className="flex gap-4 items-center">
-            <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="bg-[var(--color-gold)] text-[var(--color-evergreen)] px-6 py-2.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white transition-all duration-300">
-              Book Consultation
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      {/* 2. Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center pt-20">
-        <div className="absolute inset-0 z-0">
+      {/* ═══════════════════════════════════════════
+          1. HERO SECTION
+      ═══════════════════════════════════════════ */}
+      <section className="relative pt-24 md:pt-28 pb-8 md:pb-16 bg-[#fcf9f8] min-h-[85vh] flex items-center overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute top-[64px] lg:top-[72px] left-0 right-0 bottom-0 z-0">
           <img 
-            src="/landing/landing_hero_1779536482633.png" 
-            alt="Cinematic luxury bespoke tailoring" 
-            className="w-full h-full object-cover object-center"
+            src="/homepage .jpeg" 
+            alt="Sewzella Hero Banner" 
+            className="w-full h-full object-contain object-right md:object-right-top"
           />
-          <div className="absolute inset-0 bg-[var(--color-evergreen)]/60"></div>
+          {/* Subtle gradient so text remains readable if image is busy */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#fcf9f8] via-[#fcf9f8]/60 to-transparent pointer-events-none"></div>
         </div>
-        
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center mt-12 pb-20 md:pb-24">
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-[var(--color-gold)] uppercase tracking-[0.3em] text-sm mb-6 font-semibold"
+
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16 relative z-10 w-full">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-6">
+            {/* Left Content */}
+            <motion.div
+              className="flex-1 max-w-xl lg:max-w-none"
+              initial="hidden"
+              animate="visible"
+              variants={stagger}
+            >
+              <motion.h1
+                variants={fadeUp}
+                className="text-[36px] md:text-[48px] lg:text-[56px] font-bold leading-[1.12] mb-5 tracking-[-0.02em]"
+                style={{ fontFamily: "'Libre Caslon Text', serif" }}
+              >
+                Custom Tailoring,<br />
+                Delivered to{' '}
+                <span className="italic text-[#4a0581]">Your Doorstep</span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeUp}
+                custom={1}
+                className="text-[#4c4451] text-[16px] md:text-[17px] leading-relaxed mb-7 max-w-lg"
+              >
+                Design, customize, and stitch your perfect outfit from the comfort of your home. Sewzella connects customers with skilled tailors and seamless doorstep delivery.
+              </motion.p>
+
+              <motion.div variants={fadeUp} custom={2} className="flex flex-wrap gap-3 mb-8">
+                <a
+                  href="https://play.google.com/store"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-7 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#622999] transition-all duration-300 shadow-[0_4px_20px_rgba(74,5,129,0.3)] hover:shadow-[0_6px_25px_rgba(74,5,129,0.4)] hover:-translate-y-[1px]"
+                >
+                  Download App <Download size={16} />
+                </a>
+                <Link
+                  to="/partner/welcome"
+                  className="inline-flex items-center gap-2 border-2 border-[#4a0581] text-[#4a0581] px-7 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#4a0581] hover:text-white transition-all duration-300"
+                >
+                  <Scissors size={16} />
+                  Become a Tailor
+                </Link>
+              </motion.div>
+
+              <motion.div variants={fadeUp} custom={3} className="flex items-center gap-3 text-[13px] text-[#7d7483]">
+                <div className="flex -space-x-2">
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-[#dcb8ff] to-[#4a0581] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold"
+                    >
+                      {['S', 'A', 'R'][i]}
+                    </div>
+                  ))}
+                </div>
+                <span>
+                  Trusted by <strong className="text-[#1c1b1b]">10,000+</strong> customers<br className="sm:hidden" /> and tailoring professionals across Kashmir.
+                </span>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          2. TRUST BAR / FEATURES
+      ═══════════════════════════════════════════ */}
+      <section className="relative z-10 -mt-16 md:-mt-20 pb-8 md:pb-12 bg-transparent">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <motion.div
+            className="bg-white rounded-[32px] border border-[#f0eded] shadow-[0_8px_32px_rgba(0,0,0,0.06)] py-8 md:py-12 px-6 md:px-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 md:gap-10"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            variants={stagger}
           >
-            Premium Custom Tailoring Since 1952
-          </motion.p>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="font-serif text-5xl md:text-7xl lg:text-[80px] text-white leading-[1.1] mb-8"
-          >
-            Transform Your Style<br/>With Perfect Fitting
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-white/80 text-lg md:text-xl max-w-2xl font-light leading-relaxed mb-10"
-          >
-            Experience the joy of custom-made clothes, where every stitch is crafted with care to give you the perfect fit and look.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-6"
-          >
-            <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="bg-[var(--color-gold)] text-[var(--color-evergreen)] px-8 py-4 rounded text-sm tracking-widest uppercase font-bold hover:bg-white transition-all duration-300 flex items-center justify-center gap-2">
-              Book Consultation <ChevronRight size={16} />
-            </a>
-            <a href="#why-choose-us" className="border border-white/30 text-white px-8 py-4 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white/10 hover:border-white transition-all duration-300 flex items-center justify-center">
-              Why Choose Us
-            </a>
+            {TRUST_FEATURES.map((f, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                className="flex flex-col items-center text-center group"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-[#f0dbff] text-[#4a0581] flex items-center justify-center mb-3 group-hover:bg-[#4a0581] group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_8px_25px_rgba(74,5,129,0.25)]">
+                  {f.icon}
+                </div>
+                <h3 className="text-[13px] font-bold text-[#1c1b1b] mb-1 leading-tight">{f.title}</h3>
+                <p className="text-[11px] text-[#7d7483] leading-snug">{f.desc}</p>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
-
-        {/* Bottom Trust Indicators */}
-        <div className="absolute bottom-0 w-full border-t border-white/10 bg-[var(--color-evergreen)]/40 backdrop-blur-md hidden md:block">
-          <div className="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center text-white/70 text-xs uppercase tracking-widest">
-            <span className="flex items-center gap-2"><CheckCircle size={14} className="text-[var(--color-gold)]" /> High Quality Fabrics</span>
-            <span className="flex items-center gap-2"><Scissors size={14} className="text-[var(--color-gold)]" /> Expert Tailors</span>
-            <span className="flex items-center gap-2"><Ruler size={14} className="text-[var(--color-gold)]" /> Perfect Fitting</span>
-            <span className="flex items-center gap-2"><Shirt size={14} className="text-[var(--color-gold)]" /> Premium Materials</span>
-          </div>
-        </div>
       </section>
 
-      {/* 3. Premium Services Cards */}
-      <section id="services" className="py-24 md:py-32 bg-[var(--color-alabaster)]">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div className="max-w-xl">
-              <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)] mb-4">Our Premium Services</h2>
-              <p className="text-[var(--color-sage)] text-lg leading-relaxed">From well-fitted custom suits to beautiful bridal wear, we provide expert tailoring services for all your special occasions.</p>
+      {/* ═══════════════════════════════════════════
+          3. HOW SEWZELLA WORKS
+      ═══════════════════════════════════════════ */}
+      <section id="how-it-works" className="py-16 md:py-24 bg-[#fcf9f8]">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <motion.div
+            className="text-center mb-14"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+          >
+            <h2 className="text-[28px] md:text-[36px] font-bold mb-3 flex items-center justify-center gap-3" style={{ fontFamily: "'Libre Caslon Text', serif" }}>
+              <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 md:w-10 md:h-10">
+                <path d="M8 24 L14 14 L12 12 L6 18 Z" fill="#4a0581" opacity="0.9"/>
+                <path d="M24 24 L18 14 L20 12 L26 18 Z" fill="#4a0581" opacity="0.9"/>
+                <circle cx="16" cy="10" r="3" fill="#7a42b1"/>
+                <circle cx="16" cy="10" r="1.2" fill="white"/>
+                <path d="M6 18 Q4 20 5 22 Q6 24 8 24" fill="#4a0581"/>
+                <path d="M26 18 Q28 20 27 22 Q26 24 24 24" fill="#4a0581"/>
+              </svg>
+              How Sewzella Works
+            </h2>
+          </motion.div>
+
+          <motion.div
+            className="relative"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            variants={stagger}
+          >
+            {/* Dashed Connection Line with Arrows */}
+            <div className="hidden lg:block absolute top-[52px] left-[14%] right-[14%] h-0 z-0">
+              <svg width="100%" height="12" viewBox="0 0 900 12" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="0" y1="6" x2="880" y2="6" stroke="#cec3d3" strokeWidth="2" strokeDasharray="10 6"/>
+                {/* Arrow heads at intervals */}
+                <polygon points="175,2 185,6 175,10" fill="#cec3d3"/>
+                <polygon points="395,2 405,6 395,10" fill="#cec3d3"/>
+                <polygon points="615,2 625,6 615,10" fill="#cec3d3"/>
+                <polygon points="835,2 845,6 835,10" fill="#cec3d3"/>
+              </svg>
             </div>
-            <Link to="/" className="text-[var(--color-evergreen)] border-b border-[var(--color-evergreen)] pb-1 text-sm tracking-widest uppercase font-medium hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
-              View All Services
-            </Link>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { title: "Men's Custom Suits", desc: "Perfectly fitted custom suits for the modern man.", img: "/landing/service_suit_1779536603895.png" },
-              { title: "Bridal Wear", desc: "Beautiful and elegant designs crafted specially for your big day.", img: "/landing/service_bridal_1779536675225.png" },
-              { title: "Alterations & Fitting", desc: "Perfecting the fit of your favorite clothes.", img: "/landing/landing_hero_1779536482633.png" }, 
-              { title: "Traditional Ethnic Wear", desc: "Custom tailoring for your favorite traditional and festive wear.", img: "/landing/service_suit_1779536603895.png" } 
-            ].map((service, idx) => (
-              <div key={idx} className="group cursor-pointer">
-                <div className="aspect-[4/5] overflow-hidden rounded-lg mb-6 bg-[var(--color-stone)]">
-                  <img src={service.img} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                </div>
-                <h3 className="font-serif text-2xl mb-2 text-[var(--color-evergreen)]">{service.title}</h3>
-                <p className="text-[var(--color-sage)] text-sm mb-4 leading-relaxed">{service.desc}</p>
-                <span className="text-[var(--color-evergreen)] text-xs tracking-widest uppercase font-semibold flex items-center gap-1 group-hover:text-[var(--color-gold)] transition-colors">
-                  Learn More <ChevronRight size={14} />
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Bespoke Process Timeline */}
-      <section className="py-24 md:py-32 bg-[var(--color-stone)]">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="text-center mb-20">
-            <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">How It Works</span>
-            <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)]">Our Simple Custom Process</h2>
-          </div>
-
-          <div className="relative">
-            <div className="hidden md:block absolute top-1/2 left-0 w-full h-[1px] bg-[var(--color-sage)]/20 -translate-y-1/2 z-0"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-6 relative z-10">
-              {[
-                { step: "01", title: "Consult", desc: "Share your ideas and choose your favorite fabrics with our team.", icon: <CheckCircle className="w-6 h-6" /> },
-                { step: "02", title: "Measure", desc: "We take exact measurements so your clothes fit perfectly.", icon: <Ruler className="w-6 h-6" /> },
-                { step: "03", title: "Stitch", desc: "Our expert tailors stitch your clothes with great care and perfection.", icon: <Scissors className="w-6 h-6" /> },
-                { step: "04", title: "Deliver", desc: "Your custom-made outfit is checked for quality and delivered to you.", icon: <Shirt className="w-6 h-6" /> }
-              ].map((item, idx) => (
-                <div key={idx} className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded bg-[var(--color-evergreen)] text-[var(--color-gold)] flex items-center justify-center mb-6 shadow-xl">
-                    {item.icon}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-4 relative z-10">
+              {HOW_STEPS.map((step, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeUp}
+                  custom={i}
+                  className="flex flex-col items-center text-center group"
+                >
+                  <div className="relative mb-5">
+                    {/* Light circular background with illustrated SVG */}
+                    <div className="w-[100px] h-[100px] rounded-full bg-[#f6f0ff] border-2 border-[#e9def5] flex items-center justify-center p-4 group-hover:border-[#dcb8ff] group-hover:shadow-[0_8px_30px_rgba(74,5,129,0.12)] transition-all duration-300 group-hover:scale-105">
+                      {step.icon}
+                    </div>
+                    {/* Step number badge */}
+                    <div className="absolute -top-1 -left-1 w-7 h-7 rounded-full bg-[#4a0581] text-white text-[12px] font-bold flex items-center justify-center border-2 border-white shadow-sm">
+                      {step.num}
+                    </div>
                   </div>
-                  <span className="text-[var(--color-sage)] text-sm tracking-widest mb-2 font-medium">{item.step}. {item.title}</span>
-                  <p className="text-[var(--color-evergreen)] text-sm leading-relaxed max-w-[240px]">{item.desc}</p>
-                </div>
+                  <h3 className="text-[14px] font-bold text-[#1c1b1b] mb-1.5 italic" style={{ fontFamily: "'Libre Caslon Text', serif" }}>{step.title}</h3>
+                  <p className="text-[12px] text-[#7d7483] leading-relaxed max-w-[180px]">{step.desc}</p>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* 5. Master Artisan Story */}
-      <section id="artisans" className="py-24 md:py-32 bg-[var(--color-alabaster)]">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="flex flex-col lg:flex-row gap-16 items-center">
-            <div className="w-full lg:w-1/2 relative">
-              <div className="aspect-square md:aspect-[4/5] rounded-lg overflow-hidden">
-                <img src="/landing/artisan_portrait_1779536723229.png" alt="Master Artisan" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute -bottom-8 -right-8 md:-bottom-12 md:-right-12 bg-[var(--color-evergreen)] text-[var(--color-alabaster)] p-8 md:p-12 rounded-lg max-w-sm shadow-2xl hidden sm:block">
-                <p className="font-serif text-xl md:text-2xl italic leading-relaxed mb-4 text-[var(--color-gold)]">
-                  "Tailoring is not just about measurements; it's about bringing your personal style to life."
-                </p>
-                <span className="text-xs tracking-widest uppercase text-white/60">— Elias Thorne, Head Tailor</span>
-              </div>
-            </div>
-            
-            <div className="w-full lg:w-1/2 lg:pl-12 mt-12 lg:mt-0">
-              <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">The Experts Behind SewZella</span>
-              <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)] mb-8">Our Expert Tailors</h2>
-              <p className="text-[var(--color-sage)] text-lg leading-relaxed mb-8">
-                We work with experienced tailors who have dedicated their lives to clothing and design. They specialize in handling premium fabrics like cotton, silk, and wool with expert care.
-              </p>
-              
-              <div className="flex flex-col gap-6 mb-10">
-                <div className="flex gap-4">
-                  <CheckCircle className="text-[var(--color-gold)] shrink-0 mt-1" size={20} />
-                  <div>
-                    <h4 className="text-[var(--color-evergreen)] font-semibold mb-1 text-sm tracking-wider uppercase">Traditional Techniques</h4>
-                    <p className="text-[var(--color-sage)] text-sm">We use trusted traditional methods to ensure your clothes last longer and look better.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <CheckCircle className="text-[var(--color-gold)] shrink-0 mt-1" size={20} />
-                  <div>
-                    <h4 className="text-[var(--color-evergreen)] font-semibold mb-1 text-sm tracking-wider uppercase">Quality Craftsmanship</h4>
-                    <p className="text-[var(--color-sage)] text-sm">Our tailors focus on the best cutting techniques to minimize waste and deliver top quality.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="bg-[var(--color-evergreen)] text-white px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-[var(--color-evergreen-container)] transition-colors inline-block">
-                Meet Our Tailors
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ═══════════════════════════════════════════
+          4. POPULAR CATEGORIES
+      ═══════════════════════════════════════════ */}
+      <section id="categories" className="py-16 md:py-24 bg-white">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <motion.div
+            className="text-center mb-14"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+          >
+            <h2 className="text-[28px] md:text-[36px] font-bold mb-3" style={{ fontFamily: "'Libre Caslon Text', serif" }}>
+              Popular Categories
+            </h2>
+            <p className="text-[#7d7483] text-[15px] max-w-lg mx-auto">Explore our most loved custom stitching categories</p>
+          </motion.div>
 
-      {/* Why Choose SewZella Section */}
-      <section id="why-choose-us" className="py-24 md:py-32 bg-[var(--color-stone)] relative border-t border-[var(--color-evergreen)]/10">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="text-center mb-20">
-            <span className="text-[var(--color-sage)] uppercase tracking-[0.2em] text-xs font-semibold block mb-4">Why We Are Better</span>
-            <h2 className="font-serif text-4xl md:text-5xl text-[var(--color-evergreen)]">Why Choose Us?</h2>
-            <p className="text-[var(--color-sage)] text-lg max-w-2xl mx-auto mt-6">
-              We bring premium custom tailoring to your doorstep, combining great quality with modern convenience.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { 
-                icon: <Star className="w-8 h-8 text-[var(--color-gold)]" />, 
-                title: "Expert Tailoring", 
-                desc: "We partner with highly skilled tailors, ensuring every stitch is perfect and durable." 
-              },
-              { 
-                icon: <Clock className="w-8 h-8 text-[var(--color-gold)]" />, 
-                title: "Ultimate Convenience", 
-                desc: "From home measurements to doorstep delivery, enjoy an easy and smooth process." 
-              },
-              { 
-                icon: <Leaf className="w-8 h-8 text-[var(--color-gold)]" />, 
-                title: "Trusted Quality", 
-                desc: "We are committed to using high-quality materials and fair practices for all our tailors." 
-              },
-              { 
-                icon: <ShieldCheck className="w-8 h-8 text-[var(--color-gold)]" />, 
-                title: "Perfect Fit Guarantee", 
-                desc: "Our exact measurements and free alterations make sure your clothes fit you flawlessly." 
-              }
-            ].map((feature, idx) => (
-              <div key={idx} className="bg-white p-10 rounded-lg shadow-sm border border-[var(--color-evergreen)]/5 hover:shadow-md transition-shadow group">
-                <div className="w-16 h-16 rounded-full bg-[var(--color-evergreen-container)]/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-                  {feature.icon}
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            variants={stagger}
+          >
+            {CATEGORIES.map((cat, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                className="group cursor-pointer text-center"
+              >
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-[#f6f3f2] shadow-[0_4px_20px_rgba(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgba(74,5,129,0.15)] transition-all duration-400">
+                  <img
+                    src={cat.img}
+                    alt={cat.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                <h3 className="font-serif text-xl text-[var(--color-evergreen)] mb-3">{feature.title}</h3>
-                <p className="text-[var(--color-sage)] text-sm leading-relaxed">{feature.desc}</p>
-              </div>
+                <h3 className="text-[14px] font-bold text-[#1c1b1b] mb-1 group-hover:text-[#4a0581] transition-colors">{cat.title}</h3>
+                <p className="text-[11px] text-[#7d7483] leading-snug px-1">{cat.desc}</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* 9. Join/Partner Section */}
-      <section className="py-24 bg-[var(--color-evergreen)] text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
-        <div className="max-w-7xl mx-auto px-8 md:px-16 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-[var(--color-evergreen-container)] p-12 md:p-16 rounded-lg border border-white/10 relative overflow-hidden group">
-              <Scissors className="absolute -right-8 -bottom-8 w-64 h-64 text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500 transform -rotate-12" />
-              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-[var(--color-gold)]">Join as a Tailor</h3>
-              <p className="text-white/70 mb-10 text-lg max-w-md">Are you an expert in stitching? Join our network of top tailors and reach more customers easily.</p>
-              <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="border border-[var(--color-gold)] text-[var(--color-gold)] px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-[var(--color-gold)] hover:text-[var(--color-evergreen)] transition-all">
-                Apply Now
-              </a>
-            </div>
-            
-            <div className="bg-[var(--color-sage)]/20 p-12 md:p-16 rounded-lg border border-white/10 relative overflow-hidden group">
-              <Truck className="absolute -right-8 -bottom-8 w-64 h-64 text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500" />
-              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-white">Join as a Delivery Partner</h3>
-              <p className="text-white/70 mb-10 text-lg max-w-md">Become a delivery partner and help us deliver custom-made clothes to our customers safely and on time.</p>
-              <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="border border-white/30 text-white px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white hover:text-[var(--color-evergreen)] transition-all">
-                Partner With Us
-              </a>
-            </div>
+      {/* ═══════════════════════════════════════════
+          5. AI MEASUREMENT + LIVE ORDER TRACKING
+      ═══════════════════════════════════════════ */}
+      <section id="about" className="py-16 md:py-24 bg-[#f6f3f2]">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* AI Measurement Card */}
+            <motion.div
+              className="bg-white rounded-3xl p-8 md:p-10 flex flex-col lg:flex-row items-center gap-8 shadow-[0_4px_30px_rgba(0,0,0,0.04)] border border-[#f0eded]"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className="flex-1 w-full">
+                <div className="flex items-center gap-2 text-[#4a0581] font-bold text-[16px] mb-4">
+                  <Scan size={20} />
+                  AI Measurement Assistant
+                </div>
+                <h3 className="text-[20px] md:text-[22px] font-extrabold mb-3 text-[#1c1b1b] leading-tight">
+                  No measuring tape? No problem.
+                </h3>
+                <p className="text-[#4c4451] text-[13px] leading-relaxed mb-6">
+                  Upload a front and side photo, enter your height and weight, and Sewzella will estimate your measurements instantly.
+                </p>
 
-            <div className="bg-[var(--color-sage)]/20 p-12 md:p-16 rounded-lg border border-white/10 relative overflow-hidden group">
-              <User className="absolute -right-8 -bottom-8 w-64 h-64 text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500" />
-              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-white">Join as a Customer</h3>
-              <p className="text-white/70 mb-10 text-lg max-w-md">Experience the best custom tailoring. Join us today to get clothes that are made perfectly just for you.</p>
-              <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="border border-white/30 text-white px-8 py-3.5 rounded text-sm tracking-widest uppercase font-semibold hover:bg-white hover:text-[var(--color-evergreen)] transition-all">
-                Sign Up Now
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+                {/* Measurement Points - 2 columns */}
+                <div className="grid grid-cols-2 gap-y-4 gap-x-4 mb-8">
+                  {['Chest', 'Shoulder', 'Waist', 'Sleeve', 'Hip', 'Neck'].map((label, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <div className="w-[22px] h-[22px] rounded-full bg-[#4a0581] text-white flex items-center justify-center shrink-0">
+                        <CheckCircle size={12} strokeWidth={3} />
+                      </div>
+                      <span className="text-[13px] font-bold text-[#1c1b1b]">{label}</span>
+                    </div>
+                  ))}
+                </div>
 
-      {/* 10. Newsletter CTA */}
-      <section className="py-24 bg-[var(--color-stone)] border-b border-[var(--color-evergreen)]/10">
-        <div className="max-w-5xl mx-auto px-8 text-center">
-          <h2 className="font-serif text-3xl md:text-4xl text-[var(--color-evergreen)] mb-6">Stay Updated</h2>
-          <p className="text-[var(--color-sage)] mb-10 text-lg max-w-2xl mx-auto">Subscribe to our newsletter for the latest style inspiration, fashion tips, and exclusive offers.</p>
-          
-          <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="Your email address" 
-              className="flex-1 bg-white border border-[var(--color-sage)]/30 rounded px-6 py-4 text-[var(--color-evergreen)] placeholder:text-[var(--color-sage)] focus:outline-none focus:border-[var(--color-gold)] transition-colors"
-            />
-            <button className="bg-[var(--color-evergreen)] text-white px-10 py-4 rounded text-sm tracking-widest uppercase font-semibold hover:bg-[var(--color-gold)] transition-colors">
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </section>
+                <button className="bg-[#4a0581] text-white px-7 py-3 rounded-xl text-[13px] font-bold hover:bg-[#622999] transition-all duration-300">
+                  Try AI Measurement
+                </button>
+              </div>
+              <div className="flex-shrink-0 flex justify-center lg:justify-end w-full lg:w-[280px]">
+                <img
+                  src="/mobile.png"
+                  alt="AI Measurement App Interface"
+                  className="w-full max-w-[280px] object-contain"
+                />
+              </div>
+            </motion.div>
 
-      {/* 11. Luxury Footer */}
-      <footer id="contact" className="bg-[var(--color-evergreen)] text-white pt-24 pb-12">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
-            <div className="lg:col-span-1">
-              <h2 className="font-serif text-3xl text-[var(--color-gold)] mb-6">SewZella</h2>
-              <p className="text-white/60 text-sm leading-relaxed mb-8">
-                Bringing you the best of custom tailoring with expert craftsmanship and top quality.
+            {/* Live Order Tracking Card */}
+            <motion.div
+              className="bg-white rounded-3xl p-8 md:p-10 shadow-[0_4px_30px_rgba(0,0,0,0.04)] border border-[#f0eded] flex flex-col"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              custom={1}
+            >
+              <div className="flex items-center gap-2 text-[#4a0581] font-bold text-[16px] mb-4">
+                <Scan size={20} />
+                Live Order Tracking
+              </div>
+              <p className="text-[#1c1b1b] text-[13px] font-semibold mb-8">
+                Stay updated at every stage of your order.
               </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded border border-white/20 flex items-center justify-center text-white/60 hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
-                  <Instagram size={18} />
-                </a>
-                <a href="#" className="w-10 h-10 rounded border border-white/20 flex items-center justify-center text-white/60 hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
-                  <Facebook size={18} />
-                </a>
-                <a href="#" className="w-10 h-10 rounded border border-white/20 flex items-center justify-center text-white/60 hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] transition-colors">
-                  <Twitter size={18} />
-                </a>
+
+              {/* Order Timeline - 2 columns */}
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8 relative">
+                {/* Connecting Line - Desktop Only (between cols) */}
+                <div className="hidden md:block absolute left-1/2 top-8 bottom-8 w-[1px] bg-gradient-to-b from-transparent via-[#eae7e7] to-transparent -translate-x-1/2"></div>
+                
+                {/* Left Column */}
+                <div className="space-y-6 relative">
+                  <div className="absolute left-[13px] top-4 bottom-4 w-[2px] bg-[#eae7e7]"></div>
+                  {[
+                    { label: 'Order Confirmed', date: '10 Jun, 10:30 AM', icon: <Package size={12} /> },
+                    { label: 'Measurements Received', date: '10 Jun, 12:45 PM', icon: <Ruler size={12} /> },
+                    { label: 'Tailor Assigned', date: '10 Jun, 01:30 PM', icon: <Users size={12} /> },
+                    { label: 'Stitching In Progress', date: '11 Jun, 09:15 AM', icon: <Scissors size={12} /> },
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-4 relative z-10">
+                      <div className="w-[28px] h-[28px] rounded-full bg-[#4a0581] text-white flex items-center justify-center shrink-0 mt-0.5">
+                        {step.icon}
+                      </div>
+                      <div>
+                        <p className="text-[12px] font-bold text-[#1c1b1b] leading-tight">{step.label}</p>
+                        <p className="text-[10px] text-[#7d7483] mt-1">{step.date}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-6 relative md:mt-4">
+                  <div className="absolute left-[13px] top-4 bottom-4 w-[2px] bg-[#eae7e7]"></div>
+                  {[
+                    { label: 'Quality Check', date: '13 Jun, 04:30 PM', icon: <Shield size={12} />, color: 'bg-[#4a0581]' },
+                    { label: 'Out For Delivery', date: '14 Jun, 10:30 AM', icon: <Truck size={12} />, color: 'bg-[#4a0581]' },
+                    { label: 'Delivered', date: '14 Jun, 02:45 PM', icon: <CheckCircle size={12} strokeWidth={3} />, color: 'bg-[#22c55e]' },
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-4 relative z-10">
+                      <div className={`w-[28px] h-[28px] rounded-full ${step.color} text-white flex items-center justify-center shrink-0 mt-0.5`}>
+                        {step.icon}
+                      </div>
+                      <div>
+                        <p className="text-[12px] font-bold text-[#1c1b1b] leading-tight">{step.label}</p>
+                        <p className="text-[10px] text-[#7d7483] mt-1">{step.date}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-center mt-auto">
+                <button className="border-2 border-[#dcb8ff] text-[#4a0581] px-8 py-2.5 rounded-[14px] text-[13px] font-bold hover:border-[#4a0581] transition-all duration-300">
+                  Track Your Order
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          6. BECOME A TAILOR PARTNER
+      ═══════════════════════════════════════════ */}
+      <section id="become-partner" className="py-16 md:py-24 bg-[#fcf9f8]">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <motion.div
+            className="relative bg-gradient-to-r from-[#4a0581] to-[#651baa] rounded-3xl overflow-hidden"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+          >
+            <div className="flex flex-col lg:flex-row">
+              <div className="flex-1 p-8 md:p-12 lg:p-16 text-white">
+                <h2 className="text-[28px] md:text-[36px] font-bold mb-3" style={{ fontFamily: "'Libre Caslon Text', serif" }}>
+                  Become a Tailor Partner
+                </h2>
+                <p className="text-white/80 text-[15px] mb-8 max-w-md">
+                  Grow your tailoring business with Sewzella.
+                </p>
+
+                <div className="flex flex-wrap gap-3 mb-10">
+                  {PARTNER_FEATURES.map((f, i) => (
+                    <div
+                      key={i}
+                      className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white px-4 py-2.5 rounded-full text-[12px] font-medium border border-white/20"
+                    >
+                      {f.icon}
+                      {f.label}
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  to="/partner/welcome"
+                  className="inline-flex items-center gap-2 bg-white text-[#4a0581] px-8 py-3.5 rounded-full text-[14px] font-bold hover:bg-[#f0dbff] transition-all duration-300 shadow-lg"
+                >
+                  Join as Tailor <ChevronRight size={16} />
+                </Link>
+              </div>
+
+              <div className="hidden lg:flex items-end justify-end flex-shrink-0 pr-8">
+                <img
+                  src="/landing/tailor_partner_woman.png"
+                  alt="Tailor Partner"
+                  className="w-[300px] h-[340px] object-cover object-top rounded-t-2xl"
+                />
               </div>
             </div>
-            
-            <div>
-              <h4 className="text-sm tracking-widest uppercase font-semibold mb-6 text-white">Discover</h4>
-              <ul className="space-y-4">
-                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Our Tailors</a></li>
-                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Fabrics</a></li>
-                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Sustainability</a></li>
-              </ul>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          7. DOWNLOAD SEWZELLA APP
+      ═══════════════════════════════════════════ */}
+      <section className="py-16 md:py-24 bg-[#fcf9f8]">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <motion.div
+            className="bg-white rounded-[32px] border border-[#f0eded] shadow-[0_4px_30px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col lg:flex-row items-center relative"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+          >
+            {/* Left: Image */}
+            <div className="lg:w-1/3 flex justify-center lg:justify-start pt-10 px-8 lg:pt-0 lg:pl-16">
+              <img
+                src="/download.png"
+                alt="Sewzella App Download"
+                className="w-[240px] md:w-[320px] lg:w-full max-w-[360px] object-contain object-bottom h-[280px] md:h-[360px] lg:h-auto lg:max-h-[400px]"
+              />
             </div>
-            
-            <div>
-              <h4 className="text-sm tracking-widest uppercase font-semibold mb-6 text-white">Partners</h4>
-              <ul className="space-y-4">
-                <li><a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Artisan Portal</a></li>
-                <li><a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Delivery Partners</a></li>
-                <li><a href="#" className="text-white/60 hover:text-[var(--color-gold)] transition-colors text-sm">Corporate</a></li>
-              </ul>
+
+            {/* Middle: Content */}
+            <div className="lg:w-1/3 py-12 px-8 lg:px-10 text-center lg:text-left flex flex-col items-center lg:items-start justify-center">
+              <h2
+                className="text-[28px] md:text-[36px] font-bold text-[#4a0581] mb-3 leading-tight"
+                style={{ fontFamily: "'Libre Caslon Text', serif" }}
+              >
+                Download Sewzella
+              </h2>
+              <p className="text-[#4c4451] text-[14px] mb-8 max-w-md mx-auto lg:mx-0">
+                Your perfect outfit is just a few taps away.
+              </p>
+
+              {/* App Store Badges */}
+              <div className="flex flex-row gap-4 justify-center lg:justify-start">
+                <a
+                  href="https://play.google.com/store"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 bg-black text-white px-5 py-2.5 rounded-[10px] hover:bg-gray-900 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302-2.302 2.302-2.652-2.652 2.652-2.652zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z" />
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-[9px] uppercase tracking-wider opacity-80 leading-none mb-0.5">Get it on</p>
+                    <p className="text-[14px] font-semibold leading-none">Google Play</p>
+                  </div>
+                </a>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="inline-flex items-center gap-3 bg-black/80 text-white px-5 py-2.5 rounded-[10px] cursor-not-allowed">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                    <div className="text-left">
+                      <p className="text-[9px] uppercase tracking-wider opacity-80 leading-none mb-0.5">Download on the</p>
+                      <p className="text-[14px] font-semibold leading-none">App Store</p>
+                    </div>
+                  </div>
+                  <span className="text-[#4a0581] text-[11px] font-bold tracking-wide">Coming Soon</span>
+                </div>
+              </div>
             </div>
-            
-            <div>
-              <h4 className="text-sm tracking-widest uppercase font-semibold mb-6 text-white">Contact</h4>
-              <ul className="space-y-4">
-                <li className="text-white/60 text-sm">concierge@sewzella.com</li>
-                <li className="text-white/60 text-sm">+1 (800) 555-0199</li>
-                <li><Link to="/page/support" className="text-[var(--color-gold)] hover:text-white transition-colors text-sm underline underline-offset-4 mt-2 inline-block">Send a Message</Link></li>
-              </ul>
+
+            {/* Vertical Divider */}
+            <div className="hidden lg:block w-[1px] h-[160px] bg-gradient-to-b from-transparent via-[#eae7e7] to-transparent"></div>
+
+            {/* Right: Features */}
+            <div className="lg:w-1/3 py-10 px-8 lg:px-12 flex items-center justify-center lg:justify-start">
+              <div className="flex gap-8 md:gap-10">
+                {[
+                  { icon: <Smartphone size={24} strokeWidth={1.5} />, label: 'Easy to Use' },
+                  { icon: <ShieldCheck size={24} strokeWidth={1.5} />, label: 'Secure & Safe' },
+                  { icon: <Scan size={24} strokeWidth={1.5} />, label: 'Fast & Reliable' },
+                ].map((f, i) => (
+                  <div key={i} className="flex flex-col items-center text-center gap-3">
+                    <div className="w-14 h-14 rounded-[18px] bg-white border border-[#eae7e7] flex items-center justify-center text-[#4a0581] shadow-sm">
+                      {f.icon}
+                    </div>
+                    <span className="text-[12px] font-bold text-[#1c1b1b] max-w-[70px] leading-tight">{f.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-white/40 text-xs tracking-wider uppercase">
-              &copy; {new Date().getFullYear()} SewZella Custom Tailoring. Perfect Fit Every Time.
-            </p>
-            <div className="flex gap-6 text-white/40 text-xs tracking-wider uppercase">
-              <Link to="/page/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
-              <Link to="/page/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
-              <Link to="/page/accessibility-report" className="hover:text-white transition-colors">Accessibility Report</Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          8. TESTIMONIALS
+      ═══════════════════════════════════════════ */}
+      <section className="py-16 md:py-24 bg-[#fcf9f8]">
+        <div className="max-w-[1536px] mx-auto px-5 md:px-16">
+          <motion.div
+            className="text-center mb-14"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+          >
+            <h2 className="text-[28px] md:text-[36px] font-bold mb-3" style={{ fontFamily: "'Libre Caslon Text', serif" }}>
+              What Our Customers Say
+            </h2>
+          </motion.div>
+
+          <div className="relative">
+            {/* Desktop: Show all 3 */}
+            <div className="hidden md:grid md:grid-cols-3 gap-8">
+              {TESTIMONIALS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  className="bg-white rounded-2xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#eae7e7] hover:shadow-[0_8px_30px_rgba(74,5,129,0.1)] transition-all duration-300"
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                  custom={i}
+                >
+                  <div className="text-[#dcb8ff] mb-4">
+                    <Quote size={32} />
+                  </div>
+                  <p className="text-[14px] text-[#4c4451] leading-relaxed mb-6 italic">
+                    "{t.text}"
+                  </p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-[#f0eded]">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#dcb8ff] to-[#4a0581] flex items-center justify-center text-white text-[14px] font-bold">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-[#1c1b1b]">{t.name}</p>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, si) => (
+                          <Star key={si} size={12} className="text-[#f59e0b] fill-[#f59e0b]" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Mobile: Carousel */}
+            <div className="md:hidden">
+              <div className="bg-white rounded-2xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#eae7e7]">
+                <div className="text-[#dcb8ff] mb-4">
+                  <Quote size={32} />
+                </div>
+                <p className="text-[14px] text-[#4c4451] leading-relaxed mb-6 italic">
+                  "{TESTIMONIALS[testimonialIdx].text}"
+                </p>
+                <div className="flex items-center gap-3 pt-4 border-t border-[#f0eded]">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#dcb8ff] to-[#4a0581] flex items-center justify-center text-white text-[14px] font-bold">
+                    {TESTIMONIALS[testimonialIdx].name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-[#1c1b1b]">{TESTIMONIALS[testimonialIdx].name}</p>
+                    <div className="flex gap-0.5">
+                      {[...Array(5)].map((_, si) => (
+                        <Star key={si} size={12} className="text-[#f59e0b] fill-[#f59e0b]" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Nav Arrows */}
+            <div className="flex justify-center gap-4 mt-8">
+              <button
+                onClick={prevTestimonial}
+                className="w-10 h-10 rounded-full border-2 border-[#cec3d3] text-[#7d7483] flex items-center justify-center hover:bg-[#4a0581] hover:text-white hover:border-[#4a0581] transition-all duration-300"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={nextTestimonial}
+                className="w-10 h-10 rounded-full border-2 border-[#cec3d3] text-[#7d7483] flex items-center justify-center hover:bg-[#4a0581] hover:text-white hover:border-[#4a0581] transition-all duration-300"
+              >
+                <ChevronRight size={18} />
+              </button>
             </div>
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          9. FOOTER
+      ═══════════════════════════════════════════ */}
+      <LandingFooter />
     </div>
   );
 };

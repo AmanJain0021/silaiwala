@@ -150,7 +150,7 @@ const DeliveryDashboard = () => {
         <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">
             <div className="px-5 space-y-6">
                 {/* Main Earnings Card */}
-                <div className="w-full bg-gradient-to-br from-[#3b3db0] to-[#2D2F6E] rounded-[2rem] p-6 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20">
+                <div className="w-full bg-gradient-to-br from-[#3b3db0] to-[#843D9B] rounded-[2rem] p-6 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20">
                     <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl -translate-y-10 translate-x-10 pointer-events-none"></div>
                     <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#3b3db0] opacity-50 rounded-full blur-2xl translate-y-10 translate-x-10 pointer-events-none"></div>
                     
@@ -160,7 +160,7 @@ const DeliveryDashboard = () => {
                         <p className="text-[10px] text-indigo-100 font-medium leading-relaxed mb-5 max-w-[200px]">
                             Earnings will update once you complete a delivery.
                         </p>
-                        <button onClick={() => navigate('/delivery/wallet')} className="bg-white text-[#2D2F6E] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors flex items-center gap-1 shadow-sm">
+                        <button onClick={() => navigate('/delivery/wallet')} className="bg-white text-[#843D9B] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors flex items-center gap-1 shadow-sm">
                             View Details <ChevronRight size={14} />
                         </button>
                     </div>
@@ -199,7 +199,7 @@ const DeliveryDashboard = () => {
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-4 gap-3 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
                     <div className="flex flex-col items-center justify-center text-center space-y-1">
-                        <div className="w-10 h-10 bg-indigo-50 text-[#2D2F6E] rounded-2xl flex items-center justify-center mb-1 border border-indigo-100">
+                        <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-2xl flex items-center justify-center mb-1 border border-indigo-100">
                             <Box size={18} />
                         </div>
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today</span>
@@ -243,10 +243,10 @@ const DeliveryDashboard = () => {
                     >
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-[#2D2F6E] rounded-full animate-pulse"></div>
-                                <span className="text-[10px] font-black text-[#2D2F6E] uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">Active Dispatch</span>
+                                <div className="w-2 h-2 bg-[#843D9B] rounded-full animate-pulse"></div>
+                                <span className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">Active Dispatch</span>
                             </div>
-                            <div className="w-10 h-10 bg-indigo-50 text-[#2D2F6E] rounded-xl flex items-center justify-center border border-indigo-100">
+                            <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center border border-indigo-100">
                                 <Bike size={20} />
                             </div>
                         </div>
@@ -254,16 +254,16 @@ const DeliveryDashboard = () => {
                         <h3 className="text-xl font-black text-slate-900 tracking-tight capitalize mb-6">{getTaskType(currentTask)}</h3>
 
                         <div className="relative pl-6 space-y-6">
-                            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-indigo-100 border-l border-dashed border-[#2D2F6E]/20"></div>
+                            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-indigo-100 border-l border-dashed border-[#843D9B]/20"></div>
                             
                             {/* Source */}
                             <div className="relative">
-                                <div className="absolute -left-[30px] top-1 w-4 h-4 bg-white border-2 border-[#2D2F6E] rounded-full flex items-center justify-center z-10 shadow-sm">
-                                    <div className="w-1.5 h-1.5 bg-[#2D2F6E] rounded-full"></div>
+                                <div className="absolute -left-[30px] top-1 w-4 h-4 bg-white border-2 border-[#843D9B] rounded-full flex items-center justify-center z-10 shadow-sm">
+                                    <div className="w-1.5 h-1.5 bg-[#843D9B] rounded-full"></div>
                                 </div>
                                 <div className="flex justify-between items-start gap-4">
                                     <div>
-                                        <p className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest mb-1">Pickup (Source)</p>
+                                        <p className="text-[9px] font-black text-[#843D9B] uppercase tracking-widest mb-1">Pickup (Source)</p>
                                         <p className="text-sm font-medium text-slate-600 leading-snug">
                                             {(() => {
                                                 const isFabric = currentTask.taskType === 'fabric-pickup';
@@ -271,7 +271,7 @@ const DeliveryDashboard = () => {
                                             })()}
                                         </p>
                                     </div>
-                                    <div className="bg-indigo-50 px-2 py-1 rounded text-[9px] font-black text-[#2D2F6E] shrink-0 uppercase tracking-widest">
+                                    <div className="bg-indigo-50 px-2 py-1 rounded text-[9px] font-black text-[#843D9B] shrink-0 uppercase tracking-widest">
                                         Pickup
                                     </div>
                                 </div>
@@ -279,10 +279,10 @@ const DeliveryDashboard = () => {
 
                             {/* Destination */}
                             <div className="relative">
-                                <div className="absolute -left-[30px] top-1 w-4 h-4 bg-white border-2 border-[#2D2F6E] rounded-full flex items-center justify-center z-10 shadow-sm"></div>
+                                <div className="absolute -left-[30px] top-1 w-4 h-4 bg-white border-2 border-[#843D9B] rounded-full flex items-center justify-center z-10 shadow-sm"></div>
                                 <div className="flex justify-between items-start gap-4">
                                     <div>
-                                        <p className="text-[9px] font-black text-[#2D2F6E] uppercase tracking-widest mb-1">Drop-off (Destination)</p>
+                                        <p className="text-[9px] font-black text-[#843D9B] uppercase tracking-widest mb-1">Drop-off (Destination)</p>
                                         <p className="text-sm font-black text-slate-900 leading-snug mb-1">
                                             {(() => {
                                                 const isFabric = currentTask.taskType === 'fabric-pickup';
@@ -296,14 +296,14 @@ const DeliveryDashboard = () => {
                                             })()}
                                         </p>
                                     </div>
-                                    <div className="bg-indigo-50 px-2 py-1 rounded text-[9px] font-black text-[#2D2F6E] shrink-0 uppercase tracking-widest">
+                                    <div className="bg-indigo-50 px-2 py-1 rounded text-[9px] font-black text-[#843D9B] shrink-0 uppercase tracking-widest">
                                         Drop-off
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <button className="w-full bg-[#2D2F6E] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
+                        <button className="w-full bg-[#843D9B] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
                             View Dispatch Details <ChevronRight size={14} />
                         </button>
                     </div>
@@ -314,10 +314,10 @@ const DeliveryDashboard = () => {
                         </div>
                         {availableOrders?.length > 0 ? (
                             <>
-                                <p className="text-slate-600 font-bold mb-4">You have no active tasks, but there {availableOrders.length === 1 ? 'is' : 'are'} <span className="text-[#2D2F6E]">{availableOrders.length} live order{availableOrders.length === 1 ? '' : 's'}</span> waiting!</p>
+                                <p className="text-slate-600 font-bold mb-4">You have no active tasks, but there {availableOrders.length === 1 ? 'is' : 'are'} <span className="text-[#843D9B]">{availableOrders.length} live order{availableOrders.length === 1 ? '' : 's'}</span> waiting!</p>
                                 <button
                                     onClick={() => navigate('/delivery/tasks')}
-                                    className="px-6 py-3 bg-[#2D2F6E] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20 active:scale-95"
+                                    className="px-6 py-3 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20 active:scale-95"
                                 >
                                     View Live Pool
                                 </button>
