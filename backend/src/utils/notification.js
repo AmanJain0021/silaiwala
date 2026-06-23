@@ -134,9 +134,10 @@ const sendNotification = async (options) => {
       console.error("❌ FCM Push Error:", fcmError.message);
     }
 
-    return notification;
+    return true;
   } catch (error) {
     console.error("❌ Notification Error:", error.message);
+    return false;
   }
 };
 

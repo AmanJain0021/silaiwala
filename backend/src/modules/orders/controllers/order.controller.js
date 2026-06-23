@@ -1,4 +1,5 @@
 const Order = require("../../../models/Order");
+const mongoose = require("mongoose");
 const User = require("../../../models/User");
 const Tailor = require("../../../models/Tailor");
 const Customer = require("../../../models/Customer");
@@ -102,11 +103,14 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
     .update(sign.toString())
     .digest("hex");
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
   if (razorpay_signature === expectedSign) {
     // Payment verified
-    const order = await Order.findById(orderObjectId);
+    const order = await Order.findById(orderObjectId).session(session);
     if (!order) {
-      return next(new ErrorResponse("Order not found during verification", 404));
+      await session.abortTransaction(); session.endSession(); return next(new ErrorResponse("Order not found during verification", 404));
     }
 
     if (paymentType === 'advance') {
@@ -159,16 +163,16 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
                const tailorAdvanceAmount = Math.round(tailorTotalEarning * (advancePct / 100));
 
                tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorAdvanceAmount;
-               await tailorProfile.save();
+               await tailorProfile.save({ session });
 
-               await WalletTransaction.create({
-                   user: order.tailor,
+               await WalletTransaction.create([{
+user: order.tailor,
                    amount: tailorAdvanceAmount,
                    type: "credit",
                    category: "advance_payment",
                    order: order._id,
                    description: `Advance payment received for order ${order.orderId}`
-               });
+}], { session });
                console.log(`Credited ₹${tailorAdvanceAmount} advance to Tailor ${order.tailor}`);
            }
        } catch (err) {
@@ -207,8 +211,8 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        // Create PaymentLedger entry for remaining payment
        try {
          const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-         await PaymentLedger.create({
-           ledgerId,
+         await PaymentLedger.create([{
+ledgerId,
            order: order._id,
            orderId: order.orderId,
            customer: order.customer,
@@ -232,7 +236,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            paymentMethod: "online",
            paymentStatus: "paid",
            paidAt: new Date(),
-         });
+}], { session });
        } catch (ledgerErr) {
          console.error("Failed to create PaymentLedger entry:", ledgerErr);
        }
@@ -244,6 +248,59 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            message: `Customer has paid the remaining balance for ${order.orderId}.`,
            data: { orderId: order._id, targetUrl: "/orders" }
        });
+    } else if (paymentType === 'full') {
+       order.advancePaymentStatus = "paid";
+       order.advancePaymentId = razorpay_payment_id;
+       order.advancePaymentAmount = order.totalAmount;
+       order.remainingPaymentStatus = "paid";
+       order.remainingPaymentId = razorpay_payment_id;
+       order.remainingPaymentAmount = 0;
+       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'fabric-ready-for-pickup' : 'in-progress';
+       order.trackingHistory.push({
+         status: order.status,
+         timestamp: new Date(),
+         message: `Full payment of ₹${order.totalAmount} successful. Order accepted.`,
+       });
+       await sendNotification({
+           recipient: order.tailor,
+           type: "ORDER_CREATED",
+           title: "Full Payment Received - Start Order!",
+           message: `Customer has paid in full for ${order.orderId}. You can start processing.`,
+           data: { orderId: order._id, targetUrl: "/orders" }
+       });
+
+       // Emit socket
+       const { getIO } = require("../../../config/socket");
+       const io = getIO();
+       if (io) {
+           io.to(`user_${order.tailor}`).emit('order_status_updated', {
+               orderId: order.orderId,
+               status: order.status
+           });
+       }
+
+       // --- Credit Tailor Wallet for Full Payment ---
+       try {
+           const tailorProfile = await Tailor.findOne({ user: order.tailor });
+           if (tailorProfile) {
+               // Calculate platform fee here if needed, simplified for now:
+               const platformFee = Math.round(order.totalAmount * 0.10); // Example 10%
+               const tailorShare = order.totalAmount - platformFee;
+               
+               await WalletTransaction.create([{
+user: tailorProfile.user,
+                   amount: tailorShare,
+                   type: 'credit',
+                   category: 'full_payment',
+                   order: order._id,
+                   description: `Full payment received for Order ${order.orderId} (less platform fee)`
+}], { session });
+               tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorShare;
+               await tailorProfile.save({ session });
+           }
+       } catch (walletErr) {
+           console.error("Wallet credit error (Full Payment):", walletErr);
+       }
     } else {
        // Legacy fallback or fully upfront payment
        order.paymentStatus = "paid";
@@ -266,8 +323,8 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        // Create PaymentLedger for full payment
        try {
          const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-         await PaymentLedger.create({
-           ledgerId,
+         await PaymentLedger.create([{
+ledgerId,
            order: order._id,
            orderId: order.orderId,
            customer: order.customer,
@@ -290,13 +347,13 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            paymentMethod: "online",
            paymentStatus: "paid",
            paidAt: new Date(),
-         });
+}], { session });
        } catch (ledgerErr) {
          console.error("Failed to create PaymentLedger entry:", ledgerErr);
        }
     }
 
-    await order.save();
+    await order.save({ session });
 
     await sendNotification({
         recipient: order.customer,
@@ -342,41 +399,49 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
                 // 1. Reward Referrer
                 referrerProfile.walletBalance += REFERRER_BONUS;
                 referrerProfile.referralEarnings += REFERRER_BONUS;
-                await referrerProfile.save();
+                await referrerProfile.save({ session });
 
-                await WalletTransaction.create({
-                    user: referrerProfile.user,
+                await WalletTransaction.create([{
+user: referrerProfile.user,
                     amount: REFERRER_BONUS,
                     type: "credit",
                     category: "referral_bonus",
                     description: `Bonus for referring ${customerProfile.user.name || 'a new user'}`
-                });
+}], { session });
 
                 // 2. Reward New Customer
                 customerProfile.walletBalance += CUSTOMER_BONUS;
-                await WalletTransaction.create({
-                    user: customerProfile.user,
+                await WalletTransaction.create([{
+user: customerProfile.user,
                     amount: CUSTOMER_BONUS,
                     type: "credit",
                     category: "referral_bonus",
                     description: "Welcome bonus from referral"
-                });
+}], { session });
             }
         }
-        await customerProfile.save();
+        await customerProfile.save({ session });
     } else if (customerProfile) {
         customerProfile.totalOrders += 1;
-        await customerProfile.save();
+        await customerProfile.save({ session });
     }
     // ---------------------
-
+    await session.commitTransaction();
     res.status(200).json({
       success: true,
       message: "Payment verified successfully",
       data: order
     });
   } else {
+    await session.abortTransaction();
     return next(new ErrorResponse("Invalid payment signature!", 400));
+  }
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Payment verification transaction aborted:", error);
+    return next(new ErrorResponse("Payment processing failed", 500));
+  } finally {
+    session.endSession();
   }
 });
 
@@ -387,6 +452,36 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
  */
 exports.createOrder = asyncHandler(async (req, res, next) => {
   let { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee } = req.body;
+
+  // Single Service-Type Validation for Order Creation
+  if (items && items.length > 0) {
+    const hasProducts = items.some(item => item.product);
+    const hasServices = items.some(item => item.service);
+
+    if (hasProducts && hasServices) {
+      return next(new ErrorResponse("An order cannot contain both products and services.", 400));
+    }
+
+    if (hasServices) {
+      const Service = require("../../../models/Service");
+      const serviceIds = items.filter(item => item.service).map(item => item.service);
+      const services = await Service.find({ _id: { $in: serviceIds } }).populate('category');
+      
+      let hasAlteration = false;
+      let hasStitching = false;
+
+      for (const svc of services) {
+        const isAlt = svc.category?.name?.toLowerCase().includes('alteration') || svc.tags?.some(t => t.toLowerCase().includes('alteration'));
+        if (isAlt) hasAlteration = true;
+        else hasStitching = true;
+      }
+
+      if (hasAlteration && hasStitching) {
+        return next(new ErrorResponse("An order cannot contain both alteration and stitching services.", 400));
+      }
+    }
+  }
+
 
   // Failsafe: Geocode delivery address if it's missing coordinates (e.g. old saved address)
   deliveryAddress = await autoGeocode(deliveryAddress);
@@ -450,7 +545,57 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
           if (promo.maxDiscountAmount && discountAmount > promo.maxDiscountAmount) {
             discountAmount = promo.maxDiscountAmount;
           }
-        } else {
+        } else if (paymentType === 'full') {
+       order.advancePaymentStatus = "paid";
+       order.advancePaymentId = razorpay_payment_id;
+       order.advancePaymentAmount = order.totalAmount;
+       order.remainingPaymentStatus = "paid";
+       order.remainingPaymentId = razorpay_payment_id;
+       order.remainingPaymentAmount = 0;
+       
+       transitionOrder(order, 'accepted', `Full payment of ₹${order.totalAmount} successful. Order accepted.`, true);
+
+       await sendNotification({
+           recipient: order.tailor,
+           type: "ORDER_CREATED",
+           title: "Full Payment Received - Start Order!",
+           message: `Customer has paid in full for ${order.orderId}. You can start processing.`,
+           data: { orderId: order._id, targetUrl: "/orders" }
+       });
+
+       // Emit socket
+       const { getIO } = require("../../../config/socket");
+       const io = getIO();
+       if (io) {
+           io.to(`user_${order.tailor}`).emit('order_status_updated', {
+               orderId: order.orderId,
+               status: order.status
+           });
+       }
+
+       // --- Credit Tailor Wallet for Full Payment ---
+       try {
+           const tailorProfile = await Tailor.findOne({ user: order.tailor });
+           if (tailorProfile) {
+               // Calculate platform fee here if needed, simplified for now:
+               const platformFee = Math.round(order.totalAmount * 0.10); // Example 10%
+               const tailorShare = order.totalAmount - platformFee;
+               
+               await WalletTransaction.create({
+                   user: tailorProfile.user,
+                   amount: tailorShare,
+                   type: 'credit',
+                   category: 'full_payment',
+                   order: order._id,
+                   description: `Full payment received for Order ${order.orderId} (less platform fee)`
+               });
+               tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorShare;
+               await tailorProfile.save();
+           }
+       } catch (walletErr) {
+           console.error("Wallet credit error (Full Payment):", walletErr);
+       }
+    } else {
           discountAmount = promo.discountValue;
         }
         finalAmount = totalAmount - discountAmount;

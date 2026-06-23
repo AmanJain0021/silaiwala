@@ -8,7 +8,8 @@ import {
     FileCheck,
     CreditCard,
     UserCircle,
-    Wallet
+    Wallet,
+    Ruler
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
@@ -67,6 +68,7 @@ const TailorLayout = () => {
     const menuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Home', path: '/partner' },
         { icon: <ClipboardList size={20} />, label: 'Orders', path: '/partner/orders', badge: pendingOrdersCount },
+        { icon: <Ruler size={20} />, label: 'Alterations', path: '/partner/alterations' },
         { icon: <Wallet size={20} />, label: 'Wallet', path: '/partner/wallet' },
         { icon: <ShoppingBag size={20} />, label: 'Services', path: '/partner/products' },
         { icon: <UserCircle size={20} />, label: 'Profile', path: '/partner/settings' },

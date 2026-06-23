@@ -289,7 +289,14 @@ const Orders = () => {
                             {/* Production Status Stepper */}
                             <div className="bg-white rounded-3xl p-5 border border-gray-100">
                                 {(() => {
-                                    const steps = [
+                                    const isReadyMade = order.items?.some(item => item.product);
+
+                                    const steps = isReadyMade ? [
+                                        { key: 'order-received',     label: 'Order Received' },
+                                        { key: 'in-progress',        label: 'Processing & Packing' },
+                                        { key: 'ready-for-delivery', label: 'Ready To Dispatch' },
+                                        { key: 'delivered',          label: 'Delivered' }
+                                    ] : [
                                         ...(order.isMeasurementHome ? [{ key: 'measurements-approved', label: 'Measurements Done' }] : []),
                                         { key: 'order-received',     label: 'Order Received' },
                                         { key: 'fabric-received',    label: 'Fabric Received' },
@@ -318,6 +325,7 @@ const Orders = () => {
                                         'fabric-selected',
                                         'measurement-verification',
                                         'pattern-making',
+                                        'in-progress',
                                         'cutting',
                                         'stitching',
                                         'finishing',

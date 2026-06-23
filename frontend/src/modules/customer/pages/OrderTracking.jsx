@@ -320,6 +320,8 @@ const OrderTracking = () => {
 
     const dateString = getArrivalDate();
 
+    const isReadyMade = order?.items?.some(item => item.product);
+
     // Timeline Configuration
     const stages = isBulk 
         ? [
@@ -328,6 +330,14 @@ const OrderTracking = () => {
             { key: 'accepted-by-tailor', label: 'Assigned', icon: User },
             { key: 'in-production', label: 'Production', icon: Scissors },
             { key: 'shipped', label: 'In Transit', icon: Truck },
+            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+        ]
+        : isReadyMade
+        ? [
+            { key: 'pending', label: 'Order Received', icon: Package },
+            { key: 'in-progress', label: 'Processing & Packing', icon: Package },
+            { key: 'ready-for-delivery', label: 'Ready To Dispatch', icon: Package },
+            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
             { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
         ]
         : [
@@ -370,6 +380,7 @@ const OrderTracking = () => {
             'fabric-selected',
             'measurement-verification',
             'pattern-making',
+            'in-progress',
             'cutting',
             'stitching',
             'finishing',
@@ -387,9 +398,7 @@ const OrderTracking = () => {
         let equivalentStageKey = stageKey;
         if (stageKey === 'shipped') equivalentStageKey = 'out-for-delivery';
 
-        let mappedStatus = status;
-        if (status === 'in-progress') mappedStatus = 'cutting';
-        const currentIndex = statusOrder.indexOf(mappedStatus);
+        const currentIndex = statusOrder.indexOf(status);
         const stageIndex = statusOrder.indexOf(equivalentStageKey);
 
         const isCompleted = currentIndex >= stageIndex && stageIndex !== -1;

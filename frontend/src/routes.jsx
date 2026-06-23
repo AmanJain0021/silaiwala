@@ -48,6 +48,7 @@ const TailorEarnings = React.lazy(() => import('./modules/tailor/pages/TailorEar
 const MeasurementList = React.lazy(() => import('./modules/tailor/pages/MeasurementList'));
 const MeasurementDetail = React.lazy(() => import('./modules/tailor/pages/MeasurementDetail'));
 const PartnerLanding = React.lazy(() => import('./modules/tailor/pages/PartnerLanding'));
+const TailorAlterations = React.lazy(() => import('./modules/tailor/pages/TailorAlterations'));
 
 // Customer Pages
 const CustomerHome = React.lazy(() => import('./modules/customer/pages/Home'));
@@ -131,6 +132,7 @@ const MyReviews = React.lazy(() => import('./modules/customer/pages/MyReviews'))
 const BulkOrderRequest = React.lazy(() => import('./modules/customer/pages/BulkOrderRequest')); // NEW
 const MyBulkOrders = React.lazy(() => import('./modules/customer/pages/MyBulkOrders')); // NEW
 const EmbroideryPage = React.lazy(() => import('./modules/customer/pages/Embroidery')); // NEW
+const AlterationForm = React.lazy(() => import('./modules/customer/pages/AlterationForm')); // NEW
 const SewZellaLanding = React.lazy(() => import('./modules/landing/SewZellaLanding')); // NEW
 const LandingCMSPage = React.lazy(() => import('./modules/landing/LandingCMSPage')); // NEW
 const LandingSupportPage = React.lazy(() => import('./modules/landing/LandingSupportPage')); // NEW
@@ -170,6 +172,7 @@ const AppRoutes = () => {
                         <Route path="services" element={<ServicesPage />} />
                         <Route path="services/:id" element={<ServiceDetailPage />} />
                         <Route path="embellishments" element={<Embellishments />} />
+                        <Route path="alteration" element={<AlterationForm />} />
 
                         {/* New Store & Nav Routes */}
                         <Route path="store" element={<StorePage />} />
@@ -241,6 +244,7 @@ const AppRoutes = () => {
                         <Route path="/partner/settings" element={<ProfileSettings />} />
                         <Route path="/partner/measurements" element={<MeasurementList />} />
                         <Route path="/partner/measurements/:id" element={<MeasurementDetail />} />
+                        <Route path="/partner/alterations" element={<TailorAlterations />} />
                     </Route>
                     {/* Full screen tailor views separated from layout nav */}
 

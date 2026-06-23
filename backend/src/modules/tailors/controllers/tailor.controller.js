@@ -552,7 +552,7 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
  */
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { status, message, autoAssign, deliveryMethod } = req.body;
-  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled", "ready"];
+  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled", "ready", "in-progress"];
 
   if (!allowedStatuses.includes(status)) {
     return next(new ErrorResponse("Invalid status update", 400));
@@ -596,12 +596,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     }
   }
 
-  order.status = status;
-  order.trackingHistory.push({
-    status: status,
-    message: message || `Order status updated to ${status}`,
-    timestamp: new Date()
-  });
+  const { transitionOrder } = require("../../../utils/orderStateMachine");
+  transitionOrder(order, status, message || `Order status updated to ${status}`);
 
   await order.save();
 
@@ -692,12 +688,8 @@ exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => 
     return next(new ErrorResponse('Order must be in pending or measurements-uploaded state to request approval', 400));
   }
   
-  order.status = 'measurement-verification';
-  order.trackingHistory.push({
-    status: 'measurement-verification',
-    message: 'Measurements sent to customer for approval',
-    timestamp: new Date()
-  });
+  const { transitionOrder } = require("../../../utils/orderStateMachine");
+  transitionOrder(order, 'measurement-verification', 'Measurements sent to customer for approval');
   await order.save();
 
   // Notify Customer

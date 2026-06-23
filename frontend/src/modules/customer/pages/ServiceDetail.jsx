@@ -12,6 +12,7 @@ import DesignUpload from '../components/service-detail/DesignUpload';
 import PriceSummary from '../components/service-detail/PriceSummary';
 import StyleAddonModal from '../components/service-detail/StyleAddonModal';
 import useCheckoutStore from '../../../store/checkoutStore';
+import useCartStore from '../../../store/cartStore';
 import useMeasurementStore from '../../../store/measurementStore';
 import useLocationStore from '../../../store/locationStore';
 import useAddressStore from '../../../store/userStore';
@@ -52,6 +53,7 @@ const ServiceDetail = () => {
         setBuyNowMode,
         serviceDetails: storedDetails 
     } = useCheckoutStore(state => state);
+    const cartItems = useCartStore(state => state.items);
     const addMeasurement = useMeasurementStore(state => state.addMeasurement);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -155,6 +157,16 @@ const ServiceDetail = () => {
             isMounted = false;
         };
     }, [id, location.state]);
+
+    const isAlteration = serviceData?.category?.name?.toLowerCase().includes('alteration') || serviceData?.tags?.some(t => t.toLowerCase().includes('alteration'));
+
+    useEffect(() => {
+        if (isAlteration) {
+            setFabricSource('customer');
+            setMeasurementType('sample');
+            setMeasurements({ type: 'sample', notes: 'Partner will pickup garment for alteration' });
+        }
+    }, [isAlteration]);
 
     useEffect(() => {
         let isMounted = true;
@@ -370,7 +382,32 @@ const ServiceDetail = () => {
         };
     };
 
+    const checkCartConflict = () => {
+        if (cartItems && cartItems.length > 0) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error("This cart already contains a different service type. Please complete this order or clear your cart before adding another service category.");
+            });
+            return true;
+        }
+
+        const isCurrentAlteration = serviceData?.category?.name?.toLowerCase().includes('alteration') || serviceData?.tags?.some(t => t.toLowerCase().includes('alteration'));
+
+        if (serviceItems && serviceItems.length > 0) {
+            const existingItem = serviceItems[0];
+            const isExistingAlteration = existingItem.serviceDetails?.category?.name?.toLowerCase().includes('alteration') || existingItem.serviceDetails?.tags?.some(t => t.toLowerCase().includes('alteration'));
+
+            if (isCurrentAlteration !== isExistingAlteration) {
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error("This cart already contains a different service type. Please complete this order or clear your cart before adding another service category.");
+                });
+                return true;
+            }
+        }
+        return false;
+    };
+
     const handleAddMore = async () => {
+        if (checkCartConflict()) return;
         const item = await prepareDraftItem();
         addServiceItem(item);
         resetDraftForm();
@@ -388,6 +425,7 @@ const ServiceDetail = () => {
     };
 
     const handleBuyNow = async () => {
+        if (checkCartConflict()) return;
         const item = await prepareDraftItem();
         
         // Use 'Book Now' mode instead of adding to basket
@@ -426,7 +464,9 @@ const ServiceDetail = () => {
                         </div>
                     )}
                 </div>
-                <BookingStepper currentStepId={measurements ? 'review' : (measurementType ? 'details' : 'fabric')} />
+                {!isAlteration && (
+                    <BookingStepper currentStepId={measurements ? 'review' : (measurementType ? 'details' : 'fabric')} />
+                )}
             </div>
 
             <div className="max-w-2xl mx-auto px-4 mt-4 space-y-3.5">
@@ -476,58 +516,59 @@ const ServiceDetail = () => {
                 )}
 
                 {/* 2. Fabric Choice - The "Fork" */}
-                {/* ... existing code ... */}
+                {!isAlteration && (
+                    <section className="animate-in fade-in slide-in-from-bottom-2">
+                        <FabricSelector
+                            selected={fabricSource}
+                            onSelect={setFabricSource}
+                            selectedFabric={selectedFabric}
+                            onSelectFabric={setSelectedFabric}
+                            tailor={preSelectedTailor}
+                        />
+                    </section>
+                )}
 
-                {/* 2. Fabric Choice - The "Fork" */}
-                <section className="animate-in fade-in slide-in-from-bottom-2">
-                    <FabricSelector
-                        selected={fabricSource}
-                        onSelect={setFabricSource}
-                        selectedFabric={selectedFabric}
-                        onSelectFabric={setSelectedFabric}
-                        tailor={preSelectedTailor}
-                    />
-                </section>
-
-                <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <MeasurementSelector
-                        selectedType={measurementType}
-                        visitPrice={isCalculatingDistance ? '...' : (tailorAtHomePrice || visitSettings.baseFee)}
-                        isDistanceBased={!!preSelectedTailor}
-                        onSelectType={(type) => {
-                            if (type === 'home') {
-                                setMeasurementType('home');
-                                setIsTailorAtHome(true);
-                                navigate('/user/checkout/address', {
-                                    state: {
-                                        returnUrl: `/user/services/${id}`,
-                                        restoredState: {
-                                            currentStep,
-                                            deliveryType,
-                                            measurementType: 'home',
-                                            isTailorAtHome: true,
-                                            selectedAddons,
-                                            fabricSource,
-                                            selectedFabric,
-                                            selectedSavedProfile,
-                                            measurements
+                {!isAlteration && (
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <MeasurementSelector
+                            selectedType={measurementType}
+                            visitPrice={isCalculatingDistance ? '...' : (tailorAtHomePrice || visitSettings.baseFee)}
+                            isDistanceBased={!!preSelectedTailor}
+                            onSelectType={(type) => {
+                                if (type === 'home') {
+                                    setMeasurementType('home');
+                                    setIsTailorAtHome(true);
+                                    navigate('/user/checkout/address', {
+                                        state: {
+                                            returnUrl: `/user/services/${id}`,
+                                            restoredState: {
+                                                currentStep,
+                                                deliveryType,
+                                                measurementType: 'home',
+                                                isTailorAtHome: true,
+                                                selectedAddons,
+                                                fabricSource,
+                                                selectedFabric,
+                                                selectedSavedProfile,
+                                                measurements
+                                            }
                                         }
-                                    }
-                                });
-                            } else if (type === 'sample') {
-                                setIsTailorAtHome(false);
-                                setMeasurementType('sample');
-                                setMeasurements({ type: 'sample', notes: 'Partner will pickup sample garment with fabric' });
-                            } else {
-                                setIsTailorAtHome(false);
-                                setMeasurementType(type);
-                            }
-                        }}
-                        onMeasurementComplete={setMeasurements}
-                        selectedSavedProfile={selectedSavedProfile}
-                        onSelectSavedProfile={setSelectedSavedProfile}
-                    />
-                </section>
+                                    });
+                                } else if (type === 'sample') {
+                                    setIsTailorAtHome(false);
+                                    setMeasurementType('sample');
+                                    setMeasurements({ type: 'sample', notes: 'Partner will pickup sample garment with fabric' });
+                                } else {
+                                    setIsTailorAtHome(false);
+                                    setMeasurementType(type);
+                                }
+                            }}
+                            onMeasurementComplete={setMeasurements}
+                            selectedSavedProfile={selectedSavedProfile}
+                            onSelectSavedProfile={setSelectedSavedProfile}
+                        />
+                    </section>
+                )}
 
                 {/* 3.5 Style Add-ons Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-5 duration-600">

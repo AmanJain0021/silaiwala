@@ -63,9 +63,9 @@ const distributeEarnings = async (orderId) => {
 
     // 3. Store earnings on Order for audit trail
     const totalTailorEarning = tailorShare + tailorAdvanceReceived;
-    order.tailorEarning = Math.max(totalTailorEarning, 0);
+    order.tailorEarning = order.tailorEarning || Math.max(totalTailorEarning, 0);
     order.deliveryPartnerEarning = order.deliveryPartnerEarning || (deliveryFee || 0);
-    order.netPlatformEarning = (platformFee || 0) + (gstAmount || 0);
+    order.netPlatformEarning = order.netPlatformEarning || ((platformFee || 0) + (gstAmount || 0));
     await order.save({ session });
 
     // Note: Delivery partner payouts are now handled per-phase inside delivery.controller.js

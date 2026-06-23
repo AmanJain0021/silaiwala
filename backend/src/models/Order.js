@@ -42,6 +42,8 @@ const orderSchema = new mongoose.Schema(
           enum: ["customer", "platform"],
           default: "customer",
         },
+        isAlteration: { type: Boolean, default: false },
+        alterationRef: { type: mongoose.Schema.Types.ObjectId, ref: "Alteration" },
         deliveryType: {
           type: String,
           enum: ["standard", "express", "premium"],
@@ -91,7 +93,8 @@ const orderSchema = new mongoose.Schema(
         "measurement-accepted",
         "measurement-otp-verified",
         "measurements-uploaded",
-        "measurements-approved"
+        "measurements-approved",
+        "measurement-revision-required"
       ],
       default: "pending",
     },
@@ -269,14 +272,6 @@ const orderSchema = new mongoose.Schema(
     measurementReport: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "MeasurementReport",
-    },
-    fabricPickupRequired: {
-      type: Boolean,
-      default: false,
-    },
-    isMeasurementHome: {
-      type: Boolean,
-      default: false,
     },
   },
   {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Scissors, ShoppingBag, ClipboardList, Users, Sparkles, Heart, X, Calendar, Clock, Layers, Feather } from 'lucide-react';
+import { Scissors, ShoppingBag, ClipboardList, Users, Sparkles, Heart, X, Calendar, Clock, Layers, Feather, Ruler } from 'lucide-react';
 import api from '../../../utils/api';
 
 const ICON_COLOR = "#E2C17D";
@@ -43,6 +43,11 @@ const actions = [
         label: 'Embroidery',
         icon: <Feather size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
         path: '/user/embroidery'
+    },
+    {
+        label: 'Alteration',
+        icon: <Ruler size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+        path: '/user/alteration'
     }
 ];
 

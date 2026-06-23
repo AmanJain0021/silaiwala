@@ -141,14 +141,16 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const { role } = req.query;
+    const { role, limit = 50, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
     let query = {};
     if (role) {
       query.role = role;
     }
 
     if (role === 'customer') {
-      const users = await User.find({ role: 'customer' }).select("-password").sort("-createdAt").lean();
+      const total = await User.countDocuments({ role: 'customer' });
+      const users = await User.find({ role: 'customer' }).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip).lean();
       const userIds = users.map(u => u._id);
       
       const [profiles, orders] = await Promise.all([
@@ -168,11 +170,12 @@ exports.getAllUsers = async (req, res) => {
         };
       });
 
-      return res.status(200).json({ success: true, count: data.length, data });
+      return res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
     }
 
     if (role === 'tailor') {
-      const users = await User.find({ role: 'tailor' }).select("-password").sort("-createdAt").lean();
+      const total = await User.countDocuments({ role: 'tailor' });
+      const users = await User.find({ role: 'tailor' }).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip).lean();
       const userIds = users.map(u => u._id);
       
       const profiles = await Tailor.find({ user: { $in: userIds } }).lean();
@@ -185,11 +188,12 @@ exports.getAllUsers = async (req, res) => {
         };
       });
 
-      return res.status(200).json({ success: true, count: data.length, data });
+      return res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
     }
 
-    const users = await User.find(query).select("-password").sort("-createdAt");
-    res.status(200).json({ success: true, count: users.length, data: users });
+    const total = await User.countDocuments(query);
+    const users = await User.find(query).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip);
+    res.status(200).json({ success: true, count: users.length, total, pages: Math.ceil(total / limit), data: users });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -216,8 +220,11 @@ exports.updateUserStatus = async (req, res) => {
 
 exports.getDeliveryPartners = async (req, res) => {
   try {
+    const { limit = 50, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
+    const total = await User.countDocuments({ role: "delivery" });
     // 1. Get all users with delivery role
-    const users = await User.find({ role: "delivery" }).select("-password").sort("-createdAt").lean();
+    const users = await User.find({ role: "delivery" }).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip).lean();
     const userIds = users.map(u => u._id);
 
     // 2. Get delivery profiles for these users
@@ -232,7 +239,7 @@ exports.getDeliveryPartners = async (req, res) => {
       };
     });
 
-    res.status(200).json({ success: true, count: data.length, data });
+    res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -243,7 +250,10 @@ exports.getDeliveryPartners = async (req, res) => {
 
 exports.getPendingTailors = async (req, res) => {
   try {
-    const users = await User.find({ role: "tailor", isActive: false }).select("-password").lean();
+    const { limit = 50, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
+    const total = await User.countDocuments({ role: "tailor", isActive: false });
+    const users = await User.find({ role: "tailor", isActive: false }).select("-password").limit(Number(limit)).skip(skip).lean();
     const userIds = users.map(u => u._id);
     const profiles = await Tailor.find({ user: { $in: userIds } }).lean();
 
@@ -255,7 +265,7 @@ exports.getPendingTailors = async (req, res) => {
       };
     });
 
-    res.status(200).json({ success: true, data });
+    res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
   } catch (error) {
     console.error("Error in getPendingTailors:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -353,7 +363,10 @@ exports.updateTailorCommission = async (req, res) => {
 
 exports.getPendingDeliveryPartners = async (req, res) => {
   try {
-    const users = await User.find({ role: "delivery", isActive: false }).select("-password").lean();
+    const { limit = 50, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
+    const total = await User.countDocuments({ role: "delivery", isActive: false });
+    const users = await User.find({ role: "delivery", isActive: false }).select("-password").limit(Number(limit)).skip(skip).lean();
     const userIds = users.map(u => u._id);
     const profiles = await Delivery.find({ user: { $in: userIds } }).lean();
 
@@ -365,7 +378,7 @@ exports.getPendingDeliveryPartners = async (req, res) => {
       };
     });
 
-    res.status(200).json({ success: true, data });
+    res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
   } catch (error) {
     console.error("Error in getPendingDeliveryPartners:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -868,7 +881,7 @@ exports.getAllCategories = async (req, res) => {
       return { ...cat, productCount };
     }));
 
-    res.status(200).json({ success: true, data });
+    res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
   } catch (error) {
     console.error("Error in getAllCategories:", error);
     res.status(500).json({ success: false, message: error.message });

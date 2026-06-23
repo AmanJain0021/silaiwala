@@ -9,8 +9,8 @@ const CartPage = () => {
     const navigate = useNavigate();
     const { items, getTotalPrice, removeItem, updateQuantity } = useCartStore(state => state);
     const totalPrice = getTotalPrice();
-    const deliveryFee = totalPrice > 999 ? 0 : 49;
-    const finalTotal = totalPrice + deliveryFee;
+    // Delivery fee is calculated dynamically at checkout based on address distance
+    const finalTotal = totalPrice;
 
     const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
@@ -91,24 +91,23 @@ const CartPage = () => {
                             </div>
                             <div className="flex justify-between text-xs text-gray-600">
                                 <span>Delivery Fee</span>
-                                {deliveryFee === 0 ? (
+                                {totalPrice > 999 ? (
                                     <span className="text-[#843D9B] font-bold">FREE</span>
                                 ) : (
-                                    <span>₹{deliveryFee}</span>
+                                    <span className="text-gray-400 italic">Calculated at checkout</span>
                                 )}
                             </div>
-                            {deliveryFee === 0 && (
-                                <div className="text-[10px] text-[#843D9B] bg-indigo-50 px-2 py-1.5 rounded-lg flex items-center gap-2">
-                                    <Info size={12} />
-                                    Free delivery applied over ₹999
+                            {totalPrice > 999 && (
+                                <div className="bg-green-50 text-green-700 p-2 rounded-lg text-[10px] font-medium border border-green-100">
+                                    You've unlocked free delivery!
                                 </div>
                             )}
 
                             <div className="h-px bg-gray-100 my-2" />
 
-                            <div className="flex justify-between items-center text-base font-bold text-gray-900 mb-6">
-                                <span>Total Payable</span>
-                                <span>₹{finalTotal}</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-bold text-gray-900">Total Payable</span>
+                                <span className="text-sm font-black text-[#843D9B]">₹{finalTotal}</span>
                             </div>
 
                             <button
@@ -142,8 +141,8 @@ const CartPage = () => {
                     className="w-full py-3.5 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-between px-6 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     <div className="text-left">
-                        <p className="text-[10px] opacity-80 uppercase tracking-wider font-medium text-white">Total Amount</p>
-                        <p className="text-base font-bold text-white">₹{finalTotal}</p>
+                        <p className="text-[10px] text-white/70 uppercase font-bold tracking-wider mb-0.5">Estimated Total</p>
+                        <p className="text-sm font-black text-white">₹{finalTotal}</p>
                     </div>
                     <div className="flex items-center gap-2 text-white">
                         {isCheckoutLoading ? 'Wait...' : 'Checkout'}
