@@ -446,7 +446,7 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
   if (status) {
     const statusLower = status.toLowerCase();
     if (statusLower === 'new') {
-      query.status = 'pending';
+      query.status = { $in: ['pending', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'] };
     }
     else if (statusLower === 'active') {
       query.status = { $in: ['accepted', 'fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered', 'in-progress', 'cutting', 'stitching', 'completed', 'ready-for-pickup', 'out-for-delivery'] };
@@ -675,5 +675,106 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: order,
+  });
+});
+
+
+/**
+ * @desc    Request customer to approve uploaded measurements
+ * @route   POST /api/v1/tailors/orders/:id/send-measurement-confirmation
+ * @access  Private (Tailor)
+ */
+exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => {
+  const order = await Order.findOne({ _id: req.params.id, tailor: req.user.id });
+  if (!order) return next(new ErrorResponse('Order not found or not assigned to you', 404));
+  
+  if (!['measurements-uploaded', 'pending'].includes(order.status)) {
+    return next(new ErrorResponse('Order must be in pending or measurements-uploaded state to request approval', 400));
+  }
+  
+  order.status = 'measurement-verification';
+  order.trackingHistory.push({
+    status: 'measurement-verification',
+    message: 'Measurements sent to customer for approval',
+    timestamp: new Date()
+  });
+  await order.save();
+
+  // Notify Customer
+  try {
+    const { sendNotification } = require('../../../utils/notification');
+    await sendNotification({
+      recipient: order.customer,
+      type: 'MEASUREMENT_APPROVAL_REQUEST',
+      title: 'Review Your Measurements 📏',
+      message: `Tailor has requested your approval for the measurements of order ${order.orderId}`,
+      data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
+    });
+  } catch (err) {
+    console.error("Notification failed:", err);
+  }
+
+  // Emit socket
+  try {
+    const { getIO } = require('../../../config/socket');
+    const io = getIO();
+    if (io) {
+      io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
+    }
+  } catch (err) {
+    console.error("Socket emission failed:", err);
+  }
+
+  res.status(200).json({ success: true, data: order });
+});
+
+/**
+ * @desc    Get Measurement Report for an order
+ * @route   GET /api/v1/tailors/orders/:id/measurement-report
+ * @access  Private (Tailor)
+ */
+exports.getMeasurementReport = asyncHandler(async (req, res, next) => {
+  const order = await Order.findOne({ _id: req.params.id, tailor: req.user.id }).populate('customer', 'name profileImage');
+  if (!order) return next(new ErrorResponse('Order not found or not assigned to you', 404));
+
+  const MeasurementReport = require("../../../models/MeasurementReport");
+  const report = await MeasurementReport.findOne({ order: order._id }).populate("executive", "name phoneNumber profileImage");
+
+  // Return null report instead of 404 to allow the frontend to handle empty state
+  res.status(200).json({ success: true, data: { report: report || null, order } });
+});
+
+/**
+ * @desc    Update Measurement Report
+ * @route   PUT /api/v1/tailors/orders/:id/measurement-report
+ * @access  Private (Tailor)
+ */
+exports.updateMeasurementReport = asyncHandler(async (req, res, next) => {
+  const { measurements } = req.body;
+  const order = await Order.findOne({ _id: req.params.id, tailor: req.user.id });
+
+  if (!order) {
+    return next(new ErrorResponse("Order not found or not authorized", 404));
+  }
+
+  const MeasurementReport = require("../../../models/MeasurementReport");
+  let report = await MeasurementReport.findOne({ order: order._id });
+
+  if (!report) {
+    // Create report if it doesn't exist
+    report = new MeasurementReport({
+      order: order._id,
+      formData: measurements || {},
+      unit: "inches"
+    });
+  } else if (measurements && typeof measurements === 'object') {
+    report.formData = measurements;
+  }
+
+  await report.save();
+
+  res.status(200).json({
+    success: true,
+    data: report
   });
 });

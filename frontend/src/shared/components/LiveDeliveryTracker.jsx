@@ -3,7 +3,7 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import { Phone, Clock, MapPin, Navigation, Bike, Loader2 } from 'lucide-react';
 import DeliveryBoyLiveMap from './DeliveryBoyLiveMap';
 
-const LiveDeliveryTracker = ({ order, socket }) => {
+const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   const [riderLocation, setRiderLocation] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [eta, setEta] = useState(null);
@@ -56,14 +56,15 @@ const LiveDeliveryTracker = ({ order, socket }) => {
     dropoffPartner: order.dropoffPartner,
     deliveryPartner: order.deliveryPartner,
     rider,
-    riderStatus
+    riderStatus,
+    forceSearching
   });
 
-  // If no rider is assigned at all — don't render anything (outer component should gate this)
-  if (!rider) return null;
+  // Show searching animation only when rider is assigned but hasn't accepted yet, or forced searching
+  const isSearching = forceSearching || riderStatus === 'assigned' || riderStatus === 'pending' || !riderStatus;
 
-  // Show searching animation only when rider is assigned but hasn't accepted yet
-  const isSearching = riderStatus === 'assigned' || riderStatus === 'pending' || !riderStatus;
+  // If no rider is assigned at all AND we are not searching — don't render anything
+  if (!rider && !isSearching) return null;
 
   if (isSearching) {
     return (

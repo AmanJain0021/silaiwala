@@ -18,7 +18,7 @@ const walletTransactionSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["order_earnings", "advance_payment", "delivery_earnings", "withdrawal", "commission_deduction", "referral_bonus", "refund"],
+      enum: ["order_earnings", "advance_payment", "delivery_earnings", "executive_earnings", "withdrawal", "commission_deduction", "referral_bonus", "refund"],
       required: true,
     },
     order: {

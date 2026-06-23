@@ -267,7 +267,7 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     }
 
     let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryEarnings;
+    let deliveryEarnings = order.deliveryFee;
     
 
 
@@ -397,7 +397,7 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
   }
 
     let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryEarnings;
+    let deliveryEarnings = order.deliveryFee;
     
 
 
@@ -470,33 +470,58 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
         ],
         today: [
           { $match: { updatedAt: { $gte: todayStart }, status: { $in: ["delivered", "fabric-delivered", "fabric-received"] } } },
-          { $group: { _id: null, earnings: { $sum: "$deliveryFee" }, count: { $sum: 1 } } }
-        ],
-        yesterday: [
-          { $match: { updatedAt: { $gte: yesterdayStart, $lt: todayStart }, status: { $in: ["delivered", "fabric-delivered", "fabric-received"] } } },
-          { $group: { _id: null, earnings: { $sum: "$deliveryFee" } } }
+          { $group: { _id: null, count: { $sum: 1 } } }
         ]
       }
     }
   ]);
 
+  const WalletTransaction = require("../../../models/WalletTransaction");
+  
+  // Calculate today's actual wallet earnings to prevent mismatch with wallet balance
+  const todayEarningsResult = await WalletTransaction.aggregate([
+    { 
+      $match: { 
+        user: userId, 
+        type: "credit", 
+        category: { $in: ["order_earnings", "delivery_earnings"] },
+        createdAt: { $gte: todayStart } 
+      } 
+    },
+    { $group: { _id: null, earnings: { $sum: "$amount" } } }
+  ]);
+  const actualTodayEarnings = todayEarningsResult[0]?.earnings || 0;
+
+  const yesterdayEarningsResult = await WalletTransaction.aggregate([
+    { 
+      $match: { 
+        user: userId, 
+        type: "credit", 
+        category: { $in: ["order_earnings", "delivery_earnings"] },
+        createdAt: { $gte: yesterdayStart, $lt: todayStart } 
+      } 
+    },
+    { $group: { _id: null, earnings: { $sum: "$amount" } } }
+  ]);
+  const actualYesterdayEarnings = yesterdayEarningsResult[0]?.earnings || 0;
+
   const overall = stats[0]?.overall?.[0] || { totalDeliveries: 0, activeDeliveries: 0, totalEarnings: 0 };
-  const today = stats[0]?.today?.[0] || { earnings: 0, count: 0 };
+  const todayCount = stats[0]?.today?.[0]?.count || 0;
   const yesterday = stats[0]?.yesterday?.[0] || { earnings: 0 };
 
   // Calculate growth percentage
   let growth = 0;
-  if (yesterday.earnings > 0) {
-    growth = ((today.earnings - yesterday.earnings) / yesterday.earnings) * 100;
-  } else if (today.earnings > 0) {
+  if (actualYesterdayEarnings > 0) {
+    growth = ((actualTodayEarnings - actualYesterdayEarnings) / actualYesterdayEarnings) * 100;
+  } else if (actualTodayEarnings > 0) {
     growth = 100; // 100% growth if there were no earnings yesterday
   }
 
   const dashboardStats = {
     ...overall,
     totalEarnings: delivery.totalEarned || 0,
-    todayEarnings: today.earnings,
-    todayCount: today.count,
+    todayEarnings: actualTodayEarnings,
+    todayCount: todayCount,
     growth: Math.round(growth * 10) / 10 // Round to 1 decimal place
   };
 
@@ -578,7 +603,27 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       console.log(`🔐 DELIVERY OTP GENERATED: ${otp}`);
       console.log(`======================================================\n\n`);
       
-      // Optional: You could call sendNotification here too
+      const { sendNotification } = require("../../../utils/notification");
+      
+      // Notify Customer
+      await sendNotification({
+        recipient: order.customer,
+        type: "OTP_GENERATED",
+        title: "Delivery OTP",
+        message: `Your OTP for the delivery partner is ${otp}. Share this only when the partner arrives.`,
+        data: { orderId: order._id, otp }
+      });
+      
+      // Notify Tailor
+      if (order.tailor) {
+        await sendNotification({
+          recipient: order.tailor,
+          type: "OTP_GENERATED",
+          title: "Delivery OTP",
+          message: `The OTP for the delivery partner is ${otp}. Share this only when the partner arrives.`,
+          data: { orderId: order._id, otp }
+        });
+      }
   } else if (status === "fabric-picked-up" || status === "picked-up-from-tailor") {
       const { otp } = req.body;
       if (!otp) {
@@ -635,7 +680,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
     if (status === "fabric-delivered" || status === "delivered") {
     try {
-      const earnedAmount = order.deliveryEarnings;
+      const earnedAmount = order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0;
 
       if (!earnedAmount || earnedAmount <= 0) {
         console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId}. Wallet will not be credited.`);
@@ -917,7 +962,7 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
 
   order.deliveryStatus = "accepted";
 
-  const { calculatedDistance } = req.body;
+  const { calculatedDistance } = req.body || {};
   // --- Calculate Distance & Earnings ---
   if (calculatedDistance != null) {
       order.deliveryDistance = Number(calculatedDistance);
@@ -1187,7 +1232,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   const WalletTransaction = require("../../../models/WalletTransaction");
   
   // Calculate delivery earnings
-  let earnings = order.deliveryEarnings;
+  let earnings = order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0;
   if (!earnings || earnings <= 0) {
     console.error(`CRITICAL: Delivery Fee missing for Order ${order.orderId}. Wallet will NOT be credited.`);
     earnings = 0;
@@ -1313,7 +1358,12 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     }
 
     // Ensure platform and delivery fees are populated before distributing earnings
-    if (!order.platformFee) order.platformFee = Math.round(order.totalAmount * 0.1);
+    if (!order.platformFee) {
+       const Settings = require("../../../models/Settings");
+       const settings = await Settings.getSettings();
+       const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
+       order.platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
+    }
 
     
     // Distribute Earnings (Tailor)
@@ -1336,6 +1386,8 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
     } else {
       io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
+      // Also notify tailor that final delivery is complete
+      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
     }
   }
 

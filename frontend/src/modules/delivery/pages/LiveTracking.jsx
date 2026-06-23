@@ -31,6 +31,7 @@ const LiveTracking = () => {
   const [destination, setDestination] = useState(null);
 
   const [routeDistance, setRouteDistance] = useState(0);
+  const [settings, setSettings] = useState(null);
 
   // Start location tracking
   useDeliveryTracking(deliveryBoy?.id, orderDetails ? [orderDetails] : []);
@@ -48,7 +49,9 @@ const LiveTracking = () => {
   
   // Calculate total distance in km from route calculation
   const totalDistance = routeDistance ? routeDistance / 1000 : 0;
-  const earnings = Math.round(totalDistance * 10); // Example: Rs 10 per km
+  const baseFee = settings?.deliveryRates?.baseFee || 40;
+  const perKmRate = settings?.deliveryRates?.perKmRate || 10;
+  const earnings = Math.round(baseFee + (totalDistance * perKmRate));
   const path = []; // Mock path length if needed, or track locations
 
   // Get current location and update distance tracker
@@ -80,6 +83,20 @@ const LiveTracking = () => {
       navigator.geolocation.clearWatch(watchId);
     };
   }, [isTracking, orderDetails]);
+
+  // Fetch admin settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/cms/settings`);
+        const data = await response.json();
+        if (data.success) setSettings(data.data);
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Fetch order details
   useEffect(() => {

@@ -80,20 +80,34 @@ const StoreProductDetail = () => {
     };
 
     const handleAddToCart = () => {
-        if (!selectedSize || !selectedColor) {
-            showToast("Please select size and color", "error");
+        const hasSizes = productData.variants?.some(v => v.size);
+        const hasColors = productData.variants?.some(v => v.color);
+
+        if (hasSizes && !selectedSize) {
+            showToast("Please select a size", "error");
             return;
         }
-        addToCart(productData, { size: selectedSize, color: selectedColor });
+        if (hasColors && !selectedColor) {
+            showToast("Please select a color", "error");
+            return;
+        }
+        addToCart(productData, { size: selectedSize || 'Standard', color: selectedColor || 'Default' });
         showToast("Added to Cart!");
     };
 
     const handleBuyNow = () => {
-        if (!selectedSize || !selectedColor) {
-            showToast("Please select size and color", "error");
+        const hasSizes = productData.variants?.some(v => v.size);
+        const hasColors = productData.variants?.some(v => v.color);
+
+        if (hasSizes && !selectedSize) {
+            showToast("Please select a size", "error");
             return;
         }
-        addToCart(productData, { size: selectedSize, color: selectedColor });
+        if (hasColors && !selectedColor) {
+            showToast("Please select a color", "error");
+            return;
+        }
+        addToCart(productData, { size: selectedSize || 'Standard', color: selectedColor || 'Default' });
         navigate('/user/cart');
     };
 

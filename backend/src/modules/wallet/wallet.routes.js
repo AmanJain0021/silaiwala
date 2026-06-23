@@ -16,7 +16,7 @@ router.get("/admin/withdrawals", authorize("admin"), getAllWithdrawals);
 router.patch("/admin/withdrawals/:id", authorize("admin"), updateWithdrawalStatus);
 
 // Tailor & Delivery & Customer Routes
-router.get("/dashboard", authorize("tailor", "delivery", "user", "customer"), getWalletDashboard);
-router.post("/withdraw", authorize("tailor", "delivery", "user", "customer"), requestWithdrawal);
+router.get("/dashboard", authorize("tailor", "delivery", "user", "customer", "measurement_executive"), getWalletDashboard);
+router.post("/withdraw", authorize("tailor", "delivery", "user", "customer", "measurement_executive"), requestWithdrawal);
 
 module.exports = router;

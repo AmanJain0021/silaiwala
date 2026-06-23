@@ -38,7 +38,7 @@ const DeliveryOrders = () => {
   } = useDeliveryAuthStore();
   
   const isOnline = deliveryBoy?.status === 'available';
-  const [filter, setFilter] = useState(isOnline ? 'available' : 'pending');
+  const [filter, setFilter] = useState(isOnline ? 'available' : 'delivered');
   const [currentPage, setCurrentPage] = useState(1);
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [selectedNewOrder, setSelectedNewOrder] = useState(null);
@@ -54,8 +54,8 @@ const DeliveryOrders = () => {
   const loadOrders = async (page = currentPage, activeFilter = filter) => {
     try {
       // Use unified fetchOrders for both tabs to prevent data mixing
-      // 'open' now covers ALL running statuses assigned to the rider in the backend
-      const statusParam = activeFilter === 'available' ? 'open' : 'delivered';
+      // undefined covers ALL running statuses assigned to the rider in the backend via default logic
+      const statusParam = activeFilter === 'available' ? undefined : 'delivered';
 
       await fetchOrders({
         page,

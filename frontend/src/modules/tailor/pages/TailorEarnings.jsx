@@ -182,12 +182,12 @@ const TailorEarnings = () => {
                             </div>
                             <div className="relative z-10">
                                 <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] mb-3">
-                                    Current Balance • {activeTab}
+                                    Total Wallet Balance
                                 </p>
                                 <div className="flex items-baseline gap-2 mb-6">
                                     <span className="text-2xl font-black text-white/40">₹</span>
                                     <h3 className="text-5xl font-black text-white tracking-tighter">
-                                    {displayedEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {(stats.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </h3>
                                 </div>
                                 <div className="flex items-center gap-6">
@@ -274,9 +274,16 @@ const TailorEarnings = () => {
                                                 <p className="text-sm font-black text-gray-900 leading-tight truncate">
                                                     {item._id ? (item.description || `Order #${item.orderId || 'N/A'}`) : (item.id.startsWith('AL') ? `Order #${item.id}` : item.id)}
                                                 </p>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mt-1">
-                                                    {item.createdAt ? formatTime(item.createdAt) : item.time}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                                                        {item.createdAt ? formatTime(item.createdAt) : item.time}
+                                                    </p>
+                                                    {item.withdrawalRequest?.proofOfPayment && (
+                                                        <a href={item.withdrawalRequest.proofOfPayment} target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#843D9B] bg-[#843D9B]/10 px-1.5 py-0.5 rounded hover:bg-[#843D9B]/20 transition-colors flex items-center gap-1">
+                                                            <ArrowUpRight size={10} /> Receipt
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <p className={`text-base font-black ${isCredit ? 'text-gray-900' : 'text-rose-500'}`}>

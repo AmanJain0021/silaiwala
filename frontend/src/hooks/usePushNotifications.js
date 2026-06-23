@@ -7,7 +7,8 @@ export const usePushNotifications = (user) => {
   const [fcmToken, setFcmToken] = useState(null);
 
   useEffect(() => {
-    if (!user || !user._id) return; // Only request token if user is logged in
+    const userId = user?._id || user?.id;
+    if (!userId) return; // Only request token if user is logged in
 
     const requestPermissionAndGetToken = async () => {
       try {

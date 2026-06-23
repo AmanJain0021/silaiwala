@@ -55,7 +55,7 @@ api.interceptors.response.use(
     },
     (error) => {
         if (axios.isCancel(error)) {
-            console.log('Request canceled:', error.message);
+            // Silently handle cancellation, it's expected behavior
         } else if (error.config) {
             const requestKey = getRequestKey(error.config);
             activeRequests.delete(requestKey);

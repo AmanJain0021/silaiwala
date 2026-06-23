@@ -278,6 +278,11 @@ const Payouts = () => {
                       {item.status}
                     </span>
                     {item.transactionId && <p className="text-[8px] font-mono text-slate-400 tracking-tighter opacity-60">#{item.transactionId.slice(-6).toUpperCase()}</p>}
+                    {item.proofOfPayment && (
+                        <a href={item.proofOfPayment} target="_blank" rel="noreferrer" className="text-[8px] font-black text-indigo-700 hover:text-indigo-900 transition-colors flex items-center gap-1">
+                            <FiCheckCircle size={8} /> Receipt
+                        </a>
+                    )}
                   </div>
                 </motion.div>
               ))

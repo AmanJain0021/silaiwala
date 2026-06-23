@@ -61,8 +61,9 @@ function App() {
         const userStr = localStorage.getItem('user');
         if (userStr && userStr !== 'undefined') {
           const user = JSON.parse(userStr);
-          if (user && user._id) {
-            connect(user._id, user.role);
+          const userId = user._id || user.id;
+          if (userId) {
+            connect(userId, user.role);
           }
         } else {
           disconnect();

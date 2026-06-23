@@ -24,8 +24,9 @@ const AdminOrders = () => {
     // States for Assignments
     const [tailorsList, setTailorsList] = useState([]);
     const [deliveryList, setDeliveryList] = useState([]);
+    const [measurementExecutivesList, setMeasurementExecutivesList] = useState([]);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-    const [assignRole, setAssignRole] = useState(null); // 'tailor' or 'deliveryPartner'
+    const [assignRole, setAssignRole] = useState(null); // 'tailor', 'deliveryPartner', or 'measurementExecutive'
 
     const tabs = ['All Orders', 'Stitching Service', 'Readymade Store'];
 
@@ -49,7 +50,9 @@ const AdminOrders = () => {
                 amount: `₹${(o.totalAmount || 0).toLocaleString()}`,
                 status: o.status || 'pending',
                 paymentStatus: o.paymentStatus || 'pending',
-                measurements: 'Standard Profile',
+                measurements: o.isMeasurementHome ? 'Tailor at Home' : 'Standard Profile',
+                isMeasurementHome: o.isMeasurementHome || false,
+                measurementExecutive: o.measurementRequest?.executive?.name || 'Unassigned',
                 trackingHistory: o.trackingHistory || []
             }));
             setOrdersData(formatted);
@@ -63,9 +66,10 @@ const AdminOrders = () => {
 
     const fetchUsers = async () => {
         try {
-            const [tailorsRes, deliveryRes] = await Promise.all([
+            const [tailorsRes, deliveryRes, measurementExecsRes] = await Promise.all([
                 api.get('/admin/users?role=tailor'),
-                api.get('/admin/users?role=delivery')
+                api.get('/admin/users?role=delivery'),
+                api.get('/admin/users?role=measurement_executive')
             ]);
             setTailorsList(tailorsRes.data.data.map(t => ({
                 id: t._id,
@@ -81,6 +85,14 @@ const AdminOrders = () => {
                 isActive: d.isActive,
                 status: d.isActive ? 'Online' : 'Offline',
                 joined: new Date(d.createdAt).toLocaleDateString()
+            })) || []);
+            setMeasurementExecutivesList(measurementExecsRes.data.data.map(e => ({
+                id: e._id,
+                name: e.name,
+                phone: e.phoneNumber,
+                isActive: e.isActive,
+                status: e.isActive ? 'Online' : 'Offline',
+                joined: new Date(e.createdAt).toLocaleDateString()
             })) || []);
         } catch (err) {
             console.error('Failed to fetch users:', err);
@@ -169,7 +181,8 @@ const AdminOrders = () => {
             fetchOrders();
             // Update selected order UI
             if (selectedOrder) {
-                const userName = (assignRole === 'tailor' ? tailorsList : deliveryList).find(u => u._id === userId)?.name || 'Assigned';
+                const list = assignRole === 'tailor' ? tailorsList : assignRole === 'deliveryPartner' ? deliveryList : measurementExecutivesList;
+                const userName = list.find(u => u._id === userId || u.id === userId)?.name || 'Assigned';
                 setSelectedOrder(prev => ({
                     ...prev,
                     [assignRole]: userName,
@@ -447,6 +460,15 @@ const AdminOrders = () => {
                                             </div>
                                             <button onClick={() => { setAssignRole('deliveryPartner'); setIsAssignModalOpen(true); }} className="text-[10px] font-bold text-primary hover:underline">Reassign</button>
                                         </div>
+                                        {selectedOrder.measurements !== 'Standard Profile' && (
+                                            <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                                                <div>
+                                                    <p className="text-[10px] text-gray-400 font-bold">Measurement Executive</p>
+                                                    <p className="text-xs font-bold text-primary">{selectedOrder.measurementExecutive || 'Unassigned'}</p>
+                                                </div>
+                                                <button onClick={() => { setAssignRole('measurementExecutive'); setIsAssignModalOpen(true); }} className="text-[10px] font-bold text-primary hover:underline">Reassign</button>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm space-y-2">
                                         <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1.5 border-b border-gray-100 pb-2 mb-3">
@@ -844,13 +866,13 @@ const AdminOrders = () => {
                             className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-black text-gray-900 capitalize">Assign {assignRole === 'tailor' ? 'Tailor' : 'Delivery Partner'}</h3>
+                                <h3 className="text-sm font-black text-gray-900 capitalize">Assign {assignRole === 'tailor' ? 'Tailor' : assignRole === 'deliveryPartner' ? 'Delivery Partner' : 'Measurement Executive'}</h3>
                                 <button onClick={() => setIsAssignModalOpen(false)} className="text-gray-400 hover:text-red-500">
                                     <X size={18} />
                                 </button>
                             </div>
                             <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                                {(assignRole === 'tailor' ? tailorsList : deliveryList).map(user => (
+                                {(assignRole === 'tailor' ? tailorsList : assignRole === 'deliveryPartner' ? deliveryList : measurementExecutivesList).map(user => (
                                     <button
                                         key={user.id}
                                         onClick={() => handleAssign(user.id)}
@@ -869,8 +891,8 @@ const AdminOrders = () => {
                                         </div>
                                     </button>
                                 ))}
-                                {(assignRole === 'tailor' ? tailorsList : deliveryList).length === 0 && (
-                                    <div className="text-center p-4 text-xs font-medium text-gray-400">No active {assignRole === 'tailor' ? 'tailors' : 'delivery partners'} found.</div>
+                                {(assignRole === 'tailor' ? tailorsList : assignRole === 'deliveryPartner' ? deliveryList : measurementExecutivesList).length === 0 && (
+                                    <div className="text-center p-4 text-xs font-medium text-gray-400">No active {assignRole === 'tailor' ? 'tailors' : assignRole === 'deliveryPartner' ? 'delivery partners' : 'measurement executives'} found.</div>
                                 )}
                             </div>
                         </motion.div>

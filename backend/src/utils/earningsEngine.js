@@ -26,12 +26,19 @@ const distributeEarnings = async (orderId) => {
 
     const { tailor, deliveryPartner, totalAmount, platformFee, deliveryFee, gstAmount } = order;
 
-    // 1. Calculate Tailor Share
-    let tailorShare = totalAmount - (platformFee || 0) - (deliveryFee || 0) - (gstAmount || 0);
+    // 1. Calculate Tailor Share (ONLY the amount of the Tailor Service)
+    let tailorShare = order.items.reduce((sum, item) => {
+      return sum + (item.price * (item.quantity || 1));
+    }, 0);
 
     // Deduct any advance payment they already received in their wallet
+    let tailorAdvanceReceived = 0;
     if (order.advancePaymentStatus === 'paid' && order.advancePaymentAmount > 0) {
-       tailorShare -= order.advancePaymentAmount;
+       const Settings = require("../models/Settings");
+       const settings = await Settings.findOne() || await Settings.create({});
+       const advancePct = settings?.walletConfig?.advancePercentage || 30;
+       tailorAdvanceReceived = Math.round(tailorShare * (advancePct / 100));
+       tailorShare -= tailorAdvanceReceived;
     }
 
     // 2. Credit Tailor (Only if there's a remaining balance to pay)
@@ -55,7 +62,7 @@ const distributeEarnings = async (orderId) => {
     }
 
     // 3. Store earnings on Order for audit trail
-    const totalTailorEarning = tailorShare + (order.advancePaymentAmount || 0);
+    const totalTailorEarning = tailorShare + tailorAdvanceReceived;
     order.tailorEarning = Math.max(totalTailorEarning, 0);
     order.deliveryPartnerEarning = order.deliveryPartnerEarning || (deliveryFee || 0);
     order.netPlatformEarning = (platformFee || 0) + (gstAmount || 0);

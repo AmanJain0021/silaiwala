@@ -168,7 +168,9 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
            type: cycle === "pickup" ? "fabric-ready-for-pickup" : "ready-for-delivery", 
            taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
            requiresAcceptance: true,
-           targetUrl: "/delivery/tasks" 
+           targetUrl: "/delivery/tasks",
+           deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
+           deliveryDistance: order.deliveryDistance
          }
        });
        
@@ -184,7 +186,9 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
              orderId: order._id,
              requiresAcceptance: true,
              taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
-             targetUrl: "/delivery/tasks" 
+             targetUrl: "/delivery/tasks",
+             deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
+             deliveryDistance: order.deliveryDistance
            }
          });
 

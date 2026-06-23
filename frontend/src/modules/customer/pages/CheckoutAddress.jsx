@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronRight, Plus, ArrowRight, MapPin } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAddressStore from '../../../store/userStore';
 import AddressCard from '../components/checkout/address/AddressCard';
 import AddressForm from '../components/checkout/address/AddressForm';
@@ -21,9 +21,15 @@ const CheckoutAddress = () => {
         selectAddress(id);
     };
 
+    const location = useLocation();
+
     const handleProceed = () => {
         if (selectedAddressId) {
-            navigate('/user/checkout/summary'); // Next step (Step 4)
+            if (location.state?.returnUrl) {
+                navigate(location.state.returnUrl, { state: { restoredState: location.state.restoredState } });
+            } else {
+                navigate('/user/checkout/summary'); // Next step (Step 4)
+            }
         }
     };
 
@@ -119,7 +125,7 @@ const CheckoutAddress = () => {
                                 : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                         )}
                     >
-                        Proceed to Order Summary <ArrowRight size={18} />
+                        {location.state?.returnUrl ? "Confirm Address" : "Proceed to Order Summary"} <ArrowRight size={18} />
                     </button>
                 </div>
             )}

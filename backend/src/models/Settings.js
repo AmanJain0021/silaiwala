@@ -52,6 +52,10 @@ const settingsSchema = new mongoose.Schema(
       baseFee: { type: Number, default: 20 },
       perKmRate: { type: Number, default: 10 },
     },
+    executiveRates: {
+      baseFee: { type: Number, default: 50 },
+      perKmRate: { type: Number, default: 15 },
+    },
     walletConfig: {
       advancePercentage: { type: Number, default: 30 },
       platformFeePercentage: { type: Number, default: 5 },

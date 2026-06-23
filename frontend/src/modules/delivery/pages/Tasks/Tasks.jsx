@@ -27,6 +27,7 @@ import useAuthStore from '../../../../store/authStore';
 import { getToken } from '../../../../utils/auth';
 
 const Tasks = () => {
+    const user = useAuthStore((state) => state.user);
     const { isOnline } = useOutletContext() || { isOnline: true };
     const [activeTab, setActiveTab] = useState('assigned'); // 'assigned' or 'available'
     const [loading, setLoading] = useState(true);
@@ -72,8 +73,9 @@ const Tasks = () => {
         // Join general delivery fleet room and personal room
         socket.emit('join', 'delivery_partners');
         const user = useAuthStore.getState().user;
-        if (user?._id) {
-            socket.emit('join', `user_${user._id}`);
+        const userId = user?._id || user?.id;
+        if (userId) {
+            socket.emit('join', `user_${userId}`);
         }
 
         socket.on('new_task', (data) => {
@@ -112,16 +114,34 @@ const Tasks = () => {
 
     const activeTask = tasks.find(t => t._id === activeTaskId);
     // Tasks needing acceptance (pending = partner notified but not yet accepted)
-    const pendingAcceptanceTasks = tasks.filter(t => 
-        (t.pickupDeliveryStatus === 'pending' || t.dropoffDeliveryStatus === 'pending') &&
-        !['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(t.pickupDeliveryStatus) &&
-        !['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(t.dropoffDeliveryStatus)
-    );
-    const pendingTasks = tasks.filter(t => 
-        ['pending', 'accepted', 'ready-for-pickup', 'fabric-ready-for-pickup'].includes(t.status) &&
-        (t.pickupDeliveryStatus === 'accepted' || t.dropoffDeliveryStatus === 'accepted' || 
-         t.pickupDeliveryStatus === 'reached-pickup' || t.dropoffDeliveryStatus === 'reached-pickup')
-    );
+    const pendingAcceptanceTasks = tasks.filter(t => {
+        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
+        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
+        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
+        const uid = user?._id || user?.id; // Fallback to user.id if user._id is undefined
+
+        const isLegacyDelivery = !!dpId && dpId === uid && t.deliveryStatus === 'pending';
+        const isPickupAssigned = !!ppId && ppId === uid && t.pickupDeliveryStatus === 'pending';
+        const isDropoffAssigned = !!dopId && dopId === uid && t.dropoffDeliveryStatus === 'pending';
+        
+        return isLegacyDelivery || isPickupAssigned || isDropoffAssigned;
+    });
+
+    // Active accepted/assigned tasks
+    const pendingTasks = tasks.filter(t => {
+        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
+        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
+        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
+        const uid = user?._id || user?.id;
+
+        const isStatusValid = ['pending', 'accepted', 'ready-for-pickup', 'fabric-ready-for-pickup', 'ready-for-delivery'].includes(t.status);
+        
+        const isLegacyActive = !!dpId && dpId === uid && ['accepted', 'reached-pickup'].includes(t.deliveryStatus);
+        const isPickupActive = !!ppId && ppId === uid && ['accepted', 'reached-pickup'].includes(t.pickupDeliveryStatus);
+        const isDropoffActive = !!dopId && dopId === uid && ['accepted', 'reached-pickup'].includes(t.dropoffDeliveryStatus);
+
+        return isStatusValid && (isLegacyActive || isPickupActive || isDropoffActive);
+    });
 
     const handleAcceptOrder = async (orderId) => {
         try {

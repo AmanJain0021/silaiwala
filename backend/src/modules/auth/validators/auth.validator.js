@@ -12,7 +12,7 @@ exports.validateRegister = [
     return true;
   }),
   body('password').optional().isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('role').optional().isIn(['customer', 'tailor', 'delivery']).withMessage('Invalid role'),
+  body('role').optional().isIn(['customer', 'tailor', 'delivery', 'measurement_executive']).withMessage('Invalid role'),
   
   // Tailor specific fields
   body('shopName').optional().trim().isLength({ max: 100 }).withMessage('Shop name too long'),

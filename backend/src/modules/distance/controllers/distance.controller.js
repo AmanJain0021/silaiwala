@@ -55,6 +55,14 @@ exports.calculateDistance = asyncHandler(async (req, res, next) => {
         });
 
         const data = response.data;
+        
+        require('fs').appendFileSync('distance_log.txt', JSON.stringify({
+            origin: `${origLat},${origLng}`,
+            destination: `${destLat},${destLng}`,
+            status: data.status,
+            distance: data.rows?.[0]?.elements?.[0]?.distance?.value
+        }) + '\n');
+
         if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
             const distanceMeters = data.rows[0].elements[0].distance.value;
             const distanceKm = distanceMeters / 1000;
@@ -166,5 +174,58 @@ exports.geocode = asyncHandler(async (req, res, next) => {
                 raw: {}
             }
         });
+    }
+});
+
+/**
+ * @desc    Forward geocode address string to get coordinates
+ * @route   GET /api/v1/distance/forward-geocode
+ * @access  Public
+ */
+exports.forwardGeocode = asyncHandler(async (req, res, next) => {
+    const { address } = req.query;
+
+    if (!address) {
+        return next(new ErrorResponse("Please provide an address string", 400));
+    }
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey || apiKey === 'your_google_maps_api_key' || apiKey === 'your_backend_google_maps_api_key_here') {
+        return res.status(200).json({
+            success: true,
+            data: {
+                lat: 22.7196, // default Indore
+                lng: 75.8577
+            }
+        });
+    }
+
+    try {
+        console.log(`📍 [distance.controller] Calling Google Forward Geocoding for address: ${address}`);
+        const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+            params: {
+                address: address,
+                key: apiKey
+            }
+        });
+
+        const data = response.data;
+        if (data.status === 'OK' && data.results.length > 0) {
+            const result = data.results[0].geometry.location;
+            console.log(`🗺️ [distance.controller] Forward Geocoded to: ${result.lat},${result.lng}`);
+            return res.status(200).json({
+                success: true,
+                data: {
+                    lat: result.lat,
+                    lng: result.lng
+                }
+            });
+        } else {
+            throw new Error(data.error_message || 'Google Maps Geocoding failed or returned no results');
+        }
+    } catch (error) {
+        console.error("Forward Geocoding API Failed:", error.message);
+        return next(new ErrorResponse("Failed to geocode address", 500));
     }
 });

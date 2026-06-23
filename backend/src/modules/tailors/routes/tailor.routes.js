@@ -9,7 +9,10 @@ const {
   getOrders,
   getDeliveryDetails,
   updateOrderStatus,
-  updateDocuments
+  updateDocuments,
+  getMeasurementReport,
+  sendMeasurementForConfirmation,
+  updateMeasurementReport
 } = require("../controllers/tailor.controller");
 const {
   getMyWorkSamples,
@@ -67,6 +70,9 @@ router.use(protect, authorize("tailor"));
 router.patch("/profile", updateProfile);
 router.patch("/documents", updateDocuments);
 router.patch("/orders/:id/status", updateOrderStatus);
+router.get("/orders/:id/measurement-report", getMeasurementReport);
+router.put("/orders/:id/measurement-report", updateMeasurementReport);
+router.post("/orders/:id/send-measurement-confirmation", sendMeasurementForConfirmation);
 
 // Work Samples Actions
 router.post("/work-samples", createWorkSample);

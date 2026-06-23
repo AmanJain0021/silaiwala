@@ -85,7 +85,13 @@ const orderSchema = new mongoose.Schema(
         "product-delivered",
         "order-completed",
         "failed-delivery", 
-        "cancelled"
+        "cancelled",
+        "measurement-requested",
+        "measurement-assigned",
+        "measurement-accepted",
+        "measurement-otp-verified",
+        "measurements-uploaded",
+        "measurements-approved"
       ],
       default: "pending",
     },
@@ -126,6 +132,10 @@ const orderSchema = new mongoose.Schema(
       default: 'auto'
     },
     fabricPickupRequired: {
+        type: Boolean,
+        default: false
+    },
+    isMeasurementHome: {
         type: Boolean,
         default: false
     },
@@ -244,6 +254,27 @@ const orderSchema = new mongoose.Schema(
     paidAt: Date,
     deliveredAt: Date,
     isReviewed: {
+      type: Boolean,
+      default: false,
+    },
+    measurementMethod: {
+      type: String,
+      enum: ["shop", "home"],
+      default: "shop",
+    },
+    measurementRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "MeasurementRequest",
+    },
+    measurementReport: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "MeasurementReport",
+    },
+    fabricPickupRequired: {
+      type: Boolean,
+      default: false,
+    },
+    isMeasurementHome: {
       type: Boolean,
       default: false,
     },

@@ -459,6 +459,10 @@ exports.getAllOrders = async (req, res) => {
       .populate("deliveryPartner", "name phoneNumber")
       .populate("items.service", "title")
       .populate("items.product", "name")
+      .populate({
+        path: "measurementRequest",
+        populate: { path: "executive", select: "name phoneNumber" }
+      })
       .sort("-createdAt")
       .limit(Number(limit))
       .skip(skip);
@@ -487,7 +491,11 @@ exports.getOrderById = async (req, res) => {
       .populate("pickupPartner", "name phoneNumber")
       .populate("dropoffPartner", "name phoneNumber")
       .populate("items.service", "title")
-      .populate("items.product", "name");
+      .populate("items.product", "name")
+      .populate({
+        path: "measurementRequest",
+        populate: { path: "executive", select: "name phoneNumber" }
+      });
       
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
@@ -503,7 +511,7 @@ exports.getOrderById = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, paymentStatus, tailor, deliveryPartner, deliveryFee } = req.body;
+    const { status, paymentStatus, tailor, deliveryPartner, deliveryFee, measurementExecutive } = req.body;
     
     const oldOrder = await Order.findById(id);
     if (!oldOrder) {
@@ -553,6 +561,38 @@ exports.updateOrderStatus = async (req, res) => {
           }
       }
       trackingMessage = trackingMessage || "Delivery partner assigned";
+    }
+
+    // Handle Measurement Executive Assignment
+    if (measurementExecutive) {
+      const MeasurementRequest = require("../../../models/MeasurementRequest");
+      let mRequest = await MeasurementRequest.findOne({ order: oldOrder._id });
+      
+      if (!mRequest) {
+        // Create if missing
+        mRequest = await MeasurementRequest.create({
+          requestId: `MR${Date.now()}`,
+          order: oldOrder._id,
+          customer: oldOrder.customer,
+          tailor: oldOrder.tailor,
+          executive: measurementExecutive,
+          status: "assigned",
+          customerAddress: oldOrder.deliveryAddress ? {
+            street: oldOrder.deliveryAddress.street,
+            city: oldOrder.deliveryAddress.city,
+            state: oldOrder.deliveryAddress.state,
+            zipCode: oldOrder.deliveryAddress.zipCode
+          } : undefined,
+          customerLocation: oldOrder.deliveryAddress?.location?.coordinates?.length === 2 ? oldOrder.deliveryAddress.location : undefined
+        });
+        updateData.measurementRequest = mRequest._id;
+      } else {
+        mRequest.executive = measurementExecutive;
+        mRequest.status = "assigned";
+        await mRequest.save();
+      }
+      
+      if (!trackingMessage) trackingMessage = "Measurement executive assigned";
     }
     
     if (status === 'delivered') updateData.deliveredAt = Date.now();
@@ -605,6 +645,30 @@ exports.updateOrderStatus = async (req, res) => {
       const { getIO } = require("../../../config/socket");
       const io = getIO();
       if (io) io.to("delivery_partners").emit("task_claimed", { orderId: id });
+    }
+
+    if (measurementExecutive) {
+      const execProfile = await User.findById(measurementExecutive);
+      await sendNotification({
+        recipient: measurementExecutive,
+        type: "NEW_MEASUREMENT_REQUEST",
+        title: "New Measurement Request! 📐",
+        message: `A measurement visit for order ${order.orderId} has been manually assigned to you by admin.`,
+        data: { 
+          orderId: order._id,
+          targetUrl: "/executive/requests" 
+        }
+      });
+      
+      const { getIO } = require("../../../config/socket");
+      const io = getIO();
+      if (io) {
+        io.to(`user_${measurementExecutive}`).emit("new_measurement_request", {
+          orderId: order._id,
+          orderIdStr: order.orderId,
+          status: "assigned"
+        });
+      }
     }
     
     if (order && status && status !== oldOrder.status) {
@@ -1020,8 +1084,7 @@ exports.getFinancialStats = async (req, res) => {
     const orders = await Order.find({ paymentStatus: "paid" });
     
     const totalRevenue = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
-    // Let's assume 15% platform commission
-    const platformCommission = totalRevenue * 0.15;
+    const platformCommission = orders.reduce((acc, o) => acc + (o.platformFee || 0), 0);
     
     const pendingPayoutsDoc = await Payout.find({ status: "pending" });
     const pendingPayouts = pendingPayoutsDoc.reduce((acc, p) => acc + (p.amount || 0), 0);
@@ -1261,7 +1324,7 @@ exports.generateReport = async (req, res) => {
         summary = {
             totalOrders: sales.length,
             totalRevenue: sales.reduce((acc, o) => acc + o.totalAmount, 0),
-            commission: sales.reduce((acc, o) => acc + (o.totalAmount * 0.15), 0),
+            commission: sales.reduce((acc, o) => acc + (o.platformFee || 0), 0),
         };
         reportData = sales.map(o => ({
             orderId: o.orderId,

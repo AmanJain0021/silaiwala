@@ -12,6 +12,13 @@ const TailorContextWrapper = () => (
     </TailorAuthProvider>
 );
 
+import { MeasurementAuthProvider } from './modules/measurement-executive/context/MeasurementAuthContext';
+const MeasurementContextWrapper = () => (
+    <MeasurementAuthProvider>
+        <Outlet />
+    </MeasurementAuthProvider>
+);
+
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
 import TailorLayout from './layouts/TailorLayout';
@@ -80,7 +87,21 @@ import DeliveryProtectedRoute from './modules/delivery/components/DeliveryProtec
 const DeliveryWallet = React.lazy(() => import('./modules/delivery/pages/Wallet/DeliveryWallet'));
 const DeliveryOrderDetail = React.lazy(() => import('./modules/delivery/pages/OrderDetail')); // NEW
 const LiveTracking = React.lazy(() => import('./modules/delivery/pages/LiveTracking')); // NEW
+
+// Measurement Executive Module
+const MELogin = React.lazy(() => import('./modules/measurement-executive/pages/Login'));
+const MESignup = React.lazy(() => import('./modules/measurement-executive/pages/Signup'));
+const MEDashboard = React.lazy(() => import('./modules/measurement-executive/pages/Dashboard'));
+const MERequests = React.lazy(() => import('./modules/measurement-executive/pages/Requests'));
+const MERequestDetail = React.lazy(() => import('./modules/measurement-executive/pages/RequestDetail'));
+const MEProfile = React.lazy(() => import('./modules/measurement-executive/pages/Profile'));
+const MEWallet = React.lazy(() => import('./modules/measurement-executive/pages/Wallet'));
+import MELayout from './modules/measurement-executive/layouts/MeasurementExecutiveLayout';
+import MEAuthLayout from './modules/measurement-executive/layouts/MeasurementExecutiveAuthLayout';
+import MEProtectedRoute from './modules/measurement-executive/components/ProtectedRoute';
+
 // Admin Pages
+const AdminLogin = React.lazy(() => import('./modules/admin/pages/Login'));
 const AdminDashboard = React.lazy(() => import('./modules/admin/pages/Dashboard'));
 const AdminOrders = React.lazy(() => import('./modules/admin/pages/Orders'));
 const AdminTailors = React.lazy(() => import('./modules/admin/pages/Tailors'));
@@ -93,10 +114,10 @@ const AdminCMS = React.lazy(() => import('./modules/admin/pages/CMS'));
 const AdminSubscriptions = React.lazy(() => import('./modules/admin/pages/Subscriptions'));
 const AdminReports = React.lazy(() => import('./modules/admin/pages/Reports'));
 const AdminSettings = React.lazy(() => import('./modules/admin/pages/Settings'));
-const AdminLogin = React.lazy(() => import('./modules/admin/pages/Login'));
 const AdminStyleAddons = React.lazy(() => import('./modules/admin/pages/StyleAddons'));
 const AdminBulkOrders = React.lazy(() => import('./modules/admin/pages/BulkOrders'));
 const AdminSupport = React.lazy(() => import('./modules/admin/pages/Support'));
+const AdminMeasurementExecutives = React.lazy(() => import('./modules/admin/pages/MeasurementExecutives'));
 import AdminProtectedRoute from './modules/admin/components/AdminProtectedRoute';
 
 const ReferEarn = React.lazy(() => import('./modules/customer/pages/ReferEarn')); // NEW
@@ -240,6 +261,26 @@ const AppRoutes = () => {
                 <Route path="/delivery/orders/:id" element={<DeliveryOrderDetail />} />
                 <Route path="/delivery/orders/:id/tracking" element={<LiveTracking />} />
             </Route>
+
+            {/* Measurement Executive Routes */}
+            <Route element={<MeasurementContextWrapper />}>
+                <Route element={<MEAuthLayout />}>
+                    <Route path="/executive/login" element={<MELogin />} />
+                    <Route path="/executive/signup" element={<MESignup />} />
+                </Route>
+
+                <Route element={<MEProtectedRoute />}>
+                    <Route element={<MELayout />}>
+                        <Route path="/executive" element={<Navigate to="/executive/dashboard" replace />} />
+                        <Route path="/executive/dashboard" element={<MEDashboard />} />
+                        <Route path="/executive/requests" element={<MERequests />} />
+                        <Route path="/executive/requests/:id" element={<MERequestDetail />} />
+                        <Route path="/executive/wallet" element={<MEWallet />} />
+                        <Route path="/executive/profile" element={<MEProfile />} />
+                    </Route>
+                </Route>
+            </Route>
+
             {/* Admin Module */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route element={<AdminProtectedRoute />}>
@@ -259,6 +300,7 @@ const AppRoutes = () => {
                     <Route path="/admin/bulk-orders" element={<AdminBulkOrders />} />
                     <Route path="/admin/support" element={<AdminSupport />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
+                    <Route path="/admin/measurement-executives" element={<AdminMeasurementExecutives />} />
                 </Route>
             </Route>
 

@@ -273,6 +273,11 @@ const DeliveryWallet = () => {
                                             <p className="text-[9px] text-slate-400 mt-0.5">
                                                 {new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(txn.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                             </p>
+                                            {txn.withdrawalRequest?.proofOfPayment && (
+                                                <a href={txn.withdrawalRequest.proofOfPayment} target="_blank" rel="noreferrer" className="text-[9px] font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded hover:bg-indigo-100 transition-colors flex items-center gap-1 w-max mt-1">
+                                                    <ArrowUpRight size={10} /> Receipt
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1.5">

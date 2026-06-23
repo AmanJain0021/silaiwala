@@ -19,7 +19,8 @@ import {
     Sparkles,
     Package,
     Mail,
-    CreditCard
+    CreditCard,
+    Ruler
 } from 'lucide-react';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 
@@ -66,6 +67,7 @@ const AdminLayout = () => {
         { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders' },
         { icon: <Package size={20} />, label: 'Bulk Orders', path: '/admin/bulk-orders' },
         { icon: <Scissors size={20} />, label: 'Tailors', path: '/admin/tailors' },
+        { icon: <Ruler size={20} />, label: 'Measurement Execs', path: '/admin/measurement-executives' },
         { icon: <Truck size={20} />, label: 'Delivery', path: '/admin/delivery' },
         { icon: <Users size={20} />, label: 'Customers', path: '/admin/customers' },
         { icon: <Layers size={20} />, label: 'Services', path: '/admin/services' },

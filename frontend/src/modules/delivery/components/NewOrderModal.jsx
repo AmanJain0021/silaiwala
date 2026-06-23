@@ -169,7 +169,7 @@ const NewOrderModal = ({ order, isOpen, onClose, onAccept, isAccepting, riderLoc
                             {/* Order Earning Info */}
                             <div className="flex justify-between items-center py-4 border-t border-b border-slate-100 bg-emerald-50 px-4 rounded-xl mb-4 mt-10">
                                 <span className="text-emerald-700 text-sm font-bold">Expected Earning</span>
-                                <span className="text-emerald-900 font-black text-lg">{formatPrice(order.deliveryEarnings || 0)}</span>
+                                <span className="text-emerald-900 font-black text-lg">{formatPrice(order.deliveryFee || order.deliveryEarnings || 0)}</span>
                             </div>
 
                             {/* Action Section */}

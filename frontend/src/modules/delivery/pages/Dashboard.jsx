@@ -16,7 +16,7 @@ const DeliveryDashboard = () => {
   const { isLoaded } = useOutletContext();
   const navigate = useNavigate();
   const {
-    deliveryBoy, updateStatus, fetchProfile, fetchDashboardSummary,
+    deliveryBoy, updateStatus, fetchProfile, fetchDashboardSummary, fetchOrders,
     isUpdatingStatus, orders, dashboardStats
   } = useDeliveryAuthStore();
 
@@ -41,7 +41,7 @@ const DeliveryDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setIsDashboardLoading(true);
-      await Promise.all([fetchProfile(), fetchDashboardSummary()]); // Parallelize for speed
+      await Promise.all([fetchProfile(), fetchDashboardSummary(), fetchOrders()]); // Parallelize for speed
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {

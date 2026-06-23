@@ -17,7 +17,9 @@ const BestSellingGarments = () => {
                     setGarments(res.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching featured garments:", error);
+                if (error?.name !== 'CanceledError' && error?.code !== 'ERR_CANCELED') {
+                    console.error("Error fetching featured garments:", error);
+                }
             } finally {
                 setIsLoading(false);
             }

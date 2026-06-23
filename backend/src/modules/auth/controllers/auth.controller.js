@@ -3,6 +3,7 @@ const User = require("../../../models/User");
 const Customer = require("../../../models/Customer");
 const Tailor = require("../../../models/Tailor");
 const Delivery = require("../../../models/Delivery");
+const MeasurementExecutive = require("../../../models/MeasurementExecutive");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 const { sendNotification } = require("../../../utils/notification");
@@ -90,7 +91,7 @@ exports.register = asyncHandler(async (req, res, next) => {
   }
 
   // 1. Validate Role
-  const allowedRoles = ["customer", "tailor", "delivery"];
+  const allowedRoles = ["customer", "tailor", "delivery", "measurement_executive"];
   const finalRole = allowedRoles.includes(role?.toLowerCase()) ? role.toLowerCase() : "customer";
 
   // 2. Check for existing user
@@ -101,7 +102,7 @@ exports.register = asyncHandler(async (req, res, next) => {
   }
 
   // 3. Create User - Tailors and Delivery partners are inactive until approved
-  const isAutoActive = !["tailor", "delivery"].includes(finalRole.toLowerCase());
+  const isAutoActive = !["tailor", "delivery", "measurement_executive"].includes(finalRole.toLowerCase());
   
   const user = await User.create({
     name,
@@ -186,6 +187,35 @@ exports.register = asyncHandler(async (req, res, next) => {
           title: "New Delivery Partner",
           message: `${name} has registered as a Delivery Partner and is pending approval.`,
           data: { targetUrl: "/users/delivery/pending" }
+        });
+        break;
+      case "measurement_executive":
+        profile = await MeasurementExecutive.create({
+          user: user._id,
+          address: req.body.address,
+          currentLocation: {
+            type: "Point",
+            coordinates: coordinates || [0, 0]
+          },
+          serviceRadius: req.body.serviceRadius || 10,
+          profilePhoto: profileImage || "default_profile.png",
+          aadharNumber: req.body.aadharNumber,
+          documents: req.body.documents || [],
+          bankDetails: (req.body.accountNumber || req.body.accountName || req.body.ifscCode) ? {
+            accountNumber: req.body.accountNumber,
+            accountName: req.body.accountName,
+            bankName: req.body.bankName,
+            ifscCode: req.body.ifscCode
+          } : undefined
+        });
+
+        // Notify admins about new measurement executive registration
+        await sendNotification({
+          recipient: "admins",
+          type: "NEW_REGISTRATION",
+          title: "New Measurement Executive",
+          message: `${name} has registered as a Measurement Executive and is pending approval.`,
+          data: { targetUrl: "/admin/measurement-executives" }
         });
         break;
     }

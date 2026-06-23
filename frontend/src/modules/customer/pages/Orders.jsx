@@ -27,6 +27,11 @@ const OrdersPage = () => {
         }
 
         socket.on('new_notification', (data) => {
+            console.log('Notification received:', data);
+            fetchOrders();
+        });
+
+        socket.on('order_status_updated', (data) => {
             console.log('Order status update received:', data);
             fetchOrders();
         });

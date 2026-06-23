@@ -13,11 +13,14 @@ import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
+import { motion } from 'framer-motion';
+
 const OrderTracking = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const [order, setOrder] = useState(null);
+    const [measurementReport, setMeasurementReport] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -25,6 +28,7 @@ const OrderTracking = () => {
     const [isBulk, setIsBulk] = useState(location.state?.isBulk || false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
+    const [measurementOtp, setMeasurementOtp] = useState(null);
 
     const [socketInstance, setSocketInstance] = useState(null);
 
@@ -45,8 +49,25 @@ const OrderTracking = () => {
             }
 
             if (response?.data?.success) {
-                setOrder(response.data.data);
+                const fetchedOrder = response.data.data;
+                setOrder(fetchedOrder);
+                if (fetchedOrder.measurementOtp) {
+                    setMeasurementOtp(fetchedOrder.measurementOtp);
+                }
                 setError(null); // Clear any previous errors if successful
+                
+                // Fetch measurement report if needed
+                if (fetchedOrder.isMeasurementHome) {
+                    try {
+                        const mRes = await api.get(`/orders/${id}/measurements`);
+                        if (mRes.data.success) {
+                            setMeasurementReport(mRes.data.data);
+                        }
+                    } catch (mErr) {
+                        console.error('Failed to fetch measurement report:', mErr);
+                    }
+                }
+                
                 setIsLoading(false);
             }
         } catch (err) {
@@ -55,6 +76,29 @@ const OrderTracking = () => {
                 setError(err.response?.data?.message || 'Failed to load tracking details.');
                 setIsLoading(false);
             }
+        }
+    };
+
+    const handleMeasurementAction = async (action) => {
+        try {
+            if (action === 'approve') {
+                const res = await api.post(`/orders/${id}/measurements/approve`);
+                if (res.data.success) {
+                    alert('Measurements approved successfully!');
+                    fetchOrderDetails();
+                }
+            } else if (action === 'reject') {
+                const notes = window.prompt("Please detail the changes required in the measurements:");
+                if (!notes) return;
+                const res = await api.post(`/orders/${id}/measurements/request-revision`, { notes });
+                if (res.data.success) {
+                    alert('Revision request sent to executive.');
+                    fetchOrderDetails();
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to process measurement action');
         }
     };
 
@@ -72,6 +116,14 @@ const OrderTracking = () => {
 
             socket.on('order_status_updated', (data) => {
                 console.log('Real-time tracking update received:', data);
+                fetchOrderDetails();
+            });
+
+            socket.on('measurement_otp_sent', (data) => {
+                console.log('Measurement OTP received:', data);
+                if (data.otp) {
+                    setMeasurementOtp(data.otp);
+                }
                 fetchOrderDetails();
             });
 
@@ -438,6 +490,23 @@ const OrderTracking = () => {
             </div>
 
             <div className="max-w-xl mx-auto p-4 space-y-4 animate-in fade-in duration-500">
+            
+                {/* OTP Banner */}
+                {measurementOtp && order.status === 'measurements-uploaded' && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+                    >
+                        <div>
+                            <p className="text-sm text-primary font-medium">Measurement Verification OTP</p>
+                            <p className="text-xs text-primary/70 mt-0.5">Share this 6-digit code with the executive</p>
+                        </div>
+                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-primary/10">
+                            <span className="text-2xl font-bold tracking-widest text-primary">{measurementOtp}</span>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* 2. Order Quick Summary */}
                 <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
@@ -521,28 +590,29 @@ const OrderTracking = () => {
                     />
                 </div>
 
-                {/* 3.3.5 Live Delivery Tracker - only show when a partner is actually assigned */}
+                {/* 3.3.5 Live Delivery Tracker */}
                 {(() => {
-                    // Only show the tracker/searching animation when a delivery partner has been assigned
                     const hasPickupPartner = !!order.pickupPartner;
                     const hasDropoffPartner = !!order.dropoffPartner;
 
-                    const isPickupPhaseStatus = ['pickup-assigned', 'fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
-                    const isDropoffPhaseStatus = ['ready-for-delivery', 'out-for-delivery'].includes(order.status);
                     const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
                     const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
 
-                    // For "searching" state: partner is assigned but status is pending
-                    const isSearchingPickup = hasPickupPartner && order.pickupDeliveryStatus === 'pending';
-                    const isSearchingDropoff = hasDropoffPartner && order.dropoffDeliveryStatus === 'pending';
+                    // For "searching" state: partner is pending, or we are in a phase that requires a partner but none is assigned yet
+                    const isSearchingPickup = (order.fabricDeliveryPreference === 'partner' && order.status === 'fabric-ready-for-pickup' && !hasPickupPartner) || (hasPickupPartner && order.pickupDeliveryStatus === 'pending') || order.pickupDeliveryStatus === 'assigned';
+                    const isSearchingDropoff = (order.status === 'ready-for-delivery' && !hasDropoffPartner) || (hasDropoffPartner && order.dropoffDeliveryStatus === 'pending') || order.dropoffDeliveryStatus === 'assigned';
 
-                    // Show for pickup: partner assigned (pending or active) and in pickup phase
-                    const shouldShowForPickup = (isPickupPhaseStatus && hasPickupPartner) || hasActivePickupPartner || isSearchingPickup;
-                    // Show for dropoff: partner assigned (pending or active) and in dropoff phase
-                    const shouldShowForDropoff = ((isDropoffPhaseStatus && hasDropoffPartner) || hasActiveDropoffPartner || isSearchingDropoff);
+                    // Show for pickup: active partner or searching for pickup
+                    const shouldShowForPickup = hasActivePickupPartner || isSearchingPickup;
+                    // Show for dropoff: active partner or searching for dropoff
+                    const shouldShowForDropoff = hasActiveDropoffPartner || isSearchingDropoff;
 
                     if (shouldShowForPickup || shouldShowForDropoff) {
-                        return <LiveDeliveryTracker order={order} socket={socketInstance} />;
+                        return <LiveDeliveryTracker 
+                            order={order} 
+                            socket={socketInstance} 
+                            forceSearching={isSearchingPickup || isSearchingDropoff} 
+                        />;
                     }
                     return null;
                 })()}
@@ -585,8 +655,54 @@ const OrderTracking = () => {
                     </div>
                 )}
 
-                {/* 3.4.5 Delivery Preference (After Advance Payment) */}
-                {order.fabricPickupRequired && order.advancePaymentStatus === 'paid' && order.fabricDeliveryPreference === 'pending' && (
+                {/* 3.4.2 Measurement Review CTA */}
+                {['measurements-uploaded', 'measurement-verification'].includes(order.status) && measurementReport && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center space-y-4">
+                        <div className="bg-white p-3 rounded-full shadow-sm text-[#843D9B]">
+                            <Scissors size={24} />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-sm font-bold text-gray-900">Review Measurements</h3>
+                            <p className="text-xs text-gray-600 mt-1 max-w-xs mx-auto">
+                                The measurement executive has submitted your measurements. Please review and approve them to start production.
+                            </p>
+                        </div>
+                        
+                        <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-indigo-50">
+                            <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-3">Recorded Metrics</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(measurementReport.measurements || {}).map(([key, val]) => (
+                                    <div key={key} className="bg-gray-50 rounded-xl p-2 border border-gray-100">
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()}
+                                        </p>
+                                        <p className="text-sm font-black text-gray-900">{String(val)}"</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col w-full gap-3 mt-2">
+                            <button
+                                onClick={() => handleMeasurementAction('approve')}
+                                className="w-full py-3 rounded-xl font-bold text-white bg-[#843D9B] text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <CheckCircle2 size={16} /> Approve & Start Production
+                            </button>
+                            
+                            <button
+                                onClick={() => handleMeasurementAction('reject')}
+                                className="w-full py-3 rounded-xl font-bold text-gray-700 bg-white border border-gray-200 text-sm transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                Request Changes
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3.4.5 Delivery Preference (After Advance Payment & Measurement Phase) */}
+                {order.fabricPickupRequired && order.advancePaymentStatus === 'paid' && order.fabricDeliveryPreference === 'pending' && 
+                 !['measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-verification'].includes(order.status) && (
                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
                         <div className="bg-white p-3 rounded-full shadow-sm">
                             <Package size={24} className="text-orange-500" />
@@ -882,8 +998,8 @@ const OrderTracking = () => {
                     isOpen={isReviewModalOpen}
                     onClose={() => setIsReviewModalOpen(false)}
                     orderId={order._id}
-                    tailorId={order.tailor?.user?._id || order.tailor?.user}
-                    deliveryPartnerId={order.deliveryPartner?.user?._id || order.deliveryPartner?.user}
+                    tailorId={order.tailor?._id || order.tailor}
+                    deliveryPartnerId={order.deliveryPartner?._id || order.deliveryPartner}
                     onSuccess={() => {
                         setIsReviewed(true);
                         fetchOrderDetails();

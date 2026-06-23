@@ -42,8 +42,9 @@ export const NotificationProvider = ({ children }) => {
                 }
             });
             
-            if (user?._id) {
-                socket.emit('join_user_room', user._id);
+            const userId = user?._id || user?.id;
+            if (userId) {
+                socket.emit('join_user_room', userId);
             }
 
             socket.on('new_notification', (notification) => {

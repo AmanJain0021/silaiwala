@@ -42,6 +42,14 @@ class SocketService {
     socket.emit(event, data);
   }
 
+  deliveryRegister(userId) {
+    const socket = this.getSocket();
+    if (userId) {
+      socket.emit('join_user_room', userId);
+    }
+    socket.emit('join', 'delivery_partners');
+  }
+
   on(event, callback) {
     const socket = this.getSocket();
     socket.on(event, callback);

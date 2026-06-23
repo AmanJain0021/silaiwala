@@ -14,8 +14,8 @@ const router = express.Router();
 router.use(protect);
 
 // Tailor & Delivery Partner Routes
-router.get("/dashboard", authorize("tailor", "delivery"), getWalletDashboard);
-router.post("/withdraw", authorize("tailor", "delivery"), requestWithdrawal);
+router.get("/dashboard", authorize("tailor", "delivery", "measurement_executive"), getWalletDashboard);
+router.post("/withdraw", authorize("tailor", "delivery", "measurement_executive"), requestWithdrawal);
 
 // Admin Routes
 router.get("/admin/withdrawals", authorize("admin"), getAllWithdrawals);

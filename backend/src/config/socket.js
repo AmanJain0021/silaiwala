@@ -80,6 +80,12 @@ const initSocket = (httpServer) => {
       console.log(`👑 Admin socket ${socket.id} joined admin_room`);
     });
 
+    // ── Measurement Executive joins their room ──────────────────────────
+    socket.on("join_measurement_executive_room", () => {
+      socket.join("measurement_executives");
+      console.log(`📐 Measurement Executive socket ${socket.id} joined measurement_executives room`);
+    });
+
     socket.on("disconnect", (reason) => {
       console.log(`❌ Socket disconnected: ${socket.id} | Reason: ${reason}`);
     });

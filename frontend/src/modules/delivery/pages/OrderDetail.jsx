@@ -104,8 +104,8 @@ const DeliveryOrderDetail = () => {
         ['ready_for_pickup', 'ready-for-pickup', 'ready-for-delivery', 'fabric-ready-for-pickup', 'assigned', 'accepted'].includes(rawS)) return 'pickup';
         
     // Delivery phase
-    if (['picked-up', 'picked_up', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s) ||
-        ['picked_up', 'fabric-picked-up', 'out_for_delivery'].includes(rawS)) return 'delivery';
+    if (['picked-up', 'picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s) ||
+        ['picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out_for_delivery'].includes(rawS)) return 'delivery';
         
     return 'pickup'; // Default fallback instead of null
   };
@@ -535,10 +535,14 @@ const DeliveryOrderDetail = () => {
                   isLoaded={isLoaded}
                   height="100%"
                   onRouteCalculated={(data) => {
-                    setEta(data.duration);
-                    setDistanceRemaining(data.distanceValue);
-                    if (currentLocation?.lat && currentLocation?.lng && currentPhase === 'pickup') {
-                      useDeliveryAuthStore.getState().updateLocation(currentLocation.lat, currentLocation.lng, data.duration, data.distanceValue);
+                    // Only update state from the live map if we actually have a GPS lock.
+                    // Otherwise the map uses the fallback origin (e.g. pickup to pickup = 0km).
+                    if (currentLocation?.lat && currentLocation?.lng) {
+                      setEta(data.duration);
+                      setDistanceRemaining(data.distanceValue);
+                      if (currentPhase === 'pickup') {
+                        useDeliveryAuthStore.getState().updateLocation(currentLocation.lat, currentLocation.lng, data.duration, data.distanceValue);
+                      }
                     }
                   }}
                 />
@@ -852,7 +856,7 @@ const DeliveryOrderDetail = () => {
                           </div>
 
                           {/* PAYMENT OPTIONS */}
-                          {isCod && (
+                          {isCod && currentPhase === 'delivery' && (
                             <div className="mt-6 pt-5 border-t border-slate-50 text-left">
                                <div className="flex items-center justify-between mb-4">
                                   <div className="min-w-0">

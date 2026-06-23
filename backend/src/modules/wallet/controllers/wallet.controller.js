@@ -4,6 +4,7 @@ const WithdrawalRequest = require("../../../models/WithdrawalRequest");
 const Tailor = require("../../../models/Tailor");
 const Delivery = require("../../../models/Delivery");
 const Customer = require("../../../models/Customer");
+const MeasurementExecutive = require("../../../models/MeasurementExecutive");
 const Settings = require("../../../models/Settings");
 const User = require("../../../models/User");
 const asyncHandler = require("../../../utils/asyncHandler");
@@ -25,6 +26,8 @@ exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
     profile = await Delivery.findOne({ user: id });
   } else if (role === "user" || role === "customer") {
     profile = await Customer.findOne({ user: id });
+  } else if (role === "measurement_executive") {
+    profile = await MeasurementExecutive.findOne({ user: id });
   }
 
   if (!profile) {
@@ -35,7 +38,8 @@ exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
   const transactions = await WalletTransaction.find({ user: id })
     .sort("-createdAt")
     .limit(10)
-    .populate("order", "orderId totalAmount");
+    .populate("order", "orderId totalAmount")
+    .populate("withdrawalRequest", "status transactionReference proofOfPayment");
 
   // Get pending withdrawals
   const withdrawals = await WithdrawalRequest.find({ user: id, status: "pending" });
@@ -73,6 +77,8 @@ exports.requestWithdrawal = asyncHandler(async (req, res, next) => {
     profile = await Delivery.findOne({ user: id });
   } else if (role === "user" || role === "customer") {
     profile = await Customer.findOne({ user: id });
+  } else if (role === "measurement_executive") {
+    profile = await MeasurementExecutive.findOne({ user: id });
   }
 
   if (!profile) {
@@ -155,7 +161,7 @@ exports.getAllWithdrawals = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin)
  */
 exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
-  const { status, transactionReference, adminNotes } = req.body;
+  const { status, transactionReference, adminNotes, proofOfPayment } = req.body;
   
   const withdrawal = await WithdrawalRequest.findById(req.params.id);
   if (!withdrawal) {
@@ -169,6 +175,7 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
   withdrawal.status = status;
   if (adminNotes) withdrawal.adminNotes = adminNotes;
   if (transactionReference) withdrawal.transactionReference = transactionReference;
+  if (proofOfPayment) withdrawal.proofOfPayment = proofOfPayment;
 
   if (status === "paid") {
     withdrawal.paidAt = new Date();
@@ -180,6 +187,8 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
       profile = await Delivery.findOne({ user: withdrawal.user });
     } else if (withdrawal.role === "user" || withdrawal.role === "customer") {
       profile = await Customer.findOne({ user: withdrawal.user });
+    } else if (withdrawal.role === "measurement_executive") {
+      profile = await MeasurementExecutive.findOne({ user: withdrawal.user });
     }
     if (profile) {
       profile.totalWithdrawn = (profile.totalWithdrawn || 0) + withdrawal.amount;
@@ -194,6 +203,8 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
       profile = await Delivery.findOne({ user: withdrawal.user });
     } else if (withdrawal.role === "user" || withdrawal.role === "customer") {
       profile = await Customer.findOne({ user: withdrawal.user });
+    } else if (withdrawal.role === "measurement_executive") {
+      profile = await MeasurementExecutive.findOne({ user: withdrawal.user });
     }
     if (profile) {
       profile.walletBalance += withdrawal.amount;

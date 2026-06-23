@@ -34,7 +34,8 @@ const AdminDelivery = () => {
                 rating: p.profile?.rating || 5.0,
                 totalDeliveries: p.profile?.totalDeliveries || 0,
                 activeTasks: 0,
-                status: p.isActive ? 'Online' : 'Offline',
+                status: p.profile?.isAvailable ? 'Online' : 'Offline',
+                accountStatus: p.isActive ? 'Active' : 'Suspended',
                 joined: new Date(p.createdAt).toLocaleDateString()
             })));
 
@@ -49,8 +50,10 @@ const AdminDelivery = () => {
                 submittedDate: new Date(p.createdAt).toLocaleDateString()
             })));
         } catch (error) {
-            console.error('Failed to fetch data:', error);
-            toast.error('Failed to load delivery data');
+            if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                console.error('Failed to fetch data:', error);
+                toast.error('Failed to load delivery data');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -70,7 +73,9 @@ const AdminDelivery = () => {
             }));
             setUnassignedTasks(data);
         } catch (err) {
-            console.error('Failed to fetch unassigned tasks:', err);
+            if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+                console.error('Failed to fetch unassigned tasks:', err);
+            }
         }
     };
 
@@ -109,7 +114,7 @@ const AdminDelivery = () => {
             toast.success(isActive ? 'Partner activated' : 'Partner suspended');
             fetchData();
             if (selectedPartner && selectedPartner.id === partnerId) {
-                setSelectedPartner(prev => ({ ...prev, status: isActive ? 'Online' : 'Offline' }));
+                setSelectedPartner(prev => ({ ...prev, accountStatus: isActive ? 'Active' : 'Suspended' }));
             }
         } catch (error) {
             console.error('Failed to update status', error);
@@ -299,6 +304,9 @@ const AdminDelivery = () => {
                                                 <span className={`block w-1.5 h-1.5 rounded-full ${partner.status === 'Online' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                                                 {partner.status}
                                             </span>
+                                            {partner.accountStatus === 'Suspended' && (
+                                                <span className="block mt-1 text-[9px] font-black text-red-500 uppercase tracking-widest">Suspended</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -502,15 +510,15 @@ const AdminDelivery = () => {
                             {/* Actions */}
                             <div className="p-6 border-t border-gray-100 bg-white grid grid-cols-2 gap-3">
                                 <button 
-                                    onClick={() => handleUpdateUserStatus(selectedPartner.id, selectedPartner.status === 'Offline')}
+                                    onClick={() => handleUpdateUserStatus(selectedPartner.id, selectedPartner.accountStatus === 'Suspended')}
                                     className={`px-4 py-3 border text-xs font-black rounded-xl transition-colors uppercase tracking-widest flex items-center justify-center gap-2 ${
-                                        selectedPartner.status === 'Offline' 
+                                        selectedPartner.accountStatus === 'Suspended' 
                                         ? 'bg-indigo-50 text-primary border-indigo-100 hover:bg-indigo-100' 
                                         : 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'
                                     }`}
                                 >
-                                    {selectedPartner.status === 'Offline' ? <CheckCircle2 size={14} /> : <Ban size={14} />}
-                                    {selectedPartner.status === 'Offline' ? 'Activate' : 'Suspend'}
+                                    {selectedPartner.accountStatus === 'Suspended' ? <CheckCircle2 size={14} /> : <Ban size={14} />}
+                                    {selectedPartner.accountStatus === 'Suspended' ? 'Activate' : 'Suspend'}
                                 </button>
                                 <button 
                                     onClick={() => toast.info('Tracking feature available in next update')}

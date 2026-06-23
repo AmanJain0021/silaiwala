@@ -14,6 +14,7 @@ import StyleAddonModal from '../components/service-detail/StyleAddonModal';
 import useCheckoutStore from '../../../store/checkoutStore';
 import useMeasurementStore from '../../../store/measurementStore';
 import useLocationStore from '../../../store/locationStore';
+import useAddressStore from '../../../store/userStore';
 import { calculateDistance } from '../../../utils/distance';
 import api from '../../../utils/api';
 
@@ -58,20 +59,28 @@ const ServiceDetail = () => {
     const [preSelectedTailor, setPreSelectedTailor] = useState(null);
 
     // Initial check for current step based on selections
-    const [currentStep, setCurrentStep] = useState('fabric'); // fabric -> details -> review
+    const restored = location.state?.restoredState || {};
+    const [currentStep, setCurrentStep] = useState(restored.currentStep || 'fabric'); // fabric -> details -> review
 
-    const [deliveryType, setDeliveryType] = useState('standard');
-    const [measurementType, setMeasurementType] = useState(null);
-    const [isTailorAtHome, setIsTailorAtHome] = useState(false);
-    const [selectedAddons, setSelectedAddons] = useState([]);
+    const [deliveryType, setDeliveryType] = useState(restored.deliveryType || 'standard');
+    const [measurementType, setMeasurementType] = useState(restored.measurementType || null);
+    const [isTailorAtHome, setIsTailorAtHome] = useState(restored.isTailorAtHome || false);
+    const [selectedAddons, setSelectedAddons] = useState(restored.selectedAddons || []);
     const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
-    const [fabricSource, setFabricSource] = useState(location.state?.fabricSource || 'customer');
-    const [selectedFabric, setSelectedFabric] = useState(location.state?.selectedFabric || null);
-    const [selectedSavedProfile, setSelectedSavedProfile] = useState(null);
-    const [measurements, setMeasurements] = useState(null);
+    const [fabricSource, setFabricSource] = useState(restored.fabricSource || location.state?.fabricSource || 'customer');
+    const [selectedFabric, setSelectedFabric] = useState(restored.selectedFabric || location.state?.selectedFabric || null);
+    const [selectedSavedProfile, setSelectedSavedProfile] = useState(restored.selectedSavedProfile || null);
+    const [measurements, setMeasurements] = useState(restored.measurements || null);
     const [visitSettings, setVisitSettings] = useState({ baseFee: 150, perKmFee: 20, freeKm: 3 });
     const [gstPercentage, setGstPercentage] = useState(5);
-    const userCoords = useLocationStore(state => state.coordinates);
+    const { addresses, selectedAddressId } = useAddressStore(state => state);
+    const selectedAddress = addresses.find(a => a._id === selectedAddressId);
+    const storeCoords = useLocationStore(state => state.coordinates);
+    const userCoords = selectedAddress?.location?.coordinates ? 
+        { lat: selectedAddress.location.coordinates[1], lng: selectedAddress.location.coordinates[0] } : 
+        storeCoords;
+    const [roadDistanceKm, setRoadDistanceKm] = useState(null);
+    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
 
     const [showFooter, setShowFooter] = useState(false);
     const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
@@ -131,6 +140,9 @@ const ServiceDetail = () => {
                         setGstPercentage(settingsRes.data.data.pricing.gstPercentage);
                     }
                 }
+
+                // Also fetch addresses so we can resolve selectedAddressId
+                useAddressStore.getState().fetchAddresses();
             } catch (error) {
                 if (isMounted) console.error('Failed to fetch service/tailor detail:', error);
             } finally {
@@ -143,6 +155,52 @@ const ServiceDetail = () => {
             isMounted = false;
         };
     }, [id, location.state]);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        const fetchRoadDistance = async () => {
+            if (!preSelectedTailor || !userCoords || !isTailorAtHome) return;
+            
+            try {
+                setIsCalculatingDistance(true);
+                const [tLng, tLat] = preSelectedTailor.location.coordinates;
+                let finalULat = userCoords.lat;
+                let finalULng = userCoords.lng;
+
+                // If an address is selected but it had no saved coordinates, let's geocode it on the fly via backend
+                if (selectedAddress && (!selectedAddress.location?.coordinates || selectedAddress.location.coordinates.length < 2)) {
+                    const addressString = `${selectedAddress.street || ''}, ${selectedAddress.city || ''}, ${selectedAddress.state || ''}, ${selectedAddress.zipCode || ''}`;
+                    try {
+                        const geoRes = await api.get('/distance/forward-geocode', { params: { address: addressString } });
+                        if (geoRes.data?.success && geoRes.data?.data) {
+                            finalULat = geoRes.data.data.lat;
+                            finalULng = geoRes.data.data.lng;
+                        }
+                    } catch (geoErr) {
+                        console.error("Backend forward geocoding failed", geoErr);
+                    }
+                }
+                
+                const res = await api.post('/distance/calculate', {
+                    origin: [tLat, tLng],
+                    destination: [finalULat, finalULng]
+                });
+                
+                if (res.data?.success && isMounted) {
+                    setRoadDistanceKm(res.data.data.distance);
+                }
+            } catch (err) {
+                console.error("Failed to fetch road distance:", err);
+            } finally {
+                if (isMounted) setIsCalculatingDistance(false);
+            }
+        };
+
+        fetchRoadDistance();
+        
+        return () => { isMounted = false; };
+    }, [preSelectedTailor, userCoords?.lat, userCoords?.lng, selectedAddress?._id, isTailorAtHome]);
 
     if (isLoading) {
         return (
@@ -217,19 +275,23 @@ const ServiceDetail = () => {
     
     const calculateVisitPrice = () => {
         if (!isTailorAtHome) return 0;
-        // If no tailor selected yet, show base fee
         if (!preSelectedTailor || !userCoords) return visitSettings.baseFee;
 
-        try {
-            const [tLng, tLat] = preSelectedTailor.location.coordinates;
-            const distance = calculateDistance(userCoords.lat, userCoords.lng, tLat, tLng);
-            
-            if (distance <= visitSettings.freeKm) return visitSettings.baseFee;
-            
-            return Math.round(visitSettings.baseFee + (distance - visitSettings.freeKm) * visitSettings.perKmFee);
-        } catch (err) {
-            return visitSettings.baseFee;
+        // Use road distance if available, else fallback to Haversine
+        let distance = roadDistanceKm;
+        
+        if (distance === null) {
+            try {
+                const [tLng, tLat] = preSelectedTailor.location.coordinates;
+                distance = calculateDistance(userCoords.lat, userCoords.lng, tLat, tLng);
+            } catch (err) {
+                return visitSettings.baseFee;
+            }
         }
+        
+        if (distance <= visitSettings.freeKm) return visitSettings.baseFee;
+        
+        return Math.round(visitSettings.baseFee + (distance - visitSettings.freeKm) * visitSettings.perKmFee);
     };
 
     const tailorAtHomePrice = calculateVisitPrice();
@@ -335,6 +397,9 @@ const ServiceDetail = () => {
         const targetTailor = preSelectedTailor || serviceData?.tailor;
         if (!targetTailor) {
             navigate('/user/checkout/tailor');
+        } else if (isTailorAtHome && selectedAddressId) {
+            // Address was already explicitly selected during the 'Tailor at Home' configuration
+            navigate('/user/checkout/summary');
         } else {
             navigate('/user/checkout/address');
         }
@@ -424,17 +489,31 @@ const ServiceDetail = () => {
                     />
                 </section>
 
-                {/* 3. Measurements Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <MeasurementSelector
                         selectedType={measurementType}
-                        visitPrice={tailorAtHomePrice || visitSettings.baseFee}
+                        visitPrice={isCalculatingDistance ? '...' : (tailorAtHomePrice || visitSettings.baseFee)}
                         isDistanceBased={!!preSelectedTailor}
                         onSelectType={(type) => {
                             if (type === 'home') {
-                                setIsTailorAtHome(true);
                                 setMeasurementType('home');
-                                setMeasurements({ type: 'home', notes: 'Tailor will visit home' });
+                                setIsTailorAtHome(true);
+                                navigate('/user/checkout/address', {
+                                    state: {
+                                        returnUrl: `/user/services/${id}`,
+                                        restoredState: {
+                                            currentStep,
+                                            deliveryType,
+                                            measurementType: 'home',
+                                            isTailorAtHome: true,
+                                            selectedAddons,
+                                            fabricSource,
+                                            selectedFabric,
+                                            selectedSavedProfile,
+                                            measurements
+                                        }
+                                    }
+                                });
                             } else if (type === 'sample') {
                                 setIsTailorAtHome(false);
                                 setMeasurementType('sample');
@@ -648,10 +727,10 @@ const ServiceDetail = () => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleAddMore}
-                                    disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
+                                    disabled={!measurementType || (measurementType !== 'saved' && measurementType !== 'home' && !measurements)}
                                     className={cn(
                                         "flex-1 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2",
-                                        measurementType && (measurementType === 'saved' || measurements) 
+                                        measurementType && (measurementType === 'saved' || measurementType === 'home' || measurements) 
                                             ? "border-primary text-primary hover:bg-indigo-50 active:scale-95" 
                                             : "border-gray-100 text-gray-300 cursor-not-allowed"
                                     )}
@@ -661,15 +740,15 @@ const ServiceDetail = () => {
                                 
                                 <button
                                     onClick={handleBuyNow}
-                                    disabled={!measurementType || (measurementType !== 'saved' && !measurements)}
+                                    disabled={!measurementType || (measurementType !== 'saved' && measurementType !== 'home' && !measurements)}
                                     className={cn(
                                         "flex-[2.5] py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
-                                        measurementType && (measurementType === 'saved' || measurements)
+                                        measurementType && (measurementType === 'saved' || measurementType === 'home' || measurements)
                                             ? "bg-primary text-white shadow-indigo-100 active:scale-[0.98] hover:bg-primary-dark" 
                                             : "bg-gray-100 text-gray-400 cursor-not-allowed"
                                     )}
                                 >
-                                    {measurementType && (measurementType === 'saved' || measurements) ? (
+                                    {measurementType && (measurementType === 'saved' || measurementType === 'home' || measurements) ? (
                                         <>Book Now <ChevronRight size={16} /></>
                                     ) : (
                                         <>Enter Details to Proceed</>

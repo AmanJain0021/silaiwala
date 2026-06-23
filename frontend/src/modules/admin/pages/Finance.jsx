@@ -22,7 +22,8 @@ const AdminFinance = () => {
         walletAudit: [],
         paymentLedger: [],
         tailorPayouts: [],
-        deliveryPayouts: []
+        deliveryPayouts: [],
+        executivePayouts: []
     });
     
     // Pagination & Filtering
@@ -32,6 +33,8 @@ const AdminFinance = () => {
     // UI State
     const [processingPayoutId, setProcessingPayoutId] = useState(null);
     const [payoutRef, setPayoutRef] = useState('');
+    const [payoutProof, setPayoutProof] = useState('');
+    const [isUploadingProof, setIsUploadingProof] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
 
     const tabs = [
@@ -41,8 +44,8 @@ const AdminFinance = () => {
         'Wallet Audit',
         'Tailor Earnings', 
         'Delivery Earnings', 
-        'Tailor Payouts',
         'Delivery Payouts',
+        'Executive Payouts',
         'GST Report'
     ];
 
@@ -97,6 +100,10 @@ const AdminFinance = () => {
                     res = await api.get(`/wallet/admin/withdrawals?role=delivery`);
                     setData(prev => ({ ...prev, deliveryPayouts: res.data.data }));
                     break;
+                case 'Executive Payouts':
+                    res = await api.get(`/wallet/admin/withdrawals?role=measurement_executive`);
+                    setData(prev => ({ ...prev, executivePayouts: res.data.data }));
+                    break;
                 case 'GST Report':
                     res = await api.get(`/admin/finance/gst?${queryParams}`);
                     setData(prev => ({ ...prev, gstReport: res.data.data.entries }));
@@ -140,14 +147,38 @@ const AdminFinance = () => {
         try {
             await api.patch(`/wallet/admin/withdrawals/${id}`, { 
                 status: 'paid',
-                transactionReference: payoutRef
+                transactionReference: payoutRef,
+                proofOfPayment: payoutProof
             });
             toast.success("Payout marked as completed");
             setProcessingPayoutId(null);
             setPayoutRef('');
+            setPayoutProof('');
             fetchData();
         } catch (error) {
             toast.error("Failed to update payout");
+        }
+    };
+
+    const handleProofUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        setIsUploadingProof(true);
+        try {
+            const res = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setPayoutProof(res.data.data.url);
+            toast.success('Screenshot uploaded');
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error('Upload failed');
+        } finally {
+            setIsUploadingProof(false);
         }
     };
 
@@ -498,8 +529,8 @@ const AdminFinance = () => {
                             </div>
                         )}
 
-                        {/* PAYOUTS TABS (Tailor / Delivery) */}
-                        {(selectedTab === 'Tailor Payouts' || selectedTab === 'Delivery Payouts') && (
+                        {/* PAYOUTS TABS (Tailor / Delivery / Executive) */}
+                        {(selectedTab === 'Tailor Payouts' || selectedTab === 'Delivery Payouts' || selectedTab === 'Executive Payouts') && (
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[500px]">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left whitespace-nowrap">
@@ -514,7 +545,7 @@ const AdminFinance = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
-                                            {(selectedTab === 'Tailor Payouts' ? data.tailorPayouts : data.deliveryPayouts).map((payout, i) => (
+                                            {(selectedTab === 'Tailor Payouts' ? data.tailorPayouts : selectedTab === 'Delivery Payouts' ? data.deliveryPayouts : data.executivePayouts).map((payout, i) => (
                                                 <tr key={i} className="hover:bg-primary/5 transition-colors group">
                                                     <td className="px-6 py-4">
                                                         <span className="text-xs font-black text-gray-900">{payout._id.slice(-8).toUpperCase()}</span>
@@ -524,8 +555,8 @@ const AdminFinance = () => {
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xs font-black text-gray-900">{payout.user?.name || 'Unknown User'}</span>
-                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                                                    {payout.role}
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : payout.role === 'measurement_executive' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                                                    {payout.role.replace('_', ' ')}
                                                                 </span>
                                                             </div>
                                                             <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">{payout.user?.email || payout.user?.phoneNumber}</span>
@@ -563,26 +594,35 @@ const AdminFinance = () => {
                                                     <td className="px-6 py-4 text-right">
                                                         {payout.status === 'pending' || payout.status === 'approved' ? (
                                                             processingPayoutId === payout._id ? (
-                                                                <div className="flex items-center justify-end gap-2">
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="Txn Ref..."
-                                                                        value={payoutRef}
-                                                                        onChange={(e) => setPayoutRef(e.target.value)}
-                                                                        className="px-3 py-1.5 text-[10px] font-bold border border-gray-200 rounded-lg outline-none focus:border-primary w-32"
-                                                                    />
-                                                                    <button
-                                                                        onClick={() => handleProcessPayout(payout._id)}
-                                                                        className="text-[10px] font-black uppercase text-white bg-primary px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-all"
-                                                                    >
-                                                                        Confirm
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => { setProcessingPayoutId(null); setPayoutRef(''); }}
-                                                                        className="text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all"
-                                                                    >
-                                                                        Cancel
-                                                                    </button>
+                                                                <div className="flex flex-col items-end gap-2">
+                                                                    <div className="flex gap-2">
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Txn Ref..."
+                                                                            value={payoutRef}
+                                                                            onChange={(e) => setPayoutRef(e.target.value)}
+                                                                            className="px-3 py-1.5 text-[10px] font-bold border border-gray-200 rounded-lg outline-none focus:border-primary w-24"
+                                                                        />
+                                                                        <label className="cursor-pointer text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all flex items-center justify-center min-w-[60px]">
+                                                                            {isUploadingProof ? '...' : payoutProof ? 'Attached' : 'Attach'}
+                                                                            <input type="file" className="hidden" accept="image/*" onChange={handleProofUpload} disabled={isUploadingProof} />
+                                                                        </label>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleProcessPayout(payout._id)}
+                                                                            disabled={isUploadingProof}
+                                                                            className="text-[10px] font-black uppercase text-white bg-primary px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-all disabled:opacity-50"
+                                                                        >
+                                                                            Confirm
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => { setProcessingPayoutId(null); setPayoutRef(''); setPayoutProof(''); }}
+                                                                            className="text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             ) : (
                                                                 <button 
@@ -600,7 +640,7 @@ const AdminFinance = () => {
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {(selectedTab === 'Tailor Payouts' ? data.tailorPayouts : data.deliveryPayouts).length === 0 && !isLoading && (
+                                            {(selectedTab === 'Tailor Payouts' ? data.tailorPayouts : selectedTab === 'Delivery Payouts' ? data.deliveryPayouts : data.executivePayouts).length === 0 && !isLoading && (
                                                 <tr><td colSpan="6" className="px-6 py-12 text-center text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">No payouts found</td></tr>
                                             )}
                                         </tbody>

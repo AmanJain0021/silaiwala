@@ -5,7 +5,7 @@ const BillDetails = ({ pricing, advancePercentage = 50 }) => {
     if (!pricing) return null;
 
     const { base, delivery, taxes, total } = pricing;
-    const finalTotal = total + 10;
+    const finalTotal = total;
     const advanceAmount = Math.round(finalTotal * (advancePercentage / 100));
     const remainingAmount = finalTotal - advanceAmount;
 
@@ -48,10 +48,12 @@ const BillDetails = ({ pricing, advancePercentage = 50 }) => {
                     </div>
                 )}
 
-                <div className="flex justify-between text-xs text-gray-600">
-                    <span>Platform Fee</span>
-                    <span>₹10</span>
-                </div>
+                {pricing.platformFee > 0 && (
+                    <div className="flex justify-between text-xs text-gray-600">
+                        <span>Platform Fee ({pricing.platformFeePercentage}%)</span>
+                        <span>₹{pricing.platformFee}</span>
+                    </div>
+                )}
 
                 <div className="flex justify-between text-xs text-gray-600">
                     <span>GST ({pricing.gstPercentage || 5}%)</span>

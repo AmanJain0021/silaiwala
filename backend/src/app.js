@@ -109,6 +109,7 @@ app.use("/api/v1/cms", require("./modules/public/routes/cms.routes"));
 app.use("/api/v1/support", require("./modules/support/routes/support.routes"));
 app.use("/api/v1/subscriptions", require("./modules/subscriptions/routes/subscription.routes"));
 app.use("/api/v1/upload", require("./routes/upload.routes"));
+app.use("/api/v1/measurement-executive", require("./modules/measurement-executive/routes/measurementExecutive.routes"));
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 
 app.use((req, res, next) => {

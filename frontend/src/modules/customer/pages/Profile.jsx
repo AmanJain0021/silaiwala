@@ -20,7 +20,9 @@ const LegalLinks = () => {
                 const res = await api.get('/cms/content?type=legal');
                 if (res.data.success) setDocs(res.data.data);
             } catch (err) {
-                console.error(err);
+                if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
+                    console.error(err);
+                }
             }
         };
         fetchDocs();

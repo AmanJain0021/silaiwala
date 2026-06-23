@@ -69,7 +69,7 @@ const TrackingTimeline = ({ states, currentIndex }) => {
                                     </div>
                                 )}
 
-                                {isCurrent && (!state.subEvents || state.subEvents.length === 0) && (
+                                {isCurrent && index < states.length - 1 && (!state.subEvents || state.subEvents.length === 0) && (
                                     <p className="text-[10px] text-primary font-bold mt-1 animate-pulse">
                                         In progress...
                                     </p>

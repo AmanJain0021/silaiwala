@@ -37,7 +37,8 @@ const Overview = () => {
                 token: getToken()
             }
         });
-        if (user?._id) socket.emit('join', `user_${user._id}`);
+        const userId = user?._id || user?.id;
+        if (userId) socket.emit('join', `user_${userId}`);
         socket.on('new_order', (data) => {
             fetchDashboardData();
             if (data?.orderId) {

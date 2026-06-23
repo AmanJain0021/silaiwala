@@ -147,11 +147,39 @@ const AddressForm = ({ onCancel, onSuccess, initialData = null }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (validate()) {
+            setErrors({});
+            let finalForm = { ...form };
+
             try {
+                // If coordinates are missing, try to geocode the address
+                if (!finalForm.location?.coordinates?.[0] || !finalForm.location?.coordinates?.[1]) {
+                    if (window.google && window.google.maps) {
+                        const geocoder = new window.google.maps.Geocoder();
+                        const addressString = `${finalForm.street}, ${finalForm.city}, ${finalForm.state}, ${finalForm.zipCode}`;
+                        
+                        const geoResult = await new Promise((resolve) => {
+                            geocoder.geocode({ address: addressString }, (results, status) => {
+                                if (status === 'OK' && results[0]) {
+                                    resolve(results[0].geometry.location);
+                                } else {
+                                    resolve(null);
+                                }
+                            });
+                        });
+
+                        if (geoResult) {
+                            finalForm.location = {
+                                type: 'Point',
+                                coordinates: [geoResult.lng(), geoResult.lat()]
+                            };
+                        }
+                    }
+                }
+
                 if (initialData && initialData._id) {
-                    await updateAddress(initialData._id, form);
+                    await updateAddress(initialData._id, finalForm);
                 } else {
-                    await addAddress(form);
+                    await addAddress(finalForm);
                 }
                 onSuccess && onSuccess();
             } catch (err) {

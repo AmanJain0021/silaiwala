@@ -9,7 +9,7 @@ const withdrawalRequestSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["tailor", "delivery"],
+      enum: ["tailor", "delivery", "measurement_executive"],
       required: true,
     },
     amount: {
@@ -39,6 +39,9 @@ const withdrawalRequestSchema = new mongoose.Schema(
       type: String,
     },
     transactionReference: {
+      type: String,
+    },
+    proofOfPayment: {
       type: String,
     },
     approvedAt: Date,

@@ -25,7 +25,8 @@ const TailorLayout = () => {
     const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
 
     useEffect(() => {
-        if (!user?._id) return;
+        const userId = user?._id || user?.id;
+        if (!userId) return;
         
         const fetchDashboardData = async () => {
             try {
@@ -50,7 +51,7 @@ const TailorLayout = () => {
         });
 
         socket.on('connect', () => {
-            socket.emit('join_tailor_room', user._id);
+            socket.emit('join_tailor_room', userId);
         });
 
         socket.on('new_order', () => {
@@ -61,7 +62,7 @@ const TailorLayout = () => {
         return () => {
             socket.disconnect();
         };
-    }, [user?._id]);
+    }, [user?._id, user?.id]);
 
     const menuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Home', path: '/partner' },
