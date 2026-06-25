@@ -35,9 +35,13 @@ api.interceptors.request.use(
         }
 
         const token = getToken();
-        const hasAuth = config.headers && (config.headers.Authorization || (typeof config.headers.has === 'function' && config.headers.has('Authorization')));
+        const hasAuth = config.headers && (config.headers.get?.('Authorization') || config.headers.Authorization);
         if (token && !hasAuth) {
-            config.headers.Authorization = `Bearer ${token}`;
+            if (config.headers.set) {
+                config.headers.set('Authorization', `Bearer ${token}`);
+            } else {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
         }
         return config;
     },

@@ -17,11 +17,13 @@ const AdminStyleAddons = () => {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        price: '',
         image: '',
         category: '',
+        referenceImages: { left: '', right: '', front: '', back: '' }
     });
 
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
     const [categoryOptions, setCategoryOptions] = useState([]);
 
     const fetchCategories = async () => {
@@ -53,7 +55,7 @@ const AdminStyleAddons = () => {
         fetchCategories();
     }, []);
 
-    const handleImageUpload = async (e) => {
+    const handleImageUpload = async (e, type = 'main') => {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -65,7 +67,14 @@ const AdminStyleAddons = () => {
             const res = await api.post('/upload', fd, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setFormData({ ...formData, image: res.data.data });
+            if (type === 'main') {
+                setFormData({ ...formData, image: res.data.data });
+            } else {
+                setFormData({
+                    ...formData,
+                    referenceImages: { ...formData.referenceImages, [type]: res.data.data }
+                });
+            }
             toast.success('Image uploaded');
         } catch (error) {
             console.error('Upload failed:', error);
@@ -77,7 +86,12 @@ const AdminStyleAddons = () => {
 
     const openAddModal = () => {
         setEditingAddon(null);
-        setFormData({ name: '', description: '', price: '', image: '', category: '' });
+        setFormData({ 
+            name: '', description: '', price: '', image: '', category: '',
+            referenceImages: { left: '', right: '', front: '', back: '' }
+        });
+        setIsCreatingCategory(false);
+        setNewCategoryName('');
         setIsModalOpen(true);
     };
 
@@ -89,25 +103,49 @@ const AdminStyleAddons = () => {
             price: addon.price,
             image: addon.image,
             category: addon.category,
+            referenceImages: addon.referenceImages || { left: '', right: '', front: '', back: '' }
         });
+        setIsCreatingCategory(false);
+        setNewCategoryName('');
         setIsModalOpen(true);
     };
 
     const handleSubmit = async () => {
-        if (!formData.name || !formData.price || !formData.category || !formData.description) {
+        let finalCategory = formData.category;
+
+        if (isCreatingCategory) {
+            if (!newCategoryName.trim()) return toast.error('Please enter a new category name');
+            finalCategory = newCategoryName.trim();
+        }
+
+        if (!formData.name || !formData.price || !finalCategory || !formData.description) {
             return toast.error('Please fill all required fields');
         }
+        
         setIsSubmitting(true);
         try {
+            // If dynamically creating a category, hit the category endpoint first
+            if (isCreatingCategory) {
+                try {
+                    await api.post('/admin/categories', { name: finalCategory, type: 'garment' });
+                    // Refresh categories list silently
+                    fetchCategories();
+                } catch (catError) {
+                    console.error('Category creation error (may already exist):', catError);
+                }
+            }
+
             if (editingAddon) {
                 await api.put(`/style-addons/${editingAddon._id}`, {
                     ...formData,
+                    category: finalCategory,
                     price: Number(formData.price),
                 });
                 toast.success('Style add-on updated');
             } else {
                 await api.post('/style-addons', {
                     ...formData,
+                    category: finalCategory,
                     price: Number(formData.price),
                 });
                 toast.success('Style add-on created');
@@ -338,17 +376,37 @@ const AdminStyleAddons = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">Category *</label>
-                                        <select
-                                            value={formData.category}
-                                            onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
-                                        >
-                                            <option value="">Select Category</option>
-                                            {categoryOptions.map(c => (
-                                                <option key={c} value={c}>{c}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex justify-between items-end mb-1.5">
+                                            <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider">Category *</label>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setIsCreatingCategory(!isCreatingCategory)}
+                                                className="text-[10px] font-bold text-[#843D9B] uppercase tracking-wider hover:underline"
+                                            >
+                                                {isCreatingCategory ? 'Select Existing' : '+ Add New'}
+                                            </button>
+                                        </div>
+                                        
+                                        {isCreatingCategory ? (
+                                            <input
+                                                type="text"
+                                                value={newCategoryName}
+                                                onChange={e => setNewCategoryName(e.target.value)}
+                                                placeholder="e.g. Blouse, Suit"
+                                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
+                                            />
+                                        ) : (
+                                            <select
+                                                value={formData.category}
+                                                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
+                                            >
+                                                <option value="">Select Category</option>
+                                                {categoryOptions.map(c => (
+                                                    <option key={c} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
@@ -364,8 +422,8 @@ const AdminStyleAddons = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">Image</label>
-                                    <div className="flex gap-4 items-center">
+                                    <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">Main Image *</label>
+                                    <div className="flex gap-4 items-center mb-6">
                                         <div className="h-16 w-16 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                                             {formData.image ? (
                                                 <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
@@ -378,7 +436,7 @@ const AdminStyleAddons = () => {
                                                 <input
                                                     type="file"
                                                     accept="image/*"
-                                                    onChange={handleImageUpload}
+                                                    onChange={(e) => handleImageUpload(e, 'main')}
                                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                     disabled={isImageUploading}
                                                 />
@@ -395,10 +453,34 @@ const AdminStyleAddons = () => {
                                                 type="text"
                                                 value={formData.image}
                                                 onChange={e => setFormData({ ...formData, image: e.target.value })}
-                                                placeholder="Or paste IMAGE URL here..."
+                                                placeholder="Or paste MAIN IMAGE URL here..."
                                                 className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-[10px] font-medium text-gray-500 outline-none focus:bg-white focus:border-gray-200 transition-all"
                                             />
                                         </div>
+                                    </div>
+
+                                    {/* Reference Images Grid */}
+                                    <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-2 mt-4">Reference Images (Optional)</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {['left', 'right', 'front', 'back'].map(view => (
+                                            <div key={view} className="bg-gray-50/50 border border-gray-100 rounded-xl p-3 flex flex-col items-center justify-center gap-2 relative group overflow-hidden">
+                                                <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {formData.referenceImages[view] ? (
+                                                        <img src={formData.referenceImages[view]} alt={view} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Image size={16} className="text-gray-300" />
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{view} View</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleImageUpload(e, view)}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    disabled={isImageUploading}
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>

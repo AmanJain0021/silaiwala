@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Scissors, ShoppingBag, ClipboardList, Users, Sparkles, Heart, X, Calendar, Clock, Layers, Feather } from 'lucide-react';
 import api from '../../../utils/api';
 
-const ICON_COLOR = "#E2C17D";
+const ICON_COLOR = "#FFFFFF";
 const ICON_SIZE = 28;
 const STROKE_WIDTH = 1.5;
 

@@ -33,7 +33,7 @@ exports.getMyProfile = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery)
  */
 exports.updateProfile = asyncHandler(async (req, res, next) => {
-  const { vehicleType, vehicleNumber, name, email, phoneNumber, bankDetails, emergencyContact } = req.body;
+  const { vehicleType, vehicleNumber, name, email, phoneNumber, bankDetails, emergencyContact, profileImage } = req.body;
 
   let delivery = await Delivery.findOne({ user: req.user.id });
 
@@ -55,13 +55,14 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
   await delivery.save();
 
   // Update User fields if provided
-  if (name || email || phoneNumber) {
+  if (name || email || phoneNumber || profileImage) {
     const user = await User.findById(req.user.id);
     if (!user) return next(new ErrorResponse("User not found", 404));
 
     if (name) user.name = name;
     if (email) user.email = email;
     if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (profileImage) user.profileImage = profileImage;
     await user.save();
   }
 

@@ -93,9 +93,10 @@ const AdminDashboard = () => {
                         }
                     ]);
                 }
+                setIsLoading(false);
             } catch (error) {
+                if (error.name === 'CanceledError') return;
                 console.error('Error fetching dashboard stats:', error);
-            } finally {
                 setIsLoading(false);
             }
         };

@@ -2,13 +2,13 @@ import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const MenuOption = ({ icon: Icon, label, subLabel, to, onClick, isDanger, color, extra }) => {
+const MenuOption = ({ icon: Icon, label, subLabel, to, onClick, isDanger, color, extra, hideArrow }) => {
     const Component = to ? Link : 'button';
 
     const getIconColor = () => {
         if (isDanger) return 'bg-red-50 text-red-600 group-hover:bg-red-100';
-        if (color) return `${color} text-[#E2C17D]`;
-        return 'bg-gray-50 text-[#843D9B] group-hover:bg-[#843D9B] group-hover:text-[#E2C17D]';
+        if (color) return `${color} text-white`;
+        return 'bg-gray-50 text-[#843D9B] group-hover:bg-[#843D9B] group-hover:text-white';
     };
 
     return (
@@ -33,12 +33,14 @@ const MenuOption = ({ icon: Icon, label, subLabel, to, onClick, isDanger, color,
                         {extra}
                     </div>
                 )}
-                <div className="p-1.5 bg-gray-50 rounded-lg group-hover:bg-indigo-50 transition-colors">
-                    <ChevronRight
-                        size={16}
-                        className={`transition-colors ${isDanger ? 'text-red-300 group-hover:text-error' : 'text-gray-300 group-hover:text-[#843D9B]'}`}
-                    />
-                </div>
+                {!hideArrow && (
+                    <div className="p-1.5 bg-gray-50 rounded-lg group-hover:bg-indigo-50 transition-colors">
+                        <ChevronRight
+                            size={16}
+                            className={`transition-colors ${isDanger ? 'text-red-300 group-hover:text-error' : 'text-gray-300 group-hover:text-[#843D9B]'}`}
+                        />
+                    </div>
+                )}
             </div>
         </Component>
     );

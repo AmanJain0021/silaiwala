@@ -109,7 +109,13 @@ const useAuthStore = create((set) => ({
             console.log('Backend Signup Raw Response:', response.data);
             
             // Handle different potential response structures robustly
-            const user = response.data.data || response.data.user || response.data;
+            let user = response.data.data;
+            // If backend returned { user: {...}, profile: {...} } under data
+            if (user && user.user) {
+                user = { ...user.user, profile: user.profile };
+            } else {
+                user = user || response.data.user || response.data;
+            }
             const token = response.data.token;
 
             if (!user) {
@@ -143,6 +149,15 @@ const useAuthStore = create((set) => ({
         } else {
             set({ user: null, isAuthenticated: false, role: null });
         }
+    },
+
+    updateUser: (updatedFields) => {
+        set((state) => {
+            if (!state.user) return state;
+            const updatedUser = { ...state.user, ...updatedFields };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            return { user: updatedUser };
+        });
     }
 }));
 

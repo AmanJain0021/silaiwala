@@ -62,8 +62,8 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
             />
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch sm:items-end w-full">
                 <div className="flex-1 space-y-1.5 group">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#2D2F6F]">Phone Number</label>
-                    <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.phone ? 'border-red-100 bg-red-50/30' : 'border-transparent focus-within:border-[#2D2F6F]'}`}>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#843D9B]">Phone Number</label>
+                    <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.phone ? 'border-red-100 bg-red-50/30' : 'border-transparent focus-within:border-[#843D9B]'}`}>
                         <span className="text-gray-800 font-bold text-sm mr-2">+91</span>
                         <div className="w-px h-5 bg-slate-200 mr-2" />
                         <input
@@ -89,7 +89,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                     type="button"
                     onClick={handleSendOTP}
                     disabled={!phone || !/^[6-9]\d{9}$/.test(phone) || otpSent || isSending}
-                    className="w-full sm:w-auto px-4 py-3 h-[48px] sm:h-[52px] bg-primary text-white rounded-2xl font-bold text-sm whitespace-nowrap active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all shadow-lg shadow-indigo-900/10 sm:mb-1"
+                    className="w-full sm:w-auto px-4 py-3 h-[48px] sm:h-[52px] bg-[#843D9B] hover:bg-[#E04D79] text-white rounded-full font-bold text-sm whitespace-nowrap active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all shadow-lg shadow-[#843D9B]/20 sm:mb-1"
                 >
                     {isSending ? 'Sending...' : (otpSent ? 'OTP Sent' : 'Send OTP')}
                 </button>

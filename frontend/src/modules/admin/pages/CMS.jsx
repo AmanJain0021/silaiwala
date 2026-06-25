@@ -7,6 +7,8 @@ import { toast } from 'react-hot-toast';
 const AdminCMS = () => {
     const [selectedTab, setSelectedTab] = useState('Banners');
     const [isAddBannerModalOpen, setIsAddBannerModalOpen] = useState(false);
+    const [isEditingBanner, setIsEditingBanner] = useState(false);
+    const [editBannerId, setEditBannerId] = useState(null);
 
     // Banner States
     const [bannersData, setBannersData] = useState([]);
@@ -83,7 +85,13 @@ const AdminCMS = () => {
         if (!newBanner.title || !newBanner.image) return;
         setIsSubmitting(true);
         try {
-            await api.post('/admin/cms/banners', newBanner);
+            if (isEditingBanner) {
+                await api.put(`/admin/cms/banners/${editBannerId}`, newBanner);
+                toast.success('Banner updated successfully');
+            } else {
+                await api.post('/admin/cms/banners', newBanner);
+                toast.success('Banner published successfully');
+            }
             setIsAddBannerModalOpen(false);
             setNewBanner({
                 title: '',
@@ -93,12 +101,29 @@ const AdminCMS = () => {
                 targetLocation: 'Home Page - Top Carousel',
                 image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
             });
+            setIsEditingBanner(false);
+            setEditBannerId(null);
             fetchData();
         } catch (error) {
-            console.error('Failed to create banner:', error);
+            console.error('Failed to save banner:', error);
+            toast.error('Failed to save banner');
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditBanner = (banner) => {
+        setNewBanner({
+            title: banner.title,
+            subtitle: banner.subtitle || '',
+            badge: banner.badge || '',
+            color: banner.color || 'bg-gradient-to-br from-[#843D9B] to-[#ff85a2]',
+            targetLocation: banner.targetLocation || 'Home Page - Top Carousel',
+            image: banner.image || ''
+        });
+        setEditBannerId(banner._id);
+        setIsEditingBanner(true);
+        setIsAddBannerModalOpen(true);
     };
 
     const handleCreateContent = async () => {
@@ -196,7 +221,19 @@ const AdminCMS = () => {
                 </div>
                 {selectedTab === 'Banners' && (
                     <button
-                        onClick={() => setIsAddBannerModalOpen(true)}
+                        onClick={() => {
+                            setIsEditingBanner(false);
+                            setEditBannerId(null);
+                            setNewBanner({
+                                title: '',
+                                subtitle: '',
+                                badge: '',
+                                color: 'bg-gradient-to-br from-[#843D9B] to-[#ff85a2]',
+                                targetLocation: 'Home Page - Top Carousel',
+                                image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
+                            });
+                            setIsAddBannerModalOpen(true);
+                        }}
                         className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest"
                     >
                         <Plus size={16} /> Add Banner
@@ -256,7 +293,7 @@ const AdminCMS = () => {
                                         </span>
                                     </div>
                                     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-1.5 bg-white text-gray-700 hover:text-primary shadow-sm rounded-lg transition-colors">
+                                        <button onClick={() => handleEditBanner(banner)} className="p-1.5 bg-white text-gray-700 hover:text-primary shadow-sm rounded-lg transition-colors">
                                             <Edit2 size={14} />
                                         </button>
                                         <button onClick={() => handleDeleteBanner(banner._id)} className="p-1.5 bg-white text-gray-700 hover:text-red-600 shadow-sm rounded-lg transition-colors">
@@ -470,7 +507,7 @@ const AdminCMS = () => {
                                 className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col"
                             >
                                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                    <h2 className="text-lg font-black tracking-tight text-gray-900">Upload Banner</h2>
+                                    <h2 className="text-lg font-black tracking-tight text-gray-900">{isEditingBanner ? 'Edit Banner' : 'Upload Banner'}</h2>
                                     <button onClick={() => setIsAddBannerModalOpen(false)} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
                                         <X size={20} />
                                     </button>
@@ -510,7 +547,10 @@ const AdminCMS = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Banner Image</label>
+                                        <div className="flex justify-between items-end mb-1.5">
+                                            <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">Banner Image</label>
+                                            <span className="text-[9px] font-medium text-gray-400">Recommended Size: 1200x400 (3:1)</span>
+                                        </div>
                                         <div className="flex flex-col gap-3">
                                             <div className="flex gap-2">
                                                 <input
@@ -554,7 +594,7 @@ const AdminCMS = () => {
                                         Cancel
                                     </button>
                                     <button disabled={isSubmitting} onClick={handleCreateBanner} className="px-6 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest disabled:opacity-50">
-                                        {isSubmitting ? 'Publishing...' : 'Publish Banner'}
+                                        {isSubmitting ? (isEditingBanner ? 'Updating...' : 'Publishing...') : (isEditingBanner ? 'Update Banner' : 'Publish Banner')}
                                     </button>
                                 </div>
                             </motion.div>

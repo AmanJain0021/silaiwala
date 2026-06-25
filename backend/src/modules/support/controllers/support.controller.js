@@ -38,13 +38,18 @@ exports.getTickets = async (req, res) => {
 exports.updateTicketStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, adminResponse } = req.body;
 
     if (!['Pending', 'In Progress', 'Resolved'].includes(status)) {
         return res.status(400).json({ success: false, message: 'Invalid status' });
     }
 
-    const ticket = await SupportTicket.findByIdAndUpdate(id, { status }, { new: true });
+    const updateData = { status };
+    if (adminResponse !== undefined) {
+        updateData.adminResponse = adminResponse;
+    }
+
+    const ticket = await SupportTicket.findByIdAndUpdate(id, updateData, { new: true });
     
     if (!ticket) {
         return res.status(404).json({ success: false, message: 'Ticket not found' });
@@ -64,6 +69,18 @@ exports.deleteTicket = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Ticket not found' });
         }
         res.status(200).json({ success: true, message: 'Ticket deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getMyTickets = async (req, res) => {
+    try {
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+        const tickets = await SupportTicket.find({ email: req.user.email }).sort({ createdAt: -1 });
+        res.status(200).json({ success: true, data: tickets });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
