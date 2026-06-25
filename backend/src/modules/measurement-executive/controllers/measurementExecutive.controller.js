@@ -1,7 +1,9 @@
 const MeasurementExecutive = require("../../../models/MeasurementExecutive");
+const mongoose = require("mongoose");
 const MeasurementRequest = require("../../../models/MeasurementRequest");
 const MeasurementReport = require("../../../models/MeasurementReport");
 const Order = require("../../../models/Order");
+const { transitionOrder } = require("../../../utils/orderStateMachine");
 const User = require("../../../models/User");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
@@ -664,26 +666,33 @@ exports.uploadMeasurement = asyncHandler(async (req, res, next) => {
  * @access  Private (measurement_executive)
  */
 exports.completeMeasurement = asyncHandler(async (req, res, next) => {
-  const request = await MeasurementRequest.findById(req.params.id);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+
+  const request = await MeasurementRequest.findById(req.params.id).session(session);
 
   if (!request) {
-    return next(new ErrorResponse("Measurement request not found", 404));
+    await session.abortTransaction();
+      return next(new ErrorResponse("Measurement request not found", 404));
   }
 
   if (request.executive?.toString() !== req.user.id) {
-    return next(new ErrorResponse("This request is not assigned to you", 403));
+    await session.abortTransaction();
+      return next(new ErrorResponse("This request is not assigned to you", 403));
   }
 
   if (request.status !== "otp_verified") {
-    return next(new ErrorResponse("OTP must be verified before completing", 400));
+    await session.abortTransaction();
+      return next(new ErrorResponse("OTP must be verified before completing", 400));
   }
 
   request.status = "completed";
-  await request.save();
+  await request.save({ session });
 
   // Calculate and process payout for the Measurement Executive
   try {
-    const profile = await MeasurementExecutive.findOne({ user: req.user.id }).lean();
+    const profile = await MeasurementExecutive.findOne({ user: req.user.id }).session(session).lean();
     let distance = 0;
     
     if (profile?.currentLocation?.coordinates?.length === 2 && request.customerLocation?.coordinates?.length === 2) {
@@ -703,7 +712,7 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
 
     const Settings = require("../../../models/Settings");
     const WalletTransaction = require("../../../models/WalletTransaction");
-    const settings = await Settings.findOne().lean();
+    const settings = await Settings.findOne().session(session).lean();
 
     const baseFee = settings?.executiveRates?.baseFee || 50;
     const perKmRate = settings?.executiveRates?.perKmRate || 15;
@@ -716,7 +725,7 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
       user: req.user.id,
       order: request.order,
       category: "executive_earnings"
-    });
+    }).session(session);
 
     if (!existingTx && earnedAmount > 0) {
       // Add to Executive profile
@@ -731,14 +740,14 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
       );
 
       // Create a WalletTransaction record
-      await WalletTransaction.create({
+      await WalletTransaction.create([{
         user: req.user.id,
         amount: earnedAmount,
         type: "credit",
         category: "executive_earnings",
         order: request.order,
         description: `Measurement payout for completed task (${distance}km)`,
-      });
+      }], { session });
 
       console.log(`Credited ₹${earnedAmount} to Measurement Executive ${req.user.id} for distance ${distance}km`);
     }
@@ -747,7 +756,7 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
   }
 
   // Update order
-  const order = await Order.findById(request.order);
+  const order = await Order.findById(request.order).session(session);
   if (order) {
     order.status = "measurements-approved";
     order.trackingHistory.push({
@@ -755,7 +764,7 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
       message: "Measurement process completed. Order is ready for processing.",
       timestamp: new Date(),
     });
-    await order.save();
+    await order.save({ session });
   }
 
   // Socket notifications
@@ -781,11 +790,19 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
     });
   }
 
-  res.status(200).json({
+  await session.commitTransaction();
+    res.status(200).json({
     success: true,
     message: "Measurement completed successfully",
     data: request,
   });
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Transaction aborted in completeMeasurement:", error);
+    return next(new ErrorResponse("Transaction failed", 500));
+  } finally {
+    session.endSession();
+  }
 });
 
 // ───────────────────────────────────────────────────────────────────────────────

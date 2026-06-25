@@ -289,7 +289,30 @@ const Orders = () => {
                             {/* Production Status Stepper */}
                             <div className="bg-white rounded-3xl p-5 border border-gray-100">
                                 {(() => {
-                                    const steps = [
+                                    const isReadyMade = order.items?.some(item => item.product);
+                                    const isAlteration = order.items?.some(item => item.isAlteration) || order.isAlteration;
+
+                                    const steps = isAlteration ? [
+                                        { key: 'order-received',     label: 'Order Received' },
+                                        { key: 'fabric-received',    label: 'Garment Received' },
+                                        { key: 'in-progress',        label: 'Alteration Started' },
+                                        { key: 'quality-check',      label: 'Completed' },
+                                        { key: 'ready-for-delivery', label: 'Ready For Delivery' },
+                                        { key: 'delivered',          label: 'Delivered' }
+                                    ] : order.isBridalConsultation ? [
+                                        { key: 'pending',            label: 'Request Received' },
+                                        { key: 'accepted',           label: 'Consultation Accepted' },
+                                        { key: 'measurements-approved', label: 'Measurements Taken' },
+                                        { key: 'in-progress',        label: 'Stitching Started' },
+                                        { key: 'quality-check',      label: 'Completed' },
+                                        { key: 'ready-for-delivery', label: 'Ready For Delivery' },
+                                        { key: 'delivered',          label: 'Delivered' }
+                                    ] : isReadyMade ? [
+                                        { key: 'order-received',     label: 'Order Received' },
+                                        { key: 'in-progress',        label: 'Processing & Packing' },
+                                        { key: 'ready-for-delivery', label: 'Ready To Dispatch' },
+                                        { key: 'delivered',          label: 'Delivered' }
+                                    ] : [
                                         ...(order.isMeasurementHome ? [{ key: 'measurements-approved', label: 'Measurements Done' }] : []),
                                         { key: 'order-received',     label: 'Order Received' },
                                         { key: 'fabric-received',    label: 'Fabric Received' },
@@ -318,6 +341,7 @@ const Orders = () => {
                                         'fabric-selected',
                                         'measurement-verification',
                                         'pattern-making',
+                                        'in-progress',
                                         'cutting',
                                         'stitching',
                                         'finishing',
@@ -521,6 +545,30 @@ const Orders = () => {
 
                     {/* Order Items Section */}
                     <div className="space-y-3 pt-2">
+                        {order.isBridalConsultation && (
+                            <div className="bg-rose-50 rounded-3xl p-5 border border-rose-100 mb-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Heart size={18} className="text-rose-500 fill-rose-500" />
+                                    <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest">Bridal Consultation</h4>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Preferred Date</p>
+                                        <p className="text-sm font-black text-rose-950">{order.bridalDate || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Preferred Time</p>
+                                        <p className="text-sm font-black text-rose-950">{order.bridalTime || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-1">Customer Notes</p>
+                                    <p className="text-xs text-rose-900 leading-relaxed font-medium bg-white/50 p-3 rounded-2xl border border-rose-100/50">
+                                        {order.bridalNotes || 'No notes provided.'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Order Items ({order.items?.length || 0})</p>
                         {order.items?.map((item, idx) => (
                             <div key={idx} className="bg-white rounded-3xl p-4 border border-gray-100 flex items-center gap-3">
@@ -551,19 +599,19 @@ const Orders = () => {
                     </div>
 
                     {/* Customer Measurements Section */}
-                    {order.items?.some(item => {
+                    {(order.isMeasurementHome || order.measurementReport || order.items?.some(item => {
                         const m = item.measurements;
                         if (!m) return false;
                         if (m instanceof Map) return m.size > 0;
                         return Object.keys(m).length > 0;
-                    }) && (
+                    })) && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
                             <div className="flex items-center justify-between">
                                 <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">📐 Customer Measurements</p>
                                 <span className="text-[9px] font-black uppercase bg-green-50 text-green-600 px-2 py-1 rounded-full border border-green-100">Provided</span>
                             </div>
                             
-                            {order.isMeasurementHome && (
+                            {(order.isMeasurementHome || order.measurementReport) && (
                                 <div className="border border-[#843D9B]/20 rounded-2xl overflow-hidden mt-2 mb-4 bg-gray-50/50">
                                     <MeasurementDetail orderId={order._id} inline={true} />
                                 </div>
@@ -688,26 +736,44 @@ const Orders = () => {
                     )}
 
                     {/* Delivery Partner Details */}
-                    {order.deliveryPartner && (['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.pickupDeliveryStatus) || ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.dropoffDeliveryStatus)) && (
-                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
+                    {(() => {
+                        const isPickupPhase = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status) || (order.status === 'in-progress' && order.pickupDeliveryStatus === 'delivered');
+                        const isDropoffPhase = ['ready', 'ready-for-delivery', 'ready-for-pickup', 'out-for-delivery'].includes(order.status) || (order.status === 'delivered' && order.dropoffDeliveryStatus === 'delivered');
+                        
+                        let showPartner = false;
+                        let partnerInfo = null;
+
+                        if (isPickupPhase && ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.pickupDeliveryStatus)) {
+                            showPartner = true;
+                            // If we have separate pickupPartner populated, prefer it. Otherwise fallback to deliveryPartner
+                            partnerInfo = order.pickupPartner?.name ? order.pickupPartner : order.deliveryPartner;
+                        } else if (isDropoffPhase && ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.dropoffDeliveryStatus)) {
+                            showPartner = true;
+                            partnerInfo = order.dropoffPartner?.name ? order.dropoffPartner : order.deliveryPartner;
+                        }
+
+                        if (!showPartner || !partnerInfo) return null;
+
+                        return (
+                            <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-4">
                             <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Delivery Partner</p>
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0">
-                                    {order.deliveryPartner.profileImage ? (
-                                        <img src={order.deliveryPartner.profileImage} alt={order.deliveryPartner.name} className="w-full h-full object-cover" />
+                                    {partnerInfo.profileImage ? (
+                                        <img src={partnerInfo.profileImage} alt={partnerInfo.name} className="w-full h-full object-cover" />
                                     ) : (
                                         <Truck size={16} className="text-[#843D9B]" />
                                     )}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[14px] font-black text-gray-900 leading-none mb-1">{order.deliveryPartner.name || 'Delivery Partner'}</p>
+                                    <p className="text-[14px] font-black text-gray-900 leading-none mb-1">{partnerInfo.name || 'Delivery Partner'}</p>
                                     <p className="text-[11px] font-bold text-gray-400 mt-0.5 flex items-center gap-1">
-                                        <Phone size={10} /> {order.deliveryPartner.phoneNumber || 'Contact Unavailable'}
+                                        <Phone size={10} /> {partnerInfo.phoneNumber || 'Contact Unavailable'}
                                     </p>
                                 </div>
-                                {order.deliveryPartner.phoneNumber && (
+                                {partnerInfo.phoneNumber && (
                                     <a 
-                                        href={`tel:${order.deliveryPartner.phoneNumber}`}
+                                        href={`tel:${partnerInfo.phoneNumber}`}
                                         className="w-8 h-8 bg-indigo-50 text-[#843D9B] rounded-full flex items-center justify-center border border-indigo-100 shrink-0"
                                     >
                                         <Phone size={14} />
@@ -715,7 +781,8 @@ const Orders = () => {
                                 )}
                             </div>
                         </div>
-                    )}
+                        );
+                    })}
 
                     {(() => {
                         const isPickupPhaseStatus = ['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
@@ -735,56 +802,31 @@ const Orders = () => {
                         return null;
                     })()}
 
-                    {(isPending || canRequestApproval) && (
+                    {isPending && (
                         /* Bottom Actions */
                         <div className="flex flex-col gap-2 pt-4 sticky bottom-0 bg-[#F5F5F5] pb-4 z-10">
-                            {isPending && (
-                                <div className="flex gap-2 w-full">
-                                    <button 
-                                        onClick={async () => {
-                                            await handleStatusUpdate(order._id, 'cancelled');
-                                            onClose();
-                                        }}
-                                        disabled={updatingOrders[order._id]}
-                                        className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                    >
-                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-700" /> : 'Reject'}
-                                    </button>
-                                    <button 
-                                        onClick={async () => {
-                                            await handleStatusUpdate(order._id, 'accepted');
-                                            onClose();
-                                        }}
-                                        disabled={updatingOrders[order._id]}
-                                        className="flex-[2] py-3 bg-[#843D9B] text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-[#843D9B]/25 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                    >
-                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
-                                    </button>
-                                </div>
-                            )}
-                            
-                            {canRequestApproval && (
+                            <div className="flex gap-2 w-full">
                                 <button 
                                     onClick={async () => {
-                                        setUpdatingOrders(prev => ({ ...prev, [order._id]: true }));
-                                        try {
-                                            const res = await api.post(`/tailors/orders/${order._id}/send-measurement-confirmation`);
-                                            if (res.data.success) {
-                                                toast.success('Sent to customer for approval');
-                                                fetchOrders();
-                                            }
-                                        } catch (e) {
-                                            toast.error('Failed to request approval');
-                                        } finally {
-                                            setUpdatingOrders(prev => ({ ...prev, [order._id]: false }));
-                                        }
+                                        await handleStatusUpdate(order._id, 'cancelled');
+                                        onClose();
                                     }}
-                                    disabled={updatingOrders[order._id] || order.status === 'measurement-verification'}
-                                    className={`w-full py-3 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 border shadow-sm disabled:opacity-50 ${order.status === 'measurement-verification' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-[#EBF1FF] text-[#1D4ED8] border-[#BFDBFE]'}`}
+                                    disabled={updatingOrders[order._id]}
+                                    className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
                                 >
-                                    {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1D4ED8]" /> : order.status === 'measurement-verification' ? 'Approval Sent to Customer' : order.status === 'measurement-revision-required' ? 'Resend for Customer Approval' : 'Request Customer Approval'}
+                                    {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-700" /> : 'Reject'}
                                 </button>
-                            )}
+                                <button 
+                                    onClick={async () => {
+                                        await handleStatusUpdate(order._id, 'accepted');
+                                        onClose();
+                                    }}
+                                    disabled={updatingOrders[order._id]}
+                                    className="flex-[2] py-3 bg-[#843D9B] text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-[#843D9B]/25 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Accept Order'}
+                                </button>
+                            </div>
                         </div>
                     )}
 

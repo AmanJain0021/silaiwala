@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
 
-const BillDetails = ({ pricing, advancePercentage = 50 }) => {
+const BillDetails = ({ pricing, advancePercentage = 50, baseLabel = "Stitching Charges" }) => {
     if (!pricing) return null;
 
     const { base, delivery, taxes, total } = pricing;
@@ -18,7 +18,7 @@ const BillDetails = ({ pricing, advancePercentage = 50 }) => {
 
             <div className="space-y-2.5">
                 <div className="flex justify-between text-xs text-gray-600">
-                    <span>Stitching Charges</span>
+                    <span>{baseLabel}</span>
                     <span>₹{base}</span>
                 </div>
 

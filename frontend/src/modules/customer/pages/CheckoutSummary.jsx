@@ -55,6 +55,7 @@ const CheckoutSummary = () => {
     const [advancePercentage, setAdvancePercentage] = useState(50);
     const [platformFeePercentage, setPlatformFeePercentage] = useState(5);
     const [deliveryRates, setDeliveryRates] = useState({ baseFee: 20, perKmRate: 10 });
+    const [gstPercentage, setGstPercentage] = useState(5);
 
     const [visitSettings, setVisitSettings] = useState({ baseFee: 150, perKmFee: 20, freeKm: 3 });
 
@@ -76,6 +77,9 @@ const CheckoutSummary = () => {
                     if (res.data.data?.visitFee) {
                         setVisitSettings(res.data.data.visitFee);
                     }
+                    if (res.data.data?.pricing?.gstPercentage !== undefined) {
+                        setGstPercentage(res.data.data.pricing.gstPercentage);
+                    }
                 }
             } catch (err) {
                 if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
@@ -95,24 +99,37 @@ const CheckoutSummary = () => {
 
     // Fetch Road Distance dynamically if needed
     useEffect(() => {
-        if (!selectedAddress?.location?.coordinates || !isServiceCheckout) return;
+        if (!selectedAddress?.location?.coordinates || (!isServiceCheckout && !isCartCheckout)) return;
 
         const fetchDistances = async () => {
             const newDistances = { ...roadDistances };
             let needsUpdate = false;
             let fetching = false;
 
-            for (const item of currentCheckoutItems) {
-                if (item.serviceDetails?.tailorCoordinates) {
-                    const [uLng, uLat] = selectedAddress.location.coordinates;
-                    const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
+            const itemsToCheck = isServiceCheckout ? currentCheckoutItems : cartItems;
 
-                    if (roadDistances[item.basketId]?.key !== cacheKey) {
+            for (const item of itemsToCheck) {
+                let tCoords = null;
+                let idForCache = null;
+
+                if (isServiceCheckout && item.serviceDetails?.tailorCoordinates) {
+                    tCoords = item.serviceDetails.tailorCoordinates;
+                    idForCache = item.basketId;
+                } else if (isCartCheckout && item.tailor?.location?.coordinates) {
+                    tCoords = item.tailor.location.coordinates;
+                    idForCache = item.cartId;
+                }
+
+                if (tCoords) {
+                    const [uLng, uLat] = selectedAddress.location.coordinates;
+                    const cacheKey = `${idForCache}_${uLat}_${uLng}`;
+
+                    if (roadDistances[idForCache]?.key !== cacheKey) {
                         fetching = true;
                         setIsCalculatingDistance(true);
                         try {
-                            const [tLng, tLat] = item.serviceDetails.tailorCoordinates;
-                            console.log(`🛣️ [CheckoutSummary] Calculating distance for Basket ${item.basketId}`, { origin: [tLat, tLng], destination: [uLat, uLng] });
+                            const [tLng, tLat] = tCoords;
+                            console.log(`🛣️ [CheckoutSummary] Calculating distance for ${idForCache}`, { origin: [tLat, tLng], destination: [uLat, uLng] });
                             
                             const res = await api.post('/distance/calculate', {
                                 origin: [tLat, tLng],
@@ -120,10 +137,10 @@ const CheckoutSummary = () => {
                             });
 
                             if (res.data.success) {
-                                console.log(`📏 [CheckoutSummary] Distance API Response for Basket ${item.basketId}:`, res.data.data);
+                                console.log(`📏 [CheckoutSummary] Distance API Response for ${idForCache}:`, res.data.data);
                                 const distanceKm = res.data.data.distance;
                                 
-                                newDistances[item.basketId] = { key: cacheKey, distanceKm };
+                                newDistances[idForCache] = { key: cacheKey, distanceKm };
                                 needsUpdate = true;
                             }
                         } catch (err) {
@@ -142,7 +159,7 @@ const CheckoutSummary = () => {
         };
 
         fetchDistances();
-    }, [selectedAddress, currentCheckoutItems, isServiceCheckout, visitSettings]);
+    }, [selectedAddress, currentCheckoutItems, cartItems, isServiceCheckout, isCartCheckout, visitSettings]);
 
     const getServicePricing = () => {
         if (currentCheckoutItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 };
@@ -188,15 +205,15 @@ const CheckoutSummary = () => {
                 }
             }
 
-            const itemTaxes = item.pricing.taxes || 0;
+            // We won't use itemTaxes here, we'll calculate total GST at the end
             const itemAddons = item.pricing.addons || 0;
             const itemFabric = item.pricing.fabric || 0;
-            const newTotal = itemBase + itemTaxes + itemAddons + itemFabric + dynamicTailorAtHome;
+            const newTotal = itemBase + itemAddons + itemFabric + dynamicTailorAtHome; // without tax
 
             return {
                 total: acc.total + newTotal,
                 base: acc.base + itemBase,
-                taxes: acc.taxes + itemTaxes,
+                taxes: 0,
                 delivery: 0,
                 addons: acc.addons + itemAddons,
                 fabric: (acc.fabric || 0) + itemFabric,
@@ -208,7 +225,14 @@ const CheckoutSummary = () => {
         pricing.platformFee = platformFeeAmount;
         pricing.platformFeePercentage = platformFeePercentage;
         pricing.delivery = orderDeliveryFee;
-        pricing.total += orderDeliveryFee + platformFeeAmount;
+        
+        // Dynamic GST Calculation (excluding delivery fee to match backend logic)
+        const taxableAmount = pricing.base + pricing.addons + pricing.fabric + pricing.tailorAtHome + platformFeeAmount;
+        const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
+        
+        pricing.taxes = totalTaxes;
+        pricing.gstPercentage = gstPercentage;
+        pricing.total += orderDeliveryFee + platformFeeAmount + totalTaxes;
         
         return pricing;
     };
@@ -216,12 +240,52 @@ const CheckoutSummary = () => {
     let cartBase = 0;
     let cartDelivery = 0;
     let cartPlatformFee = 0;
+    let cartTaxes = 0;
     
     if (isCartCheckout) {
         cartBase = getTotalPrice();
-        cartDelivery = cartBase > 999 ? 0 : 49;
+        // Use admin delivery base fee + perKm calculation if coordinates exist
+        let orderDeliveryFee = deliveryRates.baseFee || 49;
+        
+        if (cartBase <= 999 && cartItems.length > 0) {
+            const firstItem = cartItems[0];
+            const itemId = firstItem.cartId;
+            if (firstItem.tailor?.location?.coordinates && selectedAddress?.location?.coordinates) {
+                const [uLng, uLat] = selectedAddress.location.coordinates;
+                const cacheKey = `${itemId}_${uLat}_${uLng}`;
+                let distanceKm = 0;
+
+                if (roadDistances[itemId] && roadDistances[itemId].key === cacheKey) {
+                    distanceKm = roadDistances[itemId].distanceKm;
+                } else {
+                    try {
+                        const [tLng, tLat] = firstItem.tailor.location.coordinates;
+                        distanceKm = calculateDistance(uLat, uLng, tLat, tLng);
+                    } catch (err) {
+                        console.error("Cart Distance recalculation failed:", err);
+                    }
+                }
+
+                if (distanceKm > 0) {
+                    orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
+                    console.log(`[Cart] orderDeliveryFee calculated: ${orderDeliveryFee} using distance: ${distanceKm}`);
+                }
+            }
+        }
+        
+        cartDelivery = cartBase > 999 ? 0 : orderDeliveryFee;
         cartPlatformFee = Math.round(cartBase * (platformFeePercentage / 100));
+        // Calculate GST excluding delivery fee to match backend logic
+        cartTaxes = Math.round((cartBase + cartPlatformFee) * (gstPercentage / 100));
     }
+
+    const isCartAlteration = isCartCheckout && cartItems.length > 0 && cartItems[0].isAlteration;
+    const isCartCustomDesign = isCartCheckout && cartItems.length > 0 && cartItems[0].isCustomDesign;
+    const isAlterationCheckout = isCartAlteration || (isServiceCheckout && currentCheckoutItems.some(item => 
+        item.serviceDetails?.category?.name?.toLowerCase().includes('alteration') || 
+        item.serviceDetails?.tags?.some(t => t.toLowerCase().includes('alteration'))
+    ));
+    const requireFullPayment = (isCartCheckout && !isCartAlteration && !isCartCustomDesign) || (isServiceCheckout && isAlterationCheckout);
 
     const currentPricing = bulkOrder
         ? {
@@ -230,15 +294,17 @@ const CheckoutSummary = () => {
             taxes: 0,
             delivery: 0,
             platformFee: 0,
-            platformFeePercentage: 0
+            platformFeePercentage: 0,
+            gstPercentage: 0
         }
         : isServiceCheckout ? getServicePricing() : {
-            total: cartBase + cartDelivery + cartPlatformFee,
+            total: cartBase + cartDelivery + cartPlatformFee + cartTaxes,
             base: cartBase,
-            taxes: 0,
+            taxes: cartTaxes,
             delivery: cartDelivery,
             platformFee: cartPlatformFee,
-            platformFeePercentage: platformFeePercentage
+            platformFeePercentage: platformFeePercentage,
+            gstPercentage: gstPercentage
         };
 
     const finalTotal = currentPricing.total;
@@ -255,6 +321,47 @@ const CheckoutSummary = () => {
             let order;
 
             if (!bulkOrderId) {
+                // If it's a Custom Alteration from Cart, skip Order flow entirely
+                if (isCartAlteration) {
+                    setLoadingText('Submitting alteration request...');
+                    const altRes = await api.post('/alterations/request', {
+                        deliveryAddress: {
+                            street: selectedAddress.street,
+                            city: selectedAddress.city,
+                            state: selectedAddress.state || '',
+                            zipCode: selectedAddress.zipCode,
+                            location: selectedAddress.location
+                        }
+                    });
+                    if (!altRes.data.success) throw new Error('Alteration request failed');
+                    
+                    clearCart();
+                    navigate('/user/orders', { state: { message: "Alteration request submitted successfully! Awaiting quote." } });
+                    return;
+                }
+
+                // If it's a Custom Design from Cart, skip Order flow entirely
+                if (isCartCustomDesign) {
+                    setLoadingText('Submitting custom design request...');
+                    const customDesignRes = await api.post('/custom-designs/request', {
+                        tailorId: cartItems[0].tailor || cartItems[0].tailorId,
+                        description: cartItems[0].config?.customDesignDescription || '',
+                        images: cartItems[0].config?.customDesignImages || [],
+                        deliveryAddress: {
+                            street: selectedAddress.street,
+                            city: selectedAddress.city,
+                            state: selectedAddress.state || '',
+                            zipCode: selectedAddress.zipCode,
+                            location: selectedAddress.location
+                        }
+                    });
+                    if (!customDesignRes.data.success) throw new Error('Custom design request failed');
+                    
+                    clearCart();
+                    navigate('/user/orders', { state: { message: "Custom design request submitted successfully! Awaiting quote." } });
+                    return;
+                }
+
                 let payload;
                 if (isServiceCheckout) {
                     const firstItemTailor = currentCheckoutItems[0]?.serviceDetails?.tailorId || currentCheckoutItems[0]?.serviceDetails?.tailor;
@@ -304,19 +411,81 @@ const CheckoutSummary = () => {
                     };
                 }
 
-                setLoadingText('Submitting request to Tailor...');
-                const orderRes = await api.post('/orders', payload);
-                if (!orderRes.data.success) throw new Error('Order creation failed');
+                setLoadingText('Submitting order...');
+                const endpoint = isCartAlteration ? '/alterations/request' : '/orders';
+                const orderRes = await api.post(endpoint, payload);
+                if (!orderRes.data.success) throw new Error(isCartAlteration ? 'Alteration request failed' : 'Order creation failed');
                 order = orderRes.data.data;
             }
 
             if (!bulkOrderId) {
-                // NORMAL ORDER: Skip payment, send to tailor for acceptance
+                if (requireFullPayment) {
+                    setLoadingText('Connecting to Secure Payment...');
+                    const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: finalTotal });
+                    if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
+                    const rzpOrder = rzpOrderRes.data.data;
+
+                    const options = {
+                        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                        amount: rzpOrder.amount,
+                        currency: rzpOrder.currency,
+                        name: "SilaiWala",
+                        description: "Full Order Payment",
+                        order_id: rzpOrder.id,
+                        handler: async function (response) {
+                            try {
+                                const verifyRes = await api.post(`/orders/razorpay/verify`, {
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    orderObjectId: order._id,
+                                    paymentType: 'full'
+                                });
+
+                                if (verifyRes.data.success) {
+                                    if (isServiceCheckout) clearCheckout();
+                                    else clearCart();
+
+                                    navigate('/user/checkout/success', {
+                                        state: { orderId: order._id, orderNumber: order.orderId, isFullyPaid: true }
+                                    });
+                                }
+                            } catch (err) {
+                                console.error('Verification failed:', err);
+                                alert('Payment verification failed. Please contact support.');
+                            } finally {
+                                setIsProcessing(false);
+                                setLoadingText('Initializing...');
+                            }
+                        },
+                        prefill: {
+                            name: selectedAddress?.receiverName || "",
+                            contact: selectedAddress?.phone || ""
+                        },
+                        theme: { color: "#843D9B" }
+                    };
+
+                    const rzp = new window.Razorpay(options);
+                    rzp.on('payment.failed', function (response) {
+                        setIsProcessing(false);
+                        setLoadingText('Initializing...');
+                        alert('Payment failed: ' + response.error.description);
+                    });
+                    rzp.open();
+                    return;
+                }
+
+                // NORMAL STITCHING ORDER: Skip payment, send to tailor for acceptance
                 if (isServiceCheckout) clearCheckout();
                 else clearCart();
 
                 navigate('/user/checkout/success', {
-                    state: { orderId: order._id, orderNumber: order.orderId, pendingAcceptance: true }
+                    state: { 
+                        orderId: order._id, 
+                        orderNumber: order.orderId || order.alterationId, 
+                        pendingAcceptance: true,
+                        isAlteration: isCartAlteration
+                    }
                 });
                 return;
             }
@@ -457,21 +626,29 @@ const CheckoutSummary = () => {
                         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-4">
                             <h3 className="text-sm font-bold text-gray-900 mb-3">Cart Items ({cartItems.length})</h3>
                             <div className="space-y-4">
-                                {cartItems.map((item) => (
-                                    <div key={item.cartId} className="flex gap-4">
-                                        <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                            <img src={item.images?.[0] || item.image} alt={item.title} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.title}</h4>
-                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">Size: {item.selectedSize} • {item.selectedColor}</p>
-                                            <div className="flex justify-between items-center mt-2">
-                                                <span className="text-sm font-bold text-[#843D9B]">₹{item.price}</span>
-                                                <span className="text-[10px] font-black text-gray-400">QTY: {item.quantity}</span>
+                                {cartItems.map((item) => {
+                                    const isItemAlteration = item.isAlteration;
+                                    const imageSrc = isItemAlteration ? item.config?.alterationImages?.[0] : (item.images?.[0] || item.image);
+                                    const title = isItemAlteration ? 'Custom Alteration Request' : item.title;
+                                    const description = isItemAlteration ? item.config?.alterationDescription : `Size: ${item.selectedSize} • ${item.selectedColor}`;
+                                    const priceDisplay = isItemAlteration ? 'Awaiting Quote' : `₹${item.price}`;
+
+                                    return (
+                                        <div key={item.cartId} className="flex gap-4">
+                                            <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                                <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{title}</h4>
+                                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1 line-clamp-1">{description}</p>
+                                                <div className="flex justify-between items-center mt-2">
+                                                    <span className="text-sm font-bold text-[#843D9B]">{priceDisplay}</span>
+                                                    {!isItemAlteration && <span className="text-[10px] font-black text-gray-400">QTY: {item.quantity}</span>}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -513,44 +690,71 @@ const CheckoutSummary = () => {
                 </div>
 
                 <div className="w-full lg:w-96 space-y-4">
-                    {/* 4. Bill Details */}
-                    <BillDetails pricing={currentPricing} advancePercentage={advancePercentage} />
+                    {isCartAlteration ? (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-4">
+                        <h3 className="text-sm font-bold text-[#843D9B] mb-1">Awaiting Quote</h3>
+                        <p className="text-xs text-indigo-700/70">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
+                    </div>
+                ) : (
+                    <BillDetails 
+                        pricing={currentPricing} 
+                        advancePercentage={requireFullPayment ? 100 : advancePercentage} 
+                        baseLabel={isCartCheckout ? "Product Charges" : "Stitching Charges"}
+                    />
+                )}
 
-                    {/* 5. Payment Method */}
+                    {/* 5. Payment Method / Submit Action */}
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <CreditCard size={15} className="text-[#843D9B]" />
-                            Payment Method
-                        </h3>
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-                                <span className="font-bold text-[10px] text-gray-900">UPI</span>
+                        {!isCartAlteration && (
+                            <>
+                                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <CreditCard size={15} className="text-[#843D9B]" />
+                                    Payment Method
+                                </h3>
+                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                                        <span className="font-bold text-[10px] text-gray-900">UPI</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-bold text-gray-900">Razorpay Secure</p>
+                                        <p className="text-[10px] text-gray-500">Fast & Encrypted</p>
+                                    </div>
+                                    <Lock size={14} className="text-[#843D9B]" />
+                                </div>
+                            </>
+                        )}
+
+                        <div className={`${!isCartAlteration ? 'pt-4 border-t border-gray-100 mt-4' : ''} hidden lg:flex gap-3`}>
+                            <div className="text-right">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">To Pay</p>
+                                <p className="font-bold text-gray-900 mt-1">₹{finalTotal.toLocaleString()}</p>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-gray-900">Razorpay Secure</p>
-                                <p className="text-[10px] text-gray-500">Fast & Encrypted</p>
-                            </div>
-                            <Lock size={14} className="text-[#843D9B]" />
+                            <button 
+                                onClick={handlePayment}
+                                disabled={isProcessing}
+                                className="flex-1 bg-[#843D9B] text-white h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6c3080] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? (
+                                    <><Loader2 size={18} className="animate-spin" /> {loadingText}</>
+                                ) : (
+                                    <>
+                                        {(bulkOrderId || isCartAlteration || isCartCustomDesign || (!requireFullPayment && !isCartCheckout)) 
+                                            ? 'Place Order' 
+                                            : requireFullPayment 
+                                                ? 'Proceed to Secure Payment' 
+                                                : `Pay Advance ₹${Math.round(finalTotal * (advancePercentage/100))}`
+                                        }
+                                    </>
+                                )}
+                            </button>
                         </div>
 
-                        <button
-                            onClick={handlePayment}
-                            disabled={isProcessing || !selectedAddress}
-                            className="hidden lg:flex w-full mt-6 py-4 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
-                        >
-                            {isProcessing ? (
-                                <><Loader2 className="w-4 h-4 animate-spin text-white" /> Initializing...</>
-                            ) : !selectedAddress ? (
-                                'Select Address to Book'
-                            ) : (
-                                <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now'} <ArrowRight size={18} /></>
-                            )}
-                        </button>
-
-                        <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
-                            <ShieldCheck size={12} className="text-green-500" />
-                            Secure Payment Powered by Razorpay
-                        </div>
+                        {!isCartAlteration && (
+                            <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
+                                <ShieldCheck size={12} className="text-green-500" />
+                                Secure Payment Powered by Razorpay
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -568,7 +772,7 @@ const CheckoutSummary = () => {
                     ) : !selectedAddress ? (
                         'Select Address'
                     ) : (
-                        <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : 'Book Now'} <ArrowRight size={16} /></>
+                        (isCartAlteration || isCartCustomDesign) ? <>{'Submit Request'} <ArrowRight size={16} /></> : <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : (requireFullPayment ? `Pay ₹${finalTotal}` : `Place Order`)} <ArrowRight size={16} /></>
                     )}
                 </button>
             </div>

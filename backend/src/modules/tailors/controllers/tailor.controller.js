@@ -552,7 +552,7 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
  */
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { status, message, autoAssign, deliveryMethod } = req.body;
-  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled", "ready"];
+  const allowedStatuses = ["accepted", "order-received", "fabric-selected", "fabric-received", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready-for-pickup", "ready-for-delivery", "out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled", "ready", "in-progress"];
 
   if (!allowedStatuses.includes(status)) {
     return next(new ErrorResponse("Invalid status update", 400));
@@ -582,8 +582,13 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const advancePercentage = adminSettings.walletConfig?.advancePercentage || 30;
     
     // 2. Calculate partial payments
-    order.advancePaymentAmount = Math.round(order.totalAmount * (advancePercentage / 100));
-    order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+    if (order.isBridalConsultation) {
+        order.advancePaymentAmount = order.totalAmount;
+        order.remainingPaymentAmount = 0;
+    } else {
+        order.advancePaymentAmount = Math.round(order.totalAmount * (advancePercentage / 100));
+        order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+    }
     order.advancePaymentStatus = "pending";
     order.remainingPaymentStatus = "pending";
     order.paymentStatus = "pending"; // Overall status
@@ -596,12 +601,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     }
   }
 
-  order.status = status;
-  order.trackingHistory.push({
-    status: status,
-    message: message || `Order status updated to ${status}`,
-    timestamp: new Date()
-  });
+  const { transitionOrder } = require("../../../utils/orderStateMachine");
+  transitionOrder(order, status, message || `Order status updated to ${status}`);
 
   await order.save();
 
@@ -635,7 +636,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     });
     
     // Auto-Assignment Logic for Deliveries (Second Cycle)
-    if ((status === "ready" || status === "ready-for-delivery") && autoAssign) {
+    // For Bridal Consultations, we bypass delivery partner assignment as the tailor handles it manually
+    if ((status === "ready" || status === "ready-for-delivery") && autoAssign && !order.isBridalConsultation) {
       const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
       await autoAssignDelivery(order._id, "dropoff");
     }
@@ -692,12 +694,8 @@ exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => 
     return next(new ErrorResponse('Order must be in pending or measurements-uploaded state to request approval', 400));
   }
   
-  order.status = 'measurement-verification';
-  order.trackingHistory.push({
-    status: 'measurement-verification',
-    message: 'Measurements sent to customer for approval',
-    timestamp: new Date()
-  });
+  const { transitionOrder } = require("../../../utils/orderStateMachine");
+  transitionOrder(order, 'measurement-verification', 'Measurements sent to customer for approval');
   await order.save();
 
   // Notify Customer

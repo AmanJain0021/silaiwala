@@ -111,12 +111,43 @@ function App() {
       });
     };
 
+    // Listen for general notifications (like Admin Broadcasts)
+    const handleNewNotification = (data) => {
+      if (data.type === 'BROADCAST') {
+        import('react-hot-toast').then((module) => {
+          const { toast } = module.default || module;
+          toast.custom((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+              <div className="flex-1 w-0 p-4">
+                <div className="flex items-start">
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-bold text-gray-900">📣 {data.title}</p>
+                    <p className="mt-1 text-sm text-gray-500">{data.message}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex border-l border-gray-200">
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ), { duration: 8000, position: 'top-center' });
+        });
+      }
+    };
+
     socket.on('receive_new_order', handleNewOrder);
     socket.on('order_status_updated', handleStatusUpdate);
+    socket.on('new_notification', handleNewNotification);
 
     return () => {
       socket.off('receive_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
+      socket.off('new_notification', handleNewNotification);
     };
   }, [socket]);
 

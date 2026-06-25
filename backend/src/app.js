@@ -6,8 +6,7 @@ const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
 
-// Connect to Database (Required for serverless environments)
-connectDB();
+// Database connection is handled by server.js or the serverless function handler
 
 const app = express();
 
@@ -25,20 +24,33 @@ app.use(
   })
 );
 
-// CORS – allow frontend origin (Flexible for LAN/Mobile Access)
+// CORS – allow frontend origin
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
 app.use(
   cors({
-    origin: true, // Allow direct origin match for LAN testing
+    origin: function(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Global Rate Limiter – Increased for development
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10000, // Increased from 100
+  max: 1500, // 1500 requests per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },
@@ -48,6 +60,20 @@ const globalLimiter = rateLimit({
   },
 });
 app.use(globalLimiter);
+
+// Auth Rate Limiter
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // 20 requests per 15 minutes for auth endpoints
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { trustProxy: false },
+  message: {
+    success: false,
+    message: "Too many authentication attempts, please try again later.",
+  },
+});
+app.use("/api/v1/auth", authLimiter);
 
 // ─── Body Parsers ────────────────────────────────────────────────────────────
 
@@ -110,6 +136,8 @@ app.use("/api/v1/support", require("./modules/support/routes/support.routes"));
 app.use("/api/v1/subscriptions", require("./modules/subscriptions/routes/subscription.routes"));
 app.use("/api/v1/upload", require("./routes/upload.routes"));
 app.use("/api/v1/measurement-executive", require("./modules/measurement-executive/routes/measurementExecutive.routes"));
+app.use("/api/v1/alterations", require("./modules/alterations/routes/alteration.routes"));
+app.use("/api/v1/custom-designs", require("./modules/customDesigns/routes/customDesign.routes"));
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 
 app.use((req, res, next) => {

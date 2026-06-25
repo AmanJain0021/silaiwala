@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, Award, Phone, ShieldCheck, Heart, Share2, Scissors, ChevronRight, Tag, CheckCircle2, Info, ShoppingBag } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Star, MapPin, Clock, Award, Phone, ShieldCheck, Heart, Share2, Scissors, ChevronRight, Tag, CheckCircle2, Info, ShoppingBag, Calendar, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '../components/store/ProductCard';
 import useCheckoutStore from '../../../store/checkoutStore';
 import api from '../../../utils/api';
@@ -16,6 +16,11 @@ const TailorProfile = () => {
     const [workSamples, setWorkSamples] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
+    
+    // Bridal Booking State
+    const [isBridalModalOpen, setIsBridalModalOpen] = useState(false);
+    const [bookingData, setBookingData] = useState({ date: '', time: '', notes: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -59,6 +64,38 @@ const TailorProfile = () => {
         };
         fetchData();
     }, [id]);
+
+    const handleBridalSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            // Note: Sending to the main order checkout endpoint with special flags
+            const res = await api.post('/orders', {
+                tailorId: tailor._id,
+                items: [{
+                    serviceType: 'bridal-consultation',
+                    name: 'Bridal Consultation',
+                    quantity: 1
+                }],
+                fabricPickupRequired: false,
+                isBridalConsultation: true,
+                isMeasurementHome: true,
+                bridalNotes: bookingData.notes,
+                bridalDate: bookingData.date,
+                bridalTime: bookingData.time
+            });
+            if (res.data.success) {
+                alert('Bridal Consultation booked successfully!');
+                setIsBridalModalOpen(false);
+                setBookingData({ date: '', time: '', notes: '' });
+                navigate('/user/orders');
+            }
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to submit request');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-10 h-10 border-4 border-[#843D9B] border-t-transparent rounded-full animate-spin" />
@@ -185,6 +222,17 @@ const TailorProfile = () => {
                         <p className="text-[10px] text-gray-400 font-bold mt-2 px-1 flex items-center gap-1">
                             <Info size={10} /> {tailor.location?.address}
                         </p>
+                    </div>
+
+                    {/* Bridal Consultation Button */}
+                    <div className="mt-5">
+                        <button
+                            onClick={() => setIsBridalModalOpen(true)}
+                            className="w-full py-3.5 bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                        >
+                            <Heart size={16} className="text-rose-500 fill-rose-500" />
+                            <span className="text-xs font-black text-rose-600 uppercase tracking-widest">Book Bridal Consultation</span>
+                        </button>
                     </div>
                 </motion.div>
             </div>
@@ -328,6 +376,93 @@ const TailorProfile = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Bridal Booking Modal */}
+            <AnimatePresence>
+                {isBridalModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                            onClick={() => setIsBridalModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl"
+                        >
+                            <button
+                                onClick={() => setIsBridalModalOpen(false)}
+                                className="absolute right-4 top-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+
+                            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-4">
+                                <Heart size={24} className="fill-rose-500" />
+                            </div>
+
+                            <h3 className="text-xl font-black text-gray-900 mb-1">Bridal Consultation</h3>
+                            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                                Book an exclusive in-person bridal fitting. {tailor.shopName || tailor.user?.name} will travel to your location to take measurements.
+                            </p>
+
+                            <form onSubmit={handleBridalSubmit} className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Preferred Date</label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        <input
+                                            type="date"
+                                            required
+                                            min={new Date().toISOString().split('T')[0]}
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-rose-300 focus:ring-1 focus:ring-rose-300/20 transition-all outline-none"
+                                            value={bookingData.date}
+                                            onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Preferred Time</label>
+                                    <div className="relative">
+                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        <input
+                                            type="time"
+                                            required
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:border-rose-300 focus:ring-1 focus:ring-rose-300/20 transition-all outline-none"
+                                            value={bookingData.time}
+                                            onChange={(e) => setBookingData({ ...bookingData, time: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Requirements Note</label>
+                                    <textarea
+                                        placeholder="Specific requests, dress type, etc."
+                                        rows="2"
+                                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs focus:bg-white focus:border-rose-300 focus:ring-1 focus:ring-rose-300/20 transition-all outline-none resize-none"
+                                        value={bookingData.notes}
+                                        onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
+                                    ></textarea>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="w-full py-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40 active:scale-[0.98] transition-all disabled:opacity-70 mt-2"
+                                >
+                                    {isSubmitting ? 'Booking...' : 'Book Consultation'}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

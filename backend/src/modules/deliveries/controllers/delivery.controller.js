@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Delivery = require("../../../models/Delivery");
 const Order = require("../../../models/Order");
+const { transitionOrder } = require("../../../utils/orderStateMachine");
 const User = require("../../../models/User");
 const Tailor = require("../../../models/Tailor");
 const asyncHandler = require("../../../utils/asyncHandler");
@@ -185,10 +186,29 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     query.status = { $in: ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"] };
   }
 
-  const orders = await Order.find(query)
+  let orders = await Order.find(query)
     .populate("customer", "name phoneNumber profileImage")
     .sort("-updatedAt")
     .lean();
+
+  // FILTER OUT orders where the current phase does not match the specific partner assignment
+  // This prevents the pickup partner from seeing the order in Active Dispatch during the dropoff phase
+  orders = orders.filter(order => {
+    const isPickupPhase = ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
+    const isDropoffPhase = ["ready", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"].includes(order.status);
+
+    if (isPickupPhase) {
+      return (order.pickupPartner?.toString() === req.user.id) || 
+             (!order.pickupPartner && order.deliveryPartner?.toString() === req.user.id);
+    }
+    
+    if (isDropoffPhase) {
+      return (order.dropoffPartner?.toString() === req.user.id) || 
+             (!order.dropoffPartner && !order.fabricPickupRequired && order.deliveryPartner?.toString() === req.user.id);
+    }
+
+    return true; // For any other statuses (like delivered), return them if they somehow match the initial db query
+  });
 
 
 
@@ -545,6 +565,10 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery)
  */
 exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+
   const { status, message, proof } = req.body;
   const allowedStatuses = [
     "accepted",
@@ -559,7 +583,8 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   ];
 
   if (!allowedStatuses.includes(status)) {
-    return next(new ErrorResponse("Invalid delivery status", 400));
+    await session.abortTransaction();
+      return next(new ErrorResponse("Invalid delivery status", 400));
   }
 
   const isObjectId = mongoose.isValidObjectId(req.params.id);
@@ -572,10 +597,11 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       { pickupPartner: req.user.id },
       { dropoffPartner: req.user.id }
     ]
-  });
+  }).session(session);
 
   if (!order) {
-    return next(new ErrorResponse("Order not found or not assigned to you", 404));
+    await session.abortTransaction();
+      return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
   // Handle Granular Delivery Statuses & Main Status Mapping
@@ -628,10 +654,12 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   } else if (status === "fabric-picked-up" || status === "picked-up-from-tailor") {
       const { otp } = req.body;
       if (!otp) {
-        return next(new ErrorResponse("OTP is required to complete pickup", 400));
+        await session.abortTransaction();
+      return next(new ErrorResponse("OTP is required to complete pickup", 400));
       }
       if (order.pickupDeliveryOtp !== otp && otp !== "123456") {
-        return next(new ErrorResponse("Invalid OTP", 400));
+        await session.abortTransaction();
+      return next(new ErrorResponse("Invalid OTP", 400));
       }
       
       order.pickupOtpVerified = true;
@@ -687,13 +715,13 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId}. Wallet will not be credited.`);
       } else {
         const WalletTransaction = require("../../../models/WalletTransaction");
-        // Prevent duplicate credit
+        // Prevent duplicate credit by matching the exact status at the start of the description
         const existingTx = await WalletTransaction.findOne({
           user: req.user.id,
           order: order._id,
           category: { $in: ["order_earnings", "delivery_earnings"] },
-          description: { $regex: status, $options: "i" }
-        });
+          description: new RegExp(`^Delivery payout for ${status} \\(`, "i")
+        }).session(session);
 
         if (existingTx) {
           console.warn(`DUPLICATE CREDIT PREVENTED: Wallet already credited for status ${status} on order ${order._id}`);
@@ -711,14 +739,14 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
           );
 
           // Create a WalletTransaction record
-          await WalletTransaction.create({
+          await WalletTransaction.create([{
             user: req.user.id,
             amount: earnedAmount,
             type: "credit",
             category: "delivery_earnings",
             order: order._id,
             description: `Delivery payout for ${status} (${order.deliveryDistance}km)`,
-          });
+          }], { session });
 
           // Store deliveryPartnerEarning on Order for audit trail
           const currentEarning = order.deliveryPartnerEarning || 0;
@@ -775,7 +803,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     proof: proof,
   });
 
-  await order.save();
+  await order.save({ session });
 
   // --- Socket Emissions ---
   try {
@@ -799,10 +827,18 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   }
   // ------------------------
 
-  res.status(200).json({
+  await session.commitTransaction();
+    res.status(200).json({
     success: true,
     data: order,
   });
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Transaction aborted in updateDeliveryStatus:", error);
+    return next(new ErrorResponse("Transaction failed", 500));
+  } finally {
+    session.endSession();
+  }
 });
 
 /**
@@ -822,7 +858,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
 
   let allowedStatuses = [];
   if (isDelivery) {
-    allowedStatuses.push("fabric-ready-for-pickup", "ready", "ready-for-delivery");
+    allowedStatuses.push("fabric-ready-for-pickup", "ready", "ready-for-delivery", "ready-for-pickup");
   }
   if (isMeasurement) {
     allowedStatuses.push("measurement-verification", "pending-measurement"); // Add measurement statuses here
@@ -838,7 +874,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
       { deliveryPartner: null },
       { deliveryPartner: { $exists: false } },
       { pickupPartner: null, status: "fabric-ready-for-pickup" },
-      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery"] } },
+      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] } },
       { status: { $in: ["measurement-verification", "pending-measurement"] } } // For measurement tasks
     ]
   })
@@ -1206,8 +1242,15 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery Partner)
  */
 exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+
   const { otp, openBoxPhoto, deliveryProofPhoto, paymentMethod } = req.body;
-  if (!otp) return next(new ErrorResponse("OTP is required", 400));
+  if (!otp) {
+      await session.abortTransaction();
+      return next(new ErrorResponse("OTP is required", 400));
+  }
 
   const isObjectId = mongoose.isValidObjectId(req.params.id);
   const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
@@ -1219,9 +1262,12 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       { dropoffPartner: req.user.id },
       { deliveryPartner: req.user.id }
     ]
-  }).select('+pickupDeliveryOtp +dropoffDeliveryOtp'); // Ensure OTPs are selected
+  }).session(session).select('+pickupDeliveryOtp +dropoffDeliveryOtp'); // Ensure OTPs are selected
 
-  if (!order) return next(new ErrorResponse("Order not found or not assigned to you", 404));
+  if (!order) {
+      await session.abortTransaction();
+      return next(new ErrorResponse("Order not found or not assigned to you", 404));
+  }
 
   let cycle = 'dropoff';
   if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) || (!order.dropoffPartner && order.pickupPartner?.toString() === req.user.id)) {
@@ -1249,32 +1295,33 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       order: order._id,
       category: "order_earnings",
       description: description
-    });
+    }).session(session);
     
     if (existingTx) {
       console.warn(`DUPLICATE CREDIT PREVENTED: Wallet already credited for partner ${partnerId} on order ${order._id}`);
       return;
     }
 
-    const profile = await Delivery.findOne({ user: partnerId });
+    const profile = await Delivery.findOne({ user: partnerId }).session(session);
     if (profile) {
       profile.walletBalance = (profile.walletBalance || 0) + amount;
       profile.totalEarned = (profile.totalEarned || 0) + amount;
       profile.totalDeliveries = (profile.totalDeliveries || 0) + 1;
-      await profile.save();
-      await WalletTransaction.create({
+      await profile.save({ session });
+      await WalletTransaction.create([{
         user: partnerId,
         amount,
         type: "credit",
         category: "order_earnings",
         order: order._id,
         description
-      });
+      }], { session });
     }
   };
 
   if (cycle === 'pickup') {
     if (order.pickupDeliveryOtp !== otp && otp !== "123456") { // Allow 123456 as master for testing/dev
+      await session.abortTransaction();
       return next(new ErrorResponse("Invalid OTP", 400));
     }
     
@@ -1302,6 +1349,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
 
   } else {
     if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+      await session.abortTransaction();
       return next(new ErrorResponse("Invalid OTP", 400));
     }
     
@@ -1339,22 +1387,23 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
            order.paymentStatus = 'paid';
            
            // Deduct the collected cash from Delivery Partner's wallet
-           const deliveryProfile = await Delivery.findOne({ user: req.user.id });
+           const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
            if (deliveryProfile) {
               deliveryProfile.walletBalance -= order.remainingPaymentAmount;
-              await deliveryProfile.save();
-              await WalletTransaction.create({
+              await deliveryProfile.save({ session });
+              await WalletTransaction.create([{
                 user: req.user.id,
                 amount: order.remainingPaymentAmount,
                 type: "debit",
                 category: "commission_deduction",
                 order: order._id,
                 description: `Cash collected from customer for order ${order.orderId}`
-              });
+              }], { session });
            }
        } else {
            // Fallback if frontend didn't send payment method but there's a remaining amount
-           return next(new ErrorResponse("Please select a payment method for the remaining amount.", 400));
+           await session.abortTransaction();
+      return next(new ErrorResponse("Please select a payment method for the remaining amount.", 400));
        }
     }
 
@@ -1370,14 +1419,14 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     // Distribute Earnings (Tailor)
     const { distributeEarnings } = require("../../../utils/earningsEngine");
     try {
-      await order.save(); // Save the status to paid before distributing
+      await order.save({ session }); // Save the status to paid before distributing
       await distributeEarnings(order._id);
     } catch (err) {
       console.error("Failed to distribute earnings automatically:", err);
     }
   }
 
-  await order.save();
+  await order.save({ session });
 
   // Socket push for live UI updates
   const { getIO } = require("../../../config/socket");
@@ -1398,7 +1447,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   // Extract Tailor Profile for vendorAddress
   const Tailor = require("../../../models/Tailor");
   if (returnOrder.tailor) {
-    const tailorDoc = await Tailor.findOne({ user: returnOrder.tailor }).populate("user", "name phoneNumber").lean();
+    const tailorDoc = await Tailor.findOne({ user: returnOrder.tailor }).session(session).populate("user", "name phoneNumber").lean();
     if (tailorDoc) {
       returnOrder.tailor = {
         _id: returnOrder.tailor,
@@ -1416,7 +1465,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
 
   // Extract Customer Profile for address
   const Customer = require("../../../models/Customer");
-  const customerDoc = await Customer.findOne({ user: returnOrder.customer?._id || returnOrder.customer }).populate("user", "name phoneNumber").lean();
+  const customerDoc = await Customer.findOne({ user: returnOrder.customer?._id || returnOrder.customer }).session(session).populate("user", "name phoneNumber").lean();
   
   if (customerDoc) {
      returnOrder.customer = customerDoc.user?.name || "Customer";
@@ -1432,6 +1481,14 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
      returnOrder.address = address;
   }
 
-  res.status(200).json({ success: true, data: returnOrder });
+  await session.commitTransaction();
+    res.status(200).json({ success: true, data: returnOrder });
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Transaction aborted in completeDeliveryFlow:", error);
+    return next(new ErrorResponse("Transaction failed", 500));
+  } finally {
+    session.endSession();
+  }
 });
 

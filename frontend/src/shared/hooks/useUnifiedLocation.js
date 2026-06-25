@@ -28,6 +28,18 @@ export const useUnifiedLocation = ({
         return err.message || errMsg;
     };
 
+    const getManualLocation = () => {
+        try {
+            const stored = localStorage.getItem('manual_location');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error('Failed to parse manual location', e);
+        }
+        return null;
+    };
+
     const fetchAddressData = async (latitude, longitude) => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
@@ -91,6 +103,27 @@ export const useUnifiedLocation = ({
         setError(null);
 
         return new Promise((resolve, reject) => {
+            const manualLoc = getManualLocation();
+            if (manualLoc) {
+                // Mock Geolocation position object
+                const position = {
+                    coords: {
+                        latitude: manualLoc.latitude,
+                        longitude: manualLoc.longitude,
+                        accuracy: 1
+                    }
+                };
+                processPosition(position).then(locData => {
+                    setIsLocating(false);
+                    resolve(locData);
+                }).catch(err => {
+                    setError(err.message);
+                    setIsLocating(false);
+                    reject(err);
+                });
+                return;
+            }
+
             if (!("geolocation" in navigator)) {
                 const err = new Error("Geolocation is not supported by your browser.");
                 setError(err.message);
@@ -140,13 +173,30 @@ export const useUnifiedLocation = ({
     }, [fetchAddress, onLocationUpdate]);
 
     const startTracking = useCallback(() => {
-        if (!("geolocation" in navigator)) {
+        const manualLoc = getManualLocation();
+        if (!("geolocation" in navigator) && !manualLoc) {
             setError("Geolocation is not supported");
             return;
         }
         
         setIsLocating(true);
         setError(null);
+
+        if (manualLoc) {
+            // Mock single resolution for tracking if manual override is used
+            const position = {
+                coords: {
+                    latitude: manualLoc.latitude,
+                    longitude: manualLoc.longitude,
+                    accuracy: 1
+                }
+            };
+            processPosition(position).then(() => {
+                setIsLocating(false);
+            });
+            // Manual location is static, so no need for watchPosition
+            return;
+        }
 
         // Quick fallback strategy for initial position
         navigator.geolocation.getCurrentPosition(

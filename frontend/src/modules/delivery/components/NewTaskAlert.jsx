@@ -211,6 +211,15 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
             });
         });
 
+        socket.on('receive_new_order', (taskData) => {
+            console.log('Broadcasted order received via socket:', taskData);
+            const payload = taskData.data || taskData;
+            setNewTask({
+                ...payload,
+                message: taskData.message || payload.message || "New Task Available in Pool!"
+            });
+        });
+
         socket.on('new_notification', (data) => {
             console.log('New notification received on delivery partner app:', data);
             if (data.type === 'NEW_DELIVERY_TASK' || data.type === 'TASK_ASSIGNED') {

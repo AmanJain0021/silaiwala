@@ -63,9 +63,34 @@ const initSocket = (httpServer) => {
     });
 
     // ── Join a room by orderId for real-time order tracking ──────────────────
-    socket.on("join_order_room", (orderId) => {
-      socket.join(`order_${orderId}`);
-      console.log(`📦 Socket ${socket.id} joined room: order_${orderId}`);
+    socket.on("join_order_room", async (orderId) => {
+      try {
+        const Order = require("../models/Order");
+        const order = await Order.findById(orderId);
+        
+        if (!order) {
+            socket.emit("error", "Order not found");
+            return;
+        }
+
+        const isCustomer = order.customer && order.customer.toString() === socket.user.id;
+        const isTailor = order.tailor && order.tailor.toString() === socket.user.id;
+        const isDeliveryPartner = order.deliveryPartner && order.deliveryPartner.toString() === socket.user.id;
+        const isPickupPartner = order.pickupPartner && order.pickupPartner.toString() === socket.user.id;
+        const isDropoffPartner = order.dropoffPartner && order.dropoffPartner.toString() === socket.user.id;
+        const isAdmin = socket.user.role === 'admin';
+
+        if (isCustomer || isTailor || isDeliveryPartner || isPickupPartner || isDropoffPartner || isAdmin) {
+            socket.join(`order_${orderId}`);
+            console.log(`📦 Socket ${socket.id} joined room: order_${orderId}`);
+        } else {
+            console.warn(`⚠️ Socket ${socket.id} (User: ${socket.user.id}) unauthorized attempt to join order_${orderId}`);
+            socket.emit("error", "Not authorized to track this order");
+        }
+      } catch (err) {
+          console.error("Socket room join error:", err);
+          socket.emit("error", "Failed to join room");
+      }
     });
 
     // ── Leave an order room ──────────────────────────────────────────────────

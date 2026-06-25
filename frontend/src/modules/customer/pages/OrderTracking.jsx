@@ -320,6 +320,9 @@ const OrderTracking = () => {
 
     const dateString = getArrivalDate();
 
+    const isReadyMade = order?.items?.some(item => item.product);
+    const isAlteration = order?.items?.some(item => item.isAlteration) || order?.isAlteration;
+
     // Timeline Configuration
     const stages = isBulk 
         ? [
@@ -328,6 +331,35 @@ const OrderTracking = () => {
             { key: 'accepted-by-tailor', label: 'Assigned', icon: User },
             { key: 'in-production', label: 'Production', icon: Scissors },
             { key: 'shipped', label: 'In Transit', icon: Truck },
+            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+        ]
+        : isAlteration
+        ? [
+            { key: 'pending', label: 'Order Received', icon: Package },
+            { key: 'fabric-received', label: 'Garment Received', icon: Package },
+            { key: 'in-progress', label: 'Alteration Started', icon: Scissors },
+            { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
+            { key: 'ready-for-delivery', label: 'Ready For Delivery', icon: Package },
+            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
+            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+        ]
+        : order.isBridalConsultation
+        ? [
+            { key: 'pending', label: 'Request Received', icon: Package },
+            { key: 'accepted', label: 'Consultation Accepted', icon: ShieldCheck },
+            { key: 'measurements-approved', label: 'Measurements Taken', icon: Scissors },
+            { key: 'in-progress', label: 'Stitching Started', icon: Scissors },
+            { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
+            { key: 'ready-for-delivery', label: 'Ready For Delivery', icon: Package },
+            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
+            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+        ]
+        : isReadyMade
+        ? [
+            { key: 'pending', label: 'Order Received', icon: Package },
+            { key: 'in-progress', label: 'Processing & Packing', icon: Package },
+            { key: 'ready-for-delivery', label: 'Ready To Dispatch', icon: Package },
+            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
             { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
         ]
         : [
@@ -370,6 +402,7 @@ const OrderTracking = () => {
             'fabric-selected',
             'measurement-verification',
             'pattern-making',
+            'in-progress',
             'cutting',
             'stitching',
             'finishing',
@@ -387,9 +420,7 @@ const OrderTracking = () => {
         let equivalentStageKey = stageKey;
         if (stageKey === 'shipped') equivalentStageKey = 'out-for-delivery';
 
-        let mappedStatus = status;
-        if (status === 'in-progress') mappedStatus = 'cutting';
-        const currentIndex = statusOrder.indexOf(mappedStatus);
+        const currentIndex = statusOrder.indexOf(status);
         const stageIndex = statusOrder.indexOf(equivalentStageKey);
 
         const isCompleted = currentIndex >= stageIndex && stageIndex !== -1;
@@ -701,7 +732,7 @@ const OrderTracking = () => {
                 )}
 
                 {/* 3.4.5 Delivery Preference (After Advance Payment & Measurement Phase) */}
-                {order.fabricPickupRequired && order.advancePaymentStatus === 'paid' && order.fabricDeliveryPreference === 'pending' && 
+                {((order.fabricPickupRequired && order.advancePaymentStatus === 'paid') || order.status === 'measurements-approved') && order.fabricDeliveryPreference === 'pending' && 
                  !['measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-verification'].includes(order.status) && (
                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
                         <div className="bg-white p-3 rounded-full shadow-sm">
@@ -778,16 +809,17 @@ const OrderTracking = () => {
                         </div>
                     )}
 
-                    {/* Delivery Details */}
                     {order.deliveryAddress && (
                         <div className="pt-3 border-t border-gray-100">
                             <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1.5 flex items-center gap-1">
                                 <MapPin size={10} /> {order.fabricPickupRequired ? 'Pickup / Delivery Address' : 'Delivery Address'}
                             </h4>
                             <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                                {order.deliveryAddress.city === 'Unknown' || !order.deliveryAddress.city
+                                {(!order.deliveryAddress.street && !order.deliveryAddress.city)
+                                    ? 'Address not provided'
+                                    : order.deliveryAddress.city === 'Unknown' || !order.deliveryAddress.city || order.deliveryAddress.city === 'Auto'
                                     ? order.deliveryAddress.street
-                                    : `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} - ${order.deliveryAddress.zipCode}`
+                                    : `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state || ''} - ${order.deliveryAddress.zipCode}`
                                 }
                             </p>
                         </div>

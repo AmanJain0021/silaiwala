@@ -25,7 +25,7 @@ const DeliveryBoyLiveMap = ({
 
   useEffect(() => {
     // We need activeLocation, and EITHER destination coordinates OR a destination address
-    if (activeLocation?.lat && activeLocation?.lng && (destinationAddress || (destination?.lat && destination?.lng)) && window.google) {
+    if (isLoaded && activeLocation?.lat && activeLocation?.lng && (destinationAddress || (destination?.lat && destination?.lng)) && window.google?.maps?.DirectionsService) {
       const directionsService = new window.google.maps.DirectionsService();
       
       // Use coordinates if provided, otherwise fallback to string address

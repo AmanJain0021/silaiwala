@@ -34,6 +34,15 @@ const LiveTracking = () => {
 
   // Get current location and update distance tracker
   useEffect(() => {
+    const manualLocStr = localStorage.getItem('manual_location');
+    if (manualLocStr) {
+      try {
+        const manualLoc = JSON.parse(manualLocStr);
+        setCurrentLocation({ lat: manualLoc.latitude, lng: manualLoc.longitude });
+        return; // Skip watch if using manual location
+      } catch (e) { console.error(e); }
+    }
+
     if (!navigator.geolocation) {
       toast.error('Geolocation not supported');
       return;

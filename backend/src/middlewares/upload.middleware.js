@@ -5,15 +5,22 @@ const path = require("path");
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  // Allow all image types, PDFs, and common document formats
-  if (
-    file.mimetype.startsWith("image/") ||
-    file.mimetype === "application/pdf" ||
-    file.mimetype.includes("document") // to catch word docs just in case
-  ) {
+  // 1. Strict Mimetype check
+  const allowedMimetypes = [
+    "image/jpeg", "image/png", "image/webp", "image/jpg", 
+    "application/pdf", 
+    "application/msword", 
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ];
+  
+  // 2. Strict Extension check (prevent null byte or double extension attacks)
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.doc', '.docx'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedMimetypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error("Only images and PDF documents are allowed"), false);
+    cb(new Error("Invalid file format. Only JPG, PNG, WEBP, PDF, and DOC files are allowed."), false);
   }
 };
 

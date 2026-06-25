@@ -11,8 +11,7 @@ const useCartStore = create(
             error: null,
 
             fetchCart: async () => {
-                if (get().isLoading) return;
-                set({ isLoading: true });
+                set({ isLoading: true, error: null });
                 try {
                     const response = await api.get('/customers/cart');
                     // Transform backend items to frontend format if needed
@@ -21,17 +20,24 @@ const useCartStore = create(
                         const baseData = item.product || item.service || {};
                         return {
                             ...baseData,
-                            id: baseData._id,
+                            title: item.isCustomDesign ? "Custom Design" : (item.isAlteration ? "Custom Alteration" : baseData.title),
+                            price: (item.isAlteration || item.isCustomDesign) ? 0 : (item.price || baseData.basePrice || baseData.price || 0),
+                            id: baseData._id || item._id,
                             productId: item.product ? item.product._id : undefined,
                             serviceId: item.service ? item.service._id : undefined,
+                            isAlteration: item.isAlteration,
+                            isCustomDesign: item.isCustomDesign,
                             quantity: item.quantity,
                             cartId: item._id, // Backend item ID
                             selectedSize: item.config?.size || 'Standard',
                             selectedColor: item.config?.color || 'Default',
-                            tailor: baseData.tailor, // Crucial for routing order to the right tailor
+                            images: item.isCustomDesign ? item.config?.customDesignImages : (item.isAlteration ? item.config?.alterationImages : baseData.images),
+                            image: (item.isCustomDesign && item.config?.customDesignImages?.length > 0) ? item.config.customDesignImages[0] : ((item.isAlteration && item.config?.alterationImages?.length > 0) ? item.config.alterationImages[0] : baseData.image),
+                            tailor: item.tailor || baseData.tailor, // Crucial for routing order to the right tailor
                             config: item.config || {}
                         };
                     });
+                    // Persist to local storage manually to ensure it's saved
                     set({ items: backendItems, isLoading: false });
                 } catch (err) {
                     if (!axios.isCancel(err)) {
@@ -40,18 +46,23 @@ const useCartStore = create(
                 }
             },
 
-            addItem: async (product, variant = { size: 'Standard', color: 'Default' }) => {
-                set({ isLoading: true });
+            addItem: async (product, variant = { size: 'Standard', color: 'Default' }, options = {}) => {
+                set({ isLoading: true, error: null });
                 try {
                     const response = await api.post('/customers/cart', {
-                        productId: product._id || product.id,
+                        productId: product?.isCustomDesign ? null : (product._id || product.id),
+                        serviceId: product?.isCustomDesign ? null : undefined, // If needed
+                        isCustomDesign: product?.isCustomDesign || options.isCustomDesign,
+                        tailorId: options.tailorId,
                         quantity: 1,
-                        price: product.price,
+                        price: product?.price || 0,
                         config: variant
                     });
                     
                     if (response.data.success) {
                         await get().fetchCart();
+                    } else {
+                        set({ isLoading: false });
                     }
                 } catch (err) {
                     if (!axios.isCancel(err)) {
@@ -63,12 +74,13 @@ const useCartStore = create(
             },
 
             removeItem: async (cartId) => {
+                set({ isLoading: true, error: null });
                 try {
                     await api.delete(`/customers/cart/${cartId}`);
                     await get().fetchCart();
                 } catch (err) {
                     if (!axios.isCancel(err)) {
-                        set({ error: err.message });
+                        set({ error: err.message, isLoading: false });
                     }
                 }
             },
@@ -105,6 +117,7 @@ const useCartStore = create(
         }),
         {
             name: 'user-cart-storage',
+            partialize: (state) => ({ items: state.items }),
         }
     )
 );
