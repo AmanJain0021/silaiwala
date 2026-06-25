@@ -26,7 +26,7 @@ router.use(protect);
 
 router.get("/profile", authorize("customer", "admin", "tailor", "delivery"), getProfile);
 router.patch("/profile", authorize("customer", "admin", "tailor", "delivery"), updateProfile);
-router.get("/tailors", authorize("customer", "admin", "tailor", "delivery"), getTailors);
+router.get("/tailors", getTailors);
 
 // Address Management
 router.get("/addresses", authorize("customer", "admin", "tailor", "delivery"), getAddresses);

@@ -582,8 +582,13 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const advancePercentage = adminSettings.walletConfig?.advancePercentage || 30;
     
     // 2. Calculate partial payments
-    order.advancePaymentAmount = Math.round(order.totalAmount * (advancePercentage / 100));
-    order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+    if (order.isBridalConsultation) {
+        order.advancePaymentAmount = order.totalAmount;
+        order.remainingPaymentAmount = 0;
+    } else {
+        order.advancePaymentAmount = Math.round(order.totalAmount * (advancePercentage / 100));
+        order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+    }
     order.advancePaymentStatus = "pending";
     order.remainingPaymentStatus = "pending";
     order.paymentStatus = "pending"; // Overall status
@@ -631,7 +636,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     });
     
     // Auto-Assignment Logic for Deliveries (Second Cycle)
-    if ((status === "ready" || status === "ready-for-delivery") && autoAssign) {
+    // For Bridal Consultations, we bypass delivery partner assignment as the tailor handles it manually
+    if ((status === "ready" || status === "ready-for-delivery") && autoAssign && !order.isBridalConsultation) {
       const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
       await autoAssignDelivery(order._id, "dropoff");
     }

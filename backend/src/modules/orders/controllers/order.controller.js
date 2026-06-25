@@ -451,7 +451,7 @@ user: customerProfile.user,
  * @access  Private (Customer)
  */
 exports.createOrder = asyncHandler(async (req, res, next) => {
-  let { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee } = req.body;
+  let { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee, isBridalConsultation, isMeasurementHome, bridalNotes, bridalDate, bridalTime } = req.body;
 
   // Single Service-Type Validation for Order Creation
   if (items && items.length > 0) {
@@ -505,6 +505,41 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   }
 
   const targetTailorUserId = tailor._id;
+
+  // Bridal Consultation Distance & Fee Calculation
+  if (isBridalConsultation) {
+      if (!deliveryAddress) {
+          const customerProfile = await Customer.findOne({ user: finalCustomerId });
+          if (customerProfile && customerProfile.addresses && customerProfile.addresses.length > 0) {
+              deliveryAddress = customerProfile.addresses.find(a => a.isDefault) || customerProfile.addresses[0];
+          }
+      }
+      
+      if (deliveryAddress && deliveryAddress.location && deliveryAddress.location.coordinates && deliveryAddress.location.coordinates.length >= 2) {
+          const tailorProfileDoc = await Tailor.findOne({ user: targetTailorUserId });
+          if (tailorProfileDoc && tailorProfileDoc.location && tailorProfileDoc.location.coordinates && tailorProfileDoc.location.coordinates.length >= 2) {
+              const customerCoords = deliveryAddress.location.coordinates;
+              const tailorCoords = tailorProfileDoc.location.coordinates;
+              
+              const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+              // Mongoose points are [lng, lat]
+              const distance = getDistanceFromLatLonInKm(
+                  customerCoords[1], customerCoords[0],
+                  tailorCoords[1], tailorCoords[0]
+              );
+              
+              const settings = await Settings.getSettings();
+              const baseFee = settings?.deliveryRates?.baseFee || 20;
+              const perKmRate = settings?.deliveryRates?.perKmRate || 10;
+              
+              const consultationFee = baseFee + (Math.ceil(distance) * perKmRate);
+              totalAmount = consultationFee;
+              if (items && items.length > 0) {
+                  items[0].price = consultationFee;
+              }
+          }
+      }
+  }
 
   // 2. Optimization: Map items to ensure structure matches updated schema
   // In a real production environment, we would also verify basePrice and delivery charges here
@@ -632,7 +667,11 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     deliveryAddress,
     status: initialStatus,
     fabricPickupRequired,
-    isMeasurementHome: formattedItems.some(item => item.measurements?.type === 'home'),
+    isMeasurementHome: isMeasurementHome || formattedItems.some(item => item.measurements?.type === 'home'),
+    isBridalConsultation: isBridalConsultation || false,
+    bridalNotes,
+    bridalDate,
+    bridalTime,
     trackingHistory: [{ 
         status: initialStatus, 
         message: "Waiting for the tailor to accept the order before assigning a delivery partner."

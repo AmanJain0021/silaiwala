@@ -185,10 +185,29 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     query.status = { $in: ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"] };
   }
 
-  const orders = await Order.find(query)
+  let orders = await Order.find(query)
     .populate("customer", "name phoneNumber profileImage")
     .sort("-updatedAt")
     .lean();
+
+  // FILTER OUT orders where the current phase does not match the specific partner assignment
+  // This prevents the pickup partner from seeing the order in Active Dispatch during the dropoff phase
+  orders = orders.filter(order => {
+    const isPickupPhase = ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
+    const isDropoffPhase = ["ready", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"].includes(order.status);
+
+    if (isPickupPhase) {
+      return (order.pickupPartner?.toString() === req.user.id) || 
+             (!order.pickupPartner && order.deliveryPartner?.toString() === req.user.id);
+    }
+    
+    if (isDropoffPhase) {
+      return (order.dropoffPartner?.toString() === req.user.id) || 
+             (!order.dropoffPartner && !order.fabricPickupRequired && order.deliveryPartner?.toString() === req.user.id);
+    }
+
+    return true; // For any other statuses (like delivered), return them if they somehow match the initial db query
+  });
 
 
 
@@ -695,12 +714,12 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId}. Wallet will not be credited.`);
       } else {
         const WalletTransaction = require("../../../models/WalletTransaction");
-        // Prevent duplicate credit
+        // Prevent duplicate credit by matching the exact status at the start of the description
         const existingTx = await WalletTransaction.findOne({
           user: req.user.id,
           order: order._id,
           category: { $in: ["order_earnings", "delivery_earnings"] },
-          description: { $regex: status, $options: "i" }
+          description: new RegExp(`^Delivery payout for ${status} \\(`, "i")
         }).session(session);
 
         if (existingTx) {
@@ -838,7 +857,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
 
   let allowedStatuses = [];
   if (isDelivery) {
-    allowedStatuses.push("fabric-ready-for-pickup", "ready", "ready-for-delivery");
+    allowedStatuses.push("fabric-ready-for-pickup", "ready", "ready-for-delivery", "ready-for-pickup");
   }
   if (isMeasurement) {
     allowedStatuses.push("measurement-verification", "pending-measurement"); // Add measurement statuses here
@@ -854,7 +873,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
       { deliveryPartner: null },
       { deliveryPartner: { $exists: false } },
       { pickupPartner: null, status: "fabric-ready-for-pickup" },
-      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery"] } },
+      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] } },
       { status: { $in: ["measurement-verification", "pending-measurement"] } } // For measurement tasks
     ]
   })

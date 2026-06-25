@@ -775,7 +775,7 @@ const DeliveryOrderDetail = () => {
                     <div className="w-full">
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Your earning</p>
                        <h2 className="text-lg font-black text-slate-800 leading-tight">
-                          {formatPrice(order.deliveryFee || order.deliveryEarnings || 0)}
+                          {formatPrice(order.deliveryFee || order.deliveryEarnings || (totalTripDistanceKm !== null && feeSettings ? Math.round(feeSettings.baseFee + (totalTripDistanceKm * feeSettings.perKmRate)) : 0))}
                        </h2>
                        
                        {totalTripDistanceKm !== null && feeSettings && (

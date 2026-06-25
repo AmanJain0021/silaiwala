@@ -13,6 +13,7 @@ const cartSchema = new mongoose.Schema(
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         service: { type: mongoose.Schema.Types.ObjectId, ref: "Service" },
         isAlteration: { type: Boolean, default: false },
+        isCustomDesign: { type: Boolean, default: false },
         tailor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         quantity: { type: Number, default: 1 },
         price: Number,
@@ -24,6 +25,8 @@ const cartSchema = new mongoose.Schema(
           measurements: Map,
           alterationImages: [String],
           alterationDescription: String,
+          customDesignImages: [String],
+          customDesignDescription: String,
         }
       },
     ],

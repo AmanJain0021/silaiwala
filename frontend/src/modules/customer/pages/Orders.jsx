@@ -3,6 +3,7 @@ import { Package, Search, ListFilter, Ruler } from 'lucide-react';
 import useOrderStore from '../../../store/orderStore';
 import OrderCard from '../components/orders/OrderCard';
 import AlterationCard from '../components/orders/AlterationCard';
+import CustomDesignCard from '../components/orders/CustomDesignCard';
 import BottomNav from '../components/BottomNav';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -14,11 +15,13 @@ const OrdersPage = () => {
     const { orders, fetchOrders, isLoading } = useOrderStore();
     const { user } = useAuthStore();
     const [alterations, setAlterations] = React.useState([]);
-    const [activeTab, setActiveTab] = React.useState('orders'); // 'orders' or 'alterations'
+    const [customDesigns, setCustomDesigns] = React.useState([]);
+    const [activeTab, setActiveTab] = React.useState('orders'); // 'orders', 'alterations', 'custom-designs'
 
     useEffect(() => {
         fetchOrders();
         fetchAlterations();
+        fetchCustomDesigns();
 
         const socket = io(SOCKET_URL, {
             auth: {
@@ -57,6 +60,17 @@ const OrdersPage = () => {
         }
     };
 
+    const fetchCustomDesigns = async () => {
+        try {
+            const res = await api.get('/custom-designs');
+            if (res.data.success) {
+                setCustomDesigns(res.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch custom designs:', error);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans">
             {/* 1. Header */}
@@ -83,18 +97,24 @@ const OrdersPage = () => {
             </div>
 
             {/* Tabs */}
-            <div className="px-4 md:px-6 lg:px-8 py-2 flex gap-4 border-b border-gray-100 bg-white">
+            <div className="px-4 md:px-6 lg:px-8 py-2 flex gap-4 border-b border-gray-100 bg-white overflow-x-auto custom-scrollbar">
                 <button 
                     onClick={() => setActiveTab('orders')}
-                    className={`pb-2 text-sm font-bold ${activeTab === 'orders' ? 'text-[#843D9B] border-b-2 border-[#843D9B]' : 'text-gray-400'}`}
+                    className={`pb-2 text-sm font-bold whitespace-nowrap ${activeTab === 'orders' ? 'text-[#843D9B] border-b-2 border-[#843D9B]' : 'text-gray-400'}`}
                 >
                     Orders
                 </button>
                 <button 
                     onClick={() => setActiveTab('alterations')}
-                    className={`pb-2 text-sm font-bold ${activeTab === 'alterations' ? 'text-[#843D9B] border-b-2 border-[#843D9B]' : 'text-gray-400'}`}
+                    className={`pb-2 text-sm font-bold whitespace-nowrap ${activeTab === 'alterations' ? 'text-[#843D9B] border-b-2 border-[#843D9B]' : 'text-gray-400'}`}
                 >
                     Alterations
+                </button>
+                <button 
+                    onClick={() => setActiveTab('custom-designs')}
+                    className={`pb-2 text-sm font-bold whitespace-nowrap ${activeTab === 'custom-designs' ? 'text-[#843D9B] border-b-2 border-[#843D9B]' : 'text-gray-400'}`}
+                >
+                    Custom Designs
                 </button>
             </div>
 
@@ -121,7 +141,7 @@ const OrdersPage = () => {
                             ))}
                         </div>
                     )
-                ) : (
+                ) : activeTab === 'alterations' ? (
                     alterations.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                             <Ruler size={48} className="text-gray-300 mb-4" />
@@ -134,6 +154,22 @@ const OrdersPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                             {alterations.map((alt, index) => (
                                 <AlterationCard key={alt._id || index} alteration={alt} onPaymentSuccess={() => { fetchAlterations(); fetchOrders(); }} />
+                            ))}
+                        </div>
+                    )
+                ) : (
+                    customDesigns.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
+                            <Ruler size={48} className="text-gray-300 mb-4" />
+                            <h3 className="text-sm font-bold text-gray-900">No Custom Designs</h3>
+                            <p className="text-xs text-gray-500 max-w-[200px] mt-1">
+                                Your custom design requests will appear here.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {customDesigns.map((design, index) => (
+                                <CustomDesignCard key={design._id || index} design={design} onPaymentSuccess={() => { fetchCustomDesigns(); fetchOrders(); }} />
                             ))}
                         </div>
                     )

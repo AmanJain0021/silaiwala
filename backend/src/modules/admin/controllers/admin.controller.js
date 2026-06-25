@@ -789,6 +789,17 @@ exports.sendBroadcastNotification = async (req, res) => {
     
     const fcmTokens = users.flatMap(u => u.fcmTokens);
     
+    // 1. Send via Socket.io (In-app realtime broadcast)
+    const { getIO } = require("../../../config/socket");
+    const io = getIO();
+    if (io) {
+      if (targetAudience === 'delivery') {
+          io.to('delivery_partners').emit('new_notification', { type: 'BROADCAST', title, message });
+      } else {
+          io.emit('new_notification', { type: 'BROADCAST', role: targetAudience, title, message });
+      }
+    }
+    
     if (fcmTokens.length > 0) {
       const payload = {
         notification: {
@@ -804,14 +815,14 @@ exports.sendBroadcastNotification = async (req, res) => {
       const response = await admin.messaging().sendEachForMulticast(payload);
       console.log(`FCM Admin Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
       
-      res.status(200).json({ 
+      return res.status(200).json({ 
         success: true, 
-        message: `Broadcast successfully sent to ${response.successCount} devices.` 
+        message: `Broadcast successfully sent via in-app & ${response.successCount} push devices.` 
       });
     } else {
-      res.status(200).json({ 
+      return res.status(200).json({ 
         success: true, 
-        message: "No users found with active push notification tokens for this audience." 
+        message: "Broadcast sent via in-app successfully (No active push tokens found)." 
       });
     }
   } catch (error) {

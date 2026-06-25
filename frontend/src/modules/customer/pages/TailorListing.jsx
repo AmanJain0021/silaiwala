@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, Star, MapPin, Heart, ShieldCheck, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../utils/api';
@@ -8,7 +8,11 @@ import SafeImage from '../../../components/Common/SafeImage';
 
 const TailorListing = () => {
     const navigate = useNavigate();
-    const [search, setSearch] = useState("");
+    const location = useLocation();
+    const [search, setSearch] = useState(() => {
+        const params = new URLSearchParams(location.search);
+        return params.get('service') || '';
+    });
     const [tailors, setTailors] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 

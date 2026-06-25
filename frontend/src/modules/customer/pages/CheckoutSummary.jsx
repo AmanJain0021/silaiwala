@@ -280,11 +280,12 @@ const CheckoutSummary = () => {
     }
 
     const isCartAlteration = isCartCheckout && cartItems.length > 0 && cartItems[0].isAlteration;
+    const isCartCustomDesign = isCartCheckout && cartItems.length > 0 && cartItems[0].isCustomDesign;
     const isAlterationCheckout = isCartAlteration || (isServiceCheckout && currentCheckoutItems.some(item => 
         item.serviceDetails?.category?.name?.toLowerCase().includes('alteration') || 
         item.serviceDetails?.tags?.some(t => t.toLowerCase().includes('alteration'))
     ));
-    const requireFullPayment = (isCartCheckout && !isCartAlteration) || (isServiceCheckout && isAlterationCheckout);
+    const requireFullPayment = (isCartCheckout && !isCartAlteration && !isCartCustomDesign) || (isServiceCheckout && isAlterationCheckout);
 
     const currentPricing = bulkOrder
         ? {
@@ -339,6 +340,28 @@ const CheckoutSummary = () => {
                     return;
                 }
 
+                // If it's a Custom Design from Cart, skip Order flow entirely
+                if (isCartCustomDesign) {
+                    setLoadingText('Submitting custom design request...');
+                    const customDesignRes = await api.post('/custom-designs/request', {
+                        tailorId: cartItems[0].tailor || cartItems[0].tailorId,
+                        description: cartItems[0].config?.customDesignDescription || '',
+                        images: cartItems[0].config?.customDesignImages || [],
+                        deliveryAddress: {
+                            street: selectedAddress.street,
+                            city: selectedAddress.city,
+                            state: selectedAddress.state || '',
+                            zipCode: selectedAddress.zipCode,
+                            location: selectedAddress.location
+                        }
+                    });
+                    if (!customDesignRes.data.success) throw new Error('Custom design request failed');
+                    
+                    clearCart();
+                    navigate('/user/orders', { state: { message: "Custom design request submitted successfully! Awaiting quote." } });
+                    return;
+                }
+
                 let payload;
                 if (isServiceCheckout) {
                     const firstItemTailor = currentCheckoutItems[0]?.serviceDetails?.tailorId || currentCheckoutItems[0]?.serviceDetails?.tailor;
@@ -389,8 +412,9 @@ const CheckoutSummary = () => {
                 }
 
                 setLoadingText('Submitting order...');
-                const orderRes = await api.post('/orders', payload);
-                if (!orderRes.data.success) throw new Error('Order creation failed');
+                const endpoint = isCartAlteration ? '/alterations/request' : '/orders';
+                const orderRes = await api.post(endpoint, payload);
+                if (!orderRes.data.success) throw new Error(isCartAlteration ? 'Alteration request failed' : 'Order creation failed');
                 order = orderRes.data.data;
             }
 
@@ -456,7 +480,12 @@ const CheckoutSummary = () => {
                 else clearCart();
 
                 navigate('/user/checkout/success', {
-                    state: { orderId: order._id, orderNumber: order.orderId, pendingAcceptance: true }
+                    state: { 
+                        orderId: order._id, 
+                        orderNumber: order.orderId || order.alterationId, 
+                        pendingAcceptance: true,
+                        isAlteration: isCartAlteration
+                    }
                 });
                 return;
             }
@@ -597,21 +626,29 @@ const CheckoutSummary = () => {
                         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-4">
                             <h3 className="text-sm font-bold text-gray-900 mb-3">Cart Items ({cartItems.length})</h3>
                             <div className="space-y-4">
-                                {cartItems.map((item) => (
-                                    <div key={item.cartId} className="flex gap-4">
-                                        <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                            <img src={item.images?.[0] || item.image} alt={item.title} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.title}</h4>
-                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">Size: {item.selectedSize} • {item.selectedColor}</p>
-                                            <div className="flex justify-between items-center mt-2">
-                                                <span className="text-sm font-bold text-[#843D9B]">₹{item.price}</span>
-                                                <span className="text-[10px] font-black text-gray-400">QTY: {item.quantity}</span>
+                                {cartItems.map((item) => {
+                                    const isItemAlteration = item.isAlteration;
+                                    const imageSrc = isItemAlteration ? item.config?.alterationImages?.[0] : (item.images?.[0] || item.image);
+                                    const title = isItemAlteration ? 'Custom Alteration Request' : item.title;
+                                    const description = isItemAlteration ? item.config?.alterationDescription : `Size: ${item.selectedSize} • ${item.selectedColor}`;
+                                    const priceDisplay = isItemAlteration ? 'Awaiting Quote' : `₹${item.price}`;
+
+                                    return (
+                                        <div key={item.cartId} className="flex gap-4">
+                                            <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                                <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{title}</h4>
+                                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1 line-clamp-1">{description}</p>
+                                                <div className="flex justify-between items-center mt-2">
+                                                    <span className="text-sm font-bold text-[#843D9B]">{priceDisplay}</span>
+                                                    {!isItemAlteration && <span className="text-[10px] font-black text-gray-400">QTY: {item.quantity}</span>}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -653,51 +690,71 @@ const CheckoutSummary = () => {
                 </div>
 
                 <div className="w-full lg:w-96 space-y-4">
-                    {/* 4. Bill Details */}
+                    {isCartAlteration ? (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-4">
+                        <h3 className="text-sm font-bold text-[#843D9B] mb-1">Awaiting Quote</h3>
+                        <p className="text-xs text-indigo-700/70">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
+                    </div>
+                ) : (
                     <BillDetails 
                         pricing={currentPricing} 
                         advancePercentage={requireFullPayment ? 100 : advancePercentage} 
                         baseLabel={isCartCheckout ? "Product Charges" : "Stitching Charges"}
                     />
+                )}
 
-                    {/* 5. Payment Method */}
+                    {/* 5. Payment Method / Submit Action */}
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <CreditCard size={15} className="text-[#843D9B]" />
-                            Payment Method
-                        </h3>
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-                                <span className="font-bold text-[10px] text-gray-900">UPI</span>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-gray-900">Razorpay Secure</p>
-                                <p className="text-[10px] text-gray-500">Fast & Encrypted</p>
-                            </div>
-                            <Lock size={14} className="text-[#843D9B]" />
-                        </div>
+                        {!isCartAlteration && (
+                            <>
+                                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <CreditCard size={15} className="text-[#843D9B]" />
+                                    Payment Method
+                                </h3>
+                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                                        <span className="font-bold text-[10px] text-gray-900">UPI</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-bold text-gray-900">Razorpay Secure</p>
+                                        <p className="text-[10px] text-gray-500">Fast & Encrypted</p>
+                                    </div>
+                                    <Lock size={14} className="text-[#843D9B]" />
+                                </div>
+                            </>
+                        )}
 
-                        <div className="pt-4 border-t border-gray-100 flex gap-3">
-                            <button
+                        <div className={`${!isCartAlteration ? 'pt-4 border-t border-gray-100 mt-4' : ''} hidden lg:flex gap-3`}>
+                            <div className="text-right">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">To Pay</p>
+                                <p className="font-bold text-gray-900 mt-1">₹{finalTotal.toLocaleString()}</p>
+                            </div>
+                            <button 
                                 onClick={handlePayment}
                                 disabled={isProcessing}
-                                className="flex-1 bg-[#843D9B] text-white h-12 rounded-xl text-sm font-bold flex items-center justify-center hover:bg-[#1E1F4D] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="flex-1 bg-[#843D9B] text-white h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6c3080] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 {isProcessing ? (
-                                    <span className="flex items-center gap-2">
-                                        <Loader2 size={16} className="animate-spin" />
-                                        {loadingText}
-                                    </span>
+                                    <><Loader2 size={18} className="animate-spin" /> {loadingText}</>
                                 ) : (
-                                    isCartAlteration ? 'Submit Request' : (requireFullPayment || bulkOrderId ? `Pay ₹${finalTotal}` : `Pay Advance ₹${finalTotal}`)
+                                    <>
+                                        {(bulkOrderId || isCartAlteration || isCartCustomDesign || (!requireFullPayment && !isCartCheckout)) 
+                                            ? 'Place Order' 
+                                            : requireFullPayment 
+                                                ? 'Proceed to Secure Payment' 
+                                                : `Pay Advance ₹${Math.round(finalTotal * (advancePercentage/100))}`
+                                        }
+                                    </>
                                 )}
                             </button>
                         </div>
 
-                        <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
-                            <ShieldCheck size={12} className="text-green-500" />
-                            Secure Payment Powered by Razorpay
-                        </div>
+                        {!isCartAlteration && (
+                            <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
+                                <ShieldCheck size={12} className="text-green-500" />
+                                Secure Payment Powered by Razorpay
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -715,7 +772,7 @@ const CheckoutSummary = () => {
                     ) : !selectedAddress ? (
                         'Select Address'
                     ) : (
-                        isCartAlteration ? <>{'Submit Request'} <ArrowRight size={16} /></> : <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : (requireFullPayment ? `Pay ₹${finalTotal}` : `Pay Advance ₹${finalTotal}`)} <ArrowRight size={16} /></>
+                        (isCartAlteration || isCartCustomDesign) ? <>{'Submit Request'} <ArrowRight size={16} /></> : <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : (requireFullPayment ? `Pay ₹${finalTotal}` : `Place Order`)} <ArrowRight size={16} /></>
                     )}
                 </button>
             </div>

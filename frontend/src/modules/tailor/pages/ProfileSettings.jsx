@@ -55,7 +55,7 @@ const ProfileSettings = () => {
                         email: data.user?.email || '',
                         phoneNumber: data.user?.phoneNumber || '',
                         bio: data.bio || '',
-                        address: data.location?.address || '123 Main St, Bandra West, Mumbai',
+                        address: data.location?.address || '',
                         latitude: data.location?.coordinates?.[1] || null,
                         longitude: data.location?.coordinates?.[0] || null,
                         profileImage: data.user?.profileImage || ''

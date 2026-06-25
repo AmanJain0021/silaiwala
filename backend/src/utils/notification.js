@@ -113,16 +113,22 @@ const sendNotification = async (options) => {
       }
 
       if (fcmTokens.length > 0) {
+        const fcmData = { type: type || 'SYSTEM' };
+        if (data) {
+          for (const key in data) {
+            fcmData[key] = data[key] ? data[key].toString() : '';
+          }
+        }
+        if (!fcmData.url && data?.targetUrl) {
+          fcmData.url = data.targetUrl.toString();
+        }
+
         const payload = {
           notification: {
             title: title,
             body: message,
           },
-          data: {
-            type: type || 'SYSTEM',
-            orderId: data?.orderId ? data.orderId.toString() : '',
-            url: data?.targetUrl || ''
-          },
+          data: fcmData,
           tokens: fcmTokens
         };
         

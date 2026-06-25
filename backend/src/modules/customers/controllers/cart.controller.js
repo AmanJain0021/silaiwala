@@ -36,7 +36,7 @@ exports.getCart = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.addToCart = asyncHandler(async (req, res, next) => {
-  const { productId, serviceId, isAlteration, tailorId, quantity, price, config } = req.body;
+  const { productId, serviceId, isAlteration, isCustomDesign, tailorId, quantity, price, config } = req.body;
 
   let cart = await Cart.findOne({ user: req.user.id });
 
@@ -50,13 +50,16 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
     const hasProducts = cart.items.some(item => item.product);
     const hasServices = cart.items.some(item => item.service);
 
-    if (productId && (hasServices || cart.items.some(i => i.isAlteration))) {
+    if (productId && (hasServices || cart.items.some(i => i.isAlteration) || cart.items.some(i => i.isCustomDesign))) {
       return next(new ErrorResponse("This cart already contains a different service type. Please complete or clear your cart.", 400));
     }
-    if (serviceId && (hasProducts || cart.items.some(i => i.isAlteration))) {
+    if (serviceId && (hasProducts || cart.items.some(i => i.isAlteration) || cart.items.some(i => i.isCustomDesign))) {
       return next(new ErrorResponse("This cart already contains a different service type. Please complete or clear your cart.", 400));
     }
-    if (isAlteration && (hasProducts || hasServices)) {
+    if (isAlteration && (hasProducts || hasServices || cart.items.some(i => i.isCustomDesign))) {
+      return next(new ErrorResponse("This cart already contains a different service type. Please complete or clear your cart.", 400));
+    }
+    if (isCustomDesign && (hasProducts || hasServices || cart.items.some(i => i.isAlteration))) {
       return next(new ErrorResponse("This cart already contains a different service type. Please complete or clear your cart.", 400));
     }
 
@@ -79,10 +82,10 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
   // Check if item already exists (Alterations don't stack by ID usually, but we check if it's identical or just add new)
   const itemIndex = cart.items.findIndex(item => 
     (productId && item.product?.toString() === productId) || 
-    (serviceId && item.service?.toString() === serviceId && !isAlteration)
+    (serviceId && item.service?.toString() === serviceId && !isAlteration && !isCustomDesign)
   );
 
-  if (itemIndex > -1 && !isAlteration) {
+  if (itemIndex > -1 && !isAlteration && !isCustomDesign) {
     cart.items[itemIndex].quantity += (quantity || 1);
     if (config) cart.items[itemIndex].config = config;
   } else {
@@ -90,6 +93,7 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
       product: productId || null,
       service: serviceId || null,
       isAlteration: isAlteration || false,
+      isCustomDesign: isCustomDesign || false,
       tailor: tailorId || null,
       quantity: quantity || 1,
       price: price || 0,

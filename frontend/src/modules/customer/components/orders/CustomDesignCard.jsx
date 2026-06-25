@@ -1,22 +1,22 @@
 import React from 'react';
-import { Clock, Ruler, ChevronRight, CheckCircle, IndianRupee } from 'lucide-react';
+import { Wand2, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../../utils/api';
 import toast from 'react-hot-toast';
 
-
-const AlterationCard = ({ alteration, onPaymentSuccess }) => {
+const CustomDesignCard = ({ design, onPaymentSuccess }) => {
     const navigate = useNavigate();
 
     const [deliveryRates, setDeliveryRates] = React.useState({ baseFee: 49, perKmRate: 10 });
     const [platformFeePercentage, setPlatformFeePercentage] = React.useState(5);
     const [gstPercentage, setGstPercentage] = React.useState(18);
+    const [advancePercentage, setAdvancePercentage] = React.useState(50); // Usually advance is taken
 
     const [distanceKm, setDistanceKm] = React.useState(null);
 
     React.useEffect(() => {
         const fetchDistancesAndSettings = async () => {
-            if (alteration.quotationStatus !== 'quoted') return;
+            if (design.quotationStatus !== 'quoted') return;
             
             // 1. Fetch Settings
             try {
@@ -24,6 +24,9 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
                 if (res.data.success) {
                     if (res.data.data?.walletConfig?.platformFeePercentage) {
                         setPlatformFeePercentage(res.data.data.walletConfig.platformFeePercentage);
+                    }
+                    if (res.data.data?.walletConfig?.advancePercentage) {
+                        setAdvancePercentage(res.data.data.walletConfig.advancePercentage);
                     }
                     if (res.data.data?.deliveryRates) {
                         setDeliveryRates(res.data.data.deliveryRates);
@@ -37,10 +40,10 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
             }
 
             // 2. Fetch True Road Distance
-            if (alteration.pickupAddress?.location?.coordinates && alteration.tailor?.location?.coordinates) {
+            if (design.pickupAddress?.location?.coordinates && design.tailor?.location?.coordinates) {
                 try {
-                    const [uLng, uLat] = alteration.pickupAddress.location.coordinates;
-                    const [tLng, tLat] = alteration.tailor.location.coordinates;
+                    const [uLng, uLat] = design.pickupAddress.location.coordinates;
+                    const [tLng, tLat] = design.tailor.location.coordinates;
                     
                     const distRes = await api.post('/distance/calculate', {
                         origin: [tLat, tLng],
@@ -57,22 +60,26 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
         };
 
         fetchDistancesAndSettings();
-    }, [alteration.quotationStatus, alteration.pickupAddress, alteration.tailor]);
+    }, [design.quotationStatus, design.pickupAddress, design.tailor]);
 
     let deliveryFee = deliveryRates?.baseFee || 49;
     if (distanceKm !== null && distanceKm > 0 && deliveryRates) {
         deliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
     }
 
-    const baseAmount = alteration.quoteAmount || 0;
+    const baseAmount = design.quoteAmount || 0;
     const platformFee = Math.round(baseAmount * (platformFeePercentage / 100));
     const taxableAmount = baseAmount + platformFee;
     const taxes = Math.round(taxableAmount * (gstPercentage / 100));
-    const finalTotal = baseAmount + deliveryFee + platformFee + taxes;
+    const fullTotal = baseAmount + deliveryFee + platformFee + taxes;
+    
+    const finalTotal = fullTotal; 
+    const advancePaymentAmount = Math.round(finalTotal * (advancePercentage / 100));
+    const remainingPaymentAmount = finalTotal - advancePaymentAmount;
 
     const handleAcceptAndPay = async () => {
         try {
-            const rzpOrderRes = await api.post(`/alterations/${alteration._id}/razorpay`, {
+            const rzpOrderRes = await api.post(`/custom-designs/${design._id}/razorpay`, {
                 finalTotal
             });
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
@@ -83,11 +90,11 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "SilaiWala",
-                description: "Alteration Payment",
+                description: "Custom Design Payment",
                 order_id: rzpOrder.id,
                 handler: async function (response) {
                     try {
-                        const verifyRes = await api.post(`/alterations/${alteration._id}/verify`, {
+                        const verifyRes = await api.post(`/custom-designs/${design._id}/verify`, {
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
@@ -135,51 +142,51 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                        <Ruler size={14} className="text-[#843D9B]" />
+                        <Wand2 size={14} className="text-[#843D9B]" />
                     </div>
                     <div>
-                        <p className="text-[10px] text-gray-500 font-medium">Alteration ID</p>
-                        <h3 className="text-sm font-bold text-gray-900">{alteration.alterationId}</h3>
+                        <p className="text-[10px] text-gray-500 font-medium">Design ID</p>
+                        <h3 className="text-sm font-bold text-gray-900">{design.customDesignId}</h3>
                     </div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(alteration.quotationStatus)}`}>
-                    {alteration.quotationStatus}
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(design.quotationStatus)}`}>
+                    {design.quotationStatus}
                 </span>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-3 flex gap-3 items-center">
                 <div className="w-12 h-12 rounded-lg bg-gray-200 overflow-hidden shrink-0">
-                    {alteration.images && alteration.images[0] && (
-                        <img src={alteration.images[0]} alt="Garment" className="w-full h-full object-cover" />
+                    {design.images && design.images[0] && (
+                        <img src={design.images[0]} alt="Garment" className="w-full h-full object-cover" />
                     )}
                 </div>
                 <div className="flex-1">
-                    <p className="text-xs text-gray-700 line-clamp-2">{alteration.description}</p>
+                    <p className="text-xs text-gray-700 line-clamp-2">{design.description}</p>
                 </div>
             </div>
 
             <div className="flex justify-between items-end mt-1">
                 <div>
                     <p className="text-[10px] text-gray-500">Tailor</p>
-                    <p className="text-xs font-bold text-gray-900">{alteration.tailor?.name || 'Assigned Tailor'}</p>
+                    <p className="text-xs font-bold text-gray-900">{design.tailor?.name || 'Assigned Tailor'}</p>
                 </div>
-                {alteration.quotationStatus === 'quoted' && (
+                {design.quotationStatus === 'quoted' && (
                     <div className="text-right">
                         <p className="text-[10px] text-gray-500">Quote Amount</p>
-                        <p className="text-sm font-bold text-[#843D9B]">₹{alteration.quoteAmount}</p>
+                        <p className="text-sm font-bold text-[#843D9B]">₹{design.quoteAmount}</p>
                     </div>
                 )}
-                {alteration.quotationStatus === 'accepted' && alteration.paymentStatus === 'paid' && (
+                {design.quotationStatus === 'accepted' && design.advancePaymentStatus === 'paid' && (
                     <div className="text-right">
-                        <p className="text-[10px] text-green-600 font-bold flex items-center justify-end gap-1"><CheckCircle size={12}/> Paid ₹{alteration.quoteAmount}</p>
-                        {alteration.linkedOrderId && (
-                            <button onClick={() => navigate(`/user/orders/${alteration.linkedOrderId._id}/track`)} className="text-[10px] text-[#843D9B] font-bold underline mt-1">Track Order</button>
+                        <p className="text-[10px] text-green-600 font-bold flex items-center justify-end gap-1"><CheckCircle size={12}/> Paid</p>
+                        {design.linkedOrderId && (
+                            <button onClick={() => navigate(`/user/orders/${design.linkedOrderId._id}/track`)} className="text-[10px] text-[#843D9B] font-bold underline mt-1">Track Order</button>
                         )}
                     </div>
                 )}
             </div>
 
-            {alteration.quotationStatus === 'quoted' && (
+            {design.quotationStatus === 'quoted' && (
                 <div className="mt-2 pt-3 border-t border-gray-100">
                     <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-100 space-y-2">
                         <div className="flex justify-between items-center">
@@ -201,8 +208,16 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
                             <span className="text-xs font-bold text-gray-900">₹{taxes}</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
-                            <span className="text-sm font-black text-gray-900">Final Total</span>
-                            <span className="text-sm font-black text-[#843D9B]">₹{finalTotal}</span>
+                            <span className="text-sm font-black text-gray-900">Total Project Cost</span>
+                            <span className="text-sm font-black text-gray-900">₹{finalTotal}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                            <span className="text-xs font-bold text-gray-700">Advance Payable Now ({advancePercentage}%)</span>
+                            <span className="text-xs font-bold text-[#843D9B]">₹{advancePaymentAmount}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                            <span className="text-[10px] text-gray-500">Pay on Delivery</span>
+                            <span className="text-[10px] font-bold text-gray-500">₹{remainingPaymentAmount}</span>
                         </div>
                     </div>
                     
@@ -211,7 +226,7 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
                             onClick={handleAcceptAndPay}
                             className="flex-1 bg-[#843D9B] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#1E1F4D] transition-colors"
                         >
-                            Accept & Pay ₹{finalTotal}
+                            Accept & Pay Advance ₹{advancePaymentAmount}
                         </button>
                     </div>
                 </div>
@@ -220,4 +235,4 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
     );
 };
 
-export default AlterationCard;
+export default CustomDesignCard;

@@ -4,12 +4,23 @@ import { Home, ClipboardList, User, LogOut, Menu, X, MapPin, Bell, Navigation, W
 import { MeasurementAuthProvider } from '../context/MeasurementAuthContext';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import toast from 'react-hot-toast';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
+import ManualLocationModal from '../../../shared/components/ManualLocationModal';
 
 const LocationBanner = () => {
     const { profile } = useMeasurementStore();
     const coords = profile?.currentLocation?.coordinates;
     const [addressName, setAddressName] = useState('Location not set');
     const [isFetching, setIsFetching] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { detectLocation } = useUnifiedLocation({ fetchAddress: true });
+    
+    // Auto-fetch on mount
+    useEffect(() => {
+        if (!coords || coords.length !== 2) {
+            handleFetchLocation();
+        }
+    }, []);
 
     useEffect(() => {
         if (coords && coords.length === 2) {
@@ -34,33 +45,34 @@ const LocationBanner = () => {
         }
     }, [coords]);
 
-    const handleFetchLocation = () => {
+    const handleFetchLocation = async () => {
         setIsFetching(true);
         toast.loading('Fetching precise location...', { id: 'loc-toast' });
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { longitude, latitude } = position.coords;
-                    try {
-                        await useMeasurementStore.getState().updateLocation([longitude, latitude]);
-                        toast.success('Location updated successfully!', { id: 'loc-toast' });
-                    } catch (err) {
-                        toast.error('Failed to update location', { id: 'loc-toast' });
-                    } finally {
-                        setIsFetching(false);
-                    }
-                },
-                (error) => {
-                    console.error('Geolocation error:', error);
-                    toast.error('Location permission denied.', { id: 'loc-toast' });
-                    setIsFetching(false);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        } else {
-            toast.error('Geolocation is not supported', { id: 'loc-toast' });
+        try {
+            const data = await detectLocation();
+            if (data && data.latitude && data.longitude) {
+                await useMeasurementStore.getState().updateLocation([data.longitude, data.latitude]);
+                toast.success('Location updated successfully!', { id: 'loc-toast' });
+            }
+        } catch (error) {
+            toast.error('Failed to update location automatically.', { id: 'loc-toast' });
+        } finally {
             setIsFetching(false);
         }
+    };
+
+    const handleSetManualLocation = async (place) => {
+        // Save to local storage for global override
+        localStorage.setItem('manual_location', JSON.stringify({
+            latitude: place.latitude,
+            longitude: place.longitude,
+            address: place.address
+        }));
+        
+        // Immediately update store
+        await useMeasurementStore.getState().updateLocation([place.longitude, place.latitude]);
+        setAddressName(place.address);
+        toast.success('Manual location set successfully!');
     };
 
     return (
@@ -78,10 +90,17 @@ const LocationBanner = () => {
             </div>
             <div className="flex items-center space-x-3 flex-shrink-0">
                 <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors flex items-center justify-center text-xs font-semibold"
+                    title="Set Location Manually"
+                >
+                    Manual
+                </button>
+                <button 
                     onClick={handleFetchLocation}
                     disabled={isFetching}
                     className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
-                    title="Fetch Location"
+                    title="Auto Fetch Location"
                 >
                     <Navigation className={`h-5 w-5 text-white ${isFetching ? 'animate-pulse' : ''}`} />
                 </button>
@@ -89,6 +108,12 @@ const LocationBanner = () => {
                     <Bell className="h-5 w-5 text-white" />
                 </button>
             </div>
+            
+            <ManualLocationModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onLocationSet={handleSetManualLocation}
+            />
         </div>
     );
 };

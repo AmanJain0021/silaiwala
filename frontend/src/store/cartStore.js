@@ -20,18 +20,19 @@ const useCartStore = create(
                         const baseData = item.product || item.service || {};
                         return {
                             ...baseData,
-                            title: item.isAlteration ? "Custom Alteration" : baseData.title,
-                            price: item.isAlteration ? 0 : (item.price || baseData.basePrice || baseData.price || 0),
+                            title: item.isCustomDesign ? "Custom Design" : (item.isAlteration ? "Custom Alteration" : baseData.title),
+                            price: (item.isAlteration || item.isCustomDesign) ? 0 : (item.price || baseData.basePrice || baseData.price || 0),
                             id: baseData._id || item._id,
                             productId: item.product ? item.product._id : undefined,
                             serviceId: item.service ? item.service._id : undefined,
                             isAlteration: item.isAlteration,
+                            isCustomDesign: item.isCustomDesign,
                             quantity: item.quantity,
                             cartId: item._id, // Backend item ID
                             selectedSize: item.config?.size || 'Standard',
                             selectedColor: item.config?.color || 'Default',
-                            images: item.isAlteration ? item.config?.alterationImages : baseData.images,
-                            image: item.isAlteration && item.config?.alterationImages?.length > 0 ? item.config.alterationImages[0] : baseData.image,
+                            images: item.isCustomDesign ? item.config?.customDesignImages : (item.isAlteration ? item.config?.alterationImages : baseData.images),
+                            image: (item.isCustomDesign && item.config?.customDesignImages?.length > 0) ? item.config.customDesignImages[0] : ((item.isAlteration && item.config?.alterationImages?.length > 0) ? item.config.alterationImages[0] : baseData.image),
                             tailor: item.tailor || baseData.tailor, // Crucial for routing order to the right tailor
                             config: item.config || {}
                         };
@@ -45,13 +46,16 @@ const useCartStore = create(
                 }
             },
 
-            addItem: async (product, variant = { size: 'Standard', color: 'Default' }) => {
+            addItem: async (product, variant = { size: 'Standard', color: 'Default' }, options = {}) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await api.post('/customers/cart', {
-                        productId: product._id || product.id,
+                        productId: product?.isCustomDesign ? null : (product._id || product.id),
+                        serviceId: product?.isCustomDesign ? null : undefined, // If needed
+                        isCustomDesign: product?.isCustomDesign || options.isCustomDesign,
+                        tailorId: options.tailorId,
                         quantity: 1,
-                        price: product.price,
+                        price: product?.price || 0,
                         config: variant
                     });
                     

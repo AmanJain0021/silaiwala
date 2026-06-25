@@ -3,10 +3,12 @@ const Order = require("../../../models/Order");
 const Cart = require("../../../models/Cart");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
+const Tailor = require("../../../models/Tailor");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 const { sendNotification } = require("../../../utils/notification");
 const razorpay = require("../../../config/razorpay");
+const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
 
 /**
  * @desc    Submit an Alteration Request from Cart
@@ -14,20 +16,10 @@ const razorpay = require("../../../config/razorpay");
  * @access  Private (Customer)
  */
 exports.submitAlterationRequest = asyncHandler(async (req, res, next) => {
-  const { deliveryAddress } = req.body;
+  const { tailorId, description, images, deliveryAddress } = req.body;
 
-  const cart = await Cart.findOne({ user: req.user.id });
-  if (!cart || !cart.items || cart.items.length === 0) {
-    return next(new ErrorResponse("Cart is empty", 400));
-  }
-
-  const alterationItem = cart.items.find(item => item.isAlteration);
-  if (!alterationItem) {
-    return next(new ErrorResponse("No alteration found in cart", 400));
-  }
-
-  if (!alterationItem.config || !alterationItem.config.alterationDescription || !alterationItem.config.alterationImages || alterationItem.config.alterationImages.length === 0) {
-    return next(new ErrorResponse("Alteration description and images are required", 400));
+  if (!tailorId || !description || !images || images.length === 0 || !deliveryAddress) {
+    return next(new ErrorResponse("Tailor, description, images, and delivery address are required", 400));
   }
 
   const alterationId = `ALT-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
@@ -35,20 +27,16 @@ exports.submitAlterationRequest = asyncHandler(async (req, res, next) => {
   const alteration = await Alteration.create({
     alterationId,
     customer: req.user.id,
-    tailor: alterationItem.tailor,
-    description: alterationItem.config.alterationDescription,
-    images: alterationItem.config.alterationImages,
+    tailor: tailorId,
+    description: description,
+    images: images,
     pickupAddress: deliveryAddress,
     quotationStatus: "pending"
   });
 
-  // Clear the alteration item from cart
-  cart.items = cart.items.filter(item => !item.isAlteration);
-  await cart.save();
-
   // Notify Tailor
   await sendNotification({
-      recipient: alterationItem.tailor,
+      recipient: tailorId,
       type: "ALTERATION_REQUEST",
       title: "New Alteration Request!",
       message: `You have received a new alteration request (${alterationId}). Please review and provide a quote.`,
@@ -85,10 +73,22 @@ exports.getAlterations = asyncHandler(async (req, res, next) => {
     .populate('linkedOrderId')
     .sort('-createdAt');
 
+  const tailorUserIds = alterations.map(a => a.tailor._id);
+  const tailors = await Tailor.find({ user: { $in: tailorUserIds } });
+
+  const data = alterations.map(alt => {
+     const altObj = alt.toObject();
+     const tailorProfile = tailors.find(t => t.user.toString() === altObj.tailor._id.toString());
+     if (tailorProfile && tailorProfile.location) {
+         altObj.tailor.location = tailorProfile.location;
+     }
+     return altObj;
+  });
+
   res.status(200).json({
     success: true,
     count: alterations.length,
-    data: alterations
+    data: data
   });
 });
 
@@ -163,8 +163,10 @@ exports.createRazorpayAlterationOrder = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("This alteration is already paid", 400));
   }
 
+  const finalTotal = req.body.finalTotal || alteration.quoteAmount;
+
   const options = {
-    amount: Math.round(alteration.quoteAmount * 100), // amount in paise
+    amount: Math.round(finalTotal * 100), // amount in paise
     currency: "INR",
     receipt: `alt_receipt_${crypto.randomBytes(5).toString("hex")}`,
   };
@@ -186,7 +188,7 @@ exports.createRazorpayAlterationOrder = asyncHandler(async (req, res, next) => {
  * @access  Private (Customer)
  */
 exports.verifyAlterationPayment = asyncHandler(async (req, res, next) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, finalTotal, deliveryFee, platformFee, taxes } = req.body;
 
   const sign = razorpay_order_id + "|" + razorpay_payment_id;
   const expectedSign = crypto
@@ -222,7 +224,10 @@ exports.verifyAlterationPayment = asyncHandler(async (req, res, next) => {
       orderId,
       customer: alteration.customer,
       tailor: alteration.tailor,
-      totalAmount: alteration.quoteAmount,
+      totalAmount: finalTotal || alteration.quoteAmount,
+      deliveryFee: deliveryFee || 0,
+      platformFee: platformFee || 0,
+      taxes: taxes || 0,
       status: "fabric-ready-for-pickup", // Triggers delivery partner to pick up garment from customer
       paymentStatus: "paid",
       paymentId: razorpay_payment_id,
@@ -257,6 +262,9 @@ exports.verifyAlterationPayment = asyncHandler(async (req, res, next) => {
     });
 
     await session.commitTransaction();
+
+    // Trigger auto-assignment of delivery partner for fabric pickup
+    await autoAssignDelivery(newOrder[0]._id, "pickup");
 
     res.status(200).json({
       success: true,

@@ -44,6 +44,8 @@ const orderSchema = new mongoose.Schema(
         },
         isAlteration: { type: Boolean, default: false },
         alterationRef: { type: mongoose.Schema.Types.ObjectId, ref: "Alteration" },
+        isCustomDesign: { type: Boolean, default: false },
+        customDesignRef: { type: mongoose.Schema.Types.ObjectId, ref: "CustomDesign" },
         deliveryType: {
           type: String,
           enum: ["standard", "express", "premium"],
@@ -141,6 +143,19 @@ const orderSchema = new mongoose.Schema(
     isMeasurementHome: {
         type: Boolean,
         default: false
+    },
+    isBridalConsultation: {
+        type: Boolean,
+        default: false
+    },
+    bridalNotes: {
+        type: String
+    },
+    bridalDate: {
+        type: String
+    },
+    bridalTime: {
+        type: String
     },
     fabricDeliveryPreference: {
         type: String,

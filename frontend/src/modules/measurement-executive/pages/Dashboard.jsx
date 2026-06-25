@@ -3,10 +3,12 @@ import useMeasurementStore from '../store/measurementExecutiveStore';
 import { useMeasurementAuth } from '../context/MeasurementAuthContext';
 import { ClipboardList, CheckCircle, TrendingUp, MapPin, User } from 'lucide-react';
 import toast from 'react-hot-toast';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 const Dashboard = () => {
     const { profile, stats, loading, fetchDashboard, toggleAvailability } = useMeasurementStore();
     const { isSocketConnected } = useMeasurementAuth();
+    const { detectLocation } = useUnifiedLocation({ fetchAddress: false });
 
     const executiveName = profile?.user?.name || profile?.name || 'Measurement Executive';
     const coords = profile?.currentLocation?.coordinates;
@@ -43,26 +45,16 @@ const Dashboard = () => {
             
             if (newStatus === 'online') {
                 toast.loading('Fetching location...', { id: 'loc-toast' });
-                if ('geolocation' in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                        async (position) => {
-                            const { longitude, latitude } = position.coords;
-                            try {
-                                await useMeasurementStore.getState().updateLocation([longitude, latitude]);
-                                await toggleAvailability(newStatus);
-                                toast.success(`You are now online`, { id: 'loc-toast' });
-                            } catch (err) {
-                                toast.error('Failed to update status', { id: 'loc-toast' });
-                            }
-                        },
-                        (error) => {
-                            console.error('Geolocation error:', error);
-                            toast.error('Location required to go online. Please enable it.', { id: 'loc-toast' });
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                    );
-                } else {
-                    toast.error('Geolocation is not supported by your browser', { id: 'loc-toast' });
+                try {
+                    const data = await detectLocation();
+                    if (data && data.latitude && data.longitude) {
+                        await useMeasurementStore.getState().updateLocation([data.longitude, data.latitude]);
+                        await toggleAvailability(newStatus);
+                        toast.success(`You are now online`, { id: 'loc-toast' });
+                    }
+                } catch (error) {
+                    console.error('Location error:', error);
+                    toast.error('Location required to go online. Please enable it or set manually.', { id: 'loc-toast' });
                 }
             } else {
                 await toggleAvailability(newStatus);

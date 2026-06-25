@@ -42,7 +42,7 @@ const ALLOWED_TRANSITIONS = {
   "cutting": ["stitching", "finishing", "quality-check", "ready", "cancelled"],
   "stitching": ["finishing", "quality-check", "ready", "cancelled"],
   "finishing": ["quality-check", "ready", "cancelled"],
-  "quality-check": ["ready", "cancelled"],
+  "quality-check": ["ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
 
   // Ready for Customer/Delivery
   "ready": ["ready-for-delivery", "ready-for-pickup", "cancelled"],
