@@ -267,18 +267,22 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     const Customer = require("../../../models/Customer");
     const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
     
-    let address = 'Customer Address Not Provided';
-    let latitude = null;
-    let longitude = null;
+    let address = 'Address not available';
 
     if (order.deliveryAddress) {
-        address = `${order.deliveryAddress.street || ''}, ${order.deliveryAddress.city || ''}, ${order.deliveryAddress.state || ''} - ${order.deliveryAddress.zipCode || ''}`;
+        const parts = [order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean);
+        address = parts.join(', ');
+        if (order.deliveryAddress.zipCode) address += ` - ${order.deliveryAddress.zipCode}`;
+        if (!address.trim() || address === ' - ') address = 'Address not available';
     }
 
     if (customerDoc && customerDoc.addresses && customerDoc.addresses.length > 0) {
         const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
         if (!order.deliveryAddress) {
-           address = `${defaultAddress.street || ''}, ${defaultAddress.city || ''}, ${defaultAddress.state || ''} - ${defaultAddress.zipCode || ''}`;
+            const parts = [defaultAddress.street, defaultAddress.city, defaultAddress.state].filter(Boolean);
+            address = parts.join(', ');
+            if (defaultAddress.zipCode) address += ` - ${defaultAddress.zipCode}`;
+            if (!address.trim() || address === ' - ') address = 'Address not available';
         }
         if (defaultAddress.location?.coordinates?.length >= 2) {
             longitude = defaultAddress.location.coordinates[0];
@@ -287,7 +291,7 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     }
 
     let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryFee;
+    let deliveryEarnings = order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20;
     
 
 
@@ -859,9 +863,6 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
   if (isDelivery) {
     allowedStatuses.push("fabric-ready-for-pickup", "ready", "ready-for-delivery", "ready-for-pickup");
   }
-  if (isMeasurement) {
-    allowedStatuses.push("measurement-verification", "pending-measurement"); // Add measurement statuses here
-  }
 
   if (allowedStatuses.length === 0) {
     return res.status(200).json({ success: true, count: 0, data: [] });
@@ -910,8 +911,23 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
     let latitude = null;
     let longitude = null;
+    let address = 'Address not available';
+
+    if (order.deliveryAddress) {
+        const parts = [order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean);
+        address = parts.join(', ');
+        if (order.deliveryAddress.zipCode) address += ` - ${order.deliveryAddress.zipCode}`;
+        if (!address.trim() || address === ' - ') address = 'Address not available';
+    }
+
     if (customerDoc && customerDoc.addresses && customerDoc.addresses.length > 0) {
         const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
+        if (!order.deliveryAddress) {
+            const parts = [defaultAddress.street, defaultAddress.city, defaultAddress.state].filter(Boolean);
+            address = parts.join(', ');
+            if (defaultAddress.zipCode) address += ` - ${defaultAddress.zipCode}`;
+            if (!address.trim() || address === ' - ') address = 'Address not available';
+        }
         if (defaultAddress.location?.coordinates?.length >= 2) {
             longitude = defaultAddress.location.coordinates[0];
             latitude = defaultAddress.location.coordinates[1];
@@ -919,12 +935,15 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     }
 
     let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryEarnings;
+    let deliveryEarnings = order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20;
 
     return {
       ...order,
       tailor: tailorProfile,
       taskType: isFabric ? "fabric-pickup" : "order-delivery",
+      address,
+      latitude,
+      longitude,
       deliveryDistance,
       deliveryEarnings
     };
@@ -1049,7 +1068,7 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
   const { getIO } = require("../../../config/socket");
   const io = getIO();
   if (io) {
-    io.to("delivery_partners").emit("task_claimed", { orderId: order._id });
+    io.to("delivery_partners").emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
     
     // Update tailor panel to show partner name instead of "Searching"
     io.to(`user_${order.tailor}`).emit('order_status_updated', {

@@ -99,6 +99,17 @@ const initSocket = (httpServer) => {
       console.log(`🚪 Socket ${socket.id} left room: order_${orderId}`);
     });
 
+    // ── Issue chat rooms ─────────────────────────────────────────────────────
+    socket.on("join_issue_room", (issueId) => {
+      socket.join(`issue_${issueId}`);
+      console.log(`💬 Socket ${socket.id} joined room: issue_${issueId}`);
+    });
+
+    socket.on("leave_issue_room", (issueId) => {
+      socket.leave(`issue_${issueId}`);
+      console.log(`🚪 Socket ${socket.id} left room: issue_${issueId}`);
+    });
+
     // ── Admin joins a global admin room ──────────────────────────────────────
     socket.on("join_admin_room", () => {
       socket.join("admin_room");

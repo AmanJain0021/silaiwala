@@ -10,7 +10,8 @@ import {
     UserCircle,
     Wallet,
     Ruler,
-    Wand2
+    Wand2,
+    AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
@@ -69,8 +70,9 @@ const TailorLayout = () => {
     const menuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Home', path: '/partner' },
         { icon: <ClipboardList size={20} />, label: 'Orders', path: '/partner/orders', badge: pendingOrdersCount },
-        { icon: <Ruler size={20} />, label: 'Alterations', path: '/partner/alterations' },
-        { icon: <Wand2 size={20} />, label: 'Custom Designs', path: '/partner/custom-designs' },
+        { icon: <Ruler size={20} />, label: 'Alterations', mobileLabel: 'Alt.', path: '/partner/alterations' },
+        { icon: <Wand2 size={20} />, label: 'Custom Designs', mobileLabel: 'Custom', path: '/partner/custom-designs' },
+        { icon: <AlertTriangle size={20} />, label: 'Issues', path: '/partner/issues' },
         { icon: <Wallet size={20} />, label: 'Wallet', path: '/partner/wallet' },
         { icon: <ShoppingBag size={20} />, label: 'Services', path: '/partner/products' },
         { icon: <UserCircle size={20} />, label: 'Profile', path: '/partner/settings' },
@@ -177,7 +179,7 @@ const TailorLayout = () => {
                 </main>
 
                 {/* ── BOTTOM NAVIGATION (MOBILE ONLY) ── */}
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0A0A0A] border-t border-[#1C1C1C] px-2 py-2 flex items-center justify-around z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-start gap-6 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
@@ -195,10 +197,10 @@ const TailorLayout = () => {
                                 <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
                                     isActive
                                         ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/30 scale-110'
-                                        : 'text-[#555555] active:scale-90'
+                                        : 'text-gray-400 active:scale-90'
                                 }`}>
                                     {item.badge > 0 && (
-                                        <span className="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-1 bg-rose-500 rounded-full border-[1.5px] border-[#0A0A0A] flex items-center justify-center text-[7px] font-black text-white shadow-lg z-10">
+                                        <span className="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-1 bg-rose-500 rounded-full border-[1.5px] border-white flex items-center justify-center text-[7px] font-black text-white shadow-sm z-10">
                                             {item.badge > 99 ? '99+' : item.badge}
                                         </span>
                                     )}
@@ -207,10 +209,10 @@ const TailorLayout = () => {
                                         strokeWidth: isActive ? 2.5 : 2
                                     })}
                                 </div>
-                                <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${
-                                    isActive ? 'text-[#843D9B]' : 'text-[#444444]'
+                                <span className={`text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                    isActive ? 'text-[#843D9B]' : 'text-gray-400'
                                 }`}>
-                                    {item.label}
+                                    {item.mobileLabel || item.label}
                                 </span>
                             </Link>
                         );

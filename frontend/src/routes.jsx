@@ -50,6 +50,8 @@ const MeasurementDetail = React.lazy(() => import('./modules/tailor/pages/Measur
 const PartnerLanding = React.lazy(() => import('./modules/tailor/pages/PartnerLanding'));
 const TailorAlterations = React.lazy(() => import('./modules/tailor/pages/TailorAlterations'));
 const TailorCustomDesigns = React.lazy(() => import('./modules/tailor/pages/TailorCustomDesigns')); // NEW
+const TailorReportedIssues = React.lazy(() => import('./modules/tailor/pages/ReportedIssues')); // NEW
+const TailorIssueDetails = React.lazy(() => import('./modules/tailor/pages/TailorIssueDetails')); // NEW
 
 // Customer Pages
 const CustomerHome = React.lazy(() => import('./modules/customer/pages/Home'));
@@ -120,6 +122,7 @@ const AdminStyleAddons = React.lazy(() => import('./modules/admin/pages/StyleAdd
 const AdminBulkOrders = React.lazy(() => import('./modules/admin/pages/BulkOrders'));
 const AdminSupport = React.lazy(() => import('./modules/admin/pages/Support'));
 const AdminMeasurementExecutives = React.lazy(() => import('./modules/admin/pages/MeasurementExecutives'));
+const AdminIssues = React.lazy(() => import('./modules/admin/pages/IssuesManagement')); // NEW
 import AdminProtectedRoute from './modules/admin/components/AdminProtectedRoute';
 
 const ReferEarn = React.lazy(() => import('./modules/customer/pages/ReferEarn')); // NEW
@@ -138,6 +141,8 @@ const CustomDesignForm = React.lazy(() => import('./modules/customer/pages/Custo
 const SewZellaLanding = React.lazy(() => import('./modules/landing/SewZellaLanding')); // NEW
 const LandingCMSPage = React.lazy(() => import('./modules/landing/LandingCMSPage')); // NEW
 const LandingSupportPage = React.lazy(() => import('./modules/landing/LandingSupportPage')); // NEW
+const ReportIssue = React.lazy(() => import('./modules/customer/pages/ReportIssue')); // NEW
+const IssueDetails = React.lazy(() => import('./modules/customer/pages/IssueDetails')); // NEW
 
 const AppRoutes = () => {
     return (
@@ -206,6 +211,8 @@ const AppRoutes = () => {
                         <Route path="bulk-order" element={<BulkOrderRequest />} />
                         <Route path="bulk-orders" element={<MyBulkOrders />} />
                         <Route path="embroidery" element={<EmbroideryPage />} />
+                        <Route path="issues/report/:orderId" element={<ReportIssue />} />
+                        <Route path="issues/:issueId" element={<IssueDetails />} />
                     </Route>
                 </Route>
             </Route>
@@ -249,6 +256,8 @@ const AppRoutes = () => {
                         <Route path="/partner/measurements/:id" element={<MeasurementDetail />} />
                         <Route path="/partner/alterations" element={<TailorAlterations />} />
                         <Route path="/partner/custom-designs" element={<TailorCustomDesigns />} />
+                        <Route path="/partner/issues" element={<TailorReportedIssues />} />
+                        <Route path="/partner/issues/:issueId" element={<TailorIssueDetails />} />
                     </Route>
                     {/* Full screen tailor views separated from layout nav */}
 
@@ -309,6 +318,7 @@ const AppRoutes = () => {
                     <Route path="/admin/support" element={<AdminSupport />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
                     <Route path="/admin/measurement-executives" element={<AdminMeasurementExecutives />} />
+                    <Route path="/admin/issues" element={<AdminIssues />} />
                 </Route>
             </Route>
 

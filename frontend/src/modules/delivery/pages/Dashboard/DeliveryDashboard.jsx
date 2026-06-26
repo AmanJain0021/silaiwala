@@ -9,6 +9,7 @@ import {
     ChevronRight,
     TrendingUp,
     CheckCircle2,
+    Check,
     X,
     Navigation,
     Loader2,
@@ -145,7 +146,44 @@ const DeliveryDashboard = () => {
         return 'Dispatch Task';
     };
 
-    const currentTask = activeOrders.length > 0 ? activeOrders[0] : null;
+    const handleAccept = async (orderId) => {
+        try {
+            const res = await deliveryService.acceptOrder(orderId);
+            if (res.success) {
+                toast.success('Task claimed successfully!');
+                fetchDashboardData();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to claim task');
+        }
+    };
+
+    const handleReject = async (orderId) => {
+        try {
+            await deliveryService.rejectOrder(orderId);
+            toast.success('Task rejected');
+            fetchDashboardData();
+        } catch (e) {
+            toast.error('Failed to reject task');
+        }
+    };
+
+    const pendingRequests = activeOrders.filter(t => {
+        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
+        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
+        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
+        const uid = user?._id || user?.id;
+
+        const isLegacyDelivery = !!dpId && dpId === uid && t.deliveryStatus === 'pending';
+        const isPickupAssigned = !!ppId && ppId === uid && t.pickupDeliveryStatus === 'pending';
+        const isDropoffAssigned = !!dopId && dopId === uid && t.dropoffDeliveryStatus === 'pending';
+        
+        return isLegacyDelivery || isPickupAssigned || isDropoffAssigned;
+    });
+
+    const activeTasksList = activeOrders.filter(t => !pendingRequests.find(p => p._id === t._id));
+    const currentTask = activeTasksList.length > 0 ? activeTasksList[0] : (pendingRequests.length > 0 ? pendingRequests[0] : null);
+    const isPendingTask = pendingRequests.some(p => p._id === currentTask?._id);
 
     return (
         <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">
@@ -239,13 +277,19 @@ const DeliveryDashboard = () => {
                 {/* Active Dispatch / Tasks */}
                 {currentTask ? (
                     <div 
-                        className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer"
-                        onClick={() => navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`)}
+                        className={`bg-white rounded-[2rem] p-5 border shadow-sm relative overflow-hidden ${isPendingTask ? 'border-amber-200 shadow-amber-900/5' : 'border-slate-100 cursor-pointer'}`}
+                        onClick={() => {
+                            if (!isPendingTask) {
+                                navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`);
+                            }
+                        }}
                     >
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-[#843D9B] rounded-full animate-pulse"></div>
-                                <span className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">Active Dispatch</span>
+                                <div className={`w-2 h-2 ${isPendingTask ? 'bg-amber-500' : 'bg-[#843D9B]'} rounded-full animate-pulse`}></div>
+                                <span className={`text-[10px] font-black ${isPendingTask ? 'text-amber-600 bg-amber-50' : 'text-[#843D9B] bg-indigo-50'} uppercase tracking-widest px-2 py-1 rounded-md`}>
+                                    {isPendingTask ? 'Pending Acceptance' : 'Active Dispatch'}
+                                </span>
                             </div>
                             <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center border border-indigo-100">
                                 <Bike size={20} />
@@ -304,9 +348,20 @@ const DeliveryDashboard = () => {
                             </div>
                         </div>
 
-                        <button className="w-full bg-[#843D9B] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
-                            View Dispatch Details <ChevronRight size={14} />
-                        </button>
+                        {isPendingTask ? (
+                            <div className="flex gap-3 mt-6">
+                                <button onClick={(e) => { e.stopPropagation(); handleReject(currentTask._id); }} className="flex-1 bg-rose-50 text-rose-600 rounded-2xl py-3 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-100 transition-all shadow-sm">
+                                    Reject <X size={14} />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleAccept(currentTask._id); }} className="flex-1 bg-[#843D9B] text-white rounded-2xl py-3 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20">
+                                    Accept <Check size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button className="w-full bg-[#843D9B] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
+                                View Dispatch Details <ChevronRight size={14} />
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center">

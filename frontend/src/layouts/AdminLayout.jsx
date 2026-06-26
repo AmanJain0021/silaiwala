@@ -20,7 +20,8 @@ import {
     Package,
     Mail,
     CreditCard,
-    Ruler
+    Ruler,
+    AlertTriangle
 } from 'lucide-react';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 
@@ -72,6 +73,7 @@ const AdminLayout = () => {
         { icon: <Users size={20} />, label: 'Customers', path: '/admin/customers' },
         { icon: <Layers size={20} />, label: 'Services', path: '/admin/services' },
         { icon: <Store size={20} />, label: 'Store', path: '/admin/store' },
+        { icon: <AlertTriangle size={20} />, label: 'Issues', path: '/admin/issues' },
         { icon: <Wallet size={20} />, label: 'Finance', path: '/admin/finance' },
         { icon: <Megaphone size={20} />, label: 'CMS', path: '/admin/cms' },
         { icon: <CreditCard size={20} />, label: 'Subscriptions', path: '/admin/subscriptions' },

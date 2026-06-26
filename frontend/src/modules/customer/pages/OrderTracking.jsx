@@ -997,7 +997,55 @@ const OrderTracking = () => {
                     );
                 })()}
 
-                {/* 6. Review Section (If Delivered) */}
+                {/* 6. Issue Reporting Section (If Delivered) */}
+                {order.status === 'delivered' && (
+                    <div className="mb-6">
+                        {order.reportedIssue ? (
+                            <div className="bg-red-50 rounded-[2rem] p-6 border border-red-100 relative overflow-hidden">
+                                <div className="flex justify-between items-start mb-3 relative z-10">
+                                    <div>
+                                        <h3 className="text-lg font-black text-red-900 tracking-tighter mb-1">Issue Reported</h3>
+                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                            order.reportedIssue.status === 'pending' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                                            order.reportedIssue.status === 'resolved' ? 'bg-green-100 text-green-700 border-green-200' :
+                                            'bg-indigo-100 text-[#843D9B] border-indigo-200'
+                                        }`}>
+                                            {order.reportedIssue.status.replace(/_/g, ' ')}
+                                        </span>
+                                    </div>
+                                    <button 
+                                        onClick={() => navigate(`/user/issues/${order.reportedIssue._id}`)}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-full font-black text-[10px] uppercase shadow-md shadow-red-200 hover:bg-red-700 active:scale-95 transition-all outline-none"
+                                    >
+                                        Open Chat
+                                    </button>
+                                </div>
+                                <div className="bg-white/60 p-3 rounded-xl border border-red-100/50 relative z-10">
+                                    <p className="text-xs text-red-800 font-medium line-clamp-2">
+                                        "{order.reportedIssue.description}"
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-red-50 rounded-[2rem] p-6 text-center border border-red-100 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <h3 className="text-lg font-black text-red-900 tracking-tighter mb-2">Need a Fix?</h3>
+                                    <p className="text-xs text-red-700 font-medium mb-4 leading-relaxed max-w-[250px] mx-auto">
+                                        If you found a stitching mistake or fitting issue, you can report it within 7 days of delivery.
+                                    </p>
+                                    <button 
+                                        onClick={() => navigate(`/user/issues/report/${order._id}`)}
+                                        className="px-8 py-3 bg-red-600 text-white rounded-full font-black text-[10px] uppercase shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all outline-none"
+                                    >
+                                        Report Issue
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* 7. Review Section (If Delivered) */}
                 {order.status === 'delivered' && !order.isReviewed && !isReviewed && (
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}

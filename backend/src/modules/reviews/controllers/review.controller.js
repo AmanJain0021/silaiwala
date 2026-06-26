@@ -14,12 +14,18 @@ const ErrorResponse = require("../../../utils/errorResponse");
 exports.createReview = asyncHandler(async (req, res, next) => {
   const { rating, comment, targetType, targetId, orderId } = req.body;
 
-  // Check if review already exists from this user for this target
-  const existingReview = await Review.findOne({
+  // Check if review already exists from this user for this target and order
+  let query = {
     user: req.user.id,
     targetId,
     targetType,
-  });
+  };
+
+  if (orderId) {
+    query.order = orderId;
+  }
+
+  const existingReview = await Review.findOne(query);
 
   if (existingReview) {
     return next(new ErrorResponse("You have already reviewed this", 400));

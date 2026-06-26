@@ -441,7 +441,7 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
   const { status, page = 1, limit = 10 } = req.query;
   const skip = (page - 1) * limit;
 
-  let query = { tailor: req.user.id };
+  let query = { tailor: req.user.id, isRework: { $ne: true } };
 
   if (status) {
     const statusLower = status.toLowerCase();
@@ -498,6 +498,7 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
   const activeOrders = await Order.find({
     tailor: tailorId,
     deliveryPartner: { $exists: true, $ne: null },
+    isRework: { $ne: true },
     status: { $in: ["fabric-ready-for-pickup", "fabric-picked-up", "ready-for-pickup", "out-for-delivery"] }
   })
   .populate("customer", "name phoneNumber")
@@ -507,6 +508,7 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
   // Recent history (already delivered)
   const history = await Order.find({
     tailor: tailorId,
+    isRework: { $ne: true },
     status: "delivered"
   })
   .populate("deliveryPartner", "name phoneNumber")
@@ -737,9 +739,16 @@ exports.getMeasurementReport = asyncHandler(async (req, res, next) => {
 
   const MeasurementReport = require("../../../models/MeasurementReport");
   const report = await MeasurementReport.findOne({ order: order._id }).populate("executive", "name phoneNumber profileImage");
+  let reportData = null;
+  if (report) {
+    reportData = report.toJSON();
+    if (report.formData && report.formData instanceof Map) {
+      reportData.formData = Object.fromEntries(report.formData);
+    }
+  }
 
   // Return null report instead of 404 to allow the frontend to handle empty state
-  res.status(200).json({ success: true, data: { report: report || null, order } });
+  res.status(200).json({ success: true, data: { report: reportData, order } });
 });
 
 /**

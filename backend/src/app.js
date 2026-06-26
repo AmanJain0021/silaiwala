@@ -138,6 +138,7 @@ app.use("/api/v1/upload", require("./routes/upload.routes"));
 app.use("/api/v1/measurement-executive", require("./modules/measurement-executive/routes/measurementExecutive.routes"));
 app.use("/api/v1/alterations", require("./modules/alterations/routes/alteration.routes"));
 app.use("/api/v1/custom-designs", require("./modules/customDesigns/routes/customDesign.routes"));
+app.use("/api/v1/issues", require("./modules/issues/routes/issue.routes"));
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 
 app.use((req, res, next) => {

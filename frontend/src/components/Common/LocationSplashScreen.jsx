@@ -50,34 +50,13 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                         const activeToken = token || getToken();
                         const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
 
-                        // Save location to backend
-                        if (role === 'tailor') {
-                            await api.patch('/tailors/profile', {
-                                latitude,
-                                longitude,
-                                address
-                            }, { headers });
-                        } else if (role === 'delivery') {
+                        // Save location to backend ONLY for delivery partners who need live tracking
+                        if (role === 'delivery') {
                             await api.patch('/deliveries/status', {
                                 lat: latitude,
                                 lng: longitude,
                                 isAvailable: true,
                                 status: 'active'
-                            }, { headers });
-                        } else if (role === 'customer' || role === 'user') {
-                            await api.post('/customers/addresses', {
-                                type: 'Home',
-                                receiverName: 'Self',
-                                phone: 'N/A', // Let backend allow or we pass a placeholder
-                                street: address,
-                                city: 'Unknown',
-                                state: 'Unknown',
-                                zipCode: '000000',
-                                isDefault: true,
-                                location: {
-                                    type: 'Point',
-                                    coordinates: [longitude, latitude]
-                                }
                             }, { headers });
                         }
 

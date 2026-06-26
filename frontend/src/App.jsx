@@ -59,11 +59,35 @@ function App() {
     const checkAndConnectSocket = () => {
       try {
         const userStr = localStorage.getItem('user');
+        const tailorStr = localStorage.getItem('tailor_user');
+        const deliveryStr = localStorage.getItem('delivery_user');
+        const adminStr = localStorage.getItem('admin_user');
+        const meStr = localStorage.getItem('me_user');
+
+        let activeUser = null;
+        let role = null;
+
         if (userStr && userStr !== 'undefined') {
-          const user = JSON.parse(userStr);
-          const userId = user._id || user.id;
+            activeUser = JSON.parse(userStr);
+            role = activeUser.role || 'customer';
+        } else if (tailorStr && tailorStr !== 'undefined') {
+            activeUser = JSON.parse(tailorStr);
+            role = 'tailor';
+        } else if (deliveryStr && deliveryStr !== 'undefined') {
+            activeUser = JSON.parse(deliveryStr);
+            role = 'delivery';
+        } else if (adminStr && adminStr !== 'undefined') {
+            activeUser = JSON.parse(adminStr);
+            role = 'admin';
+        } else if (meStr && meStr !== 'undefined') {
+            activeUser = JSON.parse(meStr);
+            role = 'measurement_executive';
+        }
+
+        if (activeUser) {
+          const userId = activeUser._id || activeUser.id;
           if (userId) {
-            connect(userId, user.role);
+            connect(userId, role);
           }
         } else {
           disconnect();

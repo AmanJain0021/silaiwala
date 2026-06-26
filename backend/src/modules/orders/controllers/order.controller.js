@@ -719,7 +719,7 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
   let query = {};
 
   // This endpoint is used by the customer app, so we always look for orders where the user is the customer
-  query = { customer: req.user.id };
+  query = { customer: req.user.id, isRework: { $ne: true } };
 
     const orders = await Order.find(query)
       .populate("tailor", "name shopName profileImage")
@@ -838,6 +838,15 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
       }
   }
 
+  // Check if an issue exists for this order
+  let reportedIssue = null;
+  try {
+      const Issue = require("../../../models/Issue");
+      reportedIssue = await Issue.findOne({ originalOrder: order._id }).lean();
+  } catch (err) {
+      console.error("Error checking for existing issue:", err);
+  }
+
   res.status(200).json({
     success: true,
     data: {
@@ -846,7 +855,9 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
       vendorLongitude,
       customerLatitude,
       customerLongitude,
-      measurementOtp
+      measurementOtp,
+      reportedIssue,
+      existingIssueId: reportedIssue?._id // Keep this for backward compatibility with the button
     },
   });
 });
@@ -1344,5 +1355,10 @@ exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) =>
     return res.status(200).json({ success: true, data: null });
   }
 
-  res.status(200).json({ success: true, data: report });
+  const reportData = report.toJSON();
+  if (report.formData && report.formData instanceof Map) {
+    reportData.formData = Object.fromEntries(report.formData);
+  }
+
+  res.status(200).json({ success: true, data: reportData });
 });

@@ -148,6 +148,14 @@ const orderSchema = new mongoose.Schema(
         type: Boolean,
         default: false
     },
+    isRework: {
+        type: Boolean,
+        default: false
+    },
+    parentOrder: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order"
+    },
     bridalNotes: {
         type: String
     },

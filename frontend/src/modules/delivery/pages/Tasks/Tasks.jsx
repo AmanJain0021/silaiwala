@@ -102,9 +102,16 @@ const Tasks = () => {
         });
 
         socket.on('task_claimed', (data) => {
-            console.log('Task claimed by another partner:', data.orderId);
-            setAvailableTasks(prev => prev.filter(t => t._id !== data.orderId));
-            setTasks(prev => prev.filter(t => t._id !== data.orderId)); // Also remove if it was assigned to them but then revoked/claimed?
+            const currentUserId = useAuthStore.getState().user?._id || useAuthStore.getState().user?.id;
+            
+            if (data.claimedBy === currentUserId) {
+                // We claimed it! Just remove from available, keep in tasks
+                setAvailableTasks(prev => prev.filter(t => t._id !== data.orderId));
+            } else {
+                console.log('Task claimed by another partner:', data.orderId);
+                setAvailableTasks(prev => prev.filter(t => t._id !== data.orderId));
+                setTasks(prev => prev.filter(t => t._id !== data.orderId));
+            }
         });
 
         return () => {
@@ -134,7 +141,7 @@ const Tasks = () => {
         const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
         const uid = user?._id || user?.id;
 
-        const isStatusValid = ['pending', 'accepted', 'ready-for-pickup', 'fabric-ready-for-pickup', 'ready-for-delivery'].includes(t.status);
+        const isStatusValid = ['pending', 'accepted', 'ready', 'ready-for-pickup', 'fabric-ready-for-pickup', 'ready-for-delivery'].includes(t.status);
         
         const isLegacyActive = !!dpId && dpId === uid && ['accepted', 'reached-pickup'].includes(t.deliveryStatus);
         const isPickupActive = !!ppId && ppId === uid && ['accepted', 'reached-pickup'].includes(t.pickupDeliveryStatus);
@@ -629,7 +636,7 @@ const Tasks = () => {
                                                             {task.taskType === 'fabric-pickup' ? 'Fabric Collection' : 'Final Delivery'}
                                                         </div>
                                                         <p className="text-sm font-black text-slate-900 tracking-tight capitalize">Available Dispatch</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 tracking-wide italic leading-none mt-0.5">Reward: ₹20</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 tracking-wide italic leading-none mt-0.5">Reward: ₹{task.deliveryEarnings || task.deliveryFee || 20}</p>
                                                     </div>
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg ${task.taskType === 'fabric-pickup' ? 'bg-amber-600' : 'bg-primary'}`}>
                                                         <Bike size={18} />
@@ -646,7 +653,7 @@ const Tasks = () => {
                                                             <MapPin size={11} className="text-primary-dark mt-0.5 shrink-0" />
                                                             <p className="text-[10px] font-bold text-primary-dark leading-snug">
                                                                 {task.taskType === 'fabric-pickup' 
-                                                                    ? formatAddress(task.deliveryAddress) 
+                                                                    ? (task.address || formatAddress(task.deliveryAddress)) 
                                                                     : (task.tailor?.shopName || 'Tailor Workshop')}
                                                             </p>
                                                         </div>
@@ -661,7 +668,7 @@ const Tasks = () => {
                                                             <p className="text-[10px] font-bold text-primary-dark leading-snug opacity-80">
                                                                 {task.taskType === 'fabric-pickup'
                                                                     ? (task.tailor?.shopName || 'Tailor Workshop')
-                                                                    : formatAddress(task.deliveryAddress)}
+                                                                    : (task.address || formatAddress(task.deliveryAddress))}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -669,9 +676,9 @@ const Tasks = () => {
 
                                                 <button
                                                     onClick={() => handleAcceptOrder(task._id)}
-                                                    className="w-full bg-primary-dark text-white rounded-xl py-3 font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95"
+                                                    className="w-full bg-slate-900 text-white rounded-xl py-3 font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95"
                                                 >
-                                                    Claim Task <Check size={14} />
+                                                    Accept Order <Check size={14} />
                                                 </button>
                                             </div>
                                         </div>
