@@ -14,7 +14,8 @@ const activeRequests = new Map();
 
 // Helper to generate a unique key for each request
 const getRequestKey = (config) => {
-    return `${config.method}:${config.url}`;
+    const paramsStr = config.params ? JSON.stringify(config.params) : '';
+    return `${config.method}:${config.url}:${paramsStr}`;
 };
 
 // Request interceptor for adding JWT token and handling cancellation

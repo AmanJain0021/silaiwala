@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import logo from "../../../../assets/animations/lottie/logo-removebg.png";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { FiLogOut, FiPackage, FiHome, FiUser, FiMenu, FiBell, FiAlertCircle } from "react-icons/fi";
-import { Bike, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { MdMotorcycle } from "react-icons/md";
 import { useDeliveryAuthStore } from "../../store/deliveryStore";
 import { useDeliveryNotificationStore } from "../../store/deliveryNotificationStore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -382,7 +383,7 @@ const DeliveryLayout = () => {
                     {deliveryBoy?.avatar ? (
                       <img src={deliveryBoy.avatar} className="w-full h-full object-cover" alt="Profile" />
                     ) : (
-                      <Bike className="text-white w-6 h-6" />
+                      <MdMotorcycle className="text-white w-6 h-6" />
                     )}
                   </div>
                   <div>

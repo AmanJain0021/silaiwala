@@ -89,7 +89,6 @@ exports.getTailors = asyncHandler(async (req, res, next) => {
 
   let query = {};
 
-  /* Temporarily disabled location filtering
   if (lat && lng) {
     query.location = {
       $near: {
@@ -101,9 +100,18 @@ exports.getTailors = asyncHandler(async (req, res, next) => {
       },
     };
   }
-  */
 
-  const tailors = await Tailor.find(query).populate("user", "name email profileImage").lean();
+  const tailors = await Tailor.find(query)
+    .populate("user", "name email profileImage")
+    .populate("activePlan", "name sortOrder price isPopular theme")
+    .lean();
+
+  // Sort tailors: those with higher plan sortOrder come first.
+  tailors.sort((a, b) => {
+    const sortA = a.activePlan?.sortOrder || 0;
+    const sortB = b.activePlan?.sortOrder || 0;
+    return sortB - sortA;
+  });
 
   res.status(200).json({
     success: true,

@@ -205,6 +205,11 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                         <p className="text-[10px] text-gray-400 font-medium leading-none mt-1">
                             Partner will collect your best fitting clothes
                         </p>
+                        {selectedType === 'sample' && (
+                            <p className="text-[9px] text-amber-600 font-semibold mt-2 bg-amber-50 p-1.5 rounded-lg border border-amber-100 leading-snug">
+                                * Note: It is your responsibility to provide the sample garment at the time of the fabric pickup.
+                            </p>
+                        )}
                     </div>
                     {selectedType === 'sample' && (
                         <div className="absolute top-0 right-0 p-1 bg-primary text-white rounded-bl-lg">

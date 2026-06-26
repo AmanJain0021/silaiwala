@@ -21,6 +21,11 @@ const subscriptionPlanSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    commissionPercentage: {
+      type: Number,
+      required: true,
+      default: 20,
+    },
     features: [
       {
         type: String,

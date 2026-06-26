@@ -44,6 +44,18 @@ const AdminLayout = () => {
             }
         });
 
+        socket.on('connect', () => {
+            socket.emit('join_admin_room');
+            const userStr = localStorage.getItem('admin_user');
+            if (userStr && userStr !== 'undefined') {
+                const activeUser = JSON.parse(userStr);
+                const userId = activeUser._id || activeUser.id;
+                if (userId) {
+                    socket.emit('join_user_room', userId);
+                }
+            }
+        });
+
         socket.on('new_order', (data) => {
             setHasUnread(true);
             toast.success(`New Order Received: ${data.orderId || 'Check dashboard'}`, {

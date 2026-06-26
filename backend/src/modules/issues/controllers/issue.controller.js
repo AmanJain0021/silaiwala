@@ -72,10 +72,10 @@ exports.reportIssue = asyncHandler(async (req, res, next) => {
 
   // Notify tailor
   await sendNotification({
-    user: order.tailor,
+    recipient: order.tailor,
     title: "New Stitching Issue Reported",
     message: `Customer reported an issue for order ${order.orderId}`,
-    type: "info",
+    type: "ISSUE_REPORTED",
     data: { issueId: issue._id, targetUrl: "/partner/issues" }
   });
 
