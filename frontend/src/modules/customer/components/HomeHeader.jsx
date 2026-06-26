@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, ShoppingBag, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
+import { Search, Bell, ShoppingCart, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
@@ -106,7 +106,7 @@ const HomeHeader = ({ user }) => {
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
                             className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
                         >
-                            <ShoppingBag size={18} />
+                            <ShoppingCart size={18} />
                             {cartCount > 0 && (
                                 <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#843D9B] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#843D9B] shadow-md">
                                     {cartCount}
@@ -121,7 +121,7 @@ const HomeHeader = ({ user }) => {
         </div>
 
             {/* Sticky Search and Marquee Section */}
-            <div className="sticky top-0 z-[100] bg-[#843D9B] backdrop-blur-md border-b border-[#843D9B]/50 transition-all duration-300 md:hidden overflow-hidden shadow-sm">
+            <div className="sticky top-[-1px] mt-[-1px] z-[100] bg-[#843D9B] border-b border-[#843D9B]/50 transition-all duration-300 md:hidden overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 pb-0">
                     {/* Search Bar - Modernized */}
                     <AnimatedSearchBar />

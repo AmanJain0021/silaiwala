@@ -1,56 +1,99 @@
-import React from 'react';
-import { Truck, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-
+import React, { useState } from 'react';
+import { ChevronRight, Package, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '../../../utils/cn';
 
 const ActiveOrderBanner = ({ order }) => {
     const navigate = useNavigate();
+    const [isExpanded, setIsExpanded] = useState(false);
+
     if (!order) return null;
 
     const serviceTitle = order.items?.[0]?.service?.title || "Custom stitching";
-    const status = order.status?.replace(/-/g, ' ').toUpperCase();
-    const displayId = order.orderId || order._id?.substring(0, 8);
+    const status = order.status?.replace(/-/g, ' ').toUpperCase() || "PENDING";
+    const serviceImage = order.items?.[0]?.service?.image || order.items?.[0]?.image;
 
     return (
-        <div className="px-4 md:px-6 lg:px-8 mb-4" onClick={() => navigate(`/user/orders/${order._id}/track`)}>
-            <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all">
-                <div className="flex justify-between items-start mb-4 relative z-10 gap-3">
-                    <div className="min-w-0">
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.1em]">Active Order #{displayId}</p>
-                        <h3 className="text-2xl font-black text-[#843D9B] mt-1 leading-tight tracking-tight">{serviceTitle}</h3>
-                    </div>
-                    <div className="bg-orange-50 text-orange-600 px-3 py-2 rounded-2xl text-[10px] font-black flex items-center gap-2 shrink-0 max-w-[120px] shadow-sm border border-orange-100">
-                        <Truck size={18} className="shrink-0" /> 
-                        <span className="leading-tight uppercase">{status}</span>
-                    </div>
-                </div>
-
-                {/* Progress Bar (Dynamic based on tracking history length) */}
-                <div className="w-full bg-gray-100 rounded-full h-2 mb-4 relative z-10 overflow-hidden">
-                    <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min((order.trackingHistory?.length || 1) * 20, 100)}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="bg-[#843D9B] h-full rounded-full shadow-lg" 
-                    ></motion.div>
-                </div>
-
-                <div className="flex justify-between items-center relative z-10">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                        Updated {new Date(order.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <button className="text-[#843D9B] text-xs font-black uppercase tracking-[0.15em] flex items-center gap-1 group">
-                        Track Now
-                    </button>
-                </div>
-
-                {/* Background Decoration */}
-                <div className="absolute right-[-20px] bottom-[-20px] opacity-[0.03] rotate-[-15deg] pointer-events-none">
-                    <CheckCircle2 size={120} />
-                </div>
+        <AnimatePresence>
+            <div className="fixed bottom-[88px] right-4 z-40 flex justify-end">
+                <motion.div 
+                    layout
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1, y: [0, -6, 0] }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    transition={{ 
+                        y: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                        layout: { type: "spring", stiffness: 300, damping: 25 },
+                        default: { duration: 0.2 }
+                    }}
+                    onClick={() => isExpanded ? navigate(`/user/orders/${order._id}/track`) : setIsExpanded(true)}
+                    className={cn(
+                        "bg-[#843D9B] text-white shadow-xl shadow-[#843D9B]/30 flex items-center border border-[#6b2f7d] overflow-hidden cursor-pointer h-[64px]",
+                        isExpanded ? "rounded-[1.25rem] px-2.5 justify-between w-[calc(100vw-2rem)] max-w-sm" : "rounded-[1.25rem] p-1.5 justify-center w-[64px]"
+                    )}
+                >
+                    <AnimatePresence mode="wait">
+                        {isExpanded ? (
+                            <motion.div 
+                                key="expanded"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.2 }}
+                                className="flex items-center justify-between w-full h-full"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {serviceImage ? (
+                                        <div className="w-[44px] h-[44px] bg-white rounded-xl overflow-hidden shrink-0 border-2 border-white/20 flex items-center justify-center">
+                                            <img src={serviceImage} alt="Order" className="w-full h-full object-cover" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-[44px] h-[44px] bg-white/20 rounded-xl flex items-center justify-center shrink-0 border-2 border-white/20">
+                                            <Package size={22} className="text-white" />
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col min-w-0 py-0.5 whitespace-nowrap">
+                                        <span className="font-black text-[13px] tracking-wide leading-tight">Track Order</span>
+                                        <span className="text-[10px] font-bold text-white/80 truncate mt-0.5 uppercase tracking-wider">
+                                            {serviceTitle} • {status}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center shrink-0 pr-2 pl-2">
+                                    <ChevronRight size={20} className="text-white" />
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsExpanded(false);
+                                        }}
+                                        className="ml-2 p-1.5 hover:bg-white/20 rounded-full transition-colors"
+                                    >
+                                        <X size={16} className="text-white/80" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                                key="collapsed"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.2 }}
+                                className="relative w-full h-full rounded-xl overflow-hidden flex items-center justify-center bg-white/10"
+                            >
+                                {serviceImage ? (
+                                    <img src={serviceImage} alt="Order" className="w-full h-full object-cover" />
+                                ) : (
+                                    <Package size={24} className="text-white" />
+                                )}
+                                <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#843D9B] animate-pulse" />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
             </div>
-        </div>
+        </AnimatePresence>
     );
 };
 

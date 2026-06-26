@@ -402,7 +402,7 @@ const AdminStyleAddons = () => {
                                                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-[#843D9B] transition-colors shadow-sm"
                                             >
                                                 <option value="">Select Category</option>
-                                                {categoryOptions.map(c => (
+                                                {Array.from(new Set([...categoryOptions, ...uniqueCategories.filter(c => c !== 'All')])).sort().map(c => (
                                                     <option key={c} value={c}>{c}</option>
                                                 ))}
                                             </select>
