@@ -4,6 +4,8 @@ const Order = require("../../../models/Order");
 const { transitionOrder } = require("../../../utils/orderStateMachine");
 const User = require("../../../models/User");
 const Tailor = require("../../../models/Tailor");
+const Settings = require("../../../models/Settings");
+const Notification = require("../../../models/Notification");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 
@@ -1405,19 +1407,40 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
            order.remainingPaymentStatus = 'paid';
            order.paymentStatus = 'paid';
            
-           // Deduct the collected cash from Delivery Partner's wallet
+           // Add collected cash to Delivery Partner's COD Wallet
            const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
            if (deliveryProfile) {
-              deliveryProfile.walletBalance -= order.remainingPaymentAmount;
+              deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
+              deliveryProfile.lastCashCollectionDate = new Date();
+              
+              // Check COD Limits
+              const settings = await Settings.getSettings();
+              const limit = settings.codWalletConfig?.maxCashLimit || 5000;
+              const autoBlock = settings.codWalletConfig?.autoBlockOnLimit !== false;
+
+              if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
+                 deliveryProfile.cashBlocked = true;
+                 
+                 // Notify Delivery Partner
+                 await Notification.create([{
+                     user: req.user.id,
+                     title: "COD Limit Exceeded ⚠️",
+                     message: `You have reached the maximum cash collection limit of ₹${limit}. Please deposit cash to receive new assignments.`,
+                     type: "alert",
+                 }], { session });
+              } else if (deliveryProfile.codWalletBalance >= limit * 0.8) {
+                 // Warning near limit
+                 await Notification.create([{
+                     user: req.user.id,
+                     title: "COD Limit Warning ⚠️",
+                     message: `Your cash collection balance (₹${deliveryProfile.codWalletBalance}) is nearing the limit of ₹${limit}.`,
+                     type: "alert",
+                 }], { session });
+              }
+
               await deliveryProfile.save({ session });
-              await WalletTransaction.create([{
-                user: req.user.id,
-                amount: order.remainingPaymentAmount,
-                type: "debit",
-                category: "commission_deduction",
-                order: order._id,
-                description: `Cash collected from customer for order ${order.orderId}`
-              }], { session });
+              
+              // We no longer debit the earnings wallet!
            }
        } else {
            // Fallback if frontend didn't send payment method but there's a remaining amount

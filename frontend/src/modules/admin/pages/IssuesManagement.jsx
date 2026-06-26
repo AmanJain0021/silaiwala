@@ -38,7 +38,8 @@ const IssuesManagement = () => {
     const filteredIssues = issues.filter(issue => 
         issue.originalOrder?.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         issue.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        issue.tailor?.shopName?.toLowerCase().includes(searchTerm.toLowerCase())
+        issue.tailor?.shopName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        issue.issueId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -55,7 +56,7 @@ const IssuesManagement = () => {
                     <div className="flex-1 max-w-md relative">
                         <input
                             type="text"
-                            placeholder="Search by Order ID, Customer, or Tailor..."
+                            placeholder="Search by Issue ID, Order ID, Customer, or Tailor..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full h-12 pl-12 pr-4 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
@@ -72,6 +73,7 @@ const IssuesManagement = () => {
                             <thead>
                                 <tr className="border-b border-gray-100">
                                     <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Issue Date</th>
+                                    <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Issue ID</th>
                                     <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Order ID</th>
                                     <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Customer</th>
                                     <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Tailor</th>
@@ -83,6 +85,7 @@ const IssuesManagement = () => {
                                 {filteredIssues.map((issue) => (
                                     <tr key={issue._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                                         <td className="py-4 text-xs font-bold text-gray-900">{new Date(issue.createdAt).toLocaleDateString()}</td>
+                                        <td className="py-4 text-xs font-black text-gray-900 uppercase">{issue.issueId || 'N/A'}</td>
                                         <td className="py-4 text-xs font-black text-primary uppercase">{issue.originalOrder?.orderId}</td>
                                         <td className="py-4 text-xs font-medium text-gray-700">{issue.customer?.name}</td>
                                         <td className="py-4 text-xs font-medium text-gray-700">{issue.tailor?.shopName}</td>

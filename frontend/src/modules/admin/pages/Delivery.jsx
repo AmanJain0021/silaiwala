@@ -10,6 +10,7 @@ const AdminDelivery = () => {
     const [selectedApp, setSelectedApp] = useState(null);
     const [deliveryData, setDeliveryData] = useState([]);
     const [pendingData, setPendingData] = useState([]);
+    const [codDeposits, setCodDeposits] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -20,9 +21,10 @@ const AdminDelivery = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [partnersRes, pendingRes] = await Promise.all([
+            const [partnersRes, pendingRes, depositsRes] = await Promise.all([
                 api.get('/admin/delivery-partners'),
-                api.get('/admin/delivery-partners/pending')
+                api.get('/admin/delivery-partners/pending'),
+                api.get('/admin/deliveries/cod-deposit')
             ]);
             
             setDeliveryData(partnersRes.data.data.map(p => ({
@@ -36,7 +38,9 @@ const AdminDelivery = () => {
                 activeTasks: 0,
                 status: p.profile?.isAvailable ? 'Online' : 'Offline',
                 accountStatus: p.isActive ? 'Active' : 'Suspended',
-                joined: new Date(p.createdAt).toLocaleDateString()
+                joined: new Date(p.createdAt).toLocaleDateString(),
+                codWalletBalance: p.profile?.codWalletBalance || 0,
+                cashBlocked: p.profile?.cashBlocked || false
             })));
 
             setPendingData(pendingRes.data.data.map(p => ({
@@ -49,6 +53,10 @@ const AdminDelivery = () => {
                 documents: p.profile?.documents || [],
                 submittedDate: new Date(p.createdAt).toLocaleDateString()
             })));
+
+            if (depositsRes.data.success) {
+                setCodDeposits(depositsRes.data.data);
+            }
         } catch (error) {
             if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
                 console.error('Failed to fetch data:', error);
@@ -66,8 +74,8 @@ const AdminDelivery = () => {
                 id: o.orderId || o._id.substring(0, 8),
                 fullId: o._id,
                 type: o.status.includes('fabric') ? 'Pickup' : 'Delivery',
-                from: o.status.includes('fabric') ? o.customer?.name : o.tailor?.shopName || 'Tailor Shop',
-                to: o.status.includes('fabric') ? o.tailor?.shopName || 'Tailor Shop' : o.customer?.name,
+                from: o.status.includes('fabric') ? (o.customer?.name || 'Customer') : (o.tailor?.name || o.tailor?.shopName || 'Tailor'),
+                to: o.status.includes('fabric') ? (o.tailor?.name || o.tailor?.shopName || 'Tailor') : (o.customer?.name || 'Customer'),
                 timeSlot: 'ASAP',
                 status: o.status
             }));
@@ -105,6 +113,16 @@ const AdminDelivery = () => {
         } catch (error) {
             console.error('Rejection failed', error);
             toast.error('Failed to reject application');
+        }
+    };
+
+    const handleDepositStatus = async (depositId, status) => {
+        try {
+            await api.post(`/admin/deliveries/${depositId}/cod-deposit/status`, { status });
+            toast.success(`Deposit request ${status} successfully`);
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.message || `Failed to ${status} deposit`);
         }
     };
 
@@ -146,7 +164,7 @@ const AdminDelivery = () => {
         }
     };
 
-    const tabs = ['All Partners', 'Pending Applications', 'Manual Assignment'];
+    const tabs = ['All Partners', 'Pending Applications', 'Manual Assignment', 'COD Deposits'];
 
     const filteredPartners = deliveryData.filter(p => 
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -223,6 +241,11 @@ const AdminDelivery = () => {
                                     {pendingData.length}
                                 </span>
                             )}
+                            {tab === 'COD Deposits' && codDeposits.filter(d => d.status === 'pending').length > 0 && (
+                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${selectedTab === tab ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-500'}`}>
+                                    {codDeposits.filter(d => d.status === 'pending').length}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -256,7 +279,7 @@ const AdminDelivery = () => {
                                     <th className="px-6 py-4">Rider Details</th>
                                     <th className="px-6 py-4">Vehicle Info</th>
                                     <th className="px-6 py-4">Performance</th>
-                                    <th className="px-6 py-4">Active Tasks</th>
+                                    <th className="px-6 py-4">COD Wallet</th>
                                     <th className="px-6 py-4">Status</th>
                                 </tr>
                             </thead>
@@ -295,9 +318,14 @@ const AdminDelivery = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black ${partner.activeTasks > 0 ? 'bg-primary/10 text-primary' : 'text-gray-400'}`}>
-                                                {partner.activeTasks} Task{partner.activeTasks !== 1 ? 's' : ''}
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className={`text-xs font-black ${partner.codWalletBalance > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                                                    ₹{partner.codWalletBalance.toLocaleString()}
+                                                </span>
+                                                {partner.cashBlocked && (
+                                                    <span className="text-[9px] font-black uppercase text-red-500 tracking-wider">Blocked</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider flex w-max items-center gap-1.5 ${getStatusStyle(partner.status)}`}>
@@ -353,7 +381,7 @@ const AdminDelivery = () => {
                             </div>
                         )}
                     </div>
-                ) : (
+                ) : selectedTab === 'Manual Assignment' ? (
                     <div className="p-6 overflow-y-auto space-y-4">
                         <div className="flex justify-between items-center mb-2">
                             <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Unassigned Tasks</h3>
@@ -414,7 +442,85 @@ const AdminDelivery = () => {
                             </div>
                         ))}
                     </div>
-                )}
+                ) : selectedTab === 'COD Deposits' ? (
+                    <div className="p-6 overflow-y-auto space-y-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">COD Deposits</h3>
+                            <button className="text-xs font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-2">
+                                <Filter size={14} /> Filter Deposits
+                            </button>
+                        </div>
+                        {codDeposits.length === 0 ? (
+                            <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <FileText size={40} className="mx-auto text-gray-300 mb-4" />
+                                <p className="text-sm font-bold text-gray-500">No deposit requests found</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left whitespace-nowrap">
+                                    <thead>
+                                        <tr className="bg-gray-50/50 text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
+                                            <th className="px-6 py-4">Request Date</th>
+                                            <th className="px-6 py-4">Partner Details</th>
+                                            <th className="px-6 py-4">Amount</th>
+                                            <th className="px-6 py-4">Remarks</th>
+                                            <th className="px-6 py-4">Status</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {codDeposits.map((deposit) => (
+                                            <tr key={deposit._id} className="hover:bg-primary/5 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase">{new Date(deposit.createdAt).toLocaleString()}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-black text-gray-900">{deposit.deliveryPartner?.user?.name || 'Unknown Partner'}</span>
+                                                        <span className="text-[9px] font-bold text-gray-400">{deposit.deliveryPartner?.user?.phoneNumber}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-sm font-black text-primary">₹{deposit.amount}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-medium text-gray-500">{deposit.remarks || '-'}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${
+                                                        deposit.status === 'approved' ? 'bg-green-100 text-green-700 border-green-200' :
+                                                        deposit.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                        'bg-orange-100 text-orange-700 border-orange-200'
+                                                    }`}>
+                                                        {deposit.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    {deposit.status === 'pending' && (
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => handleDepositStatus(deposit._id, 'rejected')}
+                                                                className="px-3 py-1.5 bg-red-50 text-red-600 text-[10px] font-black rounded-lg hover:bg-red-100 transition-colors uppercase"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDepositStatus(deposit._id, 'approved')}
+                                                                className="px-3 py-1.5 bg-green-50 text-green-600 text-[10px] font-black rounded-lg hover:bg-green-100 transition-colors uppercase"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                ) : null}
             </div>
 
             {/* Slide-out Partner Drawer */}
@@ -459,20 +565,31 @@ const AdminDelivery = () => {
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#fbfcfb]">
 
-                                {/* Live Status */}
-                                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-indigo-50 text-primary rounded-lg">
-                                            <Truck size={20} />
+                                {/* COD Wallet & Live Status */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="p-1.5 bg-orange-50 text-orange-500 rounded-lg">
+                                                <Banknote size={16} />
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">COD Balance</p>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Live Status</p>
-                                            <p className="text-sm font-black text-gray-900">{selectedPartner.status}</p>
-                                        </div>
+                                        <p className="text-xl font-black text-gray-900">₹{selectedPartner.codWalletBalance.toLocaleString()}</p>
+                                        {selectedPartner.cashBlocked && (
+                                            <span className="text-[9px] font-black uppercase text-red-500 tracking-wider mt-1 block">Blocked Limit Exceeded</span>
+                                        )}
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Active Tasks</p>
-                                        <p className="text-xl font-black text-primary">{selectedPartner.activeTasks}</p>
+                                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="p-1.5 bg-indigo-50 text-primary rounded-lg">
+                                                <Truck size={16} />
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Live Status</p>
+                                        </div>
+                                        <p className="text-sm font-black text-gray-900">{selectedPartner.status}</p>
+                                        <div className="text-left mt-1">
+                                            <p className="text-xs font-black text-primary">{selectedPartner.activeTasks} Active Tasks</p>
+                                        </div>
                                     </div>
                                 </div>
 

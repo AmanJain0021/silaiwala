@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
     Package,
     Navigation,
     Phone,
@@ -16,7 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
     X,
     Power
 } from 'lucide-react';
-import { MdMotorcycle } from "react-icons/md";
+import { MdTwoWheeler } from "react-icons/md";
 import deliveryService from '../../services/deliveryService';
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';

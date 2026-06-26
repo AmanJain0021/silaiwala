@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const issueSchema = new mongoose.Schema(
   {
+    issueId: {
+      type: String,
+      unique: true,
+      required: true,
+    },
     originalOrder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",

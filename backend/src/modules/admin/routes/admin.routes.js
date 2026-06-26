@@ -58,6 +58,12 @@ const {
   getPaymentLedger,
 } = require("../controllers/finance.controller");
 
+const {
+  getAllDepositHistory,
+  updateDepositStatus,
+  updateCodSettings
+} = require("../../deliveries/controllers/cashDeposit.controller");
+
 const router = express.Router();
 
 
@@ -83,6 +89,10 @@ router.put("/tailors/:id/commission", updateTailorCommission);
 router.get("/delivery-partners/pending", getPendingDeliveryPartners);
 router.put("/delivery-partners/:id/approve", approveDeliveryPartner);
 router.delete("/delivery-partners/:id/reject", rejectDeliveryPartner);
+
+// Delivery Partner COD
+router.get("/deliveries/cod-deposit", getAllDepositHistory);
+router.post("/deliveries/:id/cod-deposit/status", updateDepositStatus);
 
 // Orders
 router.get("/orders", getAllOrders);
@@ -144,6 +154,7 @@ router.patch("/finance/payouts/:id", updatePayoutStatus);
 // System Settings
 router.get("/settings", getSettings);
 router.put("/settings", updateSettings);
+router.patch("/settings/cod-wallet", updateCodSettings);
 
 // Reports Management
 router.get("/reports/generate", generateReport);

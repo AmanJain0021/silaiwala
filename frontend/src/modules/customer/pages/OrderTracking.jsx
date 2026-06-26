@@ -1004,7 +1004,9 @@ const OrderTracking = () => {
                             <div className="bg-red-50 rounded-[2rem] p-6 border border-red-100 relative overflow-hidden">
                                 <div className="flex justify-between items-start mb-3 relative z-10">
                                     <div>
-                                        <h3 className="text-lg font-black text-red-900 tracking-tighter mb-1">Issue Reported</h3>
+                                        <h3 className="text-lg font-black text-red-900 tracking-tighter mb-1">
+                                            {order.reportedIssue.issueId ? `${order.reportedIssue.issueId} - ` : ''}Issue Reported
+                                        </h3>
                                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
                                             order.reportedIssue.status === 'pending' ? 'bg-orange-100 text-orange-700 border-orange-200' :
                                             order.reportedIssue.status === 'resolved' ? 'bg-green-100 text-green-700 border-green-200' :

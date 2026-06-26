@@ -15,6 +15,7 @@ const {
   resendDeliveryOtp,
   completeDeliveryFlow
 } = require("../controllers/delivery.controller");
+const { requestCashDeposit, getMyDepositHistory, createRazorpayDepositOrder, verifyRazorpayDeposit } = require("../controllers/cashDeposit.controller");
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
 
 // All routes are protected and for delivery partners only
@@ -34,5 +35,10 @@ router.patch("/orders/:id/status", updateDeliveryStatus);
 router.post("/orders/:id/resend-delivery-otp", resendDeliveryOtp);
 router.patch("/orders/:id/complete", completeDeliveryFlow);
 router.post("/documents", submitDocuments);
+
+router.post("/cod-deposit/request", requestCashDeposit);
+router.post("/cod-deposit/razorpay/create", createRazorpayDepositOrder);
+router.post("/cod-deposit/razorpay/verify", verifyRazorpayDeposit);
+router.get("/cod-deposit/history", getMyDepositHistory);
 
 module.exports = router;

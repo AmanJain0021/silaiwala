@@ -60,8 +60,12 @@ exports.reportIssue = asyncHandler(async (req, res, next) => {
     });
   }
 
+  // Generate issueId
+  const issueIdString = `ISS-${Math.floor(100000 + Math.random() * 900000)}`;
+
   // Create issue
   const issue = await Issue.create({
+    issueId: issueIdString,
     originalOrder: orderId,
     customer: req.user.id,
     tailor: order.tailor,

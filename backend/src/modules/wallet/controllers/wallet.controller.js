@@ -51,6 +51,8 @@ exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
       totalEarned: profile.totalEarned || 0, // Tailor might use different field, handled below if needed
       totalWithdrawn: profile.totalWithdrawn || 0,
       pendingWithdrawals: withdrawals.reduce((sum, w) => sum + w.amount, 0),
+      codWalletBalance: profile.codWalletBalance || 0,
+      cashBlocked: profile.cashBlocked || false,
       recentTransactions: transactions
     }
   });

@@ -1314,6 +1314,7 @@ exports.updateSettings = async (req, res) => {
     if (updateData.visitFee) settings.visitFee = updateData.visitFee;
     if (updateData.pricing) settings.pricing = updateData.pricing;
     if (updateData.walletConfig) settings.walletConfig = updateData.walletConfig;
+    if (updateData.codWalletConfig) settings.codWalletConfig = updateData.codWalletConfig;
     if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
 
     await settings.save();
