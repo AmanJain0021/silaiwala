@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Search, Bell, ShoppingBag, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
+import { Search, Bell, ShoppingCart, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
+import useAuthStore from '../../../store/authStore';
+import useUserStore from '../../../store/userStore';
+import LocationModal from './LocationModal';
 import useCheckoutStore from '../../../store/checkoutStore';
 import useLocationStore from '../../../store/locationStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,9 +22,10 @@ const HomeHeader = ({ user }) => {
     const cartCount = productCartItems.length + serviceItems.length;
     const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
 
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showLocationModal, setShowLocationModal] = useState(false);
+    const { profile } = useUserStore();
     const { address: location, setLocation } = useLocationStore();
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempLocation, setTempLocation] = useState('');
     const { detectLocation, isLocating: isLoading } = useUnifiedLocation({ fetchAddress: true });
 
     const getGreeting = () => {
@@ -63,67 +67,27 @@ const HomeHeader = ({ user }) => {
                 {/* Top Row: Brand & Icons */}
                 <div className="flex justify-between items-center">
                     <div className="flex-1 min-w-0 mr-4">
-                        <AnimatePresence mode="wait">
-                            {isEditing ? (
-                                <motion.div
-                                    key="editing"
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 10 }}
-                                    className="flex items-center gap-2 w-full"
-                                >
-                                    <div className="flex-1 relative flex items-center">
-                                        <Search className="absolute left-2.5 h-3 w-3 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            value={tempLocation}
-                                            onChange={(e) => setTempLocation(e.target.value)}
-                                            placeholder="Enter area..."
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl py-1.5 pl-7 pr-2 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-[#843D9B]/10 transition-all shadow-sm"
-                                            autoFocus
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleDetectLocation}
-                                        className="p-1.5 bg-[#843D9B]/5 text-[#843D9B] rounded-lg"
-                                    >
-                                        {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
-                                    </button>
-                                    <button
-                                        onClick={handleSave}
-                                        className="p-1.5 bg-[#843D9B] text-white rounded-lg shadow-md"
-                                    >
-                                        <Check size={12} />
-                                    </button>
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="viewing"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="flex items-center gap-2 cursor-pointer group"
-                                    onClick={() => {
-                                        setTempLocation(location);
-                                        setIsEditing(true);
-                                    }}
-                                >
-                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0 shadow-sm">
-                                        <MapPin size={14} className="group-hover:scale-110 transition-transform" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[9px] text-white/70 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
-                                        <div className="flex items-center gap-1 overflow-hidden">
-                                            <span className="text-[11px] font-black text-white truncate tracking-tight">{location}</span>
-                                            <ChevronDown size={10} className="text-white opacity-70" />
-                                        </div>
-                                    </div>
-                                    <div className="hidden sm:flex items-center gap-2 shrink-0">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                                        <span className="text-[9px] font-black text-white uppercase tracking-widest opacity-90">Riders Online</span>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex items-center gap-2 cursor-pointer group"
+                            onClick={() => setShowLocationModal(true)}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0 shadow-sm">
+                                <MapPin size={14} className="group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[9px] text-white/70 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
+                                <div className="flex items-center gap-1 overflow-hidden">
+                                    <span className="text-[11px] font-black text-white truncate tracking-tight">{location}</span>
+                                    <ChevronDown size={10} className="text-white opacity-70" />
+                                </div>
+                            </div>
+                            <div className="hidden sm:flex items-center gap-2 shrink-0">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                                <span className="text-[9px] font-black text-white uppercase tracking-widest opacity-90">Riders Online</span>
+                            </div>
+                        </motion.div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -142,7 +106,7 @@ const HomeHeader = ({ user }) => {
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
                             className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
                         >
-                            <ShoppingBag size={18} />
+                            <ShoppingCart size={18} />
                             {cartCount > 0 && (
                                 <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#843D9B] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#843D9B] shadow-md">
                                     {cartCount}
@@ -157,7 +121,7 @@ const HomeHeader = ({ user }) => {
         </div>
 
             {/* Sticky Search and Marquee Section */}
-            <div className="sticky top-0 z-[100] bg-[#843D9B] backdrop-blur-md border-b border-[#843D9B]/50 transition-all duration-300 md:hidden overflow-hidden shadow-sm">
+            <div className="sticky top-[-1px] mt-[-1px] z-[100] bg-[#843D9B] border-b border-[#843D9B]/50 transition-all duration-300 md:hidden overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 pb-0">
                     {/* Search Bar - Modernized */}
                     <AnimatedSearchBar />
@@ -248,6 +212,10 @@ const HomeHeader = ({ user }) => {
                     </>
                 )}
             </AnimatePresence>
+            <LocationModal 
+                isOpen={showLocationModal} 
+                onClose={() => setShowLocationModal(false)} 
+            />
         </>
     );
 };

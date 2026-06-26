@@ -92,7 +92,7 @@ const PromoBanner = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.6 }}
-                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-32 sm:h-64 lg:h-72 flex items-center`}
+                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-40 sm:h-64 lg:h-72 w-full flex items-center`}
                 >
                     {/* Full Background Image */}
                     <div className="absolute inset-0 z-0">
@@ -105,7 +105,7 @@ const PromoBanner = () => {
                         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
                     </div>
 
-                    <div className="relative z-10 flex-1 flex flex-col gap-1.5 sm:gap-3 px-6 sm:px-12">
+                    <div className="absolute inset-0 z-10 flex flex-col justify-center gap-1.5 sm:gap-3 px-6 sm:px-12">
                         <div className="bg-white/20 w-fit px-2.5 py-1 rounded-full text-[8px] sm:text-[10px] font-black tracking-widest backdrop-blur-md flex items-center gap-1.5 border border-white/10 uppercase">
                             <Sparkles size={8} className="text-indigo-300" /> {currentBanner.badge || 'PROMO'}
                         </div>

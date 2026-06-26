@@ -8,16 +8,18 @@ const AdminSupport = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
+    const [adminResponses, setAdminResponses] = useState({});
 
     const fetchTickets = async () => {
         setIsLoading(true);
         try {
             const res = await api.get('/support/admin');
             setTickets(res.data.data);
+            setIsLoading(false);
         } catch (error) {
+            if (error.name === 'CanceledError') return;
             console.error('Failed to fetch support tickets', error);
             toast.error('Failed to fetch support tickets');
-        } finally {
             setIsLoading(false);
         }
     };
@@ -28,7 +30,11 @@ const AdminSupport = () => {
 
     const updateStatus = async (id, newStatus) => {
         try {
-            await api.patch(`/support/admin/${id}/status`, { status: newStatus });
+            const payload = { status: newStatus };
+            if (adminResponses[id]) {
+                payload.adminResponse = adminResponses[id];
+            }
+            await api.patch(`/support/admin/${id}/status`, payload);
             toast.success(`Ticket marked as ${newStatus}`);
             fetchTickets();
         } catch (error) {
@@ -127,11 +133,28 @@ const AdminSupport = () => {
                                         </div>
                                         <h3 className="text-lg font-bold text-gray-900 mb-1">{ticket.subject}</h3>
                                         <p className="text-sm text-gray-500 mb-4 bg-gray-50 p-4 rounded-xl whitespace-pre-wrap">{ticket.message}</p>
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
                                             <span className="font-bold text-gray-900">{ticket.name}</span>
                                             <span className="text-gray-300">•</span>
                                             <a href={`mailto:${ticket.email}`} className="text-primary hover:underline">{ticket.email}</a>
                                         </div>
+                                        {ticket.status !== 'Resolved' ? (
+                                            <div className="mt-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Admin Response</label>
+                                                <textarea
+                                                    rows="2"
+                                                    value={adminResponses[ticket._id] || ''}
+                                                    onChange={(e) => setAdminResponses(prev => ({ ...prev, [ticket._id]: e.target.value }))}
+                                                    className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-primary transition-all resize-none"
+                                                    placeholder="Type a response to the delivery partner..."
+                                                ></textarea>
+                                            </div>
+                                        ) : ticket.adminResponse ? (
+                                            <div className="mt-2 bg-green-50/50 border border-green-100 p-4 rounded-xl">
+                                                <label className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1 block">Your Response</label>
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{ticket.adminResponse}</p>
+                                            </div>
+                                        ) : null}
                                     </div>
                                     <div className="flex flex-row md:flex-col items-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 min-w-[140px]">
                                         {ticket.status !== 'Resolved' && (

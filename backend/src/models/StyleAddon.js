@@ -21,6 +21,12 @@ const styleAddonSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add the clothing category applicable (e.g., Kurta, Shirt, Suit)']
     },
+    referenceImages: {
+        left: { type: String, default: '' },
+        right: { type: String, default: '' },
+        front: { type: String, default: '' },
+        back: { type: String, default: '' }
+    },
     isActive: {
         type: Boolean,
         default: true

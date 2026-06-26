@@ -224,7 +224,7 @@ const TailorRegistration = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full flex flex-col items-center justify-center py-10 text-center"
             >
-                <div className="h-24 w-24 bg-purple-50 text-[#2D2F6F] rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-purple-900/5">
+                <div className="h-24 w-24 bg-pink-50 text-[#843D9B] rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-purple-900/5">
                     <CheckCircle2 size={48} strokeWidth={2.5} />
                 </div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">Application Sent!</h2>
@@ -233,7 +233,7 @@ const TailorRegistration = () => {
                 </p>
                 <button
                     onClick={() => navigate('/partner/verification')}
-                    className="mt-8 font-black bg-[#2D2F6F] text-white px-10 py-4 rounded-2xl hover:bg-[#1E1F4D] transition-all shadow-lg shadow-purple-200"
+                    className="mt-8 font-black bg-[#843D9B] text-white px-10 py-4 rounded-full hover:bg-[#E04D79] transition-all shadow-lg shadow-[#843D9B]/20"
                 >
                     View Status
                 </button>
@@ -250,7 +250,7 @@ const TailorRegistration = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2 sm:gap-3 w-full">
                     {step > 1 && (
-                        <button type="button" onClick={prevStep} className="p-2 -ml-2 text-gray-400 hover:text-[#2D2F6F] transition-colors bg-gray-50 rounded-xl shrink-0">
+                        <button type="button" onClick={prevStep} className="p-2 -ml-2 text-gray-400 hover:text-[#843D9B] transition-colors bg-gray-50 rounded-full shrink-0">
                             <ChevronLeft size={20} />
                         </button>
                     )}
@@ -258,7 +258,7 @@ const TailorRegistration = () => {
                         <h2 className="text-[17px] sm:text-xl font-bold text-slate-800 tracking-tight leading-tight truncate">
                             {stepTitles[step - 1]}
                         </h2>
-                        <span className="text-[9px] sm:text-[10px] font-bold text-white bg-[#2D2F6F] px-2 py-1 rounded-md uppercase tracking-wider shrink-0">
+                        <span className="text-[9px] sm:text-[10px] font-bold text-white bg-[#843D9B] px-2 py-1 rounded-md uppercase tracking-wider shrink-0">
                             Step {step}/4
                         </span>
                     </div>
@@ -287,7 +287,7 @@ const TailorRegistration = () => {
                                     type="button"
                                     onClick={prevStep}
                                     disabled={isValidating}
-                                    className="w-1/3 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                                    className="w-1/3 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
                                 >
                                     <ChevronLeft className="w-5 h-5" /> BACK
                                 </button>
@@ -296,7 +296,7 @@ const TailorRegistration = () => {
                                 type="button"
                                 onClick={handleNext}
                                 disabled={isValidating}
-                                className={`flex-1 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${isValidating ? 'bg-gray-300 text-gray-500' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] text-white shadow-purple-100'}`}
+                                className={`flex-1 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${isValidating ? 'bg-gray-300 text-gray-500' : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20'}`}
                             >
                                 {isValidating ? 'VALIDATING...' : 'NEXT'} <ArrowRight className="w-5 h-5" />
                             </button>
@@ -307,7 +307,7 @@ const TailorRegistration = () => {
                                 type="button"
                                 onClick={prevStep}
                                 disabled={isLoading}
-                                className="w-1/3 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                                className="w-1/3 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
                             >
                                 <ChevronLeft className="w-5 h-5" /> BACK
                             </button>
@@ -315,7 +315,7 @@ const TailorRegistration = () => {
                                 type="button"
                                 onClick={handleSubmit(onSubmit)}
                                 disabled={isLoading}
-                                className={`flex-1 h-14 rounded-2xl font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading ? 'bg-gray-300 text-gray-600' : 'bg-[#2D2F6F] hover:bg-[#1E1F4D] text-white shadow-purple-100'}`}
+                                className={`flex-1 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading ? 'bg-gray-300 text-gray-600' : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20'}`}
                             >
                                 {isLoading ? 'Submitting...' : 'SUBMIT APPLICATION'}
                             </button>

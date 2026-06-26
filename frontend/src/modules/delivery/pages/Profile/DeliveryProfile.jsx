@@ -20,7 +20,8 @@ import {
     Send,
     UploadCloud,
     Loader2,
-    Globe
+    Globe,
+    Camera
 } from 'lucide-react';
 import MenuOption from '../../../customer/components/profile/MenuOption';
 import deliveryService from '../../services/deliveryService';
@@ -29,7 +30,7 @@ import api from '../../../../utils/api';
 
 const DeliveryProfile = () => {
     const navigate = useNavigate();
-    const { user, setUser } = useAuthStore();
+    const { user, updateUser } = useAuthStore();
     const logout = useAuthStore((state) => state.logout);
     const [isEditing, setIsEditing] = useState(null); // 'personal' | 'bank' | null
     const { isOnline, setIsOnline } = useOutletContext() || { isOnline: true, setIsOnline: () => { } };
@@ -38,6 +39,9 @@ const DeliveryProfile = () => {
     const [showKYCModal, setShowKYCModal] = useState(false);
     const [kycStatus, setKycStatus] = useState('Action Required');
     const [loading, setLoading] = useState(true);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [supportIssue, setSupportIssue] = useState('');
+    const [myTickets, setMyTickets] = useState([]);
 
     // Profile States
     const [deliveryProfile, setDeliveryProfile] = useState(null);
@@ -46,6 +50,8 @@ const DeliveryProfile = () => {
         phone: '',
         emergencyPhone: '',
         vehicle: '',
+        profileImage: null,
+        previewImage: null,
     });
 
     const [bankInfo, setBankInfo] = useState({
@@ -72,6 +78,8 @@ const DeliveryProfile = () => {
                         phone: data.user.phoneNumber || '',
                         emergencyPhone: data.emergencyContact || '',
                         vehicle: data.vehicleNumber || '',
+                        profileImage: null,
+                        previewImage: data.user.profileImage || null,
                     }));
                     if (data.documents && data.documents.length > 0) {
                         const allVerified = data.documents.every(doc => doc.status === 'verified');
@@ -86,14 +94,35 @@ const DeliveryProfile = () => {
                         });
                     }
                 }
+                setLoading(false);
             } catch (error) {
+                if (error.name === 'CanceledError' || error.message?.includes('canceled')) {
+                    console.log('Request canceled, likely due to React StrictMode or navigation.');
+                    return; // DO NOT set loading to false here, let the new request handle it
+                }
                 console.error('Failed to fetch profile:', error);
-            } finally {
                 setLoading(false);
             }
         };
         fetchProfile();
     }, []);
+
+    const fetchMyTickets = async () => {
+        try {
+            const res = await api.get('/support/my-tickets');
+            if (res.data.success) {
+                setMyTickets(res.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch support tickets', error);
+        }
+    };
+
+    useEffect(() => {
+        if (showSupport) {
+            fetchMyTickets();
+        }
+    }, [showSupport]);
 
     const handleToggleDuty = async () => {
         const newStatus = !isOnline;
@@ -111,19 +140,58 @@ const DeliveryProfile = () => {
     const handleSave = async (section) => {
         try {
             if (section === 'personal') {
-                await deliveryService.updateProfile({
+                if (!personalInfo.name.trim()) {
+                    toast.error("Full Name is required");
+                    return;
+                }
+                if (personalInfo.emergencyPhone && personalInfo.emergencyPhone.length < 10) {
+                    toast.error("Please enter a valid Emergency Contact");
+                    return;
+                }
+
+                let profileImageUrl = null;
+                if (personalInfo.profileImage) {
+                    const toastId = toast.loading('Uploading profile photo...');
+                    try {
+                        const formData = new FormData();
+                        formData.append('images', personalInfo.profileImage);
+                        const uploadRes = await api.post('/upload/public/bulk', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        profileImageUrl = uploadRes.data.data[0];
+                        toast.success('Photo uploaded', { id: toastId });
+                    } catch (err) {
+                        toast.error('Photo upload failed', { id: toastId });
+                        return;
+                    }
+                }
+
+                const res = await deliveryService.updateProfile({
                     name: personalInfo.name,
                     phoneNumber: personalInfo.phone,
                     emergencyContact: personalInfo.emergencyPhone,
-                    vehicleNumber: personalInfo.vehicle
+                    vehicleNumber: personalInfo.vehicle,
+                    ...(profileImageUrl && { profileImage: profileImageUrl })
                 });
+                
+                if (res.success) {
+                    setDeliveryProfile(res.data);
+                }
 
-                if (setUser && user) {
-                    setUser({ ...user, name: personalInfo.name });
+                if (updateUser) {
+                    updateUser({ name: personalInfo.name, phoneNumber: personalInfo.phone });
                 }
                 toast.success('Identity profile updated');
             } else if (section === 'bank') {
-                await deliveryService.updateProfile({
+                if (!bankInfo.accountName.trim() || !bankInfo.bank.trim() || !bankInfo.accountNo.trim() || !bankInfo.ifsc.trim()) {
+                    toast.error("Please fill in all bank details");
+                    return;
+                }
+                if (bankInfo.ifsc.length !== 11) {
+                    toast.error("IFSC Code must be exactly 11 characters");
+                    return;
+                }
+                const res = await deliveryService.updateProfile({
                     bankDetails: {
                         accountName: bankInfo.accountName,
                         bankName: bankInfo.bank,
@@ -131,12 +199,38 @@ const DeliveryProfile = () => {
                         ifscCode: bankInfo.ifsc
                     }
                 });
+                if (res.success) {
+                    setDeliveryProfile(res.data);
+                }
                 toast.success('Financial details updated');
             }
             setIsEditing(null);
         } catch (error) {
             console.error(`Failed to update ${section} details:`, error);
             toast.error(`Failed to update ${section} details`);
+        }
+    };
+
+    const handleSupportSubmit = async () => {
+        if (!supportIssue.trim()) {
+            toast.error('Please describe your issue');
+            return;
+        }
+        const toastId = toast.loading('Submitting ticket...');
+        try {
+            const payload = {
+                name: user?.name || deliveryProfile?.personal?.name || 'Delivery Partner',
+                email: user?.email || 'delivery@silaiwala.com',
+                subject: 'Delivery App Support Ticket',
+                message: supportIssue
+            };
+            await api.post('/support', payload);
+            toast.success('Ticket submitted successfully! Support will contact you shortly.', { id: toastId });
+            setSupportIssue('');
+            fetchMyTickets();
+        } catch (error) {
+            console.error('Failed to submit ticket:', error);
+            toast.error(error.response?.data?.message || 'Failed to submit ticket. Please try again.', { id: toastId });
         }
     };
 
@@ -191,7 +285,7 @@ const DeliveryProfile = () => {
                     <div className="relative">
                         <div className="w-14 h-14 rounded-full border-[3px] border-white shadow-md overflow-hidden bg-indigo-50">
                             <img
-                                src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Chirag"}
+                                src={deliveryProfile?.user?.profileImage || user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Chirag"}
                                 alt="Profile"
                                 className="w-full h-full object-cover"
                             />
@@ -201,14 +295,14 @@ const DeliveryProfile = () => {
                         </div>
                     </div>
                     <div className="flex-1">
-                        <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{user?.name || 'Partner'}</h2>
+                        <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{deliveryProfile?.user?.name || user?.name || 'Partner'}</h2>
                         <div className="flex items-center gap-1.5 flex-wrap">
                             <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-lg border border-amber-100">
                                 <span className="text-amber-500 font-black text-[9px]">★</span>
                                 <span className="text-amber-700 font-bold text-[9px]">{deliveryProfile?.rating || '4.8'}</span>
                             </div>
                             <span className="text-slate-200">•</span>
-                            <span className="text-slate-400 font-bold text-[8px] uppercase tracking-wider">ID: {user?._id?.slice(-6).toUpperCase() || '882190'}</span>
+                            <span className="text-slate-400 font-bold text-[8px] uppercase tracking-wider">ID: {(deliveryProfile?.user?._id || user?._id)?.slice(-6).toUpperCase() || '882190'}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                             <div className="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
@@ -247,16 +341,28 @@ const DeliveryProfile = () => {
                         icon={User}
                         color="bg-[#843D9B]"
                         label="Identity Profile"
-                        subLabel={deliveryProfile?.user?.isVerified ? "Verified Partner" : "Update details"}
-                        onClick={() => setIsEditing('personal')}
+                        subLabel={deliveryProfile?.kycStatus === 'verified' ? "Verified Partner" : "Update details"}
+                        onClick={() => {
+                            if (deliveryProfile) {
+                                setPersonalInfo({
+                                    name: deliveryProfile.user?.name || '',
+                                    phone: deliveryProfile.user?.phoneNumber || '',
+                                    emergencyPhone: deliveryProfile.emergencyContact || '',
+                                    vehicle: deliveryProfile.vehicleNumber || '',
+                                    profileImage: null,
+                                    previewImage: deliveryProfile.user?.profileImage || null,
+                                });
+                            }
+                            setIsEditing('personal');
+                        }}
                     />
                     <MenuOption
                         icon={Star}
                         color="bg-[#843D9B]"
                         label="Performance Rating"
                         subLabel="Your service score"
-                        extra={<span className="bg-orange-50 text-[10px] font-black px-2.5 py-1 rounded-full text-orange-600 border border-orange-100 italic">4.8</span>}
-                        to="/delivery/stats"
+                        extra={<span className="bg-orange-50 text-[10px] font-black px-2.5 py-1 rounded-full text-orange-600 border border-orange-100 italic">{deliveryProfile?.rating?.toFixed(1) || '0.0'}</span>}
+                        onClick={() => toast.success('Performance details coming soon!')}
                     />
                 </div>
             </div>
@@ -270,7 +376,7 @@ const DeliveryProfile = () => {
                         color="bg-[#843D9B]"
                         label="Wallet & Earnings"
                         subLabel="Check your balance"
-                        extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 1,240</span>}
+                        extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ {deliveryProfile?.walletBalance || 0}</span>}
                         to="/delivery/wallet"
                     />
                     <MenuOption
@@ -278,7 +384,17 @@ const DeliveryProfile = () => {
                         color="bg-[#843D9B]"
                         label="Financial Routing"
                         subLabel="Bank details"
-                        onClick={() => setIsEditing('bank')}
+                        onClick={() => {
+                            if (deliveryProfile?.bankDetails) {
+                                setBankInfo({
+                                    accountName: deliveryProfile.bankDetails.accountName || '',
+                                    bank: deliveryProfile.bankDetails.bankName || '',
+                                    accountNo: deliveryProfile.bankDetails.accountNumber || '',
+                                    ifsc: deliveryProfile.bankDetails.ifscCode || '',
+                                });
+                            }
+                            setIsEditing('bank');
+                        }}
                     />
                 </div>
             </div>
@@ -291,16 +407,20 @@ const DeliveryProfile = () => {
                         icon={Bell}
                         color="bg-[#843D9B]"
                         label="Notifications"
-                        subLabel="Alert preferences"
-                        to="/delivery/notifications"
+                        subLabel={notificationsEnabled ? "Alerts are active" : "Alerts are muted"}
+                        hideArrow={true}
+                        extra={
+                            <div className={`w-10 h-6 rounded-full p-0.5 transition-colors duration-300 relative flex items-center shadow-inner ${notificationsEnabled ? 'bg-[#843D9B]' : 'bg-slate-200'}`}>
+                                <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${notificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`}>
+                                </div>
+                            </div>
+                        }
+                        onClick={() => {
+                            setNotificationsEnabled(!notificationsEnabled);
+                            toast.success(`Notifications ${!notificationsEnabled ? 'enabled' : 'disabled'}`);
+                        }}
                     />
-                    <MenuOption
-                        icon={Globe}
-                        color="bg-[#843D9B]"
-                        label="Language"
-                        extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
-                        to="/delivery/language"
-                    />
+
                     <MenuOption
                         icon={FileText}
                         color="bg-[#843D9B]"
@@ -430,13 +550,47 @@ const DeliveryProfile = () => {
                                     <label className="text-[10px] font-black text-slate-400 tracking-widest mb-2 block uppercase">Describe your issue</label>
                                     <textarea
                                         rows="4"
+                                        value={supportIssue}
+                                        onChange={(e) => setSupportIssue(e.target.value)}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium text-slate-900 focus:outline-none focus:border-slate-500 transition-all resize-none"
                                         placeholder="I need help with..."
                                     ></textarea>
                                 </div>
-                                <button className="w-full bg-slate-600 text-white rounded-2xl p-4 font-black tracking-widest text-xs hover:bg-slate-700 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase">
+                                <button 
+                                    onClick={handleSupportSubmit}
+                                    className="w-full bg-slate-600 text-white rounded-2xl p-4 font-black tracking-widest text-xs hover:bg-slate-700 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase"
+                                >
                                     <Send size={16} /> Submit Ticket
                                 </button>
+                                
+                                {myTickets.length > 0 && (
+                                    <div className="mt-8 pt-6 border-t border-slate-100 max-h-[300px] overflow-y-auto pr-2">
+                                        <h4 className="text-[10px] font-black text-slate-400 tracking-widest mb-4 uppercase sticky top-0 bg-white z-10 py-1">Recent Tickets</h4>
+                                        <div className="space-y-4">
+                                            {myTickets.map(ticket => (
+                                                <div key={ticket._id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-bold text-slate-900">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
+                                                            ticket.status === 'Resolved' ? 'bg-green-100 text-green-700' :
+                                                            ticket.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-orange-100 text-orange-700'
+                                                        }`}>
+                                                            {ticket.status}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-slate-600 mb-3">{ticket.message}</p>
+                                                    {ticket.adminResponse && (
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-3">
+                                                            <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase mb-1 block">Support Response</span>
+                                                            <p className="text-sm text-slate-800">{ticket.adminResponse}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>
@@ -491,7 +645,9 @@ const DeliveryProfile = () => {
                                                 formData.append('image', file);
 
                                                 try {
-                                                    const res = await api.post('/upload', formData);
+                                                    const res = await api.post('/upload', formData, {
+                                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                                    });
                                                     setAadharImage(res.data.data);
                                                     toast.success('Aadhar uploaded');
                                                 } catch (err) {
@@ -527,7 +683,9 @@ const DeliveryProfile = () => {
                                                 formData.append('image', file);
 
                                                 try {
-                                                    const res = await api.post('/upload', formData);
+                                                    const res = await api.post('/upload', formData, {
+                                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                                    });
                                                     setLicenseImage(res.data.data);
                                                     toast.success('License uploaded');
                                                 } catch (err) {
@@ -560,6 +718,225 @@ const DeliveryProfile = () => {
                             <p className="text-center mt-4 text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
                                 Documents are securely encrypted.<br />Verification takes up to 24 hours.
                             </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* Edit Profile Modal */}
+            <AnimatePresence>
+                {isEditing === 'personal' && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => setIsEditing(null)}
+                    >
+                        <motion.div
+                            initial={{ y: "100%", opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: "100%", opacity: 0 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-5 sm:p-6 shadow-2xl relative"
+                        >
+                            <button
+                                onClick={() => setIsEditing(null)}
+                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
+                            >
+                                <X size={16} />
+                            </button>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center">
+                                    <User size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Identity Profile</h3>
+                                    <p className="text-[9px] tracking-widest font-bold text-slate-400 uppercase">Update your personal details</p>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex flex-col items-center mb-2">
+                                    <label className="relative cursor-pointer group">
+                                        <div className="w-14 h-14 rounded-full border-2 border-dashed border-[#843D9B] overflow-hidden flex items-center justify-center bg-fuchsia-50 group-hover:bg-fuchsia-100 transition-all">
+                                            {personalInfo.previewImage ? (
+                                                <img src={personalInfo.previewImage} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={20} className="text-[#843D9B]" />
+                                            )}
+                                        </div>
+                                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Camera size={20} className="text-white" />
+                                        </div>
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    setPersonalInfo({
+                                                        ...personalInfo,
+                                                        profileImage: file,
+                                                        previewImage: URL.createObjectURL(file)
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1.5">Update Photo</span>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Full Name</label>
+                                    <input
+                                        type="text"
+                                        value={personalInfo.name}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
+                                            if (val.length > 0) {
+                                                val = val.charAt(0).toUpperCase() + val.slice(1);
+                                            }
+                                            setPersonalInfo({ ...personalInfo, name: val });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        value={personalInfo.phone}
+                                        readOnly
+                                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-400 focus:outline-none cursor-not-allowed opacity-70"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Emergency Contact</label>
+                                    <input
+                                        type="tel"
+                                        value={personalInfo.emergencyPhone}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^0-9]/g, '');
+                                            if (val.length > 10) val = val.slice(0, 10);
+                                            setPersonalInfo({ ...personalInfo, emergencyPhone: val });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Vehicle Number</label>
+                                    <input
+                                        type="text"
+                                        value={personalInfo.vehicle}
+                                        readOnly
+                                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-400 focus:outline-none cursor-not-allowed uppercase opacity-70"
+                                    />
+                                </div>
+                                <button 
+                                    onClick={() => handleSave('personal')}
+                                    className="w-full bg-[#843D9B] text-white rounded-xl py-3 font-black tracking-widest text-xs hover:bg-[#6b3180] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase mt-1"
+                                >
+                                    <CheckCircle2 size={16} /> Save Changes
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Bank Modal */}
+            <AnimatePresence>
+                {isEditing === 'bank' && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => setIsEditing(null)}
+                    >
+                        <motion.div
+                            initial={{ y: "100%", opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: "100%", opacity: 0 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-5 sm:p-6 shadow-2xl relative"
+                        >
+                            <button
+                                onClick={() => setIsEditing(null)}
+                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
+                            >
+                                <X size={16} />
+                            </button>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center">
+                                    <CreditCard size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Financial Routing</h3>
+                                    <p className="text-[9px] tracking-widest font-bold text-slate-400 uppercase">Update bank details</p>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Account Holder Name</label>
+                                    <input
+                                        type="text"
+                                        value={bankInfo.accountName}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
+                                            if (val.length > 0) val = val.charAt(0).toUpperCase() + val.slice(1);
+                                            setBankInfo({ ...bankInfo, accountName: val });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Bank Name</label>
+                                    <input
+                                        type="text"
+                                        value={bankInfo.bank}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
+                                            if (val.length > 0) val = val.charAt(0).toUpperCase() + val.slice(1);
+                                            setBankInfo({ ...bankInfo, bank: val });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Account Number</label>
+                                    <input
+                                        type="text"
+                                        value={bankInfo.accountNo}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^0-9]/g, '');
+                                            if (val.length > 18) val = val.slice(0, 18);
+                                            setBankInfo({ ...bankInfo, accountNo: val });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all tracking-widest"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">IFSC Code</label>
+                                    <input
+                                        type="text"
+                                        value={bankInfo.ifsc}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                                            if (val.length > 11) val = val.slice(0, 11);
+                                            setBankInfo({ ...bankInfo, ifsc: val });
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all tracking-widest"
+                                    />
+                                </div>
+                                <button 
+                                    onClick={() => handleSave('bank')}
+                                    className="w-full bg-[#843D9B] text-white rounded-xl py-3 font-black tracking-widest text-xs hover:bg-[#6b3180] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase mt-1"
+                                >
+                                    <CheckCircle2 size={16} /> Save Changes
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

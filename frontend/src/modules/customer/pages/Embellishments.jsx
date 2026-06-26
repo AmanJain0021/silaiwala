@@ -4,12 +4,15 @@ import { ArrowLeft, Sparkles, Scissors, ShoppingBag, CheckCircle2, ChevronRight,
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../../utils/cn';
 import api from '../../../utils/api';
+import DesignDetailModal from '../components/DesignDetailModal';
 
 const Embellishments = () => {
     const navigate = useNavigate();
     const [selectedDesigns, setSelectedDesigns] = useState({});
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [detailDesign, setDetailDesign] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchAddons = async () => {
@@ -31,7 +34,10 @@ const Embellishments = () => {
                             id: addon._id,
                             name: addon.name,
                             price: addon.price,
-                            image: addon.image
+                            image: addon.image,
+                            description: addon.description,
+                            referenceImages: addon.referenceImages,
+                            categoryId: cat.toLowerCase().replace(/\s+/g, '-')
                         });
                         return acc;
                     }, {});
@@ -106,7 +112,10 @@ const Embellishments = () => {
                                         <motion.div
                                             key={design.id}
                                             whileTap={{ scale: 0.98 }}
-                                            onClick={() => toggleDesign(category.id, design)}
+                                            onClick={() => {
+                                                setDetailDesign(design);
+                                                setIsDetailModalOpen(true);
+                                            }}
                                             className={cn(
                                                 "relative bg-white rounded-[2rem] overflow-hidden border transition-all cursor-pointer group",
                                                 isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "border-gray-100 shadow-sm hover:border-indigo-200"
@@ -156,43 +165,17 @@ const Embellishments = () => {
                 </div>
             </div>
 
-            {/* Bottom Panel */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-gray-100 p-4 pb-12">
-                <div className="max-w-md mx-auto">
-                    <div className="flex justify-between items-center mb-4 px-2">
-                        <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Add-on Total</p>
-                            <h4 className="text-2xl font-black text-gray-900 leading-none">₹{calculateTotal()}</h4>
-                        </div>
-                        <div className="flex -space-x-2">
-                            {Object.values(selectedDesigns).flat().slice(0, 3).map((d, i) => (
-                                <div key={i} className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-gray-100">
-                                    <img src={d.image} className="w-full h-full object-cover" alt="" />
-                                </div>
-                            ))}
-                            {Object.values(selectedDesigns).flat().length > 3 && (
-                                <div className="w-8 h-8 rounded-full border-2 border-white bg-indigo-50 flex items-center justify-center text-[10px] font-black text-primary">
-                                    +{Object.values(selectedDesigns).flat().length - 3}
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
-                    <button
-                        onClick={() => navigate('/user/services')}
-                        className={cn(
-                            "w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
-                            calculateTotal() > 0 ? "bg-primary text-white shadow-primary/20 active:scale-[0.98]" : "bg-gray-100 text-gray-400"
-                        )}
-                    >
-                        {calculateTotal() > 0 ? (
-                            <>Confirm Selection <ChevronRight size={16} /></>
-                        ) : (
-                            <>Choose Designs to Continue</>
-                        )}
-                    </button>
-                </div>
-            </div>
+
+            {/* Design Detail Modal */}
+            {isDetailModalOpen && detailDesign && (
+                <DesignDetailModal 
+                    design={detailDesign}
+                    isSelected={selectedDesigns[detailDesign.categoryId]?.find(d => d.id === detailDesign.id)}
+                    onToggle={() => toggleDesign(detailDesign.categoryId, detailDesign)}
+                    onClose={() => setIsDetailModalOpen(false)}
+                />
+            )}
         </div>
     );
 };
