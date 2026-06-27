@@ -2,8 +2,18 @@ import axios from 'axios';
 import { API_URL } from '../config/constants';
 import { getToken, removeToken } from './auth';
 
+// Ensure the base URL has a protocol to prevent it from being treated as a relative path
+const getBaseUrl = () => {
+    let url = import.meta.env.VITE_API_URL || API_URL;
+    if (url && !url.startsWith('http') && !url.startsWith('/')) {
+        url = `https://${url}`;
+    }
+    return url;
+};
+
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: getBaseUrl(),
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },

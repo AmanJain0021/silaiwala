@@ -42,7 +42,8 @@ export const useUnifiedLocation = ({
 
     const fetchAddressData = async (latitude, longitude) => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+            let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+            if (apiUrl && !apiUrl.startsWith('http') && !apiUrl.startsWith('/')) apiUrl = `https://${apiUrl}`;
             console.log('📍 [useUnifiedLocation] Fetching address for coords:', { latitude, longitude });
             const response = await fetch(`${apiUrl}/distance/geocode?lat=${latitude}&lng=${longitude}`);
             const result = await response.json();
