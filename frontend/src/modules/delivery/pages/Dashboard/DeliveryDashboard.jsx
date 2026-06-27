@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Bike,
     Package,
     IndianRupee,
     ArrowUpRight,
@@ -29,6 +28,7 @@ import {
     FileText,
     ShieldAlert
 } from 'lucide-react';
+import { MdTwoWheeler } from "react-icons/md";
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { SOCKET_URL } from '../../../../config/constants';
 import useAuthStore from '../../../../store/authStore';
@@ -292,7 +292,7 @@ const DeliveryDashboard = () => {
                                 </span>
                             </div>
                             <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center border border-indigo-100">
-                                <Bike size={20} />
+                                <MdTwoWheeler size={20} />
                             </div>
                         </div>
 

@@ -53,7 +53,7 @@ const ReportedIssues = () => {
                             <div className="flex justify-between items-start mb-3">
                                 <div>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                        Order {issue.originalOrder?.orderId}
+                                        {issue.issueId ? `${issue.issueId} • ` : ''}Order {issue.originalOrder?.orderId}
                                     </p>
                                     <h3 className="text-sm font-black text-gray-900 uppercase truncate pr-4">
                                         {issue.customer?.name}

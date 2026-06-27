@@ -20,6 +20,9 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                 setCategories(response.data.data);
             }
         } catch (error) {
+            if (error.name === 'CanceledError' || error.message === 'canceled' || error.message === 'Cancelled by a new request') {
+                return; // Ignore canceled requests
+            }
             console.error('Error fetching categories:', error);
         } finally {
             setIsLoading(false);

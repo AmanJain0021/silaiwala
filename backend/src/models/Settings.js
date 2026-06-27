@@ -61,6 +61,11 @@ const settingsSchema = new mongoose.Schema(
       platformFeePercentage: { type: Number, default: 5 },
       minDeliveryFee: { type: Number, default: 20 },
       withdrawalApprovalRequired: { type: Boolean, default: true },
+    },
+    codWalletConfig: {
+      maxCashLimit: { type: Number, default: 5000 },
+      maxDepositTimeHours: { type: Number, default: 48 },
+      autoBlockOnLimit: { type: Boolean, default: true },
     }
   },
   {

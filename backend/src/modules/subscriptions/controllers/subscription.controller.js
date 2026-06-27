@@ -46,6 +46,9 @@ exports.subscribe = asyncHandler(async (req, res, next) => {
 
   tailor.activePlan = plan._id;
   tailor.planExpiryDate = expiryDate;
+  if (plan.commissionPercentage !== undefined) {
+    tailor.commissionPercentage = plan.commissionPercentage;
+  }
   
   await tailor.save();
 

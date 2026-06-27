@@ -73,6 +73,17 @@ const deliverySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    codWalletBalance: {
+      type: Number,
+      default: 0,
+    },
+    cashBlocked: {
+      type: Boolean,
+      default: false,
+    },
+    lastCashCollectionDate: {
+      type: Date,
+    },
     totalEarned: {
       type: Number,
       default: 0,

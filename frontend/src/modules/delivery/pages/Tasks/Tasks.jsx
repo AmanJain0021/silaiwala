@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Bike,
     Package,
     Navigation,
     Phone,
@@ -18,6 +17,7 @@ import {
     X,
     Power
 } from 'lucide-react';
+import { MdTwoWheeler } from "react-icons/md";
 import deliveryService from '../../services/deliveryService';
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
@@ -639,7 +639,7 @@ const Tasks = () => {
                                                         <p className="text-[10px] font-bold text-slate-400 tracking-wide italic leading-none mt-0.5">Reward: ₹{task.deliveryEarnings || task.deliveryFee || 20}</p>
                                                     </div>
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg ${task.taskType === 'fabric-pickup' ? 'bg-amber-600' : 'bg-primary'}`}>
-                                                        <Bike size={18} />
+                                                        <MdMotorcycle size={18} />
                                                     </div>
                                                 </div>
 

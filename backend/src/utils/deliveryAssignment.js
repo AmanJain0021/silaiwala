@@ -16,6 +16,7 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
 
     const query = {
       isAvailable: true,
+      cashBlocked: { $ne: true },
       user: { $nin: order.rejectedBy || [] }
     };
 

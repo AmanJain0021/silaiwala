@@ -60,8 +60,12 @@ exports.reportIssue = asyncHandler(async (req, res, next) => {
     });
   }
 
+  // Generate issueId
+  const issueIdString = `ISS-${Math.floor(100000 + Math.random() * 900000)}`;
+
   // Create issue
   const issue = await Issue.create({
+    issueId: issueIdString,
     originalOrder: orderId,
     customer: req.user.id,
     tailor: order.tailor,
@@ -72,10 +76,10 @@ exports.reportIssue = asyncHandler(async (req, res, next) => {
 
   // Notify tailor
   await sendNotification({
-    user: order.tailor,
+    recipient: order.tailor,
     title: "New Stitching Issue Reported",
     message: `Customer reported an issue for order ${order.orderId}`,
-    type: "info",
+    type: "ISSUE_REPORTED",
     data: { issueId: issue._id, targetUrl: "/partner/issues" }
   });
 

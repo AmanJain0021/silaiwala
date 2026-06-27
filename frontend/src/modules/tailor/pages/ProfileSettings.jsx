@@ -11,7 +11,7 @@ import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import PlacesAutocompleteField from '../../../shared/components/PlacesAutocompleteField';
 import { useJsApiLoader } from '@react-google-maps/api';
 
-const GOOGLE_MAPS_LIBRARIES = ['places'];
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const ProfileSettings = () => {
     const navigate = useNavigate();

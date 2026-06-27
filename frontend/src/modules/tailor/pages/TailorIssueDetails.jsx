@@ -137,7 +137,7 @@ const TailorIssueDetails = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                     <h1 className="text-sm font-black text-gray-900 uppercase tracking-tight truncate">
-                        {issue.customer?.name || 'Customer'}
+                        {issue.issueId ? `${issue.issueId} - ` : ''}{issue.customer?.name || 'Customer'}
                     </h1>
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                         Status: <span className="text-primary">{issue.status.replace(/_/g, ' ')}</span>

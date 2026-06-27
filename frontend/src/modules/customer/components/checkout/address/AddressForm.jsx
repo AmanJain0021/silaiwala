@@ -7,7 +7,7 @@ import useLocationStore from '../../../../../store/locationStore';
 import useUnifiedLocation from '../../../../../shared/hooks/useUnifiedLocation';
 import { useJsApiLoader } from '@react-google-maps/api';
 
-const GOOGLE_MAPS_LIBRARIES = ['places'];
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const InputField = ({ label, name, placeholder, type = "text", required, form, errors, setForm, setErrors, maxLength, prefix }) => (
     <div className="mb-3">

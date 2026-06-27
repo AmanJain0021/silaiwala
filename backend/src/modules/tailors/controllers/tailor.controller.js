@@ -566,6 +566,31 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
+  // Check Subscription Limits when accepting an order
+  if (status === "accepted" && order.status !== "accepted") {
+    const Tailor = require("../../../models/Tailor");
+    const SubscriptionPlan = require("../../../models/SubscriptionPlan");
+    const tailorProfile = await Tailor.findOne({ user: req.user.id }).populate('activePlan');
+    
+    if (tailorProfile && tailorProfile.activePlan && tailorProfile.activePlan.maxOrdersPerMonth !== -1) {
+      const maxOrders = tailorProfile.activePlan.maxOrdersPerMonth;
+      
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const acceptedOrdersCount = await Order.countDocuments({
+        tailor: req.user.id,
+        acceptedAt: { $gte: startOfMonth },
+        status: { $ne: 'cancelled' }
+      });
+
+      if (acceptedOrdersCount >= maxOrders) {
+        return next(new ErrorResponse(`You have reached your subscription plan limit of ${maxOrders} orders per month. Please upgrade your plan.`, 403));
+      }
+    }
+  }
+
   // Set helper timestamps for performance tracking
   if (status === "accepted" && !order.acceptedAt) {
     order.acceptedAt = new Date();

@@ -270,6 +270,49 @@ const AdminSettings = () => {
                             <hr className="border-gray-50" />
 
                             <div>
+                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">COD Wallet Configuration</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Max Cash Limit (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.codWalletConfig?.maxCashLimit ?? 5000} 
+                                            onChange={(e) => updateNestedSetting('codWalletConfig', 'maxCashLimit', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">Maximum COD cash a rider can hold.</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Max Deposit Time (Hours)</label>
+                                        <input 
+                                            type="number" 
+                                            value={settings.codWalletConfig?.maxDepositTimeHours ?? 24} 
+                                            onChange={(e) => updateNestedSetting('codWalletConfig', 'maxDepositTimeHours', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">Time allowed to deposit cash before block.</p>
+                                    </div>
+                                </div>
+                                <div className={`mt-6 flex items-center justify-between p-6 rounded-2xl border transition-all ${settings.codWalletConfig?.autoBlockOnLimit ? 'bg-primary/5 border-primary/20 shadow-inner' : 'bg-gray-50 border-gray-100'}`}>
+                                    <div>
+                                        <p className={`text-xs font-black uppercase tracking-wider ${settings.codWalletConfig?.autoBlockOnLimit ? 'text-primary' : 'text-gray-900'}`}>Auto-Block on Limit Exceeded</p>
+                                        <p className="text-[10px] text-gray-500 font-medium mt-1">Automatically prevent new task assignments if cash limit is exceeded.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer scale-110">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer" 
+                                            checked={settings.codWalletConfig?.autoBlockOnLimit ?? true}
+                                            onChange={(e) => updateNestedSetting('codWalletConfig', 'autoBlockOnLimit', e.target.checked)}
+                                        />
+                                        <div className="w-12 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-50" />
+
+                            <div>
                                 <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Tailor at Home Fees</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div>

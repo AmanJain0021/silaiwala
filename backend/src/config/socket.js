@@ -53,11 +53,33 @@ const initSocket = (httpServer) => {
 
     // ── Join a room by userId for targeted notifications ─────────────────────
     socket.on("join_user_room", (userId) => {
+      if (userId !== socket.user?.id) {
+        console.warn(`⚠️ Unauthorized attempt to join user room for user ${userId} by user ${socket.user?.id}`);
+        return;
+      }
       socket.join(`user_${userId}`);
       console.log(`👤 User ${userId} joined their notification room`);
     });
 
     socket.on("join", (room) => {
+      // Basic authorization for sensitive rooms
+      if (room === "delivery_partners" && socket.user?.role !== "delivery") {
+        console.warn(`⚠️ Unauthorized attempt to join delivery_partners by user ${socket.user?.id}`);
+        return;
+      }
+      if (room === "admin_room" && socket.user?.role !== "admin") {
+        console.warn(`⚠️ Unauthorized attempt to join admin_room by user ${socket.user?.id}`);
+        return;
+      }
+      if (room === "measurement_executives" && socket.user?.role !== "measurement_executive") {
+        console.warn(`⚠️ Unauthorized attempt to join measurement_executives by user ${socket.user?.id}`);
+        return;
+      }
+      if (room.startsWith("user_") && room !== `user_${socket.user?.id}`) {
+        console.warn(`⚠️ Unauthorized attempt to join another user's room (${room}) by user ${socket.user?.id}`);
+        return;
+      }
+
       socket.join(room);
       console.log(`🏢 Socket ${socket.id} joined room: ${room}`);
     });
@@ -112,12 +134,31 @@ const initSocket = (httpServer) => {
 
     // ── Admin joins a global admin room ──────────────────────────────────────
     socket.on("join_admin_room", () => {
+      if (socket.user?.role !== "admin") {
+        console.warn(`⚠️ Unauthorized attempt to join admin_room by user ${socket.user?.id}`);
+        return;
+      }
       socket.join("admin_room");
       console.log(`👑 Admin socket ${socket.id} joined admin_room`);
     });
 
+    // ── Tailor joins their room ───────────────────────────────────────────────
+    socket.on("join_tailor_room", (userId) => {
+      // It acts as a user room specific to the tailor
+      if (userId !== socket.user?.id) {
+         console.warn(`⚠️ Unauthorized attempt to join tailor room for user ${userId} by user ${socket.user?.id}`);
+         return;
+      }
+      socket.join(`user_${userId}`);
+      console.log(`✂️ Tailor socket ${socket.id} joined user_${userId}`);
+    });
+
     // ── Measurement Executive joins their room ──────────────────────────
     socket.on("join_measurement_executive_room", () => {
+      if (socket.user?.role !== "measurement_executive") {
+        console.warn(`⚠️ Unauthorized attempt to join measurement_executives by user ${socket.user?.id}`);
+        return;
+      }
       socket.join("measurement_executives");
       console.log(`📐 Measurement Executive socket ${socket.id} joined measurement_executives room`);
     });

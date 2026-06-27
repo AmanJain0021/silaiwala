@@ -3,6 +3,8 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import { Phone, Clock, MapPin, Navigation, Bike, Loader2 } from 'lucide-react';
 import DeliveryBoyLiveMap from './DeliveryBoyLiveMap';
 
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
+
 const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   const [riderLocation, setRiderLocation] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -12,6 +14,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   useEffect(() => {

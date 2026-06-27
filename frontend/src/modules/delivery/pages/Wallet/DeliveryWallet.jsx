@@ -53,6 +53,10 @@ const DeliveryWallet = () => {
     });
     const [qrFile, setQrFile] = useState(null);
     const [qrPreview, setQrPreview] = useState(null);
+    const [showDepositModal, setShowDepositModal] = useState(false);
+    const [depositAmount, setDepositAmount] = useState('');
+    const [depositRemarks, setDepositRemarks] = useState('');
+    const [depositHistory, setDepositHistory] = useState([]);
 
     const fetchWalletData = async () => {
         setIsLoading(true);
@@ -63,6 +67,12 @@ const DeliveryWallet = () => {
                 setWalletData(balanceRes.data.data);
                 setTransactions(balanceRes.data.data.recentTransactions || []);
             }
+            
+            const historyRes = await api.get('/deliveries/cod-deposit/history');
+            if (historyRes.data.success) {
+                setDepositHistory(historyRes.data.data);
+            }
+
             setIsLoading(false);
         } catch (error) {
             if (error?.name === 'CanceledError') return;
@@ -158,6 +168,71 @@ const DeliveryWallet = () => {
         }
     };
 
+    const handleDepositRequest = async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(depositAmount);
+        
+        if (!amount || amount <= 0) return toast.error('Please enter a valid amount');
+        if (amount > walletData.codWalletBalance) return toast.error('Amount exceeds your COD balance');
+
+        setIsSubmitting(true);
+        try {
+            // 1. Create Razorpay Order
+            const rzpOrderRes = await api.post('/deliveries/cod-deposit/razorpay/create', {
+                amount,
+                remarks: depositRemarks
+            });
+            
+            if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
+
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                amount: rzpOrderRes.data.data.amount,
+                currency: "INR",
+                name: "Silaiwala",
+                description: "COD Cash Deposit",
+                order_id: rzpOrderRes.data.data.id,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await api.post('/deliveries/cod-deposit/razorpay/verify', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            depositId: rzpOrderRes.data.depositId
+                        });
+
+                        if (verifyRes.data.success) {
+                            toast.success('Cash deposit successful!');
+                            setShowDepositModal(false);
+                            setDepositAmount('');
+                            setDepositRemarks('');
+                            fetchWalletData();
+                        }
+                    } catch (err) {
+                        toast.error(err.response?.data?.message || 'Payment verification failed');
+                    }
+                },
+                prefill: {
+                    name: "Delivery Partner",
+                    contact: "9999999999"
+                },
+                theme: {
+                    color: "#3C1A9B"
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                toast.error(response.error.description || 'Payment failed');
+            });
+            rzp.open();
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || 'Failed to submit deposit request');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
@@ -243,8 +318,66 @@ const DeliveryWallet = () => {
                     </div>
                 </div>
 
-                {/* Info Banner */}
-                
+                {/* COD Wallet Section */}
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <CreditCard size={16} />
+                            </div>
+                            <h3 className="text-sm font-black text-slate-900">COD Wallet</h3>
+                        </div>
+                        {walletData.cashBlocked && (
+                            <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-1 rounded-md flex items-center gap-1">
+                                <AlertCircle size={12} /> BLOCKED
+                            </span>
+                        )}
+                    </div>
+                    
+                    {walletData.cashBlocked && (
+                        <div className="bg-red-50 border border-red-100 p-3 rounded-xl mb-4 flex items-start gap-2 text-red-800 text-xs">
+                            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                            <p>You have exceeded your pending cash collection limit. Please deposit your collected cash to continue receiving delivery assignments.</p>
+                        </div>
+                    )}
+
+                    <div className="flex items-end justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Collected Cash</p>
+                            <h4 className="text-2xl font-black text-slate-900">₹{(walletData.codWalletBalance || 0).toLocaleString()}</h4>
+                        </div>
+                        <button
+                            onClick={() => setShowDepositModal(true)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
+                        >
+                            Deposit Cash
+                        </button>
+                    </div>
+
+                    {depositHistory.length > 0 && (
+                        <div className="mt-5 border-t border-slate-100 pt-4">
+                            <p className="text-[11px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Recent Deposits</p>
+                            <div className="space-y-3">
+                                {depositHistory.slice(0, 3).map((dep, idx) => (
+                                    <div key={idx} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${dep.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : dep.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-500'}`}>
+                                                <History size={14} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-slate-900">₹{dep.amount}</p>
+                                                <p className="text-[9px] text-slate-400">{new Date(dep.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded capitalize ${dep.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : dep.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'}`}>
+                                            {dep.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Transaction History */}
                 <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-5">
@@ -460,6 +593,97 @@ const DeliveryWallet = () => {
                                 <p className="text-center text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] leading-relaxed">
                                     Funds will be transferred to your upi id <br /> after admin review
                                 </p>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Deposit Modal */}
+            <AnimatePresence>
+                {showDepositModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => !isSubmitting && setShowDepositModal(false)}
+                    >
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-t-[2.5rem] w-full max-w-md p-8 relative shadow-2xl"
+                        >
+                            <button
+                                onClick={() => setShowDepositModal(false)}
+                                disabled={isSubmitting}
+                                className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            <div className="mb-8 flex items-center gap-4">
+                                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                                    <Building2 size={28} />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Deposit Cash</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Pay COD Dues Online</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleDepositRequest} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Amount (₹)</label>
+                                    <input
+                                        type="number"
+                                        value={depositAmount}
+                                        onChange={(e) => setDepositAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+                                        required
+                                        max={walletData.codWalletBalance}
+                                    />
+                                    <div className="flex justify-between mt-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Pending Cash: ₹{walletData.codWalletBalance}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDepositAmount(walletData.codWalletBalance)}
+                                            className="text-[10px] font-black text-blue-600 uppercase tracking-widest"
+                                        >
+                                            Max
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Remarks (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={depositRemarks}
+                                        onChange={(e) => setDepositRemarks(e.target.value)}
+                                        placeholder="e.g. Handed to John"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-500 transition-all"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting || !depositAmount}
+                                    className="w-full bg-blue-600 text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Processing Payment
+                                        </>
+                                    ) : (
+                                        'Pay Online'
+                                    )}
+                                </button>
                             </form>
                         </motion.div>
                     </motion.div>
