@@ -55,6 +55,7 @@ const AdminStore = () => {
                 setCategories(catRes.data.data || []);
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch store data:', error);
             toast.error('Failed to load storage data');
         } finally {
@@ -86,6 +87,7 @@ const AdminStore = () => {
             toast.success('Deleted successfully');
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to delete');
         }
     };
@@ -126,6 +128,7 @@ const AdminStore = () => {
             resetForm();
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Submission failed:', error);
             toast.error(error.response?.data?.message || 'Failed to save');
         } finally {
@@ -156,6 +159,7 @@ const AdminStore = () => {
             toast.success('Inventory updated');
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Update failed');
         }
     };

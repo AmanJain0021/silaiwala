@@ -5,6 +5,7 @@ import { FiArrowLeft, FiNavigation, FiPackage, FiMapPin } from 'react-icons/fi';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
 import { getToken } from '../../../utils/auth';
+import { API_URL } from '../../../config/constants';
 import { useDistanceTracker } from '../../../shared/hooks/useDistanceTracker';
 import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import PageTransition from '../../../shared/components/PageTransition';
@@ -97,9 +98,14 @@ const LiveTracking = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/cms/settings`);
-        const data = await response.json();
-        if (data.success) setSettings(data.data);
+        const response = await fetch(`${API_URL}/cms/settings`);
+        const result = await response.json();
+        if (result.success) {
+          setSettings(result.data);
+          if (result.data.googleMapsApiKey) {
+            setApiKey(result.data.googleMapsApiKey);
+          }
+        }
       } catch (error) {
         console.error('Failed to load settings:', error);
       }
@@ -112,7 +118,7 @@ const LiveTracking = () => {
     const fetchOrderDetails = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/deliveries/orders/${orderId}`,
+          `${API_URL}/deliveries/orders/${orderId}`,
           {
             headers: {
               Authorization: `Bearer ${getToken()}`

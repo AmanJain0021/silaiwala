@@ -91,17 +91,17 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.registerFcmToken = asyncHandler(async (req, res, next) => {
-  const { fcmToken } = req.body;
+  const { token, platform } = req.body;
 
-  if (!fcmToken) {
+  if (!token) {
     return next(new ErrorResponse("Please provide an FCM token", 400));
   }
 
   const user = req.user;
 
   // Add token if it doesn't exist
-  if (!user.fcmTokens.includes(fcmToken)) {
-    user.fcmTokens.push(fcmToken);
+  if (!user.fcmTokens.includes(token)) {
+    user.fcmTokens.push(token);
     await user.save();
   }
 

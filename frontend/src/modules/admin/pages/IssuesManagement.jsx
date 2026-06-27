@@ -17,6 +17,7 @@ const IssuesManagement = () => {
             const res = await api.get('/issues/admin/list');
             setIssues(res.data.data);
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             toast.error("Failed to load issues");
         } finally {
             setIsLoading(false);
@@ -31,6 +32,7 @@ const IssuesManagement = () => {
             toast.success("Issue forcefully resolved");
             fetchIssues();
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             toast.error("Failed to update issue status");
         }
     };

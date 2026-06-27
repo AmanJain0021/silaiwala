@@ -33,6 +33,7 @@ const AdminStyleAddons = () => {
                 setCategoryOptions(res.data.data.map(c => c.name));
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch categories:', error);
         }
     };
@@ -43,6 +44,7 @@ const AdminStyleAddons = () => {
             const res = await api.get('/style-addons');
             setAddons(res.data.data || []);
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch style addons:', error);
             toast.error('Failed to load style add-ons');
         } finally {
@@ -77,6 +79,7 @@ const AdminStyleAddons = () => {
             }
             toast.success('Image uploaded');
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Upload failed:', error);
             toast.error('Image upload failed');
         } finally {
@@ -153,6 +156,7 @@ const AdminStyleAddons = () => {
             setIsModalOpen(false);
             fetchAddons();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to save style addon:', error);
             toast.error(error.response?.data?.message || 'Failed to save');
         } finally {
@@ -167,6 +171,7 @@ const AdminStyleAddons = () => {
             toast.success('Style add-on deleted');
             fetchAddons();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to delete:', error);
             toast.error('Failed to delete');
         }
@@ -178,6 +183,7 @@ const AdminStyleAddons = () => {
             toast.success(`Add-on ${addon.isActive ? 'deactivated' : 'activated'}`);
             fetchAddons();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to update status');
         }
     };

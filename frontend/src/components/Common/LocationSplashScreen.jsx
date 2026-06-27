@@ -32,8 +32,8 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
 
                         // Try to reverse geocode using Google Maps API
                         try {
-                            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-                            const res = await fetch(`${apiUrl}/distance/geocode?lat=${latitude}&lng=${longitude}`);
+                            const { API_URL } = await import('../../config/constants');
+                            const res = await fetch(`${API_URL}/distance/geocode?lat=${latitude}&lng=${longitude}`);
                             const result = await res.json();
                             if (result.success && result.data && result.data.address) {
                                 address = result.data.address;

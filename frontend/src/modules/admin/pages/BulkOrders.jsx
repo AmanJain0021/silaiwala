@@ -48,6 +48,7 @@ const AdminBulkOrders = () => {
             setTailors(tailorsRes.data.data);
             setDeliveryPartners(deliveryRes.data.data);
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to fetch data');
         } finally {
             setIsLoading(false);
@@ -67,6 +68,7 @@ const AdminBulkOrders = () => {
                 setSelectedOrder(prev => ({ ...prev, status: newStatus }));
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to update status');
         }
     };
@@ -87,6 +89,7 @@ const AdminBulkOrders = () => {
             setIsQuoting(false);
             setSelectedOrder(null);
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to send quote');
         }
     };
@@ -472,6 +475,7 @@ const AdminBulkOrders = () => {
                                                                     fetchOrders();
                                                                     setSelectedOrder(prev => ({ ...prev, tailor: tailorId, status: 'accepted-by-tailor' }));
                                                                 } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
                                                                     toast.error('Assignment failed');
                                                                 }
                                                             }}
@@ -502,6 +506,7 @@ const AdminBulkOrders = () => {
                                                                     fetchOrders();
                                                                     setSelectedOrder(prev => ({ ...prev, deliveryPartner: riderId, status: 'fabric-ready-for-pickup' }));
                                                                 } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
                                                                     toast.error('Assignment failed');
                                                                 }
                                                             }}

@@ -14,6 +14,7 @@ const OrderFinancialDetailModal = ({ orderId, onClose }) => {
                 const res = await api.get(`/admin/finance/orders/${orderId}`);
                 setData(res.data.data);
             } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
                 toast.error("Failed to fetch order financial details");
                 onClose();
             } finally {

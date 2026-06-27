@@ -22,6 +22,7 @@ const MeasurementExecutives = () => {
             const res = await api.get(endpoint);
             setExecutives(res.data.data);
         } catch (error) {
+            if (error?.name === 'CanceledError') return;
             toast.error('Failed to fetch executives');
             console.error(error);
         } finally {

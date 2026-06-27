@@ -69,10 +69,12 @@ const Overview = () => {
         <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
             {/* ── HEADER (MOBILE ONLY) ── */}
             <div className="md:hidden bg-white px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
-                <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
-                    <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
-                </button>
-                <h1 className="text-[16px] font-black text-[#843D9B] tracking-tight">SEWZELLA</h1>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0">
+                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+                    </button>
+                    <h1 className="text-[16px] font-black text-[#843D9B] tracking-tight mb-0.5">SEWZELLA</h1>
+                </div>
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => navigate('/partner/notifications')}
@@ -89,8 +91,12 @@ const Overview = () => {
                         onClick={() => navigate('/partner/settings')}
                         className="relative"
                     >
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'T'}
+                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden">
+                            {user?.profile?.profileImage || user?.profileImage ? (
+                                <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                user?.name?.charAt(0)?.toUpperCase() || 'T'
+                            )}
                         </div>
                     </button>
                 </div>

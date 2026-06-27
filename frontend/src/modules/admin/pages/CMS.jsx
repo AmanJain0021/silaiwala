@@ -51,6 +51,7 @@ const AdminCMS = () => {
                 setCmsContent(res.data.data);
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error(`Error fetching ${selectedTab}:`, error);
         } finally {
             setIsLoading(false);
@@ -67,6 +68,7 @@ const AdminCMS = () => {
             await api.delete(`/admin/cms/banners/${id}`);
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to delete banner:', error);
         }
     };
@@ -77,6 +79,7 @@ const AdminCMS = () => {
             await api.delete(`/admin/cms/content/${id}`);
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to delete content:', error);
         }
     };
@@ -105,6 +108,7 @@ const AdminCMS = () => {
             setEditBannerId(null);
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to save banner:', error);
             toast.error('Failed to save banner');
         } finally {
@@ -147,6 +151,7 @@ const AdminCMS = () => {
             setEditId(null);
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to save content:', error);
             toast.error('Failed to save content');
         } finally {
@@ -175,6 +180,7 @@ const AdminCMS = () => {
             toast.success('Broadcast sent successfully');
             setNotification({ title: '', message: '', targetAudience: 'customer' });
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to send broadcast:', error);
             toast.error('Failed to send broadcast');
         } finally {
@@ -197,6 +203,7 @@ const AdminCMS = () => {
             setNewBanner({ ...newBanner, image: res.data.data });
             toast.success('Image uploaded successfully');
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Upload failed:', error);
             toast.error('Image upload failed');
         } finally {
