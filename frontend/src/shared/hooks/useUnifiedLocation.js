@@ -43,7 +43,9 @@ export const useUnifiedLocation = ({
     const fetchAddressData = async (latitude, longitude) => {
         try {
             let { API_URL } = await import('../../config/constants');
-            if (apiUrl && !apiUrl.startsWith('http') && !apiUrl.startsWith('/')) apiUrl = `https://${apiUrl}`;
+            if (API_URL && !API_URL.startsWith('http') && !API_URL.startsWith('/')) {
+                API_URL = `https://${API_URL}`;
+            }
             console.log('📍 [useUnifiedLocation] Fetching address for coords:', { latitude, longitude });
             const response = await fetch(`${API_URL}/distance/geocode?lat=${latitude}&lng=${longitude}`);
             const result = await response.json();
