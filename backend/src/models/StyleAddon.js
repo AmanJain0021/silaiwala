@@ -30,6 +30,11 @@ const styleAddonSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    addonType: {
+        type: String,
+        enum: ['embellishment', 'embroidery'],
+        default: 'embellishment'
     }
 }, { timestamps: true });
 

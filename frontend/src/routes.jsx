@@ -119,6 +119,7 @@ const AdminSubscriptions = React.lazy(() => import('./modules/admin/pages/Subscr
 const AdminReports = React.lazy(() => import('./modules/admin/pages/Reports'));
 const AdminSettings = React.lazy(() => import('./modules/admin/pages/Settings'));
 const AdminStyleAddons = React.lazy(() => import('./modules/admin/pages/StyleAddons'));
+const AdminEmbroideryAddons = React.lazy(() => import('./modules/admin/pages/EmbroideryAddons'));
 const AdminBulkOrders = React.lazy(() => import('./modules/admin/pages/BulkOrders'));
 const AdminSupport = React.lazy(() => import('./modules/admin/pages/Support'));
 const AdminMeasurementExecutives = React.lazy(() => import('./modules/admin/pages/MeasurementExecutives'));
@@ -314,6 +315,7 @@ const AppRoutes = () => {
                     <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
                     <Route path="/admin/reports" element={<AdminReports />} />
                     <Route path="/admin/style-addons" element={<AdminStyleAddons />} />
+                    <Route path="/admin/embroidery-addons" element={<AdminEmbroideryAddons />} />
                     <Route path="/admin/bulk-orders" element={<AdminBulkOrders />} />
                     <Route path="/admin/support" element={<AdminSupport />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />

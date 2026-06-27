@@ -5,14 +5,16 @@ const StyleAddon = require('../../../models/StyleAddon');
 // @access  Admin
 exports.createStyleAddon = async (req, res) => {
     try {
-        const { name, description, price, image, category } = req.body;
+        const { name, description, price, image, category, referenceImages, addonType } = req.body;
         
         const addon = await StyleAddon.create({
             name,
             description,
             price,
             image,
-            category
+            category,
+            referenceImages,
+            addonType: addonType || 'embellishment'
         });
 
         res.status(201).json({
@@ -29,11 +31,19 @@ exports.createStyleAddon = async (req, res) => {
 // @access  Public
 exports.getStyleAddons = async (req, res) => {
     try {
-        const { category, isActive } = req.query;
+        const { category, isActive, addonType } = req.query;
         let query = {};
         
         if (category) query.category = category;
         if (isActive !== undefined) query.isActive = isActive === 'true';
+        if (addonType === 'embellishment') {
+            query.$or = [
+                { addonType: 'embellishment' },
+                { addonType: { $exists: false } }
+            ];
+        } else if (addonType) {
+            query.addonType = addonType;
+        }
 
         const addons = await StyleAddon.find(query).sort({ createdAt: -1 });
 
