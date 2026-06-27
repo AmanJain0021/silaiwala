@@ -4,7 +4,7 @@ import { Search, X, Plus, Edit2, Trash2, Sparkles, Tag, ToggleLeft, ToggleRight,
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
-const AdminStyleAddons = () => {
+const AdminEmbroideryAddons = () => {
     const [addons, setAddons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +40,7 @@ const AdminStyleAddons = () => {
     const fetchAddons = async () => {
         setIsLoading(true);
         try {
-            const res = await api.get('/style-addons?addonType=embellishment');
+            const res = await api.get('/style-addons?addonType=embroidery');
             setAddons(res.data.data || []);
         } catch (error) {
             console.error('Failed to fetch style addons:', error);
@@ -140,7 +140,7 @@ const AdminStyleAddons = () => {
                     ...formData,
                     category: finalCategory,
                     price: Number(formData.price),
-                    addonType: 'embellishment'
+                    addonType: 'embroidery'
                 });
                 toast.success('Style add-on updated');
             } else {
@@ -148,7 +148,7 @@ const AdminStyleAddons = () => {
                     ...formData,
                     category: finalCategory,
                     price: Number(formData.price),
-                    addonType: 'embellishment'
+                    addonType: 'embroidery'
                 });
                 toast.success('Style add-on created');
             }
@@ -198,8 +198,8 @@ const AdminStyleAddons = () => {
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Style Add-ons</h1>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Manage embellishments, design upgrades, and style enhancements</p>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Embroidery Add-ons</h1>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Manage embroidery designs and placements</p>
                 </div>
                 <button
                     onClick={openAddModal}
@@ -347,7 +347,7 @@ const AdminStyleAddons = () => {
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                 <h2 className="text-lg font-bold tracking-tight text-gray-900">
-                                    {editingAddon ? 'Edit Style Add-on' : 'Add New Style Add-on'}
+                                    {editingAddon ? 'Edit Embroidery Add-on' : 'Add New Embroidery Add-on'}
                                 </h2>
                                 <button onClick={() => setIsModalOpen(false)} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
                                     <X size={20} />
@@ -510,4 +510,4 @@ const AdminStyleAddons = () => {
     );
 };
 
-export default AdminStyleAddons;
+export default AdminEmbroideryAddons;

@@ -21,7 +21,8 @@ import {
     Mail,
     CreditCard,
     Ruler,
-    AlertTriangle
+    AlertTriangle,
+    Feather
 } from 'lucide-react';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 
@@ -79,6 +80,7 @@ const AdminLayout = () => {
         { icon: <CreditCard size={20} />, label: 'Subscriptions', path: '/admin/subscriptions' },
         { icon: <BarChart3 size={20} />, label: 'Reports', path: '/admin/reports' },
         { icon: <Sparkles size={20} />, label: 'Style Addons', path: '/admin/style-addons' },
+        { icon: <Feather size={20} />, label: 'Embroidery', path: '/admin/embroidery-addons' },
         { icon: <Mail size={20} />, label: 'Support', path: '/admin/support' },
         { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
     ];
