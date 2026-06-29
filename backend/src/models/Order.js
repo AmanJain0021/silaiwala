@@ -55,6 +55,7 @@ const orderSchema = new mongoose.Schema(
         quantity: { type: Number, default: 1 },
         price: Number,
         measurements: Map,
+        styleAddons: { type: Array, default: [] },
       },
     ],
     totalAmount: {

@@ -16,7 +16,10 @@ const initSocket = (httpServer) => {
         if (!origin || 
             origin.includes('localhost') || 
             origin.includes('127.0.0.1') || 
-            origin.match(/^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/)
+            origin.match(/^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/) ||
+            origin === 'https://sewzella.com' ||
+            origin === 'https://www.sewzella.com' ||
+            (process.env.CLIENT_URL && origin === process.env.CLIENT_URL)
         ) {
           callback(null, true);
         } else {

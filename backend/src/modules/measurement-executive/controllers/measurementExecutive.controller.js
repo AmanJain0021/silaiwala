@@ -47,14 +47,37 @@ exports.updateLocation = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Please provide valid coordinates [longitude, latitude]", 400));
   }
 
+  let address = undefined;
+  
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (apiKey) {
+      // coordinates are [lng, lat], Google Maps expects lat,lng
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates[1]},${coordinates[0]}&key=${apiKey}`);
+      const data = await response.json();
+      
+      if (data.status === "OK" && data.results && data.results.length > 0) {
+        address = data.results[0].formatted_address;
+      }
+    }
+  } catch (error) {
+    console.error("Geocoding failed:", error.message);
+  }
+
+  const updateData = {
+    currentLocation: {
+      type: "Point",
+      coordinates,
+    },
+  };
+
+  if (address) {
+    updateData.address = address;
+  }
+
   const profile = await MeasurementExecutive.findOneAndUpdate(
     { user: req.user.id },
-    {
-      currentLocation: {
-        type: "Point",
-        coordinates,
-      },
-    },
+    updateData,
     { new: true }
   );
 

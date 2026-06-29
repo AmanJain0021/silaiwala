@@ -23,6 +23,7 @@ const AdminServices = () => {
             const res = await api.get('/admin/categories?type=service');
             setCategoriesData(res.data.data);
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch categories:', error);
             toast.error('Failed to load categories');
         } finally {
@@ -36,6 +37,7 @@ const AdminServices = () => {
             const res = await api.get('/services');
             setTailorServices(res.data.data);
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch tailor services:', error);
             toast.error('Failed to load tailor services');
         } finally {
@@ -66,6 +68,7 @@ const AdminServices = () => {
             setNewService({ ...newService, image: res.data.data });
             toast.success('Image uploaded successfully');
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Upload failed:', error);
             toast.error('Image upload failed');
         } finally {
@@ -91,6 +94,7 @@ const AdminServices = () => {
             setNewService({ title: '', price: '', deliveryTime: '', description: '', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png' });
             fetchCategories();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to add service:', error);
             toast.error('Failed to add category');
         } finally {
@@ -105,6 +109,7 @@ const AdminServices = () => {
             toast.success('Category deleted');
             fetchCategories();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to delete service:', error);
             toast.error('Failed to delete category');
         }

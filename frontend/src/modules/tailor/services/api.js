@@ -2,8 +2,16 @@ import axios from 'axios';
 import { API_URL } from '../../../config/constants';
 import { getToken, removeToken } from '../../../utils/auth';
 
+const getBaseUrl = () => {
+    let url = API_URL;
+    if (url && !url.startsWith('http') && !url.startsWith('/')) {
+        url = `https://${url}`;
+    }
+    return url;
+};
+
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: getBaseUrl(),
     headers: {
         'Content-Type': 'application/json',
     },

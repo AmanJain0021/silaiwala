@@ -551,7 +551,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     selectedFabric: item.selectedFabric || null,
     quantity: item.quantity || 1,
     price: item.price,
-    measurements: item.measurements || {}
+    measurements: item.measurements || {},
+    styleAddons: item.addons || []
   }));
 
   // 3. Generate unique order ID

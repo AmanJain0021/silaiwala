@@ -40,6 +40,7 @@ const AdminLogin = () => {
             setStep('otp');
             setTimer(60); // 60 seconds reset
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             setError(err.message || 'Failed to send OTP to this admin email.');
         }
     };
@@ -64,6 +65,7 @@ const AdminLogin = () => {
             }
             navigate('/admin');
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             setError(err.message || 'Invalid verification code');
         }
     };

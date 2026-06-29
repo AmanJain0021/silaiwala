@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    ShoppingBag, Star, Gift, ArrowUpRight, Menu,
+    ShoppingBag, Star, Gift, ArrowUpRight, Menu, Bell,
     Loader2, ChevronRight, X, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,11 +8,13 @@ import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useTailorAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 
 // ── Figma-matched Earnings Page ──────────────────────────────────────────────
 const TailorEarnings = () => {
     const navigate = useNavigate();
     const { user } = useTailorAuth();
+    const { unreadCount } = useNotifications();
 
     const [activeTab, setActiveTab] = useState('Daily');
     const [isLoading, setIsLoading] = useState(true);
@@ -133,14 +135,38 @@ const TailorEarnings = () => {
     return (
         <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
 
-            {/* ── MOBILE HEADER ── */}
-            <div className="md:hidden bg-white px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
-                <button onClick={() => navigate('/partner/settings')} className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white">
-                    <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
-                </button>
-                <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight">SEWZELLA</h1>
-                <div className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center text-white font-black text-sm">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'T'}
+            {/* ── HEADER (MOBILE ONLY) ── */}
+            <div className="md:hidden bg-white px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0">
+                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+                    </button>
+                    <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight mb-0.5">SEWZELLA</h1>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate('/partner/notifications')}
+                        className="relative text-gray-400 hover:text-[#843D9B] transition-colors flex items-center justify-center p-1"
+                    >
+                        <Bell size={22} />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 h-4 w-4 bg-[#843D9B] rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => navigate('/partner/settings')}
+                        className="relative"
+                    >
+                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden">
+                            {user?.profile?.profileImage || user?.profileImage ? (
+                                <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                user?.name?.charAt(0)?.toUpperCase() || 'T'
+                            )}
+                        </div>
+                    </button>
                 </div>
             </div>
 

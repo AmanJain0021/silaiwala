@@ -28,6 +28,7 @@ const AdminCustomers = () => {
                 addresses: c.addresses || []
             })));
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch customers:', error);
         } finally {
             setIsLoading(false);
@@ -49,6 +50,7 @@ const AdminCustomers = () => {
                 setSelectedCustomer(prev => ({ ...prev, status: nextActive ? 'Active' : 'Suspended' }));
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to update status:', error);
             toast.error('Failed to update status');
         } finally {

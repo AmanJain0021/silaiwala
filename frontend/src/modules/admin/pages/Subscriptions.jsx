@@ -37,6 +37,7 @@ const AdminSubscriptions = () => {
                 setPlans(res.data.data);
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Error fetching plans:', error);
             toast.error('Failed to load subscription plans');
         } finally {
@@ -119,6 +120,7 @@ const AdminSubscriptions = () => {
             fetchPlans();
             handleCloseModal();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error(error.response?.data?.message || 'Failed to save plan');
         } finally {
             setIsSubmitting(false);
@@ -133,6 +135,7 @@ const AdminSubscriptions = () => {
             toast.success('Plan deleted successfully');
             fetchPlans();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error(error.response?.data?.message || 'Failed to delete plan');
         }
     };
@@ -145,6 +148,7 @@ const AdminSubscriptions = () => {
                 fetchPlans();
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error(error.response?.data?.message || 'Failed to toggle status');
         }
     };

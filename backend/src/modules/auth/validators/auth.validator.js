@@ -31,9 +31,14 @@ exports.validateOTP = oneOf([
       .matches(/^\+?[\d\s-]{10,}$/).withMessage('Please provide a valid 10-digit phone number')
   ],
   [
+    body('phone')
+      .notEmpty().withMessage('Phone number is required')
+      .matches(/^\+?[\d\s-]{10,}$/).withMessage('Please provide a valid 10-digit phone number')
+  ],
+  [
     body('email')
       .notEmpty().withMessage('Email address is required')
       .isEmail().withMessage('Please provide a valid email')
   ]
-]);
+], { message: 'Please provide a valid phone number or email address' });
 

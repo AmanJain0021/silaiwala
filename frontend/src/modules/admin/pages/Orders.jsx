@@ -57,6 +57,7 @@ const AdminOrders = () => {
             }));
             setOrdersData(formatted);
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch orders:', err);
             setOrdersData([]);
         } finally {
@@ -95,6 +96,7 @@ const AdminOrders = () => {
                 joined: new Date(e.createdAt).toLocaleDateString()
             })) || []);
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch users:', err);
         }
     };
@@ -127,6 +129,7 @@ const AdminOrders = () => {
                 setSelectedOrder(prev => ({ ...prev, status: newStatus }));
             }
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to update status:', err);
         } finally {
             setIsUpdatingStatus(false);
@@ -143,6 +146,7 @@ const AdminOrders = () => {
             }
             toast.success(`Payment status updated to ${newPaymentStatus}`);
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to update payment status:', err);
             toast.error('Failed to update payment status');
         } finally {
@@ -162,6 +166,7 @@ const AdminOrders = () => {
             
             fetchOrders();
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to update delivery fee:', err);
             toast.error('Failed to update delivery fee');
         } finally {
@@ -190,6 +195,7 @@ const AdminOrders = () => {
                 }));
             }
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to assign:', err);
         } finally {
             setIsUpdatingStatus(false);
@@ -205,6 +211,7 @@ const AdminOrders = () => {
                 setIsManageOpen(true);
             }
         } catch (err) {
+            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch order details:', err);
             toast.error('Failed to load order details');
         } finally {

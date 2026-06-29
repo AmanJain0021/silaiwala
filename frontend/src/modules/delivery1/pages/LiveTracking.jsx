@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { FiArrowLeft, FiNavigation, FiPackage, FiMapPin } from 'react-icons/fi';
+import { API_URL } from '../../../config/constants';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
 import { useDistanceTracker } from '../../../shared/hooks/useDistanceTracker';
@@ -87,7 +88,7 @@ const LiveTracking = () => {
     const fetchOrderDetails = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/delivery/orders/${orderId}`,
+          `${API_URL}/delivery/orders/${orderId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('deliveryToken')}`

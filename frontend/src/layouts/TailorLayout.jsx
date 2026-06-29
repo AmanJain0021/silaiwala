@@ -168,20 +168,47 @@ const TailorLayout = () => {
                     </header>
                 )}
 
-                <main className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-500 ${
+                <main className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-500 flex flex-col ${
                     (isOverview || location.pathname === '/partner/settings' || location.pathname === '/partner/wallet' || location.pathname === '/partner/earnings') 
                         ? 'p-0' 
-                        : 'p-4 md:p-8 lg:p-10'
+                        : 'p-0 md:p-8 lg:p-10'
                 }`}>
-                    <div className="max-w-7xl mx-auto h-full">
-                        <Outlet />
+                    <div className="max-w-7xl mx-auto h-full w-full flex flex-col relative">
+                        {/* ── SUB-NAVIGATION FOR ORDERS SECTION ── */}
+                        {['/partner/orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname) && (
+                            <div className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 pt-3 pb-3 flex gap-3 overflow-x-auto scrollbar-hide shrink-0 sticky top-0 z-30 shadow-sm">
+                                {[
+                                    { path: '/partner/orders', label: 'Stitching' },
+                                    { path: '/partner/alterations', label: 'Alterations' },
+                                    { path: '/partner/custom-designs', label: 'Custom' },
+                                    { path: '/partner/issues', label: 'Issues' },
+                                ].map((tab) => (
+                                    <Link 
+                                        key={tab.path} 
+                                        to={tab.path} 
+                                        className={`whitespace-nowrap text-[11px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all shadow-sm ${
+                                            location.pathname === tab.path 
+                                                ? 'bg-[#843D9B] text-white shadow-[#843D9B]/20' 
+                                                : 'bg-white border border-gray-100 text-gray-500 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                        
+                        <div className={`flex-1 overflow-y-auto custom-scrollbar ${['/partner/orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname) ? 'p-4 pb-24' : ''}`}>
+                            <Outlet />
+                        </div>
                     </div>
                 </main>
 
                 {/* ── BOTTOM NAVIGATION (MOBILE ONLY) ── */}
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-start gap-6 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
-                    {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
+                    {menuItems.filter(item => !['/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(item.path)).map((item) => {
+                        const isOrderSection = ['/partner/orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname);
+                        const isActive = location.pathname === item.path || (item.path === '/partner/orders' && isOrderSection);
                         return (
                             <Link
                                 key={item.path}

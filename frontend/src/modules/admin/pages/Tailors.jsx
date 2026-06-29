@@ -61,6 +61,7 @@ const AdminTailors = () => {
             })));
 
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Error fetching tailors:', error);
         } finally {
             setIsLoading(false);
@@ -78,6 +79,7 @@ const AdminTailors = () => {
             toast.success('Tailor approved successfully');
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Approval failed', error);
         }
     };
@@ -95,6 +97,7 @@ const AdminTailors = () => {
             toast.success('Tailor application rejected');
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Rejection failed', error);
         }
     };
@@ -120,6 +123,7 @@ const AdminTailors = () => {
             setIsEditCommissionModalOpen(false);
             fetchData();
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error(error.response?.data?.message || 'Failed to update commission');
         } finally {
             setIsUpdatingCommission(false);

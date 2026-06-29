@@ -13,8 +13,17 @@ const getBackendBase = () => {
     return ''; // Fallback for env var prioritization
 };
 
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || getBackendBase() || 'http://localhost:5000';
-export const API_URL = import.meta.env.VITE_API_URL || (SOCKET_URL ? `${SOCKET_URL}/api/v1` : '/api/v1');
+let envApiUrl = import.meta.env.VITE_API_URL;
+if (envApiUrl && !envApiUrl.startsWith('http')) {
+    envApiUrl = `https://${envApiUrl}`;
+}
+let envSocketUrl = import.meta.env.VITE_SOCKET_URL;
+if (envSocketUrl && !envSocketUrl.startsWith('http')) {
+    envSocketUrl = `https://${envSocketUrl}`;
+}
+
+export const SOCKET_URL = envSocketUrl || getBackendBase() || 'http://localhost:5000';
+export const API_URL = envApiUrl || (SOCKET_URL ? `${SOCKET_URL}/api/v1` : '/api/v1');
 
 
 export const APP_NAME = 'SewZella';

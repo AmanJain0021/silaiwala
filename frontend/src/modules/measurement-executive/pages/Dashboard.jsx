@@ -1,43 +1,42 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { useMeasurementAuth } from '../context/MeasurementAuthContext';
-import { ClipboardList, CheckCircle, TrendingUp, MapPin, User } from 'lucide-react';
+import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const { profile, stats, loading, fetchDashboard, toggleAvailability } = useMeasurementStore();
     const { isSocketConnected } = useMeasurementAuth();
     const { detectLocation } = useUnifiedLocation({ fetchAddress: false });
 
     const executiveName = profile?.user?.name || profile?.name || 'Measurement Executive';
-    const coords = profile?.currentLocation?.coordinates;
-    const [addressName, setAddressName] = useState('Location not set');
+    const addressName = profile?.address || 'Location not set';
+    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+    const handleRefreshLocation = async () => {
+        setIsFetchingLocation(true);
+        toast.loading('Fetching precise location...', { id: 'loc-toast-refresh' });
+        try {
+            const data = await detectLocation();
+            if (data && data.latitude && data.longitude) {
+                await useMeasurementStore.getState().updateLocation([data.longitude, data.latitude]);
+                await fetchDashboard(); // refresh profile to get exact address
+                toast.success(`Location updated`, { id: 'loc-toast-refresh' });
+            }
+        } catch (error) {
+            console.error('Location error:', error);
+            toast.error('Failed to update location', { id: 'loc-toast-refresh' });
+        } finally {
+            setIsFetchingLocation(false);
+        }
+    };
 
     useEffect(() => {
         fetchDashboard();
     }, []);
-
-    useEffect(() => {
-        if (coords && coords.length === 2) {
-            setAddressName('Fetching address...');
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords[1]}&lon=${coords[0]}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.display_name) {
-                        const parts = data.display_name.split(',');
-                        setAddressName(parts.slice(0, 3).join(','));
-                    } else {
-                        setAddressName(`Lat: ${coords[1].toFixed(4)}, Lng: ${coords[0].toFixed(4)}`);
-                    }
-                })
-                .catch(() => {
-                    setAddressName(`Lat: ${coords[1].toFixed(4)}, Lng: ${coords[0].toFixed(4)}`);
-                });
-        } else {
-            setAddressName('Location not set');
-        }
-    }, [coords]);
 
     const handleToggleStatus = async () => {
         try {
@@ -99,81 +98,180 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                <div className="flex items-center">
-                    <div className="bg-blue-100 p-3 rounded-full mr-4">
-                        <User className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Welcome, {executiveName}</h1>
-                        <p className="text-sm text-gray-500 mt-1">Manage your measurement requests and tracking</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow px-5 py-6 sm:px-6 mb-8 flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Current Status</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                        Toggle your status to start receiving measurement requests.
-                    </p>
-                </div>
-                <div className="flex items-center">
-                    <span className={`mr-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {isOnline ? 'Online' : 'Offline'}
-                    </span>
-                    <button
-                        onClick={handleToggleStatus}
-                        className={`${
-                            isOnline ? 'bg-green-600' : 'bg-gray-200'
-                        } relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-                    >
-                        <span className="sr-only">Toggle online status</span>
-                        <span
-                            aria-hidden="true"
-                            className={`${
-                                isOnline ? 'translate-x-5' : 'translate-x-0'
-                            } pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200`}
-                        />
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
-                {statCards.map((item) => (
-                    <div key={item.name} className="bg-white overflow-hidden shadow rounded-lg">
-                        <div className="p-5">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <div className={`${item.bg} rounded-md p-3`}>
-                                        <item.icon className={`h-6 w-6 ${item.color}`} aria-hidden="true" />
-                                    </div>
-                                </div>
-                                <div className="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt className="text-sm font-medium text-gray-500 truncate">{item.name}</dt>
-                                        <dd className="text-3xl font-semibold text-gray-900">{item.value}</dd>
-                                    </dl>
-                                </div>
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
+            {/* ── HEADER ── */}
+            <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
+                        <div className="w-11 h-11 bg-indigo-50 text-[#843D9B] font-black text-xl rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100 shrink-0">
+                            {executiveName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <h2 className="text-[15px] font-black text-gray-900 leading-tight tracking-tight truncate">
+                                {executiveName}
+                            </h2>
+                            <div className="flex items-center mt-0.5">
+                                <MapPin size={10} className="text-[#843D9B] shrink-0 mr-1" />
+                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest truncate">
+                                    {addressName}
+                                </span>
+                                <button 
+                                    onClick={handleRefreshLocation} 
+                                    className="ml-1.5 p-1 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors shrink-0 border border-gray-100 flex items-center justify-center"
+                                    title="Detect Location"
+                                >
+                                    <Navigation size={9} className={`${isFetchingLocation ? 'animate-pulse text-[#843D9B]' : 'text-gray-400'}`} strokeWidth={3} />
+                                </button>
                             </div>
                         </div>
                     </div>
-                ))}
+
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Status Toggle */}
+                        <button
+                            onClick={handleToggleStatus}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all ${
+                                isOnline 
+                                    ? 'bg-[#843D9B]/10 border-[#843D9B]/20 text-[#843D9B]' 
+                                    : 'bg-gray-100 border-gray-200 text-gray-500'
+                            }`}
+                        >
+                            {isOnline ? 'Online' : 'Offline'}
+                            <Power size={10} />
+                        </button>
+                        
+                        <button className="w-10 h-10 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-500 shadow-sm relative shrink-0">
+                            <AlertCircle size={18} />
+                        </button>
+                        <button className="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-sm relative shrink-0">
+                            <Bell size={18} />
+                            <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[6px] font-black text-white">0</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Connection Status</h3>
+            {/* Main Content */}
+            <div className="px-4 mt-6 max-w-lg mx-auto">
+                
+                {/* Purple Stats Card */}
+                <div className="bg-gradient-to-br from-[#6b2c80] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-6">
+                    {/* Decorative Elements */}
+                    <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10" />
+                    <div className="absolute left-10 bottom-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-xl -mb-10" />
+                    
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Total Measurements</p>
+                        <h3 className="text-5xl font-black text-white mb-2 tracking-tighter">{stats?.totalMeasurements || 0}</h3>
+                        <p className="text-[11px] font-medium text-white/80 mb-6 max-w-[200px] leading-relaxed">
+                            Completed measurements will update your total count immediately.
+                        </p>
+                        
+                        <button className="bg-white text-[#843D9B] text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center gap-1 w-fit shadow-lg shadow-black/10 active:scale-95 transition-transform">
+                            VIEW DETAILS <ChevronRight size={14} />
+                        </button>
+                    </div>
+
+                    {/* Floating accents */}
+                    <div className="absolute right-6 bottom-6 w-24 h-24 bg-[#5a246b] rounded-2xl rotate-12 opacity-50 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl">
+                        <div className="w-4 h-4 rounded-full border-2 border-white/20" />
+                    </div>
+                    <div className="absolute right-24 bottom-4 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold text-xs shadow-lg rotate-12">
+                        M
+                    </div>
+                    <div className="absolute right-4 bottom-20 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold text-[10px] shadow-lg -rotate-12">
+                        M
+                    </div>
                 </div>
-                <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                        <div className={`h-4 w-4 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'} mr-3`}></div>
-                        <span className="text-sm text-gray-700">
-                            {isSocketConnected ? 'Connected to live assignment server' : 'Disconnected from server'}
+
+                {/* Stats Grid (4 columns) */}
+                <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 flex justify-between items-center mb-6">
+                    <div className="flex flex-col items-center gap-1.5 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 mb-1">
+                            <ClipboardList size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Today</span>
+                        <span className="text-sm font-black text-gray-900">{stats?.completedToday || 0}</span>
+                        <span className="text-[8px] font-bold text-gray-400">Done</span>
+                    </div>
+
+                    <div className="w-px h-12 bg-gray-100" />
+
+                    <div className="flex flex-col items-center gap-1.5 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 mb-1">
+                            <AlertCircle size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Pending</span>
+                        <span className="text-sm font-black text-gray-900">{stats?.totalPending || 0}</span>
+                        <span className="text-[8px] font-bold text-gray-400">Tasks</span>
+                    </div>
+
+                    <div className="w-px h-12 bg-gray-100" />
+
+                    <div className="flex flex-col items-center gap-1.5 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 mb-1">
+                            <TrendingUp size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total</span>
+                        <span className="text-sm font-black text-gray-900">{stats?.totalMeasurements || 0}</span>
+                        <span className="text-[8px] font-bold text-gray-400">Tasks</span>
+                    </div>
+
+                    <div className="w-px h-12 bg-gray-100" />
+
+                    <div className="flex flex-col items-center gap-1.5 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mb-1">
+                            <CheckCircle size={18} />
+                        </div>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</span>
+                        <span className={`text-sm font-black ${isSocketConnected ? 'text-emerald-500' : 'text-gray-400'}`}>
+                            {isSocketConnected ? '4.8' : '0.0'}
+                        </span>
+                        <span className={`text-[8px] font-bold ${isSocketConnected ? 'text-emerald-500' : 'text-gray-400'}`}>
+                            {isSocketConnected ? 'Excellent' : 'Offline'}
                         </span>
                     </div>
                 </div>
+
+                {/* Live Task Action Card */}
+                <div className="bg-white rounded-[24px] p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center mb-6">
+                    <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 mb-4 rotate-3">
+                        <ClipboardList size={24} />
+                    </div>
+                    {stats?.totalPending > 0 ? (
+                        <>
+                            <h3 className="text-[15px] font-black text-gray-800 mb-1">
+                                You have active tasks, there {stats.totalPending === 1 ? 'is' : 'are'} <span className="text-[#843D9B]">{stats.totalPending} pending</span> {stats.totalPending === 1 ? 'request' : 'requests'}!
+                            </h3>
+                            <button className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
+                                VIEW LIVE POOL
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-[15px] font-black text-gray-800 mb-1">
+                                You have no active tasks currently.
+                            </h3>
+                            <p className="text-xs text-gray-500 font-medium mt-1">Keep your status online to receive new requests.</p>
+                            <button className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
+                                VIEW LIVE POOL
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* Verification Warning */}
+                {profile?.verificationStatus !== 'verified' && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+                        <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
+                        <div>
+                            <h4 className="text-[11px] font-black text-amber-900 uppercase tracking-widest mb-1">Verification Pending</h4>
+                            <p className="text-xs font-medium text-amber-700 leading-relaxed">
+                                Your account is currently <strong>{profile?.verificationStatus || 'pending'}</strong>. You will be able to receive measurement requests once approved by an admin.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

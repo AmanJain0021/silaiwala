@@ -253,15 +253,16 @@ exports.registerCustomer = exports.register;
  * @access  Public
  */
 exports.sendOTP = asyncHandler(async (req, res, next) => {
-  const { phoneNumber, email } = req.body;
-  let identifier = phoneNumber || email;
+  const { phoneNumber, email, phone } = req.body;
+  const activePhone = phoneNumber || phone;
+  let identifier = activePhone || email;
 
   if (!identifier) {
     return next(new ErrorResponse("Please provide an email or phone number", 400));
   }
 
-  if (phoneNumber) {
-    const digitsOnly = String(phoneNumber).replace(/[^\d]/g, '');
+  if (activePhone) {
+    const digitsOnly = String(activePhone).replace(/[^\d]/g, '');
     const last10Digits = digitsOnly.slice(-10);
     
     if (!/^[6-9]\d{9}$/.test(last10Digits)) {

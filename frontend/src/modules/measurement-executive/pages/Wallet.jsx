@@ -170,8 +170,8 @@ const MEWallet = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">
-            {/* Top Indigo Background Area */}
-            <div className="bg-[#3C1A9B] pt-4 px-5 pb-32 rounded-b-[2rem] relative">
+            {/* Top Purple Background Area */}
+            <div className="bg-[#843D9B] pt-4 px-5 pb-32 rounded-b-[2rem] relative">
                 {/* Header */}
                 <div className="flex items-center justify-between text-white mb-8">
                     <div className="flex items-center gap-4">
@@ -182,22 +182,22 @@ const MEWallet = () => {
                 </div>
 
                 {/* Main Balance Card */}
-                <div className="absolute left-5 right-5 top-[5.5rem] bg-[#4026ab] rounded-[2rem] p-6 text-white shadow-[0_20px_40px_rgba(41,23,122,0.4)] overflow-hidden border border-white/10 z-10">
+                <div className="absolute left-5 right-5 top-[5.5rem] bg-[#843D9B] rounded-[2rem] p-6 text-white shadow-[0_20px_40px_rgba(132,61,155,0.4)] overflow-hidden border border-white/10 z-10">
                     {/* Background Pattern */}
                     <div className="absolute right-0 top-0 opacity-10 scale-150 translate-x-10 -translate-y-4">
                         <Wallet size={200} strokeWidth={1} />
                     </div>
 
                     <div className="relative z-10 w-[60%]">
-                        <p className="text-[11px] font-medium text-indigo-200 mb-1">Current Balance</p>
+                        <p className="text-[11px] font-medium text-purple-200 mb-1">Current Balance</p>
                         <h2 className="text-4xl font-black tracking-tight mb-2 flex items-center">
                             ₹{calculatedBalance.toLocaleString()}
                         </h2>
-                        <p className="text-[10px] font-medium text-indigo-200 mb-5">Available for withdrawal</p>
+                        <p className="text-[10px] font-medium text-purple-200 mb-5">Available for withdrawal</p>
                         
                         <button
                             onClick={() => setShowWithdrawModal(true)}
-                            className="bg-white text-[#29177a] px-5 py-2.5 rounded-xl font-bold text-[11px] flex items-center gap-2 hover:bg-indigo-50 transition-colors shadow-sm"
+                            className="bg-white text-[#843D9B] px-5 py-2.5 rounded-xl font-bold text-[11px] flex items-center gap-2 hover:bg-purple-50 transition-colors shadow-sm"
                         >
                             Withdraw Money <ChevronRight size={14} strokeWidth={3} />
                         </button>
@@ -205,7 +205,12 @@ const MEWallet = () => {
 
                     {/* 3D Wallet Graphic */}
                     <div className="absolute -right-4 bottom-0 w-44 h-44 drop-shadow-2xl">
-                        <img src={wallet3DImage} alt="Wallet" className="w-full h-full object-contain" />
+                        <img 
+                            src={wallet3DImage} 
+                            alt="Wallet" 
+                            className="w-full h-full object-contain" 
+                            style={{ filter: 'hue-rotate(35deg) saturate(0.65) brightness(1.05)' }} 
+                        />
                     </div>
                 </div>
             </div>
