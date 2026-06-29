@@ -342,3 +342,41 @@ exports.login = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Delete user account permanently
+ * @route   DELETE /api/v1/auth/delete-account
+ * @access  Private
+ */
+exports.deleteAccount = asyncHandler(async (req, res, next) => {
+  const user = req.user;
+
+  if (!user) {
+    return next(new ErrorResponse("User not found", 404));
+  }
+
+  // Delete role-specific profile first
+  switch (user.role) {
+    case "customer":
+      await Customer.findOneAndDelete({ user: user._id });
+      break;
+    case "tailor":
+      await Tailor.findOneAndDelete({ user: user._id });
+      break;
+    case "delivery":
+    case "delivery_boy":
+      await Delivery.findOneAndDelete({ user: user._id });
+      break;
+    case "measurement_executive":
+      await MeasurementExecutive.findOneAndDelete({ user: user._id });
+      break;
+  }
+
+  // Delete the user record
+  await User.findByIdAndDelete(user._id);
+
+  res.status(200).json({
+    success: true,
+    message: "Account deleted successfully",
+  });
+});
+

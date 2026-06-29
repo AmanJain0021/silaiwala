@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     User, ShoppingBag, MapPin, Ruler, Grid, LogOut, Wallet, Star,
-    Settings, Headset, ChevronRight, Share2, Heart, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Sparkles, Package
+    Settings, Headset, ChevronRight, Share2, Heart, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Sparkles, Package, Trash2, AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../store/authStore';
@@ -57,6 +57,9 @@ const ProfilePage = () => {
     const navigate = useNavigate();
     const { logout } = useAuthStore(state => state);
     const { fetchProfile, profile, isLoading } = useUserStore();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         fetchProfile();
@@ -65,6 +68,22 @@ const ProfilePage = () => {
     const handleLogout = () => {
         logout();
         navigate('/user/login');
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmText !== 'DELETE') return;
+        setIsDeleting(true);
+        try {
+            await api.delete('/auth/delete-account');
+            logout();
+            navigate('/user/login');
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete account');
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setDeleteConfirmText('');
+        }
     };
 
     if (isLoading && !profile) {
@@ -206,9 +225,67 @@ const ProfilePage = () => {
                     </button>
                 </div>
 
+                <div className="max-w-md mx-auto sm:max-w-none px-2 mt-4">
+                    <button
+                        onClick={() => setShowDeleteModal(true)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-200 group hover:bg-red-50 hover:border-red-200 transition-all duration-300 active:scale-[0.98]"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-100 group-hover:rotate-6 transition-transform">
+                                <Trash2 size={20} strokeWidth={2.5} />
+                            </div>
+                            <div className="text-left">
+                                <h4 className="text-sm font-black text-red-600 uppercase tracking-wider italic">Delete Account</h4>
+                                <p className="text-[10px] font-bold text-red-400">Permanently remove your account</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={16} className="text-red-300" />
+                    </button>
+                </div>
+
                 <p className="text-center text-[10px] font-bold text-gray-400 mt-10 pb-6 uppercase tracking-widest opacity-50">
                     SewZella • Version 1.0.0 (Beta)
                 </p>
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowDeleteModal(false)}>
+                    <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center gap-3">
+                            <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center">
+                                <AlertTriangle size={28} className="text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-black text-gray-900 tracking-tight">Delete Account?</h3>
+                            <p className="text-xs text-gray-500 leading-relaxed">This action is <span className="font-bold text-red-600">permanent</span> and cannot be undone. All your data, orders, and measurements will be lost forever.</p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block">Type DELETE to confirm</label>
+                            <input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={e => setDeleteConfirmText(e.target.value)}
+                                placeholder="DELETE"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold text-center tracking-widest focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             </div>
 
             <BottomNav />
