@@ -189,49 +189,32 @@ const DeliveryDashboard = () => {
         <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">
             <div className="px-5 space-y-6">
                 {/* Main Earnings Card */}
-                <div className="w-full bg-gradient-to-br from-[#3b3db0] to-[#843D9B] rounded-[2rem] p-6 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl -translate-y-10 translate-x-10 pointer-events-none"></div>
-                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#3b3db0] opacity-50 rounded-full blur-2xl translate-y-10 translate-x-10 pointer-events-none"></div>
+                <div className="bg-gradient-to-br from-[#6b2c80] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-2">
+                    {/* Decorative Elements */}
+                    <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10" />
+                    <div className="absolute left-10 bottom-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-xl -mb-10" />
                     
-                    <div className="relative z-10 flex flex-col items-start w-[60%]">
-                        <p className="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-2">Today's Earnings</p>
-                        <h3 className="text-5xl font-black tracking-tighter mb-3 drop-shadow-sm">₹{dashboardStats.todayEarnings || 0}</h3>
-                        <p className="text-[10px] text-indigo-100 font-medium leading-relaxed mb-5 max-w-[200px]">
-                            Earnings will update once you complete a delivery.
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Today's Amount</p>
+                        <h3 className="text-5xl font-black text-white mb-2 tracking-tighter">₹{dashboardStats.todayEarnings || 0}</h3>
+                        <p className="text-[11px] font-medium text-white/80 mb-6 max-w-[200px] leading-relaxed">
+                            Earnings will update once you complete a delivery task immediately.
                         </p>
-                        <button onClick={() => navigate('/delivery/wallet')} className="bg-white text-[#843D9B] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors flex items-center gap-1 shadow-sm">
-                            View Details <ChevronRight size={14} />
+                        
+                        <button onClick={() => navigate('/delivery/wallet')} className="bg-white text-[#843D9B] text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center gap-1 w-fit shadow-lg shadow-black/10 active:scale-95 transition-transform">
+                            VIEW DETAILS <ChevronRight size={14} />
                         </button>
                     </div>
 
-                    {/* Graphic Elements mimicking the wallet */}
-                    <div className="absolute -right-4 bottom-0 h-[120%] w-[50%] pointer-events-none flex items-end justify-center pb-2">
-                        <div className="relative w-32 h-24">
-                            {/* Coins */}
-                            <div className="absolute -left-6 bottom-4 w-8 h-8 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow-md flex items-center justify-center transform -rotate-12 z-0">
-                                <IndianRupee size={12} className="text-yellow-700" />
-                            </div>
-                            <div className="absolute right-0 top-0 w-10 h-10 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow-md flex items-center justify-center transform rotate-12 z-0">
-                                <IndianRupee size={16} className="text-yellow-700" />
-                            </div>
-                            <div className="absolute left-6 -bottom-2 w-10 h-10 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow-md flex items-center justify-center transform rotate-6 z-20">
-                                <IndianRupee size={16} className="text-yellow-700" />
-                            </div>
-                            
-                            {/* Wallet Body */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-2xl shadow-xl border border-indigo-400/50 z-10 flex items-center p-2">
-                                {/* Wallet Flap */}
-                                <div className="absolute top-0 right-0 left-0 h-1/2 bg-indigo-500 rounded-t-2xl opacity-50 border-b border-indigo-400"></div>
-                                {/* Button */}
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 bg-indigo-300 rounded-full shadow-inner border border-indigo-400 flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
-                                </div>
-                            </div>
-                            {/* Trend Arrow */}
-                            <div className="absolute -top-10 -right-8 text-indigo-400/30 transform rotate-12 z-0">
-                                <TrendingUp size={80} strokeWidth={4} />
-                            </div>
-                        </div>
+                    {/* Floating accents */}
+                    <div className="absolute right-6 bottom-6 w-24 h-24 bg-[#5a246b] rounded-2xl rotate-12 opacity-50 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl">
+                        <div className="w-4 h-4 rounded-full border-2 border-white/20" />
+                    </div>
+                    <div className="absolute right-24 bottom-4 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold text-xs shadow-lg rotate-12">
+                        ₹
+                    </div>
+                    <div className="absolute right-4 bottom-20 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold text-[10px] shadow-lg -rotate-12">
+                        ₹
                     </div>
                 </div>
 
