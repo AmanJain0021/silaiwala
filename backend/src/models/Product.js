@@ -109,6 +109,22 @@ const productSchema = new mongoose.Schema(
       enum: ["store_item", "fabric"],
       default: "store_item",
     },
+    weight: {
+      type: Number,
+      default: 0.5, // Default weight in kg
+    },
+    length: {
+      type: Number,
+      default: 10, // Default length in cm
+    },
+    width: {
+      type: Number,
+      default: 10, // Default width in cm
+    },
+    height: {
+      type: Number,
+      default: 10, // Default height in cm
+    },
   },
   {
     timestamps: true,

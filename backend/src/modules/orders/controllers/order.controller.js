@@ -255,6 +255,7 @@ ledgerId,
        order.remainingPaymentStatus = "paid";
        order.remainingPaymentId = razorpay_payment_id;
        order.remainingPaymentAmount = 0;
+       order.paymentStatus = "paid"; // <--- ADDED THIS LINE
        order.status = order.items.some(item => item.fabricSource === 'customer') ? 'fabric-ready-for-pickup' : 'in-progress';
        order.trackingHistory.push({
          status: order.status,
@@ -560,7 +561,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
   // 4. Check if fabric pickup is required
   const fabricPickupRequired = formattedItems.some(item => item.fabricSource === 'customer');
-  const initialStatus = "pending";
+  const isReadyMade = formattedItems.some(item => item.product);
+  const initialStatus = isReadyMade ? "in-progress" : "pending";
 
   // 5. Handle Promo Code / Coupon
   let discountAmount = 0;
@@ -581,57 +583,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
           if (promo.maxDiscountAmount && discountAmount > promo.maxDiscountAmount) {
             discountAmount = promo.maxDiscountAmount;
           }
-        } else if (paymentType === 'full') {
-       order.advancePaymentStatus = "paid";
-       order.advancePaymentId = razorpay_payment_id;
-       order.advancePaymentAmount = order.totalAmount;
-       order.remainingPaymentStatus = "paid";
-       order.remainingPaymentId = razorpay_payment_id;
-       order.remainingPaymentAmount = 0;
-       
-       transitionOrder(order, 'accepted', `Full payment of ₹${order.totalAmount} successful. Order accepted.`, true);
-
-       await sendNotification({
-           recipient: order.tailor,
-           type: "ORDER_CREATED",
-           title: "Full Payment Received - Start Order!",
-           message: `Customer has paid in full for ${order.orderId}. You can start processing.`,
-           data: { orderId: order._id, targetUrl: "/orders" }
-       });
-
-       // Emit socket
-       const { getIO } = require("../../../config/socket");
-       const io = getIO();
-       if (io) {
-           io.to(`user_${order.tailor}`).emit('order_status_updated', {
-               orderId: order.orderId,
-               status: order.status
-           });
-       }
-
-       // --- Credit Tailor Wallet for Full Payment ---
-       try {
-           const tailorProfile = await Tailor.findOne({ user: order.tailor });
-           if (tailorProfile) {
-               // Calculate platform fee here if needed, simplified for now:
-               const platformFee = Math.round(order.totalAmount * 0.10); // Example 10%
-               const tailorShare = order.totalAmount - platformFee;
-               
-               await WalletTransaction.create({
-                   user: tailorProfile.user,
-                   amount: tailorShare,
-                   type: 'credit',
-                   category: 'full_payment',
-                   order: order._id,
-                   description: `Full payment received for Order ${order.orderId} (less platform fee)`
-               });
-               tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorShare;
-               await tailorProfile.save();
-           }
-       } catch (walletErr) {
-           console.error("Wallet credit error (Full Payment):", walletErr);
-       }
-    } else {
+        } else {
           discountAmount = promo.discountValue;
         }
         finalAmount = totalAmount - discountAmount;
@@ -675,7 +627,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     bridalTime,
     trackingHistory: [{ 
         status: initialStatus, 
-        message: "Waiting for the tailor to accept the order before assigning a delivery partner."
+        message: isReadyMade ? "Order received and automatically assigned. Processing started." : "Waiting for the tailor to accept the order before assigning a delivery partner."
     }],
   });
 
@@ -694,11 +646,16 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         console.log(`📡 Socket: Notified Tailor ${targetTailorUserId} of new order creation`);
     }
 
+    const notificationTitle = isReadyMade ? "New Ready-Made Order" : "New Order Placed";
+    const notificationMessage = isReadyMade 
+        ? `A new ready-made order ${order.orderId} has been automatically assigned to you.`
+        : `A new order ${order.orderId} has been placed. Please review and accept or reject it.`;
+
     await sendNotification({
         recipient: targetTailorUserId,
         type: "ORDER_CREATED",
-        title: "New Order Placed",
-        message: `A new order ${order.orderId} has been placed. Please accept or reject it.`,
+        title: notificationTitle,
+        message: notificationMessage,
         data: { orderId: order._id, targetUrl: "/orders" }
     });
   } catch (err) {

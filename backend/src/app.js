@@ -141,6 +141,8 @@ app.use("/api/v1/measurement-executive", require("./modules/measurement-executiv
 app.use("/api/v1/alterations", require("./modules/alterations/routes/alteration.routes"));
 app.use("/api/v1/custom-designs", require("./modules/customDesigns/routes/customDesign.routes"));
 app.use("/api/v1/issues", require("./modules/issues/routes/issue.routes"));
+app.use("/api/v1/shiprocket", require("./modules/shiprocket/routes/shiprocket.routes"));
+
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 
 app.use((req, res, next) => {

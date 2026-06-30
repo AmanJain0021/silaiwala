@@ -15,6 +15,11 @@ const AdminTailors = () => {
     const [isEditCommissionModalOpen, setIsEditCommissionModalOpen] = useState(false);
     const [newCommission, setNewCommission] = useState('');
     const [isUpdatingCommission, setIsUpdatingCommission] = useState(false);
+    
+    // Shiprocket location edit state
+    const [isEditLocationModalOpen, setIsEditLocationModalOpen] = useState(false);
+    const [newShiprocketLocation, setNewShiprocketLocation] = useState('');
+    const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
 
     const tabs = ['All Tailors', 'Pending Applications'];
 
@@ -42,7 +47,8 @@ const AdminTailors = () => {
                 documents: t.profile?.documents || [],
                 shopName: t.profile?.shopName,
                 experience: t.profile?.experienceInYears,
-                bio: t.profile?.bio
+                bio: t.profile?.bio,
+                shiprocketPickupLocation: t.profile?.shiprocketPickupLocation || ''
             })));
 
             setPendingData(pendingRes.data.data.map(t => ({
@@ -127,6 +133,33 @@ const AdminTailors = () => {
             toast.error(error.response?.data?.message || 'Failed to update commission');
         } finally {
             setIsUpdatingCommission(false);
+        }
+    };
+
+    const handleEditShiprocketLocation = async () => {
+        if (!selectedTailor) return;
+        
+        setIsUpdatingLocation(true);
+        try {
+            await api.put(`/admin/tailors/${selectedTailor.id}/shiprocket-location`, {
+                shiprocketPickupLocation: newShiprocketLocation
+            });
+            
+            toast.success('Shiprocket location updated successfully');
+            
+            // Update local state
+            setSelectedTailor(prev => ({
+                ...prev,
+                shiprocketPickupLocation: newShiprocketLocation
+            }));
+            
+            setIsEditLocationModalOpen(false);
+            fetchData();
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            toast.error(error.response?.data?.message || 'Failed to update location');
+        } finally {
+            setIsUpdatingLocation(false);
         }
     };
 
@@ -421,6 +454,26 @@ const AdminTailors = () => {
                                                 </button>
                                             </div>
                                         </div>
+                                        <div className="flex justify-between items-center py-4 border-b border-gray-50">
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-600">Shiprocket Pickup Location</p>
+                                                <p className="text-[10px] text-gray-400 font-medium">Mapped location name in Shiprocket</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-black text-gray-900 max-w-[120px] truncate" title={selectedTailor.shiprocketPickupLocation || 'Not Set'}>
+                                                    {selectedTailor.shiprocketPickupLocation || 'Not Set'}
+                                                </span>
+                                                <button 
+                                                    onClick={() => {
+                                                        setNewShiprocketLocation(selectedTailor.shiprocketPickupLocation || '');
+                                                        setIsEditLocationModalOpen(true);
+                                                    }}
+                                                    className="text-[10px] text-primary hover:underline font-bold"
+                                                >
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        </div>
                                         <div className="flex justify-between items-center pt-4">
                                             <div>
                                                 <p className="text-xs font-bold text-gray-600">Joined Date</p>
@@ -636,6 +689,57 @@ const AdminTailors = () => {
                                     className="flex-1 py-3 bg-primary text-white hover:bg-primary-dark transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
                                 >
                                     {isUpdatingCommission ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Shiprocket Location Modal */}
+            <AnimatePresence>
+                {isEditLocationModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+                        onClick={() => !isUpdatingLocation && setIsEditLocationModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col p-6"
+                        >
+                            <h3 className="text-lg font-black text-gray-900 mb-2">Shiprocket Location</h3>
+                            <p className="text-xs text-gray-500 font-medium mb-6">Enter the exact Pickup Location Name mapped in Shiprocket for {selectedTailor?.name}</p>
+                            
+                            <div className="relative mb-6">
+                                <input 
+                                    type="text"
+                                    value={newShiprocketLocation}
+                                    onChange={(e) => setNewShiprocketLocation(e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 focus:outline-none focus:border-primary"
+                                    placeholder="e.g. Raju_Tailor_Delhi_01"
+                                />
+                            </div>
+                            
+                            <div className="flex gap-3 mt-2">
+                                <button 
+                                    onClick={() => setIsEditLocationModalOpen(false)}
+                                    disabled={isUpdatingLocation}
+                                    className="flex-1 py-3 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleEditShiprocketLocation}
+                                    disabled={isUpdatingLocation}
+                                    className="flex-1 py-3 bg-primary text-white hover:bg-primary-dark transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
+                                >
+                                    {isUpdatingLocation ? 'Saving...' : 'Save'}
                                 </button>
                             </div>
                         </motion.div>

@@ -997,6 +997,46 @@ const OrderTracking = () => {
                     );
                 })()}
 
+                {/* Shiprocket Tracking Card */}
+                {order.deliveryProvider === 'shiprocket' && order.shiprocketDetails?.shipmentId && (
+                    <div className="bg-white rounded-[2rem] p-5 border border-purple-100 shadow-sm mt-4">
+                        <h4 className="text-[10px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Package size={14} className="text-[#843D9B]" /> 
+                            Courier Partner Tracking
+                        </h4>
+                        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</span>
+                                <span className="text-xs font-black uppercase text-[#843D9B]">
+                                    {order.shiprocketDetails.currentStatus || 'Processing'}
+                                </span>
+                            </div>
+                            {order.shiprocketDetails.courierName && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Courier</span>
+                                    <span className="text-xs font-black text-gray-900">{order.shiprocketDetails.courierName}</span>
+                                </div>
+                            )}
+                            {order.shiprocketDetails.awbCode && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tracking / AWB</span>
+                                    <span className="text-xs font-black text-gray-900">{order.shiprocketDetails.awbCode}</span>
+                                </div>
+                            )}
+                        </div>
+                        {order.shiprocketDetails.trackingUrl && (
+                            <a 
+                                href={order.shiprocketDetails.trackingUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="mt-3 w-full py-3 bg-[#843D9B] text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm hover:bg-[#6c3280] transition-colors"
+                            >
+                                <ExternalLink size={14} /> View Live Tracking
+                            </a>
+                        )}
+                    </div>
+                )}
+
                 {/* 6. Issue Reporting Section (If Delivered) */}
                 {order.status === 'delivered' && (
                     <div className="mb-6">

@@ -237,6 +237,20 @@ const orderSchema = new mongoose.Schema(
         proof: String,
       },
     ],
+    deliveryProvider: {
+      type: String,
+      enum: ['internal', 'shiprocket'],
+      default: 'internal',
+    },
+    shiprocketDetails: {
+      shipmentId: String,
+      orderId: String,
+      awbCode: String,
+      courierName: String,
+      trackingUrl: String,
+      currentStatus: String,
+      pickupScheduled: { type: Boolean, default: false },
+    },
     deliveryProof: String,
     couponCode: String,
     discountAmount: {

@@ -17,6 +17,11 @@ const tailorSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    shiprocketPickupLocation: {
+      type: String,
+      trim: true,
+      default: "Primary",
+    },
     specializations: [
       {
         type: String,

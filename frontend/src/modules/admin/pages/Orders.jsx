@@ -20,6 +20,7 @@ const AdminOrders = () => {
     const [manageOrderData, setManageOrderData] = useState(null);
     const [isManageOpen, setIsManageOpen] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const [shiprocketValidation, setShiprocketValidation] = useState(null);
 
     // States for Assignments
     const [tailorsList, setTailorsList] = useState([]);
@@ -204,11 +205,20 @@ const AdminOrders = () => {
 
     const handleManageOrderDetails = async (orderId) => {
         setIsLoadingDetails(true);
+        setShiprocketValidation(null);
         try {
             const res = await api.get(`/admin/orders/${orderId}`);
             if (res.data.success) {
                 setManageOrderData(res.data.data);
                 setIsManageOpen(true);
+                
+                // Fetch validation for ready-made products
+                const isReadyMade = res.data.data.items?.some(item => item.productType === 'store_item');
+                if (isReadyMade && !res.data.data.shiprocketDetails?.shipmentId) {
+                    api.get(`/shiprocket/validate/${orderId}`)
+                       .then(vRes => setShiprocketValidation(vRes.data.data))
+                       .catch(() => setShiprocketValidation({ isValid: false, errors: ['Failed to load validation status'] }));
+                }
             }
         } catch (err) {
             if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
@@ -671,36 +681,70 @@ const AdminOrders = () => {
                                             <p className="text-xs text-orange-500 font-medium">Not yet assigned</p>
                                         )}
                                     </div>
-                                    <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl relative">
-                                        <h4 className="text-[10px] font-semibold uppercase text-orange-400 tracking-wider mb-2 flex items-center gap-1.5">
-                                            <Truck size={12} /> Delivery Partner
-                                        </h4>
-                                        {manageOrderData.deliveryPartner ? (
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900">{manageOrderData.deliveryPartner.name}</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">{manageOrderData.deliveryPartner.phoneNumber || 'N/A'}</p>
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs text-orange-500 font-medium">Not yet assigned</p>
-                                        )}
-                                        <div className="mt-3 pt-3 border-t border-orange-200/50 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[9px] uppercase text-orange-400 font-bold">Delivery Earning</p>
-                                                <p className="text-xs font-bold text-gray-900 mt-0.5">₹{manageOrderData.deliveryFee || 0}</p>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const fee = window.prompt("Enter new Delivery Boy Earning (₹):", manageOrderData.deliveryFee || 50);
-                                                    if (fee !== null && fee.trim() !== '' && !isNaN(fee)) {
-                                                        handleUpdateDeliveryFee(manageOrderData.fullId || manageOrderData._id, fee);
-                                                    }
-                                                }}
-                                                className="text-[10px] font-bold text-primary hover:underline bg-white px-2 py-1 rounded border border-gray-200"
-                                            >
-                                                Update
-                                            </button>
+                                    {manageOrderData.deliveryProvider === 'shiprocket' ? (
+                                        <div className="bg-purple-50/50 border border-purple-100 p-4 rounded-xl relative">
+                                            <h4 className="text-[10px] font-semibold uppercase text-purple-400 tracking-wider mb-2 flex items-center gap-1.5">
+                                                <Package size={12} /> Shiprocket Courier
+                                            </h4>
+                                            {manageOrderData.shiprocketDetails?.shipmentId ? (
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">{manageOrderData.shiprocketDetails.courierName || 'Courier Assigned'}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">AWB: {manageOrderData.shiprocketDetails.awbCode || 'Pending'}</p>
+                                                    <p className="text-[10px] mt-1 inline-block px-2 py-0.5 bg-purple-100 text-purple-700 rounded uppercase font-bold tracking-wider">
+                                                        {manageOrderData.shiprocketDetails.currentStatus || 'Processing'}
+                                                    </p>
+                                                    {manageOrderData.shiprocketDetails.trackingUrl && (
+                                                        <a href={manageOrderData.shiprocketDetails.trackingUrl} target="_blank" rel="noopener noreferrer" className="block mt-2 text-[10px] font-bold text-primary hover:underline">Track Shipment</a>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="text-xs text-purple-500 font-medium mb-2">Shipment Pending Generation</p>
+                                                    {shiprocketValidation && !shiprocketValidation.isValid && (
+                                                        <div className="bg-red-50 text-red-600 p-2 rounded-lg border border-red-100 mt-2">
+                                                            <p className="font-bold text-[10px] uppercase mb-1">Validation Blocking Shipment:</p>
+                                                            <ul className="list-disc pl-4 text-[10px] font-medium space-y-0.5">
+                                                                {shiprocketValidation.errors.map((err, idx) => (
+                                                                    <li key={idx}>{err}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl relative">
+                                            <h4 className="text-[10px] font-semibold uppercase text-orange-400 tracking-wider mb-2 flex items-center gap-1.5">
+                                                <Truck size={12} /> Delivery Partner
+                                            </h4>
+                                            {manageOrderData.deliveryPartner ? (
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">{manageOrderData.deliveryPartner.name}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">{manageOrderData.deliveryPartner.phoneNumber || 'N/A'}</p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-orange-500 font-medium">Not yet assigned</p>
+                                            )}
+                                            <div className="mt-3 pt-3 border-t border-orange-200/50 flex justify-between items-center">
+                                                <div>
+                                                    <p className="text-[9px] uppercase text-orange-400 font-bold">Delivery Earning</p>
+                                                    <p className="text-xs font-bold text-gray-900 mt-0.5">₹{manageOrderData.deliveryFee || 0}</p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => {
+                                                        const fee = window.prompt("Enter new Delivery Boy Earning (₹):", manageOrderData.deliveryFee || 50);
+                                                        if (fee !== null && fee.trim() !== '' && !isNaN(fee)) {
+                                                            handleUpdateDeliveryFee(manageOrderData.fullId || manageOrderData._id, fee);
+                                                        }
+                                                    }}
+                                                    className="text-[10px] font-bold text-primary hover:underline bg-white px-2 py-1 rounded border border-gray-200"
+                                                >
+                                                    Update
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Live Tracking */}

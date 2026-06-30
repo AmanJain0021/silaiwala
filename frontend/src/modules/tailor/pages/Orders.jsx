@@ -22,6 +22,7 @@ const Orders = () => {
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [shiprocketValidation, setShiprocketValidation] = useState(null);
 
     // Production Notes State for Active Orders
     const [productionNotes, setProductionNotes] = useState({});
@@ -46,6 +47,19 @@ const Orders = () => {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (selectedOrder) {
+            const isReadyMade = selectedOrder.items?.some(item => item.productType === 'store_item');
+            if (isReadyMade && !selectedOrder.shiprocketDetails?.shipmentId) {
+                api.get(`/shiprocket/validate/${selectedOrder._id}`)
+                   .then(res => setShiprocketValidation(res.data.data))
+                   .catch(err => setShiprocketValidation({ isValid: false, errors: ['Failed to load validation status'] }));
+            }
+        } else {
+            setShiprocketValidation(null);
+        }
+    }, [selectedOrder]);
 
     const handleStatusUpdate = async (orderId, status, extraPayload = {}) => {
         setUpdatingOrders(prev => ({ ...prev, [orderId]: true }));
@@ -83,6 +97,41 @@ const Orders = () => {
         } finally {
             setIsDispatching(false);
             setDispatchingMethod(null);
+        }
+    };
+
+    const handleShiprocketAction = async (action, orderId) => {
+        try {
+            setUpdatingOrders(prev => ({ ...prev, [orderId]: true }));
+            let response;
+            if (action === 'create-shipment') {
+                response = await api.post(`/shiprocket/create-shipment/${orderId}`);
+                toast.success("Shipment created!");
+            } else if (action === 'generate-awb') {
+                response = await api.post(`/shiprocket/generate-awb/${orderId}`);
+                toast.success("AWB generated!");
+            } else if (action === 'schedule-pickup') {
+                response = await api.post(`/shiprocket/schedule-pickup/${orderId}`);
+                toast.success("Pickup scheduled!");
+            } else if (action === 'label') {
+                response = await api.get(`/shiprocket/label/${orderId}`);
+                window.open(response.data.data.label_url, '_blank');
+            }
+            
+            // Refresh orders to get latest status
+            fetchOrders();
+            // Update selected order with new details so UI updates instantly
+            if (response?.data?.data && selectedOrder && selectedOrder._id === orderId) {
+                setSelectedOrder(response.data.data);
+                // Also trigger validation check if shipment was just created
+                if (action === 'create-shipment') {
+                   setShiprocketValidation(null);
+                }
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Action failed");
+        } finally {
+            setUpdatingOrders(prev => ({ ...prev, [orderId]: false }));
         }
     };
 
@@ -285,6 +334,98 @@ const Orders = () => {
                                     <p className="text-sm font-black text-gray-900">{order.customer?.name}</p>
                                 </div>
                             </div>
+
+                            {/* Shiprocket Delivery Section (For Ready-Made Products) */}
+                            {order.items?.some(item => !!item.product && !item.service && !item.isAlteration && !item.isCustomDesign) && order.items.every(item => !item.service && !item.isAlteration && !item.isCustomDesign) && (
+                                <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-4 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[11px] font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
+                                            <Package size={14} className="text-[#843D9B]" /> 
+                                            Shiprocket Delivery
+                                        </p>
+                                        <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-600 px-2 py-1 rounded-full border border-purple-100">Ready-Made</span>
+                                    </div>
+
+                                    {!order.shiprocketDetails?.shipmentId ? (
+                                        <div className="flex flex-col gap-3">
+                                            {shiprocketValidation && !shiprocketValidation.isValid && (
+                                                <div className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100">
+                                                    <p className="font-bold text-xs uppercase mb-1">Validation Errors</p>
+                                                    <ul className="list-disc pl-4 text-[11px] font-medium space-y-0.5">
+                                                        {shiprocketValidation.errors.map((err, idx) => (
+                                                            <li key={idx}>{err}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            <button 
+                                                disabled={updatingOrders[order._id] || (shiprocketValidation && !shiprocketValidation.isValid)}
+                                                onClick={() => handleShiprocketAction('create-shipment', order._id)}
+                                                className="w-full py-3 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-indigo-100 disabled:opacity-50 transition-all"
+                                            >
+                                                {updatingOrders[order._id] ? 'Generating...' : 'Generate Shipment'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col gap-1">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Shipment ID</span>
+                                                    <span className="text-xs font-black text-gray-900">{order.shiprocketDetails.shipmentId}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</span>
+                                                    <span className="text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100">
+                                                        {order.shiprocketDetails.currentStatus || 'NEW'}
+                                                    </span>
+                                                </div>
+                                                {order.shiprocketDetails.awbCode && (
+                                                    <div className="flex justify-between items-center mt-1">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">AWB / Courier</span>
+                                                        <span className="text-xs font-black text-gray-900">{order.shiprocketDetails.awbCode} ({order.shiprocketDetails.courierName})</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {!order.shiprocketDetails.awbCode ? (
+                                                    <button 
+                                                        onClick={() => handleShiprocketAction('generate-awb', order._id)}
+                                                        disabled={updatingOrders[order._id]}
+                                                        className="col-span-2 py-2.5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-black active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+                                                    >
+                                                        {updatingOrders[order._id] ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Generate AWB'}
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        {!order.shiprocketDetails.pickupScheduled ? (
+                                                            <button 
+                                                                onClick={() => handleShiprocketAction('schedule-pickup', order._id)}
+                                                                disabled={updatingOrders[order._id]}
+                                                                className="py-2.5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-black active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+                                                            >
+                                                                {updatingOrders[order._id] ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Schedule Pickup'}
+                                                            </button>
+                                                        ) : (
+                                                            <div className="py-2.5 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-lg border border-green-200 flex items-center justify-center">
+                                                                Pickup Scheduled
+                                                            </div>
+                                                        )}
+                                                        
+                                                        <button 
+                                                            onClick={() => handleShiprocketAction('label', order._id)}
+                                                            disabled={updatingOrders[order._id]}
+                                                            className="py-2.5 bg-white border border-gray-300 text-gray-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+                                                        >
+                                                            {updatingOrders[order._id] ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Print Label'}
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Production Status Stepper */}
                             <div className="bg-white rounded-3xl p-5 border border-gray-100">

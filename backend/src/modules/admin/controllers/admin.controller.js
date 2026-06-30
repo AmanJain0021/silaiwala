@@ -359,6 +359,28 @@ exports.updateTailorCommission = async (req, res) => {
   }
 };
 
+exports.updateTailorShiprocketLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { shiprocketPickupLocation } = req.body;
+
+    const tailor = await Tailor.findOneAndUpdate(
+      { user: id },
+      { shiprocketPickupLocation },
+      { new: true }
+    );
+
+    if (!tailor) {
+      return res.status(404).json({ success: false, message: "Tailor profile not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Shiprocket location updated successfully", data: tailor });
+  } catch (error) {
+    console.error("Error in updateTailorShiprocketLocation:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // --- DELIVERY PARTNER APPROVALS ---
 
 exports.getPendingDeliveryPartners = async (req, res) => {

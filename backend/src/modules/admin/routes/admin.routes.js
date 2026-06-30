@@ -44,6 +44,7 @@ const {
   getSettings,
   updateSettings,
   generateReport,
+  updateTailorShiprocketLocation,
 } = require("../controllers/admin.controller");
 
 const {
@@ -84,6 +85,7 @@ router.get("/tailors/pending", getPendingTailors);
 router.put("/tailors/:id/approve", approveTailor);
 router.put("/tailors/:id/reject", rejectTailor);
 router.put("/tailors/:id/commission", updateTailorCommission);
+router.put("/tailors/:id/shiprocket-location", updateTailorShiprocketLocation);
 
 // Delivery Partner Approvals
 router.get("/delivery-partners/pending", getPendingDeliveryPartners);
