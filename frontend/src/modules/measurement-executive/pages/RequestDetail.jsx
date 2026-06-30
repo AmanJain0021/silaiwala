@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText } from 'lucide-react';
+import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../shared/utils/api';
 import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
@@ -181,40 +181,61 @@ const RequestDetail = () => {
     const estimatedEarnings = Math.round(baseFee + (distanceKm * perKmRate));
 
     return (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-8">
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-semibold text-gray-900">Request Detail</h1>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 capitalize">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-purple-200">
+                        <Navigation size={24} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Request Details</h1>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Manage active task</p>
+                    </div>
+                </div>
+                <div className="px-4 py-2 rounded-xl flex items-center gap-2 border font-black text-xs uppercase tracking-widest shadow-sm bg-blue-50 text-blue-600 border-blue-100 self-start sm:self-auto">
                     {request.status.replace('_', ' ')}
-                </span>
+                </div>
             </div>
 
             {/* Customer Info Card */}
-            <div className="bg-white shadow rounded-lg mb-8 overflow-hidden">
-                <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Customer Details</h3>
+            <div className="bg-white shadow-xl shadow-gray-200/40 rounded-[2rem] border border-gray-100 mb-8 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-br from-purple-50/50 to-white">
+                    <h3 className="text-lg font-black text-gray-900">Customer Details</h3>
                 </div>
-                <div className="px-4 py-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-start">
-                        <User className="h-5 w-5 text-gray-400 mt-1 mr-3" />
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4 transition-all hover:bg-gray-50 hover:shadow-md">
+                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-[#843D9B]">
+                            <User size={20} />
+                        </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-900">{request.customer?.name}</p>
-                            <p className="text-sm text-gray-500">Order: {request.order?.orderId}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Customer Name</p>
+                            <p className="text-sm font-black text-gray-900">{request.customer?.name}</p>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Order: {request.order?.orderId}</p>
                         </div>
                     </div>
-                    <div className="flex items-start">
-                        <Phone className="h-5 w-5 text-gray-400 mt-1 mr-3" />
-                        <p className="text-sm text-gray-900 mt-1">{request.customer?.phoneNumber}</p>
-                    </div>
-                    <div className="flex items-start md:col-span-2">
-                        <MapPin className="h-5 w-5 text-gray-400 mt-1 mr-3" />
+
+                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4 transition-all hover:bg-gray-50 hover:shadow-md">
+                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-sky-500">
+                            <Phone size={20} />
+                        </div>
                         <div>
-                            <p className="text-sm text-gray-900 mb-3">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Contact Number</p>
+                            <p className="text-sm font-medium text-gray-900">{request.customer?.phoneNumber}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4 transition-all hover:bg-gray-50 hover:shadow-md md:col-span-2">
+                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-emerald-500">
+                            <MapPin size={20} />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Address</p>
+                            <p className="text-sm font-medium text-gray-900 leading-relaxed mb-3">
                                 {request.customerAddress?.street}, {request.customerAddress?.city}, {request.customerAddress?.state} {request.customerAddress?.zipCode}
                             </p>
                             {mapsUrl && (
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="flex items-center gap-1.5 text-xs font-black text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
                                         <Navigation className="h-3.5 w-3.5 text-sky-500" />
                                         {request.distance ? `${request.distance} km` : 'N/A'}
                                     </div>
@@ -222,7 +243,7 @@ const RequestDetail = () => {
                                         href={mapsUrl} 
                                         target="_blank" 
                                         rel="noreferrer" 
-                                        className="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-xl text-xs font-bold transition-colors shadow-sm"
+                                        className="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-sm"
                                     >
                                         <Navigation className="h-3.5 w-3.5" />
                                         Navigate
@@ -236,35 +257,35 @@ const RequestDetail = () => {
 
             {/* Tailor Info Card */}
             {request.tailor && (
-                <div className="bg-white shadow rounded-lg mb-8 overflow-hidden">
-                    <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center gap-2">
+                <div className="bg-white shadow-xl shadow-gray-200/40 rounded-[2rem] border border-gray-100 mb-8 overflow-hidden">
+                    <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-br from-indigo-50/50 to-white">
+                        <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                             <Scissors className="h-5 w-5 text-indigo-500" />
-                            Assigned Tailor Details
+                            Assigned Tailor
                         </h3>
-                        <p className="mt-1 text-sm text-gray-500">Measurements {request.status === 'completed' ? 'have been sent' : 'will be sent'} to this tailor.</p>
+                        <p className="mt-1 text-xs font-bold text-gray-400 uppercase tracking-widest">Measurements {request.status === 'completed' ? 'have been sent' : 'will be sent'} to this tailor</p>
                     </div>
-                    <div className="px-4 py-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50">
-                        <div className="flex items-center">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50">
+                        <div className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4 shadow-sm">
                             {request.tailor?.profileImage ? (
-                                <img src={request.tailor.profileImage} alt="" className="h-10 w-10 rounded-full mr-3 object-cover" />
+                                <img src={request.tailor.profileImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
                             ) : (
-                                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
-                                    <User className="h-5 w-5 text-indigo-600" />
+                                <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                                    <User className="h-6 w-6 text-indigo-600" />
                                 </div>
                             )}
                             <div>
-                                <p className="text-sm font-medium text-gray-900">{request.tailor?.name}</p>
-                                <p className="text-xs text-gray-500">Tailor Partner</p>
+                                <p className="text-sm font-black text-gray-900">{request.tailor?.name}</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Tailor Partner</p>
                             </div>
                         </div>
-                        <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center mr-3">
-                                <Phone className="h-5 w-5 text-slate-500" />
+                        <div className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4 shadow-sm">
+                            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                                <Phone className="h-6 w-6 text-slate-500" />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-900">{request.tailor?.phoneNumber}</p>
-                                <p className="text-xs text-gray-500">Contact Number</p>
+                                <p className="text-sm font-black text-gray-900">{request.tailor?.phoneNumber}</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Contact Number</p>
                             </div>
                         </div>
                     </div>
@@ -273,140 +294,146 @@ const RequestDetail = () => {
 
             {/* Live Map & Stats */}
             {request.status !== 'measurements_uploaded' && (
-                <div className="bg-white shadow rounded-lg mb-8 overflow-hidden">
-                    <div className="px-4 py-4 border-b border-gray-200 sm:px-6 bg-slate-50 flex items-center justify-between">
-                        <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
+                <div className="bg-white shadow-xl shadow-gray-200/40 rounded-[2rem] border border-gray-100 mb-8 overflow-hidden">
+                    <div className="px-6 py-5 border-b border-gray-100 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h3 className="text-base font-black text-gray-900 flex items-center gap-2 uppercase tracking-widest">
                             <Navigation className="h-5 w-5 text-indigo-600" />
                             Live Navigation
                         </h3>
                         {routeData && (
-                            <div className="flex gap-4">
-                                <div className="flex flex-col items-end">
-                                    <span className="text-xs text-gray-500 font-semibold uppercase">Distance</span>
-                                    <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
-                                        <Navigation className="h-3.5 w-3.5 text-blue-500" />
-                                        {routeData.distance}
-                                    </span>
+                            <div className="flex flex-wrap gap-3">
+                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
+                                    <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500"><Navigation size={12} /></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none">Distance</span>
+                                        <span className="text-xs font-black text-slate-800 leading-none mt-1">{routeData.distance}</span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-xs text-gray-500 font-semibold uppercase">Time</span>
-                                    <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
-                                        <Clock className="h-3.5 w-3.5 text-orange-500" />
-                                        {routeData.duration}
-                                    </span>
+                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
+                                    <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500"><Clock size={12} /></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none">Time</span>
+                                        <span className="text-xs font-black text-slate-800 leading-none mt-1">{routeData.duration}</span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-xs text-gray-500 font-semibold uppercase">Est. Earning</span>
-                                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1">
-                                        <Landmark className="h-3.5 w-3.5" />
-                                        ₹{estimatedEarnings}
-                                    </span>
+                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
+                                    <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><Landmark size={12} /></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none">Earning</span>
+                                        <span className="text-xs font-black text-emerald-600 leading-none mt-1">₹{estimatedEarnings}</span>
+                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
-                    <div className="p-4 bg-gray-50">
-                        <DeliveryBoyLiveMap 
-                            currentLocation={currentLocation}
-                            destination={request.customerLocation?.coordinates ? {
-                                lat: request.customerLocation.coordinates[1],
-                                lng: request.customerLocation.coordinates[0]
-                            } : null}
-                            destinationAddress={`${request.customerAddress?.street}, ${request.customerAddress?.city}`}
-                            isLoaded={isLoaded}
-                            height="300px"
-                            onRouteCalculated={(data) => setRouteData(data)}
-                        />
+                    <div className="p-4 bg-gray-50/50">
+                        <div className="rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                            <DeliveryBoyLiveMap 
+                                currentLocation={currentLocation}
+                                destination={request.customerLocation?.coordinates ? {
+                                    lat: request.customerLocation.coordinates[1],
+                                    lng: request.customerLocation.coordinates[0]
+                                } : null}
+                                destinationAddress={`${request.customerAddress?.street}, ${request.customerAddress?.city}`}
+                                isLoaded={isLoaded}
+                                height="300px"
+                                onRouteCalculated={(data) => setRouteData(data)}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Steps Container */}
             <div className="space-y-8">
-                               {/* STEP 1: Take Measurements */}
+                {/* STEP 1: Take Measurements */}
                 {request.status === 'accepted' && (
-                    <div className="bg-white shadow rounded-lg p-6 border-l-4 border-indigo-500">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="bg-indigo-100 text-indigo-700 h-8 w-8 rounded-full flex items-center justify-center font-bold">1</div>
-                            <h3 className="text-lg font-medium text-gray-900">Take Measurements</h3>
+                    <div className="bg-white shadow-xl shadow-purple-200/40 rounded-[2rem] p-6 sm:p-8 border-2 border-purple-100 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-2 h-full bg-[#843D9B]"></div>
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="bg-[#843D9B] text-white h-10 w-10 rounded-xl flex items-center justify-center font-black shadow-lg shadow-purple-200">1</div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Take Measurements</h3>
                         </div>
+                        
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             {['chest', 'waist', 'hips', 'shoulder', 'length', 'neck', 'sleeve', 'inseam'].map((field) => (
-                                <div key={field}>
-                                    <label className="block text-sm font-medium text-gray-700 capitalize mb-1">{field}</label>
+                                <div key={field} className="bg-gray-50 p-3 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-purple-100 transition-all">
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">{field}</label>
                                     <input
                                         type="number"
                                         min="0"
                                         placeholder="0.0"
-                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2 border"
+                                        className="block w-full bg-transparent border-0 p-0 text-sm font-black text-gray-900 focus:ring-0"
                                         value={formData[field] || ''}
                                         onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                                     />
                                 </div>
                             ))}
                         </div>
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <div className="mb-8">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Notes</label>
                             <textarea
-                                rows="2"
-                                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                                rows="3"
+                                className="block w-full text-sm font-medium text-gray-900 bg-gray-50 border border-gray-200 rounded-2xl p-4 focus:ring-4 focus:ring-purple-100 focus:border-[#843D9B] transition-all resize-none shadow-inner"
                                 placeholder="Any specific requirements from customer..."
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Report (PDF)</label>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Upload Report (PDF)</label>
                                 {pdfFile ? (
-                                    <div className="flex items-center justify-between p-3 border-2 border-indigo-100 rounded-lg bg-indigo-50">
+                                    <div className="flex items-center justify-between p-4 border-2 border-indigo-100 rounded-2xl bg-indigo-50/50 shadow-sm">
                                         <div className="flex items-center space-x-3 overflow-hidden">
-                                            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                                            <div className="p-2.5 bg-white rounded-xl text-indigo-600 shadow-sm border border-indigo-100">
                                                 <FileText className="w-6 h-6" />
                                             </div>
-                                            <span className="text-sm font-medium text-indigo-900 truncate">{pdfFile.name}</span>
+                                            <span className="text-sm font-bold text-indigo-900 truncate">{pdfFile.name}</span>
                                         </div>
                                         <button 
                                             type="button" 
                                             onClick={() => setPdfFile(null)}
-                                            className="p-1.5 bg-white text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors shadow-sm"
+                                            className="p-2 bg-white text-gray-500 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-100 rounded-xl transition-all shadow-sm"
                                         >
                                             <span className="sr-only">Remove</span>
                                             ✕
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-400 transition-colors bg-gray-50 hover:bg-indigo-50/30">
+                                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 border-dashed rounded-2xl hover:border-[#843D9B] transition-colors bg-gray-50 hover:bg-purple-50/30">
                                         <div className="space-y-1 text-center">
-                                            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                            <div className="mx-auto h-12 w-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-3">
+                                                <Upload className="h-6 w-6 text-gray-400" />
+                                            </div>
                                             <div className="flex text-sm text-gray-600 justify-center">
-                                                <label className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
+                                                <label className="relative cursor-pointer rounded-md font-black text-[#843D9B] hover:text-[#6b2f81] focus-within:outline-none uppercase tracking-widest text-[11px]">
                                                     <span>Upload a file</span>
                                                     <input type="file" accept=".pdf" className="sr-only" onChange={(e) => setPdfFile(e.target.files[0])} />
                                                 </label>
                                             </div>
-                                            <p className="text-xs text-gray-500">PDF up to 10MB</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PDF up to 10MB</p>
                                         </div>
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Reference Photos</label>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Reference Photos</label>
                                 {photos.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         {photos.map((photo, index) => (
-                                            <div key={index} className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm aspect-square bg-gray-100">
+                                            <div key={index} className="relative group rounded-2xl overflow-hidden border border-gray-200 shadow-sm aspect-square bg-gray-100">
                                                 <img 
                                                     src={URL.createObjectURL(photo)} 
                                                     alt="Preview" 
                                                     className="w-full h-full object-cover"
                                                 />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                                                     <button
                                                         type="button"
                                                         onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
-                                                        className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-lg transform scale-90 group-hover:scale-100 transition-all"
+                                                        className="p-3 bg-white text-red-500 rounded-xl hover:bg-red-50 shadow-lg transform scale-90 group-hover:scale-100 transition-all font-black text-xs"
                                                     >
                                                         ✕
                                                     </button>
@@ -414,24 +441,28 @@ const RequestDetail = () => {
                                             </div>
                                         ))}
                                         {photos.length < 4 && (
-                                            <label className="relative cursor-pointer border-2 border-gray-300 border-dashed rounded-lg flex flex-col items-center justify-center aspect-square hover:border-indigo-400 bg-gray-50 hover:bg-indigo-50/30 transition-colors">
-                                                <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                                                <span className="text-xs font-medium text-indigo-600">Add Photo</span>
+                                            <label className="relative cursor-pointer border-2 border-gray-200 border-dashed rounded-2xl flex flex-col items-center justify-center aspect-square hover:border-[#843D9B] bg-gray-50 hover:bg-purple-50/30 transition-colors">
+                                                <div className="h-10 w-10 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center mb-2">
+                                                    <Upload className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#843D9B]">Add Photo</span>
                                                 <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => setPhotos([...photos, ...Array.from(e.target.files)])} />
                                             </label>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-400 transition-colors bg-gray-50 hover:bg-indigo-50/30">
+                                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 border-dashed rounded-2xl hover:border-[#843D9B] transition-colors bg-gray-50 hover:bg-purple-50/30">
                                         <div className="space-y-1 text-center">
-                                            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                            <div className="mx-auto h-12 w-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-3">
+                                                <Upload className="h-6 w-6 text-gray-400" />
+                                            </div>
                                             <div className="flex text-sm text-gray-600 justify-center">
-                                                <label className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
+                                                <label className="relative cursor-pointer rounded-md font-black text-[#843D9B] hover:text-[#6b2f81] focus-within:outline-none uppercase tracking-widest text-[11px]">
                                                     <span>Upload photos</span>
                                                     <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => setPhotos(Array.from(e.target.files))} />
                                                 </label>
                                             </div>
-                                            <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PNG, JPG up to 10MB</p>
                                         </div>
                                     </div>
                                 )}
@@ -441,7 +472,7 @@ const RequestDetail = () => {
                         <button
                             onClick={handleUpload}
                             disabled={uploading}
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 mt-4"
+                            className="w-full flex justify-center py-4 px-4 rounded-xl shadow-lg shadow-purple-200 text-xs uppercase tracking-widest font-black text-white bg-[#843D9B] hover:bg-[#6b2f81] transition-all disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0"
                         >
                             {uploading ? 'Uploading...' : 'Submit Measurements'}
                         </button>
@@ -450,39 +481,42 @@ const RequestDetail = () => {
 
                 {/* STEP 2: Verify Customer */}
                 {(request.status === 'measurements_uploaded' || request.status === 'otp_sent') && (
-                    <div className="bg-white shadow rounded-lg p-6 border-l-4 border-indigo-500 mt-4">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="bg-indigo-100 text-indigo-700 h-8 w-8 rounded-full flex items-center justify-center font-bold">2</div>
-                            <h3 className="text-lg font-medium text-gray-900">Customer Confirmation</h3>
+                    <div className="bg-white shadow-xl shadow-indigo-200/40 rounded-[2rem] p-6 sm:p-8 border-2 border-indigo-100 relative overflow-hidden mt-6">
+                        <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-indigo-500 text-white h-10 w-10 rounded-xl flex items-center justify-center font-black shadow-lg shadow-indigo-200">2</div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Customer Confirmation</h3>
                         </div>
                         
                         {request.status === 'measurements_uploaded' ? (
                             <div>
-                                <p className="text-sm text-gray-500 mb-4">Measurements saved! Generate an OTP to have the customer confirm and sign-off on these measurements.</p>
+                                <p className="text-sm font-medium text-gray-500 mb-6 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">Measurements saved! Generate an OTP to have the customer confirm and sign-off on these measurements.</p>
                                 <button
                                     onClick={handleGenerateOTP}
-                                    className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 font-medium"
+                                    className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all font-black text-xs uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0"
                                 >
                                     Generate OTP
                                 </button>
                             </div>
                         ) : (
                             <div>
-                                <p className="text-sm text-gray-500 mb-4">OTP has been sent to the customer's app. Please ask and enter it below.</p>
-                                <div className="flex gap-2 max-w-xs">
-                                    <input
-                                        type="text"
-                                        placeholder="Enter 6-digit OTP"
-                                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value)}
-                                    />
+                                <p className="text-sm font-medium text-gray-500 mb-6 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">OTP has been sent to the customer's app. Please ask and enter it below.</p>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <div className="flex-1 bg-gray-50 p-2 rounded-xl border border-gray-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 transition-all shadow-inner">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter 6-digit OTP"
+                                            className="w-full bg-transparent border-0 px-2 py-1 text-base font-black text-center tracking-[0.5em] focus:ring-0"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                        />
+                                    </div>
                                     <button
                                         onClick={handleVerifyOTP}
                                         disabled={verifying || !otp}
-                                        className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 font-medium disabled:opacity-50"
+                                        className="sm:w-32 py-3 px-4 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50 disabled:shadow-none"
                                     >
-                                        {verifying ? 'Verifying...' : 'Verify'}
+                                        {verifying ? 'Verifying' : 'Verify'}
                                     </button>
                                 </div>
                             </div>
@@ -492,11 +526,13 @@ const RequestDetail = () => {
 
                 {/* STEP 3: Complete */}
                 {request.status === 'otp_verified' && (
-                    <div className="bg-white shadow rounded-lg p-6 border-l-4 border-green-500 text-center mt-4">
-                        <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">Customer Verified!</h3>
-                        <p className="text-sm text-gray-500 mb-6">The tailor has been notified of the confirmed measurements. You can now close this request.</p>
-                        <button onClick={handleComplete} className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium shadow">
+                    <div className="bg-white shadow-xl shadow-emerald-200/40 rounded-[2rem] p-8 sm:p-12 border-2 border-emerald-100 text-center mt-6">
+                        <div className="w-20 h-20 mx-auto bg-emerald-100 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                            <CheckCircle className="h-10 w-10 text-emerald-500" />
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-3">Customer Verified!</h3>
+                        <p className="text-sm font-medium text-gray-500 mb-8 max-w-md mx-auto">The tailor has been notified of the confirmed measurements. You can now close this request and proceed to your next task.</p>
+                        <button onClick={handleComplete} className="w-full sm:w-auto px-8 py-4 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
                             Mark Task as Complete
                         </button>
                     </div>
@@ -504,47 +540,60 @@ const RequestDetail = () => {
 
                 {/* COMPLETED STATE */}
                 {request.status === 'completed' && request.report && (
-                    <div className="bg-white shadow rounded-lg overflow-hidden border-l-4 border-emerald-500">
-                        <div className="px-4 py-5 border-b border-gray-200 sm:px-6 flex items-center justify-between bg-emerald-50">
-                            <div className="flex items-center gap-3">
-                                <CheckCircle className="h-6 w-6 text-emerald-500" />
-                                <h3 className="text-lg leading-6 font-bold text-emerald-800">Task Completed</h3>
+                    <div className="bg-white shadow-xl shadow-emerald-200/40 rounded-[2rem] overflow-hidden border-2 border-emerald-100 mt-6 relative">
+                        <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
+                        <div className="px-6 py-6 border-b border-gray-100 bg-gradient-to-br from-emerald-50/50 to-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-200">
+                                    <CheckCircle className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Task Completed</h3>
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Measurements processed</p>
+                                </div>
                             </div>
-                            <span className="text-sm text-emerald-600 font-medium">Measurement Sent Successfully</span>
+                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[10px] uppercase tracking-widest border border-emerald-100 shadow-sm">
+                                Successfully Sent
+                            </span>
                         </div>
-                        <div className="px-4 py-5 sm:p-6">
-                            <h4 className="text-sm font-semibold text-gray-700 uppercase mb-4 flex items-center gap-2">
+                        <div className="p-6 sm:p-8">
+                            <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <FileText className="h-4 w-4" /> Submitted Measurements
                             </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
                                 {Object.entries(request.report.formData || {}).map(([key, value]) => (
-                                    <div key={key} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                        <p className="text-xs text-gray-500 capitalize">{key}</p>
-                                        <p className="text-lg font-semibold text-slate-800">{value} <span className="text-xs font-normal text-gray-400">{request.report.unit || 'in'}</span></p>
+                                    <div key={key} className="bg-gray-50/80 p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{key}</p>
+                                        <p className="text-xl font-black text-gray-900">{value} <span className="text-xs font-bold text-gray-400">{request.report.unit || 'in'}</span></p>
                                     </div>
                                 ))}
                             </div>
                             
                             {request.report.notes && (
-                                <div className="mb-6">
-                                    <h4 className="text-sm font-semibold text-gray-700 uppercase mb-2">Notes</h4>
-                                    <p className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg border border-yellow-100 italic">"{request.report.notes}"</p>
+                                <div className="mb-8">
+                                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-3">Notes</h4>
+                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 relative">
+                                        <div className="absolute top-4 left-4 text-amber-200 font-serif text-4xl leading-none">"</div>
+                                        <p className="text-sm font-medium text-amber-900 italic relative z-10 pl-6 pr-2 py-1">{request.report.notes}</p>
+                                    </div>
                                 </div>
                             )}
 
                             {(request.report.photos?.length > 0 || request.report.pdfUrl) && (
                                 <div>
-                                    <h4 className="text-sm font-semibold text-gray-700 uppercase mb-3">Attachments</h4>
+                                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4">Attachments</h4>
                                     <div className="flex flex-wrap gap-4">
                                         {request.report.photos?.map((photo, i) => (
-                                            <a key={i} href={photo} target="_blank" rel="noopener noreferrer" className="block relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:ring-2 hover:ring-indigo-400 transition-all">
-                                                <img src={photo} alt="Measurement" className="w-full h-full object-cover" />
+                                            <a key={i} href={photo} target="_blank" rel="noopener noreferrer" className="block relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-gray-100 shadow-sm hover:border-[#843D9B] hover:shadow-md transition-all group">
+                                                <img src={photo} alt="Measurement" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             </a>
                                         ))}
                                         {request.report.pdfUrl && (
-                                            <a href={request.report.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-20 h-20 rounded-lg bg-red-50 text-red-500 border border-red-100 shadow-sm hover:ring-2 hover:ring-red-400 transition-all flex-col gap-1">
-                                                <FileText className="h-6 w-6" />
-                                                <span className="text-[10px] font-bold">PDF</span>
+                                            <a href={request.report.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl bg-red-50 text-red-500 border-2 border-red-100 shadow-sm hover:border-red-400 hover:shadow-md hover:bg-red-100 transition-all gap-2 group">
+                                                <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                                    <FileText className="h-6 w-6" />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">PDF</span>
                                             </a>
                                         )}
                                     </div>
@@ -553,7 +602,6 @@ const RequestDetail = () => {
                         </div>
                     </div>
                 )}
-
             </div>
         </div>
     );

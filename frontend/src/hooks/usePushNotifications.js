@@ -26,7 +26,7 @@ export const usePushNotifications = (user) => {
             console.log('FCM Token:', currentToken);
             
             // Send token to backend
-            await api.post('/notifications/fcm-token', { fcmToken: currentToken });
+            await api.post('/notifications/fcm-token', { token: currentToken, platform: 'web' });
           } else {
             console.log('No registration token available. Request permission to generate one.');
           }

@@ -64,8 +64,18 @@ const Dashboard = () => {
         }
     };
 
-    if (loading || !profile) {
+    if (loading) {
         return <div className="p-4 flex justify-center">Loading dashboard...</div>;
+    }
+
+    if (!profile) {
+        return (
+            <div className="p-4 flex flex-col items-center justify-center text-red-500 mt-10">
+                <AlertCircle size={48} className="mb-4 text-red-400" />
+                <h3 className="text-lg font-bold mb-2">Error Loading Dashboard</h3>
+                <p className="text-sm">Please refresh the page or try again later.</p>
+            </div>
+        );
     }
 
     if (profile.verificationStatus !== 'verified') {
@@ -161,10 +171,10 @@ const Dashboard = () => {
                     <div className="absolute left-10 bottom-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-xl -mb-10" />
                     
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Total Measurements</p>
-                        <h3 className="text-5xl font-black text-white mb-2 tracking-tighter">{stats?.totalMeasurements || 0}</h3>
+                        <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Today's Earnings</p>
+                        <h3 className="text-5xl font-black text-white mb-2 tracking-tighter">₹{stats?.todayEarnings || 0}</h3>
                         <p className="text-[11px] font-medium text-white/80 mb-6 max-w-[200px] leading-relaxed">
-                            Completed measurements will update your total count immediately.
+                            Completed measurements will update your today's earnings immediately.
                         </p>
                         
                         <button className="bg-white text-[#843D9B] text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center gap-1 w-fit shadow-lg shadow-black/10 active:scale-95 transition-transform">
@@ -177,10 +187,10 @@ const Dashboard = () => {
                         <div className="w-4 h-4 rounded-full border-2 border-white/20" />
                     </div>
                     <div className="absolute right-24 bottom-4 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold text-xs shadow-lg rotate-12">
-                        M
+                        ₹
                     </div>
                     <div className="absolute right-4 bottom-20 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold text-[10px] shadow-lg -rotate-12">
-                        M
+                        ₹
                     </div>
                 </div>
 
@@ -190,9 +200,9 @@ const Dashboard = () => {
                         <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 mb-1">
                             <ClipboardList size={18} />
                         </div>
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Today</span>
-                        <span className="text-sm font-black text-gray-900">{stats?.completedToday || 0}</span>
-                        <span className="text-[8px] font-bold text-gray-400">Done</span>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Earning</span>
+                        <span className="text-sm font-black text-gray-900">₹{profile?.totalEarned || 0}</span>
+                        <span className="text-[8px] font-bold text-gray-400">Earned</span>
                     </div>
 
                     <div className="w-px h-12 bg-gray-100" />
