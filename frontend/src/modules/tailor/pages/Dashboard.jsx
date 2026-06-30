@@ -123,6 +123,20 @@ const Dashboard = () => {
                     {/* Action icons */}
                     <div className="flex items-center gap-2">
                         <button
+                            onClick={async () => {
+                                try {
+                                    await api.post('/notifications/test-push');
+                                    alert('Test push sent successfully!');
+                                } catch (err) {
+                                    alert('Error: ' + err.message);
+                                }
+                            }}
+                            className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 transition-all active:scale-95 shadow-sm"
+                            title="Test Push Notification"
+                        >
+                            <Bell size={18} />
+                        </button>
+                        <button
                             onClick={() => navigate('/partner/settings')}
                             className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 hover:text-[#843D9B] hover:bg-white transition-all active:scale-95 shadow-sm"
                         >

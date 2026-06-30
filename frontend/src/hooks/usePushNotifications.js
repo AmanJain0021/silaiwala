@@ -19,7 +19,16 @@ export const usePushNotifications = (user) => {
           console.log('Notification permission granted.');
           // Use VAPID key for web push
           const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-          const currentToken = await getToken(messaging, { vapidKey: vapidKey });
+          
+          let registration;
+          if ('serviceWorker' in navigator) {
+            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+          }
+
+          const currentToken = await getToken(messaging, { 
+              vapidKey: vapidKey,
+              serviceWorkerRegistration: registration
+          });
           
           if (currentToken) {
             setFcmToken(currentToken);
@@ -47,10 +56,14 @@ export const usePushNotifications = (user) => {
       // Play sound for all foreground push notifications based on role
       try { playNotificationSound(user?.role || 'customer'); } catch(e) { console.error(e); }
       
-      // Optional: You could trigger a local React toast here if you wanted.
-      // Since we already have socket.io for real-time in-app toasts, 
-      // we might not need to show FCM payloads while the app is active,
-      // but the event listener is here if needed.
+      // Force an OS-level native notification even when the app is open!
+      if (Notification.permission === 'granted') {
+        new Notification(payload.notification?.title || 'SewZella', {
+          body: payload.notification?.body || 'New Notification',
+          icon: '/vite.svg',
+          data: payload.data
+        });
+      }
     });
 
     return () => {

@@ -135,9 +135,9 @@ function App() {
       });
     };
 
-    // Listen for general notifications (like Admin Broadcasts)
+    // Listen for general notifications (like Admin Broadcasts or Test Pushes)
     const handleNewNotification = (data) => {
-      if (data.type === 'BROADCAST') {
+      if (data.type === 'BROADCAST' || data.type === 'TEST') {
         import('react-hot-toast').then((module) => {
           const { toast } = module.default || module;
           toast.custom((t) => (

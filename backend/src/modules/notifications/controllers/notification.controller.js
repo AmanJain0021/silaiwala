@@ -110,3 +110,28 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
     message: "FCM Token registered successfully",
   });
 });
+
+/**
+ * @desc    Send a test push notification to logged in user
+ * @route   POST /api/v1/notifications/test-push
+ * @access  Private
+ */
+exports.testPushNotification = asyncHandler(async (req, res, next) => {
+  const { sendNotification } = require("../../../utils/notification");
+  
+  await sendNotification({
+    recipient: req.user._id,
+    title: "Test Push Notification",
+    message: "This is a test push notification to verify the setup is working correctly.",
+    type: "TEST",
+    data: {
+      testUrl: "/dashboard",
+      timestamp: new Date().toISOString()
+    }
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Test push notification sent successfully",
+  });
+});

@@ -93,7 +93,7 @@ const PartnerLanding = () => {
             className="flex-1 flex flex-col"
           >
             {/* Image Section */}
-            <div className="relative h-[60vh] w-full overflow-hidden bg-gray-100">
+            <div className="relative h-[45vh] md:h-[55vh] w-full shrink-0 overflow-hidden bg-gray-100">
               <motion.img 
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
@@ -126,12 +126,12 @@ const PartnerLanding = () => {
             </div>
 
             {/* Content Section */}
-            <div className="flex-1 bg-white px-8 pt-4 pb-12 flex flex-col items-center text-center">
+            <div className="flex-1 bg-white px-6 pt-6 pb-4 flex flex-col items-center text-center justify-center">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
-                className="w-16 h-16 rounded-3xl bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center mb-6 shadow-sm"
+                className="w-14 h-14 md:w-16 md:h-16 rounded-3xl bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center mb-4 shadow-sm"
               >
                 {steps[currentStep].icon}
               </motion.div>
@@ -140,7 +140,7 @@ const PartnerLanding = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-4xl font-black text-[#1B263B] mb-4 tracking-tight"
+                className="text-3xl md:text-4xl font-black text-[#1B263B] mb-3 tracking-tight leading-tight"
               >
                 {steps[currentStep].title}
               </motion.h2>
@@ -158,7 +158,7 @@ const PartnerLanding = () => {
         </AnimatePresence>
 
         {/* Navigation Buttons */}
-        <div className="p-8 bg-white fixed bottom-0 left-0 w-full">
+        <div className="px-6 pb-8 pt-4 bg-white w-full z-10 shrink-0">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -177,7 +177,7 @@ const PartnerLanding = () => {
           </motion.button>
           
           {/* Step Indicators (Dots) */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-2 mt-6">
             {steps.map((_, idx) => (
               <div 
                 key={idx} 

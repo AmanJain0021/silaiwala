@@ -251,6 +251,24 @@ const orderSchema = new mongoose.Schema(
       currentStatus: String,
       pickupScheduled: { type: Boolean, default: false },
     },
+    exchangeStatus: {
+      type: String,
+      enum: ['none', 'requested', 'approved', 'rejected', 'return-initiated', 'return-delivered', 'exchange-shipped', 'completed'],
+      default: 'none'
+    },
+    exchangeDetails: {
+      reason: String,
+      requestedSize: String,
+      customerNotes: String,
+      images: [String],
+    },
+    shiprocketReturnDetails: {
+      returnOrderId: String,
+      returnShipmentId: String,
+      returnAwbCode: String,
+      pickupScheduledDate: Date,
+      currentStatus: String
+    },
     deliveryProof: String,
     couponCode: String,
     discountAmount: {

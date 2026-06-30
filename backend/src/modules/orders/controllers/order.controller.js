@@ -1320,3 +1320,100 @@ exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) =>
 
   res.status(200).json({ success: true, data: reportData });
 });
+
+/**
+ * @desc    Initiate an exchange request
+ * @route   POST /api/v1/orders/:id/exchange
+ * @access  Private (Customer)
+ */
+exports.requestExchange = asyncHandler(async (req, res, next) => {
+  const { reason, requestedSize, customerNotes, images } = req.body;
+  
+  const order = await Order.findOne({ _id: req.params.id, customer: req.user.id })
+    .populate('items.product');
+
+  if (!order) return next(new ErrorResponse("Order not found", 404));
+
+  if (order.status !== 'delivered' && order.status !== 'order-completed' && order.status !== 'product-delivered') {
+    return next(new ErrorResponse("Only delivered orders can be exchanged", 400));
+  }
+  
+  const hasService = order.items.some(item => !!item.service || item.isAlteration || item.isCustomDesign);
+  if (hasService) {
+    return next(new ErrorResponse("Only ready-made garments can be exchanged", 400));
+  }
+  
+  if (order.exchangeStatus !== 'none' && order.exchangeStatus !== 'rejected') {
+    return next(new ErrorResponse("Exchange already requested for this order", 400));
+  }
+
+  order.exchangeStatus = 'requested';
+  order.exchangeDetails = {
+    reason,
+    requestedSize,
+    customerNotes,
+    images: images || []
+  };
+  
+  order.trackingHistory.push({
+    status: "exchange-requested",
+    message: `Exchange requested for size ${requestedSize}. Reason: ${reason}`
+  });
+
+  await order.save();
+
+  await sendNotification(order.tailor, {
+    title: "New Exchange Request",
+    message: `Customer requested exchange for order #${order.orderId}`,
+    type: "EXCHANGE_REQUEST",
+    relatedId: order._id,
+    onModel: "Order"
+  });
+
+  res.status(200).json({
+    success: true,
+    data: order
+  });
+});
+
+/**
+ * @desc    Update exchange status
+ * @route   PATCH /api/v1/orders/:id/exchange/status
+ * @access  Private (Tailor/Admin)
+ */
+exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.body;
+  
+  const order = await Order.findById(req.params.id);
+  if (!order) return next(new ErrorResponse("Order not found", 404));
+
+  if (req.user.role === 'tailor' && order.tailor.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized to update this order", 403));
+  }
+
+  if (order.exchangeStatus === 'none') {
+    return next(new ErrorResponse("No exchange request found", 400));
+  }
+
+  order.exchangeStatus = status;
+
+  order.trackingHistory.push({
+    status: `exchange-${status}`,
+    message: `Exchange request has been ${status}`
+  });
+
+  await order.save();
+
+  await sendNotification(order.customer, {
+    title: `Exchange Request ${status}`,
+    message: `Your exchange request for order #${order.orderId} has been ${status}`,
+    type: "EXCHANGE_STATUS",
+    relatedId: order._id,
+    onModel: "Order"
+  });
+
+  res.status(200).json({
+    success: true,
+    data: order
+  });
+});

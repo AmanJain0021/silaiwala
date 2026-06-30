@@ -14,6 +14,7 @@ import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 import { motion } from 'framer-motion';
+import ExchangeRequestModal from '../components/orders/ExchangeRequestModal';
 
 const OrderTracking = () => {
     const { id } = useParams();
@@ -24,6 +25,7 @@ const OrderTracking = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
     const [isReviewed, setIsReviewed] = useState(false);
     const [isBulk, setIsBulk] = useState(location.state?.isBulk || false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -1039,7 +1041,7 @@ const OrderTracking = () => {
 
                 {/* 6. Issue Reporting Section (If Delivered) */}
                 {order.status === 'delivered' && (
-                    <div className="mb-6">
+                    <div className="mb-6 space-y-4">
                         {order.reportedIssue ? (
                             <div className="bg-red-50 rounded-[2rem] p-6 border border-red-100 relative overflow-hidden">
                                 <div className="flex justify-between items-start mb-3 relative z-10">
@@ -1081,6 +1083,43 @@ const OrderTracking = () => {
                                     >
                                         Report Issue
                                     </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {order?.items?.every(item => !item.service && !item.isAlteration && !item.isCustomDesign) && (
+                            <div className="bg-purple-50 rounded-[2rem] p-6 text-center border border-purple-100 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    {order.exchangeStatus === 'none' ? (
+                                        <>
+                                            <h3 className="text-lg font-black text-purple-900 tracking-tighter mb-2">Wrong Size or Color?</h3>
+                                            <p className="text-xs text-purple-700 font-medium mb-4 leading-relaxed max-w-[250px] mx-auto">
+                                                Since this is a ready-made product, you can request an exchange.
+                                            </p>
+                                            <button 
+                                                onClick={() => setIsExchangeModalOpen(true)}
+                                                className="px-8 py-3 bg-[#843D9B] text-white rounded-full font-black text-[10px] uppercase shadow-lg shadow-purple-200 hover:bg-[#6c3280] active:scale-95 transition-all outline-none"
+                                            >
+                                                Request Exchange
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <h3 className="text-lg font-black text-purple-900 tracking-tighter mb-2">Exchange {order.exchangeStatus}</h3>
+                                            <p className="text-xs text-purple-700 font-medium mb-4 leading-relaxed max-w-[250px] mx-auto">
+                                                {order.exchangeStatus === 'requested' && 'Your exchange request is being reviewed by the tailor.'}
+                                                {order.exchangeStatus === 'approved' && 'Your exchange is approved. A return pickup will be scheduled soon.'}
+                                                {order.exchangeStatus === 'return-initiated' && 'A return pickup has been scheduled.'}
+                                                {order.exchangeStatus === 'rejected' && 'Your exchange request was rejected.'}
+                                            </p>
+                                            {order.shiprocketReturnDetails?.returnAwbCode && (
+                                                <div className="bg-white/60 p-3 rounded-xl border border-purple-100/50 mt-2 text-left">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Return AWB:</span>
+                                                    <span className="text-xs font-black text-gray-900 ml-2">{order.shiprocketReturnDetails.returnAwbCode}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}

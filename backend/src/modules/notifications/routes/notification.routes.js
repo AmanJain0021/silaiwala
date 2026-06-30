@@ -5,13 +5,15 @@ const {
   markAsRead,
   markAllRead,
   deleteNotification,
-  registerFcmToken
+  registerFcmToken,
+  testPushNotification
 } = require("../controllers/notification.controller");
 const { protect } = require("../../../middlewares/auth.middleware");
 
 router.use(protect);
 
 router.post("/fcm-token", registerFcmToken);
+router.post("/test-push", testPushNotification);
 router.get("/", getNotifications);
 router.patch("/read-all", markAllRead);
 router.patch("/:id/read", markAsRead);

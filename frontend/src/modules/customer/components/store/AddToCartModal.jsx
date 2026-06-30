@@ -194,8 +194,8 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                 }}
                                 className={cn(
                                     "absolute top-4 left-4 p-2 rounded-full transition shadow-lg cursor-pointer z-20",
-                                    isWishlisted 
-                                        ? "bg-rose-50 text-rose-500" 
+                                    isWishlisted
+                                        ? "bg-rose-50 text-rose-500"
                                         : "bg-white/80 hover:bg-white text-gray-500 hover:text-rose-500"
                                 )}
                             >
@@ -371,7 +371,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                                 type="button"
                                 onClick={handleBuyNow}
                                 disabled={isAdding}
-                                className="flex-1 py-3.5 bg-blue-200 hover:bg-blue-500 text-gray-900 rounded-xl text-xs font-black uppercase tracking-widest cursor-pointer active:scale-95 transition-all text-center shadow-sm"
+                                className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-widest cursor-pointer active:scale-95 transition-all text-center shadow-sm"
                             >
                                 Buy at ₹{price}
                             </button>

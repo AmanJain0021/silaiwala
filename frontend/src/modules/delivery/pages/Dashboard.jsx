@@ -193,11 +193,29 @@ const DeliveryDashboard = () => {
               </div>
             </motion.div>
             
-            <motion.button 
-              initial={{ opacity: 0, scale: 0.8 }} 
-              animate={{ opacity: 1, scale: 1 }}
-              onClick={() => navigate('/delivery/notifications')}
-              className="w-12 h-12 rounded-2xl bg-white/95 backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center text-slate-700 active:scale-95 transition-transform"
+            <div className="flex gap-2">
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={async () => {
+                  try {
+                    const api = (await import('../../../utils/api')).default;
+                    await api.post('/notifications/test-push');
+                    toast.success('Test push sent!');
+                  } catch (err) {
+                    toast.error('Failed to send test push');
+                  }
+                }}
+                className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-xl flex items-center justify-center text-indigo-600 active:scale-95 transition-transform"
+                title="Test Push"
+              >
+                <Bell className="text-xl" />
+              </motion.button>
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={() => navigate('/delivery/notifications')}
+                className="w-12 h-12 rounded-2xl bg-white/95 backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center text-slate-700 active:scale-95 transition-transform"
             >
               <FiAlertCircle size={20} />
             </motion.button>

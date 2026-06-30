@@ -6,7 +6,8 @@ const {
   generateAWBForOrder,
   schedulePickupForOrder,
   getLabel,
-  webhookListener
+  webhookListener,
+  createReturnShipment
 } = require("../controllers/shiprocket.controller");
 
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
@@ -22,5 +23,6 @@ router.post("/create-shipment/:orderId", authorize("admin", "tailor"), createShi
 router.post("/generate-awb/:orderId", authorize("admin", "tailor"), generateAWBForOrder);
 router.post("/schedule-pickup/:orderId", authorize("admin", "tailor"), schedulePickupForOrder);
 router.get("/label/:orderId", authorize("admin", "tailor"), getLabel);
+router.post("/create-return/:orderId", authorize("admin", "tailor"), createReturnShipment);
 
 module.exports = router;

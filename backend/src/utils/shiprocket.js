@@ -138,9 +138,36 @@ const generateLabel = async (shipmentId) => {
   }
 };
 
+/**
+ * Create Return Order in Shiprocket
+ */
+const createReturnOrder = async (orderData) => {
+  const token = await getToken();
+  
+  if (token === 'SIMULATED_TOKEN') {
+    return {
+      order_id: `SR_RET_${Date.now()}`,
+      shipment_id: `SR_RET_SHIP_${Date.now()}`,
+      status: 'NEW',
+      status_code: 1,
+    };
+  }
+
+  try {
+    const response = await axios.post(`${BASE_URL}/orders/create/return`, orderData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Shiprocket Create Return Order Error:", error.response?.data || error.message);
+    throw new ErrorResponse(error.response?.data?.message || "Failed to create Shiprocket return order", 500);
+  }
+};
+
 module.exports = {
   createOrder,
   generateAWB,
   requestPickup,
-  generateLabel
+  generateLabel,
+  createReturnOrder
 };

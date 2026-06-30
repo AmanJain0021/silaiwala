@@ -387,3 +387,120 @@ exports.webhookListener = asyncHandler(async (req, res, next) => {
 
   res.status(200).send("OK");
 });
+
+/**
+ * @desc    Create Return Shipment in Shiprocket
+ * @route   POST /api/v1/shiprocket/create-return/:orderId
+ * @access  Private (Tailor/Admin)
+ */
+exports.createReturnShipment = asyncHandler(async (req, res, next) => {
+  const order = await Order.findById(req.params.orderId).populate('customer').populate('items.product');
+
+  if (!order) return next(new ErrorResponse("Order not found", 404));
+
+  if (order.exchangeStatus !== 'approved') {
+    return next(new ErrorResponse("Exchange request must be approved first", 400));
+  }
+
+  const tailorProfile = await Tailor.findOne({ user: order.tailor }).populate('user');
+  
+  // Prepare order items
+  let totalWeight = 0;
+  let maxL = 0, maxW = 0, maxH = 0;
+  
+  order.items.forEach(item => {
+    if (item.product) {
+      totalWeight += item.product.weight * item.quantity;
+      if (item.product.length > maxL) maxL = item.product.length;
+      if (item.product.width > maxW) maxW = item.product.width;
+      if (item.product.height > maxH) maxH = item.product.height;
+    }
+  });
+
+  const orderItems = order.items.filter(item => item.product).map(item => ({
+    name: item.product.name,
+    sku: item.product._id.toString(),
+    units: item.quantity,
+    selling_price: item.price,
+    discount: 0,
+    tax: 0,
+    hsn: ""
+  }));
+
+  const nameParts = order.customer.name.trim().split(' ');
+  const firstName = nameParts[0];
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : "";
+
+  const shiprocketReturnData = {
+    order_id: `RET_${order.orderId}`,
+    order_date: new Date().toISOString().split('T')[0],
+    pickup_customer_name: firstName,
+    pickup_last_name: lastName,
+    pickup_address: order.deliveryAddress.street,
+    pickup_city: order.deliveryAddress.city,
+    pickup_state: order.deliveryAddress.state,
+    pickup_country: "India",
+    pickup_pincode: order.deliveryAddress.zipCode,
+    pickup_email: order.customer.email,
+    pickup_phone: order.customer.phone || "9999999999",
+    
+    shipping_customer_name: tailorProfile.businessName || tailorProfile.user.name,
+    shipping_last_name: "",
+    shipping_address: tailorProfile.address.street,
+    shipping_city: tailorProfile.address.city,
+    shipping_country: "India",
+    shipping_pincode: tailorProfile.address.zipCode,
+    shipping_state: tailorProfile.address.state,
+    shipping_email: tailorProfile.user.email,
+    shipping_phone: tailorProfile.user.phone,
+    
+    order_items: orderItems,
+    payment_method: "Prepaid", // Returns don't collect COD
+    shipping_charges: 0,
+    giftwrap_charges: 0,
+    transaction_charges: 0,
+    total_discount: 0,
+    sub_total: order.totalAmount,
+    length: maxL || 10,
+    breadth: maxW || 10,
+    height: maxH || 5,
+    weight: totalWeight || 0.5,
+  };
+
+  const { createReturnOrder, generateAWB, requestPickup } = require("../../../utils/shiprocket");
+  
+  // 1. Create Return Order
+  const srReturnOrder = await createReturnOrder(shiprocketReturnData);
+  
+  // 2. Generate Return AWB
+  const awbDetails = await generateAWB(srReturnOrder.shipment_id);
+  
+  // 3. Request Return Pickup
+  const pickupDetails = await requestPickup(srReturnOrder.shipment_id);
+
+  // Update order
+  order.shiprocketReturnDetails = {
+    returnOrderId: srReturnOrder.order_id,
+    returnShipmentId: srReturnOrder.shipment_id,
+    returnAwbCode: awbDetails.awb_code,
+    pickupScheduledDate: pickupDetails.pickup_scheduled_date,
+    currentStatus: "RETURN_PICKUP_SCHEDULED"
+  };
+  
+  order.exchangeStatus = 'return-initiated';
+
+  await order.save();
+
+  await sendNotification(order.customer, {
+    title: "Return Pickup Scheduled",
+    message: `A pickup has been scheduled for your exchange item.`,
+    type: "RETURN_PICKUP",
+    relatedId: order._id,
+    onModel: "Order"
+  });
+
+  res.status(200).json({
+    success: true,
+    data: order
+  });
+});

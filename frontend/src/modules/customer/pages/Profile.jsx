@@ -209,11 +209,33 @@ const ProfilePage = () => {
 
                 <div className="max-w-md mx-auto sm:max-w-none px-2 mt-8">
                     <button
+                        onClick={async () => {
+                            try {
+                                await api.post('/notifications/test-push');
+                                alert('Test push sent successfully!');
+                            } catch (err) {
+                                alert('Failed to send test push: ' + (err.response?.data?.message || err.message));
+                            }
+                        }}
+                        className="w-full mb-4 flex items-center justify-between p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 group hover:bg-indigo-50 transition-all duration-300 active:scale-[0.98]"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
+                                <Bell size={20} strokeWidth={2.5} />
+                            </div>
+                            <div className="text-left">
+                                <h4 className="text-sm font-black text-[#843D9B] uppercase tracking-wider italic">Test Push</h4>
+                                <p className="text-[10px] font-bold text-indigo-400">Send a test notification</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={16} className="text-indigo-300" />
+                    </button>
+                    <button
                         onClick={handleLogout}
                         className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 group hover:bg-red-50 transition-all duration-300 active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
+                            <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
                                 <LogOut size={20} strokeWidth={2.5} />
                             </div>
                             <div className="text-left">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart } from 'lucide-react';
+import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -118,17 +118,15 @@ const Orders = () => {
                 window.open(response.data.data.label_url, '_blank');
             }
             
-            // Refresh orders to get latest status
-            fetchOrders();
-            // Update selected order with new details so UI updates instantly
+            await fetchOrders();
             if (response?.data?.data && selectedOrder && selectedOrder._id === orderId) {
                 setSelectedOrder(response.data.data);
-                // Also trigger validation check if shipment was just created
                 if (action === 'create-shipment') {
                    setShiprocketValidation(null);
                 }
             }
         } catch (error) {
+            console.error('Shiprocket action error:', error);
             toast.error(error.response?.data?.message || "Action failed");
         } finally {
             setUpdatingOrders(prev => ({ ...prev, [orderId]: false }));
@@ -684,6 +682,79 @@ const Orders = () => {
                         </>
                     )}
 
+                    {/* Exchange Request Section */}
+                    {order.exchangeStatus && order.exchangeStatus !== 'none' && (
+                        <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-3 mt-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <RefreshCcw size={18} className="text-[#843D9B]" />
+                                <h4 className="text-sm font-black text-purple-900 uppercase tracking-widest">Exchange Request</h4>
+                                <span className={`ml-auto text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                    order.exchangeStatus === 'requested' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                                    order.exchangeStatus === 'approved' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                    order.exchangeStatus === 'return-initiated' ? 'bg-green-100 text-green-700 border-green-200' :
+                                    'bg-red-100 text-red-700 border-red-200'
+                                }`}>
+                                    {order.exchangeStatus}
+                                </span>
+                            </div>
+                            
+                            <div className="bg-white/60 p-3 rounded-xl border border-purple-100/50 space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-[10px] font-bold text-purple-400 uppercase">Reason</span>
+                                    <span className="text-xs font-black text-purple-900">{order.exchangeDetails?.reason || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-[10px] font-bold text-purple-400 uppercase">Requested Size</span>
+                                    <span className="text-xs font-black text-purple-900">{order.exchangeDetails?.requestedSize || 'Same'}</span>
+                                </div>
+                                {order.exchangeDetails?.customerNotes && (
+                                    <div className="pt-2 border-t border-purple-100/50">
+                                        <span className="text-[10px] font-bold text-purple-400 uppercase block mb-1">Notes</span>
+                                        <span className="text-xs font-medium text-purple-800">{order.exchangeDetails.customerNotes}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {order.exchangeStatus === 'requested' && (
+                                <div className="flex gap-2 mt-3">
+                                    <button 
+                                        onClick={() => handleExchangeAction('rejected', order._id)}
+                                        disabled={updatingOrders[order._id]}
+                                        className="flex-1 py-2.5 bg-white text-gray-700 border border-gray-200 text-[10px] font-black uppercase rounded-xl hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center disabled:opacity-50"
+                                    >
+                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-700" /> : 'Reject'}
+                                    </button>
+                                    <button 
+                                        onClick={() => handleExchangeAction('approved', order._id)}
+                                        disabled={updatingOrders[order._id]}
+                                        className="flex-1 py-2.5 bg-[#843D9B] text-white text-[10px] font-black uppercase rounded-xl hover:bg-[#6c3280] active:scale-95 transition-all shadow-md shadow-purple-200 flex items-center justify-center disabled:opacity-50"
+                                    >
+                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Approve'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {order.exchangeStatus === 'approved' && (
+                                <button 
+                                    onClick={() => handleInitiateReturn(order._id)}
+                                    disabled={updatingOrders[order._id]}
+                                    className="w-full py-3 bg-gray-900 text-white text-[10px] font-black uppercase rounded-xl hover:bg-black active:scale-95 transition-all shadow-md mt-3 flex items-center justify-center disabled:opacity-50"
+                                >
+                                    {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Schedule Return Pickup (Shiprocket)'}
+                                </button>
+                            )}
+
+                            {order.shiprocketReturnDetails?.returnAwbCode && (
+                                <div className="mt-3 p-3 bg-white border border-gray-100 rounded-xl flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Return AWB</p>
+                                        <p className="text-xs font-black text-gray-900">{order.shiprocketReturnDetails.returnAwbCode}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Order Items Section */}
                     <div className="space-y-3 pt-2">
                         {order.isBridalConsultation && (
@@ -1052,8 +1123,15 @@ const Orders = () => {
                                             </span>
                                             <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-tighter">Received {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
-                                        <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-900 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-black text-xs group-hover:scale-110 transition-transform">
-                                            {order.customer?.name?.charAt(0) || 'C'}
+                                        <div className="flex gap-2">
+                                            {order.exchangeStatus && order.exchangeStatus !== 'none' && (
+                                                <div className="flex items-center justify-center px-2 bg-purple-100 text-purple-700 text-[9px] font-black uppercase rounded-lg border border-purple-200 animate-pulse">
+                                                    Exchange
+                                                </div>
+                                            )}
+                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-900 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-black text-xs group-hover:scale-110 transition-transform">
+                                                {order.customer?.name?.charAt(0) || 'C'}
+                                            </div>
                                         </div>
                                     </div>
 
