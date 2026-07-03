@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X } from 'lucide-react';
 import MenuOption from '../../customer/components/profile/MenuOption';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -53,7 +54,8 @@ const Profile = () => {
     );
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-20">
+        <PullToRefresh onRefresh={async () => await fetchDashboard()}>
+            <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-20">
             
             {/* ── MOBILE HEADER ── */}
             <div className={`md:hidden relative bg-[#843D9B] pt-4 ${isEditing ? 'pb-12' : 'pb-16'} px-5 text-white overflow-hidden shrink-0 shadow-xl transition-all duration-300`}>
@@ -69,13 +71,6 @@ const Profile = () => {
                     <h1 className="text-base font-black tracking-tight absolute left-1/2 -translate-x-1/2 uppercase">
                         Profile Settings
                     </h1>
-                    <button 
-                        onClick={() => fetchDashboard()} 
-                        disabled={loading}
-                        className="p-1.5 -mr-2 text-white hover:text-indigo-100 transition-colors"
-                    >
-                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                    </button>
                 </div>
                 <div className="absolute -bottom-1 left-0 w-full leading-none">
                     <svg className="w-full h-8 text-[#F5F5F5] fill-current" viewBox="0 0 100 20" preserveAspectRatio="none">
@@ -307,6 +302,7 @@ const Profile = () => {
                 </div>
             )}
         </div>
+        </PullToRefresh>
     );
 };
 

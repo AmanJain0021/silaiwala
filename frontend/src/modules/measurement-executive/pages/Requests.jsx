@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { MapPin, Clock, Navigation, User, FileText, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const Requests = () => {
     const { requests, loading, fetchRequests, acceptRequest, rejectRequest } = useMeasurementStore();
@@ -37,7 +38,8 @@ const Requests = () => {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-8">
+        <PullToRefresh onRefresh={async () => await fetchRequests(activeTab)}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-8">
             <div className="flex items-center gap-3 mb-3 sm:mb-8">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-purple-200 shrink-0">
                     <FileText className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />
@@ -46,13 +48,6 @@ const Requests = () => {
                     <h1 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight truncate">Measurement Requests</h1>
                     <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 sm:mt-1 truncate">Manage your assigned tasks</p>
                 </div>
-                <button
-                    onClick={() => fetchRequests(activeTab)}
-                    disabled={loading}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-600 shadow-sm hover:shadow-md transition-all shrink-0 active:scale-95"
-                >
-                    <RefreshCw className={`w-5 h-5 sm:w-6 sm:h-6 ${loading ? 'animate-spin text-[#843D9B]' : ''}`} strokeWidth={2} />
-                </button>
             </div>
 
             {/* Premium Tabs */}
@@ -209,6 +204,7 @@ const Requests = () => {
                 </div>
             )}
         </div>
+        </PullToRefresh>
     );
 };
 

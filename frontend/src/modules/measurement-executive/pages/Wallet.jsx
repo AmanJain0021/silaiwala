@@ -22,9 +22,9 @@ import {
     ArrowDown,
     Landmark,
     ShieldCheck,
-    Menu,
-    RefreshCw
+    Menu
 } from 'lucide-react';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -170,7 +170,8 @@ const MEWallet = () => {
     const calculatedBalance = walletData.balance || 0;
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">
+        <PullToRefresh onRefresh={async () => await fetchWalletData()}>
+            <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">
             {/* Top Purple Background Area */}
             <div className="bg-[#843D9B] pt-4 px-5 pb-32 rounded-b-[2rem] relative">
                 {/* Header */}
@@ -179,16 +180,7 @@ const MEWallet = () => {
                         <Menu size={28} className="opacity-90 cursor-pointer" onClick={() => navigate(-1)} />
                         <h1 className="text-[22px] font-black tracking-tight">Wallet</h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button 
-                            onClick={fetchWalletData}
-                            disabled={isLoading}
-                            className="text-white hover:text-purple-200 transition-colors"
-                        >
-                            <RefreshCw size={22} className={`opacity-90 ${isLoading ? 'animate-spin' : ''}`} />
-                        </button>
-                        <HelpCircle size={24} className="opacity-90" />
-                    </div>
+                    <HelpCircle size={24} className="opacity-90" />
                 </div>
 
                 {/* Main Balance Card */}
@@ -481,6 +473,7 @@ const MEWallet = () => {
                 )}
             </AnimatePresence>
         </div>
+        </PullToRefresh>
     );
 };
 

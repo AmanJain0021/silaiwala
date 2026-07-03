@@ -5,6 +5,7 @@ import { useMeasurementAuth } from '../context/MeasurementAuthContext';
 import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -108,7 +109,8 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
+        <PullToRefresh onRefresh={async () => await fetchDashboard()}>
+            <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
             {/* ── HEADER ── */}
             <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
                 <div className="flex items-center justify-between">
@@ -137,15 +139,6 @@ const Dashboard = () => {
                     </div>
 
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        {/* Refresh Button */}
-                        <button
-                            onClick={() => fetchDashboard()}
-                            disabled={loading}
-                            className="w-9 h-9 sm:w-10 sm:h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-sm hover:text-[#843D9B] transition-colors shrink-0"
-                        >
-                            <RefreshCw size={16} className={loading ? 'animate-spin text-[#843D9B]' : ''} />
-                        </button>
-                        
                         {/* Status Toggle */}
                         <button
                             onClick={handleToggleStatus}
@@ -159,9 +152,6 @@ const Dashboard = () => {
                             <Power size={10} />
                         </button>
                         
-                        <button className="w-10 h-10 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-500 shadow-sm relative shrink-0">
-                            <AlertCircle size={18} />
-                        </button>
                         <button className="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-sm relative shrink-0">
                             <Bell size={18} />
                             <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[6px] font-black text-white">0</span>
@@ -293,6 +283,7 @@ const Dashboard = () => {
                 )}
             </div>
         </div>
+        </PullToRefresh>
     );
 };
 
