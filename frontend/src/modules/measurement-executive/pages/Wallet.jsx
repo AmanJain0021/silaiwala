@@ -22,7 +22,8 @@ import {
     ArrowDown,
     Landmark,
     ShieldCheck,
-    Menu
+    Menu,
+    RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
@@ -175,10 +176,19 @@ const MEWallet = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between text-white mb-8">
                     <div className="flex items-center gap-4">
-                        <Menu size={28} className="opacity-90" onClick={() => navigate(-1)} />
+                        <Menu size={28} className="opacity-90 cursor-pointer" onClick={() => navigate(-1)} />
                         <h1 className="text-[22px] font-black tracking-tight">Wallet</h1>
                     </div>
-                    <HelpCircle size={24} className="opacity-90" />
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={fetchWalletData}
+                            disabled={isLoading}
+                            className="text-white hover:text-purple-200 transition-colors"
+                        >
+                            <RefreshCw size={22} className={`opacity-90 ${isLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                        <HelpCircle size={24} className="opacity-90" />
+                    </div>
                 </div>
 
                 {/* Main Balance Card */}

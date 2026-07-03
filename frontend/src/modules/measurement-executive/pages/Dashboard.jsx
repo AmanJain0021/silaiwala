@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { useMeasurementAuth } from '../context/MeasurementAuthContext';
-import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation } from 'lucide-react';
+import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
@@ -136,7 +136,16 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        {/* Refresh Button */}
+                        <button
+                            onClick={() => fetchDashboard()}
+                            disabled={loading}
+                            className="w-9 h-9 sm:w-10 sm:h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-sm hover:text-[#843D9B] transition-colors shrink-0"
+                        >
+                            <RefreshCw size={16} className={loading ? 'animate-spin text-[#843D9B]' : ''} />
+                        </button>
+                        
                         {/* Status Toggle */}
                         <button
                             onClick={handleToggleStatus}

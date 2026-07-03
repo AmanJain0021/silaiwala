@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X } from 'lucide-react';
+import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X, RefreshCw } from 'lucide-react';
 import MenuOption from '../../customer/components/profile/MenuOption';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
     const navigate = useNavigate();
-    const { profile, fetchDashboard } = useMeasurementStore();
+    const { profile, fetchDashboard, loading } = useMeasurementStore();
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
     
     const [isEditing, setIsEditing] = useState(false);
@@ -69,6 +69,13 @@ const Profile = () => {
                     <h1 className="text-base font-black tracking-tight absolute left-1/2 -translate-x-1/2 uppercase">
                         Profile Settings
                     </h1>
+                    <button 
+                        onClick={() => fetchDashboard()} 
+                        disabled={loading}
+                        className="p-1.5 -mr-2 text-white hover:text-indigo-100 transition-colors"
+                    >
+                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                    </button>
                 </div>
                 <div className="absolute -bottom-1 left-0 w-full leading-none">
                     <svg className="w-full h-8 text-[#F5F5F5] fill-current" viewBox="0 0 100 20" preserveAspectRatio="none">
