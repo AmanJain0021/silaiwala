@@ -271,14 +271,7 @@ const DeliveryProfile = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="w-10 h-10 text-[#843D9B] animate-spin" />
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Scanning Profile...</p>
-            </div>
-        );
-    }
+
 
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2 -mt-2">
@@ -287,12 +280,16 @@ const DeliveryProfile = () => {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 opacity-60"></div>
                 <div className="relative z-10 flex items-center gap-3">
                     <div className="relative">
-                        <div className="w-14 h-14 rounded-full border-[3px] border-white shadow-md overflow-hidden bg-indigo-50">
-                            <img
-                                src={deliveryProfile?.user?.profileImage || user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Chirag"}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-14 h-14 rounded-full border-[3px] border-white shadow-md overflow-hidden bg-indigo-50 flex items-center justify-center">
+                            {(deliveryProfile?.user?.profileImage || user?.profileImage) ? (
+                                <img
+                                    src={deliveryProfile?.user?.profileImage || user?.profileImage}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-indigo-600 font-black text-2xl">{(deliveryProfile?.user?.name || user?.name)?.charAt(0) || 'S'}</span>
+                            )}
                         </div>
                         <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
                             <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
