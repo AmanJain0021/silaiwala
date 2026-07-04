@@ -24,6 +24,7 @@ import {
     ShieldCheck,
     Menu
 } from 'lucide-react';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -169,13 +170,14 @@ const MEWallet = () => {
     const calculatedBalance = walletData.balance || 0;
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">
+        <PullToRefresh onRefresh={async () => await fetchWalletData()}>
+            <div className="min-h-screen bg-slate-50 pb-24 animate-in fade-in duration-500">
             {/* Top Purple Background Area */}
             <div className="bg-[#843D9B] pt-4 px-5 pb-32 rounded-b-[2rem] relative">
                 {/* Header */}
                 <div className="flex items-center justify-between text-white mb-8">
                     <div className="flex items-center gap-4">
-                        <Menu size={28} className="opacity-90" onClick={() => navigate(-1)} />
+                        <Menu size={28} className="opacity-90 cursor-pointer" onClick={() => navigate(-1)} />
                         <h1 className="text-[22px] font-black tracking-tight">Wallet</h1>
                     </div>
                     <HelpCircle size={24} className="opacity-90" />
@@ -471,6 +473,7 @@ const MEWallet = () => {
                 )}
             </AnimatePresence>
         </div>
+        </PullToRefresh>
     );
 };
 

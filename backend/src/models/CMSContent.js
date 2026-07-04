@@ -23,7 +23,7 @@ const cmsSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["customer", "tailor", "delivery", "general"],
+      enum: ["customer", "tailor", "delivery", "executive", "general"],
       default: "general",
     },
     isActive: {

@@ -107,6 +107,9 @@ const Login = () => {
                             Sign up here
                         </Link>
                     </p>
+                    <p className="mt-6 text-[10px] text-gray-400 font-medium">
+                        By logging in, you agree to our <Link to="/executive/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/executive/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>.
+                    </p>
                 </div>
             </form>
         </motion.div>

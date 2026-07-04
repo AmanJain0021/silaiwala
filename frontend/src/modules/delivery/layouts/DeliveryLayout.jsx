@@ -369,29 +369,29 @@ const DeliveryLayout = () => {
 
             {/* Top Fixed Header - Elegant Mobile Profile Bar */}
             {!location.pathname.includes('/delivery/wallet') && (
-            <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-5 z-50">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden border border-indigo-100">
+            <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-3 sm:px-5 z-50 gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-indigo-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden border border-indigo-100 shrink-0">
                         {user?.profileImage ? (
                             <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
                         ) : (
                             <span className="text-indigo-600 font-black text-lg">{user?.name?.charAt(0) || 'S'}</span>
                         )}
                     </div>
-                    <div className="flex flex-col">
-                        <span className="font-black text-slate-900 text-sm tracking-tight leading-none mb-1">{user?.name || 'SewZelaa Partner'}</span>
-                        <div className="flex items-center gap-1.5 text-slate-500">
-                            <MapPin size={10} className="text-indigo-400" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest max-w-[120px] truncate leading-none mt-[1px]">{currentLocationStr}</span>
+                    <div className="flex flex-col min-w-0">
+                        <span className="font-black text-slate-900 text-xs sm:text-sm tracking-tight leading-none mb-1 truncate">{user?.name || 'SewZelaa Partner'}</span>
+                        <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                            <MapPin size={10} className="text-indigo-400 shrink-0" />
+                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest truncate leading-none mt-[1px]">{currentLocationStr}</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                     {/* Status Pill Toggle */}
                     <button
                         onClick={toggleAvailability}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all duration-300 ${isOnline
+                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-full border transition-all duration-300 shrink-0 ${isOnline
                             ? 'bg-indigo-50 border-indigo-100 text-primary'
                             : 'bg-slate-50 border-slate-200 text-slate-400'
                             }`}
@@ -405,18 +405,18 @@ const DeliveryLayout = () => {
                     {/* SOS Emergency Button */}
                     <button
                         onClick={() => setShowSOS(true)}
-                        className="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-red-100"
+                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-red-100 shrink-0"
                     >
-                        <ShieldAlert size={18} className={showSOS ? 'animate-pulse' : ''} />
+                        <ShieldAlert size={16} className={showSOS ? 'animate-pulse' : ''} />
                     </button>
 
                     <button
                         onClick={() => setShowNotifications(true)}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all relative ${showNotifications ? 'bg-primary text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-all relative shrink-0 ${showNotifications ? 'bg-primary text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
-                        <Bell size={18} className={showNotifications ? 'animate-bounce' : ''} />
+                        <Bell size={16} className={showNotifications ? 'animate-bounce' : ''} />
                         {unreadCount > 0 && (
-                            <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-2 ring-rose-50">
+                            <span className="absolute top-0 right-0 sm:top-0.5 sm:right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-rose-500 text-white text-[7px] sm:text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-2 ring-rose-50">
                                 {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                         )}

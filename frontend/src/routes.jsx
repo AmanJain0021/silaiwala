@@ -144,6 +144,7 @@ const LandingCMSPage = React.lazy(() => import('./modules/landing/LandingCMSPage
 const LandingSupportPage = React.lazy(() => import('./modules/landing/LandingSupportPage')); // NEW
 const ReportIssue = React.lazy(() => import('./modules/customer/pages/ReportIssue')); // NEW
 const IssueDetails = React.lazy(() => import('./modules/customer/pages/IssueDetails')); // NEW
+const SharedLegalPage = React.lazy(() => import('./shared/components/LegalPage')); // NEW
 
 const AppRoutes = () => {
     return (
@@ -154,7 +155,8 @@ const AppRoutes = () => {
                 <Route path="/user/login" element={<Login />} />
                 <Route path="/user/register" element={<Signup />} />
             </Route>
-
+            
+            <Route path="/user/legal/:type" element={<SharedLegalPage category="customer" />} />
 
             {/* Delivery Auth Routes - Using custom design */}
             <Route element={<DeliveryAuthLayout />}>
@@ -163,6 +165,8 @@ const AppRoutes = () => {
                 <Route path="/delivery/forgot-password" element={<DeliveryForgotPassword />} />
                 <Route path="/delivery/reset-password" element={<DeliveryResetPassword />} />
             </Route>
+
+            <Route path="/delivery/legal/:type" element={<SharedLegalPage category="delivery" />} />
 
             {/* Landing Route */}
             <Route path="/" element={<SewZellaLanding />} />
@@ -229,6 +233,8 @@ const AppRoutes = () => {
                     <Route path="/partner/signup" element={<TailorRegistration />} />
                     <Route path="/partner/register" element={<Navigate to="/partner/signup" replace />} />
                 </Route>
+                
+                <Route path="/partner/legal/:type" element={<SharedLegalPage category="tailor" />} />
 
                 {/* Tailor/Partner Public Routes */}
                 <Route path="/partner/under-review" element={<UnderReview />} />
@@ -286,6 +292,8 @@ const AppRoutes = () => {
                     <Route path="/executive/login" element={<MELogin />} />
                     <Route path="/executive/signup" element={<MESignup />} />
                 </Route>
+                
+                <Route path="/executive/legal/:type" element={<SharedLegalPage category="executive" />} />
 
                 <Route element={<MEProtectedRoute />}>
                     <Route element={<MELayout />}>

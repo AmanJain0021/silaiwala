@@ -5,10 +5,11 @@ import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone,
 import MenuOption from '../../customer/components/profile/MenuOption';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const Profile = () => {
     const navigate = useNavigate();
-    const { profile, fetchDashboard } = useMeasurementStore();
+    const { profile, fetchDashboard, loading } = useMeasurementStore();
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
     
     const [isEditing, setIsEditing] = useState(false);
@@ -53,7 +54,8 @@ const Profile = () => {
     );
 
     return (
-        <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-20">
+        <PullToRefresh onRefresh={async () => await fetchDashboard()}>
+            <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-20">
             
             {/* ── MOBILE HEADER ── */}
             <div className={`md:hidden relative bg-[#843D9B] pt-4 ${isEditing ? 'pb-12' : 'pb-16'} px-5 text-white overflow-hidden shrink-0 shadow-xl transition-all duration-300`}>
@@ -326,6 +328,7 @@ const Profile = () => {
                 </div>
             )}
         </div>
+        </PullToRefresh>
     );
 };
 

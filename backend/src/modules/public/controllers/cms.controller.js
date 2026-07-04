@@ -31,7 +31,9 @@ exports.getCMSContent = async (req, res) => {
     const { type, category } = req.query;
     const query = { isActive: true };
     if (type) query.type = type;
-    if (category) query.category = category;
+    if (category) {
+      query.category = { $in: [category, "general"] };
+    }
 
     const content = await CMSContent.find(query).sort("title");
     res.status(200).json({ success: true, count: content.length, data: content });

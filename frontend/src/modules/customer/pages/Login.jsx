@@ -199,6 +199,9 @@ const Login = () => {
                         Create Account
                     </button>
                 </p>
+                <div className="mt-8 text-[10px] text-gray-400 font-medium">
+                    By logging in, you agree to our <button onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
+                </div>
             </div>
         </motion.div>
     );
