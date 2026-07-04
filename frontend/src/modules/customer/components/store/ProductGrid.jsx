@@ -30,12 +30,14 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productTy
 
     useEffect(() => {
         fetchProducts();
-    }, [categoryId, filters, searchQuery]);
+    }, [categoryId, filters, searchQuery, productType]);
 
     return (
         <div className="bg-gray-50 pb-8 min-h-[50vh]">
             <h2 className="text-xl md:text-2xl font-bold text-[#843D9B] px-4 md:px-6 lg:px-8 py-4">
-                {categoryName && categoryName !== 'All' ? `${categoryName} Collection` : 'Explore Fabrics'}
+                {categoryName && categoryName !== 'All' 
+                    ? `${categoryName} Collection` 
+                    : `Explore ${productType === 'fabric' ? 'Fabrics' : 'Garments'}`}
             </h2>
 
             {items.length === 0 && !isLoading ? (

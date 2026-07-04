@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings as SettingsIcon, Shield, Bell, CreditCard,
-    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign
+    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -16,6 +16,7 @@ const AdminSettings = () => {
     const tabs = [
         { id: 'General', icon: <Globe size={16} />, desc: 'Platform basics' },
         { id: 'Pricing & Fees', icon: <DollarSign size={16} />, desc: 'GST & Visit charges' },
+        { id: 'Loyalty Points', icon: <Gift size={16} />, desc: 'Points rules' },
         { id: 'Security', icon: <Shield size={16} />, desc: 'Roles & permissions' },
         { id: 'Notifications', icon: <Bell size={16} />, desc: 'Email & SMS setup' },
         { id: 'Payment Gateways', icon: <CreditCard size={16} />, desc: 'Razorpay, Stripe' },
@@ -394,6 +395,57 @@ const AdminSettings = () => {
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedTab === 'Loyalty Points' && settings && (
+                        <div className="p-8 space-y-8 max-w-3xl">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900">Loyalty Points Configuration</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">Manage rules for awarding and deducting loyalty points.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Points per ₹100 Spent</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings.loyaltyConfig?.pointsPer100Spent ?? 5} 
+                                        onChange={(e) => updateNestedSetting('loyaltyConfig', 'pointsPer100Spent', Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-medium mt-1">Awarded on order completion.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Flat Points per Booking</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings.loyaltyConfig?.flatPointsPerBooking ?? 0} 
+                                        onChange={(e) => updateNestedSetting('loyaltyConfig', 'flatPointsPerBooking', Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">1 Point Value (₹)</label>
+                                    <input 
+                                        type="number" 
+                                        step="0.1"
+                                        value={settings.loyaltyConfig?.redemptionValueInINR ?? 1} 
+                                        onChange={(e) => updateNestedSetting('loyaltyConfig', 'redemptionValueInINR', Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Cancellation Penalty (Points)</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings.loyaltyConfig?.cancellationPenalty ?? 50} 
+                                        onChange={(e) => updateNestedSetting('loyaltyConfig', 'cancellationPenalty', Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-red-500 transition-colors shadow-sm" 
+                                    />
+                                    <p className="text-[10px] text-red-400 font-medium mt-1">Deducted when order is cancelled.</p>
                                 </div>
                             </div>
                         </div>

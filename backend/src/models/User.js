@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    loyaltyPoints: {
+      type: Number,
+      default: 0,
+    },
     totalEarnings: {
       type: Number,
       default: 0,

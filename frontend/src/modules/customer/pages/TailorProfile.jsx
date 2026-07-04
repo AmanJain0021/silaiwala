@@ -56,9 +56,13 @@ const TailorProfile = () => {
                 });
 
                 setWorkSamples(Array.from(uniqueContent.values()));
+                setIsLoading(false);
             } catch (error) {
+                if (error?.name === 'CanceledError' || error?.message === 'canceled' || error?.message?.includes('Cancelled')) {
+                    console.log('Tailor fetch canceled, ignoring...');
+                    return;
+                }
                 console.error('Failed to fetch tailor data:', error);
-            } finally {
                 setIsLoading(false);
             }
         };

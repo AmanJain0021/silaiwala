@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, MapPin, ChevronRight, ShieldCheck, Clock } from 'lucide-react';
+import { Star, MapPin, ChevronRight, ShieldCheck, Clock, BadgeCheck, Tag, Scissors } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useTailorStore from '../../../store/tailorStore';
@@ -33,7 +33,7 @@ const PopularTailors = () => {
                 </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
                 {displayTailors.map((tailor, index) => (
                     <motion.div
                         key={tailor._id}
@@ -44,48 +44,61 @@ const PopularTailors = () => {
                     >
                         <Link
                             to={`/user/tailor/${tailor._id}`}
-                            className="flex gap-4 bg-white p-4 rounded-[1.5rem] shadow-[0_4px_15px_rgba(0,0,0,0.02)] border border-gray-100 active:scale-[0.98] transition-transform group relative overflow-hidden"
+                            className="flex flex-col sm:flex-row gap-4 sm:gap-5 bg-white p-4 sm:p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all group relative"
                         >
                             <div className="relative shrink-0">
-                                <div className="h-20 w-20 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group-hover:rotate-2 transition-transform">
+                                <div className="h-48 w-full sm:w-40 sm:h-40 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
                                     <SafeImage
                                         src={tailor.user?.profileImage}
                                         alt={tailor.user?.name}
-                                        className="h-full w-full group-hover:scale-110 transition-transform duration-500"
+                                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
-                                </div>
-                                <div className="absolute -bottom-1 -right-1 bg-[#843D9B] text-white p-1 rounded-lg border-2 border-white shadow-sm">
-                                    <ShieldCheck size={10} />
                                 </div>
                             </div>
 
-                            <div className="flex-1 pt-1 min-w-0">
-                                <div className="flex justify-between items-start gap-2 mb-0.5">
-                                    <h3 className="text-[13px] sm:text-sm font-black text-gray-900 leading-tight group-hover:text-[#843D9B] transition-colors truncate">
-                                        {tailor.shopName || tailor.user?.name}
-                                    </h3>
-                                    {tailor.isAvailable && (
-                                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-md text-[7px] font-black border border-amber-100/50 shadow-sm whitespace-nowrap shrink-0">
-                                            <Clock size={8} className="animate-pulse" /> AVAILABLE
+                            <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-start mb-1 gap-2">
+                                        <h3 className="text-lg font-black text-gray-900 leading-tight flex items-center gap-1.5 truncate">
+                                            <span className="truncate">{tailor.shopName || tailor.user?.name}</span>
+                                            <BadgeCheck className="w-5 h-5 text-blue-500 shrink-0 fill-blue-500 stroke-white" />
+                                        </h3>
+                                        <div className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-black tracking-wider flex items-center gap-1 shrink-0">
+                                            <ShieldCheck size={12} /> <span className="hidden sm:inline">Top Rated</span><span className="sm:hidden">Top</span>
                                         </div>
-                                    )}
-                                </div>
-                                <p className="text-[10px] text-[#843D9B] font-bold mt-1.5 bg-indigo-50 w-fit px-2 py-0.5 rounded-full border border-[#843D9B]/5 italic truncate max-w-full">
-                                    {tailor.specializations?.[0] || 'Expert Tailor'}
-                                </p>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium mb-3">
+                                        <div className="flex items-center gap-1 text-[#F59E0B]">
+                                            <Star size={14} className="fill-current" />
+                                            <span className="font-bold text-gray-700">{tailor.rating || '5.0'}</span> ({tailor.reviews || '90'} Reviews)
+                                        </div>
+                                        <span className="text-gray-300 hidden sm:inline">|</span>
+                                        <div className="flex items-center gap-1">
+                                            <MapPin size={12} />
+                                            {tailor.distance || '2.1 km away'}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-blue-50/70 text-blue-600 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 text-xs font-bold mb-3 border border-blue-100/50">
+                                        <Tag size={12} /> Starts from ₹{tailor.basePrice || '299'}
+                                    </div>
 
-                                <div className="flex items-center gap-3 mt-3 text-[10px] text-gray-400 font-bold uppercase">
-                                    <div className="flex items-center gap-1 text-[#843D9B]">
-                                        <Star size={10} className="fill-[#843D9B]" />
-                                        {tailor.rating || 0}
+                                    <div className="hidden sm:flex flex-wrap items-center gap-2 mb-3">
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-purple-50 text-purple-600 border border-purple-100 rounded-md flex items-center gap-1"><Scissors size={10}/> Expert Tailors</span>
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md flex items-center gap-1"><ShieldCheck size={10}/> Quality Stitching</span>
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-orange-50 text-orange-600 border border-orange-100 rounded-md flex items-center gap-1"><Clock size={10}/> On-time Delivery</span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <MapPin size={10} />
-                                        {tailor.distance || 'Near you'}
-                                    </div>
-                                    <div className="ml-auto flex items-center gap-1 text-gray-800">
-                                        View <ChevronRight size={12} />
-                                    </div>
+                                    
+                                    <p className="text-xs text-gray-500 leading-relaxed mb-4 line-clamp-2">
+                                        {tailor.bio || 'Professional tailoring for all your needs - from everyday wear to special occasions.'}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-auto">
+                                    <button className="bg-[#843D9B] text-white py-2.5 px-6 rounded-xl text-xs font-black tracking-wide hover:bg-[#68166d] transition-colors shadow-sm shadow-purple-200 flex items-center justify-center gap-2 sm:w-auto w-full">
+                                        View Tailor <ChevronRight size={14} />
+                                    </button>
                                 </div>
                             </div>
                         </Link>

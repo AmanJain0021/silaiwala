@@ -65,12 +65,29 @@ const StorePage = () => {
                     onOpenFilter={() => setIsFilterOpen(true)}
                 />
                 <div className="flex px-4 pt-2 gap-2">
-                    <button onClick={() => setActiveTab('store_item')} className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'store_item' ? 'bg-[#843D9B] text-white' : 'bg-gray-100 text-gray-500'}`}>Garments</button>
-                    <button onClick={() => setActiveTab('fabric')} className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'fabric' ? 'bg-[#843D9B] text-white' : 'bg-gray-100 text-gray-500'}`}>Fabrics</button>
+                    <button 
+                        onClick={() => { 
+                            setActiveTab('store_item'); 
+                            setActiveCategory({ name: "All", id: null }); 
+                        }} 
+                        className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'store_item' ? 'bg-[#843D9B] text-white' : 'bg-gray-100 text-gray-500'}`}
+                    >
+                        Garments
+                    </button>
+                    <button 
+                        onClick={() => { 
+                            setActiveTab('fabric'); 
+                            setActiveCategory({ name: "All", id: null }); 
+                        }} 
+                        className={`flex-1 py-2 rounded-t-xl text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'fabric' ? 'bg-[#843D9B] text-white' : 'bg-gray-100 text-gray-500'}`}
+                    >
+                        Fabrics
+                    </button>
                 </div>
                 <CategoryScroll
                     activeCategory={activeCategory.name}
                     onSelectCategory={handleCategorySelect}
+                    productType={activeTab}
                 />
             </div>
 

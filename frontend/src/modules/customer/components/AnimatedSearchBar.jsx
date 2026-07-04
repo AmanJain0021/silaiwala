@@ -70,15 +70,15 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch }) => {
     return (
         <div className={`relative group ${className}`}>
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Search className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-[#843D9B] transition-colors" />
+                <Search className="h-4 w-4 text-gray-400 group-focus-within:text-[#843D9B] transition-colors" />
             </div>
             <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleSearch}
-                placeholder={`Search ${text}|`}
-                className={`w-full bg-white border border-transparent rounded-[1.25rem] pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-white/20 focus:border-white transition-all placeholder:text-gray-400 shadow-inner ${className.includes('py-') ? '' : 'py-2 sm:py-2.5'}`}
+                placeholder="Search Tailors, Alteration, Bridal, Embroidery..."
+                className={`w-full bg-white border border-transparent rounded-[1.25rem] pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-white/20 focus:border-white transition-all placeholder:text-gray-400 shadow-inner ${className.includes('py-') ? '' : 'py-3 sm:py-3.5'}`}
             />
         </div>
     );

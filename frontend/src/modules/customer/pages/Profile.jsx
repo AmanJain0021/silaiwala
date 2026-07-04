@@ -43,6 +43,7 @@ const LegalLinks = () => {
                     <MenuOption
                         key={doc._id}
                         icon={Shield}
+                        color="bg-[#843D9B]"
                         label={doc.title}
                         subLabel={`Official ${doc.title} document`}
                         to={`/user/legal/${doc.slug}`}
@@ -146,17 +147,9 @@ const ProfilePage = () => {
                             icon={Star}
                             color="bg-[#843D9B]"
                             label="Loyalty Points"
-                            subLabel="Redeem your rewards"
-                            extra={<span className="bg-gray-100 text-[10px] font-black px-2.5 py-1 rounded-full text-gray-900 border border-gray-200">0</span>}
-                            to="/user/rewards"
-                        />
-                        <MenuOption
-                            icon={Wallet}
-                            color="bg-[#843D9B]"
-                            label="Wallet"
-                            subLabel="Your balance"
-                            extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 0</span>}
-                            to="/user/wallet"
+                            subLabel="View your earned points"
+                            extra={<span className="bg-gray-100 text-[10px] font-black px-2.5 py-1 rounded-full text-gray-900 border border-gray-200">{displayUser.loyaltyPoints || 0}</span>}
+                            to="/user/loyalty"
                         />
                         <MenuOption
                             icon={Ticket}

@@ -1,81 +1,103 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Star, Loader2 } from 'lucide-react';
-import api from '../../../utils/api';
-import SafeImage from '../../../components/Common/SafeImage';
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { Scissors, ClipboardList, Users, Sparkles, Heart, Layers, Feather, Ruler, Wand2 } from 'lucide-react';
+
+const ICON_COLOR = "#FFFFFF";
+const ICON_SIZE = 24;
+const STROKE_WIDTH = 1.5;
 
 const ServiceGrid = () => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const [services, setServices] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchServices = async () => {
-            try {
-                const response = await api.get('/services');
-                if (response.data.success) {
-                    // Just take top 4 for the home grid
-                    setServices(response.data.data.slice(0, 4));
-                }
-            } catch (error) {
-                if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
-                    console.error('Error fetching popular services:', error);
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchServices();
-    }, []);
+    const services = [
+        {
+            label: 'Tailors',
+            icon: <Users size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/tailors'
+        },
+        {
+            label: 'My Orders',
+            icon: <ClipboardList size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/orders'
+        },
+        {
+            label: 'Stitching',
+            icon: <Scissors size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/services'
+        },
+        {
+            label: 'Style Add-ons',
+            icon: <Sparkles size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/embellishments'
+        },
+        {
+            label: 'Bridal',
+            icon: <Heart size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/tailors?service=bridal'
+        },
+        {
+            label: 'Bulk Order',
+            icon: <Layers size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/bulk-order'
+        },
+        {
+            label: 'Embroidery',
+            icon: <Feather size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/embroidery'
+        },
+        {
+            label: 'Alteration',
+            icon: <Ruler size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/alteration'
+        },
+        {
+            label: 'Custom Design',
+            icon: <Wand2 size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            path: '/user/custom-design'
+        }
+    ];
 
-    if (isLoading) {
-        return (
-            <div className="px-4 py-8 flex flex-col items-center justify-center gap-2">
-                <Loader2 size={24} className="animate-spin text-[#843D9B]" />
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Finding Best Designs...</p>
-            </div>
-        );
-    }
-
-    if (services.length === 0) return null;
+    const handleActionClick = (action) => {
+        if (action.path) {
+            navigate(action.path);
+        }
+    };
 
     return (
-        <div className="px-4 md:px-6 lg:px-8 py-2">
-            <div className="flex justify-between items-end mb-3">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900">Popular Services</h2>
-                    <p className="text-xs text-gray-500">Custom fitted for you</p>
+        <div className="px-4 md:px-6 lg:px-8 pt-4 pb-6">
+            {/* Header with Title and Toggle */}
+            <div className="relative flex items-center justify-center mb-6 px-2">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div className="w-full border-t border-dashed border-gray-300"></div>
                 </div>
-                <Link to="/user/services" state={location.state} className="text-xs font-semibold text-[#843D9B] flex items-center gap-1 hover:underline">
-                    View All <ArrowRight size={12} />
-                </Link>
+                <div className="relative bg-[#F7F8FC] px-4">
+                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.3em] whitespace-nowrap">What We Offer</h2>
+                </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {services.map((service) => (
-                    <div
-                        key={service._id}
-                        onClick={() => navigate(`/user/services/${service._id}`, { state: location.state })}
-                        className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 group cursor-pointer hover:shadow-md transition-shadow"
-                    >
-                        <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-gray-50">
-                            <SafeImage
-                                src={service.image}
-                                alt={service.title}
-                                className="w-full h-full group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-bold shadow-sm">
-                                <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                                {service.rating || 0}
+            <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                <AnimatePresence mode="popLayout">
+                    {services.map((service, index) => (
+                        <motion.div
+                            key={index}
+                            layout
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="flex-col items-center gap-2 cursor-pointer group flex min-w-[70px] snap-center"
+                            whileTap={{ scale: 0.92 }}
+                            onClick={() => handleActionClick(service)}
+                        >
+                            <div className="w-14 h-14 bg-[#843D9B] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg mx-auto shadow-sm border-2 border-[#843D9B] shrink-0">
+                                {service.icon}
                             </div>
-                        </div>
-                        <div className="px-1">
-                            <h3 className="font-semibold text-gray-900 text-sm truncate">{service.title}</h3>
-                            <p className="text-xs text-gray-500 mt-1">Starts from <span className="font-bold text-[#843D9B]">₹{service.basePrice}</span></p>
-                        </div>
-                    </div>
-                ))}
+                            <span className="text-[8px] sm:text-[9px] font-black text-center text-gray-800 uppercase tracking-wider leading-tight w-full max-w-[60px] break-words mx-auto">
+                                {service.label}
+                            </span>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
             </div>
         </div>
     );

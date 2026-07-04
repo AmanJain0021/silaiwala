@@ -137,6 +137,14 @@ const orderSchema = new mongoose.Schema(
       enum: ['auto', 'manual', 'shiprocket'],
       default: 'auto'
     },
+    loyaltyPointsAwarded: {
+      type: Boolean,
+      default: false
+    },
+    loyaltyPointsDeducted: {
+      type: Boolean,
+      default: false
+    },
     fabricPickupRequired: {
         type: Boolean,
         default: false
@@ -340,6 +348,13 @@ orderSchema.index({ customer: 1, status: 1 });
 orderSchema.index({ tailor: 1, status: 1 });
 orderSchema.index({ deliveryPartner: 1, status: 1 });
 
-const Order = mongoose.model("Order", orderSchema);
+orderSchema.post('save', async function(doc) {
+  if (doc.status === 'delivered' || doc.status === 'order-completed' || doc.status === 'cancelled') {
+    const { processLoyaltyPoints } = require('../utils/loyaltyEngine');
+    // We don't await this to avoid blocking the save operation, it runs in the background
+    processLoyaltyPoints(doc).catch(err => console.error("Loyalty processing failed:", err));
+  }
+});
 
+const Order = mongoose.model("Order", orderSchema);
 module.exports = Order;

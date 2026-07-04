@@ -1338,6 +1338,7 @@ exports.updateSettings = async (req, res) => {
     if (updateData.walletConfig) settings.walletConfig = updateData.walletConfig;
     if (updateData.codWalletConfig) settings.codWalletConfig = updateData.codWalletConfig;
     if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
+    if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
 
     await settings.save();
     res.status(200).json({ success: true, data: settings, message: "Settings updated successfully" });

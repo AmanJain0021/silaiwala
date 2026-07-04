@@ -31,6 +31,7 @@ const OrderTracking = () => {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
     const [measurementOtp, setMeasurementOtp] = useState(null);
+    const [settings, setSettings] = useState(null);
 
     const [socketInstance, setSocketInstance] = useState(null);
 
@@ -135,6 +136,21 @@ const OrderTracking = () => {
                     fetchOrderDetails();
                 }
             });
+
+            const fetchSettings = async () => {
+                try {
+                    const res = await api.get('/cms/settings');
+                    if (res.data && res.data.data && res.data.data.loyaltyConfig) {
+                        setSettings(res.data.data.loyaltyConfig);
+                    }
+                } catch (err) {
+                    if (err?.name === 'CanceledError' || err?.message === 'canceled' || err?.message?.includes('Cancelled')) {
+                        return;
+                    }
+                    console.error("Failed to fetch settings:", err);
+                }
+            };
+            fetchSettings();
 
             return () => {
                 socket.disconnect();
@@ -554,6 +570,29 @@ const OrderTracking = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* 2.5 Loyalty Points Indicator */}
+                {settings && order.status !== 'cancelled' && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-100 shadow-sm flex items-center justify-between"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-white border border-purple-100 flex items-center justify-center shrink-0">
+                                <Star size={18} className="text-[#843D9B] fill-[#843D9B]" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-900">{order.loyaltyPointsAwarded ? 'Rewards Earned' : 'Loyalty Rewards'}</p>
+                                <p className="text-[10px] text-gray-600 mt-0.5">{order.loyaltyPointsAwarded ? 'Points added to your wallet' : 'Points to be earned upon delivery'}</p>
+                            </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                            <span className="text-lg font-black text-[#843D9B]">+{Math.floor((order.totalAmount || 0) / 100) * (settings.pointsPer100Spent || 0) + (settings.flatPointsPerBooking || 0)}</span>
+                            <span className="text-[10px] font-bold text-[#843D9B] ml-1">pts</span>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* 3. The Timeline Section */}
                 <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm relative overflow-hidden">

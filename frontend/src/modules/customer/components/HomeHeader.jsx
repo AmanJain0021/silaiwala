@@ -126,31 +126,13 @@ const HomeHeader = ({ user }) => {
                     {/* Search Bar - Modernized */}
                     <AnimatedSearchBar />
 
-                {/* Scrolling Services Line */}
-                <div className="mt-4 -mx-4 pt-2.5 pb-2.5 border-t border-white/10 overflow-hidden relative flex bg-black/10 backdrop-blur-sm">
-                    <motion.div 
-                        animate={{ x: [0, -700] }}
-                        transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-                        className="flex gap-6 whitespace-nowrap text-[10px] font-bold text-white tracking-widest uppercase px-4"
-                    >
-                        <span className="flex items-center gap-1.5"><Scissors size={12} /> Custom Stitching</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        <span className="flex items-center gap-1.5"><Shirt size={12} /> Expert Tailors</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        <span className="flex items-center gap-1.5"><Star size={12} /> Perfect Fit Guarantee</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        <span className="flex items-center gap-1.5"><Truck size={12} /> Doorstep Delivery</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        {/* Repeat */}
-                        <span className="flex items-center gap-1.5"><Scissors size={12} /> Custom Stitching</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        <span className="flex items-center gap-1.5"><Shirt size={12} /> Expert Tailors</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        <span className="flex items-center gap-1.5"><Star size={12} /> Perfect Fit Guarantee</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                        <span className="flex items-center gap-1.5"><Truck size={12} /> Doorstep Delivery</span>
-                        <span className="flex items-center gap-1.5 text-white/50"><span className="text-[6px]">●</span></span>
-                    </motion.div>
+                {/* Static Tabs */}
+                <div className="mt-3 -mx-4 pt-3 pb-3 border-t border-white/10 flex justify-between px-6 text-[10px] font-bold text-white tracking-widest uppercase items-center">
+                    <span className="cursor-pointer hover:text-white/80 transition-colors">DELIVERY</span>
+                    <span className="text-white/30 text-[6px]">●</span>
+                    <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors"><Scissors size={12} /> CUSTOM STITCHING</span>
+                    <span className="text-white/30 text-[6px]">●</span>
+                    <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors"><Shirt size={12} /> EXPERT TAILORS</span>
                 </div>
             </div>
         </div>

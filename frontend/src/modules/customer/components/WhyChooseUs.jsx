@@ -1,27 +1,49 @@
 import React from 'react';
-import { ShieldCheck, Truck, Zap } from 'lucide-react';
+import { UserCheck, Award, Clock, ShieldCheck } from 'lucide-react';
 
 const WhyChooseUs = () => {
     return (
-        <div className="mx-4 md:mx-6 lg:mx-8 px-4 sm:px-6 lg:px-8 py-6 bg-white rounded-2xl shadow-sm border border-gray-100 my-4 transition-all duration-300">
-            <div className="flex justify-between text-center">
-                <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                    <div className="h-10 w-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600 shadow-sm transition-transform group-hover:scale-110">
-                        <ShieldCheck size={20} strokeWidth={2.5} />
-                    </div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Verified</span>
+        <div className="px-4 md:px-6 lg:px-8 py-4 mb-4">
+            <div className="relative flex items-center justify-center mb-6 px-2">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div className="w-full border-t border-dashed border-gray-300"></div>
                 </div>
-                <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                    <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary shadow-sm transition-transform group-hover:scale-110">
-                        <Truck size={20} strokeWidth={2.5} />
-                    </div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Free Pickup</span>
+                <div className="relative bg-[#F7F8FC] px-4">
+                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.3em] whitespace-nowrap">Why Choose Sewzella?</h2>
                 </div>
-                <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                    <div className="h-10 w-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 shadow-sm transition-transform group-hover:scale-110">
-                        <Zap size={20} fill="currentColor" strokeWidth={0} />
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+                <div className="flex flex-col items-center text-center gap-1">
+                    <div className="w-8 h-8 flex items-center justify-center">
+                        <UserCheck size={24} className="text-[#F59E0B]" />
                     </div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Express</span>
+                    <span className="text-[9px] font-black text-gray-900 leading-tight">Expert Tailors</span>
+                    <span className="text-[7px] text-gray-400 font-bold leading-tight">Professionals with years of experience</span>
+                </div>
+                
+                <div className="flex flex-col items-center text-center gap-1">
+                    <div className="w-8 h-8 flex items-center justify-center">
+                        <Award size={24} className="text-[#EC4899]" />
+                    </div>
+                    <span className="text-[9px] font-black text-gray-900 leading-tight">Premium Quality</span>
+                    <span className="text-[7px] text-gray-400 font-bold leading-tight">Finest fabrics & stitching quality</span>
+                </div>
+                
+                <div className="flex flex-col items-center text-center gap-1">
+                    <div className="w-8 h-8 flex items-center justify-center">
+                        <Clock size={24} className="text-[#10B981]" />
+                    </div>
+                    <span className="text-[9px] font-black text-gray-900 leading-tight">On-time Delivery</span>
+                    <span className="text-[7px] text-gray-400 font-bold leading-tight">Always on time, every time</span>
+                </div>
+                
+                <div className="flex flex-col items-center text-center gap-1">
+                    <div className="w-8 h-8 flex items-center justify-center">
+                        <ShieldCheck size={24} className="text-[#3B82F6]" />
+                    </div>
+                    <span className="text-[9px] font-black text-gray-900 leading-tight">Secure Payments</span>
+                    <span className="text-[7px] text-gray-400 font-bold leading-tight">100% safe & secure payments</span>
                 </div>
             </div>
         </div>
