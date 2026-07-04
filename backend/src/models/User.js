@@ -52,10 +52,14 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    fcmTokens: [{
-      type: String,
-      trim: true
-    }],
+    fcmToken: { 
+      type: [String], 
+      default: [] 
+    },
+    fcmTokenMobile: { 
+      type: [String], 
+      default: [] 
+    },
     isVerified: {
       type: Boolean,
       default: false,

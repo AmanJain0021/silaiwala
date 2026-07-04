@@ -444,6 +444,28 @@ const DeliveryProfile = () => {
             {/* Logout Action - Premium Style */}
             <div className="pt-2 pb-4">
                 <button
+                    onClick={async () => {
+                        try {
+                            await api.post('/notifications/test-push');
+                            toast.success('Test push sent successfully!');
+                        } catch (err) {
+                            toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message));
+                        }
+                    }}
+                    className="w-full bg-indigo-50/80 p-3 rounded-[1.5rem] border border-indigo-100 flex items-center justify-between group active:scale-[0.98] transition-all mb-3"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:rotate-6 transition-transform">
+                            <Bell size={18} strokeWidth={2.5} />
+                        </div>
+                        <div className="text-left">
+                            <h4 className="text-xs font-black text-indigo-700 uppercase tracking-widest italic leading-none">Test Notification</h4>
+                            <p className="text-[9px] font-bold text-indigo-400 mt-1">Send a test push alert</p>
+                        </div>
+                    </div>
+                    <ChevronRight size={16} className="text-indigo-300" />
+                </button>
+                <button
                     onClick={() => {
                         logout();
                         navigate('/delivery/login');

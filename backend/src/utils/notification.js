@@ -92,23 +92,49 @@ const sendNotification = async (options) => {
 
     // 3. Dispatch Firebase Cloud Messaging (FCM) push
     try {
-      const admin = require('../config/firebase');
+      // Initialize Firebase (if not already initialized)
+      require('../config/firebase');
+      const { getMessaging } = require('firebase-admin/messaging');
       const User = require('../models/User');
       
       let fcmTokens = [];
       
       if (recipient === "admins") {
-        const admins = await User.find({ role: 'admin', fcmTokens: { $exists: true, $not: {$size: 0} } });
-        fcmTokens = admins.flatMap(a => a.fcmTokens);
+        const admins = await User.find({ 
+          role: 'admin',
+          $or: [
+            { fcmToken: { $exists: true, $not: {$size: 0} } },
+            { fcmTokenMobile: { $exists: true, $not: {$size: 0} } }
+          ]
+        });
+        fcmTokens = admins.flatMap(a => {
+          const tokens = a.fcmToken ? [...a.fcmToken] : [];
+          if (a.fcmTokenMobile) tokens.push(...a.fcmTokenMobile);
+          return tokens;
+        });
       } else if (recipient === "delivery_partners") {
         // Send to all active delivery partners
-        const partners = await User.find({ role: 'delivery', isActive: true, fcmTokens: { $exists: true, $not: {$size: 0} } });
-        fcmTokens = partners.flatMap(p => p.fcmTokens);
+        const partners = await User.find({ 
+          role: 'delivery', 
+          isActive: true, 
+          $or: [
+            { fcmToken: { $exists: true, $not: {$size: 0} } },
+            { fcmTokenMobile: { $exists: true, $not: {$size: 0} } }
+          ]
+        });
+        fcmTokens = partners.flatMap(p => {
+          const tokens = p.fcmToken ? [...p.fcmToken] : [];
+          if (p.fcmTokenMobile) tokens.push(...p.fcmTokenMobile);
+          return tokens;
+        });
       } else {
         // Send to specific user
         const targetUser = await User.findById(recipient);
-        if (targetUser && targetUser.fcmTokens && targetUser.fcmTokens.length > 0) {
-          fcmTokens = targetUser.fcmTokens;
+        if (targetUser) {
+          fcmTokens = targetUser.fcmToken ? [...targetUser.fcmToken] : [];
+          if (targetUser.fcmTokenMobile) {
+            fcmTokens.push(...targetUser.fcmTokenMobile);
+          }
         }
       }
 
@@ -132,8 +158,8 @@ const sendNotification = async (options) => {
           tokens: fcmTokens
         };
         
-        // Send to multiple devices
-        const response = await admin.messaging().sendEachForMulticast(payload);
+        // Send to multiple devices using the modular getMessaging()
+        const response = await getMessaging().sendEachForMulticast(payload);
         console.log(`FCM Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
       }
     } catch (fcmError) {

@@ -99,11 +99,18 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 
   const user = req.user;
 
-  // Add token if it doesn't exist
-  if (!user.fcmTokens.includes(token)) {
-    user.fcmTokens.push(token);
-    await user.save();
+  // Add token based on platform
+  if (platform === 'mobile' || platform === 'android' || platform === 'ios') {
+    if (!user.fcmTokenMobile.includes(token)) {
+      user.fcmTokenMobile.push(token);
+    }
+  } else {
+    if (!user.fcmToken.includes(token)) {
+      user.fcmToken.push(token);
+    }
   }
+
+  await user.save();
 
   res.status(200).json({
     success: true,

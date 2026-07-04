@@ -11,10 +11,45 @@ function PushNotificationManager() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr && userStr !== 'undefined') {
-      setUser(JSON.parse(userStr));
-    }
+    const checkUser = () => {
+      const userStr = localStorage.getItem('user');
+      const tailorStr = localStorage.getItem('tailor_user');
+      const deliveryStr = localStorage.getItem('delivery_user');
+      const adminStr = localStorage.getItem('admin_user');
+      const meStr = localStorage.getItem('me_user');
+
+      let activeUser = null;
+
+      if (userStr && userStr !== 'undefined') {
+          activeUser = JSON.parse(userStr);
+      } else if (tailorStr && tailorStr !== 'undefined') {
+          activeUser = JSON.parse(tailorStr);
+      } else if (deliveryStr && deliveryStr !== 'undefined') {
+          activeUser = JSON.parse(deliveryStr);
+      } else if (adminStr && adminStr !== 'undefined') {
+          activeUser = JSON.parse(adminStr);
+      } else if (meStr && meStr !== 'undefined') {
+          activeUser = JSON.parse(meStr);
+      }
+
+      // Only update state if the user string has actually changed
+      // to prevent infinite re-renders and repeated API calls
+      setUser(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(activeUser)) {
+          return activeUser;
+        }
+        return prev;
+      });
+    };
+
+    checkUser();
+    window.addEventListener('storage', checkUser);
+    const interval = setInterval(checkUser, 5000);
+
+    return () => {
+      window.removeEventListener('storage', checkUser);
+      clearInterval(interval);
+    };
   }, []);
 
   usePushNotifications(user);
@@ -53,6 +88,7 @@ function SplashManager({ splashConfig, setSplashConfig }) {
 function App() {
   const { socket, connect, disconnect } = useSocketStore();
   const [splashConfig, setSplashConfig] = useState({ isSplash: false, role: 'customer' });
+  const lastConnectedUserRef = React.useRef(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -85,12 +121,25 @@ function App() {
         }
 
         if (activeUser) {
-          const userId = activeUser._id || activeUser.id;
+          // If activeUser is a profile (Tailor, Delivery, etc.), the base User ID is stored in activeUser.user
+          let userId = activeUser._id || activeUser.id;
+          if (activeUser.user) {
+            userId = typeof activeUser.user === 'string' ? activeUser.user : (activeUser.user._id || userId);
+          }
+          
           if (userId) {
-            connect(userId, role);
+            // Only connect if the user ID has changed to prevent infinite socket room joins
+            const connectionKey = `${userId}-${role}`;
+            if (lastConnectedUserRef.current !== connectionKey) {
+              connect(userId, role);
+              lastConnectedUserRef.current = connectionKey;
+            }
           }
         } else {
-          disconnect();
+          if (lastConnectedUserRef.current !== null) {
+            disconnect();
+            lastConnectedUserRef.current = null;
+          }
         }
       } catch (error) {
         console.error('Socket connection error:', error);

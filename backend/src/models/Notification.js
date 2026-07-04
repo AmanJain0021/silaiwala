@@ -54,7 +54,9 @@ const notificationSchema = new mongoose.Schema(
         "ALTERATION_QUOTE",
         "ISSUE_REPORTED",
         "ISSUE_UPDATED",
-        "ISSUE_RESOLVED"
+        "ISSUE_RESOLVED",
+        "TEST",
+        "BROADCAST"
       ],
       required: true,
     },

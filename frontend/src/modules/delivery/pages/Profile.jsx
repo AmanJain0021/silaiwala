@@ -10,6 +10,7 @@ import {
 import PageTransition from '../../../shared/components/PageTransition';
 import toast from 'react-hot-toast';
 import { formatPrice } from '../../../shared/utils/helpers';
+import api from '../../../utils/api';
 
 import { useRef } from 'react';
 
@@ -281,6 +282,29 @@ const DeliveryProfile = () => {
              ))}
           </div>
 
+          {/* Test Push Notification (Moved to top so it's always visible) */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-indigo-900">Push Notifications</h3>
+                <p className="text-[10px] text-indigo-600 mt-0.5">Verify your device is receiving alerts</p>
+              </div>
+              <button 
+                onClick={async () => {
+                    try {
+                        await api.post('/notifications/test-push');
+                        toast.success('Test push sent successfully!');
+                    } catch (err) {
+                        toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message));
+                    }
+                }} 
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all"
+              >
+                <FiAlertCircle size={14} /> Send Test
+              </button>
+            </div>
+          </div>
+
           {/* Navigation Tabs */}
           <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200/50 shadow-inner">
             {['personal', 'banking'].map((tab) => (
@@ -406,7 +430,7 @@ const DeliveryProfile = () => {
 
           {/* Logout Section */}
           {!isEditing && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 mt-6">
               <button onClick={handleLogout} className="flex items-center justify-center gap-3 w-full py-4 bg-white border border-rose-100 text-rose-600 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-sm active:scale-95 transition-all">
                 <FiLogOut size={16} /> Sign Out Partner
               </button>
