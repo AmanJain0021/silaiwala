@@ -653,6 +653,7 @@ const AdminCMS = () => {
                                                 <option value="customer">Customer</option>
                                                 <option value="tailor">Tailor</option>
                                                 <option value="delivery">Delivery</option>
+                                                <option value="executive">Measurement Executive</option>
                                             </select>
                                         </div>
                                     </div>

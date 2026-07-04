@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Lock, Eye, ArrowRight, EyeOff } from 'lucide-react';
+import { Phone, Lock, Eye, ArrowRight, EyeOff, ShieldCheck } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 
@@ -174,6 +174,12 @@ const DeliveryLogin = () => {
                 </AnimatePresence>
 
             </form>
+            
+            <div className="mt-10 text-center">
+                <p className="text-[10px] text-gray-400 font-medium">
+                    By logging in, you agree to our <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>.
+                </p>
+            </div>
         </motion.div>
     );
 };

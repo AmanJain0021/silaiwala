@@ -208,6 +208,12 @@ const TailorLogin = () => {
                     )}
                 </AnimatePresence>
             </form>
+            
+            <div className="mt-10 text-center">
+                <p className="text-[10px] text-gray-400 font-medium">
+                    By logging in, you agree to our <button onClick={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
+                </p>
+            </div>
         </motion.div>
     );
 };
