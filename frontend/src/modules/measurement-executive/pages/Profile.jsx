@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X } from 'lucide-react';
+import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X, Bell } from 'lucide-react';
 import MenuOption from '../../customer/components/profile/MenuOption';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
@@ -182,6 +182,32 @@ const Profile = () => {
                                 subLabel="Legal guidelines"
                                 onClick={() => setActiveModal('privacy')}
                             />
+                        </div>
+
+                        {/* Test Push Section */}
+                        <div className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await api.post('/notifications/test-push');
+                                        toast.success('Test push sent successfully!');
+                                    } catch (err) {
+                                        toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message));
+                                    }
+                                }}
+                                className="w-full p-4 bg-indigo-50 hover:bg-indigo-100 rounded-2xl border border-indigo-100 flex items-center justify-between group transition-all"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-6 transition-transform">
+                                        <Bell size={18} strokeWidth={3} />
+                                    </div>
+                                    <div className="text-left">
+                                        <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest leading-none">Test Push</h4>
+                                        <p className="text-[9px] font-bold text-indigo-400 mt-1">Send a test notification</p>
+                                    </div>
+                                </div>
+                                <ChevronRight size={18} className="text-indigo-300 group-hover:translate-x-1 transition-transform" />
+                            </button>
                         </div>
 
                         {/* Logout Section */}

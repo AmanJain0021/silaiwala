@@ -803,13 +803,20 @@ exports.sendBroadcastNotification = async (req, res) => {
     const User = require('../../../models/User');
     const admin = require('../../../config/firebase');
     
-    // Find all active users for the target role who have fcmTokens
+    // Find all active users for the target role who have fcmToken or fcmTokenMobile
     const users = await User.find({ 
       role: targetAudience, 
-      fcmTokens: { $exists: true, $not: {$size: 0} } 
+      $or: [
+        { fcmToken: { $exists: true, $not: {$size: 0} } },
+        { fcmTokenMobile: { $exists: true, $not: {$size: 0} } }
+      ]
     });
     
-    const fcmTokens = users.flatMap(u => u.fcmTokens);
+    const fcmTokens = users.flatMap(u => {
+      const tokens = u.fcmToken ? [...u.fcmToken] : [];
+      if (u.fcmTokenMobile) tokens.push(...u.fcmTokenMobile);
+      return tokens;
+    });
     
     // 1. Send via Socket.io (In-app realtime broadcast)
     const { getIO } = require("../../../config/socket");
