@@ -126,13 +126,28 @@ const HomeHeader = ({ user }) => {
                     {/* Search Bar - Modernized */}
                     <AnimatedSearchBar />
 
-                {/* Static Tabs */}
-                <div className="mt-3 -mx-4 pt-3 pb-3 border-t border-white/10 flex justify-between px-6 text-[10px] font-bold text-white tracking-widest uppercase items-center">
-                    <span className="cursor-pointer hover:text-white/80 transition-colors">DELIVERY</span>
-                    <span className="text-white/30 text-[6px]">●</span>
-                    <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors"><Scissors size={12} /> CUSTOM STITCHING</span>
-                    <span className="text-white/30 text-[6px]">●</span>
-                    <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors"><Shirt size={12} /> EXPERT TAILORS</span>
+                {/* Marquee Tabs */}
+                <div className="mt-3 -mx-4 pt-3 pb-3 border-t border-white/10 overflow-hidden relative flex text-[10px] font-bold text-white tracking-widest uppercase items-center">
+                    <motion.div
+                        className="flex gap-8 px-4 items-center whitespace-nowrap w-max"
+                        animate={{ x: ["0%", "-50%"] }}
+                        transition={{ repeat: Infinity, ease: "linear", duration: 15 }}
+                    >
+                        <span className="cursor-pointer hover:text-white/80 transition-colors shrink-0">DELIVERY</span>
+                        <span className="text-white/30 text-[6px] shrink-0">●</span>
+                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Scissors size={12} /> CUSTOM STITCHING</span>
+                        <span className="text-white/30 text-[6px] shrink-0">●</span>
+                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Shirt size={12} /> EXPERT TAILORS</span>
+                        <span className="text-white/30 text-[6px] shrink-0">●</span>
+                        
+                        {/* Duplicate for seamless looping */}
+                        <span className="cursor-pointer hover:text-white/80 transition-colors shrink-0">DELIVERY</span>
+                        <span className="text-white/30 text-[6px] shrink-0">●</span>
+                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Scissors size={12} /> CUSTOM STITCHING</span>
+                        <span className="text-white/30 text-[6px] shrink-0">●</span>
+                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Shirt size={12} /> EXPERT TAILORS</span>
+                        <span className="text-white/30 text-[6px] shrink-0">●</span>
+                    </motion.div>
                 </div>
             </div>
         </div>
