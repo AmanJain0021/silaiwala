@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, CheckCircle2, Star, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
@@ -83,10 +83,9 @@ const ServiceCard = ({ service }) => {
     );
 };
 
-const ServicesGrid = () => {
+const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const [services, setServices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-
 
     const { location: { lat, lng }, error: locationError } = useUnifiedLocation({ autoDetect: true, fetchAddress: false });
     const routeLocation = useRouteLocation();
@@ -113,6 +112,49 @@ const ServicesGrid = () => {
         fetchServices();
     }, [tailorId]);
 
+    const filteredServices = useMemo(() => {
+        let result = services;
+
+        const getCategoryStr = (s) => {
+            if (!s.category) return '';
+            if (typeof s.category === 'string') return s.category.toLowerCase();
+            if (s.category.name) return s.category.name.toLowerCase();
+            return '';
+        };
+
+        const getTitleStr = (s) => (s.title || '').toLowerCase();
+        const getDescStr = (s) => (s.description || '').toLowerCase();
+
+        // Apply activeFilter
+        if (activeFilter !== 'All') {
+            if (activeFilter === 'Men') {
+                result = result.filter(s => getCategoryStr(s) === 'men' || getTitleStr(s).includes('men'));
+            } else if (activeFilter === 'Women') {
+                result = result.filter(s => getCategoryStr(s) === 'women' || getTitleStr(s).includes('women') || getTitleStr(s).includes('ladies'));
+            } else if (activeFilter === 'Bridal') {
+                result = result.filter(s => getCategoryStr(s) === 'bridal' || getTitleStr(s).includes('bridal'));
+            } else if (activeFilter === 'Popular') {
+                result = result.filter(s => s.rating >= 4.5);
+            } else if (activeFilter === 'Under ₹500') {
+                result = result.filter(s => s.basePrice < 500);
+            } else if (activeFilter === 'Express Delivery') {
+                result = result.filter(s => (s.deliveryTime || '').includes('2-4'));
+            }
+        }
+
+        // Apply searchQuery
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(s => 
+                getTitleStr(s).includes(query) || 
+                getDescStr(s).includes(query) ||
+                (s.tags || []).some(tag => (tag || '').toLowerCase().includes(query))
+            );
+        }
+
+        return result;
+    }, [services, activeFilter, searchQuery]);
+
     if (isLoading) {
         return (
             <div className="p-12 flex flex-col items-center justify-center gap-3">
@@ -124,14 +166,16 @@ const ServicesGrid = () => {
 
     return (
         <div className="p-4 md:p-6 lg:p-8">
-            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">All Services</h2>
-            {services.length === 0 ? (
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+                {activeFilter === 'All' && !searchQuery ? 'All Services' : `Results for ${searchQuery ? '"' + searchQuery + '"' : activeFilter}`}
+            </h2>
+            {filteredServices.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                     <p className="text-gray-400 font-bold text-sm">No services found.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {services.map(service => (
+                    {filteredServices.map(service => (
                         <ServiceCard key={service._id} service={service} />
                     ))}
                 </div>

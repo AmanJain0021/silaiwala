@@ -66,6 +66,12 @@ const settingsSchema = new mongoose.Schema(
       maxCashLimit: { type: Number, default: 5000 },
       maxDepositTimeHours: { type: Number, default: 48 },
       autoBlockOnLimit: { type: Boolean, default: true },
+    },
+    loyaltyConfig: {
+      pointsPer100Spent: { type: Number, default: 1 },
+      flatPointsPerBooking: { type: Number, default: 0 },
+      redemptionValuePerPoint: { type: Number, default: 1 },
+      cancellationPenalty: { type: Number, default: 0 },
     }
   },
   {

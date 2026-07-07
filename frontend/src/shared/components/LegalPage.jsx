@@ -38,19 +38,20 @@ const LegalPage = ({ type: propType, category, fallbackTitle = "Legal Document" 
     }, [type, category]);
 
     return (
-        <div className="min-h-screen bg-white font-sans pb-20">
+        <div className="min-h-screen bg-white font-sans pb-20 overflow-x-hidden w-full">
             {/* Header */}
-            <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-                <div className="max-w-3xl mx-auto px-4 h-16 flex items-center gap-4">
+            <div className="bg-gradient-to-br from-[#2D2F6F] to-[#843D9B] text-white pt-10 pb-6 px-4 sticky top-0 z-50 shadow-lg">
+                <div className="max-w-3xl mx-auto flex items-center gap-4">
                     <button 
                         onClick={() => navigate(-1)} 
-                        className="p-2 -ml-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+                        className="p-2 -ml-2 rounded-full bg-white/10 hover:bg-white/20 transition-all backdrop-blur-sm"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={20} className="text-white" />
                     </button>
-                    <h1 className="text-lg font-black text-gray-900 tracking-tight flex-1 truncate">
-                        {content ? content.title : fallbackTitle}
-                    </h1>
+                    <div>
+                        <h1 className="text-xl font-black tracking-tight">{content ? content.title : fallbackTitle}</h1>
+                        <p className="text-xs text-indigo-100 font-medium mt-0.5">Legal & Policies</p>
+                    </div>
                 </div>
             </div>
 
@@ -62,7 +63,17 @@ const LegalPage = ({ type: propType, category, fallbackTitle = "Legal Document" 
                         <p className="text-sm font-bold uppercase tracking-widest">Loading Document...</p>
                     </div>
                 ) : content ? (
-                    <div className="prose prose-sm sm:prose-base max-w-none prose-headings:font-black prose-headings:tracking-tight prose-a:text-[#843D9B] text-gray-700 leading-relaxed">
+                    <div className="w-full break-words max-w-none text-gray-700 leading-relaxed 
+                                    [&_h1]:text-2xl [&_h1]:font-black [&_h1]:mb-4 [&_h1]:mt-8 [&_h1]:text-gray-900
+                                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-gray-900
+                                    [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-gray-900
+                                    [&_p]:mb-4 [&_p]:text-[15px] [&_p]:whitespace-normal [&_p]:break-words
+                                    [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_ul]:space-y-1 [&_ul]:whitespace-normal
+                                    [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4 [&_ol]:space-y-1 [&_ol]:whitespace-normal
+                                    [&_a]:text-[#843D9B] [&_a]:underline [&_a]:font-medium [&_a]:break-words
+                                    [&_strong]:font-bold [&_strong]:text-gray-900
+                                    [&_b]:font-bold [&_b]:text-gray-900
+                                    [&_*]:max-w-full">
                         <div dangerouslySetInnerHTML={{ __html: content.content }} />
                     </div>
                 ) : (

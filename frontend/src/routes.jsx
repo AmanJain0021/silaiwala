@@ -146,6 +146,7 @@ const LandingSupportPage = React.lazy(() => import('./modules/landing/LandingSup
 const ReportIssue = React.lazy(() => import('./modules/customer/pages/ReportIssue')); // NEW
 const IssueDetails = React.lazy(() => import('./modules/customer/pages/IssueDetails')); // NEW
 const SharedLegalPage = React.lazy(() => import('./shared/components/LegalPage')); // NEW
+const LoyaltyPoints = React.lazy(() => import('./modules/customer/pages/LoyaltyPoints')); // NEW
 
 const AppRoutes = () => {
     return (
@@ -197,6 +198,7 @@ const AppRoutes = () => {
                         <Route path="profile/edit" element={<EditProfile />} />
                         <Route path="profile/measurements" element={<Measurements />} />
                         <Route path="profile/addresses" element={<SavedAddresses />} />
+                        <Route path="loyalty" element={<LoyaltyPoints />} />
                         <Route path="refer" element={<ReferEarn />} />
                         {/* Fixed path from /tailor/:id to /shop/:id to avoid conflict or keep it customer centric */}
                         <Route path="tailor/:id" element={<TailorProfile />} />

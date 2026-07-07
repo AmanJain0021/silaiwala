@@ -1,19 +1,19 @@
 import React, { useEffect } from 'react';
 // Components
 import HomeHeader from '../components/HomeHeader';
-import LocationBar from '../components/LocationBar';
-import QuickActions from '../components/QuickActions';
-import PopularTailors from '../components/PopularTailors';
-import BestSellingGarments from '../components/BestSellingGarments';
-import ServiceGrid from '../components/ServiceGrid';
-import BottomNav from '../components/BottomNav';
 import PromoBanner from '../components/PromoBanner';
+import AIMeasurementCard from '../components/AIMeasurementCard';
+import QuickActions from '../components/QuickActions';
+import ServiceGrid from '../components/ServiceGrid';
+import TrendingCategories from '../components/TrendingCategories';
 import ActiveOrderBanner from '../components/ActiveOrderBanner';
-
+import PopularTailors from '../components/PopularTailors';
+import TrustSection from '../components/TrustSection';
 import WhyChooseUs from '../components/WhyChooseUs';
+import ReferEarnBanner from '../components/ReferEarnBanner';
+import BottomNav from '../components/BottomNav';
 
 import useAuthStore from '../../../store/authStore';
-
 import useOrderStore from '../../../store/orderStore';
 
 const Home = () => {
@@ -36,18 +36,37 @@ const Home = () => {
             {/* 1. Header & Location */}
             <HomeHeader user={user || { name: 'Guest' }} />
 
+            {/* 2. Hero Banner */}
             <PromoBanner />
+
+            {/* 3. AI Measurement */}
+            <AIMeasurementCard />
+
+            {/* 4. Quick Actions */}
             <QuickActions />
 
+            {/* 5. What We Offer */}
+            <ServiceGrid />
+
+            {/* 6. Trending Categories */}
+            <TrendingCategories />
+
+            {/* 7. Active Order (Untouched) */}
             {activeOrder && <ActiveOrderBanner order={activeOrder} />}
 
+            {/* 8. Expert Tailors Near You */}
             <PopularTailors />
-            <BestSellingGarments />
 
-            <ServiceGrid />
+            {/* 9. Trust Section */}
+            <TrustSection />
+
+            {/* 10. Why Choose Sewzella? */}
             <WhyChooseUs />
 
-            {/* 8. Bottom Navigation */}
+            {/* 11. Refer & Earn */}
+            <ReferEarnBanner />
+
+            {/* 12. Bottom Navigation */}
             <BottomNav />
         </div>
     );

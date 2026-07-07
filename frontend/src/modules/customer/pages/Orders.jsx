@@ -17,6 +17,7 @@ const OrdersPage = () => {
     const [alterations, setAlterations] = React.useState([]);
     const [customDesigns, setCustomDesigns] = React.useState([]);
     const [activeTab, setActiveTab] = React.useState('orders'); // 'orders', 'alterations', 'custom-designs'
+    const [filterStatus, setFilterStatus] = React.useState('All');
 
     useEffect(() => {
         fetchOrders();
@@ -71,9 +72,12 @@ const OrdersPage = () => {
         }
     };
 
+    const filteredOrders = orders.filter(o => filterStatus === 'All' || o.status === filterStatus);
+    const filteredAlterations = alterations.filter(a => filterStatus === 'All' || a.status === filterStatus);
+    const filteredCustomDesigns = customDesigns.filter(d => filterStatus === 'All' || d.status === filterStatus);
+
     return (
         <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans">
-            {/* 1. Header */}
             {/* 1. Header */}
             <div className="sticky top-0 md:top-20 z-50 bg-[#843D9B] shadow-md px-4 md:px-6 lg:px-8 pt-safe pb-4 md:rounded-b-2xl">
                 <h1 className="text-xl md:text-2xl font-bold text-white mb-1 pt-2">My Orders</h1>
@@ -90,10 +94,25 @@ const OrdersPage = () => {
                         className="bg-transparent text-[11px] w-full focus:outline-none"
                     />
                 </div>
-                <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-black whitespace-nowrap text-gray-600 active:bg-gray-50 shrink-0">
-                    <ListFilter size={14} />
-                    All Status
-                </button>
+                <div className="relative">
+                    <select 
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                    >
+                        <option value="All">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-black whitespace-nowrap text-gray-600 active:bg-gray-50 shrink-0 relative z-0">
+                        <ListFilter size={14} />
+                        {filterStatus === 'All' ? 'All Status' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1).replace('-', ' ')}
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -126,7 +145,7 @@ const OrdersPage = () => {
                         <p className="text-xs text-gray-500">Loading your {activeTab}...</p>
                     </div>
                 ) : activeTab === 'orders' ? (
-                    orders.length === 0 ? (
+                    filteredOrders.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                             <Package size={48} className="text-gray-300 mb-4" />
                             <h3 className="text-sm font-bold text-gray-900">No Orders Yet</h3>
@@ -136,13 +155,13 @@ const OrdersPage = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {orders.map((order, index) => (
+                            {filteredOrders.map((order, index) => (
                                 <OrderCard key={order._id || index} order={order} />
                             ))}
                         </div>
                     )
                 ) : activeTab === 'alterations' ? (
-                    alterations.length === 0 ? (
+                    filteredAlterations.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                             <Ruler size={48} className="text-gray-300 mb-4" />
                             <h3 className="text-sm font-bold text-gray-900">No Alterations</h3>
@@ -152,13 +171,13 @@ const OrdersPage = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {alterations.map((alt, index) => (
+                            {filteredAlterations.map((alt, index) => (
                                 <AlterationCard key={alt._id || index} alteration={alt} onPaymentSuccess={() => { fetchAlterations(); fetchOrders(); }} />
                             ))}
                         </div>
                     )
                 ) : (
-                    customDesigns.length === 0 ? (
+                    filteredCustomDesigns.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                             <Ruler size={48} className="text-gray-300 mb-4" />
                             <h3 className="text-sm font-bold text-gray-900">No Custom Designs</h3>
@@ -168,7 +187,7 @@ const OrdersPage = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {customDesigns.map((design, index) => (
+                            {filteredCustomDesigns.map((design, index) => (
                                 <CustomDesignCard key={design._id || index} design={design} onPaymentSuccess={() => { fetchCustomDesigns(); fetchOrders(); }} />
                             ))}
                         </div>

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Image as ImageIcon, Send, FileText, Bell, Plus, Edit2, Trash2, Smartphone, Megaphone, X } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
-
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 const AdminCMS = () => {
     const [selectedTab, setSelectedTab] = useState('Banners');
     const [isAddBannerModalOpen, setIsAddBannerModalOpen] = useState(false);
@@ -659,7 +660,7 @@ const AdminCMS = () => {
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Pages' ? 'Full Content (Markdown/HTML supported)' : 'Answer Content'}</label>
-                                        <textarea rows={8} value={newContent.content} onChange={e => setNewContent({ ...newContent, content: e.target.value })} placeholder="Start typing the content here..." className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors resize-none"></textarea>
+                                        <ReactQuill theme="snow" value={newContent.content} onChange={content => setNewContent({ ...newContent, content })} className="bg-white rounded-xl mb-4" />
                                     </div>
                                 </div>
                                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 rounded-b-3xl">

@@ -4,7 +4,7 @@ import api from '../../../../utils/api';
 import { getImageUrl } from '../../../../utils/imageUrl';
 import SafeImage from '../../../../components/Common/SafeImage';
 
-const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
+const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store_item' }) => {
     const scrollRef = useRef(null);
     const [categories, setCategories] = useState([]);
     const [history, setHistory] = useState([]); // Stack of { id, name, data }
@@ -13,8 +13,9 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
     const fetchCategories = async (parentId = null) => {
         setIsLoading(true);
         try {
+            const typeParam = productType === 'fabric' ? 'product' : 'garment';
             const response = await api.get('/products/categories', {
-                params: { parent: parentId, type: 'product' }
+                params: { parent: parentId, type: typeParam }
             });
             if (response.data.success) {
                 setCategories(response.data.data);
@@ -30,8 +31,9 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
     };
 
     useEffect(() => {
+        setHistory([]); // reset history when product type changes
         fetchCategories();
-    }, []);
+    }, [productType]);
 
     const handleCategoryClick = async (category) => {
         try {
@@ -115,7 +117,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory }) => {
                                 <span className="text-[10px] font-black uppercase text-[#843D9B]">All</span>
                             </div>
                             <span className={`text-[10px] font-medium text-center ${activeCategory === "All" ? 'text-[#843D9B] font-bold' : 'text-gray-600'}`}>
-                                All Fabrics
+                                {productType === 'fabric' ? 'All Fabrics' : 'All Garments'}
                             </span>
                         </button>
                     )}
