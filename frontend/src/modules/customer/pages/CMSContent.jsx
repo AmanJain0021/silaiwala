@@ -55,13 +55,20 @@ const CMSContentPage = () => {
                 </div>
 
                 <div className="relative z-10 flex items-center justify-between mb-2">
-                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white hover:bg-white/10 rounded-full transition-colors">
+                    <button onClick={() => navigate('/user/profile')} className="p-2 -ml-2 text-white hover:bg-white/10 rounded-full transition-colors">
                         <ArrowLeft size={22} />
                     </button>
                     <h1 className="text-lg font-black tracking-tight absolute left-1/2 -translate-x-1/2 uppercase italic">
                         Legal
                     </h1>
-                    <button className="p-2 bg-white/10 rounded-full text-white backdrop-blur-md">
+                    <button 
+                        onClick={() => {
+                            if (navigator.share) {
+                                navigator.share({ title: content.title, url: window.location.href }).catch(console.error);
+                            }
+                        }}
+                        className="p-2 bg-white/10 rounded-full text-white backdrop-blur-md"
+                    >
                         <Share2 size={18} />
                     </button>
                 </div>
@@ -99,9 +106,9 @@ const CMSContentPage = () => {
                     />
 
                     <div className="mt-12 pt-6 border-t border-gray-100 flex flex-col items-center text-center">
-                        <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                        <button onClick={() => navigate('/user/profile')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center mb-3 transition-colors hover:bg-gray-100">
                             <ArrowLeft size={16} className="text-gray-400" />
-                        </div>
+                        </button>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-loose">
                             Last Updated: {new Date(content.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             <br />

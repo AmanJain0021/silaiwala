@@ -17,10 +17,18 @@ const AdminOrders = () => {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
     const [manageOrderData, setManageOrderData] = useState(null);
     const [isManageOpen, setIsManageOpen] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [shiprocketValidation, setShiprocketValidation] = useState(null);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalOrders, setTotalOrders] = useState(0);
+    const [totalStitching, setTotalStitching] = useState(0);
+    const [totalStore, setTotalStore] = useState(0);
+    const limit = 10;
 
     // States for Assignments
     const [tailorsList, setTailorsList] = useState([]);
@@ -31,9 +39,17 @@ const AdminOrders = () => {
 
     const tabs = ['All Orders', 'Stitching Service', 'Readymade Store'];
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (page = currentPage, query = searchQuery, tab = selectedTab, status = statusFilter) => {
+        setIsLoading(true);
         try {
-            const res = await api.get('/admin/orders');
+            let typeParam = '';
+            if (tab === 'Stitching Service') typeParam = '&type=stitching';
+            if (tab === 'Readymade Store') typeParam = '&type=store';
+            
+            let statusParam = '';
+            if (status && status !== '') statusParam = `&status=${status}`;
+            
+            const res = await api.get(`/admin/orders?page=${page}&limit=${limit}${typeParam}${statusParam}${query ? `&search=${query}` : ''}`);
             const formatted = res.data.data.map(o => ({
                 id: o.orderId || o._id.substring(0, 8),
                 fullId: o._id,
@@ -57,6 +73,11 @@ const AdminOrders = () => {
                 trackingHistory: o.trackingHistory || []
             }));
             setOrdersData(formatted);
+            setTotalPages(res.data.pages || 1);
+            setTotalOrders(res.data.total || 0);
+            setTotalStitching(res.data.totalStitching || 0);
+            setTotalStore(res.data.totalStore || 0);
+            setCurrentPage(page);
         } catch (err) {
             if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to fetch orders:', err);
@@ -114,20 +135,37 @@ const AdminOrders = () => {
         const searchVal = params.get('search');
         if (searchVal) setSearchQuery(searchVal);
 
-        fetchOrders();
         fetchUsers();
 
         return () => socket.disconnect();
     }, []);
 
+    // Fetch orders when page, search, or tab changes with debounce for search
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchOrders(currentPage, searchQuery, selectedTab, statusFilter);
+        }, 400);
+        return () => clearTimeout(timeoutId);
+    }, [currentPage, searchQuery, selectedTab, statusFilter]);
+
+    // Reset to page 1 when search or tab changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedTab, statusFilter]);
+
     const handleUpdateStatus = async (orderId, newStatus) => {
         setIsUpdatingStatus(true);
         setStatusDropdownOpen(false);
         try {
-            await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
+            const response = await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
             fetchOrders();
             if (selectedOrder && selectedOrder.fullId === orderId) {
-                setSelectedOrder(prev => ({ ...prev, status: newStatus }));
+                const updatedOrder = response.data?.data;
+                setSelectedOrder(prev => ({ 
+                    ...prev, 
+                    status: newStatus,
+                    trackingHistory: updatedOrder?.trackingHistory || prev.trackingHistory
+                }));
             }
         } catch (err) {
             if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
@@ -182,17 +220,19 @@ const AdminOrders = () => {
             const updateData = {};
             updateData[assignRole] = userId;
 
-            await api.put(`/admin/orders/${selectedOrder.fullId}/status`, updateData);
+            const response = await api.put(`/admin/orders/${selectedOrder.fullId}/status`, updateData);
 
             fetchOrders();
             // Update selected order UI
             if (selectedOrder) {
                 const list = assignRole === 'tailor' ? tailorsList : assignRole === 'deliveryPartner' ? deliveryList : measurementExecutivesList;
                 const userName = list.find(u => u._id === userId || u.id === userId)?.name || 'Assigned';
+                const updatedOrder = response.data?.data;
                 setSelectedOrder(prev => ({
                     ...prev,
                     [assignRole]: userName,
-                    [`${assignRole}Id`]: userId
+                    [`${assignRole}Id`]: userId,
+                    trackingHistory: updatedOrder?.trackingHistory || prev.trackingHistory
                 }));
             }
         } catch (err) {
@@ -229,20 +269,6 @@ const AdminOrders = () => {
         }
     };
 
-    const filteredOrders = ordersData.filter(o => {
-        const matchesTab =
-            selectedTab === 'All Orders' ||
-            (selectedTab === 'Stitching Service' && o.type === 'Stitching') ||
-            (selectedTab === 'Readymade Store' && o.type === 'Store');
-
-        const matchesSearch =
-            o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            o.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            o.service.toLowerCase().includes(searchQuery.toLowerCase());
-
-        return matchesTab && matchesSearch;
-    });
-
     const getStatusStyle = (status) => {
         switch (status.toLowerCase()) {
             case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
@@ -265,9 +291,40 @@ const AdminOrders = () => {
 
     return (
         <div className="h-full flex flex-col space-y-6 relative">
-            <div>
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h1>
-                <p className="text-xs text-gray-500 font-medium mt-1">Manage and track all customer orders from end to end</p>
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h1>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Manage and track all customer orders from end to end</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                    <div className="bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 flex-1 min-w-[180px]">
+                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <Package size={24} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Total</p>
+                            <p className="text-2xl font-black text-gray-900 leading-none">{totalOrders}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 flex-1 min-w-[180px]">
+                        <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 shrink-0">
+                            <Scissors size={24} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Stitching</p>
+                            <p className="text-2xl font-black text-gray-900 leading-none">{totalStitching}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 flex-1 min-w-[180px]">
+                        <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                            <Package size={24} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Store</p>
+                            <p className="text-2xl font-black text-gray-900 leading-none">{totalStore}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Controls */}
@@ -295,9 +352,21 @@ const AdminOrders = () => {
                             className="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-gray-50 border border-transparent focus:border-gray-200 rounded-xl outline-none transition-all"
                         />
                     </div>
-                    <button className="p-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 hover:text-primary transition-colors shrink-0 border border-transparent">
-                        <Filter size={18} />
-                    </button>
+                    <div className="relative flex items-center bg-gray-50 rounded-xl border border-transparent hover:border-gray-200 transition-all">
+                        <div className="pl-3 text-gray-400 pointer-events-none">
+                            <Filter size={16} />
+                        </div>
+                        <select 
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full pl-2 pr-8 py-2 text-xs font-semibold bg-transparent text-gray-600 outline-none cursor-pointer appearance-none capitalize"
+                        >
+                            <option value="">All Statuses</option>
+                            {availableStatuses.map(s => (
+                                <option key={s} value={s}>{s.replace(/-/g, ' ')}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -321,7 +390,7 @@ const AdminOrders = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {filteredOrders.map((order) => (
+                            {ordersData.map((order) => (
                                 <tr
                                     key={order.id}
                                     onClick={() => setSelectedOrder(order)}
@@ -364,7 +433,7 @@ const AdminOrders = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredOrders.length === 0 && (
+                            {ordersData.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-gray-400 text-xs font-bold">
                                         No orders found for this category.
@@ -374,6 +443,34 @@ const AdminOrders = () => {
                         </tbody>
                     </table>
                 </div>
+                
+                {/* Pagination Controls */}
+                {totalOrders > 0 && (
+                    <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/30 px-6 py-3">
+                        <p className="text-[11px] text-gray-500 font-medium">
+                            Showing <span className="font-bold text-gray-900">{(currentPage - 1) * limit + 1}</span> to <span className="font-bold text-gray-900">{Math.min(currentPage * limit, totalOrders)}</span> of <span className="font-bold text-gray-900">{totalOrders}</span> orders
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 border border-gray-200 text-xs font-bold rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-[11px] font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-lg">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 border border-gray-200 text-xs font-bold rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Slide-out Detail Drawer */}

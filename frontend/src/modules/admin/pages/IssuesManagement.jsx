@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, MessageSquare, Loader2, Search, CheckCircle, XCircle } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
 const IssuesManagement = () => {
+    const navigate = useNavigate();
     const [issues, setIssues] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -88,9 +90,9 @@ const IssuesManagement = () => {
                                     <tr key={issue._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                                         <td className="py-4 text-xs font-bold text-gray-900">{new Date(issue.createdAt).toLocaleDateString()}</td>
                                         <td className="py-4 text-xs font-black text-gray-900 uppercase">{issue.issueId || 'N/A'}</td>
-                                        <td className="py-4 text-xs font-black text-primary uppercase">{issue.originalOrder?.orderId}</td>
-                                        <td className="py-4 text-xs font-medium text-gray-700">{issue.customer?.name}</td>
-                                        <td className="py-4 text-xs font-medium text-gray-700">{issue.tailor?.shopName}</td>
+                                        <td className="py-4 text-xs font-black text-primary uppercase">{issue.originalOrder?.orderId || 'N/A'}</td>
+                                        <td className="py-4 text-xs font-medium text-gray-700">{issue.customer?.name || 'N/A'}</td>
+                                        <td className="py-4 text-xs font-medium text-gray-700">{issue.tailor?.shopName || issue.tailor?.name || 'N/A'}</td>
                                         <td className="py-4">
                                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                                                 issue.status === 'pending' ? 'bg-amber-100 text-amber-700' :
@@ -103,7 +105,7 @@ const IssuesManagement = () => {
                                         </td>
                                         <td className="py-4 flex items-center justify-end gap-2">
                                             <button 
-                                                onClick={() => window.open(`/partner/issues/${issue._id}`, '_blank')}
+                                                onClick={() => navigate(`/admin/issues/${issue._id}`)}
                                                 className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
                                                 title="View Chat"
                                             >

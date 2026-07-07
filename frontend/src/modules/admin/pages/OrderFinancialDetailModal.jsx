@@ -53,10 +53,10 @@ const OrderFinancialDetailModal = ({ orderId, onClose }) => {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-[10px] font-black rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest">
+                        <button onClick={() => window.print()} className="print:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-[10px] font-black rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest">
                             <Download size={14} /> Invoice
                         </button>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                        <button onClick={onClose} className="print:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors">
                             <X size={20} className="text-gray-500" />
                         </button>
                     </div>

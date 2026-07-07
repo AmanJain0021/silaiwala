@@ -33,14 +33,17 @@ const Tasks = () => {
     const [loading, setLoading] = useState(true);
     const [tasks, setTasks] = useState([]);
     const [availableTasks, setAvailableTasks] = useState([]);
+    const [completedTasks, setCompletedTasks] = useState([]);
     const [activeTaskId, setActiveTaskId] = useState(null);
+    const [otpInput, setOtpInput] = useState('');
 
     const fetchTasks = async () => {
         setLoading(true);
         try {
-            const [assignedRes, availableRes] = await Promise.all([
+            const [assignedRes, availableRes, completedRes] = await Promise.all([
                 deliveryService.getAssignedOrders(),
-                deliveryService.getAvailableOrders()
+                deliveryService.getAvailableOrders(),
+                deliveryService.getCompletedOrders()
             ]);
 
             if (assignedRes.success) {
@@ -51,6 +54,9 @@ const Tasks = () => {
             }
             if (availableRes.success) {
                 setAvailableTasks(availableRes.data);
+            }
+            if (completedRes?.success) {
+                setCompletedTasks(completedRes.data);
             }
             setLoading(false);
         } catch (error) {
@@ -165,21 +171,26 @@ const Tasks = () => {
 
     const [taskProof, setTaskProof] = useState(null);
 
-    const handleUpdateStatus = async (orderId, newStatus, message, proof = null) => {
+    const handleUpdateStatus = async (orderId, newStatus, message, proof = null, otp = null) => {
         try {
-            const res = await deliveryService.updateDeliveryStatus(orderId, newStatus, message, proof);
+            const res = await deliveryService.updateDeliveryStatus(orderId, newStatus, message, proof, otp);
             if (res.success) {
                 toast.success(`Status updated to ${newStatus}`);
-                if (newStatus === 'delivered') {
+                if (newStatus === 'delivered' || newStatus === 'fabric-delivered') {
                     setActiveTaskId(null);
                     setTaskProof(null);
+                    setOtpInput('');
                 } else if (newStatus === 'out-for-delivery') {
                     setActiveTaskId(orderId);
+                }
+                
+                if (newStatus === 'fabric-picked-up' || newStatus === 'picked-up-from-tailor') {
+                    setOtpInput('');
                 }
                 fetchTasks();
             }
         } catch (error) {
-            toast.error('Failed to update status');
+            toast.error(error.response?.data?.message || 'Failed to update status');
         }
     };
 
@@ -252,12 +263,28 @@ const Tasks = () => {
 
         if (currentStage === 'reached-pickup') {
             return (
-                <button 
-                    onClick={() => handleUpdateStatus(task._id, isFabric ? 'fabric-picked-up' : 'picked-up-from-tailor')} 
-                    className={`${btnClass} bg-amber-600 text-white hover:bg-amber-700 shadow-amber-100 uppercase tracking-widest font-black`}
-                >
-                    <Package size={14} /> Confirm Item Picked Up
-                </button>
+                <div className="space-y-3">
+                    <input
+                        type="text"
+                        placeholder="Enter 6-digit OTP"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value)}
+                        className="w-full text-center tracking-[0.5em] font-black py-3 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none"
+                        maxLength={6}
+                    />
+                    <button 
+                        onClick={() => {
+                            if (!otpInput || otpInput.length < 6) {
+                                toast.error('Please enter the 6-digit OTP');
+                                return;
+                            }
+                            handleUpdateStatus(task._id, isFabric ? 'fabric-picked-up' : 'picked-up-from-tailor', 'Picked up successfully', null, otpInput);
+                        }} 
+                        className={`${btnClass} bg-amber-600 text-white hover:bg-amber-700 shadow-amber-100 uppercase tracking-widest font-black`}
+                    >
+                        <Package size={14} /> Confirm Item Picked Up
+                    </button>
+                </div>
             );
         }
 
@@ -375,6 +402,12 @@ const Tasks = () => {
                             className={`flex-1 py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'available' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Find New ({availableTasks.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('completed')}
+                            className={`flex-1 py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'completed' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Completed ({completedTasks.length})
                         </button>
                     </div>
                 )}
@@ -500,7 +533,7 @@ const Tasks = () => {
                             exit={{ opacity: 0, x: activeTab === 'assigned' ? 20 : -20 }}
                             className="space-y-3 px-1"
                         >
-                            {activeTab === 'assigned' ? (
+                            {activeTab === 'assigned' && (
                                 <>
                                     {/* Tasks awaiting acceptance (partner was notified, needs to Accept/Reject) */}
                                     {pendingAcceptanceTasks.map((task) => (
@@ -623,7 +656,8 @@ const Tasks = () => {
                                         </div>
                                     )}
                                 </>
-                            ) : (
+                            )}
+                            {activeTab === 'available' && (
                                 <>
                                     {availableTasks.map((task) => (
                                         <div key={task._id} className="bg-white p-4 rounded-[1.5rem] border-2 border-slate-100 shadow-lg relative overflow-hidden group">
@@ -639,7 +673,7 @@ const Tasks = () => {
                                                         <p className="text-[10px] font-bold text-slate-400 tracking-wide italic leading-none mt-0.5">Reward: ₹{task.deliveryEarnings || task.deliveryFee || 20}</p>
                                                     </div>
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg ${task.taskType === 'fabric-pickup' ? 'bg-amber-600' : 'bg-primary'}`}>
-                                                        <MdMotorcycle size={18} />
+                                                        <MdTwoWheeler size={18} />
                                                     </div>
                                                 </div>
 
@@ -691,6 +725,54 @@ const Tasks = () => {
                                             </div>
                                             <p className="text-slate-500 font-bold capitalize tracking-wide text-sm">Searching for dispatches...</p>
                                             <p className="text-slate-400 text-[9px] mt-0.5">Try again in a few minutes.</p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            {activeTab === 'completed' && (
+                                <>
+                                    {completedTasks.map((task) => (
+                                        <div key={task._id} className="bg-white p-4 rounded-[1.25rem] border-2 border-slate-100 shadow-sm transition-all mb-3">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="space-y-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-black text-slate-800 tracking-tight capitalize">{getTaskType(task)}</p>
+                                                        <span className="text-[9px] font-black text-primary bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-tighter italic">#{task._id.slice(-6)}</span>
+                                                    </div>
+                                                    <p className="text-[9px] font-bold text-slate-500 capitalize tracking-wide">
+                                                        {task.taskType === 'fabric-pickup' ? `From: ${task.customer?.name}` : `From: ${task.tailor?.shopName}`}
+                                                    </p>
+                                                </div>
+                                                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-green-50 text-green-700 border border-green-100">
+                                                    {task.status.replace(/-/g, ' ')}
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-2.5 pl-0.5">
+                                                <div className="flex gap-2.5">
+                                                    <div className="w-6 h-6 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                                                        <CheckCircle2 size={12} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Delivered To</p>
+                                                        <p className="text-[11px] font-bold text-slate-600 leading-tight capitalize">
+                                                            {task.taskType === 'fabric-pickup'
+                                                                ? formatAddress(task.tailor?.location?.address || task.tailor?.address)
+                                                                : formatAddress(task.deliveryAddress)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {completedTasks.length === 0 && (
+                                        <div className="text-center py-16 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200">
+                                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-slate-300 mx-auto mb-3">
+                                                <CheckCircle2 size={24} />
+                                            </div>
+                                            <p className="text-slate-500 font-bold capitalize tracking-wide text-sm">No completed tasks.</p>
+                                            <p className="text-slate-400 text-[9px] mt-0.5">Your delivered orders will appear here.</p>
                                         </div>
                                     )}
                                 </>

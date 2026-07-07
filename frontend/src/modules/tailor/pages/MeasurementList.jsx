@@ -15,14 +15,22 @@ const MeasurementList = () => {
 
     const filters = ['All Profiles', 'Recent Updates', 'High Priority'];
 
-    // Fetch Measurements (mapped as profiles for tailor use case)
+    // Fetch Orders to display as measurement profiles
     const fetchProfiles = async () => {
         setIsLoading(true);
         try {
-            // Using existing endpoint
-            const response = await api.get('/measurements');
+            const response = await api.get('/tailors/orders');
             if (response.data.success) {
-                setProfiles(response.data.data || []);
+                const mappedProfiles = response.data.data.map(order => ({
+                    _id: order._id,
+                    orderId: order.orderId,
+                    profileName: order.customer?.name || 'Customer',
+                    updatedTime: order.createdAt,
+                    metrics: 12,
+                    tags: [order.status.toUpperCase()],
+                    status: order.status === 'delivered' ? 'Expired' : 'Active'
+                }));
+                setProfiles(mappedProfiles);
             }
         } catch (error) {
             console.error('Error fetching measurements profiles:', error);
@@ -35,15 +43,24 @@ const MeasurementList = () => {
         fetchProfiles();
     }, []);
 
-    const filteredProfiles = (profiles.length > 0 ? profiles : [
-        /* Fallback Mock matching Figma exactly if DB has no profiles */
-        { _id: '1', profileName: 'Alexander Pierce', updatedTime: '2 hours ago', metrics: 14, tags: ['SH', 'TR'], status: 'Active' },
-        { _id: '2', profileName: 'Elena Rodriguez', updatedTime: 'Oct 24, 2023', metrics: 22, tags: ['BRIDE', 'SILK'], status: 'Active' },
-        { _id: '3', profileName: 'Julian Vane', updatedTime: 'Oct 12, 2023', metrics: 12, tags: ['SUIT'], status: 'Active' },
-        { _id: '4', profileName: 'Sarah Miller', updatedTime: 'Sep 30, 2023', metrics: 8, tags: ['EXPIRED'], status: 'Expired' }
-    ]).filter(item => 
-        (item.profileName || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredProfiles = profiles.filter(item => {
+        const matchesSearch = (item.profileName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              (item.orderId || '').toLowerCase().includes(searchQuery.toLowerCase());
+        
+        let matchesFilter = true;
+        if (activeFilter === 'High Priority') {
+            // Consider pending, accepted, or in-progress orders as high priority
+            matchesFilter = ['PENDING', 'ACCEPTED', 'IN-PROGRESS'].includes(item.tags[0]);
+        }
+        
+        return matchesSearch && matchesFilter;
+    }).sort((a, b) => {
+        if (activeFilter === 'Recent Updates') {
+            return new Date(b.updatedTime) - new Date(a.updatedTime);
+        }
+        // Default sorting
+        return new Date(b.updatedTime) - new Date(a.updatedTime);
+    });
 
     return (
         <div className="min-h-screen bg-[#F5F5F5] pb-24 flex flex-col relative pt-0">

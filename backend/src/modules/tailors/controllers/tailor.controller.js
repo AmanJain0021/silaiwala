@@ -759,7 +759,12 @@ exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => 
  * @access  Private (Tailor)
  */
 exports.getMeasurementReport = asyncHandler(async (req, res, next) => {
-  const order = await Order.findOne({ _id: req.params.id, tailor: req.user.id }).populate('customer', 'name profileImage');
+  const mongoose = require("mongoose");
+  const query = mongoose.Types.ObjectId.isValid(req.params.id)
+    ? { _id: req.params.id, tailor: req.user.id }
+    : { orderId: req.params.id, tailor: req.user.id };
+
+  const order = await Order.findOne(query).populate('customer', 'name profileImage');
   if (!order) return next(new ErrorResponse('Order not found or not assigned to you', 404));
 
   const MeasurementReport = require("../../../models/MeasurementReport");
@@ -783,7 +788,13 @@ exports.getMeasurementReport = asyncHandler(async (req, res, next) => {
  */
 exports.updateMeasurementReport = asyncHandler(async (req, res, next) => {
   const { measurements } = req.body;
-  const order = await Order.findOne({ _id: req.params.id, tailor: req.user.id });
+  
+  const mongoose = require("mongoose");
+  const query = mongoose.Types.ObjectId.isValid(req.params.id)
+    ? { _id: req.params.id, tailor: req.user.id }
+    : { orderId: req.params.id, tailor: req.user.id };
+    
+  const order = await Order.findOne(query);
 
   if (!order) {
     return next(new ErrorResponse("Order not found or not authorized", 404));

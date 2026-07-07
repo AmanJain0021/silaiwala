@@ -34,6 +34,11 @@ const deliveryService = {
         return response.data;
     },
 
+    getCompletedOrders: async () => {
+        const response = await api.get('/deliveries/orders?status=completed');
+        return response.data;
+    },
+
     getAvailableOrders: async () => {
         const response = await api.get('/deliveries/available-orders');
         return response.data;
@@ -49,8 +54,8 @@ const deliveryService = {
         return response.data;
     },
 
-    updateDeliveryStatus: async (orderId, status, message, proof) => {
-        const response = await api.patch(`/deliveries/orders/${orderId}/status`, { status, message, proof });
+    updateDeliveryStatus: async (orderId, status, message, proof, otp) => {
+        const response = await api.patch(`/deliveries/orders/${orderId}/status`, { status, message, proof, otp });
         return response.data;
     },
 

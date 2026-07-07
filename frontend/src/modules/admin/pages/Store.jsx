@@ -17,6 +17,7 @@ const AdminStore = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Form States
     const [newProduct, setNewProduct] = useState({
@@ -65,6 +66,7 @@ const AdminStore = () => {
 
     useEffect(() => {
         fetchData();
+        setSearchTerm(''); // Clear search on tab switch
     }, [selectedTab]);
 
     const resetForm = () => {
@@ -170,6 +172,21 @@ const AdminStore = () => {
         return 'bg-red-100 text-red-700 border-red-200';
     };
 
+    const filteredData = data.filter((item) => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        if (selectedTab === 'Products' || selectedTab === 'Inventory') {
+            return item.name?.toLowerCase().includes(term) || item.category?.name?.toLowerCase().includes(term) || item._id?.toLowerCase().includes(term);
+        }
+        if (selectedTab === 'Categories') {
+            return item.name?.toLowerCase().includes(term) || item.type?.toLowerCase().includes(term);
+        }
+        if (selectedTab === 'Coupons') {
+            return item.code?.toLowerCase().includes(term);
+        }
+        return true;
+    });
+
     return (
         <div className="h-full flex flex-col space-y-6 relative">
             {/* Header */}
@@ -205,7 +222,13 @@ const AdminStore = () => {
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <div className="relative flex-1 sm:w-64">
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input type="text" placeholder={`Search ${selectedTab.toLowerCase()}...`} className="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-gray-50 border border-transparent focus:border-gray-200 rounded-xl outline-none transition-all" />
+                        <input 
+                            type="text" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder={`Search ${selectedTab.toLowerCase()}...`} 
+                            className="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-gray-50 border border-transparent focus:border-gray-200 rounded-xl outline-none transition-all" 
+                        />
                     </div>
                 </div>
             </div>
@@ -216,6 +239,10 @@ const AdminStore = () => {
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                         <Loader2 className="w-8 h-8 animate-spin mb-2" />
                         <span className="text-xs font-bold uppercase tracking-widest">Loading data...</span>
+                    </div>
+                ) : filteredData.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                        <span className="text-xs font-bold uppercase tracking-widest">No {selectedTab.toLowerCase()} found.</span>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -258,7 +285,7 @@ const AdminStore = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {data.map((item) => (
+                                {filteredData.map((item) => (
                                     <tr key={item._id} className="hover:bg-primary/5 transition-colors group">
                                         {/* --- PRODUCTS TAB --- */}
                                         {selectedTab === 'Products' && (
@@ -407,7 +434,20 @@ const AdminStore = () => {
                                                     <input type="text" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Category</label>
+                                                    <div className="flex justify-between items-center mb-1.5">
+                                                        <label className="block text-xs font-black uppercase text-gray-400 tracking-widest">Category</label>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => { 
+                                                                setIsAddModalOpen(false); 
+                                                                setSelectedTab('Categories'); 
+                                                                setTimeout(() => { resetForm(); setIsAddModalOpen(true); }, 150); 
+                                                            }} 
+                                                            className="text-primary hover:text-primary-dark text-[10px] font-black uppercase tracking-widest bg-primary/10 hover:bg-primary/20 transition-colors px-2 py-0.5 rounded-lg"
+                                                        >
+                                                            + New Category
+                                                        </button>
+                                                    </div>
                                                     <select value={newProduct.category} onChange={(e) => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all appearance-none">
                                                         <option value="">Select Category</option>
                                                         {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}

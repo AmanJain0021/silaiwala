@@ -48,17 +48,25 @@ const MeasurementExecutives = () => {
                     <p className="text-sm text-gray-500 mt-1">Manage, approve, and verify at-home tailors.</p>
                 </div>
                 
-                <div className="mt-4 sm:mt-0 flex items-center space-x-4">
-                    <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="pending">Pending Approval</option>
-                        <option value="verified">Verified</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
+                <div className="mt-4 sm:mt-0 flex items-center bg-gray-100 p-1 rounded-lg">
+                    {[
+                        { value: 'all', label: 'All Statuses' },
+                        { value: 'pending', label: 'Pending Approval' },
+                        { value: 'verified', label: 'Verified' },
+                        { value: 'rejected', label: 'Rejected' }
+                    ].map(option => (
+                        <button
+                            key={option.value}
+                            onClick={() => setFilter(option.value)}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                filter === option.value 
+                                    ? 'bg-white shadow-sm text-indigo-700' 
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                            }`}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 

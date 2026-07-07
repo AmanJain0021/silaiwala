@@ -4,6 +4,7 @@ import {
     Settings, Headset, ChevronRight, Share2, Heart, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Sparkles, Package, Trash2, AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import useAuthStore from '../../../store/authStore';
 import BottomNav from '../components/BottomNav';
 import ProfileHeader from '../components/profile/ProfileHeader';
@@ -66,8 +67,10 @@ const ProfilePage = () => {
     }, [fetchProfile]);
 
     const handleLogout = () => {
-        logout();
-        navigate('/user/login');
+        if (window.confirm("Are you sure you want to logout?")) {
+            logout();
+            navigate('/user/login');
+        }
     };
 
     const handleDeleteAccount = async () => {
@@ -148,7 +151,7 @@ const ProfilePage = () => {
                             label="Loyalty Points"
                             subLabel="Redeem your rewards"
                             extra={<span className="bg-gray-100 text-[10px] font-black px-2.5 py-1 rounded-full text-gray-900 border border-gray-200">0</span>}
-                            to="/user/rewards"
+                            onClick={() => toast.success('Loyalty Points feature coming soon!')}
                         />
                         <MenuOption
                             icon={Wallet}
@@ -156,14 +159,14 @@ const ProfilePage = () => {
                             label="Wallet"
                             subLabel="Your balance"
                             extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ 0</span>}
-                            to="/user/wallet"
+                            onClick={() => toast.success('Wallet feature coming soon!')}
                         />
                         <MenuOption
                             icon={Ticket}
                             color="bg-[#843D9B]"
                             label="Coupons"
                             subLabel="View available offers"
-                            to="/user/coupons"
+                            onClick={() => toast.success('Coupons feature coming soon!')}
                         />
                         <MenuOption
                             icon={Share2}
@@ -186,14 +189,14 @@ const ProfilePage = () => {
                             label="Language"
                             subLabel="Change app language"
                             extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
-                            to="/user/settings/language"
+                            onClick={() => toast.success('Language settings coming soon!')}
                         />
                         <MenuOption
                             icon={Bell}
                             color="bg-[#843D9B]"
                             label="Notifications"
                             subLabel="Manage preferences"
-                            to="/user/settings/notifications"
+                            onClick={() => toast.success('Notification settings coming soon!')}
                         />
                         <MenuOption
                             icon={MessageSquare}

@@ -330,11 +330,43 @@ exports.getTransactions = async (req, res) => {
     }
 
     if (search) {
-      query.$or = [
+      const User = mongoose.model("User");
+      const matchingUsers = await User.find({
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { phoneNumber: { $regex: search, $options: "i" } },
+        ]
+      }).select('_id');
+      const userIds = matchingUsers.map(u => u._id);
+
+      let orConditions = [
         { orderId: { $regex: search, $options: "i" } },
         { paymentId: { $regex: search, $options: "i" } },
+        { advancePaymentId: { $regex: search, $options: "i" } },
+        { remainingPaymentId: { $regex: search, $options: "i" } },
         { transactionId: { $regex: search, $options: "i" } },
+        { customer: { $in: userIds } },
+        { tailor: { $in: userIds } },
+        { deliveryPartner: { $in: userIds } }
       ];
+
+      if (search.toUpperCase().startsWith("TXN-")) {
+        const hexSuffix = search.substring(4).toLowerCase();
+        if (hexSuffix.length > 0) {
+          orConditions.push({
+            $expr: {
+              $regexMatch: {
+                input: { $toString: "$_id" },
+                regex: hexSuffix,
+                options: "i"
+              }
+            }
+          });
+        }
+      }
+
+      query.$or = orConditions;
     }
 
     if (startDate || endDate) {
@@ -382,7 +414,7 @@ exports.getTransactions = async (req, res) => {
       discountAmount: t.discountAmount || 0,
       tailorShare: t.tailorEarning || 0,
       deliveryShare: t.deliveryPartnerEarning || 0,
-      netPlatformEarning: t.netPlatformEarning || 0,
+      netPlatformEarning: t.netPlatformEarning || t.platformFee || 0,
       // Payment info
       paymentMethod: t.razorpayOrderId ? "Online (Razorpay)" : "Cash",
       paymentId: t.paymentId || t.advancePaymentId || "",

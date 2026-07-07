@@ -11,6 +11,7 @@ const Product = require("../../../models/Product");
 const PromoCode = require("../../../models/PromoCode");
 const Payout = require("../../../models/Payout");
 const Settings = require("../../../models/Settings");
+const Alteration = require("../../../models/Alteration");
 const path = require("path");
 const { sendNotification } = require("../../../utils/notification");
 
@@ -82,6 +83,19 @@ exports.getDashboardStats = async (req, res) => {
     ]);
 
     // Financial stats for the chart (last 7 days)
+    const formattedChartData = [];
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      formattedChartData.push({
+        name: days[d.getDay()],
+        dateStr: d.toISOString().split('T')[0],
+        revenue: 0
+      });
+    }
+
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -94,18 +108,20 @@ exports.getDashboardStats = async (req, res) => {
       },
       {
         $group: {
-          _id: { $dayOfWeek: "$createdAt" },
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
           revenue: { $sum: "$totalAmount" }
         }
-      },
-      { $sort: { "_id": 1 } }
+      }
     ]);
 
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const formattedChartData = chartData.map(d => ({
-      name: days[d._id - 1],
-      revenue: d.revenue
-    }));
+    chartData.forEach(d => {
+      const match = formattedChartData.find(fc => fc.dateStr === d._id);
+      if (match) {
+        match.revenue = d.revenue;
+      }
+    });
+
+    formattedChartData.forEach(d => delete d.dateStr);
 
     const systemHealth = {
       uptime: process.uptime(),
@@ -153,19 +169,24 @@ exports.getAllUsers = async (req, res) => {
       const users = await User.find({ role: 'customer' }).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip).lean();
       const userIds = users.map(u => u._id);
       
-      const [profiles, orders] = await Promise.all([
+      const [profiles, orders, alterations] = await Promise.all([
         Customer.find({ user: { $in: userIds } }).lean(),
-        Order.find({ customer: { $in: userIds } }).lean()
+        Order.find({ customer: { $in: userIds } }).lean(),
+        Alteration.find({ customer: { $in: userIds } }).lean()
       ]);
 
       const data = users.map(user => {
         const profile = profiles.find(p => p.user?.toString() === user._id.toString());
         const userOrders = orders.filter(o => o.customer?.toString() === user._id.toString());
+        const userAlterations = alterations.filter(a => a.customer?.toString() === user._id.toString());
+        
+        const totalOrderAmount = userOrders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
+        const totalAlterationAmount = userAlterations.reduce((acc, curr) => acc + (curr.quoteAmount || 0), 0);
         
         return {
           ...user,
-          orderCount: userOrders.length,
-          totalSpent: userOrders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0),
+          orderCount: userOrders.length + userAlterations.length,
+          totalSpent: totalOrderAmount + totalAlterationAmount,
           addresses: profile?.addresses || []
         };
       });
@@ -383,6 +404,45 @@ exports.updateTailorShiprocketLocation = async (req, res) => {
 
 // --- DELIVERY PARTNER APPROVALS ---
 
+exports.getDeliveryStats = async (req, res) => {
+  try {
+    const Order = require("../../../models/Order");
+    const Delivery = require("../../../models/Delivery");
+
+    const pendingTasks = await Order.countDocuments({
+      deliveryPartner: null,
+      status: { $nin: ['delivered', 'cancelled', 'product-delivered', 'order-completed', 'failed-delivery'] }
+    });
+
+    const User = require("../../../models/User");
+
+    const deliveryUsers = await User.find({ role: 'delivery' }).select('_id').lean();
+    const deliveryUserIds = deliveryUsers.map(u => u._id);
+    const activePartners = await Delivery.countDocuments({ 
+        user: { $in: deliveryUserIds },
+        isAvailable: true 
+    });
+
+    const deliveryAgg = await Delivery.aggregate([
+      { $match: { user: { $in: deliveryUserIds } } },
+      { $group: { _id: null, total: { $sum: '$totalDeliveries' } } }
+    ]);
+    const totalDelivered = deliveryAgg.length > 0 ? deliveryAgg[0].total : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalPending: pendingTasks,
+        activePartners,
+        totalDelivered
+      }
+    });
+  } catch (error) {
+    console.error("Error in getDeliveryStats:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.getPendingDeliveryPartners = async (req, res) => {
   try {
     const { limit = 50, page = 1 } = req.query;
@@ -467,7 +527,7 @@ exports.rejectDeliveryPartner = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const { status, type, customer, tailor, deliveryPartner, limit = 50, page = 1 } = req.query;
+    const { status, type, customer, tailor, deliveryPartner, search, limit = 50, page = 1 } = req.query;
     
     let query = { isRework: { $ne: true } };
     if (status) query.status = status;
@@ -482,8 +542,19 @@ exports.getAllOrders = async (req, res) => {
     }
     
     if (type) {
-      if (type === 'store') query['items.product'] = { $exists: true };
-      if (type === 'stitching') query['items.service'] = { $exists: true };
+      if (type === 'store') query['items.product'] = { $exists: true, $ne: null };
+      if (type === 'stitching') query['items.service'] = { $exists: true, $ne: null };
+    }
+
+    if (search) {
+      // Find users matching the search to filter by customer name
+      const matchingUsers = await User.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const userIds = matchingUsers.map(u => u._id);
+      
+      query.$or = [
+        { orderId: { $regex: search, $options: 'i' } },
+        { customer: { $in: userIds } }
+      ];
     }
 
     const skip = (page - 1) * limit;
@@ -502,12 +573,18 @@ exports.getAllOrders = async (req, res) => {
       .limit(Number(limit))
       .skip(skip);
       
-    const total = await Order.countDocuments(query);
+    const [total, totalStitching, totalStore] = await Promise.all([
+      Order.countDocuments(query),
+      Order.countDocuments({ ...query, 'items.service': { $exists: true, $ne: null } }),
+      Order.countDocuments({ ...query, 'items.product': { $exists: true, $ne: null } })
+    ]);
 
     res.status(200).json({ 
       success: true, 
       count: orders.length, 
       total,
+      totalStitching,
+      totalStore,
       pages: Math.ceil(total / limit),
       data: orders 
     });
@@ -841,7 +918,8 @@ exports.sendBroadcastNotification = async (req, res) => {
         tokens: fcmTokens
       };
       
-      const response = await admin.messaging().sendEachForMulticast(payload);
+      const { getMessaging } = require('firebase-admin/messaging');
+      const response = await getMessaging().sendEachForMulticast(payload);
       console.log(`FCM Admin Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
       
       return res.status(200).json({ 
@@ -881,6 +959,9 @@ exports.createCMSContent = async (req, res) => {
     res.status(201).json({ success: true, data: content });
   } catch (error) {
     console.error("Error in createCMSContent:", error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: "A content page with this title/slug already exists." });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -920,8 +1001,7 @@ exports.getAllCategories = async (req, res) => {
       const productCount = await mongoose.model("Product").countDocuments({ category: cat._id });
       return { ...cat, productCount };
     }));
-
-    res.status(200).json({ success: true, count: data.length, total, pages: Math.ceil(total / limit), data });
+    res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     console.error("Error in getAllCategories:", error);
     res.status(500).json({ success: false, message: error.message });

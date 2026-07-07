@@ -10,6 +10,7 @@ const {
   approveTailor,
   rejectTailor,
   updateTailorCommission,
+  getDeliveryStats,
   getPendingDeliveryPartners,
   approveDeliveryPartner,
   rejectDeliveryPartner,
@@ -88,6 +89,7 @@ router.put("/tailors/:id/commission", updateTailorCommission);
 router.put("/tailors/:id/shiprocket-location", updateTailorShiprocketLocation);
 
 // Delivery Partner Approvals
+router.get("/delivery-partners/stats", getDeliveryStats);
 router.get("/delivery-partners/pending", getPendingDeliveryPartners);
 router.put("/delivery-partners/:id/approve", approveDeliveryPartner);
 router.delete("/delivery-partners/:id/reject", rejectDeliveryPartner);

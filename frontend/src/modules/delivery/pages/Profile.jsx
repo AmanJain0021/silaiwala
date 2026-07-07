@@ -5,7 +5,7 @@ import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { 
   FiUser, FiMail, FiPhone, FiTruck, FiEdit2, FiSave, FiX, FiLogOut, 
   FiCheckCircle, FiCreditCard, FiSmartphone, FiDollarSign, FiInfo, 
-  FiAlertCircle, FiActivity, FiMapPin, FiCamera
+  FiAlertCircle, FiActivity, FiMapPin, FiCamera, FiImage
 } from 'react-icons/fi';
 import PageTransition from '../../../shared/components/PageTransition';
 import toast from 'react-hot-toast';
@@ -17,6 +17,9 @@ import { useRef } from 'react';
 const DeliveryProfile = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const avatarGalleryRef = useRef(null);
+  const kycInputRef = useRef(null);
+  const kycGalleryRef = useRef(null);
   const { deliveryBoy, updateProfile, fetchProfile, fetchProfileSummary, isLoading, logout } = useDeliveryAuthStore();
   
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' or 'banking'
@@ -39,6 +42,7 @@ const DeliveryProfile = () => {
     vehicleNumber: '',
     emergencyContact: '',
     aadharNumber: '',
+    kycDocument: '',
     upiId: '',
     bankDetails: {
       accountHolderName: '',
@@ -90,6 +94,7 @@ const DeliveryProfile = () => {
         vehicleNumber: deliveryBoy.vehicleNumber || '',
         emergencyContact: deliveryBoy.emergencyContact || '',
         aadharNumber: deliveryBoy.aadharNumber || '',
+        kycDocument: (deliveryBoy.documents && deliveryBoy.documents.length > 0) ? deliveryBoy.documents[0].url : '',
         upiId: deliveryBoy.upiId || '',
         bankDetails: {
           accountHolderName: deliveryBoy.bankDetails?.accountHolderName || '',
@@ -103,6 +108,12 @@ const DeliveryProfile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Accept alphabet and spaces only for bank and holder name
+    if (name === 'bankDetails.accountHolderName' || name === 'bankDetails.bankName' || name === 'name') {
+      if (!/^[a-zA-Z\s]*$/.test(value)) return;
+    }
+
     if (name.includes('.')) {
       const [field, subField] = name.split('.');
       setFormData(prev => ({
@@ -140,6 +151,7 @@ const DeliveryProfile = () => {
         vehicleNumber: deliveryBoy.vehicleNumber || '',
         emergencyContact: deliveryBoy.emergencyContact || '',
         aadharNumber: deliveryBoy.aadharNumber || '',
+        kycDocument: (deliveryBoy.documents && deliveryBoy.documents.length > 0) ? deliveryBoy.documents[0].url : '',
         upiId: deliveryBoy.upiId || '',
         bankDetails: {
           accountHolderName: deliveryBoy.bankDetails?.accountHolderName || '',
@@ -158,10 +170,6 @@ const DeliveryProfile = () => {
     navigate('/delivery/login');
   };
 
-  const handleImageClick = () => {
-    if (fileInputRef.current) fileInputRef.current.click();
-  };
-
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -176,6 +184,26 @@ const DeliveryProfile = () => {
         toast.success('Profile picture updated!');
       } catch (err) {
         toast.error('Failed to update profile picture');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleKycChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return toast.error('Image size must be less than 5MB');
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result;
+        setFormData(prev => ({ ...prev, kycDocument: base64String }));
+        if (!isEditing) {
+           await updateProfile({ ...formData, kycDocument: base64String });
+           toast.success('KYC Document saved!');
+        }
+      } catch (err) {
+        toast.error('Failed to upload document');
       }
     };
     reader.readAsDataURL(file);
@@ -217,32 +245,28 @@ const DeliveryProfile = () => {
                 <FiEdit2 size={16} />
               </button>
             ) : (
-              <div className="flex gap-2">
-                <button onClick={handleSave} disabled={isLoading} className="w-10 h-10 bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center text-white shadow-lg">
-                  <FiSave size={16} />
-                </button>
-                <button onClick={handleCancel} className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white">
-                  <FiX size={16} />
-                </button>
+              <div className="px-3 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-indigo-500/30">
+                Editing Mode
               </div>
             )}
           </div>
 
           <div className="relative z-10 flex items-center gap-4">
-             <div 
-              onClick={handleImageClick}
-              className="w-16 h-16 shrink-0 aspect-square bg-[#0F172A] rounded-2xl flex items-center justify-center border-2 border-white/10 shadow-xl relative group cursor-pointer overflow-hidden"
-            >
-              {deliveryBoy?.avatar ? (
-                <img src={deliveryBoy.avatar} alt="P" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white text-xl font-bold">{deliveryBoy?.name?.charAt(0) || 'D'}</span>
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <FiCamera className="text-white" size={18} />
-              </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
-            </div>
+             <div className="flex flex-col items-center gap-2">
+               <div className="w-16 h-16 shrink-0 aspect-square bg-[#0F172A] rounded-2xl flex items-center justify-center border-2 border-white/10 shadow-xl relative overflow-hidden">
+                 {deliveryBoy?.avatar ? (
+                   <img src={deliveryBoy.avatar} alt="P" className="w-full h-full object-cover" />
+                 ) : (
+                   <span className="text-white text-xl font-bold">{deliveryBoy?.name?.charAt(0) || 'D'}</span>
+                 )}
+               </div>
+               <div className="flex items-center gap-1">
+                  <button onClick={() => { if (fileInputRef.current) fileInputRef.current.click(); }} className="text-[8px] font-bold text-slate-300 bg-white/10 px-1.5 py-1 rounded hover:bg-white/20 transition-all flex items-center gap-1" title="Camera"><FiCamera /> Cam</button>
+                  <button onClick={() => { if (avatarGalleryRef.current) avatarGalleryRef.current.click(); }} className="text-[8px] font-bold text-slate-300 bg-white/10 px-1.5 py-1 rounded hover:bg-white/20 transition-all flex items-center gap-1" title="Gallery"><FiImage /> Gal</button>
+               </div>
+               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" capture="user" onChange={handleImageChange} />
+               <input type="file" ref={avatarGalleryRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+             </div>
             
             <div className="flex-1 min-w-0">
                <div className="flex items-center gap-2 mb-1">
@@ -361,9 +385,67 @@ const DeliveryProfile = () => {
                           )}
                         </div>
                       </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5 mt-2">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Aadhar Number (KYC)</label>
+                        {isEditing ? (
+                          <input name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-sm text-slate-800" placeholder="XXXX XXXX XXXX XXXX" />
+                        ) : (
+                          <div className="px-4 py-3 bg-slate-100/50 rounded-xl font-bold text-sm text-slate-800">{formData.aadharNumber || 'Not Set'}</div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-1.5 mt-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">KYC Document (Aadhar/PAN)</label>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => { if (kycInputRef.current) kycInputRef.current.click(); }}
+                              className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1 hover:text-indigo-700"
+                            >
+                              <FiCamera size={12} /> Camera
+                            </button>
+                            <button 
+                              onClick={() => { if (kycGalleryRef.current) kycGalleryRef.current.click(); }}
+                              className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-1 hover:text-emerald-700"
+                            >
+                              <FiImage size={12} /> Gallery
+                            </button>
+                          </div>
+                        </div>
+                        <div className="w-full h-40 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center relative overflow-hidden">
+                          {formData.kycDocument || (deliveryBoy?.documents && deliveryBoy.documents.length > 0) ? (
+                            <img src={formData.kycDocument || (deliveryBoy.documents && deliveryBoy.documents[0].url)} alt="KYC" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col gap-3 w-full px-4">
+                              <button onClick={() => { if (kycInputRef.current) kycInputRef.current.click(); }} className="w-full py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2">
+                                <FiCamera size={14} /> Open Camera
+                              </button>
+                              <button onClick={() => { if (kycGalleryRef.current) kycGalleryRef.current.click(); }} className="w-full py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2">
+                                <FiImage size={14} /> Upload from Gallery
+                              </button>
+                            </div>
+                          )}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            capture="environment" 
+                            ref={kycInputRef} 
+                            className="hidden" 
+                            onChange={handleKycChange}
+                          />
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            ref={kycGalleryRef} 
+                            className="hidden" 
+                            onChange={handleKycChange}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
               </motion.div>
             ) : (
               <motion.div key="banking" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
@@ -440,6 +522,25 @@ const DeliveryProfile = () => {
             </div>
           )}
         </div>
+
+        {/* Fixed Footer for Edit Mode */}
+        <AnimatePresence>
+          {isEditing && (
+            <motion.div 
+              initial={{ y: '100%' }} 
+              animate={{ y: 0 }} 
+              exit={{ y: '100%' }}
+              className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] flex gap-3 max-w-lg mx-auto"
+            >
+              <button onClick={handleCancel} disabled={isLoading} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[11px] active:scale-95 transition-all">
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={isLoading} className="flex-[2] py-4 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-indigo-600/20">
+                {isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><FiSave size={16} /> Save Changes</>}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
   );
 };

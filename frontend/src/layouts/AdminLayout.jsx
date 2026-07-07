@@ -185,8 +185,12 @@ const AdminLayout = () => {
                             <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">System Live</span>
                         </div>
                         <button
-                            onClick={() => setHasUnread(false)}
-                            className="relative p-2.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-full transition-all"
+                            onClick={() => {
+                                setHasUnread(false);
+                                toast.success(hasUnread ? 'You have new notifications!' : 'No new notifications');
+                            }}
+                            title="Notifications"
+                            className="relative p-2.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-full transition-all cursor-pointer"
                         >
                             <Bell size={20} />
                             {hasUnread && (
@@ -194,13 +198,15 @@ const AdminLayout = () => {
                             )}
                         </button>
                         <div className="flex items-center gap-3 lg:gap-4 pl-3 lg:pl-6 border-l border-gray-100">
-                            <div className="text-right hidden lg:block">
-                                <p className="text-xs font-black text-gray-900 leading-none uppercase tracking-tighter">Super Admin</p>
-                                <p className="text-[9px] text-[#843D9B] font-black uppercase mt-1 tracking-[0.1em]">Full Platform Access</p>
-                            </div>
-                            <div className="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-indigo-900/20 shrink-0 border-2 border-white">
-                                SA
-                            </div>
+                            <Link to="/admin/settings" title="Profile Settings" className="flex items-center gap-3 lg:gap-4 hover:opacity-80 transition-opacity cursor-pointer">
+                                <div className="text-right hidden lg:block">
+                                    <p className="text-xs font-black text-gray-900 leading-none uppercase tracking-tighter">Super Admin</p>
+                                    <p className="text-[9px] text-[#843D9B] font-black uppercase mt-1 tracking-[0.1em]">Full Platform Access</p>
+                                </div>
+                                <div className="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-indigo-900/20 shrink-0 border-2 border-white">
+                                    SA
+                                </div>
+                            </Link>
                             <button
                                 onClick={() => {
                                     useAuthStore.getState().logout();

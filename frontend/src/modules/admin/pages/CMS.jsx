@@ -153,7 +153,7 @@ const AdminCMS = () => {
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to save content:', error);
-            toast.error('Failed to save content');
+            toast.error(error.response?.data?.message || 'Failed to save content');
         } finally {
             setIsSubmitting(false);
         }

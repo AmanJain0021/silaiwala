@@ -73,14 +73,14 @@ const Support = () => {
             <div className="max-w-md mx-auto px-5 -mt-6 space-y-8">
                 {/* Contact Options */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
+                    <button onClick={() => window.open('https://wa.me/919876543210', '_blank')} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
                         <div className="h-12 w-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:text-white transition-all transform group-hover:scale-110">
                             <MessageCircle size={24} />
                         </div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-white/60">WhatsApp</p>
                         <p className="text-sm font-black text-gray-900 mt-1 group-hover:text-white tracking-tight">Chat Now</p>
                     </button>
-                    <button className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
+                    <button onClick={() => window.location.href = 'tel:+919876543210'} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
                         <div className="h-12 w-12 bg-indigo-50 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:text-white transition-all transform group-hover:scale-110">
                             <Phone size={24} />
                         </div>

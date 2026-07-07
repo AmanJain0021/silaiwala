@@ -198,7 +198,7 @@ const AdminServices = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-12 w-12 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center relative">
-                                                    <img src={service.image} alt={service.name} className="w-full h-full object-cover" />
+                                                    <img src={service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'} alt={service.name} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-black text-gray-900">{service.name}</span>
@@ -271,7 +271,7 @@ const AdminServices = () => {
                                                     <div className="flex gap-4">
                                                         <div className="h-16 w-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
                                                             <img 
-                                                                src={service.image} 
+                                                                src={service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'} 
                                                                 alt={service.title} 
                                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                                                                 onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}

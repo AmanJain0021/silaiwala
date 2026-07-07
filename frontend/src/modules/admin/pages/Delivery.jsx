@@ -13,6 +13,7 @@ const AdminDelivery = () => {
     const [codDeposits, setCodDeposits] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [stats, setStats] = useState({ totalPending: 0, activePartners: 0, totalDelivered: 0 });
 
     const [unassignedTasks, setUnassignedTasks] = useState([]);
     const [isAssigning, setIsAssigning] = useState(false);
@@ -21,10 +22,11 @@ const AdminDelivery = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [partnersRes, pendingRes, depositsRes] = await Promise.all([
+            const [partnersRes, pendingRes, depositsRes, statsRes] = await Promise.all([
                 api.get('/admin/delivery-partners'),
                 api.get('/admin/delivery-partners/pending'),
-                api.get('/admin/deliveries/cod-deposit')
+                api.get('/admin/deliveries/cod-deposit'),
+                api.get('/admin/delivery-partners/stats')
             ]);
             
             setDeliveryData(partnersRes.data.data.map(p => ({
@@ -56,6 +58,9 @@ const AdminDelivery = () => {
 
             if (depositsRes.data.success) {
                 setCodDeposits(depositsRes.data.data);
+            }
+            if (statsRes.data.success) {
+                setStats(statsRes.data.data);
             }
         } catch (error) {
             if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
@@ -191,7 +196,7 @@ const AdminDelivery = () => {
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Pending</p>
-                        <h3 className="text-2xl font-black text-gray-900">{unassignedTasks.length}</h3>
+                        <h3 className="text-2xl font-black text-gray-900">{stats.totalPending}</h3>
                     </div>
                     <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center">
                         <Package size={20} />
@@ -200,9 +205,7 @@ const AdminDelivery = () => {
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Active Partners</p>
-                        <h3 className="text-2xl font-black text-gray-900">
-                            {deliveryData.filter(p => p.status === 'Online').length}
-                        </h3>
+                        <h3 className="text-2xl font-black text-gray-900">{stats.activePartners}</h3>
                     </div>
                     <div className="w-12 h-12 bg-green-50 text-green-500 rounded-xl flex items-center justify-center">
                         <User size={20} />
@@ -211,9 +214,7 @@ const AdminDelivery = () => {
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Delivered</p>
-                        <h3 className="text-2xl font-black text-gray-900">
-                            {deliveryData.reduce((acc, p) => acc + (p.totalDeliveries || 0), 0)}
-                        </h3>
+                        <h3 className="text-2xl font-black text-gray-900">{stats.totalDelivered}</h3>
                     </div>
                     <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
                         <CheckCircle2 size={20} />

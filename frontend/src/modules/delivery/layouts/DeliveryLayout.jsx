@@ -200,8 +200,51 @@ const DeliveryLayout = () => {
         fetchAndSyncLocation();
     }, [detectLocation]);
 
+    const [pullState, setPullState] = useState({ startY: 0, currentY: 0, isPulling: false });
+
     return (
-        <div className="min-h-[100dvh] bg-[#FAFAFB] flex flex-col font-sans selection:bg-indigo-100 selection:text-primary overflow-x-clip">
+        <div 
+            className="min-h-[100dvh] bg-[#FAFAFB] flex flex-col font-sans selection:bg-indigo-100 selection:text-primary overflow-x-clip"
+            onTouchStart={(e) => {
+                if (window.scrollY === 0) {
+                    setPullState({ startY: e.touches[0].clientY, currentY: e.touches[0].clientY, isPulling: true });
+                }
+            }}
+            onTouchMove={(e) => {
+                if (pullState.isPulling) {
+                    const currentY = e.touches[0].clientY;
+                    if (currentY > pullState.startY) {
+                        setPullState(prev => ({ ...prev, currentY }));
+                    } else {
+                        setPullState(prev => ({ ...prev, isPulling: false }));
+                    }
+                }
+            }}
+            onTouchEnd={() => {
+                if (pullState.isPulling) {
+                    const distance = pullState.currentY - pullState.startY;
+                    if (distance > 100) {
+                        window.location.reload();
+                    }
+                    setPullState({ startY: 0, currentY: 0, isPulling: false });
+                }
+            }}
+        >
+            {/* Pull to refresh indicator */}
+            <div 
+                className="fixed top-0 left-0 right-0 flex justify-center items-center z-[100] pointer-events-none transition-transform duration-200"
+                style={{ 
+                    transform: `translateY(${pullState.isPulling ? Math.min((pullState.currentY - pullState.startY) * 0.4, 60) : -60}px)`,
+                    opacity: pullState.isPulling ? Math.min((pullState.currentY - pullState.startY) / 100, 1) : 0
+                }}
+            >
+                <div className="bg-white p-2 rounded-full shadow-lg text-indigo-600 mt-4">
+                    <svg className={`w-6 h-6 ${(pullState.currentY - pullState.startY) > 100 ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </div>
+            </div>
+
             {/* New Task Rapido-Style Alert */}
             <NewTaskAlert onTaskAccepted={(orderId) => {
                 // Refresh data if we are on dashboard or tasks page
@@ -380,9 +423,9 @@ const DeliveryLayout = () => {
                     </div>
                     <div className="flex flex-col min-w-0">
                         <span className="font-black text-slate-900 text-xs sm:text-sm tracking-tight leading-none mb-1 truncate">{user?.name || 'SewZelaa Partner'}</span>
-                        <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                        <div className="flex items-center gap-1 text-slate-500 min-w-0 w-full overflow-hidden">
                             <MapPin size={10} className="text-indigo-400 shrink-0" />
-                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest truncate leading-none mt-[1px]">{currentLocationStr}</span>
+                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest truncate leading-none mt-[1px] inline-block w-full">{currentLocationStr}</span>
                         </div>
                     </div>
                 </div>

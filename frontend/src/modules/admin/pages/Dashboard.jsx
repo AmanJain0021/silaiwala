@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     TrendingUp,
@@ -22,6 +22,7 @@ import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
 
 const AdminDashboard = () => {
+    const navigate = useNavigate();
     const [statsData, setStatsData] = useState({
         totalRevenue: '₹0',
         activeOrders: 0,
@@ -33,6 +34,8 @@ const AdminDashboard = () => {
     const [revenueChartData, setRevenueChartData] = useState([]);
     const [systemHealthData, setSystemHealthData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -128,10 +131,10 @@ const AdminDashboard = () => {
     }, []);
 
     const stats = [
-        { label: 'Total Revenue', value: statsData.totalRevenue, icon: <TrendingUp size={20} /> },
-        { label: 'Platform Orders', value: statsData.activeOrders, icon: <ShoppingBag size={20} /> },
-        { label: 'Total Tailors', value: statsData.totalTailors, icon: <Scissors size={20} /> },
-        { label: 'Pending Payouts', value: statsData.pendingPayouts, icon: <CreditCard size={20} /> },
+        { label: 'Total Revenue', value: statsData.totalRevenue, icon: <TrendingUp size={20} />, link: '/admin/finance' },
+        { label: 'Platform Orders', value: statsData.activeOrders, icon: <ShoppingBag size={20} />, link: '/admin/orders' },
+        { label: 'Total Tailors', value: statsData.totalTailors, icon: <Scissors size={20} />, link: '/admin/tailors' },
+        { label: 'Pending Payouts', value: statsData.pendingPayouts, icon: <CreditCard size={20} />, link: '/admin/finance' },
     ];
 
     const getStatusStyle = (status) => {
@@ -145,7 +148,17 @@ const AdminDashboard = () => {
         return 'bg-gray-100 text-gray-700 border-gray-200';
     };
 
-    const maxRevenue = revenueChartData.length > 0 ? Math.max(...revenueChartData.map(d => d.revenue)) : 0;
+    const actualMax = revenueChartData.length > 0 ? Math.max(...revenueChartData.map(d => d.revenue)) : 0;
+    const maxRevenue = actualMax > 0 ? actualMax : 1000;
+
+    const filteredOrders = liveOrders.filter(order => {
+        const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              order.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              order.tailor.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || order.status.toLowerCase() === statusFilter.toLowerCase();
+        return matchesSearch && matchesStatus;
+    });
 
     return (
         <div className="space-y-6 lg:space-y-10">
@@ -164,7 +177,8 @@ const AdminDashboard = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         key={idx}
-                        className="bg-white p-5 lg:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all group overflow-hidden relative"
+                        onClick={() => navigate(stat.link)}
+                        className="bg-white p-5 lg:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all group overflow-hidden relative cursor-pointer"
                     >
                         <div className="absolute -right-2 -top-2 h-16 w-16 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
                         <div className="flex justify-between items-center relative z-10">
@@ -226,7 +240,7 @@ const AdminDashboard = () => {
                                     <div className="relative w-full max-w-[40px] flex justify-center flex-1 items-end">
                                         <div
                                             className="w-full bg-indigo-100/50 rounded-t-lg group-hover:bg-[#843D9B] transition-all duration-300 relative"
-                                            style={{ height: `${(data.revenue / (maxRevenue || 1)) * 100}%` }}
+                                            style={{ height: `${(data.revenue / maxRevenue) * 100}%`, minHeight: '8px' }}
                                         >
                                             <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap transition-all z-20">
                                                 ₹{data.revenue.toLocaleString()}
@@ -251,13 +265,29 @@ const AdminDashboard = () => {
                                 <h3 className="text-lg lg:text-xl font-black text-gray-900 tracking-tight">Recent Orders</h3>
                                 <p className="text-[10px] lg:text-xs text-gray-400 mt-1 font-medium">Live marketplace activity</p>
                             </div>
-                            <div className="flex gap-2">
-                                <button className="p-2 lg:p-2.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-xl transition-all border border-gray-100">
-                                    <Search size={16} className="lg:w-[18px] lg:h-[18px]" />
-                                </button>
-                                <button className="p-2 lg:p-2.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-xl transition-all border border-gray-100">
-                                    <Filter size={16} className="lg:w-[18px] lg:h-[18px]" />
-                                </button>
+                            <div className="flex gap-2 items-center">
+                                <div className="relative">
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search orders..." 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-9 pr-3 py-1.5 lg:py-2 text-[10px] lg:text-xs border border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-24 lg:w-32 focus:w-36 lg:focus:w-48 transition-all bg-gray-50 focus:bg-white"
+                                    />
+                                </div>
+                                <select 
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="px-3 py-1.5 lg:py-2 text-[10px] lg:text-xs border border-gray-100 rounded-xl focus:outline-none focus:border-primary text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer outline-none"
+                                >
+                                    <option value="All">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="production">Production</option>
+                                    <option value="ready">Ready</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -268,11 +298,10 @@ const AdminDashboard = () => {
                                         <th className="px-5 lg:px-8 py-4">Assigned Tailor</th>
                                         <th className="px-5 lg:px-8 py-4">Amount</th>
                                         <th className="px-5 lg:px-8 py-4">Status</th>
-                                        <th className="px-5 lg:px-8 py-4 text-right"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {liveOrders.map((order) => (
+                                    {filteredOrders.map((order) => (
                                         <tr key={order.id} className="hover:bg-gray-50/50 transition-colors group">
                                             <td className="px-5 lg:px-8 py-4 lg:py-5">
                                                 <div className="flex flex-col">
@@ -295,16 +324,11 @@ const AdminDashboard = () => {
                                                     {order.status.replace(/-/g, ' ')}
                                                 </span>
                                             </td>
-                                            <td className="px-5 lg:px-8 py-4 lg:py-5 text-right">
-                                                <button className="text-gray-300 hover:text-primary transition-colors p-1.5 lg:p-2 hover:bg-gray-50 rounded-lg">
-                                                    <MoreHorizontal size={18} className="lg:w-[20px] lg:h-[20px]" />
-                                                </button>
-                                            </td>
                                         </tr>
                                     ))}
-                                    {liveOrders.length === 0 && !isLoading && (
+                                    {filteredOrders.length === 0 && !isLoading && (
                                         <tr>
-                                            <td colSpan="5" className="px-8 py-10 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">
+                                            <td colSpan="4" className="px-8 py-10 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">
                                                 No recent orders found
                                             </td>
                                         </tr>
@@ -348,7 +372,7 @@ const AdminDashboard = () => {
                     <div className="bg-white border border-gray-100 p-6 lg:p-8 rounded-[2rem] shadow-sm">
                         <h4 className="text-base lg:text-lg font-black text-gray-900 tracking-tight flex items-center justify-between">
                             Top Tailors
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest cursor-pointer hover:text-primary">View All</span>
+                            <span onClick={() => navigate('/admin/tailors')} className="text-[10px] text-gray-400 font-bold uppercase tracking-widest cursor-pointer hover:text-primary">View All</span>
                         </h4>
                         <div className="mt-6 space-y-4">
                             {topTailorsData.map((tailor, idx) => (

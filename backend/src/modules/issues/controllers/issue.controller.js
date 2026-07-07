@@ -303,6 +303,12 @@ exports.adminUpdateIssueStatus = asyncHandler(async (req, res, next) => {
   }
 
   issue.status = status;
+  
+  // Patch old records that don't have an issueId
+  if (!issue.issueId) {
+      issue.issueId = `ISS-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+
   await issue.save();
 
   res.status(200).json({

@@ -1,21 +1,76 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Calendar, Filter, TrendingUp, Users, Package, ShoppingBag } from 'lucide-react';
+import { FileText, Download, Calendar, Filter, TrendingUp, Users, Package, ShoppingBag, Loader2 } from 'lucide-react';
+import api from '../../../utils/api';
 
 const AdminReports = () => {
     const [selectedReportType, setSelectedReportType] = useState('Sales & Revenue');
     const [dateRange, setDateRange] = useState('This Month');
+    const [format, setFormat] = useState('csv');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [previewData, setPreviewData] = useState(null);
 
     const reportTypes = [
-        { id: 'Sales & Revenue', icon: <TrendingUp size={18} />, desc: 'Detailed breakdown of platform earnings, commissions, and transaction volume.' },
-        { id: 'Tailor Performance', icon: <Users size={18} />, desc: 'Metrics on tailor completion rates, ratings, and revenue generation.' },
-        { id: 'Customer Insights', icon: <ShoppingBag size={18} />, desc: 'User acquisition, retention rates, and average order value analysis.' },
-        { id: 'Delivery Metrics', icon: <Package size={18} />, desc: 'Delivery partner efficiency, average delivery times, and geographic coverage.' },
+        { id: 'Sales & Revenue', value: 'sales', icon: <TrendingUp size={18} />, desc: 'Detailed breakdown of platform earnings, commissions, and transaction volume.' },
+        { id: 'Tailor Performance', value: 'tailor', icon: <Users size={18} />, desc: 'Metrics on tailor completion rates, ratings, and revenue generation.' },
+        { id: 'Customer Insights', value: 'customer', icon: <ShoppingBag size={18} />, desc: 'User acquisition, retention rates, and average order value analysis.' },
+        { id: 'Delivery Metrics', value: 'delivery', icon: <Package size={18} />, desc: 'Delivery partner efficiency, average delivery times, and geographic coverage.' },
     ];
 
-    const generateReport = () => {
-        // Mock generation logic
-        alert(`Generating ${selectedReportType} report for ${dateRange}...`);
+    const generateReport = async () => {
+        setIsGenerating(true);
+        try {
+            const reportTypeObj = reportTypes.find(t => t.id === selectedReportType);
+            const rangeValue = dateRange.toLowerCase().replace(' ', '_');
+            
+            const response = await api.get('/admin/reports/generate', {
+                params: {
+                    type: reportTypeObj.value,
+                    range: rangeValue,
+                    format: format
+                }
+            });
+
+            if (response.data.success) {
+                const data = response.data.data.details;
+                setPreviewData(response.data.data.summary);
+                
+                if (!data || data.length === 0) {
+                    alert('No data available for the selected range.');
+                    return;
+                }
+
+                if (format === 'csv' || format === 'pdf') {
+                    // Fallback PDF to CSV for client-side generation without extra libraries
+                    const headers = Object.keys(data[0]);
+                    const csvContent = [
+                        headers.join(','),
+                        ...data.map(row => headers.map(header => {
+                            let cell = row[header] === null || row[header] === undefined ? '' : row[header];
+                            if (typeof cell === 'string' && cell.includes(',')) {
+                                return `"${cell}"`;
+                            }
+                            return cell;
+                        }).join(','))
+                    ].join('\n');
+                    
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `${selectedReportType.replace(/ /g, '_')}_${dateRange.replace(/ /g, '_')}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+        } catch (error) {
+            console.error('Error generating report:', error);
+            alert('Failed to generate report. Please try again.');
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     return (
@@ -36,6 +91,7 @@ const AdminReports = () => {
                             <div className="space-y-2">
                                 {reportTypes.map((type) => (
                                     <button
+                                        type="button"
                                         key={type.id}
                                         onClick={() => setSelectedReportType(type.id)}
                                         className={`w-full text-left p-3 rounded-xl border transition-all flex items-start gap-3 ${selectedReportType === type.id
@@ -78,10 +134,22 @@ const AdminReports = () => {
                                 <Filter size={12} /> Format
                             </label>
                             <div className="grid grid-cols-2 gap-2">
-                                <button className="py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 hover:bg-gray-100 transition-colors shadow-sm">
+                                <button 
+                                    type="button"
+                                    onClick={() => setFormat('csv')}
+                                    className={`py-2.5 rounded-xl text-xs font-bold shadow-sm transition-colors ${
+                                        format === 'csv' ? 'bg-primary/10 border-primary/20 text-primary border' : 'bg-gray-50 border border-gray-200 text-gray-900 hover:bg-gray-100'
+                                    }`}
+                                >
                                     CSV
                                 </button>
-                                <button className="py-2.5 bg-primary/10 border border-primary/20 rounded-xl text-xs font-bold text-primary shadow-sm">
+                                <button 
+                                    type="button"
+                                    onClick={() => setFormat('pdf')}
+                                    className={`py-2.5 rounded-xl text-xs font-bold shadow-sm transition-colors ${
+                                        format === 'pdf' ? 'bg-primary/10 border-primary/20 text-primary border' : 'bg-gray-50 border border-gray-200 text-gray-900 hover:bg-gray-100'
+                                    }`}
+                                >
                                     PDF
                                 </button>
                             </div>
@@ -89,9 +157,11 @@ const AdminReports = () => {
 
                         <button
                             onClick={generateReport}
-                            className="w-full mt-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest flex justify-center items-center gap-2"
+                            disabled={isGenerating}
+                            className="w-full mt-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest flex justify-center items-center gap-2 disabled:opacity-50"
                         >
-                            <Download size={16} /> Generate & Download
+                            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
+                            {isGenerating ? 'Generating...' : 'Generate & Download'}
                         </button>
                     </div>
                 </div>
@@ -102,26 +172,55 @@ const AdminReports = () => {
                         <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary to-[#4ade80] opacity-10 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }}></div>
                     </div>
 
-                    <FileText size={64} className="text-primary/20 mb-6" />
-                    <h2 className="text-xl font-black text-gray-900 mb-2">Report Preview</h2>
-                    <p className="text-sm text-gray-500 max-w-sm">
-                        Select a report type and date range on the left, then click generate to download your customized analytics report.
-                    </p>
-
-                    <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full max-w-md">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-indigo-50 text-primary rounded-lg">
-                                {reportTypes.find(t => t.id === selectedReportType)?.icon}
+                    {previewData ? (
+                        <div className="w-full max-w-lg space-y-6">
+                            <h2 className="text-xl font-black text-gray-900 mb-2">Report Summary</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                {Object.entries(previewData).map(([key, value]) => (
+                                    <div key={key} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
+                                        <p className="text-2xl font-black text-primary mt-1">{value}</p>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="text-left flex-1">
-                                <p className="text-sm font-bold text-gray-900">{selectedReportType} Report</p>
-                                <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
-                                    <Calendar size={10} /> {dateRange}
-                                </p>
+                            <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-indigo-50 text-primary rounded-lg">
+                                        {reportTypes.find(t => t.id === selectedReportType)?.icon}
+                                    </div>
+                                    <div className="text-left flex-1">
+                                        <p className="text-sm font-bold text-gray-900">{selectedReportType} Report</p>
+                                        <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                                            <Calendar size={10} /> {dateRange}
+                                        </p>
+                                    </div>
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] font-bold uppercase tracking-widest">Downloaded</span>
+                                </div>
                             </div>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[9px] font-bold uppercase tracking-widest">.PDF</span>
                         </div>
-                    </div>
+                    ) : (
+                        <>
+                            <FileText size={64} className="text-primary/20 mb-6" />
+                            <h2 className="text-xl font-black text-gray-900 mb-2">Report Preview</h2>
+                            <p className="text-sm text-gray-500 max-w-sm">
+                                Select a report type and date range on the left, then click generate to download your customized analytics report.
+                            </p>
+                            <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full max-w-md">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-indigo-50 text-primary rounded-lg">
+                                        {reportTypes.find(t => t.id === selectedReportType)?.icon}
+                                    </div>
+                                    <div className="text-left flex-1">
+                                        <p className="text-sm font-bold text-gray-900">{selectedReportType} Report</p>
+                                        <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                                            <Calendar size={10} /> {dateRange}
+                                        </p>
+                                    </div>
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[9px] font-bold uppercase tracking-widest">.{format.toUpperCase()}</span>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

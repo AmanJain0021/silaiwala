@@ -36,6 +36,117 @@ const AdminFinance = () => {
     const [payoutProof, setPayoutProof] = useState('');
     const [isUploadingProof, setIsUploadingProof] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [showFilters, setShowFilters] = useState(false);
+
+    const handleExportCSV = () => {
+        let exportData = [];
+        let headers = [];
+
+        switch (selectedTab) {
+            case 'Transactions':
+                headers = ['Transaction ID', 'Date', 'Order ID', 'Customer', 'Type', 'Total Amount', 'Platform Net', 'Status'];
+                exportData = data.transactions.map(txn => [
+                    txn.transactionId,
+                    new Date(txn.date).toLocaleString(),
+                    txn.orderId,
+                    txn.customer,
+                    txn.paymentType,
+                    txn.totalAmount,
+                    txn.netPlatformEarning,
+                    txn.status
+                ]);
+                break;
+            case 'Payment Ledger':
+                headers = ['Ledger ID', 'Date', 'Order Ref', 'Type', 'Total Paid', 'Order Amt', 'GST', 'Platform Fee', 'Tailor Share', 'Delivery Share'];
+                exportData = data.paymentLedger.map(ledger => [
+                    ledger.ledgerId,
+                    new Date(ledger.paidAt || ledger.createdAt).toLocaleString(),
+                    ledger.orderId,
+                    ledger.paymentType,
+                    ledger.totalPaid,
+                    ledger.orderAmount || 0,
+                    ledger.gstAmount || 0,
+                    ledger.platformFee || 0,
+                    ledger.tailorEarning || 0,
+                    ledger.deliveryPartnerEarning || 0
+                ]);
+                break;
+            case 'Wallet Audit':
+                headers = ['Date', 'User', 'Role', 'Category', 'Description', 'Type', 'Amount', 'Status'];
+                exportData = data.walletAudit.map(txn => [
+                    new Date(txn.date).toLocaleString(),
+                    txn.user,
+                    txn.userRole,
+                    txn.category,
+                    txn.description,
+                    txn.type,
+                    txn.amount,
+                    txn.status
+                ]);
+                break;
+            case 'Tailor Earnings':
+            case 'Delivery Earnings': {
+                headers = ['Date', 'Partner', 'Order Ref', 'Category', 'Amount'];
+                const earnings = selectedTab === 'Tailor Earnings' ? data.tailorEarnings : data.deliveryEarnings;
+                exportData = earnings.map(txn => [
+                    new Date(txn.creditDate).toLocaleString(),
+                    txn.tailorName || txn.partnerName,
+                    txn.orderId,
+                    txn.category,
+                    txn.amount
+                ]);
+                break;
+            }
+            case 'Tailor Payouts':
+            case 'Delivery Payouts':
+            case 'Executive Payouts': {
+                headers = ['Payout ID', 'Date', 'Recipient', 'Role', 'Amount', 'Status'];
+                const payouts = selectedTab === 'Tailor Payouts' ? data.tailorPayouts : selectedTab === 'Delivery Payouts' ? data.deliveryPayouts : data.executivePayouts;
+                exportData = payouts.map(payout => [
+                    payout._id,
+                    new Date(payout.createdAt).toLocaleDateString(),
+                    payout.user?.name || 'Unknown User',
+                    payout.role,
+                    payout.amount,
+                    payout.status
+                ]);
+                break;
+            }
+            case 'GST Report':
+                headers = ['Date', 'Order Ref', 'Taxable Amount', 'GST Rate', 'GST Collected', 'Total Invoice'];
+                exportData = data.gstReport.map(gst => [
+                    new Date(gst.date).toLocaleDateString(),
+                    gst.orderId,
+                    gst.taxableAmount || 0,
+                    gst.gstPercentage || 0,
+                    gst.gstAmount || 0,
+                    gst.totalWithGST || 0
+                ]);
+                break;
+            default:
+                toast.error("Export not supported for this tab");
+                return;
+        }
+
+        if (exportData.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        let csvContent = headers.join(",") + "\n";
+        exportData.forEach(row => {
+            csvContent += row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${selectedTab.replace(/\s+/g, '_').toLowerCase()}_report.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const tabs = [
         'Overview', 
@@ -237,18 +348,96 @@ const AdminFinance = () => {
                     <p className="text-xs text-gray-500 font-medium mt-1">Complete payment flow, wallet tracking, and earnings overview</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">
+                    <div 
+                        className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 cursor-pointer hover:bg-gray-50 transition-all"
+                        onClick={() => setShowFilters(!showFilters)}
+                    >
                         <Calendar size={14} className="text-gray-400" />
-                        01 May 2024 - 31 May 2024
+                        {filters.startDate || filters.endDate ? (
+                            `${filters.startDate ? new Date(filters.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''} ${filters.startDate && filters.endDate ? '-' : ''} ${filters.endDate ? new Date(filters.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}`
+                        ) : 'All Time'}
                     </div>
-                    <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all">
+                    <button 
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`flex items-center gap-2 px-3 py-2 border text-xs font-bold rounded-xl transition-all ${showFilters ? 'bg-gray-100 border-gray-300 text-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                    >
                         <Filter size={14} /> Filters
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 transition-all uppercase tracking-widest hidden sm:flex">
+                    <button 
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white text-xs font-black rounded-xl hover:bg-pink-600 transition-all uppercase tracking-widest hidden sm:flex"
+                    >
                         Export Report <Download size={14} />
                     </button>
                 </div>
             </div>
+
+            {/* Filters Section */}
+            <AnimatePresence>
+                {showFilters && (
+                    <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-1">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    value={filters.startDate}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                                    className="px-3 py-2 text-xs font-bold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">End Date</label>
+                                <input 
+                                    type="date" 
+                                    value={filters.endDate}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                                    className="px-3 py-2 text-xs font-bold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Status</label>
+                                <select 
+                                    value={filters.status}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                    className="px-3 py-2 text-xs font-bold bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary min-w-[120px]"
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="paid">Paid / Completed</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="refunded">Refunded</option>
+                                    <option value="failed">Failed</option>
+                                </select>
+                            </div>
+                            <div className="flex items-end ml-auto gap-2 mt-4 sm:mt-0">
+                                <button 
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, status: '', startDate: '', endDate: '' }));
+                                        setPagination(prev => ({ ...prev, page: 1 }));
+                                    }}
+                                    className="text-xs font-bold text-gray-500 hover:text-red-500 transition-colors px-4 py-2"
+                                >
+                                    Clear Filters
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        setPagination(prev => ({ ...prev, page: 1 }));
+                                        fetchData();
+                                    }}
+                                    className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-black transition-colors shadow-sm"
+                                >
+                                    Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Tabs */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
@@ -389,11 +578,11 @@ const AdminFinance = () => {
                                                     <td className="px-4 py-3 font-bold text-gray-800">#{ledger.orderId}</td>
                                                     <td className="px-4 py-3"><span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">{ledger.paymentType}</span></td>
                                                     <td className="px-4 py-3 font-black text-green-600">₹{ledger.totalPaid}</td>
-                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.orderAmount}</td>
-                                                    <td className="px-4 py-3 text-red-500">₹{ledger.gstAmount}</td>
-                                                    <td className="px-4 py-3 text-blue-600 font-bold">₹{ledger.platformFee}</td>
-                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.tailorEarning}</td>
-                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.deliveryPartnerEarning}</td>
+                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.orderAmount || 0}</td>
+                                                    <td className="px-4 py-3 text-red-500">₹{ledger.gstAmount || 0}</td>
+                                                    <td className="px-4 py-3 text-blue-600 font-bold">₹{ledger.platformFee || 0}</td>
+                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.tailorEarning || 0}</td>
+                                                    <td className="px-4 py-3 text-gray-600">₹{ledger.deliveryPartnerEarning || 0}</td>
                                                 </tr>
                                             ))}
                                             {data.paymentLedger.length === 0 && !isLoading && (
@@ -462,7 +651,7 @@ const AdminFinance = () => {
                                         <h3 className="text-xs font-black text-gray-900 tracking-widest uppercase mb-1">GST Collection Report</h3>
                                         <p className="text-[10px] text-gray-500 font-medium">Per-order GST breakdown for tax filing</p>
                                     </div>
-                                    <button className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white text-[10px] font-black rounded-lg hover:bg-primary-dark transition-all uppercase tracking-widest">
+                                    <button onClick={handleExportCSV} className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white text-[10px] font-black rounded-lg hover:bg-primary-dark transition-all uppercase tracking-widest">
                                         <Download size={14} /> Export CSV
                                     </button>
                                 </div>
@@ -483,10 +672,10 @@ const AdminFinance = () => {
                                                 <tr key={i} className="hover:bg-primary/5 transition-colors">
                                                     <td className="px-6 py-4 text-[10px] text-gray-500 font-bold uppercase">{new Date(gst.date).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4 font-black text-xs text-gray-800">#{gst.orderId}</td>
-                                                    <td className="px-6 py-4 text-xs font-bold text-gray-600">₹{gst.taxableAmount}</td>
-                                                    <td className="px-6 py-4 text-xs font-bold text-gray-500">{gst.gstPercentage}%</td>
-                                                    <td className="px-6 py-4 text-xs font-black text-primary">₹{gst.gstAmount}</td>
-                                                    <td className="px-6 py-4 text-xs font-black text-gray-900">₹{gst.totalWithGST}</td>
+                                                    <td className="px-6 py-4 text-xs font-bold text-gray-600">₹{gst.taxableAmount || 0}</td>
+                                                    <td className="px-6 py-4 text-xs font-bold text-gray-500">{gst.gstPercentage || 0}%</td>
+                                                    <td className="px-6 py-4 text-xs font-black text-primary">₹{gst.gstAmount || 0}</td>
+                                                    <td className="px-6 py-4 text-xs font-black text-gray-900">₹{gst.totalWithGST || 0}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

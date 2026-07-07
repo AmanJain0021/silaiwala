@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Gift, Share2, Copy, CheckCircle2, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import useUserStore from '../../../store/userStore';
 
@@ -58,7 +59,20 @@ const ReferEarn = () => {
                         </button>
                     </div>
 
-                    <button className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-900/10 mt-6 flex items-center justify-center gap-3 transition-all hover:bg-primary-dark active:scale-95">
+                    <button 
+                        onClick={() => {
+                            if (navigator.share) {
+                                navigator.share({
+                                    title: 'Join Silaiwala',
+                                    text: `Use my referral code ${referralCode} to get ₹25 bonus!`,
+                                    url: window.location.origin
+                                }).catch(console.error);
+                            } else {
+                                copyToClipboard();
+                            }
+                        }}
+                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-900/10 mt-6 flex items-center justify-center gap-3 transition-all hover:bg-primary-dark active:scale-95"
+                    >
                         <Share2 size={18} />
                         Share Invitation Link
                     </button>
@@ -102,7 +116,7 @@ const ReferEarn = () => {
             {/* 5. My Earnings Summary */}
             <div className="px-6 mb-10">
                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-6 text-white overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                         <Ticket size={80} />
                     </div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Total Earned Credits</p>
@@ -119,7 +133,7 @@ const ReferEarn = () => {
                         </div>
                         <div className="w-px h-8 bg-white/10" />
                         <div className="flex-1 text-right">
-                            <button className="text-[10px] font-bold text-white underline tracking-wider uppercase">View History</button>
+                            <button onClick={() => toast.success('Your referral history will be available soon!')} className="text-[10px] font-bold text-white underline tracking-wider uppercase">View History</button>
                         </div>
                     </div>
                 </div>

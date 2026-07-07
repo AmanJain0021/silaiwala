@@ -1,11 +1,12 @@
 const express = require("express");
-const { getPlans, subscribe, getAllPlansAdmin, createPlan, updatePlan, deletePlan, togglePlanStatus } = require("../controllers/subscription.controller");
+const { getPlans, subscribe, createSubscriptionOrder, getAllPlansAdmin, createPlan, updatePlan, deletePlan, togglePlanStatus } = require("../controllers/subscription.controller");
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
 
 const router = express.Router();
 
 // Public / Tailor routes
 router.get("/", getPlans);
+router.post("/create-order", protect, authorize("tailor"), createSubscriptionOrder);
 router.post("/subscribe", protect, authorize("tailor"), subscribe);
 
 // Admin routes

@@ -124,6 +124,7 @@ const AdminBulkOrders = React.lazy(() => import('./modules/admin/pages/BulkOrder
 const AdminSupport = React.lazy(() => import('./modules/admin/pages/Support'));
 const AdminMeasurementExecutives = React.lazy(() => import('./modules/admin/pages/MeasurementExecutives'));
 const AdminIssues = React.lazy(() => import('./modules/admin/pages/IssuesManagement')); // NEW
+const AdminIssueDetails = React.lazy(() => import('./modules/admin/pages/AdminIssueDetails')); // NEW
 import AdminProtectedRoute from './modules/admin/components/AdminProtectedRoute';
 
 const ReferEarn = React.lazy(() => import('./modules/customer/pages/ReferEarn')); // NEW
@@ -329,6 +330,7 @@ const AppRoutes = () => {
                     <Route path="/admin/settings" element={<AdminSettings />} />
                     <Route path="/admin/measurement-executives" element={<AdminMeasurementExecutives />} />
                     <Route path="/admin/issues" element={<AdminIssues />} />
+                    <Route path="/admin/issues/:issueId" element={<AdminIssueDetails />} />
                 </Route>
             </Route>
 

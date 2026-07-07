@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, X, Building2, User, Phone, Mail, Package, ChevronRight, Clock, Info, CheckCircle2, AlertCircle, DollarSign, FileText, Scissors } from 'lucide-react';
+import { Search, Filter, X, Building2, User, Phone, Mail, Package, ChevronRight, RefreshCw, Info, CheckCircle2, AlertCircle, DollarSign, FileText, Scissors } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
@@ -125,7 +125,7 @@ const AdminBulkOrders = () => {
                     onClick={fetchOrders}
                     className="p-2.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-xl border border-transparent transition-all"
                 >
-                    <Clock size={18} />
+                    <RefreshCw size={18} />
                 </button>
             </div>
 

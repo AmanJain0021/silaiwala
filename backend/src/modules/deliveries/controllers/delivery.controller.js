@@ -181,7 +181,11 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
   };
 
   if (status) {
-    query.status = status;
+    if (status === 'completed') {
+      query.status = { $in: ["delivered", "fabric-delivered", "failed-delivery"] };
+    } else {
+      query.status = status;
+    }
   } else {
     // Default show active deliveries (both fabric pickup and final delivery)
     // Include 'ready-for-delivery' so partners can see tasks awaiting acceptance
@@ -603,7 +607,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       { pickupPartner: req.user.id },
       { dropoffPartner: req.user.id }
     ]
-  }).session(session);
+  }).select('+pickupDeliveryOtp +dropoffDeliveryOtp').session(session);
 
   if (!order) {
     await session.abortTransaction();

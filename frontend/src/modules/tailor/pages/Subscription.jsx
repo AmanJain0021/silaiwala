@@ -29,19 +29,80 @@ const Subscription = () => {
     }, []);
 
     const handleSubscribe = async (planId) => {
-        try {
-            toast.loading('Activating plan...');
-            const res = await api.post('/subscriptions/subscribe', { planId });
-            if (res.data.success) {
+        const selectedPlan = plans.find(p => p._id === planId);
+        if (!selectedPlan) return;
+
+        if (selectedPlan.price > 0) {
+            try {
+                toast.loading('Initializing payment...');
+                const rzpOrderRes = await api.post('/subscriptions/create-order', { planId });
                 toast.dismiss();
-                toast.success('Subscription plan activated!');
-                // Refresh tailor data to get updated activePlan
-                const tailorRes = await api.get('/tailors/me');
-                if (tailorRes.data.success) setTailorData(tailorRes.data.data);
+
+                if (!rzpOrderRes.data.success) throw new Error('Failed to create payment order');
+                const rzpOrder = rzpOrderRes.data.data;
+
+                const options = {
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                    amount: rzpOrder.amount,
+                    currency: rzpOrder.currency,
+                    name: "SilaiWala",
+                    description: `Subscription: ${selectedPlan.name}`,
+                    order_id: rzpOrder.orderId,
+                    handler: async function (response) {
+                        try {
+                            toast.loading('Verifying payment...');
+                            const verifyRes = await api.post('/subscriptions/subscribe', {
+                                planId: planId,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature
+                            });
+
+                            if (verifyRes.data.success) {
+                                toast.dismiss();
+                                toast.success('Subscription plan activated!');
+                                const tailorRes = await api.get('/tailors/me');
+                                if (tailorRes.data.success) setTailorData(tailorRes.data.data);
+                            }
+                        } catch (err) {
+                            toast.dismiss();
+                            console.error('Payment verification failed:', err);
+                            toast.error(err.response?.data?.message || 'Payment verification failed');
+                        }
+                    },
+                    prefill: {
+                        name: tailorData?.shopName || "Tailor",
+                        contact: tailorData?.user?.phone || ""
+                    },
+                    theme: { color: "#843D9B" }
+                };
+
+                const rzp = new window.Razorpay(options);
+                rzp.on('payment.failed', function (response) {
+                    toast.error('Payment failed: ' + response.error.description);
+                });
+                rzp.open();
+
+            } catch (error) {
+                toast.dismiss();
+                toast.error(error.response?.data?.message || error.message || 'Failed to initialize payment');
             }
-        } catch (error) {
-            toast.dismiss();
-            toast.error(error.response?.data?.message || 'Failed to activate plan');
+        } else {
+            // Free plan
+            try {
+                toast.loading('Activating plan...');
+                const res = await api.post('/subscriptions/subscribe', { planId });
+                if (res.data.success) {
+                    toast.dismiss();
+                    toast.success('Subscription plan activated!');
+                    // Refresh tailor data to get updated activePlan
+                    const tailorRes = await api.get('/tailors/me');
+                    if (tailorRes.data.success) setTailorData(tailorRes.data.data);
+                }
+            } catch (error) {
+                toast.dismiss();
+                toast.error(error.response?.data?.message || 'Failed to activate plan');
+            }
         }
     };
 

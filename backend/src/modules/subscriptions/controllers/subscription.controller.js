@@ -2,6 +2,8 @@ const SubscriptionPlan = require("../../../models/SubscriptionPlan");
 const Tailor = require("../../../models/Tailor");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
+const razorpay = require("../../../config/razorpay");
+const crypto = require("crypto");
 
 /**
  * @desc    Get all subscription plans
@@ -19,12 +21,56 @@ exports.getPlans = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Create a razorpay order for subscription
+ * @route   POST /api/v1/subscriptions/create-order
+ * @access  Private (Tailor only)
+ */
+exports.createSubscriptionOrder = asyncHandler(async (req, res, next) => {
+  const { planId } = req.body;
+  
+  if (req.user.role !== "tailor") {
+    return next(new ErrorResponse("Not authorized to access this route", 403));
+  }
+  
+  const plan = await SubscriptionPlan.findById(planId);
+  if (!plan) {
+    return next(new ErrorResponse("Subscription plan not found", 404));
+  }
+  
+  if (plan.price <= 0) {
+    return next(new ErrorResponse("Plan price is zero, directly subscribe instead", 400));
+  }
+
+  const options = {
+    amount: Math.round(plan.price * 100), // amount in paise
+    currency: "INR",
+    receipt: `sub_${crypto.randomBytes(5).toString("hex")}`,
+  };
+
+  try {
+    const razorpayOrder = await razorpay.orders.create(options);
+    res.status(200).json({
+      success: true,
+      data: {
+        orderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        planId: plan._id
+      }
+    });
+  } catch (error) {
+    console.error("Razorpay Error:", error);
+    return next(new ErrorResponse("Razorpay order creation failed", 500));
+  }
+});
+
+/**
  * @desc    Subscribe to a plan
  * @route   POST /api/v1/subscriptions/subscribe
  * @access  Private (Tailor only)
  */
 exports.subscribe = asyncHandler(async (req, res, next) => {
-  const { planId } = req.body;
+  const { planId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
   if (req.user.role !== "tailor") {
     return next(new ErrorResponse("Not authorized to access this route", 403));
@@ -33,6 +79,22 @@ exports.subscribe = asyncHandler(async (req, res, next) => {
   const plan = await SubscriptionPlan.findById(planId);
   if (!plan) {
     return next(new ErrorResponse("Subscription plan not found", 404));
+  }
+
+  if (plan.price > 0) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return next(new ErrorResponse("Payment details are required for this plan", 400));
+    }
+
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest("hex");
+
+    if (razorpay_signature !== expectedSign) {
+      return next(new ErrorResponse("Invalid payment signature", 400));
+    }
   }
 
   const tailor = await Tailor.findOne({ user: req.user.id });
