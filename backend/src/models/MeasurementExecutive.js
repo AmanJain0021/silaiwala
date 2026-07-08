@@ -88,8 +88,14 @@ const measurementExecutiveSchema = new mongoose.Schema(
       default: 0,
     },
     emergencyContact: {
-      type: String,
-      trim: true,
+      name: {
+        type: String,
+        trim: true,
+      },
+      phone: {
+        type: String,
+        trim: true,
+      }
     },
   },
   {

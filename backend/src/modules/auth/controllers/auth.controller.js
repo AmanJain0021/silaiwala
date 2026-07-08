@@ -7,6 +7,8 @@ const MeasurementExecutive = require("../../../models/MeasurementExecutive");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 const { sendNotification } = require("../../../utils/notification");
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'placeholder');
 
 /**
  * Generate JWT Token
@@ -101,7 +103,16 @@ exports.register = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`A user with this ${conflictField} already exists`, 400));
   }
 
-  // 3. Create User - Tailors and Delivery partners are inactive until approved
+  // 3. Validate Referral Code for customers
+  let referrerProfile = null;
+  if (referralCode && finalRole === "customer") {
+    referrerProfile = await Customer.findOne({ referralCode });
+    if (!referrerProfile) {
+      return next(new ErrorResponse("Invalid referral code. Please check and try again.", 400));
+    }
+  }
+
+  // 4. Create User - Tailors and Delivery partners are inactive until approved
   const isAutoActive = !["tailor", "delivery", "measurement_executive"].includes(finalRole.toLowerCase());
   
   const user = await User.create({
@@ -121,14 +132,11 @@ exports.register = asyncHandler(async (req, res, next) => {
     switch (finalRole) {
       case "customer":
         let referredBy = null;
-        if (referralCode) {
-          const referrer = await Customer.findOne({ referralCode });
-          if (referrer) {
-            referredBy = referrer.user;
-            // Increment referrer's referredCount
-            referrer.referredCount += 1;
-            await referrer.save();
-          }
+        if (referrerProfile) {
+          referredBy = referrerProfile.user;
+          // Increment referrer's referredCount
+          referrerProfile.referredCount += 1;
+          await referrerProfile.save();
         }
         profile = await Customer.create({ 
           user: user._id,
@@ -381,3 +389,59 @@ exports.deleteAccount = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Login user with Google
+ * @route   POST /api/v1/auth/google-login
+ * @access  Public
+ */
+exports.googleLogin = asyncHandler(async (req, res, next) => {
+  const { credential } = req.body;
+  if (!credential) {
+    return next(new ErrorResponse("Google credential is required", 400));
+  }
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+    });
+    const payload = ticket.getPayload();
+    const email = payload.email;
+
+    if (!email) {
+      return next(new ErrorResponse("Could not extract email from Google account", 400));
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found. Please create an account first."
+      });
+    }
+
+    const token = generateToken(user._id);
+
+    let profile = null;
+    if (user.role === 'tailor') {
+      profile = await Tailor.findOne({ user: user._id });
+    }
+
+    res.status(200).json({
+      success: true,
+      token,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isActive: user.isActive,
+        profile: profile
+      },
+    });
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    return next(new ErrorResponse("Failed to authenticate with Google", 401));
+  }
+});

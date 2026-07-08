@@ -4,6 +4,8 @@ import useMeasurementStore from '../store/measurementExecutiveStore';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import api from '../../../shared/utils/api';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -30,6 +32,29 @@ const Login = () => {
             navigate('/executive/dashboard');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Login failed');
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const res = await api.post('/auth/google-login', { credential: credentialResponse.credential });
+            const responseData = res.data;
+            
+            if (responseData.data?.role !== 'measurement_executive') {
+                toast.error('Unauthorized access. Only Measurement Executives can log in here.');
+                return;
+            }
+
+            localStorage.setItem('token', responseData.token);
+            localStorage.setItem('user', JSON.stringify(responseData.data));
+            toast.success('Login successful!');
+            navigate('/executive/dashboard');
+        } catch (error) {
+            if (error.response?.data?.message?.includes('create an account first')) {
+                toast.error('Account not found. Please create an account first.');
+            } else {
+                toast.error(error.response?.data?.message || 'Google Login failed');
+            }
         }
     };
 
@@ -110,6 +135,16 @@ const Login = () => {
                     <p className="mt-6 text-[10px] text-gray-400 font-medium">
                         By logging in, you agree to our <Link to="/executive/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/executive/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>.
                     </p>
+                </div>
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <div className="flex justify-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => toast.error('Google Login Failed')}
+                            useOneTap
+                            shape="pill"
+                        />
+                    </div>
                 </div>
             </form>
         </motion.div>

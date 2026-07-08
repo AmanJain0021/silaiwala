@@ -59,6 +59,25 @@ exports.getWalletDashboard = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Get all transactions for the current user
+ * @route   GET /api/v1/wallet/transactions
+ * @access  Private (Tailor/Delivery/MeasurementExecutive)
+ */
+exports.getUserTransactions = asyncHandler(async (req, res, next) => {
+  const { id } = req.user;
+
+  const transactions = await WalletTransaction.find({ user: id })
+    .sort("-createdAt")
+    .populate("order", "orderId totalAmount")
+    .populate("withdrawalRequest", "status transactionReference proofOfPayment");
+
+  res.status(200).json({
+    success: true,
+    data: transactions
+  });
+});
+
+/**
  * @desc    Request a withdrawal
  * @route   POST /api/v1/wallet/withdraw
  * @access  Private (Tailor/Delivery)

@@ -55,11 +55,23 @@ const BulkOrderRequest = () => {
     const validateStep1 = () => {
         const newErrors = {};
         if (!formData.organizationName || formData.organizationName.length < 3) newErrors.organizationName = 'Min 3 chars';
-        if (!formData.contactPerson || formData.contactPerson.length < 3) newErrors.contactPerson = 'Min 3 chars';
+        
+        if (!formData.contactPerson || formData.contactPerson.length < 3) {
+            newErrors.contactPerson = 'Min 3 chars';
+        } else if (!/^[a-zA-Z\s]+$/.test(formData.contactPerson)) {
+            newErrors.contactPerson = 'Only alphabets allowed';
+        }
+
         if (!/^[0-9]{10}$/.test(formData.phoneNumber)) newErrors.phoneNumber = 'Enter 10 digits';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
         if (!formData.address || formData.address.length < 10) newErrors.address = 'Detailed address req.';
-        if (!formData.city || formData.city.length < 2) newErrors.city = 'Enter city';
+        
+        if (!formData.city || formData.city.length < 2) {
+            newErrors.city = 'Enter city';
+        } else if (!/^[a-zA-Z\s]+$/.test(formData.city)) {
+            newErrors.city = 'Only alphabets allowed';
+        }
+
         if (!/^[0-9]{6}$/.test(formData.pincode)) newErrors.pincode = 'Enter 6 digits';
 
         setErrors(newErrors);

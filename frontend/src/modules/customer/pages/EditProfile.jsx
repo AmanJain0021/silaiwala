@@ -156,9 +156,6 @@ const EditProfile = () => {
                             "Save Changes"
                         )}
                     </button>
-                    <p className="text-[10px] text-gray-400 text-center mt-4">
-                        Silaiwala protects your data privacy as per our <span className="underline">Terms of Service</span>.
-                    </p>
                 </div>
             </form>
         </div>

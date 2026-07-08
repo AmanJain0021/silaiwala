@@ -36,6 +36,9 @@ const MyBulkOrders = () => {
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [showFilters, setShowFilters] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
@@ -51,6 +54,18 @@ const MyBulkOrders = () => {
         };
         fetchOrders();
     }, []);
+
+    const filteredOrders = orders.filter(order => {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+            (order.orderId && order.orderId.toLowerCase().includes(query)) || 
+            (order.organizationName && order.organizationName.toLowerCase().includes(query)) ||
+            (order.contactPerson && order.contactPerson.toLowerCase().includes(query));
+        
+        const matchesFilter = statusFilter === 'all' || order.status === statusFilter;
+        
+        return matchesSearch && matchesFilter;
+    });
 
     if (isLoading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -81,16 +96,47 @@ const MyBulkOrders = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
                         <input
                             type="text"
-                            placeholder="Search inquiry ID..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search organization or ID..."
                             className="w-full pl-9 pr-3 py-2 bg-white border border-gray-100 rounded-xl text-[10px] font-medium outline-none"
                         />
                     </div>
-                    <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400">
+                    <button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 bg-white border ${showFilters ? 'border-[#843D9B] text-[#843D9B]' : 'border-gray-100 text-gray-400'} rounded-xl transition-colors`}>
                         <Filter size={14} />
                     </button>
                 </div>
+                
+                <AnimatePresence>
+                    {showFilters && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="mb-4 overflow-hidden"
+                        >
+                            <div className="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-gray-100">
+                                <button 
+                                    onClick={() => setStatusFilter('all')} 
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors ${statusFilter === 'all' ? 'bg-[#843D9B] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                                >
+                                    All
+                                </button>
+                                {Object.keys(statusConfig).map(status => (
+                                    <button 
+                                        key={status}
+                                        onClick={() => setStatusFilter(status)} 
+                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors ${statusFilter === status ? 'bg-[#843D9B] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                                    >
+                                        {statusConfig[status].label}
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                {orders.length === 0 ? (
+                {filteredOrders.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/50">
                         <div className="w-16 h-16 bg-gray-50 rounded-[1.5rem] flex items-center justify-center mx-auto mb-4 text-gray-300">
                             <ClipboardList size={28} />
@@ -106,7 +152,7 @@ const MyBulkOrders = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {orders.map((order) => {
+                        {filteredOrders.map((order) => {
                             const config = statusConfig[order.status] || statusConfig.pending;
                             return (
                                 <motion.div

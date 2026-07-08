@@ -40,7 +40,9 @@ const CheckoutSummary = () => {
         }
     }, [addresses.length, fetchAddresses]);
 
-    const currentCheckoutItems = isBuyNowMode && buyNowItem ? [buyNowItem] : serviceItems;
+    const currentCheckoutItems = React.useMemo(() => {
+        return isBuyNowMode && buyNowItem ? [buyNowItem] : serviceItems;
+    }, [isBuyNowMode, buyNowItem, serviceItems]);
     const isServiceCheckout = currentCheckoutItems.length > 0;
     const isCartCheckout = cartItems.length > 0;
 
@@ -50,15 +52,9 @@ const CheckoutSummary = () => {
     const location = useLocation();
     const bulkOrderId = location.state?.bulkOrderId;
 
-    const [roadDistances, setRoadDistances] = useState({});
-    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
     const [advancePercentage, setAdvancePercentage] = useState(50);
-    const [platformFeePercentage, setPlatformFeePercentage] = useState(5);
-    const [deliveryRates, setDeliveryRates] = useState({ baseFee: 20, perKmRate: 10 });
-    const [gstPercentage, setGstPercentage] = useState(5);
-
-    const [visitSettings, setVisitSettings] = useState({ baseFee: 150, perKmFee: 20, freeKm: 3 });
-
+    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false); // Kept for backwards compatibility in JSX if needed
+    
     // Fetch Admin Settings
     useEffect(() => {
         const fetchSettings = async () => {
@@ -67,18 +63,6 @@ const CheckoutSummary = () => {
                 if (res.data.success) {
                     if (res.data.data?.walletConfig?.advancePercentage) {
                         setAdvancePercentage(res.data.data.walletConfig.advancePercentage);
-                    }
-                    if (res.data.data?.walletConfig?.platformFeePercentage) {
-                        setPlatformFeePercentage(res.data.data.walletConfig.platformFeePercentage);
-                    }
-                    if (res.data.data?.deliveryRates) {
-                        setDeliveryRates(res.data.data.deliveryRates);
-                    }
-                    if (res.data.data?.visitFee) {
-                        setVisitSettings(res.data.data.visitFee);
-                    }
-                    if (res.data.data?.pricing?.gstPercentage !== undefined) {
-                        setGstPercentage(res.data.data.pricing.gstPercentage);
                     }
                 }
             } catch (err) {
@@ -90,6 +74,37 @@ const CheckoutSummary = () => {
         fetchSettings();
     }, []);
 
+    const [currentPricing, setCurrentPricing] = useState({
+        total: 0,
+        base: 0,
+        taxes: 0,
+        delivery: 0,
+        platformFee: 0,
+        platformFeePercentage: 0,
+        gstPercentage: 0
+    });
+    const [isLoadingPricing, setIsLoadingPricing] = useState(true);
+
+    // Fetch Bulk Order Details
+    useEffect(() => {
+        if (!bulkOrderId) return;
+        
+        const fetchBulkOrder = async () => {
+            try {
+                const res = await api.get(`/bulk-orders/${bulkOrderId}`);
+                if (res.data.success) {
+                    setBulkOrder(res.data.data);
+                }
+            } catch (err) {
+                if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
+                    console.error("Failed to fetch bulk order:", err);
+                    toast.error("Failed to load bulk order details");
+                }
+            }
+        };
+        fetchBulkOrder();
+    }, [bulkOrderId]);
+
     // Redirect if cart becomes empty
     useEffect(() => {
         if (!bulkOrderId && currentCheckoutItems.length === 0 && cartItems.length === 0) {
@@ -97,187 +112,48 @@ const CheckoutSummary = () => {
         }
     }, [currentCheckoutItems.length, cartItems.length, bulkOrderId, navigate]);
 
-    // Fetch Road Distance dynamically if needed
+    // Fetch Price Summary from Backend API
     useEffect(() => {
-        if (!selectedAddress?.location?.coordinates || (!isServiceCheckout && !isCartCheckout)) return;
-
-        const fetchDistances = async () => {
-            const newDistances = { ...roadDistances };
-            let needsUpdate = false;
-            let fetching = false;
-
-            const itemsToCheck = isServiceCheckout ? currentCheckoutItems : cartItems;
-
-            for (const item of itemsToCheck) {
-                let tCoords = null;
-                let idForCache = null;
-
-                if (isServiceCheckout && item.serviceDetails?.tailorCoordinates) {
-                    tCoords = item.serviceDetails.tailorCoordinates;
-                    idForCache = item.basketId;
-                } else if (isCartCheckout && item.tailor?.location?.coordinates) {
-                    tCoords = item.tailor.location.coordinates;
-                    idForCache = item.cartId;
-                }
-
-                if (tCoords) {
-                    const [uLng, uLat] = selectedAddress.location.coordinates;
-                    const cacheKey = `${idForCache}_${uLat}_${uLng}`;
-
-                    if (roadDistances[idForCache]?.key !== cacheKey) {
-                        fetching = true;
-                        setIsCalculatingDistance(true);
-                        try {
-                            const [tLng, tLat] = tCoords;
-                            console.log(`🛣️ [CheckoutSummary] Calculating distance for ${idForCache}`, { origin: [tLat, tLng], destination: [uLat, uLng] });
-                            
-                            const res = await api.post('/distance/calculate', {
-                                origin: [tLat, tLng],
-                                destination: [uLat, uLng]
-                            });
-
-                            if (res.data.success) {
-                                console.log(`📏 [CheckoutSummary] Distance API Response for ${idForCache}:`, res.data.data);
-                                const distanceKm = res.data.data.distance;
-                                
-                                newDistances[idForCache] = { key: cacheKey, distanceKm };
-                                needsUpdate = true;
-                            }
-                        } catch (err) {
-                            console.error("Failed to fetch road distance:", err);
-                        }
-                    }
-                }
+        const fetchPricing = async () => {
+            if (bulkOrder) {
+                setCurrentPricing({
+                    total: bulkOrder.quote.depositRequired,
+                    base: bulkOrder.quote.depositRequired,
+                    taxes: 0,
+                    delivery: 0,
+                    platformFee: 0,
+                    platformFeePercentage: 0,
+                    gstPercentage: 0
+                });
+                setIsLoadingPricing(false);
+                return;
             }
 
-            if (needsUpdate) {
-                setRoadDistances(newDistances);
+            if (!isCartCheckout && currentCheckoutItems.length === 0) {
+                setIsLoadingPricing(false);
+                return;
             }
-            if (fetching) {
-                setIsCalculatingDistance(false);
+
+            setIsLoadingPricing(true);
+            try {
+                const items = isCartCheckout ? cartItems : currentCheckoutItems;
+                const res = await api.post('/orders/price-summary', {
+                    items,
+                    deliveryAddress: selectedAddress,
+                    isCartCheckout
+                });
+                if (res.data.success) {
+                    setCurrentPricing(res.data.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch price summary:", err);
+                toast.error("Failed to load price summary");
+            } finally {
+                setIsLoadingPricing(false);
             }
         };
-
-        fetchDistances();
-    }, [selectedAddress, currentCheckoutItems, cartItems, isServiceCheckout, isCartCheckout, visitSettings]);
-
-    const getServicePricing = () => {
-        if (currentCheckoutItems.length === 0) return { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0 };
-        
-        let orderDeliveryFee = 0;
-
-        const pricing = currentCheckoutItems.reduce((acc, item, index) => {
-            const itemBase = item.pricing.base || 0;
-            let dynamicTailorAtHome = item.pricing.tailorAtHome || 0;
-
-            if (selectedAddress?.location?.coordinates && item.serviceDetails?.tailorCoordinates) {
-                const [uLng, uLat] = selectedAddress.location.coordinates;
-                const cacheKey = `${item.basketId}_${uLat}_${uLng}`;
-                let distanceKm = 0;
-                
-                if (roadDistances[item.basketId] && roadDistances[item.basketId].key === cacheKey) {
-                    distanceKm = roadDistances[item.basketId].distanceKm;
-                    if (item.configuration.isTailorAtHome) {
-                        if (distanceKm <= visitSettings.freeKm) {
-                            dynamicTailorAtHome = visitSettings.baseFee;
-                        } else {
-                            dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
-                        }
-                    }
-                } else {
-                    try {
-                        const [tLng, tLat] = item.serviceDetails.tailorCoordinates;
-                        distanceKm = calculateDistance(uLat, uLng, tLat, tLng);
-                        if (item.configuration.isTailorAtHome) {
-                            if (distanceKm <= visitSettings.freeKm) {
-                                dynamicTailorAtHome = visitSettings.baseFee;
-                            } else {
-                                dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
-                            }
-                        }
-                    } catch (err) {
-                        console.error("Distance recalculation failed:", err);
-                    }
-                }
-
-                if (index === 0 && distanceKm > 0) {
-                    orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
-                }
-            }
-
-            // We won't use itemTaxes here, we'll calculate total GST at the end
-            const itemAddons = item.pricing.addons || 0;
-            const itemFabric = item.pricing.fabric || 0;
-            const newTotal = itemBase + itemAddons + itemFabric + dynamicTailorAtHome; // without tax
-
-            return {
-                total: acc.total + newTotal,
-                base: acc.base + itemBase,
-                taxes: 0,
-                delivery: 0,
-                addons: acc.addons + itemAddons,
-                fabric: (acc.fabric || 0) + itemFabric,
-                tailorAtHome: acc.tailorAtHome + dynamicTailorAtHome
-            };
-        }, { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, fabric: 0, tailorAtHome: 0 });
-        
-        const platformFeeAmount = Math.round((pricing.base + pricing.addons) * (platformFeePercentage / 100));
-        pricing.platformFee = platformFeeAmount;
-        pricing.platformFeePercentage = platformFeePercentage;
-        pricing.delivery = orderDeliveryFee;
-        
-        // Dynamic GST Calculation (excluding delivery fee to match backend logic)
-        const taxableAmount = pricing.base + pricing.addons + pricing.fabric + pricing.tailorAtHome + platformFeeAmount;
-        const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
-        
-        pricing.taxes = totalTaxes;
-        pricing.gstPercentage = gstPercentage;
-        pricing.total += orderDeliveryFee + platformFeeAmount + totalTaxes;
-        
-        return pricing;
-    };
-
-    let cartBase = 0;
-    let cartDelivery = 0;
-    let cartPlatformFee = 0;
-    let cartTaxes = 0;
-    
-    if (isCartCheckout) {
-        cartBase = getTotalPrice();
-        // Use admin delivery base fee + perKm calculation if coordinates exist
-        let orderDeliveryFee = deliveryRates.baseFee || 49;
-        
-        if (cartBase <= 999 && cartItems.length > 0) {
-            const firstItem = cartItems[0];
-            const itemId = firstItem.cartId;
-            if (firstItem.tailor?.location?.coordinates && selectedAddress?.location?.coordinates) {
-                const [uLng, uLat] = selectedAddress.location.coordinates;
-                const cacheKey = `${itemId}_${uLat}_${uLng}`;
-                let distanceKm = 0;
-
-                if (roadDistances[itemId] && roadDistances[itemId].key === cacheKey) {
-                    distanceKm = roadDistances[itemId].distanceKm;
-                } else {
-                    try {
-                        const [tLng, tLat] = firstItem.tailor.location.coordinates;
-                        distanceKm = calculateDistance(uLat, uLng, tLat, tLng);
-                    } catch (err) {
-                        console.error("Cart Distance recalculation failed:", err);
-                    }
-                }
-
-                if (distanceKm > 0) {
-                    orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
-                    console.log(`[Cart] orderDeliveryFee calculated: ${orderDeliveryFee} using distance: ${distanceKm}`);
-                }
-            }
-        }
-        
-        cartDelivery = cartBase > 999 ? 0 : orderDeliveryFee;
-        cartPlatformFee = Math.round(cartBase * (platformFeePercentage / 100));
-        // Calculate GST excluding delivery fee to match backend logic
-        cartTaxes = Math.round((cartBase + cartPlatformFee) * (gstPercentage / 100));
-    }
+        fetchPricing();
+    }, [bulkOrder, cartItems, currentCheckoutItems, isCartCheckout, selectedAddress]);
 
     const isCartAlteration = isCartCheckout && cartItems.length > 0 && cartItems[0].isAlteration;
     const isCartCustomDesign = isCartCheckout && cartItems.length > 0 && cartItems[0].isCustomDesign;
@@ -287,27 +163,7 @@ const CheckoutSummary = () => {
     ));
     const requireFullPayment = (isCartCheckout && !isCartAlteration && !isCartCustomDesign) || (isServiceCheckout && isAlterationCheckout);
 
-    const currentPricing = bulkOrder
-        ? {
-            total: bulkOrder.quote.depositRequired,
-            base: bulkOrder.quote.depositRequired,
-            taxes: 0,
-            delivery: 0,
-            platformFee: 0,
-            platformFeePercentage: 0,
-            gstPercentage: 0
-        }
-        : isServiceCheckout ? getServicePricing() : {
-            total: cartBase + cartDelivery + cartPlatformFee + cartTaxes,
-            base: cartBase,
-            taxes: cartTaxes,
-            delivery: cartDelivery,
-            platformFee: cartPlatformFee,
-            platformFeePercentage: platformFeePercentage,
-            gstPercentage: gstPercentage
-        };
-
-    const finalTotal = currentPricing.total;
+    const finalTotal = currentPricing?.total || 0;
 
     const handlePayment = async () => {
         if (!selectedAddress) {
@@ -419,7 +275,7 @@ const CheckoutSummary = () => {
             }
 
             if (!bulkOrderId) {
-                if (requireFullPayment) {
+                if (requireFullPayment && finalTotal > 0) {
                     setLoadingText('Connecting to Secure Payment...');
                     const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: finalTotal });
                     if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
@@ -491,6 +347,24 @@ const CheckoutSummary = () => {
             }
 
             // ONLY BULK ORDERS DO DEPOSIT PAYMENT HERE NOW
+            if (finalTotal <= 0) {
+                const verifyRes = await api.put(`/bulk-orders/${bulkOrderId}`, {
+                    paymentStatus: 'deposit-paid',
+                    status: 'accepted',
+                    message: "No security deposit required. Order accepted."
+                });
+
+                if (verifyRes.data.success) {
+                    navigate('/user/checkout/success', {
+                        state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true }
+                    });
+                } else {
+                    toast.error('Failed to update bulk order');
+                    setIsProcessing(false);
+                }
+                return;
+            }
+
             setLoadingText('Connecting to Secure Payment...');
             const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: finalTotal });
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
@@ -694,6 +568,14 @@ const CheckoutSummary = () => {
                     <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-4">
                         <h3 className="text-sm font-bold text-[#843D9B] mb-1">Awaiting Quote</h3>
                         <p className="text-xs text-indigo-700/70">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
+                    </div>
+                ) : isLoadingPricing ? (
+                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm animate-pulse space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
+                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-6 bg-gray-200 rounded w-1/2 mt-4"></div>
                     </div>
                 ) : (
                     <BillDetails 

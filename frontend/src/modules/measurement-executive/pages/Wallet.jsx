@@ -54,6 +54,28 @@ const MEWallet = () => {
     });
     const [qrFile, setQrFile] = useState(null);
     const [qrPreview, setQrPreview] = useState(null);
+    const [showAllTransactions, setShowAllTransactions] = useState(false);
+    const [allTransactions, setAllTransactions] = useState([]);
+    const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+
+    const fetchAllTransactions = async () => {
+        setIsLoadingTransactions(true);
+        try {
+            const res = await api.get('/wallet/transactions');
+            if (res.data.success) {
+                setAllTransactions(res.data.data);
+            }
+        } catch (error) {
+            toast.error('Failed to load transaction history');
+        } finally {
+            setIsLoadingTransactions(false);
+        }
+    };
+
+    const handleViewAllClick = () => {
+        setShowAllTransactions(true);
+        fetchAllTransactions();
+    };
 
     const fetchWalletData = async () => {
         setIsLoading(true);
@@ -180,7 +202,6 @@ const MEWallet = () => {
                         <Menu size={28} className="opacity-90 cursor-pointer" onClick={() => navigate(-1)} />
                         <h1 className="text-[22px] font-black tracking-tight">Wallet</h1>
                     </div>
-                    <HelpCircle size={24} className="opacity-90" />
                 </div>
 
                 {/* Main Balance Card */}
@@ -257,7 +278,7 @@ const MEWallet = () => {
                 <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-5">
                     <div className="flex items-center justify-between mb-5">
                         <h3 className="text-sm font-black text-slate-900">Transaction History</h3>
-                        <button className="text-[11px] font-bold text-indigo-700 flex items-center gap-1">
+                        <button onClick={handleViewAllClick} className="text-[11px] font-bold text-indigo-700 flex items-center gap-1 hover:text-indigo-800 transition-colors">
                             View All <ChevronRight size={14} />
                         </button>
                     </div>
@@ -465,13 +486,68 @@ const MEWallet = () => {
                                 </button>
 
                                 <p className="text-center text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] leading-relaxed">
-                                    Funds will be transferred to your upi id <br /> after admin review
+                                    Funds will be transferred to your selected method <br /> after admin review
                                 </p>
                             </form>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* All Transactions Modal */}
+            {showAllTransactions && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowAllTransactions(false)}>
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="px-8 pt-8 pb-4 border-b border-gray-50 flex items-center justify-between shrink-0">
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Transaction History</h3>
+                            <button onClick={() => setShowAllTransactions(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-200 transition-all shadow-sm">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+                            {isLoadingTransactions ? (
+                                <div className="flex items-center justify-center h-40">
+                                    <Loader2 className="w-8 h-8 text-[#843D9B] animate-spin" />
+                                </div>
+                            ) : allTransactions.length > 0 ? (
+                                allTransactions.map((txn, idx) => (
+                                    <div key={txn._id || idx} className="flex items-center justify-between group p-3 hover:bg-slate-50 rounded-2xl transition-colors border border-transparent hover:border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border shrink-0 ${txn.type === 'credit' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-500 border-orange-100'}`}>
+                                                {txn.type === 'credit' ? <ArrowDown size={18} strokeWidth={2.5} /> : <Landmark size={18} strokeWidth={2.5} />}
+                                            </div>
+                                            <div>
+                                                <p className="text-[12px] font-bold text-slate-900 mb-0.5">
+                                                    {txn.order?.orderId ? `Order #${txn.order.orderId}` : (txn.category === 'withdrawal' ? 'Weekly Payout' : txn.description)}
+                                                </p>
+                                                <p className="text-[10px] font-medium text-slate-500 capitalize">
+                                                    {txn.category.replace('_', ' ')}
+                                                </p>
+                                                <p className="text-[9px] text-slate-400 mt-0.5">
+                                                    {new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(txn.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                            <div className={`flex items-center gap-2 ${txn.type === 'credit' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                                                <span className="text-sm font-black">{txn.type === 'credit' ? '+' : '-'} ₹{txn.amount}</span>
+                                            </div>
+                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${txn.type === 'credit' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                                                {txn.type === 'credit' ? 'Credit' : 'Debit'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center text-slate-500 py-10">
+                                    <History className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                    <p className="font-bold">No transactions found</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
         </PullToRefresh>
     );

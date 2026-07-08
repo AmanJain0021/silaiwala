@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
@@ -16,16 +16,33 @@ const Signup = () => {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const otpRefs = useRef([]);
 
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        referralCode: '',
+    const [formData, setFormData] = useState(() => {
+        const savedData = localStorage.getItem('customerSignupData');
+        if (savedData) {
+            try {
+                return JSON.parse(savedData);
+            } catch (e) {
+                console.error("Error parsing saved signup data", e);
+            }
+        }
+        return {
+            name: '',
+            email: '',
+            phoneNumber: '',
+            referralCode: '',
+        };
     });
+
+    useEffect(() => {
+        localStorage.setItem('customerSignupData', JSON.stringify(formData));
+    }, [formData]);
     const [error, setError] = useState('');
 
     const handleChange = (e) => {
         let value = e.target.value;
+        if (e.target.name === 'name') {
+            value = value.replace(/[^a-zA-Z\s]/g, '');
+        }
         if (e.target.name === 'phoneNumber') {
             value = value.replace(/\D/g, '');
         }
@@ -89,6 +106,7 @@ const Signup = () => {
         }
         try {
             await signup({ ...formData, role: 'customer', otp: fullOtp });
+            localStorage.removeItem('customerSignupData');
             navigate('/user');
         } catch (err) {
             setError(err.message || 'Signup failed. Please try again.');
@@ -157,7 +175,7 @@ const Signup = () => {
 
                             <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
                                 <div className="flex items-center px-3 sm:px-4 gap-2 sm:gap-3 h-full">
-                                    <span className="text-gray-800 font-bold text-sm">+91</span>
+                                    <span className="text-gray-900 font-bold text-base tracking-wide mt-[1px]">+91</span>
                                     <div className="w-px h-6 bg-slate-200" />
                                     <input
                                         type="tel"
@@ -178,6 +196,11 @@ const Signup = () => {
                                     placeholder="Referral Code (Optional)"
                                     value={formData.referralCode}
                                     onChange={handleChange}
+                                    onFocus={(e) => {
+                                        setTimeout(() => {
+                                            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, 100);
+                                    }}
                                     className="bg-transparent border-none focus:ring-0 font-bold text-[#843D9B] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider py-1.5 sm:py-2"
                                 />
                             </div>
@@ -241,7 +264,7 @@ const Signup = () => {
                     </Button>
                 </div>
             </motion.form>
-            <div className="mt-3 sm:mt-8 text-center sm:text-left">
+            <div className="mt-auto pt-4 sm:pt-6 text-center sm:text-left pb-4">
                 <p className="text-xs sm:text-sm font-bold text-slate-400">
                     Already have an account?{' '}
                     <button 
@@ -251,6 +274,9 @@ const Signup = () => {
                         Sign In
                     </button>
                 </p>
+                <div className="mt-6 text-[10px] text-gray-400 font-medium">
+                    By signing up, you agree to our <button onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
+                </div>
             </div>
         </motion.div>
     );

@@ -18,6 +18,7 @@ const OrdersPage = () => {
     const [customDesigns, setCustomDesigns] = React.useState([]);
     const [activeTab, setActiveTab] = React.useState('orders'); // 'orders', 'alterations', 'custom-designs'
     const [filterStatus, setFilterStatus] = React.useState('All');
+    const [searchQuery, setSearchQuery] = React.useState('');
 
     useEffect(() => {
         fetchOrders();
@@ -72,9 +73,25 @@ const OrdersPage = () => {
         }
     };
 
-    const filteredOrders = orders.filter(o => filterStatus === 'All' || o.status === filterStatus);
-    const filteredAlterations = alterations.filter(a => filterStatus === 'All' || a.status === filterStatus);
-    const filteredCustomDesigns = customDesigns.filter(d => filterStatus === 'All' || d.status === filterStatus);
+    const matchSearch = (item) => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        const idMatch = (item.orderId || item._id || '').toLowerCase().includes(q);
+        
+        let detailsMatch = false;
+        if (item.items) {
+            detailsMatch = item.items.some(i => (i.service?.name || '').toLowerCase().includes(q) || (i.fabric?.name || '').toLowerCase().includes(q));
+        } else if (item.garmentType) {
+            detailsMatch = item.garmentType.toLowerCase().includes(q);
+        } else if (item.designType || item.referenceStyle) {
+            detailsMatch = ((item.designType || '') + ' ' + (item.referenceStyle || '')).toLowerCase().includes(q);
+        }
+        return idMatch || detailsMatch;
+    };
+
+    const filteredOrders = orders.filter(o => (filterStatus === 'All' || (o.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(o));
+    const filteredAlterations = alterations.filter(a => (filterStatus === 'All' || (a.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(a));
+    const filteredCustomDesigns = customDesigns.filter(d => (filterStatus === 'All' || (d.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(d));
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans">
@@ -90,15 +107,18 @@ const OrdersPage = () => {
                     <Search size={14} className="text-gray-400 shrink-0" />
                     <input
                         type="text"
-                        placeholder="Search orders..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by ID or details..."
                         className="bg-transparent text-[11px] w-full focus:outline-none"
                     />
                 </div>
-                <div className="relative">
+                <div className="relative flex items-center">
+                    <ListFilter size={14} className="absolute left-3 text-gray-600 pointer-events-none" />
                     <select 
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                        className="pl-8 pr-4 py-1.5 border border-gray-200 rounded-full text-[11px] font-black whitespace-nowrap text-gray-600 bg-white hover:bg-gray-50 focus:outline-none cursor-pointer appearance-none shadow-sm"
                     >
                         <option value="All">All Status</option>
                         <option value="pending">Pending</option>
@@ -108,10 +128,6 @@ const OrdersPage = () => {
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                     </select>
-                    <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-black whitespace-nowrap text-gray-600 active:bg-gray-50 shrink-0 relative z-0">
-                        <ListFilter size={14} />
-                        {filterStatus === 'All' ? 'All Status' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1).replace('-', ' ')}
-                    </button>
                 </div>
             </div>
 

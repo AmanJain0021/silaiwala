@@ -9,9 +9,11 @@ import FAQSection from '../components/services/FAQSection';
 
 const Services = () => {
     const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialSearch = queryParams.get('search') || '';
     const initialFilter = location.state?.filter || 'All';
 
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(initialSearch);
     const [activeFilter, setActiveFilter] = useState(initialFilter);
 
     // Update filter if navigated again with a different state
@@ -19,7 +21,11 @@ const Services = () => {
         if (location.state?.filter) {
             setActiveFilter(location.state.filter);
         }
-    }, [location.state]);
+        const currentSearch = new URLSearchParams(location.search).get('search');
+        if (currentSearch !== null) {
+            setSearchQuery(currentSearch);
+        }
+    }, [location.state, location.search]);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#f3f9f8] to-[#e6f4f1] pb-20 md:pb-8 font-sans">
@@ -36,9 +42,6 @@ const Services = () => {
                 searchQuery={searchQuery}
                 activeFilter={activeFilter}
             />
-
-            {/* Delivery Comparison */}
-            <DeliveryComparison />
 
             {/* Custom Request Banner */}
             <CustomRequestBanner />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X, Bell } from 'lucide-react';
+import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone, Mail, Wallet, Trash2, AlertTriangle, Award, X, Bell, Loader2 } from 'lucide-react';
 import MenuOption from '../../customer/components/profile/MenuOption';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
@@ -9,7 +9,7 @@ import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const Profile = () => {
     const navigate = useNavigate();
-    const { profile, fetchDashboard, loading } = useMeasurementStore();
+    const { profile, fetchDashboard, updateProfile, loading } = useMeasurementStore();
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
     
     const [isEditing, setIsEditing] = useState(false);
@@ -21,6 +21,90 @@ const Profile = () => {
     useEffect(() => {
         if (!profile) fetchDashboard();
     }, [profile, fetchDashboard]);
+
+    const [editForm, setEditForm] = useState({
+        name: '',
+        address: '',
+        aadharNumber: '',
+        emergencyContactName: '',
+        emergencyContactPhone: ''
+    });
+    const [editErrors, setEditErrors] = useState({});
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    useEffect(() => {
+        if (isEditing) {
+            setEditForm({
+                name: user?.name || '',
+                address: profile?.address || '',
+                aadharNumber: profile?.aadharNumber || '',
+                emergencyContactName: profile?.emergencyContact?.name || '',
+                emergencyContactPhone: profile?.emergencyContact?.phone || ''
+            });
+            setEditErrors({});
+        }
+    }, [isEditing, user, profile]);
+
+    const validateEditForm = () => {
+        const errors = {};
+        if (!editForm.name.trim()) {
+            errors.name = "Name is required";
+        } else if (!/^[A-Za-z\s]+$/.test(editForm.name)) {
+            errors.name = "Name can only contain alphabets";
+        }
+
+        if (!editForm.address.trim()) {
+            errors.address = "Address is required";
+        }
+
+        if (editForm.aadharNumber && !/^\d{12}$/.test(editForm.aadharNumber)) {
+            errors.aadharNumber = "Aadhar number must be exactly 12 digits";
+        }
+
+        if (editForm.emergencyContactName && !/^[A-Za-z\s]+$/.test(editForm.emergencyContactName)) {
+            errors.emergencyContactName = "Name can only contain alphabets";
+        }
+
+        if (editForm.emergencyContactPhone && !/^\d{10}$/.test(editForm.emergencyContactPhone)) {
+            errors.emergencyContactPhone = "Phone number must be exactly 10 digits";
+        }
+
+        setEditErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        if (!validateEditForm()) return;
+        
+        setIsUpdating(true);
+        try {
+            const payload = {
+                name: editForm.name.trim(),
+                address: editForm.address.trim(),
+                aadharNumber: editForm.aadharNumber || undefined,
+            };
+            if (editForm.emergencyContactName || editForm.emergencyContactPhone) {
+                payload.emergencyContact = {
+                    name: editForm.emergencyContactName.trim(),
+                    phone: editForm.emergencyContactPhone
+                };
+            }
+
+            await updateProfile(payload);
+            
+            const updatedUser = { ...user, name: payload.name };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+
+            toast.success("Profile updated successfully!");
+            setIsEditing(false);
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Failed to update profile");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to logout?")) {
@@ -322,6 +406,98 @@ const Profile = () => {
                                 className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Profile Modal */}
+            {isEditing && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setIsEditing(false)}>
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="px-8 pt-8 pb-4 border-b border-gray-50 flex items-center justify-between shrink-0">
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Edit Profile</h3>
+                            <button onClick={() => setIsEditing(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-200 transition-all shadow-sm">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-6">
+                            <form id="editProfileForm" onSubmit={handleEditSubmit} className="space-y-5">
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Full Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={editForm.name} 
+                                        onChange={(e) => setEditForm({...editForm, name: e.target.value})} 
+                                        className={`w-full px-4 py-3 bg-gray-50 border ${editErrors.name ? 'border-red-400' : 'border-gray-200'} rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-[#843D9B] transition-all`} 
+                                        placeholder="Your Name" 
+                                    />
+                                    {editErrors.name && <p className="text-[10px] text-red-500 font-bold mt-1">{editErrors.name}</p>}
+                                </div>
+                                
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Address</label>
+                                    <textarea 
+                                        value={editForm.address} 
+                                        onChange={(e) => setEditForm({...editForm, address: e.target.value})} 
+                                        className={`w-full px-4 py-3 bg-gray-50 border ${editErrors.address ? 'border-red-400' : 'border-gray-200'} rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-[#843D9B] transition-all min-h-[80px] resize-none`} 
+                                        placeholder="Full residential address" 
+                                    />
+                                    {editErrors.address && <p className="text-[10px] text-red-500 font-bold mt-1">{editErrors.address}</p>}
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Aadhar Number (Optional)</label>
+                                    <input 
+                                        type="text" 
+                                        value={editForm.aadharNumber} 
+                                        onChange={(e) => setEditForm({...editForm, aadharNumber: e.target.value.replace(/\D/g, '')})} 
+                                        maxLength="12"
+                                        className={`w-full px-4 py-3 bg-gray-50 border ${editErrors.aadharNumber ? 'border-red-400' : 'border-gray-200'} rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-[#843D9B] transition-all`} 
+                                        placeholder="12 Digit Aadhar Number" 
+                                    />
+                                    {editErrors.aadharNumber && <p className="text-[10px] text-red-500 font-bold mt-1">{editErrors.aadharNumber}</p>}
+                                </div>
+
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Emergency Contact</h4>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Contact Name</label>
+                                            <input 
+                                                type="text" 
+                                                value={editForm.emergencyContactName} 
+                                                onChange={(e) => setEditForm({...editForm, emergencyContactName: e.target.value})} 
+                                                className={`w-full px-3 py-2 bg-white border ${editErrors.emergencyContactName ? 'border-red-400' : 'border-gray-200'} rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:border-[#843D9B] transition-all`} 
+                                                placeholder="Name" 
+                                            />
+                                            {editErrors.emergencyContactName && <p className="text-[9px] text-red-500 font-bold mt-1">{editErrors.emergencyContactName}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Contact Phone</label>
+                                            <input 
+                                                type="text" 
+                                                value={editForm.emergencyContactPhone} 
+                                                onChange={(e) => setEditForm({...editForm, emergencyContactPhone: e.target.value.replace(/\D/g, '')})} 
+                                                maxLength="10"
+                                                className={`w-full px-3 py-2 bg-white border ${editErrors.emergencyContactPhone ? 'border-red-400' : 'border-gray-200'} rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:border-[#843D9B] transition-all`} 
+                                                placeholder="10 Digit Mobile" 
+                                            />
+                                            {editErrors.emergencyContactPhone && <p className="text-[9px] text-red-500 font-bold mt-1">{editErrors.emergencyContactPhone}</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div className="p-8 border-t border-gray-50 shrink-0">
+                            <button 
+                                type="submit"
+                                form="editProfileForm"
+                                disabled={isUpdating}
+                                className="w-full bg-[#843D9B] text-white rounded-2xl py-4 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-[#843D9B]/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {isUpdating ? <><Loader2 size={14} className="animate-spin" /> Updating...</> : 'Save Changes'}
                             </button>
                         </div>
                     </div>

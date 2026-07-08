@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getWalletDashboard,
+  getUserTransactions,
   requestWithdrawal,
   getAllWithdrawals,
   updateWithdrawalStatus
@@ -15,6 +16,7 @@ router.use(protect);
 
 // Tailor & Delivery Partner Routes
 router.get("/dashboard", authorize("tailor", "delivery", "measurement_executive"), getWalletDashboard);
+router.get("/transactions", authorize("tailor", "delivery", "measurement_executive"), getUserTransactions);
 router.post("/withdraw", authorize("tailor", "delivery", "measurement_executive"), requestWithdrawal);
 
 // Admin Routes

@@ -6,6 +6,7 @@ import { useTailorAuth } from '../context/AuthContext';
 import { Phone, Lock, Eye, ArrowRight, EyeOff } from 'lucide-react';
 import api from '../services/api';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
+import { GoogleLogin } from '@react-oauth/google';
 
 const TailorLogin = () => {
     const { login } = useTailorAuth();
@@ -67,6 +68,34 @@ const TailorLogin = () => {
         } catch (error) {
             const message = error.response?.data?.message || "Invalid OTP or server error";
             setFormError('root', { type: 'manual', message });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true);
+        clearErrors('root');
+        try {
+            const response = await api.post('/auth/google-login', {
+                credential: credentialResponse.credential
+            });
+            if (response.data.success) {
+                const { token, data: userData } = response.data;
+                if (userData.role !== 'tailor') {
+                    setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
+                    return;
+                }
+                setLoggedInUser(userData);
+                setLoggedInToken(token);
+                setIsLocating(true);
+            }
+        } catch (error) {
+            if (error.response?.data?.message?.includes('create an account first')) {
+                setFormError('root', { type: 'manual', message: 'Account not found. Please create an account first.' });
+            } else {
+                setFormError('root', { type: 'manual', message: error.response?.data?.message || 'Google Login failed' });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -207,6 +236,17 @@ const TailorLogin = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+                
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <div className="flex justify-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => setFormError('root', { type: 'manual', message: 'Google Login Failed' })}
+                            useOneTap
+                            shape="pill"
+                        />
+                    </div>
+                </div>
             </form>
             
             <div className="mt-10 text-center">

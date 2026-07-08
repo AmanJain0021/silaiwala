@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, ShoppingCart, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
 import useUserStore from '../../../store/userStore';
@@ -14,6 +14,7 @@ import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import silaiwalaLogo from '/sewzella_logo.jpeg';
 
 import { useNotifications } from '../context/NotificationContext';
+import toast from 'react-hot-toast';
 
 const HomeHeader = ({ user }) => {
     const [showNotifications, setShowNotifications] = useState(false);
@@ -21,12 +22,24 @@ const HomeHeader = ({ user }) => {
     const { serviceItems } = useCheckoutStore(state => state);
     const cartCount = productCartItems.length + serviceItems.length;
     const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+    const navigate = useNavigate();
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
     const { profile } = useUserStore();
     const { address: location, setLocation } = useLocationStore();
     const { detectLocation, isLocating: isLoading } = useUnifiedLocation({ fetchAddress: true });
+
+    useEffect(() => {
+        if (showNotifications || showLocationModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showNotifications, showLocationModal]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -202,7 +215,7 @@ const HomeHeader = ({ user }) => {
                                 )}
                             </div>
 
-                            <button className="w-full mt-6 py-3 text-xs font-black text-[#843D9B] uppercase tracking-widest border border-[#843D9B]/10 rounded-2xl hover:bg-[#843D9B]/5 transition-all">
+                            <button onClick={() => { setShowNotifications(false); navigate('/user/activity'); }} className="w-full mt-6 py-3 text-xs font-black text-[#843D9B] uppercase tracking-widest border border-[#843D9B]/10 rounded-2xl hover:bg-[#843D9B]/5 transition-all">
                                 View Activity History
                             </button>
                         </motion.div>

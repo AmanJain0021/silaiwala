@@ -998,7 +998,7 @@ exports.getAllCategories = async (req, res) => {
     
     // Get product counts for each category
     const data = await Promise.all(categories.map(async (cat) => {
-      const productCount = await mongoose.model("Product").countDocuments({ category: cat._id });
+      const productCount = await Product.countDocuments({ category: cat._id });
       return { ...cat, productCount };
     }));
     res.status(200).json({ success: true, count: data.length, data });

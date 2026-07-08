@@ -25,8 +25,19 @@ const ProfileHeader = ({ user, stats }) => {
                     </Link>
                 </div>
 
-                {/* Name & Role */}
-                <h2 className="text-xl font-black text-gray-900 mb-1 tracking-tight italic">{user?.name || 'Guest User'}</h2>
+                {/* Name & Phone */}
+                <h2 className="text-xl font-black text-gray-900 mb-0.5 tracking-tight italic">{user?.name || 'Guest User'}</h2>
+                {(user?.phone || user?.phoneNumber) && (
+                    <p className="text-[11px] font-bold text-gray-400 mb-2 tracking-widest">
+                        {(() => {
+                            const p = user.phone || user.phoneNumber;
+                            const cleaned = ('' + p).replace(/\D/g, '');
+                            if (cleaned.length === 12 && cleaned.startsWith('91')) return `+91 ${cleaned.slice(2, 7)} ${cleaned.slice(7)}`;
+                            if (cleaned.length === 10) return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+                            return p;
+                        })()}
+                    </p>
+                )}
                 <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[8px] font-black uppercase tracking-[0.2em] rounded-full border border-green-100 italic">
                         Verified Account

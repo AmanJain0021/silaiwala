@@ -17,6 +17,29 @@ const DesignDetailModal = ({ design, isSelected, onToggle, onClose }) => {
     }
 
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const scrollRef = React.useRef(null);
+
+    // Handle scroll to update index
+    const handleScroll = (e) => {
+        const scrollLeft = e.target.scrollLeft;
+        const width = e.target.clientWidth;
+        const newIndex = Math.round(scrollLeft / width);
+        if (newIndex !== activeImageIndex) {
+            setActiveImageIndex(newIndex);
+        }
+    };
+
+    // Scroll to image when thumbnail is clicked
+    const scrollToImage = (idx) => {
+        setActiveImageIndex(idx);
+        if (scrollRef.current) {
+            const width = scrollRef.current.clientWidth;
+            scrollRef.current.scrollTo({
+                left: idx * width,
+                behavior: 'smooth'
+            });
+        }
+    };
 
     return (
         <AnimatePresence>
@@ -28,14 +51,14 @@ const DesignDetailModal = ({ design, isSelected, onToggle, onClose }) => {
                 className="fixed inset-0 z-[100] bg-white flex flex-col overflow-hidden font-sans"
             >
                 {/* Header */}
-                <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
+                <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent pointer-events-none">
                     <button 
                         onClick={onClose}
-                        className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white"
+                        className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white pointer-events-auto"
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <span className="text-white font-bold text-sm bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full">
+                    <span className="text-white font-bold text-sm bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full pointer-events-auto">
                         Design Details
                     </span>
                     <div className="w-10" /> {/* Spacer */}
@@ -43,15 +66,25 @@ const DesignDetailModal = ({ design, isSelected, onToggle, onClose }) => {
 
                 {/* Main Image View */}
                 <div className="relative w-full aspect-[4/5] bg-gray-100">
-                    <img 
-                        src={allImages[activeImageIndex]} 
-                        alt={design.name} 
-                        className="w-full h-full object-cover"
-                    />
+                    <div 
+                        ref={scrollRef}
+                        className="w-full h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+                        onScroll={handleScroll}
+                    >
+                        {allImages.map((img, idx) => (
+                            <div key={idx} className="w-full h-full flex-shrink-0 snap-center">
+                                <img 
+                                    src={img} 
+                                    alt={`${design.name} view ${idx + 1}`} 
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        ))}
+                    </div>
                     
                     {/* Image Counter */}
-                    <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full">
-                        <span className="text-[10px] font-black text-primary tracking-widest">
+                    <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full pointer-events-none shadow-sm">
+                        <span className="text-[10px] font-black text-[#843D9B] tracking-widest">
                             {activeImageIndex + 1} / {allImages.length}
                         </span>
                     </div>
@@ -64,7 +97,7 @@ const DesignDetailModal = ({ design, isSelected, onToggle, onClose }) => {
                         {allImages.map((img, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => setActiveImageIndex(idx)}
+                                onClick={() => scrollToImage(idx)}
                                 className={cn(
                                     "relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all",
                                     activeImageIndex === idx ? "border-[#843D9B] shadow-md" : "border-transparent opacity-70 hover:opacity-100"

@@ -62,8 +62,12 @@ const autoGeocode = async (addressObj) => {
 exports.createRazorpayOrder = asyncHandler(async (req, res, next) => {
   const { amount } = req.body;
 
-  if (!amount) {
+  if (amount === undefined || amount === null) {
     return next(new ErrorResponse("Please provide an amount", 400));
+  }
+
+  if (isNaN(amount) || Number(amount) <= 0) {
+    return next(new ErrorResponse("Amount must be greater than zero", 400));
   }
 
   const options = {
@@ -1415,5 +1419,128 @@ exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: order
+  });
+});
+
+/**
+ * @desc    Calculate price summary for checkout
+ * @route   POST /api/v1/orders/price-summary
+ * @access  Private (Customer, Admin)
+ */
+exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
+  const { items, deliveryAddress, isCartCheckout } = req.body;
+  const Settings = require("../../../models/Settings");
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(200).json({
+      success: true,
+      data: { total: 0, base: 0, taxes: 0, delivery: 0, addons: 0, tailorAtHome: 0, fabric: 0, platformFee: 0, platformFeePercentage: 0, gstPercentage: 0 }
+    });
+  }
+
+  const settings = await Settings.getSettings();
+  const visitSettings = settings.visitFee || { baseFee: 150, perKmFee: 20, freeKm: 3 };
+  const deliveryRates = settings.deliveryRates || { baseFee: 20, perKmRate: 10 };
+  const platformFeePercentage = settings.walletConfig?.platformFeePercentage || 5;
+  const gstPercentage = settings.pricing?.gstPercentage || 5;
+
+  let totalBase = 0;
+  let totalAddons = 0;
+  let totalFabric = 0;
+  let totalTailorAtHome = 0;
+  let orderDeliveryFee = 0;
+  
+  let uLat = null, uLng = null;
+  if (deliveryAddress?.location?.coordinates?.length >= 2) {
+    uLng = deliveryAddress.location.coordinates[0];
+    uLat = deliveryAddress.location.coordinates[1];
+  }
+
+  if (isCartCheckout) {
+    // Cart Logic
+    totalBase = items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+    orderDeliveryFee = deliveryRates.baseFee;
+    
+    const firstItem = items[0];
+    let distanceKm = 0;
+    let tLat = null, tLng = null;
+    
+    if (firstItem.tailor?.location?.coordinates?.length >= 2) {
+        tLng = firstItem.tailor.location.coordinates[0];
+        tLat = firstItem.tailor.location.coordinates[1];
+    }
+    
+    if (uLat !== null && uLng !== null && tLat !== null && tLng !== null) {
+        distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
+        if (distanceKm > 0) {
+            orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
+        }
+    }
+    
+    if (totalBase > 999) {
+        orderDeliveryFee = 0;
+    }
+  } else {
+    // Service Checkout Logic
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        let itemBase = item.pricing?.base || 0;
+        let itemAddons = item.pricing?.addons || 0;
+        let itemFabric = item.pricing?.fabric || 0;
+        let dynamicTailorAtHome = item.pricing?.tailorAtHome || 0;
+        
+        let distanceKm = 0;
+        let tLat = null, tLng = null;
+        
+        if (item.serviceDetails?.tailorCoordinates?.length >= 2) {
+            tLng = item.serviceDetails.tailorCoordinates[0];
+            tLat = item.serviceDetails.tailorCoordinates[1];
+        }
+        
+        if (uLat !== null && uLng !== null && tLat !== null && tLng !== null) {
+            distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
+            
+            if (item.configuration?.isTailorAtHome) {
+                if (distanceKm <= visitSettings.freeKm) {
+                    dynamicTailorAtHome = visitSettings.baseFee;
+                } else {
+                    dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
+                }
+            }
+        }
+        
+        totalBase += itemBase;
+        totalAddons += itemAddons;
+        totalFabric += itemFabric;
+        totalTailorAtHome += dynamicTailorAtHome;
+        
+        if (i === 0 && distanceKm > 0) {
+            orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
+        }
+    }
+  }
+  
+  const platformFeeAmount = Math.round((totalBase + totalAddons) * (platformFeePercentage / 100));
+  const taxableAmount = totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount;
+  const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
+  
+  const finalTotal = totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount + totalTaxes + orderDeliveryFee;
+  
+  res.status(200).json({
+    success: true,
+    data: {
+      total: finalTotal,
+      base: totalBase,
+      taxes: totalTaxes,
+      delivery: orderDeliveryFee,
+      addons: totalAddons,
+      fabric: totalFabric,
+      tailorAtHome: totalTailorAtHome,
+      platformFee: platformFeeAmount,
+      platformFeePercentage,
+      gstPercentage
+    }
   });
 });

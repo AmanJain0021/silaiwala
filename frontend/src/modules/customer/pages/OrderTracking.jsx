@@ -689,12 +689,13 @@ const OrderTracking = () => {
                     return null;
                 })()}
 
-                {/* 3.4 Advance Payment CTA */}
-                {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && (
+                {/* 3.4 Payment Actions (if applicable) */}
+                {/* 3.4.0 Advance Payment CTA */}
+                {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && order.advancePaymentAmount > 0 && (
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-3">
                         <h3 className="text-sm font-bold text-gray-900">Advance Payment Required</h3>
                         <p className="text-xs text-gray-600 max-w-xs">
-                            Tailor accepted the order. Pay ₹{order.advancePaymentAmount} advance to confirm.
+                            To begin processing your order, please pay the advance amount of ₹{order.advancePaymentAmount}.
                         </p>
                         <button
                             onClick={() => handlePayment('advance')}
@@ -709,7 +710,7 @@ const OrderTracking = () => {
                 )}
 
                 {/* 3.4.1 Remaining Payment CTA */}
-                {order.status === 'ready-for-delivery' && order.remainingPaymentStatus === 'pending' && (
+                {order.status === 'ready-for-delivery' && order.remainingPaymentStatus === 'pending' && order.remainingPaymentAmount > 0 && (
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl p-5 border border-emerald-100 shadow-sm flex flex-col items-center text-center space-y-3">
                         <h3 className="text-sm font-bold text-gray-900">Final Payment</h3>
                         <p className="text-xs text-gray-600 max-w-xs">

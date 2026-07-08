@@ -83,6 +83,7 @@ const AdminLayout = () => {
         { icon: <Scissors size={20} />, label: 'Tailors', path: '/admin/tailors' },
         { icon: <Ruler size={20} />, label: 'Measurement Execs', path: '/admin/measurement-executives' },
         { icon: <Truck size={20} />, label: 'Delivery', path: '/admin/delivery' },
+        { icon: <Users size={20} />, label: 'CRM', path: '/admin/crm' },
         { icon: <Users size={20} />, label: 'Customers', path: '/admin/customers' },
         { icon: <Layers size={20} />, label: 'Services', path: '/admin/services' },
         { icon: <Store size={20} />, label: 'Store', path: '/admin/store' },

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX } from 'react-icons/fi';
@@ -10,27 +10,56 @@ const DeliverySignup = () => {
     const isLoading = useAuthStore((state) => state.isLoading);
 
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
-        name: '', 
-        email: '', 
-        phone: '', 
-        password: '',
-        emergencyContact: '', 
-        aadharNumber: '',
-        vehicleType: 'bike', 
-        vehicleNumber: '', 
-        address: '',
-        drivingLicense: null, 
-        drivingLicenseBack: null,
-        aadharCard: null, 
-        aadharCardBack: null,
-        profileImage: null,
-        accountNumber: '',
-        accountName: '',
-        bankName: '',
-        ifscCode: '',
-        partnerRoles: ['delivery'],
+    const [formData, setFormData] = useState(() => {
+        const savedData = localStorage.getItem('deliverySignupData');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                // Ensure files are set to null initially since they can't be serialized
+                return {
+                    ...parsed,
+                    drivingLicense: null,
+                    drivingLicenseBack: null,
+                    aadharCard: null,
+                    aadharCardBack: null,
+                    profileImage: null,
+                };
+            } catch (e) {
+                console.error("Error parsing saved signup data", e);
+            }
+        }
+        return {
+            name: '', 
+            email: '', 
+            phone: '', 
+            password: '',
+            emergencyContact: '', 
+            aadharNumber: '',
+            vehicleType: 'bike', 
+            vehicleNumber: '', 
+            address: '',
+            drivingLicense: null, 
+            drivingLicenseBack: null,
+            aadharCard: null, 
+            aadharCardBack: null,
+            profileImage: null,
+            accountNumber: '',
+            accountName: '',
+            bankName: '',
+            ifscCode: '',
+            partnerRoles: ['delivery'],
+        };
     });
+
+    useEffect(() => {
+        const dataToSave = { ...formData };
+        delete dataToSave.drivingLicense;
+        delete dataToSave.drivingLicenseBack;
+        delete dataToSave.aadharCard;
+        delete dataToSave.aadharCardBack;
+        delete dataToSave.profileImage;
+        localStorage.setItem('deliverySignupData', JSON.stringify(dataToSave));
+    }, [formData]);
     const [error, setError] = useState('');
     const fileInputRefs = useRef({});
     const lastStepChangeRef = useRef(0);
@@ -223,6 +252,7 @@ const DeliverySignup = () => {
 
             // Note: The backend register function expects 'phoneNumber' or 'phone'
             await signup(payloadData);
+            localStorage.removeItem('deliverySignupData');
             // If signup is successful, redirect to a "waiting for approval" or dashboard
             // Based on auth controller, new delivery partners are isActive: false
             navigate('/delivery'); 
@@ -480,6 +510,10 @@ const DeliverySignup = () => {
                     )}
                 </div>
             </form>
+
+            <div className="mt-8 text-[10px] text-gray-400 font-medium text-center pb-4">
+                By signing up, you agree to our <button onClick={() => navigate('/delivery/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/delivery/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
+            </div>
         </motion.div>
     );
 };

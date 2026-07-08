@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { X, UploadCloud, Image as ImageIcon, Camera } from 'lucide-react';
 import { validateFile } from '../../utils/validation';
 import toast from 'react-hot-toast';
 
@@ -12,7 +12,9 @@ const ImageUploader = ({
     className = ""
 }) => {
     const [preview, setPreview] = useState(null);
-    const inputRef = useRef(null);
+    const [showOptions, setShowOptions] = useState(false);
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
 
     // Sync external value to local preview
     useEffect(() => {
@@ -34,7 +36,8 @@ const ImageUploader = ({
         const error = validateFile(file, maxSizeMB, allowedTypes);
         if (error) {
             toast.error(error);
-            if (inputRef.current) inputRef.current.value = '';
+            if (cameraInputRef.current) cameraInputRef.current.value = '';
+            if (galleryInputRef.current) galleryInputRef.current.value = '';
             return;
         }
 
@@ -45,11 +48,22 @@ const ImageUploader = ({
         e.preventDefault();
         e.stopPropagation();
         onChange(null);
-        if (inputRef.current) inputRef.current.value = '';
+        if (cameraInputRef.current) cameraInputRef.current.value = '';
+        if (galleryInputRef.current) galleryInputRef.current.value = '';
     };
 
     const triggerUpload = () => {
-        if (inputRef.current) inputRef.current.click();
+        setShowOptions(true);
+    };
+
+    const triggerCamera = () => {
+        setShowOptions(false);
+        if (cameraInputRef.current) cameraInputRef.current.click();
+    };
+
+    const triggerGallery = () => {
+        setShowOptions(false);
+        if (galleryInputRef.current) galleryInputRef.current.click();
     };
 
     return (
@@ -105,13 +119,42 @@ const ImageUploader = ({
                 )}
                 
                 <input
-                    ref={inputRef}
+                    ref={cameraInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                />
+                <input
+                    ref={galleryInputRef}
                     type="file"
                     className="hidden"
                     accept={allowedTypes.join(',')}
                     onChange={handleFileChange}
                 />
             </div>
+
+            {/* Upload Options Modal */}
+            {showOptions && (
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={() => setShowOptions(false)}>
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-4 space-y-2 animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95" onClick={e => e.stopPropagation()}>
+                        <div className="text-center pb-2 pt-2">
+                            <h3 className="text-base font-black text-gray-900 tracking-tight">Upload Photo</h3>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Choose a source for your image</p>
+                        </div>
+                        <button onClick={triggerCamera} className="w-full py-4 bg-gray-50 rounded-2xl flex items-center justify-center gap-3 font-black text-[#843D9B] active:bg-gray-100 transition-colors">
+                            <Camera size={18} /> Take Photo
+                        </button>
+                        <button onClick={triggerGallery} className="w-full py-4 bg-gray-50 rounded-2xl flex items-center justify-center gap-3 font-black text-[#843D9B] active:bg-gray-100 transition-colors">
+                            <ImageIcon size={18} /> Choose from Gallery
+                        </button>
+                        <button onClick={() => setShowOptions(false)} className="w-full py-4 bg-white border border-gray-100 rounded-2xl font-black text-gray-400 active:bg-gray-50 mt-2 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

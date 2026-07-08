@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,8 +18,32 @@ const TailorRegistration = () => {
 
     const { register, handleSubmit, watch, setValue, trigger, setError, formState: { errors } } = useForm({
         mode: 'onChange',
-        shouldUnregister: false
+        shouldUnregister: false,
+        defaultValues: (() => {
+            const savedData = localStorage.getItem('tailorSignupData');
+            if (savedData) {
+                try {
+                    return JSON.parse(savedData);
+                } catch (e) {
+                    console.error("Error parsing saved tailor data", e);
+                }
+            }
+            return {};
+        })()
     });
+
+    const formValues = watch();
+
+    useEffect(() => {
+        const valuesToSave = { ...formValues };
+        // Exclude File objects before saving to localStorage
+        ['profileImage', 'aadharFront', 'aadharBack', 'panImage', 'licenseImage', 'portfolio1', 'portfolio2'].forEach(key => {
+            if (valuesToSave[key] instanceof File) {
+                delete valuesToSave[key];
+            }
+        });
+        localStorage.setItem('tailorSignupData', JSON.stringify(valuesToSave));
+    }, [formValues]);
 
     const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);
@@ -189,6 +213,7 @@ const TailorRegistration = () => {
 
             if (response.data.success) {
                 const { token, data: result } = response.data;
+                localStorage.removeItem('tailorSignupData');
                 setIsSubmitted(true);
                 login(result.user, token);
             }
@@ -323,6 +348,10 @@ const TailorRegistration = () => {
                     )}
                 </div>
             </form>
+
+            <div className="mt-8 text-[10px] text-gray-400 font-medium text-center pb-4">
+                By applying, you agree to our <button onClick={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
+            </div>
         </motion.div>
     );
 };

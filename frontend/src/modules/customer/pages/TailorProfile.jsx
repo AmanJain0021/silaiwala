@@ -243,7 +243,7 @@ const TailorProfile = () => {
 
             {/* 3. Shop Fabrics (High Impact) */}
             {fabrics && fabrics.length > 0 && (
-                <div className="mt-6 px-4">
+                <div id="tailor-fabrics" className="mt-6 px-4">
                     <div className="flex justify-between items-center mb-4 px-2">
                         <div>
                             <h3 className="text-xl font-black text-gray-900 tracking-tight">Artisan's Collection</h3>
@@ -298,7 +298,7 @@ const TailorProfile = () => {
             )}
 
             {/* 4. Portfolio / Designs */}
-            <div className="mt-6 px-4">
+            <div id="signature-designs" className="mt-6 px-4">
                 <div className="flex justify-between items-center mb-4 px-2">
                     <div>
                         <h3 className="text-xl font-black text-gray-900 tracking-tight">Signature Designs</h3>
@@ -370,8 +370,8 @@ const TailorProfile = () => {
                     </button>
                     <button
                         onClick={() => {
-                            const fabricSection = document.querySelector('.mt-10');
-                            fabricSection?.scrollIntoView({ behavior: 'smooth' });
+                            const section = document.querySelector('#tailor-fabrics') || document.querySelector('#signature-designs');
+                            section?.scrollIntoView({ behavior: 'smooth' });
                         }}
                         className="flex-[1.2] bg-[#843D9B] text-white py-2.5 rounded-xl shadow-lg shadow-[#843D9B]/20 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5"
                     >

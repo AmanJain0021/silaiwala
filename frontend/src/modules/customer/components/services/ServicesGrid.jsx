@@ -128,11 +128,11 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         // Apply activeFilter
         if (activeFilter !== 'All') {
             if (activeFilter === 'Men') {
-                result = result.filter(s => getCategoryStr(s) === 'men' || getTitleStr(s).includes('men'));
+                result = result.filter(s => getCategoryStr(s).includes('men') || getTitleStr(s).includes('men'));
             } else if (activeFilter === 'Women') {
-                result = result.filter(s => getCategoryStr(s) === 'women' || getTitleStr(s).includes('women') || getTitleStr(s).includes('ladies'));
+                result = result.filter(s => getCategoryStr(s).includes('women') || getCategoryStr(s).includes('ladies') || getTitleStr(s).includes('women') || getTitleStr(s).includes('ladies') || getTitleStr(s).includes('blouse') || getTitleStr(s).includes('saree') || getTitleStr(s).includes('kurti') || getTitleStr(s).includes('suit'));
             } else if (activeFilter === 'Bridal') {
-                result = result.filter(s => getCategoryStr(s) === 'bridal' || getTitleStr(s).includes('bridal'));
+                result = result.filter(s => getCategoryStr(s).includes('bridal') || getTitleStr(s).includes('bridal') || getTitleStr(s).includes('lehenga'));
             } else if (activeFilter === 'Popular') {
                 result = result.filter(s => s.rating >= 4.5);
             } else if (activeFilter === 'Under ₹500') {
@@ -143,8 +143,8 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         }
 
         // Apply searchQuery
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
+        if (searchQuery && searchQuery.trim()) {
+            const query = searchQuery.trim().toLowerCase();
             result = result.filter(s => 
                 getTitleStr(s).includes(query) || 
                 getDescStr(s).includes(query) ||

@@ -182,14 +182,14 @@ const LayoutContent = () => {
             {/* Main content */}
             <div className="flex flex-col w-0 flex-1 overflow-hidden relative">
                 {/* Mobile Header logic is handled in Dashboard.jsx, but we might want a generic one for other pages */}
-                <main className="flex-1 relative z-0 overflow-y-auto custom-scrollbar md:p-8 lg:p-10 pb-24 md:pb-8">
-                    <div className="max-w-7xl mx-auto h-full">
+                <main className="flex-1 relative overflow-y-auto custom-scrollbar md:p-8 lg:p-10 pb-24 md:pb-8">
+                    <div className="max-w-7xl mx-auto min-h-full">
                         <Outlet />
                     </div>
                 </main>
 
                 {/* ── BOTTOM NAVIGATION (MOBILE ONLY) ── */}
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
+                <nav className="md:hidden absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
                     {navigation.map((item) => {
                         const isActive = location.pathname.startsWith(item.href);
                         return (

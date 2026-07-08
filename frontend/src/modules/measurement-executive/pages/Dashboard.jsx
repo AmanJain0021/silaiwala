@@ -6,6 +6,8 @@ import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, Ale
 import toast from 'react-hot-toast';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import PullToRefresh from 'react-simple-pull-to-refresh';
+import api from '../../../shared/utils/api';
+import { X, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -16,6 +18,31 @@ const Dashboard = () => {
     const executiveName = profile?.user?.name || profile?.name || 'Measurement Executive';
     const addressName = profile?.address || 'Location not set';
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+    // Notifications State
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    const fetchNotifications = async () => {
+        try {
+            setIsLoadingNotifications(true);
+            const res = await api.get('/notifications');
+            setNotifications(res.data.data || []);
+            setUnreadCount(res.data.data?.filter(n => !n.isRead).length || 0);
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+        } finally {
+            setIsLoadingNotifications(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboard();
+        fetchNotifications();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleRefreshLocation = async () => {
         setIsFetchingLocation(true);
@@ -34,10 +61,6 @@ const Dashboard = () => {
             setIsFetchingLocation(false);
         }
     };
-
-    useEffect(() => {
-        fetchDashboard();
-    }, []);
 
     const handleToggleStatus = async () => {
         try {
@@ -60,7 +83,7 @@ const Dashboard = () => {
                 await toggleAvailability(newStatus);
                 toast.success(`You are now offline`);
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to update status');
         }
     };
@@ -102,13 +125,8 @@ const Dashboard = () => {
 
     const isOnline = profile?.availabilityStatus === 'online';
 
-    const statCards = [
-        { name: 'Pending Requests', value: stats?.totalPending || 0, icon: ClipboardList, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-        { name: 'Completed Today', value: stats?.completedToday || 0, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100' },
-        { name: 'Total Measurements', value: stats?.totalMeasurements || 0, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-100' },
-    ];
-
     return (
+        <>
         <PullToRefresh onRefresh={async () => await fetchDashboard()}>
             <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
             {/* ── HEADER ── */}
@@ -152,9 +170,17 @@ const Dashboard = () => {
                             <Power size={10} />
                         </button>
                         
-                        <button className="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-sm relative shrink-0">
+                        <button 
+                            onClick={() => {
+                                setShowNotifications(true);
+                                fetchNotifications();
+                            }}
+                            className="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors shadow-sm relative shrink-0"
+                        >
                             <Bell size={18} />
-                            <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[6px] font-black text-white">0</span>
+                            {unreadCount > 0 && (
+                                <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[6px] font-black text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -176,7 +202,10 @@ const Dashboard = () => {
                             Completed measurements will update your today's earnings immediately.
                         </p>
                         
-                        <button className="bg-white text-[#843D9B] text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center gap-1 w-fit shadow-lg shadow-black/10 active:scale-95 transition-transform">
+                        <button 
+                            onClick={() => navigate('/executive/wallet')}
+                            className="bg-white text-[#843D9B] text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center gap-1 w-fit shadow-lg shadow-black/10 active:scale-95 transition-transform"
+                        >
                             VIEW DETAILS <ChevronRight size={14} />
                         </button>
                     </div>
@@ -284,6 +313,67 @@ const Dashboard = () => {
             </div>
         </div>
         </PullToRefresh>
+
+        {/* Notifications Modal */}
+        {showNotifications && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowNotifications(false)}>
+                <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="px-8 pt-8 pb-4 border-b border-gray-50 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
+                                <Bell size={20} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tight leading-none">Notifications</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Updates & Alerts</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowNotifications(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-200 transition-all shadow-sm">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-50/30">
+                        {isLoadingNotifications ? (
+                            <div className="flex items-center justify-center h-40">
+                                <Loader2 className="w-8 h-8 text-[#843D9B] animate-spin" />
+                            </div>
+                        ) : notifications.length > 0 ? (
+                            <div className="space-y-3">
+                                {notifications.map((notif, idx) => (
+                                    <div key={notif._id || idx} className={`p-4 rounded-2xl border transition-all ${notif.isRead ? 'bg-white border-gray-100' : 'bg-[#843D9B]/5 border-[#843D9B]/20 shadow-sm'}`}>
+                                        <div className="flex gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${notif.isRead ? 'bg-gray-100 text-gray-500' : 'bg-[#843D9B] text-white'}`}>
+                                                <Bell size={14} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className={`text-sm font-bold ${notif.isRead ? 'text-gray-900' : 'text-[#843D9B]'}`}>{notif.title}</h4>
+                                                <p className="text-xs text-gray-600 mt-1 leading-relaxed">{notif.message}</p>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                    {new Date(notif.createdAt).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            {!notif.isRead && (
+                                                <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-2" />
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-60 text-center">
+                                <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                                    <Bell className="w-6 h-6 text-gray-300" />
+                                </div>
+                                <p className="text-sm font-bold text-gray-900">No Notifications</p>
+                                <p className="text-xs text-gray-500 mt-1">You're all caught up!</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 

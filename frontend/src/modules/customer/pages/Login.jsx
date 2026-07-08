@@ -5,6 +5,8 @@ import { Button } from '../../../components/ui/Button';
 import useAuthStore from '../../../store/authStore';
 import { validatePhone } from '../../../utils/validation';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
+import api from '../../../utils/api';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -31,6 +33,14 @@ const Login = () => {
 
         setSendingOtp(true);
         try {
+            // First check if user is registered
+            const checkRes = await api.post('/auth/check-user', { phoneNumber: mobileNumber });
+            if (!checkRes.data.exists) {
+                setError('First you must register, then login');
+                setSendingOtp(false);
+                return;
+            }
+
             await sendOTP(mobileNumber);
             setOtpSent(true);
         } catch (err) {
@@ -74,6 +84,25 @@ const Login = () => {
         navigate(redirectPath);
     };
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            setError('');
+            const user = await useAuthStore.getState().googleLogin(credentialResponse.credential);
+            setLoggedInUser(user);
+            setIsLocating(true);
+        } catch (err) {
+            if (err.message.includes('create an account first')) {
+                setError('Account not found. Please create an account first.');
+            } else {
+                setError(err.message || 'Google Login failed');
+            }
+        }
+    };
+
+    const handleGoogleError = () => {
+        setError('Google Login Failed');
+    };
+
     if (isLocating && loggedInUser) {
         return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} />;
     }
@@ -83,7 +112,7 @@ const Login = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full"
+            className="w-full h-full flex flex-col"
         >
             <div className="text-left mb-10 sm:mb-12">
                 <h2 className="text-2xl md:text-4xl font-black text-[#843D9B] tracking-tight leading-tight">
@@ -95,22 +124,11 @@ const Login = () => {
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-10">
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-3.5 text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-center gap-2"
-                    >
-                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                        {error}
-                    </motion.div>
-                )}
-
-                <div className="space-y-6 sm:space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 flex-1">
+                <div className="space-y-4 sm:space-y-6">
                     <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
                         <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
-                            <span className="text-gray-800 font-bold text-sm">+91</span>
+                            <span className="text-black font-bold text-base tracking-wide">+91</span>
                             <div className="w-px h-6 bg-slate-200" />
                             <input
                                 type="tel"
@@ -124,6 +142,17 @@ const Login = () => {
                             />
                         </div>
                     </div>
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="px-2 text-xs font-bold text-red-500 flex items-center gap-1.5"
+                        >
+                            <span className="w-1 h-1 bg-red-500 rounded-full" />
+                            {error}
+                        </motion.div>
+                    )}
 
                     {!otpSent && (
                         <Button
@@ -188,8 +217,34 @@ const Login = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Google Login Divider and Button */}
+                {!otpSent && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-6"
+                    >
+                        <div className="relative flex items-center py-4">
+                            <div className="flex-grow border-t border-gray-200"></div>
+                            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase tracking-widest">Or</span>
+                            <div className="flex-grow border-t border-gray-200"></div>
+                        </div>
+                        
+                        <div className="flex justify-center w-full pb-2" style={{ minHeight: '44px' }}>
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={handleGoogleError}
+                                shape="pill"
+                                theme="outline"
+                                size="large"
+                            />
+                        </div>
+                    </motion.div>
+                )}
             </form>
-            <div className="mt-10 md:mt-12 text-center sm:text-left">
+            <div className="mt-auto pt-6 text-center sm:text-left">
                 <p className="text-xs md:text-sm font-bold text-slate-400">
                     Don't have an account?{' '}
                     <button 

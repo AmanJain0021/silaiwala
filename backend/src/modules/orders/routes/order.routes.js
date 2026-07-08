@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { createOrder, getMyOrders, getOrderDetails, createRazorpayOrder, verifyPayment, changeTailorRequest, updateDeliveryPreference, approveMeasurements, requestMeasurementRevision, requestExchange, updateExchangeStatus } = require("../controllers/order.controller");
+const { createOrder, getMyOrders, getOrderDetails, createRazorpayOrder, verifyPayment, changeTailorRequest, updateDeliveryPreference, approveMeasurements, requestMeasurementRevision, requestExchange, updateExchangeStatus, calculatePriceSummary } = require("../controllers/order.controller");
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
 
 router.use(protect);
 
+router.post("/price-summary", authorize("customer", "admin"), calculatePriceSummary);
 router.post("/razorpay/create", authorize("customer", "admin", "delivery", "tailor"), createRazorpayOrder);
 router.post("/razorpay/verify", authorize("customer", "admin", "delivery", "tailor"), verifyPayment);
 router.post("/:id/delivery-preference", authorize("customer", "admin"), updateDeliveryPreference);

@@ -69,6 +69,22 @@ const useMeasurementStore = create((set, get) => ({
         }
     },
 
+    updateProfile: async (data) => {
+        try {
+            const res = await api.put('/measurement-executive/profile', data);
+            set(state => ({
+                profile: res.data.data
+            }));
+            
+            // Re-fetch dashboard to update stats and user object if needed
+            await get().fetchDashboard();
+            return res.data;
+        } catch (error) {
+            console.error('Profile update failed:', error);
+            throw error;
+        }
+    },
+
     // Requests
     fetchRequests: async (statusFilter = 'pending') => {
         set({ loading: true, error: null });

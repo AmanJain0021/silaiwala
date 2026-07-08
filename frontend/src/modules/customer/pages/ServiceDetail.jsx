@@ -75,6 +75,7 @@ const ServiceDetail = () => {
     const [measurements, setMeasurements] = useState(restored.measurements || null);
     const [visitSettings, setVisitSettings] = useState({ baseFee: 150, perKmFee: 20, freeKm: 3 });
     const [gstPercentage, setGstPercentage] = useState(5);
+    const [platformFeePercentage, setPlatformFeePercentage] = useState(5);
     const { addresses, selectedAddressId } = useAddressStore(state => state);
     const selectedAddress = addresses.find(a => a._id === selectedAddressId);
     const storeCoords = useLocationStore(state => state.coordinates);
@@ -140,6 +141,9 @@ const ServiceDetail = () => {
                     }
                     if (settingsRes.data.data?.pricing?.gstPercentage !== undefined) {
                         setGstPercentage(settingsRes.data.data.pricing.gstPercentage);
+                    }
+                    if (settingsRes.data.data?.walletConfig?.platformFeePercentage !== undefined) {
+                        setPlatformFeePercentage(settingsRes.data.data.walletConfig.platformFeePercentage);
                     }
                 }
 
@@ -308,8 +312,10 @@ const ServiceDetail = () => {
 
     const tailorAtHomePrice = calculateVisitPrice();
     const subtotal = basePrice + deliveryPrice + fabricPrice + addonsPrice + tailorAtHomePrice;
-    const taxes = Math.round(subtotal * (gstPercentage / 100));
-    const currentTotal = subtotal + taxes;
+    const platformFee = Math.round(subtotal * (platformFeePercentage / 100));
+    const taxableAmount = subtotal + platformFee;
+    const taxes = Math.round(taxableAmount * (gstPercentage / 100));
+    const currentTotal = taxableAmount + taxes;
 
     // Grand Total (Basket + Current)
     const basketTotal = serviceItems.reduce((sum, item) => sum + item.pricing.total, 0);
@@ -750,6 +756,12 @@ const ServiceDetail = () => {
                                                 <div className="flex justify-between text-sky-600">
                                                     <span>Tailor At Home Fee</span>
                                                     <span>+₹{tailorAtHomePrice.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {platformFee > 0 && (
+                                                <div className="flex justify-between text-gray-500">
+                                                    <span>Platform Fee</span>
+                                                    <span>+₹{platformFee.toLocaleString()}</span>
                                                 </div>
                                             )}
                                             <div className="flex justify-between text-gray-400 pb-1 border-b border-gray-200">

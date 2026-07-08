@@ -181,7 +181,7 @@ const RequestDetail = () => {
     const estimatedEarnings = Math.round(baseFee + (distanceKm * perKmRate));
 
     return (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-8 pb-32 md:pb-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-purple-200">

@@ -717,12 +717,12 @@ exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => 
   const order = await Order.findOne({ _id: req.params.id, tailor: req.user.id });
   if (!order) return next(new ErrorResponse('Order not found or not assigned to you', 404));
   
-  if (!['measurements-uploaded', 'pending'].includes(order.status)) {
-    return next(new ErrorResponse('Order must be in pending or measurements-uploaded state to request approval', 400));
+  if (!['measurements-uploaded', 'pending', 'accepted', 'in-progress', 'order-received', 'fabric-received', 'fabric-selected'].includes(order.status)) {
+    return next(new ErrorResponse('Order must be in an initial or in-progress state to request approval', 400));
   }
   
   const { transitionOrder } = require("../../../utils/orderStateMachine");
-  transitionOrder(order, 'measurement-verification', 'Measurements sent to customer for approval');
+  transitionOrder(order, 'measurements-uploaded', 'Measurements sent to customer for approval', true);
   await order.save();
 
   // Notify Customer

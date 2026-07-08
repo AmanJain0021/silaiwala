@@ -1,5 +1,6 @@
 import React from 'react';
 import { UploadCloud, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const CustomRequestBanner = () => {
     return (
@@ -14,9 +15,9 @@ const CustomRequestBanner = () => {
                     <h2 className="text-xl font-bold mb-2">Have a unique design?</h2>
                     <p className="text-sm text-gray-300 mb-6 max-w-[80%]">Upload your sketch or reference image and get a custom quote.</p>
 
-                    <button className="bg-white text-gray-900 px-5 py-2.5 rounded-full text-xs font-bold shadow-lg hover:bg-gray-100 flex items-center gap-2 transition-transform hover:scale-105">
+                    <Link to="/user/custom-design" className="inline-flex bg-white text-gray-900 px-5 py-2.5 rounded-full text-xs font-bold shadow-lg hover:bg-gray-100 items-center gap-2 transition-transform hover:scale-105">
                         Start Custom Order <ChevronRight size={14} />
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>

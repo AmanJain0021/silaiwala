@@ -67,14 +67,17 @@ const {
 } = require("../../deliveries/controllers/cashDeposit.controller");
 
 const router = express.Router();
-
+const crmRoutes = require("./crm.routes");
 
 // Apply auth middleware to ALL routes
 router.use(protect);
-router.use(authorize("admin"));
+router.use(authorize("admin", "super_admin"));
 
 // Dashboard
 router.get("/dashboard", getDashboardStats);
+
+// CRM Dashboard
+router.use("/crm", crmRoutes);
 
 // User Management
 router.get("/users", getAllUsers);

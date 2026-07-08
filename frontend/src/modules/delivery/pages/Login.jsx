@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Lock, Eye, ArrowRight, EyeOff, ShieldCheck } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
+import api from '../../../utils/api';
+import { GoogleLogin } from '@react-oauth/google';
 
 const DeliveryLogin = () => {
     const navigate = useNavigate();
@@ -26,6 +28,13 @@ const DeliveryLogin = () => {
         setError('');
         setSendingOtp(true);
         try {
+            const checkRes = await api.post('/auth/check-user', { phoneNumber: mobileNumber });
+            if (!checkRes.data.exists) {
+                setError('First you must register, then login');
+                setSendingOtp(false);
+                return;
+            }
+
             await sendOTP(mobileNumber);
             setOtpSent(true);
         } catch (err) {
@@ -59,11 +68,32 @@ const DeliveryLogin = () => {
         }
     };
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            setError('');
+            const user = await useAuthStore.getState().googleLogin(credentialResponse.credential);
+            
+            if (user?.role !== 'delivery') {
+                logout();
+                setError('This portal is only for registered delivery partners.');
+                return;
+            }
+
+            navigate('/delivery/dashboard');
+        } catch (err) {
+            if (err.message.includes('create an account first')) {
+                setError('Account not found. Please create an account first.');
+            } else {
+                setError(err.message || 'Google Login failed');
+            }
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="w-full"
+            className="w-full h-full flex flex-col"
         >
             <div className="mb-4">
                 <h2 className="text-xl font-black text-[#1e293b] mb-0.5">Welcome back!</h2>
@@ -83,7 +113,7 @@ const DeliveryLogin = () => {
                 </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3 flex-1">
                 <div className="space-y-4">
                     {/* Mobile Number Field */}
                     <div className="group">
@@ -175,7 +205,18 @@ const DeliveryLogin = () => {
 
             </form>
             
-            <div className="mt-10 text-center">
+            <div className="mt-8 pt-6 border-t border-gray-100">
+                <div className="flex justify-center">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => setError('Google Login Failed')}
+                        useOneTap
+                        shape="pill"
+                    />
+                </div>
+            </div>
+            
+            <div className="mt-auto pt-6 text-center pb-4">
                 <p className="text-[10px] text-gray-400 font-medium">
                     By logging in, you agree to our <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>.
                 </p>

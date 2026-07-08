@@ -96,6 +96,32 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    googleLogin: async (credential) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post('/auth/google-login', { credential });
+            
+            const user = response.data.data || response.data.user || response.data;
+            const token = response.data.token;
+
+            setToken(token);
+            localStorage.setItem('user', JSON.stringify(user));
+
+            set({
+                user,
+                isAuthenticated: true,
+                role: user.role,
+                isLoading: false
+            });
+            return user;
+        } catch (err) {
+            const data = err.response?.data;
+            const message = data?.message || 'Google Login failed.';
+            set({ error: message, isLoading: false });
+            throw new Error(message);
+        }
+    },
+
     logout: () => {
         removeToken();
         localStorage.removeItem('user');

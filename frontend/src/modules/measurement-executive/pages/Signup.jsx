@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import toast from 'react-hot-toast';
@@ -6,21 +6,49 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, User, Phone, MapPin, CreditCard, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        password: '',
-        address: '',
-        aadharNumber: '',
-        serviceRadius: 10,
+    const [formData, setFormData] = useState(() => {
+        const savedData = localStorage.getItem('execSignupData');
+        if (savedData) {
+            try {
+                return JSON.parse(savedData);
+            } catch (e) {
+                console.error("Error parsing saved exec data", e);
+            }
+        }
+        return {
+            name: '',
+            email: '',
+            phoneNumber: '',
+            password: '',
+            address: '',
+            aadharNumber: '',
+            serviceRadius: 10,
+        };
     });
+
+    useEffect(() => {
+        localStorage.setItem('execSignupData', JSON.stringify(formData));
+    }, [formData]);
     const [showPassword, setShowPassword] = useState(false);
     const { register, loading } = useMeasurementStore();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        let { name, value } = e.target;
+        
+        if (name === 'name') {
+            value = value.replace(/[^a-zA-Z\s]/g, '');
+        }
+        
+        if (name === 'phoneNumber') {
+            value = value.replace(/\D/g, '');
+        }
+
+        if (name === 'aadharNumber') {
+            const numericValue = value.replace(/\D/g, '');
+            value = numericValue.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+        }
+
         setFormData({ ...formData, [name]: value });
     };
 
@@ -36,6 +64,7 @@ const Signup = () => {
             
             await register(registerData);
             
+            localStorage.removeItem('execSignupData');
             toast.success('Registration successful! Please wait for admin approval.');
             navigate('/executive/login');
         } catch (error) {
@@ -67,7 +96,7 @@ const Signup = () => {
                     {/* Phone Number Field */}
                     <div className="flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 border-transparent focus-within:border-[#843D9B] focus-within:bg-white transition-all duration-300">
                         <Phone className="w-5 h-5 mr-3 text-gray-400 focus-within:text-[#843D9B] group-focus-within:text-[#843D9B]" />
-                        <input id="phoneNumber" name="phoneNumber" type="tel" placeholder="Phone Number" required value={formData.phoneNumber} onChange={handleChange} className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full" />
+                        <input id="phoneNumber" name="phoneNumber" type="tel" placeholder="Phone Number" maxLength={10} required value={formData.phoneNumber} onChange={handleChange} className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full" />
                     </div>
                 </div>
 
@@ -95,7 +124,7 @@ const Signup = () => {
                 {/* Aadhar Number Field */}
                 <div className="flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 border-transparent focus-within:border-[#843D9B] focus-within:bg-white transition-all duration-300">
                     <CreditCard className="w-5 h-5 mr-3 text-gray-400 focus-within:text-[#843D9B] group-focus-within:text-[#843D9B]" />
-                    <input id="aadharNumber" name="aadharNumber" type="text" placeholder="Aadhar Number" required value={formData.aadharNumber} onChange={handleChange} className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full" />
+                    <input id="aadharNumber" name="aadharNumber" type="text" placeholder="Aadhar Number" maxLength={14} required value={formData.aadharNumber} onChange={handleChange} className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full" />
                 </div>
 
                 <div className="pt-4">
@@ -123,6 +152,10 @@ const Signup = () => {
                     </p>
                 </div>
             </form>
+
+            <div className="mt-8 text-[10px] text-gray-400 font-medium text-center pb-4">
+                By signing up, you agree to our <button onClick={() => window.location.href='/user/legal/terms-and-conditions'} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => window.location.href='/user/legal/privacy-policy'} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
+            </div>
         </motion.div>
     );
 };

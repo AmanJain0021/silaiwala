@@ -118,6 +118,7 @@ const AdminCMS = React.lazy(() => import('./modules/admin/pages/CMS'));
 const AdminSubscriptions = React.lazy(() => import('./modules/admin/pages/Subscriptions'));
 const AdminReports = React.lazy(() => import('./modules/admin/pages/Reports'));
 const AdminSettings = React.lazy(() => import('./modules/admin/pages/Settings'));
+const AdminCRM = React.lazy(() => import('./modules/admin/pages/CRM'));
 const AdminStyleAddons = React.lazy(() => import('./modules/admin/pages/StyleAddons'));
 const AdminEmbroideryAddons = React.lazy(() => import('./modules/admin/pages/EmbroideryAddons'));
 const AdminBulkOrders = React.lazy(() => import('./modules/admin/pages/BulkOrders'));
@@ -128,6 +129,7 @@ const AdminIssueDetails = React.lazy(() => import('./modules/admin/pages/AdminIs
 import AdminProtectedRoute from './modules/admin/components/AdminProtectedRoute';
 
 const ReferEarn = React.lazy(() => import('./modules/customer/pages/ReferEarn')); // NEW
+const ActivityHistory = React.lazy(() => import('./modules/customer/pages/ActivityHistory')); // NEW
 const FabricDetail = React.lazy(() => import('./modules/customer/pages/FabricDetail')); // NEW
 const Measurements = React.lazy(() => import('./modules/customer/pages/Measurements')); // NEW
 const SavedAddresses = React.lazy(() => import('./modules/customer/pages/SavedAddresses')); // NEW
@@ -198,6 +200,7 @@ const AppRoutes = () => {
                         <Route path="profile/edit" element={<EditProfile />} />
                         <Route path="profile/measurements" element={<Measurements />} />
                         <Route path="profile/addresses" element={<SavedAddresses />} />
+                        <Route path="activity" element={<ActivityHistory />} />
                         <Route path="loyalty" element={<LoyaltyPoints />} />
                         <Route path="refer" element={<ReferEarn />} />
                         {/* Fixed path from /tailor/:id to /shop/:id to avoid conflict or keep it customer centric */}
@@ -322,6 +325,7 @@ const AppRoutes = () => {
                     <Route path="/admin/services" element={<AdminServices />} />
                     <Route path="/admin/store" element={<AdminStore />} />
                     <Route path="/admin/finance" element={<AdminFinance />} />
+                    <Route path="/admin/crm" element={<AdminCRM />} />
                     <Route path="/admin/cms" element={<AdminCMS />} />
                     <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
                     <Route path="/admin/reports" element={<AdminReports />} />

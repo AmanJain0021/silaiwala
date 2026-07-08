@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { 
   getWalletDashboard, 
+  getUserTransactions,
   requestWithdrawal,
   getAllWithdrawals,
   updateWithdrawalStatus
@@ -17,6 +18,7 @@ router.patch("/admin/withdrawals/:id", authorize("admin"), updateWithdrawalStatu
 
 // Tailor & Delivery & Customer Routes
 router.get("/dashboard", authorize("tailor", "delivery", "user", "customer", "measurement_executive"), getWalletDashboard);
+router.get("/transactions", authorize("tailor", "delivery", "user", "customer", "measurement_executive"), getUserTransactions);
 router.post("/withdraw", authorize("tailor", "delivery", "user", "customer", "measurement_executive"), requestWithdrawal);
 
 module.exports = router;
