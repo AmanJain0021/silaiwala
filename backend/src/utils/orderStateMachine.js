@@ -10,7 +10,7 @@ const ALLOWED_TRANSITIONS = {
   "pending": ["accepted", "cancelled"],
   
   // After tailor accepts, payment dictates the next move
-  "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "cancelled"],
+  "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "order-received", "cancelled"],
 
   // Customer sets fabric delivery preference
   "fabric-ready-for-pickup": ["fabric-picked-up", "waiting-for-customer-dropoff", "cancelled"],

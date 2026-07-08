@@ -91,7 +91,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
                 newErrors[field.key] = 'Required';
             } else {
                 const num = parseFloat(values[field.key]);
-                if (num < 5 || num > 100) {
+                if (num <= 0 || num > 150) {
                     newErrors[field.key] = 'Invalid range';
                 }
             }

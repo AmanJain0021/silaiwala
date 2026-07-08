@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation } from 'lucide-react';
 import api from '../../utils/api';
@@ -7,8 +7,12 @@ import { getToken } from '../../utils/auth';
 const LocationSplashScreen = ({ onComplete, role, token }) => {
     const [status, setStatus] = useState('finding'); // finding, success, error
     const [errorMsg, setErrorMsg] = useState('');
+    const hasFetched = useRef(false);
 
     useEffect(() => {
+        if (hasFetched.current) return;
+        hasFetched.current = true;
+        
         let isMounted = true;
 
         const getLocation = () => {

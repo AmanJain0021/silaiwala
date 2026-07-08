@@ -56,7 +56,12 @@ const notificationSchema = new mongoose.Schema(
         "ISSUE_UPDATED",
         "ISSUE_RESOLVED",
         "TEST",
-        "BROADCAST"
+        "BROADCAST",
+        "PAYMENT_COMPLETED",
+        "MEASUREMENT_APPROVAL_REQUEST",
+        "EXCHANGE_REQUEST",
+        "EXCHANGE_STATUS",
+        "RETURN_PICKUP"
       ],
       required: true,
     },
