@@ -49,6 +49,24 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+// ─── Rate Limiting (Redis-backed when REDIS_ENABLED=true) ────────────────────
+const { isRedisEnabled, getRedisClient } = require("./config/redis");
+
+let rateLimitStore = undefined; // undefined = express-rate-limit default in-memory MemoryStore
+if (isRedisEnabled) {
+  try {
+    const { RedisStore } = require("rate-limit-redis");
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      rateLimitStore = new RedisStore({
+        sendCommand: (...args) => redisClient.call(...args),
+      });
+      console.log("🟢 [Rate-Limit] Using Redis store");
+    }
+  } catch (err) {
+    console.warn(`⚠️  [Rate-Limit] Failed to init Redis store — ${err.message}. Using in-memory store.`);
+  }
+}
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -60,6 +78,7 @@ const globalLimiter = rateLimit({
     success: false,
     message: "Too many requests, please try again later.",
   },
+  ...(rateLimitStore && { store: rateLimitStore }),
 });
 app.use(globalLimiter);
 
@@ -74,6 +93,7 @@ const authLimiter = rateLimit({
     success: false,
     message: "Too many authentication attempts, please try again later.",
   },
+  ...(rateLimitStore && { store: rateLimitStore }),
 });
 app.use("/api/v1/auth", authLimiter);
 

@@ -3,10 +3,16 @@ const Category = require("../../../models/Category");
 const Review = require("../../../models/Review");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
+const { getCached } = require("../../../utils/cache");
 
 exports.getProducts = asyncHandler(async (req, res, next) => {
   const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10, productType = 'store_item' } = req.query;
 
+  // Build param-inclusive cache key
+  const paramKey = [category, search, minPrice, maxPrice, sort, lat, lng, radius, page, limit, productType].join(':');
+  const cacheKey = `cache:products:list:${paramKey}`;
+
+  const result = await getCached(cacheKey, 120, async () => {
   let query = { isActive: true, productType };
 
   // 1. Geo-Spatial Search
@@ -78,13 +84,18 @@ exports.getProducts = asyncHandler(async (req, res, next) => {
     Product.countDocuments(query)
   ]);
 
-  res.status(200).json({
-    success: true,
+  return {
     total,
     page: Number(page),
     pages: Math.ceil(total / limit),
     count: products.length,
     data: products,
+  };
+  }); // end getCached
+
+  res.status(200).json({
+    success: true,
+    ...result,
   });
 });
 
@@ -131,10 +142,12 @@ exports.getProductDetails = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.getFeaturedProducts = asyncHandler(async (req, res, next) => {
-  const products = await Product.find({ isFeatured: true, isActive: true, productType: 'store_item' })
-    .populate("category", "name")
-    .limit(8)
-    .lean();
+  const products = await getCached("cache:products:featured", 120, async () => {
+    return await Product.find({ isFeatured: true, isActive: true, productType: 'store_item' })
+      .populate("category", "name")
+      .limit(8)
+      .lean();
+  });
 
   res.status(200).json({
     success: true,
@@ -149,16 +162,21 @@ exports.getFeaturedProducts = asyncHandler(async (req, res, next) => {
  */
 exports.getCategories = asyncHandler(async (req, res, next) => {
   const { parent, type } = req.query;
-  let query = { isActive: true };
-  
-  if (parent) {
-    query.parentCategory = parent === 'null' ? null : parent;
-  }
-  if (type) {
-    query.type = type;
-  }
+  const cacheKey = `cache:categories:list:${parent || 'all'}:${type || 'all'}`;
 
-  const categories = await Category.find(query).lean();
+  const categories = await getCached(cacheKey, 120, async () => {
+    let query = { isActive: true };
+    
+    if (parent) {
+      query.parentCategory = parent === 'null' ? null : parent;
+    }
+    if (type) {
+      query.type = type;
+    }
+
+    return await Category.find(query).lean();
+  });
+
   res.status(200).json({
     success: true,
     data: categories,

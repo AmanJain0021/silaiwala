@@ -12,6 +12,7 @@ const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
 const { sendNotification } = require("../../../utils/notification");
 const razorpay = require("../../../config/razorpay");
+const { invalidateCache } = require("../../../utils/cache");
 
 const PromoCode = require("../../../models/PromoCode");
 const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
@@ -432,6 +433,13 @@ user: customerProfile.user,
     }
     // ---------------------
     await session.commitTransaction();
+
+    // Invalidate dashboard caches after successful payment
+    await invalidateCache("cache:admin:dashboard-stats");
+    await invalidateCache("cache:admin:crm-dashboard");
+    await invalidateCache("cache:admin:finance-dashboard");
+    await invalidateCache("cache:admin:finance-stats");
+
     res.status(200).json({
       success: true,
       message: "Payment verified successfully",
@@ -665,6 +673,11 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   } catch (err) {
     console.error("Socket/Notification emission failed in createOrder:", err.message);
   }
+
+  await invalidateCache("cache:admin:dashboard-stats");
+  await invalidateCache("cache:admin:crm-dashboard");
+  await invalidateCache("cache:admin:finance-stats");
+  await invalidateCache("cache:products:*");
 
   res.status(201).json({
     success: true,

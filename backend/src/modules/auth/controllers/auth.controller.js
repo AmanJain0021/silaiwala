@@ -9,6 +9,7 @@ const ErrorResponse = require("../../../utils/errorResponse");
 const { sendNotification } = require("../../../utils/notification");
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'placeholder');
+const { invalidateCache } = require("../../../utils/cache");
 
 /**
  * Generate JWT Token
@@ -234,6 +235,10 @@ exports.register = asyncHandler(async (req, res, next) => {
   }
 
   const token = generateToken(user._id);
+
+  // Invalidate dashboard caches when a new user is created
+  await invalidateCache("cache:admin:dashboard-stats");
+  await invalidateCache("cache:admin:crm-dashboard");
 
   res.status(201).json({
     success: true,

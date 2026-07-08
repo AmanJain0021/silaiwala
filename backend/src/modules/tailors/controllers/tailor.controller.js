@@ -8,6 +8,7 @@ const { sendNotification } = require("../../../utils/notification");
 const Notification = require("../../../models/Notification");
 const { getIO } = require("../../../config/socket");
 const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+const { getCached, invalidateCache } = require("../../../utils/cache");
 
 /**
  * @desc    Get all tailors with filters and location
@@ -17,6 +18,10 @@ const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
 exports.getTailors = asyncHandler(async (req, res, next) => {
   const { lat, lng, radius = 5000, specialization, page = 1, limit = 10 } = req.query;
 
+  const paramKey = [lat, lng, radius, specialization, page, limit].join(':');
+  const cacheKey = `cache:tailors:list:${paramKey}`;
+
+  const result = await getCached(cacheKey, 120, async () => {
   let query = { isAvailable: true };
 
   // 1. Geo-Spatial Search (Optimization: Only if coordinates provided)
@@ -52,13 +57,18 @@ exports.getTailors = asyncHandler(async (req, res, next) => {
 
   const total = await Tailor.countDocuments(query);
 
-  res.status(200).json({
-    success: true,
+  return {
     total,
     page: Number(page),
     pages: Math.ceil(total / limit),
     count: tailors.length,
     data: tailors,
+  };
+  }); // end getCached
+
+  res.status(200).json({
+    success: true,
+    ...result,
   });
 });
 
@@ -161,6 +171,7 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
   // Get updated profile with user info
   const updatedTailor = await Tailor.findOne({ user: req.user.id }).populate("user", "name email phoneNumber profileImage");
 
+  await invalidateCache("cache:tailors:*");
   res.status(200).json({
     success: true,
     data: updatedTailor,
@@ -188,6 +199,7 @@ exports.updateDocuments = asyncHandler(async (req, res, next) => {
   tailor.rejectionReason = null;
   await tailor.save();
 
+  await invalidateCache("cache:tailors:*");
   res.status(200).json({
     success: true,
     data: tailor,

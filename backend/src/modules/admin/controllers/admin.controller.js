@@ -14,11 +14,13 @@ const Settings = require("../../../models/Settings");
 const Alteration = require("../../../models/Alteration");
 const path = require("path");
 const { sendNotification } = require("../../../utils/notification");
+const { getCached, invalidateCache } = require("../../../utils/cache");
 
 // --- DASHBOARD & GENERAL ---
 
 exports.getDashboardStats = async (req, res) => {
   try {
+    const data = await getCached("cache:admin:dashboard-stats", 60, async () => {
     const totalUsers = await User.countDocuments();
     const totalCustomers = await User.countDocuments({ role: "customer" });
     const totalTailors = await User.countDocuments({ role: "tailor" });
@@ -129,8 +131,7 @@ exports.getDashboardStats = async (req, res) => {
       databaseStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
     };
 
-    res.status(200).json({
-      success: true,
+    return {
       stats: {
         totalUsers,
         totalCustomers,
@@ -146,7 +147,10 @@ exports.getDashboardStats = async (req, res) => {
       recentOrders,
       topTailors,
       revenueChart: formattedChartData
-    });
+    };
+    }); // end getCached
+
+    res.status(200).json({ success: true, ...data });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -232,6 +236,8 @@ exports.updateUserStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
     
+    await invalidateCache("cache:admin:dashboard-stats");
+    await invalidateCache("cache:admin:crm-dashboard");
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -317,6 +323,9 @@ exports.approveTailor = async (req, res) => {
       data: { targetUrl: "/partner/dashboard" }
     });
 
+    await invalidateCache("cache:admin:dashboard-stats");
+    await invalidateCache("cache:admin:crm-dashboard");
+    await invalidateCache("cache:tailors:*");
     res.status(200).json({ success: true, message: "Tailor approved and notified", data: user });
   } catch (error) {
     console.error("Error in approveTailor:", error);
@@ -347,6 +356,9 @@ exports.rejectTailor = async (req, res) => {
     user.isVerified = false;
     await user.save();
     
+    await invalidateCache("cache:admin:dashboard-stats");
+    await invalidateCache("cache:admin:crm-dashboard");
+    await invalidateCache("cache:tailors:*");
     res.status(200).json({ success: true, message: "Tailor application rejected" });
   } catch (error) {
     console.error("Error in rejectTailor:", error);
@@ -373,6 +385,7 @@ exports.updateTailorCommission = async (req, res) => {
       return res.status(404).json({ success: false, message: "Tailor profile not found" });
     }
 
+    await invalidateCache("cache:tailors:*");
     res.status(200).json({ success: true, message: "Commission updated successfully", data: tailor });
   } catch (error) {
     console.error("Error in updateTailorCommission:", error);
@@ -497,6 +510,7 @@ exports.approveDeliveryPartner = async (req, res) => {
       data: { targetUrl: "/delivery/dashboard" }
     });
 
+    await invalidateCache("cache:admin:dashboard-stats");
     res.status(200).json({ success: true, message: "Delivery partner approved", data: user });
   } catch (error) {
     console.error("Error in approveDeliveryPartner:", error);
@@ -815,6 +829,12 @@ exports.updateOrderStatus = async (req, res) => {
         }
     }
 
+    // Invalidate admin/finance dashboard caches after order status change
+    await invalidateCache("cache:admin:dashboard-stats");
+    await invalidateCache("cache:admin:crm-dashboard");
+    await invalidateCache("cache:admin:finance-dashboard");
+    await invalidateCache("cache:admin:finance-stats");
+
     res.status(200).json({ success: true, data: order });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -828,6 +848,7 @@ exports.updateOrderStatus = async (req, res) => {
 exports.createBanner = async (req, res) => {
   try {
     const banner = await Banner.create(req.body);
+    await invalidateCache("cache:public:banners");
     res.status(201).json({ success: true, data: banner });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -851,6 +872,7 @@ exports.updateBanner = async (req, res) => {
     if (!banner) {
       return res.status(404).json({ success: false, message: "Banner not found" });
     }
+    await invalidateCache("cache:public:banners");
     res.status(200).json({ success: true, data: banner });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -864,6 +886,7 @@ exports.deleteBanner = async (req, res) => {
     if (!banner) {
       return res.status(404).json({ success: false, message: "Banner not found" });
     }
+    await invalidateCache("cache:public:banners");
     res.status(200).json({ success: true, message: "Banner deleted" });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -956,6 +979,7 @@ exports.getAllCMSContent = async (req, res) => {
 exports.createCMSContent = async (req, res) => {
   try {
     const content = await CMSContent.create(req.body);
+    await invalidateCache("cache:public:cms-content:*");
     res.status(201).json({ success: true, data: content });
   } catch (error) {
     console.error("Error in createCMSContent:", error);
@@ -970,6 +994,7 @@ exports.updateCMSContent = async (req, res) => {
   try {
     const content = await CMSContent.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!content) return res.status(404).json({ success: false, message: "Content not found" });
+    await invalidateCache("cache:public:cms-content:*");
     res.status(200).json({ success: true, data: content });
   } catch (error) {
     console.error("Error in updateCMSContent:", error);
@@ -981,6 +1006,7 @@ exports.deleteCMSContent = async (req, res) => {
   try {
     const content = await CMSContent.findByIdAndDelete(req.params.id);
     if (!content) return res.status(404).json({ success: false, message: "Content not found" });
+    await invalidateCache("cache:public:cms-content:*");
     res.status(200).json({ success: true, message: "Content deleted" });
   } catch (error) {
     console.error("Error in deleteCMSContent:", error);
@@ -1011,6 +1037,7 @@ exports.getAllCategories = async (req, res) => {
 exports.createCategory = async (req, res) => {
   try {
     const category = await Category.create(req.body);
+    await invalidateCache("cache:categories:*");
     res.status(201).json({ success: true, data: category });
   } catch (error) {
     console.error("Error in createCategory:", error);
@@ -1023,6 +1050,7 @@ exports.updateCategory = async (req, res) => {
     const { id } = req.params;
     const category = await Category.findByIdAndUpdate(id, req.body, { new: true });
     if (!category) return res.status(404).json({ success: false, message: "Category not found" });
+    await invalidateCache("cache:categories:*");
     res.status(200).json({ success: true, data: category });
   } catch (error) {
     console.error("Error in updateCategory:", error);
@@ -1057,6 +1085,7 @@ exports.deleteCategory = async (req, res) => {
     const { id } = req.params;
     const category = await Category.findByIdAndDelete(id);
     if (!category) return res.status(404).json({ success: false, message: "Category not found" });
+    await invalidateCache("cache:categories:*");
     res.status(200).json({ success: true, message: "Category deleted" });
   } catch (error) {
     console.error("Error in deleteCategory:", error);
@@ -1113,6 +1142,7 @@ exports.createProduct = async (req, res) => {
     }
 
     const product = await Product.create(payload);
+    await invalidateCache("cache:products:*");
     res.status(201).json({ success: true, data: product });
   } catch (error) {
     console.error("Error in createProduct:", error);
@@ -1124,6 +1154,7 @@ exports.updateProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    await invalidateCache("cache:products:*");
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     console.error("Error in updateProduct:", error);
@@ -1135,6 +1166,7 @@ exports.deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    await invalidateCache("cache:products:*");
     res.status(200).json({ success: true, message: "Product deleted" });
   } catch (error) {
     console.error("Error in deleteProduct:", error);
@@ -1159,6 +1191,7 @@ exports.updateInventory = async (req, res) => {
     );
     
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    await invalidateCache("cache:products:*");
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     console.error("Error in updateInventory:", error);
@@ -1428,6 +1461,7 @@ exports.updateSettings = async (req, res) => {
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
 
     await settings.save();
+    await invalidateCache("cache:public:settings");
     res.status(200).json({ success: true, data: settings, message: "Settings updated successfully" });
   } catch (error) {
     console.error("Error in updateSettings:", error);

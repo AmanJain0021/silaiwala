@@ -1,6 +1,7 @@
 const Service = require("../../../models/Service");
 const asyncHandler = require("../../../utils/asyncHandler");
 const ErrorResponse = require("../../../utils/errorResponse");
+const { getCached, invalidateCache } = require("../../../utils/cache");
 
 /**
  * @desc    Get all services
@@ -10,7 +11,10 @@ const ErrorResponse = require("../../../utils/errorResponse");
 exports.getServices = asyncHandler(async (req, res, next) => {
   const { lat, lng, radius = 20000 } = req.query; // Default radius 20km
   const isActive = req.query.isActive === 'false' ? false : true;
-  
+  const paramKey = [req.query.tailor, req.query.category, lat, lng, radius, isActive].join(':');
+  const cacheKey = `cache:services:list:${paramKey}`;
+
+  const result = await getCached(cacheKey, 120, async () => {
   let query = { isActive };
 
   // 1. Handle Location Based Filtering (Temporarily Disabled)
@@ -60,10 +64,15 @@ exports.getServices = asyncHandler(async (req, res, next) => {
     service.tailor && service.tailor.user
   );
 
-  res.status(200).json({
-    success: true,
+  return {
     count: filteredServices.length,
     data: filteredServices,
+  };
+  }); // end getCached
+
+  res.status(200).json({
+    success: true,
+    ...result,
   });
 });
 
@@ -103,6 +112,7 @@ exports.getServiceById = asyncHandler(async (req, res, next) => {
 exports.createService = asyncHandler(async (req, res, next) => {
   const service = await Service.create(req.body);
 
+  await invalidateCache("cache:services:*");
   res.status(201).json({
     success: true,
     data: service,
@@ -124,6 +134,7 @@ exports.updateService = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Service not found with id of ${req.params.id}`, 404));
   }
 
+  await invalidateCache("cache:services:*");
   res.status(200).json({
     success: true,
     data: service,
@@ -144,6 +155,7 @@ exports.deleteService = asyncHandler(async (req, res, next) => {
 
   await service.deleteOne();
 
+  await invalidateCache("cache:services:*");
   res.status(200).json({
     success: true,
     data: {},

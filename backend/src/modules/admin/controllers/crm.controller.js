@@ -4,10 +4,12 @@ const Customer = require("../../../models/Customer");
 const SupportTicket = require("../../../models/SupportTicket");
 const Review = require("../../../models/Review");
 const fs = require('fs');
+const { getCached } = require("../../../utils/cache");
 
 
 exports.getCRMDashboardData = async (req, res) => {
   try {
+    const responseData = await getCached("cache:admin:crm-dashboard", 60, async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -148,9 +150,7 @@ exports.getCRMDashboardData = async (req, res) => {
         }
     } catch(e) {}
 
-    res.status(200).json({
-        success: true,
-        data: {
+    return {
             summary: {
                 totalCustomers: totalCustomers,
                 activeCustomers: activeCustomers,
@@ -185,8 +185,10 @@ exports.getCRMDashboardData = async (req, res) => {
                 likelyToReorder: activeCustomers,
                 atRisk: Math.max(0, totalCustomers - activeCustomers)
             }
-        }
-    });
+    };
+    }); // end getCached
+
+    res.status(200).json({ success: true, data: responseData });
   } catch (error) {
     console.error("Error fetching CRM Dashboard Data:", error);
     fs.writeFileSync('crm_error.log', error.stack || error.toString());

@@ -1,12 +1,15 @@
 const Banner = require("../../../models/Banner");
 const CMSContent = require("../../../models/CMSContent");
 const Settings = require("../../../models/Settings");
+const { getCached } = require("../../../utils/cache");
 
 // --- PUBLIC CMS CONTROLLERS ---
 
 exports.getSettings = async (req, res) => {
   try {
-    const settings = await Settings.getSettings();
+    const settings = await getCached("cache:public:settings", 300, async () => {
+      return await Settings.getSettings();
+    });
     res.status(200).json({ success: true, data: settings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -16,10 +19,12 @@ exports.getSettings = async (req, res) => {
 exports.getActiveBanners = async (req, res) => {
   try {
     const { location } = req.query;
-    const query = { status: "Active" };
-    if (location) query.targetLocation = location;
-
-    const banners = await Banner.find(query).sort("-createdAt");
+    const cacheKey = `cache:public:banners${location ? ':' + location : ''}`;
+    const banners = await getCached(cacheKey, 300, async () => {
+      const query = { status: "Active" };
+      if (location) query.targetLocation = location;
+      return await Banner.find(query).sort("-createdAt");
+    });
     res.status(200).json({ success: true, count: banners.length, data: banners });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -29,13 +34,15 @@ exports.getActiveBanners = async (req, res) => {
 exports.getCMSContent = async (req, res) => {
   try {
     const { type, category } = req.query;
-    const query = { isActive: true };
-    if (type) query.type = type;
-    if (category) {
-      query.category = { $in: [category, "general"] };
-    }
-
-    const content = await CMSContent.find(query).sort("title");
+    const cacheKey = `cache:public:cms-content:${type || 'all'}:${category || 'all'}`;
+    const content = await getCached(cacheKey, 300, async () => {
+      const query = { isActive: true };
+      if (type) query.type = type;
+      if (category) {
+        query.category = { $in: [category, "general"] };
+      }
+      return await CMSContent.find(query).sort("title");
+    });
     res.status(200).json({ success: true, count: content.length, data: content });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

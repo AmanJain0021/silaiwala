@@ -7,6 +7,7 @@ const WalletTransaction = require("../../../models/WalletTransaction");
 const WithdrawalRequest = require("../../../models/WithdrawalRequest");
 const PaymentLedger = require("../../../models/PaymentLedger");
 const Settings = require("../../../models/Settings");
+const { getCached } = require("../../../utils/cache");
 
 // ─── FINANCE DASHBOARD ──────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ const Settings = require("../../../models/Settings");
  */
 exports.getFinanceDashboard = async (req, res) => {
   try {
+    const data = await getCached("cache:admin:finance-dashboard", 60, async () => {
     const settings = await Settings.getSettings();
     const gstPercentage = settings?.pricing?.gstPercentage || 5;
 
@@ -156,9 +158,7 @@ exports.getFinanceDashboard = async (req, res) => {
       .populate("customer", "name")
       .sort("-createdAt");
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return {
         summary: {
           totalRevenue: stats.totalRevenue,
           totalOrdersRevenue:
@@ -184,8 +184,10 @@ exports.getFinanceDashboard = async (req, res) => {
         recentTransactions,
         recentPartialPayments,
         recentPaidOrder,
-      },
-    });
+    };
+    }); // end getCached
+
+    res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Error in getFinanceDashboard:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -201,6 +203,7 @@ exports.getFinanceDashboard = async (req, res) => {
  */
 exports.getFinancialStats = async (req, res) => {
   try {
+    const data = await getCached("cache:admin:finance-stats", 60, async () => {
     const orderAgg = await Order.aggregate([
       { $match: { paymentStatus: "paid" } },
       {
@@ -278,9 +281,7 @@ exports.getFinancialStats = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return {
         totalRevenue: stats.totalRevenue,
         platformCommission: stats.totalPlatformFees,
         totalGSTCollected: stats.totalGST,
@@ -291,8 +292,10 @@ exports.getFinancialStats = async (req, res) => {
         pendingPayouts,
         refundsProcessed,
         revenueTrend: formattedTrend,
-      },
-    });
+    };
+    }); // end getCached
+
+    res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Error in getFinancialStats:", error);
     res.status(500).json({ success: false, message: error.message });

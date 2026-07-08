@@ -1,4 +1,5 @@
 const { Server } = require("socket.io");
+const { isRedisEnabled, getRedisClient, getRedisSubClient } = require("./redis");
 
 let io;
 
@@ -31,6 +32,23 @@ const initSocket = (httpServer) => {
     },
     pingTimeout: 60000,
   });
+
+  // ── Redis Adapter (optional — enables multi-instance socket broadcasts) ────
+  if (isRedisEnabled) {
+    try {
+      const { createAdapter } = require("@socket.io/redis-adapter");
+      const pubClient = getRedisClient();
+      const subClient = getRedisSubClient();
+      if (pubClient && subClient) {
+        io.adapter(createAdapter(pubClient, subClient));
+        console.log("🔌 [Socket.IO] Redis adapter attached");
+      } else {
+        console.warn("⚠️  [Socket.IO] Redis enabled but clients unavailable — using in-memory adapter");
+      }
+    } catch (err) {
+      console.error(`🔴 [Socket.IO] Failed to attach Redis adapter — ${err.message}. Falling back to in-memory adapter.`);
+    }
+  }
 
   const jwt = require("jsonwebtoken");
   

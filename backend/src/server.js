@@ -21,7 +21,16 @@ initSocket(server);
 
 const startServer = async () => {
   try {
-    // 1. Connect to MongoDB first
+    // 1. Initialize Redis if enabled (optional, fail-soft)
+    const { isRedisEnabled, getRedisClient } = require("./config/redis");
+    if (isRedisEnabled) {
+      console.log("🟡 Initializing Redis connection...");
+      getRedisClient(); // This will connect and log success/failure
+    } else {
+      console.log("⚪ Redis is disabled in environment (REDIS_ENABLED=false). Running in-memory mode.");
+    }
+
+    // 2. Connect to MongoDB
     await connectDB();
     
     // 2. Initialize background jobs
