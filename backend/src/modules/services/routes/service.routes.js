@@ -6,12 +6,13 @@ const {
   updateService,
   deleteService,
 } = require("../controllers/service.controller");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware");
 
 const router = express.Router();
 
 // Public routes
-router.get("/", getServices);
-router.get("/:id", getServiceById);
+router.get("/", publicLimiter, getServices);
+router.get("/:id", publicLimiter, getServiceById);
 
 // Protected routes (Admin role should be added in real scenario)
 router.post("/", createService);

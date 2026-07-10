@@ -3,6 +3,7 @@ const router = express.Router();
 const cloudinary = require("../config/cloudinary");
 const upload = require("../middlewares/upload.middleware");
 const { protect } = require("../middlewares/auth.middleware");
+const { uploadLimiter } = require("../middlewares/rateLimiter.middleware");
 
 // Helper to determine the target folder
 const getFolder = (req, defaultFolder) => {
@@ -76,24 +77,24 @@ const processUpload = async (req, res, isMultiple) => {
 // ---------------- PROTECTED ROUTES ---------------- //
 
 // Single upload (Protected)
-router.post("/", protect, upload.single("image"), (req, res) => {
+router.post("/", uploadLimiter, protect, upload.single("image"), (req, res) => {
   return processUpload(req, res, false);
 });
 
 // Bulk upload (Protected)
-router.post("/bulk", protect, upload.array("images", 10), (req, res) => {
+router.post("/bulk", uploadLimiter, protect, upload.array("images", 10), (req, res) => {
   return processUpload(req, res, true);
 });
 
 // ---------------- PUBLIC ROUTES ---------------- //
 
 // Single upload (Public - useful for registration)
-router.post("/public", upload.single("image"), (req, res) => {
+router.post("/public", uploadLimiter, upload.single("image"), (req, res) => {
   return processUpload(req, res, false);
 });
 
 // Bulk upload (Public - useful for bulk registration docs)
-router.post("/public/bulk", upload.array("images", 10), (req, res) => {
+router.post("/public/bulk", uploadLimiter, upload.array("images", 10), (req, res) => {
   return processUpload(req, res, true);
 });
 

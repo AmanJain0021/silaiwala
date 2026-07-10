@@ -3,7 +3,6 @@ const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
 
 // Database connection is handled by server.js or the serverless function handler
@@ -49,52 +48,10 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-// ─── Rate Limiting (Redis-backed when REDIS_ENABLED=true) ────────────────────
-const { isRedisEnabled, getRedisClient } = require("./config/redis");
+// ─── Rate Limiting (tiered, all optional — safe defaults apply if unset) ──────
+const { globalLimiter, authLimiter } = require("./middlewares/rateLimiter.middleware");
 
-let rateLimitStore = undefined; // undefined = express-rate-limit default in-memory MemoryStore
-if (isRedisEnabled) {
-  try {
-    const { RedisStore } = require("rate-limit-redis");
-    const redisClient = getRedisClient();
-    if (redisClient) {
-      rateLimitStore = new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-      });
-      console.log("🟢 [Rate-Limit] Using Redis store");
-    }
-  } catch (err) {
-    console.warn(`⚠️  [Rate-Limit] Failed to init Redis store — ${err.message}. Using in-memory store.`);
-  }
-}
-
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1500, // 1500 requests per 15 minutes
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { trustProxy: false },
-  message: {
-    success: false,
-    message: "Too many requests, please try again later.",
-  },
-  ...(rateLimitStore && { store: rateLimitStore }),
-});
 app.use(globalLimiter);
-
-// Auth Rate Limiter
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20, // 20 requests per 15 minutes for auth endpoints
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { trustProxy: false },
-  message: {
-    success: false,
-    message: "Too many authentication attempts, please try again later.",
-  },
-  ...(rateLimitStore && { store: rateLimitStore }),
-});
 app.use("/api/v1/auth", authLimiter);
 
 // ─── Body Parsers ────────────────────────────────────────────────────────────

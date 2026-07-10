@@ -1,6 +1,7 @@
 const express = require("express");
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
 const upload = require("../../../middlewares/upload.middleware");
+const { uploadLimiter } = require("../../../middlewares/rateLimiter.middleware");
 const {
   getDashboardStats,
   getAllUsers,
@@ -122,7 +123,7 @@ router.put("/cms/content/:id", updateCMSContent);
 router.delete("/cms/content/:id", deleteCMSContent);
 
 // File Uploads
-router.post("/upload-image", upload.single("image"), uploadImage);
+router.post("/upload-image", uploadLimiter, upload.single("image"), uploadImage);
 
 // Category Management
 router.get("/categories", getAllCategories);

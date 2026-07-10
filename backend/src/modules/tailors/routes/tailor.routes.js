@@ -37,16 +37,17 @@ const {
   getTailorServices
 } = require("../controllers/tailorService.controller");
 const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware");
 
 const router = express.Router();
 
 // ─── PUBLIC LISTING ROUTE ───────────────────────────────────────────────────
-router.get("/", getTailors);
+router.get("/", publicLimiter, getTailors);
 
-router.get("/:tailorId/fabrics", getTailorFabrics);
-router.get("/:tailorId/work-samples", getTailorWorkSamples);
-router.get("/:tailorId/services", getTailorServices);
-router.get("/work-samples/feed", getAllWorkSamples);
+router.get("/:tailorId/fabrics", publicLimiter, getTailorFabrics);
+router.get("/:tailorId/work-samples", publicLimiter, getTailorWorkSamples);
+router.get("/:tailorId/services", publicLimiter, getTailorServices);
+router.get("/work-samples/feed", publicLimiter, getAllWorkSamples);
 
 // ─── PROTECTED TAILOR GET ROUTES (STATIC PATHS FIRST) ─────────────────────
 // We need these BEFORE /:id to avoid shadowing, and we add protect manually
@@ -62,7 +63,7 @@ router.get("/delivery-details", protect, authorize("tailor"), getDeliveryDetails
 
 // ─── PUBLIC DETAILS ROUTE (DYNAMIC PATH) ────────────────────────────────────
 // MUST come after static routes but BEFORE the global protect middleware below
-router.get("/:id", getTailorDetails);
+router.get("/:id", publicLimiter, getTailorDetails);
 
 // ─── OTHER PROTECTED TAILOR ACTIONS ──────────────────────────────────────────
 router.use(protect, authorize("tailor"));
