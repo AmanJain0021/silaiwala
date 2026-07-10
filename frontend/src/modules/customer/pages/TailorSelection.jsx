@@ -17,7 +17,12 @@ const TailorSelection = () => {
     useEffect(() => {
         const fetchTailors = async () => {
             try {
-                const response = await api.get('/customers/tailors');
+                const response = await api.get('/customers/tailors', {
+                    params: {
+                        lat: coordinates?.lat,
+                        lng: coordinates?.lng
+                    }
+                });
                 if (response.data.success) {
                     setTailors(response.data.data);
                 }

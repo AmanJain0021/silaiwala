@@ -84,33 +84,108 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
  * @route   GET /api/v1/customers/tailors
  * @access  Private (Customer)
  */
+function getDistanceInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c;
+}
+
 exports.getTailors = asyncHandler(async (req, res, next) => {
-  const { lat, lng, radius = 5000 } = req.query; // radius in meters
+  const { lat, lng, search, minPrice, maxPrice, rating, sortBy, strictRadius } = req.query;
+  const isStrict = strictRadius === 'true';
+
+  const Settings = require("../../../models/Settings");
+  const settings = await Settings.findOne();
+  const searchRadiusKmRaw = settings?.tailorSearch?.searchRadiusKm;
+  const searchRadiusKm = (searchRadiusKmRaw === 'default' || searchRadiusKmRaw === 0 || searchRadiusKmRaw == null) ? 0 : Number(searchRadiusKmRaw);
 
   let query = {};
 
-  if (lat && lng) {
+  // 1. Geographic Filter
+  // Only apply hard geographic limit to the mongo query if isStrict is explicitly true
+  if (lat && lng && isStrict && searchRadiusKm > 0) {
     query.location = {
       $near: {
         $geometry: {
           type: "Point",
           coordinates: [parseFloat(lng), parseFloat(lat)],
         },
-        $maxDistance: parseInt(radius),
-      },
+        $maxDistance: searchRadiusKm * 1000
+      }
     };
   }
 
-  const tailors = await Tailor.find(query)
+  // 2. Price Filter
+  // Only apply maxPrice filter if it's less than the default slider max (10000)
+  // so we don't accidentally filter out tailors that haven't set their basePrice yet
+  if (minPrice || (maxPrice && Number(maxPrice) < 10000)) {
+      query.basePrice = {};
+      if (minPrice) query.basePrice.$gte = Number(minPrice);
+      if (maxPrice && Number(maxPrice) < 10000) query.basePrice.$lte = Number(maxPrice);
+  }
+
+  // 3. Rating Filter
+  if (rating) {
+      query.rating = { $gte: Number(rating) };
+  }
+
+  let tailors = await Tailor.find(query)
     .populate("user", "name email profileImage")
     .populate("activePlan", "name sortOrder price isPopular theme")
     .lean();
 
-  // Sort tailors: those with higher plan sortOrder come first.
+  // Search Filter (applied locally to properly include populated user.name)
+  if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      tailors = tailors.filter(t => 
+          searchRegex.test(t.shopName || "") || 
+          searchRegex.test(t.user?.name || "") || 
+          (t.specializations || []).some(s => searchRegex.test(s))
+      );
+  }
+
+  // Calculate distance
+  if (lat && lng) {
+      tailors.forEach(t => {
+          if (t.location && t.location.coordinates) {
+              t.distanceKm = getDistanceInKm(parseFloat(lat), parseFloat(lng), t.location.coordinates[1], t.location.coordinates[0]);
+              t.distance = t.distanceKm.toFixed(1) + ' km away'; // Format for frontend
+          } else {
+              t.distanceKm = Infinity;
+          }
+      });
+  } else {
+      tailors.forEach(t => t.distanceKm = 0);
+  }
+
+  // Sorting
   tailors.sort((a, b) => {
+    // Group In-Range tailors above Out-of-Range tailors (always apply if radius exists)
+    if (searchRadiusKm > 0) {
+        const aInRange = a.distanceKm <= searchRadiusKm;
+        const bInRange = b.distanceKm <= searchRadiusKm;
+        if (aInRange && !bInRange) return -1;
+        if (!aInRange && bInRange) return 1;
+    }
+
+    if (sortBy === 'price_low') return (a.basePrice || 0) - (b.basePrice || 0);
+    if (sortBy === 'price_high') return (b.basePrice || 0) - (a.basePrice || 0);
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    
+    // Default: Priority sort (higher sortOrder comes first)
     const sortA = a.activePlan?.sortOrder || 0;
     const sortB = b.activePlan?.sortOrder || 0;
-    return sortB - sortA;
+    
+    if (sortA !== sortB) return sortB - sortA;
+    
+    // Tie-breaker: Distance
+    return (a.distanceKm || 0) - (b.distanceKm || 0);
   });
 
   res.status(200).json({

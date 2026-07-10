@@ -5,14 +5,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../utils/api';
 import useLocationStore from '../../../store/locationStore';
 import SafeImage from '../../../components/Common/SafeImage';
+import TailorFilterDrawer from '../components/TailorFilterDrawer';
 
 const TailorListing = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    
     const [search, setSearch] = useState(() => {
         const params = new URLSearchParams(location.search);
-        return params.get('service') || '';
+        return params.get('search') || params.get('service') || '';
     });
+
+    const [filters, setFilters] = useState({
+        sortBy: 'priority',
+        rating: '',
+        minPrice: '',
+        maxPrice: 10000
+    });
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
     const [tailors, setTailors] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -20,8 +31,17 @@ const TailorListing = () => {
 
     useEffect(() => {
         const fetchTailors = async () => {
+            setIsLoading(true);
             try {
-                const response = await api.get('/customers/tailors');
+                const response = await api.get('/customers/tailors', {
+                    params: {
+                        lat: coordinates?.lat,
+                        lng: coordinates?.lng,
+                        sortBy: filters.sortBy,
+                        rating: filters.rating,
+                        maxPrice: filters.maxPrice
+                    }
+                });
                 if (response.data.success) {
                     setTailors(response.data.data);
                 }
@@ -32,14 +52,14 @@ const TailorListing = () => {
             }
         };
         fetchTailors();
-    }, []);
+    }, [coordinates, filters]);
 
     const filteredTailors = tailors.filter(t =>
         (t.shopName || t.user?.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (t.specializations || []).some(s => s.toLowerCase().includes(search.toLowerCase()))
     );
 
-    if (isLoading) {
+    if (isLoading && tailors.length === 0) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
                 <Loader2 size={40} className="text-[#843D9B] animate-spin mb-4" />
@@ -50,6 +70,13 @@ const TailorListing = () => {
 
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-24 font-sans selection:bg-[#843D9B] selection:text-white">
+            <TailorFilterDrawer 
+                isOpen={isFilterOpen} 
+                onClose={() => setIsFilterOpen(false)} 
+                filters={filters} 
+                setFilters={setFilters} 
+            />
+
             <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-50/50 via-white to-white -z-10" />
 
             {/* 1. Premium Sticky Header */}
@@ -67,8 +94,14 @@ const TailorListing = () => {
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Available Near You</p>
                         </div>
                     </div>
-                    <button className="p-2.5 bg-gray-50 rounded-xl text-gray-500 border border-gray-100 active:scale-95 transition-all">
+                    <button 
+                        onClick={() => setIsFilterOpen(true)}
+                        className="p-2.5 bg-gray-50 rounded-xl text-gray-500 border border-gray-100 active:scale-95 transition-all relative"
+                    >
                         <Filter size={18} />
+                        {(filters.rating || filters.maxPrice < 10000 || filters.sortBy !== 'priority') && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#843D9B] rounded-full border-2 border-white"></span>
+                        )}
                     </button>
                 </div>
 
@@ -92,9 +125,11 @@ const TailorListing = () => {
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">
                     {filteredTailors.length} Verified Tailors Found
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                     <div className="h-5 w-px bg-gray-200" />
-                    <span className="text-xs font-black text-[#843D9B] cursor-pointer">Sort By: Distance</span>
+                    <button onClick={() => setIsFilterOpen(true)} className="text-xs font-black text-[#843D9B] cursor-pointer hover:underline">
+                        Sort By: {filters.sortBy === 'priority' ? 'Recommended' : filters.sortBy === 'rating' ? 'Rating' : filters.sortBy === 'price_low' ? 'Lowest Price' : 'Highest Price'}
+                    </button>
                 </div>
             </div>
 

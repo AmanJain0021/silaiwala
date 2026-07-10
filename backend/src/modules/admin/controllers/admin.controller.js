@@ -1459,6 +1459,7 @@ exports.updateSettings = async (req, res) => {
     if (updateData.codWalletConfig) settings.codWalletConfig = updateData.codWalletConfig;
     if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
+    if (updateData.tailorSearch) settings.tailorSearch = updateData.tailorSearch;
 
     await settings.save();
     await invalidateCache("cache:public:settings");

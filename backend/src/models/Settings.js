@@ -72,6 +72,9 @@ const settingsSchema = new mongoose.Schema(
       flatPointsPerBooking: { type: Number, default: 0 },
       redemptionValuePerPoint: { type: Number, default: 1 },
       cancellationPenalty: { type: Number, default: 0 },
+    },
+    tailorSearch: {
+      searchRadiusKm: { type: mongoose.Schema.Types.Mixed, default: "default" },
     }
   },
   {

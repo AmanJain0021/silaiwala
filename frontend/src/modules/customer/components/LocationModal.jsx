@@ -110,13 +110,13 @@ const LocationModal = ({ isOpen, onClose }) => {
                 setIsFetchingLocation(false);
             },
             (error) => {
-                let msg = 'Failed to get location';
-                if (error.code === 1) msg = 'Location permission denied';
-                if (error.code === 2) msg = 'Position unavailable';
-                if (error.code === 3) msg = 'Request timeout';
-                toast.error(msg);
+                if (error.code === 1 || error.code === 2) {
+                    setView('permission-denied');
+                } else {
+                    toast.error('Request timeout');
+                    setView('list');
+                }
                 setIsFetchingLocation(false);
-                setView('list');
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
@@ -303,6 +303,33 @@ const LocationModal = ({ isOpen, onClose }) => {
                                 </div>
                                 <h3 className="text-xl font-black text-gray-900 mb-2">Locating you...</h3>
                                 <p className="text-sm text-gray-500 font-medium max-w-xs mx-auto">Please allow location permissions when prompted by your browser to find your exact address.</p>
+                            </div>
+                        )}
+
+                        {/* PERMISSION DENIED VIEW */}
+                        {view === 'permission-denied' && (
+                            <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+                                <div className="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-6 border border-red-100">
+                                    <MapPin size={32} className="text-red-500 animate-pulse" />
+                                </div>
+                                <h3 className="text-xl font-black text-gray-900 mb-2">Location Access Denied</h3>
+                                <p className="text-sm text-gray-500 font-medium mb-8 max-w-xs mx-auto">
+                                    Please enable GPS on your device and allow location access in your browser settings to find tailors near you.
+                                </p>
+                                <div className="w-full space-y-3">
+                                    <button 
+                                        onClick={() => triggerActualLocationFlow()}
+                                        className="w-full py-3.5 bg-[#843D9B] text-white text-xs font-black rounded-xl shadow-[0_0_20px_rgba(132,61,155,0.2)] hover:bg-[#68166d] transition-colors uppercase tracking-widest"
+                                    >
+                                        I've Enabled It, Try Again
+                                    </button>
+                                    <button 
+                                        onClick={() => setView('list')}
+                                        className="w-full py-3.5 bg-white border border-gray-200 text-gray-700 text-xs font-black rounded-xl hover:bg-gray-50 transition-colors uppercase tracking-widest"
+                                    >
+                                        Search Manually
+                                    </button>
+                                </div>
                             </div>
                         )}
 

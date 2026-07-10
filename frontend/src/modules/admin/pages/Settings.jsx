@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings as SettingsIcon, Shield, Bell, CreditCard,
-    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift
+    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift, MapPin
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -21,6 +21,7 @@ const AdminSettings = () => {
         { id: 'Notifications', icon: <Bell size={16} />, desc: 'Email & SMS setup' },
         { id: 'Payment Gateways', icon: <CreditCard size={16} />, desc: 'Razorpay, Stripe' },
         { id: 'App Config', icon: <Smartphone size={16} />, desc: 'Mobile app settings' },
+        { id: 'Tailor Discovery', icon: <MapPin size={16} />, desc: 'Search settings' },
     ];
 
     const fetchSettings = async () => {
@@ -521,6 +522,60 @@ const AdminSettings = () => {
                         </div>
                     )}
 
+                    {selectedTab === 'Tailor Discovery' && settings && (
+                        <div className="p-8 space-y-8 max-w-3xl">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900">Tailor Discovery Settings</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">Configure how users find tailors on the platform.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                <div>
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer" 
+                                                checked={settings.tailorSearch?.searchRadiusKm === 'default' || settings.tailorSearch?.searchRadiusKm === 0}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        updateNestedSetting('tailorSearch', 'searchRadiusKm', 'default');
+                                                    } else {
+                                                        updateNestedSetting('tailorSearch', 'searchRadiusKm', 10);
+                                                    }
+                                                }}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                        </label>
+                                        <div>
+                                            <span className="text-xs font-bold text-gray-700 block">Show All Tailors (Default)</span>
+                                            <span className="text-[10px] text-gray-400">Toggle to disable radius limit and show all tailors.</span>
+                                        </div>
+                                    </div>
+
+                                    {(settings.tailorSearch?.searchRadiusKm !== 'default' && settings.tailorSearch?.searchRadiusKm !== 0) && (
+                                        <div className="mt-4 p-4 border border-gray-100 rounded-xl bg-gray-50/50">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Tailor Search Radius (km)</label>
+                                            <input 
+                                                type="number" 
+                                                value={settings.tailorSearch?.searchRadiusKm === '' ? '' : (settings.tailorSearch?.searchRadiusKm ?? 10)} 
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    updateNestedSetting('tailorSearch', 'searchRadiusKm', val === '' ? '' : Number(val));
+                                                }}
+                                                className="w-full md:w-1/2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                                min="1"
+                                            />
+                                            <p className="text-[10px] text-gray-500 font-medium mt-2">
+                                                Only tailors within this radius from the user will be shown.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {selectedTab === 'Security' && (
                         <div className="p-8 space-y-8 max-w-3xl">
                             <div>
@@ -560,7 +615,7 @@ const AdminSettings = () => {
                         </div>
                     )}
 
-                    {(selectedTab !== 'General' && selectedTab !== 'Security' && selectedTab !== 'Payment Gateways') && (
+                    {(selectedTab !== 'General' && selectedTab !== 'Security' && selectedTab !== 'Payment Gateways' && selectedTab !== 'Tailor Discovery') && (
                         <div className="p-16 text-center flex flex-col items-center justify-center h-full text-gray-400">
                             <div className="p-6 bg-gray-50 rounded-full mb-6">
                                 <SettingsIcon size={48} className="opacity-30 animate-spin-slow" />

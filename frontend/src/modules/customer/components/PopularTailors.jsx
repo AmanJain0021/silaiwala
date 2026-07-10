@@ -11,8 +11,13 @@ const PopularTailors = () => {
     const { coordinates } = useLocationStore();
 
     React.useEffect(() => {
-        fetchTailors();
-    }, [fetchTailors]);
+        const params = { strictRadius: true };
+        if (coordinates?.lat && coordinates?.lng) {
+            params.lat = coordinates.lat;
+            params.lng = coordinates.lng;
+        }
+        fetchTailors(params);
+    }, [fetchTailors, coordinates]);
 
     // Show top 4 prominently
     const displayTailors = tailors.length > 0 ? tailors.slice(0, 4) : [];
