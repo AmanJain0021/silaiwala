@@ -10,7 +10,7 @@ import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { otpLogin, sendOTP, isLoading } = useAuthStore();
+    const { otpLogin, sendOTP, isLoading, logout } = useAuthStore();
 
     const [mobileNumber, setMobileNumber] = useState('');
     const [otp, setOtp] = useState('');
@@ -67,6 +67,19 @@ const Login = () => {
 
         try {
             const user = await otpLogin(mobileNumber, otp);
+            
+            if (user?.role !== 'customer') {
+                logout();
+                const portalHint = {
+                    tailor: 'Partner',
+                    delivery: 'Delivery',
+                    admin: 'Admin',
+                    measurement_executive: 'Executive'
+                }[user?.role] || 'appropriate';
+                setError(`This login is for customers only. Please use the ${portalHint} portal.`);
+                return;
+            }
+
             setLoggedInUser(user);
             setIsLocating(true);
         } catch (err) {
@@ -76,18 +89,26 @@ const Login = () => {
 
     const handleLocationComplete = () => {
         setIsLocating(false);
-        const redirectPath = {
-            tailor: '/partner',
-            delivery: '/delivery/dashboard',
-            admin: '/admin'
-        }[loggedInUser?.role] || '/user';
-        navigate(redirectPath);
+        navigate('/user');
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
             setError('');
             const user = await useAuthStore.getState().googleLogin(credentialResponse.credential);
+            
+            if (user?.role !== 'customer') {
+                useAuthStore.getState().logout();
+                const portalHint = {
+                    tailor: 'Partner',
+                    delivery: 'Delivery',
+                    admin: 'Admin',
+                    measurement_executive: 'Executive'
+                }[user?.role] || 'appropriate';
+                setError(`This login is for customers only. Please use the ${portalHint} portal.`);
+                return;
+            }
+
             setLoggedInUser(user);
             setIsLocating(true);
         } catch (err) {

@@ -58,7 +58,7 @@ const AdminLogin = () => {
         try {
             const user = await otpLogin(email, otpValue);
 
-            if (user.role !== 'admin') {
+            if (user.role !== 'admin' && user.role !== 'super_admin') {
                 setError('Access Denied. Internal Admin accounts only.');
                 useAuthStore.getState().logout();
                 return;
