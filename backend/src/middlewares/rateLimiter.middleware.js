@@ -1,6 +1,10 @@
 const rateLimit = require("express-rate-limit");
-const { ipKeyGenerator } = require("express-rate-limit");
 const { isRedisEnabled, getRedisClient } = require("../config/redis");
+
+// Custom key generator that uses both IP and User-Agent to differentiate devices on the same network
+const customKeyGenerator = (req) => {
+  return `${req.ip}_${req.headers['user-agent'] || 'unknown'}`;
+};
 
 // ─── Helper: create a dedicated RedisStore per tier ──────────────────────────
 // Each tier MUST have its own RedisStore instance (express-rate-limit v8 enforces this).
@@ -38,7 +42,7 @@ const globalStore = createTierStore("rl-global:");
 const globalLimiter = rateLimit({
   windowMs: GLOBAL_WINDOW_MS,
   max: GLOBAL_MAX,
-  keyGenerator: ipKeyGenerator,
+  keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },
@@ -54,7 +58,7 @@ const authStore = createTierStore("rl-auth:");
 const authLimiter = rateLimit({
   windowMs: AUTH_WINDOW_MS,
   max: AUTH_MAX,
-  keyGenerator: ipKeyGenerator,
+  keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },
@@ -70,7 +74,7 @@ const uploadStore = createTierStore("rl-upload:");
 const uploadLimiter = rateLimit({
   windowMs: UPLOAD_WINDOW_MS,
   max: UPLOAD_MAX,
-  keyGenerator: ipKeyGenerator,
+  keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },
@@ -86,7 +90,7 @@ const publicStore = createTierStore("rl-public:");
 const publicLimiter = rateLimit({
   windowMs: PUBLIC_WINDOW_MS,
   max: PUBLIC_MAX,
-  keyGenerator: ipKeyGenerator,
+  keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },
