@@ -3,15 +3,16 @@ import { Input } from '../UIElements';
 import ImageUploader from '../../../../components/Common/ImageUploader';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { Navigation } from 'lucide-react';
+import { Navigation, Lock, Eye, EyeOff } from 'lucide-react';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
+import { validatePassword } from '../../../../utils/validation';
 
 export const Step1Basic = ({ register, errors, setValue, watch }) => {
     const profileImage = watch('profileImage');
     const phone = watch('phone');
     const [otpSent, setOtpSent] = useState(false);
-
     const [isSending, setIsSending] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSendOTP = async () => {
         if (phone && /^[6-9]\d{9}$/.test(phone)) {
@@ -127,6 +128,30 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                 })}
                 error={errors.email?.message}
             />
+
+            <div className="flex flex-col space-y-1.5 w-full group">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#843D9B]">Password</label>
+                <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.password ? 'border-red-100 bg-red-50/30' : 'border-transparent focus-within:border-[#843D9B]'}`}>
+                    <Lock className={`w-4 h-4 mr-3 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400 group-focus-within:text-[#843D9B]'}`} />
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        {...register('password', {
+                            required: 'Password is required',
+                            validate: validatePassword
+                        })}
+                        className="flex-1 bg-transparent border-none focus:ring-0 font-medium text-sm text-gray-900 placeholder:text-gray-300 outline-none w-full"
+                    />
+                    <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-gray-400 hover:text-[#843D9B] shrink-0"
+                    >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                </div>
+                {errors.password && <p className="text-[10px] text-red-500 font-bold pl-2">{errors.password?.message || (typeof errors.password === 'string' ? errors.password : '')}</p>}
+            </div>
         </div>
 
     );

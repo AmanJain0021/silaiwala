@@ -12,6 +12,9 @@ const DeliveryLogin = () => {
     const { sendOTP, otpLogin, logout, isLoading } = useAuthStore();
 
     const [mobileNumber, setMobileNumber] = useState('');
+    const [password, setPassword] = useState('');
+    const [loginMethod, setLoginMethod] = useState('password'); // 'password' | 'otp'
+    const [showPassword, setShowPassword] = useState(false);
     const [otp, setOtp] = useState('');
     const [otpSent, setOtpSent] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -49,13 +52,32 @@ const DeliveryLogin = () => {
         e.preventDefault();
         setError('');
 
+        if (loginMethod === 'password') {
+            if (!mobileNumber || !password) {
+                setError('Please enter mobile number and password');
+                return;
+            }
+            try {
+                const user = await useAuthStore.getState().login(mobileNumber, password, 'delivery');
+                if (user?.role !== 'delivery') {
+                    logout();
+                    setError('This portal is only for registered delivery partners.');
+                    return;
+                }
+                navigate('/delivery/dashboard');
+            } catch (err) {
+                setError(err.message || 'Invalid credentials. Please try again.');
+            }
+            return;
+        }
+
         if (!mobileNumber || !otp) {
             setError('Please enter mobile number and OTP');
             return;
         }
 
         try {
-            const user = await otpLogin(mobileNumber, otp);
+            const user = await otpLogin(mobileNumber, otp, 'delivery');
             
             if (user?.role !== 'delivery') {
                 logout();
@@ -99,7 +121,7 @@ const DeliveryLogin = () => {
             <div className="mb-4">
                 <h2 className="text-xl font-black text-[#1e293b] mb-0.5">Welcome back!</h2>
                 <p className="text-sm font-medium text-gray-400">
-                    {otpSent ? 'Verify your number' : 'Login to continue'}
+                    {loginMethod === 'otp' && otpSent ? 'Verify your number' : 'Login to continue'}
                 </p>
             </div>
 
@@ -145,28 +167,89 @@ const DeliveryLogin = () => {
                                     I agree to the <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>
                                 </span>
                             </label>
-                            <button
-                                type="button"
-                                onClick={handleSendOTP}
-                                disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms}
-                                className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                                    !mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms
-                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                        : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
-                                }`}
-                            >
-                            {sendingOtp ? 'Sending...' : (
+
+                            {loginMethod === 'password' && (
                                 <>
-                                    Send OTP <ArrowRight className="w-5 h-5" />
+                                    <div className="group">
+                                        <div className={`flex items-center px-4 py-3 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${error && !otpSent ? 'border-red-100' : 'border-transparent focus-within:border-[#843D9B] focus-within:bg-white'}`}>
+                                            <Lock className={`w-5 h-5 mr-3 transition-colors ${error && !otpSent ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                disabled={isLoading}
+                                                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 outline-none w-full disabled:opacity-60"
+                                            />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="text-gray-400 hover:text-[#843D9B]"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={!mobileNumber || mobileNumber.length < 10 || !password || isLoading || !agreedToTerms}
+                                        className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                                            !mobileNumber || mobileNumber.length < 10 || !password || isLoading || !agreedToTerms
+                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                        }`}
+                                    >
+                                        {isLoading ? 'Logging in...' : (
+                                            <>
+                                                Login <ArrowRight className="w-5 h-5" />
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => { setLoginMethod('otp'); setError(''); }}
+                                        className="w-full text-xs font-bold text-[#843D9B] hover:text-[#E04D79] transition-colors mt-2 text-center"
+                                    >
+                                        Forgot password? Login with OTP
+                                    </button>
                                 </>
                             )}
-                            </button>
+
+                            {loginMethod === 'otp' && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={handleSendOTP}
+                                        disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms}
+                                        className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                                            !mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms
+                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                        }`}
+                                    >
+                                        {sendingOtp ? 'Sending...' : (
+                                            <>
+                                                Send OTP <ArrowRight className="w-5 h-5" />
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setLoginMethod('password'); setError(''); }}
+                                        className="w-full text-xs font-bold text-[#843D9B] hover:text-[#E04D79] transition-colors mt-2 text-center"
+                                    >
+                                        Login with Password instead
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
 
                 <AnimatePresence>
-                    {otpSent && (
+                    {loginMethod === 'otp' && otpSent && (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}

@@ -1210,10 +1210,7 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
 
   if (!order) return next(new ErrorResponse("Order not found or not assigned to you", 404));
 
-  let cycle = 'dropoff';
-  if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) || (!order.dropoffPartner && order.pickupPartner?.toString() === req.user.id)) {
-      cycle = 'pickup';
-  }
+  let cycle = order.pickupOtpVerified ? 'dropoff' : 'pickup';
   
   // Generate 6 digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1230,6 +1227,20 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
   
   await order.save();
   
+  // Emit socket event to ensure partner/customer panels instantly update with the new OTP
+  const { getIO } = require("../../../config/socket.js");
+  const io = getIO();
+  if (io) {
+    if (cycle === 'pickup') {
+      io.to(`user_${order.tailor}`).emit('order_status_updated', { _id: order._id, orderId: order.orderId, pickupDeliveryOtp: otp, status: order.status });
+    } else {
+      io.to(`user_${order.customer}`).emit('order_status_updated', { _id: order._id, orderId: order.orderId, dropoffDeliveryOtp: otp, status: order.status });
+      if (order.tailor) {
+        io.to(`user_${order.tailor}`).emit('order_status_updated', { _id: order._id, orderId: order.orderId, dropoffDeliveryOtp: otp, status: order.status });
+      }
+    }
+  }
+
   console.log(`\n\n======================================================`);
   console.log(`🔐 DELIVERY OTP RE-GENERATED: ${otp}`);
   console.log(`======================================================\n\n`);
@@ -1294,10 +1305,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
-  let cycle = 'dropoff';
-  if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) || (!order.dropoffPartner && order.pickupPartner?.toString() === req.user.id)) {
-      cycle = 'pickup';
-  }
+  let cycle = order.pickupOtpVerified ? 'dropoff' : 'pickup';
 
   const { sendNotification } = require("../../../utils/notification.js");
   const Settings = require("../../../models/Settings.js");

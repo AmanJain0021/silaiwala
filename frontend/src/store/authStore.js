@@ -21,10 +21,12 @@ const useAuthStore = create((set) => ({
     isLoading: false,
     error: null,
 
-    login: async (email, password) => {
+    login: async (email, password, expectedRole = null) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await api.post('/auth/login', { email, password });
+            const payload = { email, password };
+            if (expectedRole) payload.expectedRole = expectedRole;
+            const response = await api.post('/auth/login', payload);
             console.log('Backend Login Raw Response:', response.data);
             
             const user = response.data.data || response.data.user || response.data;
@@ -69,11 +71,13 @@ const useAuthStore = create((set) => ({
         }
     },
 
-    otpLogin: async (phoneNumber, otp) => {
+    otpLogin: async (phoneNumber, otp, expectedRole = null) => {
         set({ isLoading: true, error: null });
         try {
             // Using /auth/login route which backend controller already supports for phoneNumber + otp
-            const response = await api.post('/auth/login', { email: phoneNumber, otp });
+            const payload = { email: phoneNumber, otp };
+            if (expectedRole) payload.expectedRole = expectedRole;
+            const response = await api.post('/auth/login', payload);
             
             const user = response.data.data || response.data.user || response.data;
             const token = response.data.token;

@@ -213,7 +213,7 @@ const Orders = () => {
     const filteredOrders = orders.filter(order => {
         const orderId = order.orderId || '';
         const customerName = order.customer?.name || '';
-        const serviceTitle = order.items?.[0]?.service?.title || '';
+        const serviceTitle = order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || '';
 
         return orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
             customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -785,15 +785,15 @@ const Orders = () => {
                         {order.items?.map((item, idx) => (
                             <div key={idx} className="bg-white rounded-3xl p-4 border border-gray-100 flex items-center gap-3">
                                 <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
-                                    {item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.service?.image || item.service?.images?.[0] ? (
-                                        <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.service?.image || item.service?.images?.[0]} className="w-full h-full object-cover" />
+                                    {item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0] ? (
+                                        <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0]} className="w-full h-full object-cover" />
                                     ) : (
                                         <Scissors size={24} className="text-gray-400" />
                                     )}
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start">
-                                        <h4 className="text-[15px] font-black text-gray-900 leading-snug">{item.service?.title || 'Custom Garment'}</h4>
+                                        <h4 className="text-[15px] font-black text-gray-900 leading-snug">{item.service?.title || item.product?.name || 'Custom Garment'}</h4>
                                         <p className="text-[15px] font-black text-gray-900">₹{order.totalAmount || '0.00'}</p>
                                     </div>
                                     <p className="text-[11px] text-gray-400 mt-0.5 font-medium">{item.fabricSource === 'platform' ? 'Platform Fabric' : 'Customer Fabric'}</p>
@@ -841,8 +841,8 @@ const Orders = () => {
                                 return (
                                     <div key={idx} className="space-y-3">
                                         {order.items.length > 1 && (
-                                            <p className="text-[10px] font-bold text-[#843D9B] uppercase tracking-wider">
-                                                Item {idx + 1}: {item.service?.title || 'Custom Garment'}
+                                            <p key={`info-${idx}`} className="text-xs text-gray-500 font-medium">
+                                                Item {idx + 1}: {item.service?.title || item.product?.name || 'Custom Garment'}
                                             </p>
                                         )}
                                         
@@ -1141,15 +1141,15 @@ const Orders = () => {
 
                                     <div className="flex-1 bg-gray-50 p-2.5 md:p-3 rounded-xl md:rounded-[1.5rem] border border-gray-100 mb-3 md:mb-5 flex items-center gap-2.5 md:gap-3">
                                         <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg md:rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
-                                            {order.items?.[0]?.selectedFabric?.image || order.items?.[0]?.selectedFabric?.images?.[0] || order.items?.[0]?.service?.image || order.items?.[0]?.service?.images?.[0] ? (
-                                                <img src={order.items[0].selectedFabric?.image || order.items[0].selectedFabric?.images?.[0] || order.items[0].service?.image || order.items[0].service?.images?.[0]} className="w-full h-full object-cover" />
+                                            {order.items?.[0]?.selectedFabric?.image || order.items?.[0]?.selectedFabric?.images?.[0] || order.items?.[0]?.product?.image || order.items?.[0]?.product?.images?.[0] || order.items?.[0]?.service?.image || order.items?.[0]?.service?.images?.[0] ? (
+                                                <img src={order.items[0].selectedFabric?.image || order.items[0].selectedFabric?.images?.[0] || order.items[0].product?.image || order.items[0].product?.images?.[0] || order.items[0].service?.image || order.items[0].service?.images?.[0]} className="w-full h-full object-cover" />
                                             ) : (
                                                 <Scissors size={16} className="md:w-[18px] md:h-[18px] text-[#843D9B]" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[11px] md:text-xs font-black text-gray-900 truncate">
-                                                {order.items?.[0]?.service?.title || 'Custom Design'}
+                                                {order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Design'}
                                             </p>
                                             <div className="flex items-center gap-1 mt-0.5 md:mt-1 text-gray-400">
                                                 <MapPin size={10} className="shrink-0" />

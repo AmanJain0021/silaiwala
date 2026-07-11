@@ -45,7 +45,7 @@ const globalLimiter = rateLimit({
   keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { trustProxy: false },
+  validate: false,
   message: {
     success: false,
     message: "Too many requests, please try again later.",
@@ -61,7 +61,7 @@ const authLimiter = rateLimit({
   keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { trustProxy: false },
+  validate: false,
   message: {
     success: false,
     message: "Too many authentication attempts, please try again later.",
@@ -77,7 +77,7 @@ const uploadLimiter = rateLimit({
   keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { trustProxy: false },
+  validate: false,
   message: {
     success: false,
     message: "Too many upload requests, please try again later.",
@@ -93,7 +93,7 @@ const publicLimiter = rateLimit({
   keyGenerator: customKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { trustProxy: false },
+  validate: false,
   message: {
     success: false,
     message: "Too many requests, please slow down.",

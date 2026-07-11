@@ -7,18 +7,22 @@ import { validatePhone } from '../../../utils/validation';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 import api from '../../../utils/api';
 import { GoogleLogin } from '@react-oauth/google';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
     const { otpLogin, sendOTP, isLoading, logout } = useAuthStore();
 
     const [mobileNumber, setMobileNumber] = useState('');
+    const [password, setPassword] = useState('');
+    const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
     const [otp, setOtp] = useState('');
     const [otpSent, setOtpSent] = useState(false);
     const [error, setError] = useState('');
     const [sendingOtp, setSendingOtp] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [loggedInUser, setLoggedInUser] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSendOtp = async () => {
         setError('');
@@ -52,9 +56,32 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (sendingOtp) return;
+        if (sendingOtp || isLoading) return;
         setError('');
 
+        if (loginMethod === 'password') {
+            if (!mobileNumber || !password) {
+                setError('Please fill in all fields');
+                return;
+            }
+            try {
+                const user = await useAuthStore.getState().login(mobileNumber, password, 'customer');
+                
+                if (user?.role !== 'customer') {
+                    logout();
+                    setError('This login is for customers only.');
+                    return;
+                }
+
+                setLoggedInUser(user);
+                setIsLocating(true);
+            } catch (err) {
+                setError(err.message || 'Invalid credentials');
+            }
+            return;
+        }
+
+        // OTP Flow
         if (!otpSent) {
             handleSendOtp();
             return;
@@ -66,17 +93,11 @@ const Login = () => {
         }
 
         try {
-            const user = await otpLogin(mobileNumber, otp);
+            const user = await otpLogin(mobileNumber, otp, 'customer');
             
             if (user?.role !== 'customer') {
                 logout();
-                const portalHint = {
-                    tailor: 'Partner',
-                    delivery: 'Delivery',
-                    admin: 'Admin',
-                    measurement_executive: 'Executive'
-                }[user?.role] || 'appropriate';
-                setError(`This login is for customers only. Please use the ${portalHint} portal.`);
+                setError('This login is for customers only.');
                 return;
             }
 
@@ -175,27 +196,83 @@ const Login = () => {
                         </motion.div>
                     )}
 
-                    {!otpSent && (
-                        <Button
-                            type="button"
-                            onClick={handleSendOtp}
-                            disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
-                            className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || sendingOtp
-                                    ? 'bg-gray-200 text-gray-500'
-                                    : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20 hover:shadow-lg'
-                                }`}
-                        >
-                            {sendingOtp ? 'Sending...' : (
-                                <span className="flex items-center justify-center gap-2">
-                                    CONTINUE <span className="text-lg">›</span>
-                                </span>
-                            )}
-                        </Button>
+                    {loginMethod === 'password' && (
+                        <>
+                            <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200 mt-4">
+                                <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="Password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-medium tracking-wide outline-none"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="text-gray-400 hover:text-[#843D9B] transition-colors focus:outline-none shrink-0"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <Button
+                                type="submit"
+                                disabled={!mobileNumber || mobileNumber.length < 10 || !password || isLoading}
+                                className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || !password || isLoading
+                                        ? 'bg-gray-200 text-gray-500'
+                                        : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20 hover:shadow-lg'
+                                    }`}
+                            >
+                                {isLoading ? 'Signing in...' : (
+                                    <span className="flex items-center justify-center gap-2">
+                                        SIGN IN <span className="text-lg">›</span>
+                                    </span>
+                                )}
+                            </Button>
+                            
+                            <button
+                                type="button"
+                                onClick={() => { setLoginMethod('otp'); setError(''); }}
+                                className="w-full text-xs font-bold text-[#843D9B] hover:text-[#E04D79] transition-colors mt-2"
+                            >
+                                Forgot password? Login with OTP
+                            </button>
+                        </>
+                    )}
+
+                    {loginMethod === 'otp' && !otpSent && (
+                        <>
+                            <Button
+                                type="button"
+                                onClick={handleSendOtp}
+                                disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
+                                className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || sendingOtp
+                                        ? 'bg-gray-200 text-gray-500'
+                                        : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20 hover:shadow-lg'
+                                    }`}
+                            >
+                                {sendingOtp ? 'Sending...' : (
+                                    <span className="flex items-center justify-center gap-2">
+                                        SEND OTP <span className="text-lg">›</span>
+                                    </span>
+                                )}
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => { setLoginMethod('password'); setError(''); }}
+                                className="w-full text-xs font-bold text-[#843D9B] hover:text-[#E04D79] transition-colors mt-2"
+                            >
+                                Login with Password instead
+                            </button>
+                        </>
                     )}
                 </div>
 
                 <AnimatePresence>
-                    {otpSent && (
+                    {loginMethod === 'otp' && otpSent && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}

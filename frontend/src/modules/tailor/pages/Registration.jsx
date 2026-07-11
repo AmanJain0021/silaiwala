@@ -200,6 +200,7 @@ const TailorRegistration = () => {
                 email: data.email,
                 phoneNumber: data.phone,
                 otp: data.otp,
+                password: data.password,
                 role: 'tailor',
                 shopName: data.shopName,
                 experienceInYears: Number(data.experienceInYears),
