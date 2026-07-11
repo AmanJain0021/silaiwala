@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { getProducts, getProductDetails, getCategories, getFeaturedProducts } = require("../controllers/product.controller");
+const { getProducts, getProductDetails, getCategories, getFeaturedProducts } = require("../controllers/product.controller.js");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware.js");
 
-router.get("/", getProducts);
-router.get("/featured", getFeaturedProducts);
-router.get("/categories", getCategories);
-router.get("/:id", getProductDetails);
+router.get("/", publicLimiter, getProducts);
+router.get("/featured", publicLimiter, getFeaturedProducts);
+router.get("/categories", publicLimiter, getCategories);
+router.get("/:id", publicLimiter, getProductDetails);
 
 module.exports = router;

@@ -8,19 +8,19 @@ const {
   wishlistToggle,
   applyPromoCode,
   getReferralStats
-} = require("../controllers/customer.controller");
+} = require("../controllers/customer.controller.js");
 const { 
   getAddresses, 
   addAddress, 
   updateAddress, 
   deleteAddress 
-} = require("../controllers/address.controller");
+} = require("../controllers/address.controller.js");
 const {
   getCart,
   addToCart,
   removeFromCart
-} = require("../controllers/cart.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+} = require("../controllers/cart.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 router.use(protect);
 

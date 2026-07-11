@@ -1,7 +1,7 @@
-const Service = require("../../../models/Service");
-const Tailor = require("../../../models/Tailor");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Service = require("../../../models/Service.js");
+const Tailor = require("../../../models/Tailor.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get all services for logged in tailor

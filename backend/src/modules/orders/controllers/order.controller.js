@@ -1,21 +1,21 @@
-const Order = require("../../../models/Order");
+const Order = require("../../../models/Order.js");
 const mongoose = require("mongoose");
-const User = require("../../../models/User");
-const Tailor = require("../../../models/Tailor");
-const Customer = require("../../../models/Customer");
-const WalletTransaction = require("../../../models/WalletTransaction");
-const Settings = require("../../../models/Settings");
-const PaymentLedger = require("../../../models/PaymentLedger");
-const { getIO } = require("../../../config/socket");
+const User = require("../../../models/User.js");
+const Tailor = require("../../../models/Tailor.js");
+const Customer = require("../../../models/Customer.js");
+const WalletTransaction = require("../../../models/WalletTransaction.js");
+const Settings = require("../../../models/Settings.js");
+const PaymentLedger = require("../../../models/PaymentLedger.js");
+const { getIO } = require("../../../config/socket.js");
 const crypto = require("crypto");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
-const razorpay = require("../../../config/razorpay");
-const { invalidateCache } = require("../../../utils/cache");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const razorpay = require("../../../config/razorpay.js");
+const { invalidateCache } = require("../../../utils/cache.js");
 
-const PromoCode = require("../../../models/PromoCode");
-const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+const PromoCode = require("../../../models/PromoCode.js");
+const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
 const axios = require("axios");
 
 const autoGeocode = async (addressObj) => {
@@ -149,7 +149,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        });
        
        // Emit socket
-       const { getIO } = require("../../../config/socket");
+       const { getIO } = require("../../../config/socket.js");
        const io = getIO();
        if (io) {
            io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -276,7 +276,7 @@ ledgerId,
        });
 
        // Emit socket
-       const { getIO } = require("../../../config/socket");
+       const { getIO } = require("../../../config/socket.js");
        const io = getIO();
        if (io) {
            io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -476,7 +476,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }
 
     if (hasServices) {
-      const Service = require("../../../models/Service");
+      const Service = require("../../../models/Service.js");
       const serviceIds = items.filter(item => item.service).map(item => item.service);
       const services = await Service.find({ _id: { $in: serviceIds } }).populate('category');
       
@@ -534,7 +534,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
               const customerCoords = deliveryAddress.location.coordinates;
               const tailorCoords = tailorProfileDoc.location.coordinates;
               
-              const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+              const { getDistanceFromLatLonInKm } = require("../../../utils/haversine.js");
               // Mongoose points are [lng, lat]
               const distance = getDistanceFromLatLonInKm(
                   customerCoords[1], customerCoords[0],
@@ -806,7 +806,7 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   // Fetch Measurement OTP if the order is in measurement-accepted phase and user is customer
   let measurementOtp = null;
   if (order.isMeasurementHome && order.customer?._id?.toString() === req.user.id) {
-      const MeasurementRequest = require("../../../models/MeasurementRequest");
+      const MeasurementRequest = require("../../../models/MeasurementRequest.js");
       const mReq = await MeasurementRequest.findOne({ order: order._id }).select('+otp').sort({ createdAt: -1 }).lean();
       if (mReq && ['otp_sent', 'accepted'].includes(mReq.status) && mReq.otp) {
           measurementOtp = mReq.otp;
@@ -816,7 +816,7 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   // Check if an issue exists for this order
   let reportedIssue = null;
   try {
-      const Issue = require("../../../models/Issue");
+      const Issue = require("../../../models/Issue.js");
       reportedIssue = await Issue.findOne({ originalOrder: order._id }).lean();
   } catch (err) {
       console.error("Error checking for existing issue:", err);
@@ -872,7 +872,7 @@ exports.changeTailorRequest = asyncHandler(async (req, res, next) => {
     // Validate new tailor
     let tailor = await User.findOne({ _id: newTailorId, role: { $in: ["tailor", "admin"] } });
     if (!tailor) {
-        const Tailor = require("../../../models/Tailor");
+        const Tailor = require("../../../models/Tailor.js");
         const tailorProfile = await Tailor.findById(newTailorId).populate("user");
         if (tailorProfile && tailorProfile.user) {
             tailor = tailorProfile.user;
@@ -897,7 +897,7 @@ exports.changeTailorRequest = asyncHandler(async (req, res, next) => {
 
     // Notify new tailor
     try {
-        const { getIO } = require("../../../config/socket");
+        const { getIO } = require("../../../config/socket.js");
         const io = getIO();
         if (io) {
             io.to(`user_${tailor._id}`).emit('receive_new_order', {
@@ -951,7 +951,7 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
   } else if (preference === 'partner') {
     order.status = 'fabric-ready-for-pickup';
     // If partner, trigger auto-assignment
-    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
     await autoAssignDelivery(order._id, "pickup");
     
     order.trackingHistory.push({
@@ -964,7 +964,7 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
   await order.save();
 
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io && order.tailor) {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1011,7 +1011,7 @@ exports.approveMeasurements = asyncHandler(async (req, res, next) => {
   await order.save();
 
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io && order.tailor) {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1062,7 +1062,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
   await order.save();
 
   // Find corresponding MeasurementRequest and set its status to rejected/revision
-  const MeasurementRequest = require("../../../models/MeasurementRequest");
+  const MeasurementRequest = require("../../../models/MeasurementRequest.js");
   const mRequest = await MeasurementRequest.findOne({ order: order._id }).sort("-createdAt");
   
   if (mRequest) {
@@ -1072,7 +1072,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
 
     // Notify executive if assigned
     if (mRequest.executive) {
-      const { sendNotification } = require("../../../utils/notification");
+      const { sendNotification } = require("../../../utils/notification.js");
       await sendNotification({
           recipient: mRequest.executive,
           type: "MEASUREMENT_REJECTED",
@@ -1082,7 +1082,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
       });
       
       try {
-        const { getIO } = require("../../../config/socket");
+        const { getIO } = require("../../../config/socket.js");
         const io = getIO();
         if (io) {
           io.to(`user_${mRequest.executive}`).emit('measurement_request_updated', {
@@ -1095,7 +1095,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io && order.tailor) {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1146,7 +1146,7 @@ exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) =>
   } else if (preference === 'partner') {
     order.status = 'fabric-ready-for-pickup';
     // If partner, trigger auto-assignment
-    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
     await autoAssignDelivery(order._id, "pickup");
     
     order.trackingHistory.push({
@@ -1159,7 +1159,7 @@ exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) =>
   await order.save();
 
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io && order.tailor) {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1206,7 +1206,7 @@ exports.approveMeasurements = asyncHandler(async (req, res, next) => {
   await order.save();
 
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io && order.tailor) {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1257,7 +1257,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
   await order.save();
 
   // Find corresponding MeasurementRequest and set its status to rejected/revision
-  const MeasurementRequest = require("../../../models/MeasurementRequest");
+  const MeasurementRequest = require("../../../models/MeasurementRequest.js");
   const mRequest = await MeasurementRequest.findOne({ order: order._id }).sort("-createdAt");
   
   if (mRequest) {
@@ -1267,7 +1267,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
 
     // Notify executive if assigned
     if (mRequest.executive) {
-      const { sendNotification } = require("../../../utils/notification");
+      const { sendNotification } = require("../../../utils/notification.js");
       await sendNotification({
           recipient: mRequest.executive,
           type: "MEASUREMENT_REJECTED",
@@ -1277,7 +1277,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
       });
       
       try {
-        const { getIO } = require("../../../config/socket");
+        const { getIO } = require("../../../config/socket.js");
         const io = getIO();
         if (io) {
           io.to(`user_${mRequest.executive}`).emit('measurement_request_updated', {
@@ -1290,7 +1290,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io && order.tailor) {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1323,7 +1323,7 @@ exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) =>
     return next(new ErrorResponse("Not authorized to view this order", 401));
   }
 
-  const MeasurementReport = require("../../../models/MeasurementReport");
+  const MeasurementReport = require("../../../models/MeasurementReport.js");
   const report = await MeasurementReport.findOne({ order: order._id });
 
   if (!report) {
@@ -1442,8 +1442,8 @@ exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
  */
 exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   const { items, deliveryAddress, isCartCheckout } = req.body;
-  const Settings = require("../../../models/Settings");
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine");
+  const Settings = require("../../../models/Settings.js");
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine.js");
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(200).json({

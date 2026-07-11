@@ -1,15 +1,15 @@
 const jwt = require("jsonwebtoken");
-const User = require("../../../models/User");
-const Customer = require("../../../models/Customer");
-const Tailor = require("../../../models/Tailor");
-const Delivery = require("../../../models/Delivery");
-const MeasurementExecutive = require("../../../models/MeasurementExecutive");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
+const User = require("../../../models/User.js");
+const Customer = require("../../../models/Customer.js");
+const Tailor = require("../../../models/Tailor.js");
+const Delivery = require("../../../models/Delivery.js");
+const MeasurementExecutive = require("../../../models/MeasurementExecutive.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'placeholder');
-const { invalidateCache } = require("../../../utils/cache");
+const { invalidateCache } = require("../../../utils/cache.js");
 
 /**
  * Generate JWT Token

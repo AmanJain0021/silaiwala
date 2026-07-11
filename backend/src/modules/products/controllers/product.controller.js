@@ -1,9 +1,9 @@
-const Product = require("../../../models/Product");
-const Category = require("../../../models/Category");
-const Review = require("../../../models/Review");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { getCached } = require("../../../utils/cache");
+const Product = require("../../../models/Product.js");
+const Category = require("../../../models/Category.js");
+const Review = require("../../../models/Review.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { getCached } = require("../../../utils/cache.js");
 
 exports.getProducts = asyncHandler(async (req, res, next) => {
   const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10, productType = 'store_item' } = req.query;
@@ -17,7 +17,7 @@ exports.getProducts = asyncHandler(async (req, res, next) => {
 
   // 1. Geo-Spatial Search
   if (lat && lng) {
-    const Tailor = require("../../../models/Tailor");
+    const Tailor = require("../../../models/Tailor.js");
     const nearbyTailors = await Tailor.find({
       location: {
         $near: {

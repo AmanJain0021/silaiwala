@@ -1,6 +1,6 @@
 const express = require("express");
-const { getPlans, subscribe, createSubscriptionOrder, getAllPlansAdmin, createPlan, updatePlan, deletePlan, togglePlanStatus } = require("../controllers/subscription.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { getPlans, subscribe, createSubscriptionOrder, getAllPlansAdmin, createPlan, updatePlan, deletePlan, togglePlanStatus } = require("../controllers/subscription.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 const router = express.Router();
 

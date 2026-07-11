@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { register, login, sendOTP, checkUserExists, deleteAccount, googleLogin } = require("../controllers/auth.controller");
-const { validateRegister, validateLogin, validateOTP } = require("../validators/auth.validator");
-const validate = require("../../../middlewares/validate.middleware");
-const { protect } = require("../../../middlewares/auth.middleware");
+const { register, login, sendOTP, checkUserExists, deleteAccount, googleLogin } = require("../controllers/auth.controller.js");
+const { validateRegister, validateLogin, validateOTP } = require("../validators/auth.validator.js");
+const validate = require("../../../middlewares/validate.middleware.js");
+const { protect } = require("../../../middlewares/auth.middleware.js");
 
 router.post("/register", validateRegister, validate, register);
 router.post("/register-customer", validateRegister, validate, register);

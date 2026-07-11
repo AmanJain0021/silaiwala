@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { createOrder, getMyOrders, getOrderDetails, createRazorpayOrder, verifyPayment, changeTailorRequest, updateDeliveryPreference, approveMeasurements, requestMeasurementRevision, requestExchange, updateExchangeStatus, calculatePriceSummary } = require("../controllers/order.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { createOrder, getMyOrders, getOrderDetails, createRazorpayOrder, verifyPayment, changeTailorRequest, updateDeliveryPreference, approveMeasurements, requestMeasurementRevision, requestExchange, updateExchangeStatus, calculatePriceSummary } = require("../controllers/order.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 router.use(protect);
 
@@ -15,7 +15,7 @@ router.post("/", authorize("customer", "admin", "delivery", "tailor"), createOrd
 router.get("/my-orders", authorize("customer", "delivery", "tailor", "admin"), getMyOrders);
 router.patch("/:id/change-tailor", authorize("customer"), changeTailorRequest);
 router.get("/:id", getOrderDetails);
-router.get("/:id/measurements", authorize("customer", "admin"), require("../controllers/order.controller").getMeasurementReportForCustomer);
+router.get("/:id/measurements", authorize("customer", "admin"), require("../controllers/order.controller.js").getMeasurementReportForCustomer);
 
 // Exchange Routes
 router.post("/:id/exchange", authorize("customer"), requestExchange);

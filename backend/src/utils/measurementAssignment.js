@@ -1,8 +1,8 @@
-const MeasurementExecutive = require("../models/MeasurementExecutive");
-const MeasurementRequest = require("../models/MeasurementRequest");
-const Order = require("../models/Order");
-const { sendNotification } = require("./notification");
-const { getIO } = require("../config/socket");
+const MeasurementExecutive = require("../models/MeasurementExecutive.js");
+const MeasurementRequest = require("../models/MeasurementRequest.js");
+const Order = require("../models/Order.js");
+const { sendNotification } = require("./notification.js");
+const { getIO } = require("../config/socket.js");
 
 /**
  * Auto-assign the nearest online Measurement Executive to a MeasurementRequest.
@@ -108,7 +108,7 @@ exports.autoAssignMeasurementExecutive = async (order) => {
       await order.save();
 
       // Get customer and tailor info for notification
-      const User = require("../models/User");
+      const User = require("../models/User.js");
       const customer = await User.findById(order.customer).lean();
       const tailor = await User.findById(order.tailor).lean();
 

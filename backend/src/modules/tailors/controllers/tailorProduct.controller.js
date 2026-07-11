@@ -1,7 +1,7 @@
-const Product = require("../../../models/Product");
-const Tailor = require("../../../models/Tailor");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Product = require("../../../models/Product.js");
+const Tailor = require("../../../models/Tailor.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get all fabrics of a specific tailor (for customers during checkout)

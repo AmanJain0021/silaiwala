@@ -1,5 +1,5 @@
-const SupportTicket = require('../../../models/SupportTicket');
-const { sendNotification } = require('../../../utils/notification');
+const SupportTicket = require("../../../models/SupportTicket.js");
+const { sendNotification } = require("../../../utils/notification.js");
 
 exports.createTicket = async (req, res) => {
   try {

@@ -4,11 +4,11 @@ const {
   createMeasurement,
   updateMeasurement,
   deleteMeasurement,
-} = require("../controllers/measurement.controller");
+} = require("../controllers/measurement.controller.js");
 
 const router = express.Router();
 
-const { protect } = require("../../../middlewares/auth.middleware");
+const { protect } = require("../../../middlewares/auth.middleware.js");
 
 // All routes are protected
 router.use(protect);

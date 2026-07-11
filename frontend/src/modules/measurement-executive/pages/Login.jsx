@@ -22,6 +22,8 @@ const Login = () => {
             // Check if user is Measurement Executive
             if (res.data?.role !== 'measurement_executive') {
                 toast.error('Unauthorized access. Only Measurement Executives can log in here.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 useMeasurementStore.setState({ loading: false });
                 return;
             }
@@ -42,6 +44,8 @@ const Login = () => {
             
             if (responseData.data?.role !== 'measurement_executive') {
                 toast.error('Unauthorized access. Only Measurement Executives can log in here.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 return;
             }
 

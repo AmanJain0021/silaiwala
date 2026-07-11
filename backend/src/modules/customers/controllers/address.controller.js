@@ -1,6 +1,6 @@
-const Customer = require("../../../models/Customer");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Customer = require("../../../models/Customer.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 const axios = require("axios");
 
 const autoGeocode = async (body) => {

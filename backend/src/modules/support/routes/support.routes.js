@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const supportController = require('../controllers/support.controller');
-const { protect, authorize } = require('../../../middlewares/auth.middleware');
+const supportController = require("../controllers/support.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 // Public route to submit ticket
 router.post('/', supportController.createTicket);

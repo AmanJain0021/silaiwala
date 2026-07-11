@@ -33,6 +33,7 @@ import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
 import socketService from '../../../shared/utils/socket';
 import { useJsApiLoader } from '@react-google-maps/api';
+import useAuthStore from '../../../store/authStore';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
@@ -114,12 +115,12 @@ const DeliveryOrderDetail = () => {
   const isFabricPickup = order?.taskType === 'fabric-pickup';
 
   // Extract coordinates safely from the nested location arrays [lng, lat]
-  const tailorLat = order?.tailor?.location?.coordinates?.[1];
-  const tailorLng = order?.tailor?.location?.coordinates?.[0];
-  const customerLat = order?.deliveryAddress?.location?.coordinates?.[1];
-  const customerLng = order?.deliveryAddress?.location?.coordinates?.[0];
+  const tailorLat = order?.vendorLatitude || order?.tailor?.location?.coordinates?.[1];
+  const tailorLng = order?.vendorLongitude || order?.tailor?.location?.coordinates?.[0];
+  const customerLat = order?.latitude || order?.deliveryAddress?.location?.coordinates?.[1];
+  const customerLng = order?.longitude || order?.deliveryAddress?.location?.coordinates?.[0];
 
-  const tailorAddress = order?.tailor?.location?.address;
+  const tailorAddress = order?.vendorAddress || order?.tailor?.location?.address;
   const formatDeliveryAddress = (addr) => {
     if (!addr) return 'Address not provided';
     if (addr.street && addr.street.length > 20) return addr.street; // Full Google string
@@ -130,35 +131,37 @@ const DeliveryOrderDetail = () => {
     }
     return 'Address not provided';
   };
-  const customerAddress = formatDeliveryAddress(order?.deliveryAddress);
+  const customerAddress = order?.address || formatDeliveryAddress(order?.deliveryAddress);
 
-  const tailorPhone = order?.tailor?.phone;
-  const customerPhone = order?.customerPhone || order?.phone; // fallback if needed
+  const tailorPhone = order?.vendorPhone || order?.tailor?.phone;
+  const customerPhone = order?.phone || order?.customerPhone;
 
   // Define source and destination dynamically based on task type
-  const pickupName = isFabricPickup ? order?.customerName : order?.tailor?.shopName;
+  const pickupName = isFabricPickup ? (order?.customerName || order?.customer) : (order?.vendorName || order?.tailor?.shopName);
   const pickupAddress = isFabricPickup ? customerAddress : tailorAddress;
   const pickupLat = isFabricPickup ? customerLat : tailorLat;
   const pickupLng = isFabricPickup ? customerLng : tailorLng;
   const pickupPhone = isFabricPickup ? customerPhone : tailorPhone;
 
-  const dropoffName = isFabricPickup ? order?.tailor?.shopName : order?.customerName;
+  const dropoffName = isFabricPickup ? (order?.vendorName || order?.tailor?.shopName) : (order?.customerName || order?.customer);
   const dropoffAddress = isFabricPickup ? tailorAddress : customerAddress;
   const dropoffLat = isFabricPickup ? tailorLat : customerLat;
   const dropoffLng = isFabricPickup ? tailorLng : customerLng;
   const dropoffPhone = isFabricPickup ? tailorPhone : customerPhone;
   
-  // FIXED: Ensure we pass the correct ID (either _id or id)
-  const liveLocation = useDeliveryTracking(deliveryBoy?._id || deliveryBoy?.id, order ? [order] : []);
-
-  // Check if this order is actually assigned to the current rider
-  const isAssignedToMe = order && (
-    (typeof order.deliveryBoyId === 'string' && order.deliveryBoyId === deliveryBoy?.id) ||
-    (order.deliveryBoyId?._id === deliveryBoy?.id) ||
-    (order.deliveryBoyId === deliveryBoy?._id)
+  const { user } = useAuthStore();
+  const dBoyId = user?.id || user?._id || deliveryBoy?.id || deliveryBoy?._id;
+  const liveLocation = useDeliveryTracking(dBoyId, order ? [order] : []);
+  const isAssignedToMe = order && dBoyId && (
+    (order.deliveryPartner?._id && String(order.deliveryPartner._id) === String(dBoyId)) ||
+    (typeof order.deliveryPartner === 'string' && String(order.deliveryPartner) === String(dBoyId)) ||
+    (order.pickupPartner?._id && String(order.pickupPartner._id) === String(dBoyId)) ||
+    (typeof order.pickupPartner === 'string' && String(order.pickupPartner) === String(dBoyId)) ||
+    (order.deliveryBoyId?._id && String(order.deliveryBoyId._id) === String(dBoyId)) ||
+    (typeof order.deliveryBoyId === 'string' && String(order.deliveryBoyId) === String(dBoyId))
   );
 
-  const isAvailableTask = order && !order.deliveryBoyId && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending');
+  const isAvailableTask = order && !order.deliveryPartner && !order.pickupPartner && !order.deliveryBoyId && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending' || order.rawStatus === 'searching-delivery-partner');
   
   useEffect(() => {
     // Only use live location from hook to ensure accurate tracking
@@ -203,16 +206,20 @@ const DeliveryOrderDetail = () => {
     const hasDropoff = (dropoffLat && dropoffLng) || dropoffAddress;
     if (hasPickup && hasDropoff && isLoaded && window.google) {
       const fetchSettingsAndCalculate = async () => {
-        try {
-          const res = await api.get('/cms/settings');
-          const rates = res.data?.data?.deliveryRates || { baseFee: 20, perKmRate: 10 };
-          setFeeSettings(rates);
+          // Non-blocking fetch for fee settings
+          api.get('/cms/settings').then(res => {
+            const rates = res.data?.data?.deliveryRates || { baseFee: 20, perKmRate: 10 };
+            setFeeSettings(rates);
+          }).catch(err => {
+            console.warn("Failed to fetch settings, using defaults", err);
+            setFeeSettings({ baseFee: 20, perKmRate: 10 });
+          });
           
           const directionsService = new window.google.maps.DirectionsService();
           const hasCurrentLocation = currentLocation?.lat && currentLocation?.lng;
           
-          const pickupLocation = pickupAddress || { lat: Number(pickupLat), lng: Number(pickupLng) };
-          const dropoffLocation = dropoffAddress || { lat: Number(dropoffLat), lng: Number(dropoffLng) };
+          const pickupLocation = (pickupLat && pickupLng) ? { lat: Number(pickupLat), lng: Number(pickupLng) } : pickupAddress;
+          const dropoffLocation = (dropoffLat && dropoffLng) ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : dropoffAddress;
           
           // 1. Calculate Earnings (Always Pickup -> Dropoff)
           const earningsRequest = {
@@ -261,9 +268,6 @@ const DeliveryOrderDetail = () => {
               }
             });
           }
-        } catch (err) {
-          console.error("Failed to calculate dynamic fee:", err);
-        }
       };
       
       fetchSettingsAndCalculate();
@@ -275,19 +279,27 @@ const DeliveryOrderDetail = () => {
       const response = await fetchOrderById(id);
       setOrder(response || null);
       
-      const isArrivedStatus = ['reached-pickup', 'reached-dropoff'].includes(response?.deliveryStatus) || 
-                              ['reached-pickup', 'reached-dropoff'].includes(response?.pickupDeliveryStatus) ||
-                              ['reached-pickup', 'reached-dropoff'].includes(response?.dropoffDeliveryStatus);
+      // Determine phase to correctly evaluate hasArrived
+      const s = String(response?.status || '').toLowerCase();
+      const rawS = String(response?.rawStatus || response?.status || '').toLowerCase();
+      const isDeliveryPhase = ['picked-up', 'picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s) || ['picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out_for_delivery'].includes(rawS);
+      
+      const isArrivedStatus = isDeliveryPhase 
+        ? ['reached-dropoff'].includes(response?.deliveryStatus) || ['reached-dropoff'].includes(response?.dropoffDeliveryStatus)
+        : ['reached-pickup'].includes(response?.deliveryStatus) || ['reached-pickup'].includes(response?.pickupDeliveryStatus);
 
-      if (response?.arrivedAt || response?.deliveryFlow?.arrivedAt || isArrivedStatus) {
+      if (isArrivedStatus || (currentPhase === 'pickup' && (response?.arrivedAt || response?.deliveryFlow?.arrivedAt))) {
         setHasArrived(true);
         const accepted = (response.deliveryFlow?.tryAndBuyItems || response.items || [])
           .filter(i => i.decision !== 'rejected')
           .map(i => i.productId || i._id);
         setSelectedItemIds(new Set(accepted));
         setPaymentSelection(response.paymentMethod);
-      } else if (response?.items) {
-        setSelectedItemIds(new Set(response.items.map(i => i.productId || i._id)));
+      } else {
+        setHasArrived(false);
+        if (response?.items) {
+          setSelectedItemIds(new Set(response.items.map(i => i.productId || i._id)));
+        }
       }
       setIsInitialLoading(false);
     } catch (err) {
@@ -535,9 +547,8 @@ const DeliveryOrderDetail = () => {
                   isLoaded={isLoaded}
                   height="100%"
                   onRouteCalculated={(data) => {
-                    // Only update state from the live map if we actually have a GPS lock.
-                    // Otherwise the map uses the fallback origin (e.g. pickup to pickup = 0km).
-                    if (currentLocation?.lat && currentLocation?.lng) {
+                    // Only update state from the live map if we actually have a GPS lock and routing succeeded.
+                    if (currentLocation?.lat && currentLocation?.lng && data.distanceValue !== -1) {
                       setEta(data.duration);
                       setDistanceRemaining(data.distanceValue);
                       if (currentPhase === 'pickup') {
@@ -955,6 +966,11 @@ const DeliveryOrderDetail = () => {
             <div className="text-center py-2 px-4 bg-rose-50 rounded-xl border border-rose-100">
                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">UNAUTHORIZED ACCESS</p>
                <p className="text-[8px] font-bold text-rose-400 uppercase leading-none">This task is assigned to another partner.</p>
+               <div className="text-[8px] text-left overflow-auto break-all mt-2 text-rose-800">
+                  <p>dBoyId: {String(dBoyId)}</p>
+                  <p>deliveryPartner: {typeof order?.deliveryPartner === 'object' ? order?.deliveryPartner?._id : order?.deliveryPartner}</p>
+                  <p>pickupPartner: {typeof order?.pickupPartner === 'object' ? order?.pickupPartner?._id : order?.pickupPartner}</p>
+               </div>
             </div>
           )}
         </div>

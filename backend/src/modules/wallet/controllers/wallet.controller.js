@@ -1,15 +1,15 @@
 const mongoose = require("mongoose");
-const WalletTransaction = require("../../../models/WalletTransaction");
-const WithdrawalRequest = require("../../../models/WithdrawalRequest");
-const Tailor = require("../../../models/Tailor");
-const Delivery = require("../../../models/Delivery");
-const Customer = require("../../../models/Customer");
-const MeasurementExecutive = require("../../../models/MeasurementExecutive");
-const Settings = require("../../../models/Settings");
-const User = require("../../../models/User");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
+const WalletTransaction = require("../../../models/WalletTransaction.js");
+const WithdrawalRequest = require("../../../models/WithdrawalRequest.js");
+const Tailor = require("../../../models/Tailor.js");
+const Delivery = require("../../../models/Delivery.js");
+const Customer = require("../../../models/Customer.js");
+const MeasurementExecutive = require("../../../models/MeasurementExecutive.js");
+const Settings = require("../../../models/Settings.js");
+const User = require("../../../models/User.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
 
 /**
  * @desc    Get current user's wallet dashboard

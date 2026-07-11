@@ -1,8 +1,8 @@
-const SubscriptionPlan = require("../../../models/SubscriptionPlan");
-const Tailor = require("../../../models/Tailor");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const razorpay = require("../../../config/razorpay");
+const SubscriptionPlan = require("../../../models/SubscriptionPlan.js");
+const Tailor = require("../../../models/Tailor.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const razorpay = require("../../../config/razorpay.js");
 const crypto = require("crypto");
 
 /**

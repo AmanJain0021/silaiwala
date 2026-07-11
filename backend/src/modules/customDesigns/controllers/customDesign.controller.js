@@ -1,14 +1,14 @@
-const CustomDesign = require("../../../models/CustomDesign");
-const Order = require("../../../models/Order");
+const CustomDesign = require("../../../models/CustomDesign.js");
+const Order = require("../../../models/Order.js");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
-const Tailor = require("../../../models/Tailor");
-const Settings = require("../../../models/Settings");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
-const razorpay = require("../../../config/razorpay");
-const { getIO } = require("../../../config/socket");
+const Tailor = require("../../../models/Tailor.js");
+const Settings = require("../../../models/Settings.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const razorpay = require("../../../config/razorpay.js");
+const { getIO } = require("../../../config/socket.js");
 
 /**
  * @desc    Submit a Custom Design Request from Cart

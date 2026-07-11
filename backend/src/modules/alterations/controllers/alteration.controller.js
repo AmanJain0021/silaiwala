@@ -1,14 +1,14 @@
-const Alteration = require("../../../models/Alteration");
-const Order = require("../../../models/Order");
-const Cart = require("../../../models/Cart");
+const Alteration = require("../../../models/Alteration.js");
+const Order = require("../../../models/Order.js");
+const Cart = require("../../../models/Cart.js");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
-const Tailor = require("../../../models/Tailor");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
-const razorpay = require("../../../config/razorpay");
-const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+const Tailor = require("../../../models/Tailor.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const razorpay = require("../../../config/razorpay.js");
+const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
 
 /**
  * @desc    Submit an Alteration Request from Cart

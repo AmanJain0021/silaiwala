@@ -1,6 +1,6 @@
-const Cart = require("../../../models/Cart");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Cart = require("../../../models/Cart.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get user cart
@@ -64,7 +64,7 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
     }
 
     if (serviceId && hasServices) {
-      const Service = require("../../../models/Service");
+      const Service = require("../../../models/Service.js");
       const incomingService = await Service.findById(serviceId).populate('category');
       const existingService = await Service.findById(cart.items.find(item => item.service).service).populate('category');
       

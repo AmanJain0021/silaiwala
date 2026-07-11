@@ -1,6 +1,7 @@
 const express = require("express");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
-const upload = require("../../../middlewares/upload.middleware");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
+const upload = require("../../../middlewares/upload.middleware.js");
+const { uploadLimiter } = require("../../../middlewares/rateLimiter.middleware.js");
 const {
   getDashboardStats,
   getAllUsers,
@@ -46,7 +47,7 @@ const {
   updateSettings,
   generateReport,
   updateTailorShiprocketLocation,
-} = require("../controllers/admin.controller");
+} = require("../controllers/admin.controller.js");
 
 const {
   getFinanceDashboard,
@@ -58,16 +59,16 @@ const {
   getDeliveryEarnings,
   getWalletAudit,
   getPaymentLedger,
-} = require("../controllers/finance.controller");
+} = require("../controllers/finance.controller.js");
 
 const {
   getAllDepositHistory,
   updateDepositStatus,
   updateCodSettings
-} = require("../../deliveries/controllers/cashDeposit.controller");
+} = require("../../deliveries/controllers/cashDeposit.controller.js");
 
 const router = express.Router();
-const crmRoutes = require("./crm.routes");
+const crmRoutes = require("./crm.routes.js");
 
 // Apply auth middleware to ALL routes
 router.use(protect);
@@ -122,7 +123,7 @@ router.put("/cms/content/:id", updateCMSContent);
 router.delete("/cms/content/:id", deleteCMSContent);
 
 // File Uploads
-router.post("/upload-image", upload.single("image"), uploadImage);
+router.post("/upload-image", uploadLimiter, upload.single("image"), uploadImage);
 
 // Category Management
 router.get("/categories", getAllCategories);

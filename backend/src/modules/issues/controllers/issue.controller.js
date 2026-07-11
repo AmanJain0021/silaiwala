@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 const crypto = require("crypto");
-const Issue = require("../../../models/Issue");
-const IssueMessage = require("../../../models/IssueMessage");
-const Order = require("../../../models/Order");
-const User = require("../../../models/User");
-const { sendNotification } = require("../../../utils/notification");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { getIO } = require("../../../config/socket");
+const Issue = require("../../../models/Issue.js");
+const IssueMessage = require("../../../models/IssueMessage.js");
+const Order = require("../../../models/Order.js");
+const User = require("../../../models/User.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { getIO } = require("../../../config/socket.js");
 
 // --- CUSTOMER CONTROLLERS ---
 

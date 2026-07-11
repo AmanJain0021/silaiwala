@@ -57,6 +57,8 @@ const TailorLogin = () => {
                 const { token, data: userData } = response.data;
 
                 if (userData.role !== 'tailor') {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }
@@ -83,6 +85,8 @@ const TailorLogin = () => {
             if (response.data.success) {
                 const { token, data: userData } = response.data;
                 if (userData.role !== 'tailor') {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }

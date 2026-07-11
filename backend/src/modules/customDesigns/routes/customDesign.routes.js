@@ -1,12 +1,12 @@
 const express = require("express");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 const {
   submitCustomDesignRequest,
   getCustomDesigns,
   submitQuote,
   createRazorpayCustomDesignOrder,
   verifyCustomDesignPayment,
-} = require("../controllers/customDesign.controller");
+} = require("../controllers/customDesign.controller.js");
 
 const router = express.Router();
 

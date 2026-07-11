@@ -4,7 +4,7 @@ const {
     getStyleAddons,
     updateStyleAddon,
     deleteStyleAddon
-} = require('../controllers/styleAddon.controller');
+} = require("../controllers/styleAddon.controller.js");
 
 const router = express.Router();
 

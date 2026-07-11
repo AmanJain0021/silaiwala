@@ -1,6 +1,6 @@
 const express = require("express");
-const { getCRMDashboardData } = require("../controllers/crm.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { getCRMDashboardData } = require("../controllers/crm.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 const router = express.Router();
 

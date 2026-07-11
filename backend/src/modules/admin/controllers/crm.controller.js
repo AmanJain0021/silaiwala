@@ -1,10 +1,10 @@
-const User = require("../../../models/User");
-const Order = require("../../../models/Order");
-const Customer = require("../../../models/Customer");
-const SupportTicket = require("../../../models/SupportTicket");
-const Review = require("../../../models/Review");
+const User = require("../../../models/User.js");
+const Order = require("../../../models/Order.js");
+const Customer = require("../../../models/Customer.js");
+const SupportTicket = require("../../../models/SupportTicket.js");
+const Review = require("../../../models/Review.js");
 const fs = require('fs');
-const { getCached } = require("../../../utils/cache");
+const { getCached } = require("../../../utils/cache.js");
 
 
 exports.getCRMDashboardData = async (req, res) => {

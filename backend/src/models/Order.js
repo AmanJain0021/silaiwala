@@ -350,7 +350,7 @@ orderSchema.index({ deliveryPartner: 1, status: 1 });
 
 orderSchema.post('save', async function(doc) {
   if (doc.status === 'delivered' || doc.status === 'order-completed' || doc.status === 'cancelled') {
-    const { processLoyaltyPoints } = require('../utils/loyaltyEngine');
+    const { processLoyaltyPoints } = require("../utils/loyaltyEngine.js");
     // We don't await this to avoid blocking the save operation, it runs in the background
     processLoyaltyPoints(doc).catch(err => console.error("Loyalty processing failed:", err));
   }

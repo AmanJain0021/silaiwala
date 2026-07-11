@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const AIMeasurementCard = () => {
     return (
@@ -29,7 +30,10 @@ const AIMeasurementCard = () => {
                 </div>
 
                 {/* CTA */}
-                <button className="shrink-0 bg-[#843D9B] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black flex items-center gap-1 hover:bg-[#68166d] transition-colors relative z-10 uppercase">
+                <button 
+                    onClick={() => toast('Coming soon!')}
+                    className="shrink-0 bg-[#843D9B] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black flex items-center gap-1 hover:bg-[#68166d] transition-colors relative z-10 uppercase"
+                >
                     Try Now <ArrowRight size={10} className="sm:w-3 sm:h-3" />
                 </button>
 

@@ -3,8 +3,7 @@ const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
-const connectDB = require("./config/db");
+const connectDB = require("./config/db.js");
 
 // Database connection is handled by server.js or the serverless function handler
 
@@ -49,52 +48,10 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-// ─── Rate Limiting (Redis-backed when REDIS_ENABLED=true) ────────────────────
-const { isRedisEnabled, getRedisClient } = require("./config/redis");
+// ─── Rate Limiting (tiered, all optional — safe defaults apply if unset) ──────
+const { globalLimiter, authLimiter } = require("./middlewares/rateLimiter.middleware.js");
 
-let rateLimitStore = undefined; // undefined = express-rate-limit default in-memory MemoryStore
-if (isRedisEnabled) {
-  try {
-    const { RedisStore } = require("rate-limit-redis");
-    const redisClient = getRedisClient();
-    if (redisClient) {
-      rateLimitStore = new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-      });
-      console.log("🟢 [Rate-Limit] Using Redis store");
-    }
-  } catch (err) {
-    console.warn(`⚠️  [Rate-Limit] Failed to init Redis store — ${err.message}. Using in-memory store.`);
-  }
-}
-
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1500, // 1500 requests per 15 minutes
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { trustProxy: false },
-  message: {
-    success: false,
-    message: "Too many requests, please try again later.",
-  },
-  ...(rateLimitStore && { store: rateLimitStore }),
-});
 app.use(globalLimiter);
-
-// Auth Rate Limiter
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20, // 20 requests per 15 minutes for auth endpoints
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { trustProxy: false },
-  message: {
-    success: false,
-    message: "Too many authentication attempts, please try again later.",
-  },
-  ...(rateLimitStore && { store: rateLimitStore }),
-});
 app.use("/api/v1/auth", authLimiter);
 
 // ─── Body Parsers ────────────────────────────────────────────────────────────
@@ -103,7 +60,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // ─── Sanitization ────────────────────────────────────────────────────────────
-const sanitizeRequest = require("./middlewares/sanitizeRequest");
+const sanitizeRequest = require("./middlewares/sanitizeRequest.js");
 app.use(sanitizeRequest);
 
 // ─── Static Files ────────────────────────────────────────────────────────────
@@ -137,31 +94,31 @@ app.get("/health", (req, res) => {
 });
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
-app.use("/api/v1/auth", require("./modules/auth/routes/auth.routes"));
-app.use("/api/v1/customers", require("./modules/customers/routes/customer.routes"));
-app.use("/api/v1/orders", require("./modules/orders/routes/order.routes"));
-app.use("/api/v1/products", require("./modules/products/routes/product.routes"));
-app.use("/api/v1/measurements", require("./modules/measurements/routes/measurement.routes"));
-app.use("/api/v1/reviews", require("./modules/reviews/routes/review.routes"));
-app.use("/api/v1/services", require("./modules/services/routes/service.routes"));
-app.use("/api/v1/notifications", require("./modules/notifications/routes/notification.routes"));
-app.use("/api/v1/tailors", require("./modules/tailors/routes/tailor.routes"));
-app.use("/api/v1/distance", require("./modules/distance/routes/distance.routes"));
-app.use("/api/v1/deliveries", require("./modules/deliveries/routes/delivery.routes"));
-app.use("/api/v1/wallet", require("./modules/wallet/wallet.routes"));
-app.use("/api/v1/admin", require("./modules/admin/routes/admin.routes"));
-app.use("/api/v1/custom-bookings", require("./modules/bookings/routes/booking.routes"));
-app.use("/api/v1/bulk-orders", require("./modules/bulk-orders/routes/bulkOrder.routes"));
-app.use("/api/v1/style-addons", require("./modules/styleAddons/routes/styleAddon.routes"));
-app.use("/api/v1/cms", require("./modules/public/routes/cms.routes"));
-app.use("/api/v1/support", require("./modules/support/routes/support.routes"));
-app.use("/api/v1/subscriptions", require("./modules/subscriptions/routes/subscription.routes"));
-app.use("/api/v1/upload", require("./routes/upload.routes"));
-app.use("/api/v1/measurement-executive", require("./modules/measurement-executive/routes/measurementExecutive.routes"));
-app.use("/api/v1/alterations", require("./modules/alterations/routes/alteration.routes"));
-app.use("/api/v1/custom-designs", require("./modules/customDesigns/routes/customDesign.routes"));
-app.use("/api/v1/issues", require("./modules/issues/routes/issue.routes"));
-app.use("/api/v1/shiprocket", require("./modules/shiprocket/routes/shiprocket.routes"));
+app.use("/api/v1/auth", require("./modules/auth/routes/auth.routes.js"));
+app.use("/api/v1/customers", require("./modules/customers/routes/customer.routes.js"));
+app.use("/api/v1/orders", require("./modules/orders/routes/order.routes.js"));
+app.use("/api/v1/products", require("./modules/products/routes/product.routes.js"));
+app.use("/api/v1/measurements", require("./modules/measurements/routes/measurement.routes.js"));
+app.use("/api/v1/reviews", require("./modules/reviews/routes/review.routes.js"));
+app.use("/api/v1/services", require("./modules/services/routes/service.routes.js"));
+app.use("/api/v1/notifications", require("./modules/notifications/routes/notification.routes.js"));
+app.use("/api/v1/tailors", require("./modules/tailors/routes/tailor.routes.js"));
+app.use("/api/v1/distance", require("./modules/distance/routes/distance.routes.js"));
+app.use("/api/v1/deliveries", require("./modules/deliveries/routes/delivery.routes.js"));
+app.use("/api/v1/wallet", require("./modules/wallet/wallet.routes.js"));
+app.use("/api/v1/admin", require("./modules/admin/routes/admin.routes.js"));
+app.use("/api/v1/custom-bookings", require("./modules/bookings/routes/booking.routes.js"));
+app.use("/api/v1/bulk-orders", require("./modules/bulk-orders/routes/bulkOrder.routes.js"));
+app.use("/api/v1/style-addons", require("./modules/styleAddons/routes/styleAddon.routes.js"));
+app.use("/api/v1/cms", require("./modules/public/routes/cms.routes.js"));
+app.use("/api/v1/support", require("./modules/support/routes/support.routes.js"));
+app.use("/api/v1/subscriptions", require("./modules/subscriptions/routes/subscription.routes.js"));
+app.use("/api/v1/upload", require("./routes/upload.routes.js"));
+app.use("/api/v1/measurement-executive", require("./modules/measurement-executive/routes/measurementExecutive.routes.js"));
+app.use("/api/v1/alterations", require("./modules/alterations/routes/alteration.routes.js"));
+app.use("/api/v1/custom-designs", require("./modules/customDesigns/routes/customDesign.routes.js"));
+app.use("/api/v1/issues", require("./modules/issues/routes/issue.routes.js"));
+app.use("/api/v1/shiprocket", require("./modules/shiprocket/routes/shiprocket.routes.js"));
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 

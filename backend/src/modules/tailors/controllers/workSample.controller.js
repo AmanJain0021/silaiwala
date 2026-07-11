@@ -1,7 +1,7 @@
-const TailorWorkSample = require("../../../models/TailorWorkSample");
-const Tailor = require("../../../models/Tailor");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const TailorWorkSample = require("../../../models/TailorWorkSample.js");
+const Tailor = require("../../../models/Tailor.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get all work samples for logged in tailor

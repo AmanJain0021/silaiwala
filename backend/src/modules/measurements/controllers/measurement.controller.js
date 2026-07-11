@@ -1,6 +1,6 @@
-const Measurement = require("../../../models/Measurement");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Measurement = require("../../../models/Measurement.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get all measurement profiles for user

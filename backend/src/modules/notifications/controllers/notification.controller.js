@@ -1,6 +1,6 @@
-const Notification = require("../../../models/Notification");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Notification = require("../../../models/Notification.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get all notifications for logged in user
@@ -124,7 +124,7 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
-  const { sendNotification } = require("../../../utils/notification");
+  const { sendNotification } = require("../../../utils/notification.js");
   
   await sendNotification({
     recipient: req.user._id,

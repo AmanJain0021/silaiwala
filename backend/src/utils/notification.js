@@ -1,5 +1,5 @@
-const Notification = require("../models/Notification");
-const { getIO } = require("../config/socket");
+const Notification = require("../models/Notification.js");
+const { getIO } = require("../config/socket.js");
 
 /**
  * Service to create and send real-time notifications
@@ -17,7 +17,7 @@ const sendNotification = async (options) => {
     // 1. Save to Database
     let notificationsToCreate = [];
     if (recipient === "admins") {
-      const User = require('../models/User');
+      const User = require("../models/User.js");
       const admins = await User.find({ role: 'admin' });
       for (const admin of admins) {
         notificationsToCreate.push({
@@ -45,7 +45,7 @@ const sendNotification = async (options) => {
     const io = getIO();
     if (io) {
       if (recipient === "admins") {
-        const User = require('../models/User');
+        const User = require("../models/User.js");
         const admins = await User.find({ role: 'admin' });
         admins.forEach(admin => {
           io.to(`user_${admin._id.toString()}`).emit("new_notification", {
@@ -93,9 +93,9 @@ const sendNotification = async (options) => {
     // 3. Dispatch Firebase Cloud Messaging (FCM) push
     try {
       // Initialize Firebase (if not already initialized)
-      require('../config/firebase');
+      require("../config/firebase.js");
       const { getMessaging } = require('firebase-admin/messaging');
-      const User = require('../models/User');
+      const User = require("../models/User.js");
       
       let fcmTokens = [];
       

@@ -1,5 +1,5 @@
 const axios = require('axios');
-const ErrorResponse = require('./errorResponse');
+const ErrorResponse = require("./errorResponse.js");
 
 const BASE_URL = 'https://apiv2.shiprocket.in/v1/external';
 
