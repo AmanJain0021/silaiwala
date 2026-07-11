@@ -12,6 +12,7 @@ const Signup = () => {
     const sendOTP = useAuthStore((state) => state.sendOTP);
     const isLoading = useAuthStore((state) => state.isLoading);
 
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [step, setStep] = useState('info'); // 'info' or 'otp'
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const otpRefs = useRef([]);
@@ -251,10 +252,23 @@ const Signup = () => {
                 </div>
 
                 <div className="pt-1 sm:pt-2">
+                    {step === 'info' && (
+                        <label className="flex items-center justify-center sm:justify-start gap-2 cursor-pointer mb-4 mt-2">
+                            <input
+                                type="checkbox"
+                                checked={agreedToTerms}
+                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                            />
+                            <span className="text-xs text-gray-500 font-medium">
+                                I agree to the <button type="button" onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>
+                            </span>
+                        </label>
+                    )}
                     <Button
                         type="submit"
-                        className="w-full h-10 sm:h-12 rounded-full bg-[#843D9B] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#843D9B]/10"
-                        disabled={isLoading}
+                        className="w-full h-10 sm:h-12 rounded-full bg-[#843D9B] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#843D9B]/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || (step === 'info' && !agreedToTerms)}
                     >
                         {isLoading ? (step === 'info' ? 'Sending...' : 'Verifying...') : (
                             <span className="flex items-center justify-center gap-2">
@@ -268,15 +282,13 @@ const Signup = () => {
                 <p className="text-xs sm:text-sm font-bold text-slate-400">
                     Already have an account?{' '}
                     <button 
+                        type="button"
                         onClick={() => navigate('/user/login')}
                         className="text-[#843D9B] font-black hover:underline ml-1"
                     >
                         Sign In
                     </button>
                 </p>
-                <div className="mt-6 text-[10px] text-gray-400 font-medium">
-                    By signing up, you agree to our <button onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
-                </div>
             </div>
         </motion.div>
     );

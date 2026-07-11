@@ -12,6 +12,7 @@ const TailorLogin = () => {
     const { login } = useTailorAuth();
     const navigate = useNavigate();
 
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [sendingOtp, setSendingOtp] = useState(false);
@@ -169,22 +170,35 @@ const TailorLogin = () => {
                     </div>
 
                     {!otpSent && (
-                        <button
-                            type="button"
-                            onClick={handleSendOTP}
-                            disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
-                            className={`w-full h-14 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                                !mobileNumber || mobileNumber.length < 10 || sendingOtp
-                                    ? 'bg-gray-200 text-gray-400'
-                                    : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
-                            }`}
-                        >
+                        <div className="pt-2 flex flex-col gap-4">
+                            <label className="flex items-center justify-center gap-2 cursor-pointer mt-2">
+                                <input
+                                    type="checkbox"
+                                    checked={agreedToTerms}
+                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                                />
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    I agree to the <button type="button" onClick={() => window.open('/partner/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => window.open('/partner/legal/privacy-policy', '_blank')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>
+                                </span>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleSendOTP}
+                                disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms}
+                                className={`w-full h-14 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                                    !mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                }`}
+                            >
                             {sendingOtp ? 'Sending...' : (
                                 <>
                                     Send OTP <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
-                        </button>
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -226,9 +240,9 @@ const TailorLogin = () => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || !agreedToTerms}
                                 className={`w-full h-14 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                                    isLoading ? 'bg-[#843D9B]/50' : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                    isLoading || !agreedToTerms ? 'bg-[#843D9B]/50 cursor-not-allowed' : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
                                 }`}
                             >
                                 {isLoading ? 'Verifying...' : (
@@ -242,22 +256,16 @@ const TailorLogin = () => {
                 </AnimatePresence>
                 
                 <div className="mt-8 pt-6 border-t border-gray-100">
-                    <div className="flex justify-center">
+                    <div className={`flex justify-center transition-opacity duration-300 ${!agreedToTerms ? 'opacity-50 pointer-events-none' : ''}`}>
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={() => setFormError('root', { type: 'manual', message: 'Google Login Failed' })}
-                            useOneTap
+                            useOneTap={false}
                             shape="pill"
                         />
                     </div>
                 </div>
             </form>
-            
-            <div className="mt-10 text-center">
-                <p className="text-[10px] text-gray-400 font-medium">
-                    By logging in, you agree to our <button onClick={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
-                </p>
-            </div>
         </motion.div>
     );
 };

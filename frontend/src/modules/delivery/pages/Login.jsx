@@ -14,6 +14,7 @@ const DeliveryLogin = () => {
     const [mobileNumber, setMobileNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [otpSent, setOtpSent] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [sendingOtp, setSendingOtp] = useState(false);
     const [error, setError] = useState('');
     const [showOtp, setShowOtp] = useState(false);
@@ -132,22 +133,35 @@ const DeliveryLogin = () => {
                     </div>
 
                     {!otpSent && (
-                        <button
-                            type="button"
-                            onClick={handleSendOTP}
-                            disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
-                            className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                                !mobileNumber || mobileNumber.length < 10 || sendingOtp
-                                    ? 'bg-gray-200 text-gray-400'
-                                    : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
-                            }`}
-                        >
+                        <div className="pt-2 flex flex-col gap-4">
+                            <label className="flex items-center justify-center gap-2 cursor-pointer mt-2">
+                                <input
+                                    type="checkbox"
+                                    checked={agreedToTerms}
+                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                                />
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    I agree to the <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>
+                                </span>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleSendOTP}
+                                disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms}
+                                className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                                    !mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                }`}
+                            >
                             {sendingOtp ? 'Sending...' : (
                                 <>
                                     Send OTP <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
-                        </button>
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -188,9 +202,9 @@ const DeliveryLogin = () => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || !agreedToTerms}
                                 className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                                    isLoading ? 'bg-[#843D9B]/50' : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                    isLoading || !agreedToTerms ? 'bg-[#843D9B]/50 cursor-not-allowed' : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
                                 }`}
                             >
                                 {isLoading ? 'Verifying...' : (
@@ -206,20 +220,14 @@ const DeliveryLogin = () => {
             </form>
             
             <div className="mt-8 pt-6 border-t border-gray-100">
-                <div className="flex justify-center">
+                <div className={`flex justify-center transition-opacity duration-300 ${!agreedToTerms ? 'opacity-50 pointer-events-none' : ''}`}>
                     <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={() => setError('Google Login Failed')}
-                        useOneTap
+                        useOneTap={false}
                         shape="pill"
                     />
                 </div>
-            </div>
-            
-            <div className="mt-auto pt-6 text-center pb-4">
-                <p className="text-[10px] text-gray-400 font-medium">
-                    By logging in, you agree to our <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>.
-                </p>
             </div>
         </motion.div>
     );
