@@ -87,7 +87,7 @@ const LandingNavbar = () => {
         {/* CTA Button */}
         <div className="hidden lg:flex items-center">
           <a
-            href="https://play.google.com/store"
+            href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-5 py-2.5 rounded-full text-[13px] font-semibold hover:bg-[#622999] transition-all duration-300 shadow-[0_4px_15px_rgba(74,5,129,0.3)] hover:shadow-[0_6px_20px_rgba(74,5,129,0.4)] hover:-translate-y-[1px]"
@@ -126,7 +126,7 @@ const LandingNavbar = () => {
           ))}
           <div className="pt-3 pb-1">
             <a
-              href="https://play.google.com/store"
+              href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-[#4a0581] text-white px-5 py-3 rounded-full text-[14px] font-semibold w-full"
