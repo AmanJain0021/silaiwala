@@ -479,6 +479,10 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
       select: 'title image'
     })
     .populate({
+      path: 'items.product',
+      select: 'name image images'
+    })
+    .populate({
       path: 'items.selectedFabric',
       select: 'title image'
     })

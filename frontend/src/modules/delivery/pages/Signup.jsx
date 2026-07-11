@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX } from 'react-icons/fi';
+import { Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
+import { validatePassword } from '../../../utils/validation';
 
 const DeliverySignup = () => {
     const navigate = useNavigate();
@@ -10,6 +12,7 @@ const DeliverySignup = () => {
     const isLoading = useAuthStore((state) => state.isLoading);
 
     const [currentStep, setCurrentStep] = useState(1);
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState(() => {
         const savedData = localStorage.getItem('deliverySignupData');
         if (savedData) {
@@ -118,8 +121,9 @@ const DeliverySignup = () => {
                 setError('Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9');
                 return false;
             }
-            if (formData.password.length < 6 || !/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
-                setError('Password must be at least 6 characters and contain a special character');
+            const passErr = validatePassword(formData.password);
+            if (passErr) {
+                setError(passErr);
                 return false;
             }
             if (!/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) {
@@ -387,26 +391,27 @@ const DeliverySignup = () => {
                                 <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">+91</span>
                                 <input name="phone" placeholder="Phone Number" value={formData.phone} maxLength={10} onChange={handleChange} className="w-full pl-16 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
-                            <div className="relative group">
-                                <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="password" type="password" placeholder="Create Password" value={formData.password} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                            <div className="relative group flex items-center bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
+                                <FiLock className="absolute left-4 text-[#843D9B]" />
+                                <input 
+                                    name="password" 
+                                    type={showPassword ? "text" : "password"} 
+                                    placeholder="Create Password" 
+                                    value={formData.password} 
+                                    onChange={handleChange} 
+                                    className="w-full pl-12 pr-10 py-3 bg-transparent border-none outline-none font-medium text-sm" 
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 text-gray-400 hover:text-[#843D9B] focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
                             </div>
                             <div className="relative group">
                                 <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
                                 <input name="aadharNumber" placeholder="Aadhaar Number (e.g. 1234 5678 9012)" value={formData.aadharNumber} maxLength={14} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
-                            </div>
-                            <div className="space-y-2 mt-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Select Your Role(s)</p>
-                                <div className="flex gap-3">
-                                    <label className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.partnerRoles.includes('delivery') ? 'border-[#843D9B] bg-fuchsia-50' : 'border-gray-200 bg-gray-50'}`}>
-                                        <input type="checkbox" className="hidden" checked={formData.partnerRoles.includes('delivery')} onChange={() => handleRoleToggle('delivery')} />
-                                        <span className="text-xs font-bold text-gray-700 text-center">Delivery Partner</span>
-                                    </label>
-                                    <label className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.partnerRoles.includes('measurement') ? 'border-[#843D9B] bg-fuchsia-50' : 'border-gray-200 bg-gray-50'}`}>
-                                        <input type="checkbox" className="hidden" checked={formData.partnerRoles.includes('measurement')} onChange={() => handleRoleToggle('measurement')} />
-                                        <span className="text-xs font-bold text-gray-700 text-center">Measurement</span>
-                                    </label>
-                                </div>
                             </div>
                         </motion.div>
                     )}

@@ -296,7 +296,7 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.login = asyncHandler(async (req, res, next) => {
-  const { email, password, otp } = req.body;
+  const { email, password, otp, expectedRole } = req.body;
 
   // 1. Identify User (By Email OR Phone Number)
   if (!email) return next(new ErrorResponse("Identifier is required", 400));
@@ -319,6 +319,12 @@ exports.login = asyncHandler(async (req, res, next) => {
 
   if (!user) {
     return next(new ErrorResponse("No account found with this information", 404));
+  }
+
+  // Enforce strict role-based access if expectedRole is provided by the client
+  if (expectedRole && user.role !== expectedRole) {
+    let portalName = expectedRole === 'customer' ? 'Customer' : expectedRole === 'tailor' ? 'Partner/Tailor' : 'Delivery';
+    return next(new ErrorResponse(`Access denied. This portal is strictly for ${portalName}s.`, 403));
   }
 
   // 2. Verification (Password OR OTP)

@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import useAuthStore from '../../../store/authStore';
-import { validateEmail, validatePhone, validateName } from '../../../utils/validation';
+import { validateEmail, validatePhone, validateName, validatePassword } from '../../../utils/validation';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Signup = () => {
     const [step, setStep] = useState('info'); // 'info' or 'otp'
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const otpRefs = useRef([]);
+    const [showPassword, setShowPassword] = useState(false);
 
     const [formData, setFormData] = useState(() => {
         const savedData = localStorage.getItem('customerSignupData');
@@ -29,6 +31,7 @@ const Signup = () => {
             name: '',
             email: '',
             phoneNumber: '',
+            password: '',
             referralCode: '',
         };
     });
@@ -87,6 +90,10 @@ const Signup = () => {
         if (!/^[6-9]\d{9}$/.test(formData.phoneNumber)) {
             return setError('Please enter a valid 10-digit mobile number starting with 6-9');
         }
+
+        // Password Validation
+        const passErr = validatePassword(formData.password);
+        if (passErr) return setError(passErr);
 
         try {
             await sendOTP(formData.phoneNumber);
@@ -187,6 +194,27 @@ const Signup = () => {
                                         required
                                         className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-bold placeholder:text-slate-300 placeholder:font-medium outline-none py-1.5 sm:py-2"
                                     />
+                                </div>
+                            </div>
+
+                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
+                                <div className="flex items-center px-3 sm:px-4 gap-2 sm:gap-3 h-full">
+                                    <input
+                                        name="password"
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="Password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        required
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-bold placeholder:text-gray-500 placeholder:font-medium tracking-wide outline-none py-1.5 sm:py-2"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="text-gray-400 hover:text-[#843D9B] transition-colors focus:outline-none shrink-0"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
                                 </div>
                             </div>
 
