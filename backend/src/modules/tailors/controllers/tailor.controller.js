@@ -1,14 +1,14 @@
 const mongoose = require("mongoose");
-const Tailor = require("../../../models/Tailor");
-const User = require("../../../models/User");
-const Order = require("../../../models/Order");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
-const Notification = require("../../../models/Notification");
-const { getIO } = require("../../../config/socket");
-const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
-const { getCached, invalidateCache } = require("../../../utils/cache");
+const Tailor = require("../../../models/Tailor.js");
+const User = require("../../../models/User.js");
+const Order = require("../../../models/Order.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const Notification = require("../../../models/Notification.js");
+const { getIO } = require("../../../config/socket.js");
+const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+const { getCached, invalidateCache } = require("../../../utils/cache.js");
 
 /**
  * @desc    Get all tailors with filters and location
@@ -580,8 +580,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   // Check Subscription Limits when accepting an order
   if (status === "accepted" && order.status !== "accepted") {
-    const Tailor = require("../../../models/Tailor");
-    const SubscriptionPlan = require("../../../models/SubscriptionPlan");
+    const Tailor = require("../../../models/Tailor.js");
+    const SubscriptionPlan = require("../../../models/SubscriptionPlan.js");
     const tailorProfile = await Tailor.findOne({ user: req.user.id }).populate('activePlan');
     
     if (tailorProfile && tailorProfile.activePlan && tailorProfile.activePlan.maxOrdersPerMonth !== -1) {
@@ -616,7 +616,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   
   if (status === "accepted") {
     // 1. Fetch Admin Settings for Wallet Config
-    const Settings = require("../../../models/Settings");
+    const Settings = require("../../../models/Settings.js");
     const adminSettings = await Settings.findOne() || await Settings.create({});
     const advancePercentage = adminSettings.walletConfig?.advancePercentage || 30;
     
@@ -640,7 +640,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const { transitionOrder } = require("../../../utils/orderStateMachine");
+  const { transitionOrder } = require("../../../utils/orderStateMachine.js");
   transitionOrder(order, status, message || `Order status updated to ${status}`);
 
   await order.save();
@@ -677,7 +677,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     // Auto-Assignment Logic for Deliveries (Second Cycle)
     // For Bridal Consultations, we bypass delivery partner assignment as the tailor handles it manually
     if ((status === "ready" || status === "ready-for-delivery") && autoAssign && !order.isBridalConsultation) {
-      const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+      const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
       await autoAssignDelivery(order._id, "dropoff");
     }
 
@@ -688,7 +688,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     }
 
     // --- Socket Emission for Customer & Delivery ---
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
         let finalStatus = status;
@@ -733,13 +733,13 @@ exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => 
     return next(new ErrorResponse('Order must be in an initial or in-progress state to request approval', 400));
   }
   
-  const { transitionOrder } = require("../../../utils/orderStateMachine");
+  const { transitionOrder } = require("../../../utils/orderStateMachine.js");
   transitionOrder(order, 'measurements-uploaded', 'Measurements sent to customer for approval', true);
   await order.save();
 
   // Notify Customer
   try {
-    const { sendNotification } = require('../../../utils/notification');
+    const { sendNotification } = require("../../../utils/notification.js");
     await sendNotification({
       recipient: order.customer,
       type: 'MEASUREMENT_APPROVAL_REQUEST',
@@ -753,7 +753,7 @@ exports.sendMeasurementForConfirmation = asyncHandler(async (req, res, next) => 
 
   // Emit socket
   try {
-    const { getIO } = require('../../../config/socket');
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
       io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
@@ -779,7 +779,7 @@ exports.getMeasurementReport = asyncHandler(async (req, res, next) => {
   const order = await Order.findOne(query).populate('customer', 'name profileImage');
   if (!order) return next(new ErrorResponse('Order not found or not assigned to you', 404));
 
-  const MeasurementReport = require("../../../models/MeasurementReport");
+  const MeasurementReport = require("../../../models/MeasurementReport.js");
   const report = await MeasurementReport.findOne({ order: order._id }).populate("executive", "name phoneNumber profileImage");
   let reportData = null;
   if (report) {
@@ -812,7 +812,7 @@ exports.updateMeasurementReport = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found or not authorized", 404));
   }
 
-  const MeasurementReport = require("../../../models/MeasurementReport");
+  const MeasurementReport = require("../../../models/MeasurementReport.js");
   let report = await MeasurementReport.findOne({ order: order._id });
 
   if (!report) {

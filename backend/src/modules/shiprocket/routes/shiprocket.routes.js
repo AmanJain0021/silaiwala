@@ -8,9 +8,9 @@ const {
   getLabel,
   webhookListener,
   createReturnShipment
-} = require("../controllers/shiprocket.controller");
+} = require("../controllers/shiprocket.controller.js");
 
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 // Webhook (Public, but protected by signature in controller)
 router.post("/webhook", webhookListener);

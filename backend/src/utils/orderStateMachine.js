@@ -1,4 +1,4 @@
-const ErrorResponse = require("./errorResponse");
+const ErrorResponse = require("./errorResponse.js");
 
 /**
  * Valid state transitions for Order Status.

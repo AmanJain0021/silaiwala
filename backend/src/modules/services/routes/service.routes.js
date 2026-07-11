@@ -5,8 +5,8 @@ const {
   createService,
   updateService,
   deleteService,
-} = require("../controllers/service.controller");
-const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware");
+} = require("../controllers/service.controller.js");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware.js");
 
 const router = express.Router();
 

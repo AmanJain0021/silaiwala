@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { getProducts, getProductDetails, getCategories, getFeaturedProducts } = require("../controllers/product.controller");
-const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware");
+const { getProducts, getProductDetails, getCategories, getFeaturedProducts } = require("../controllers/product.controller.js");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware.js");
 
 router.get("/", publicLimiter, getProducts);
 router.get("/featured", publicLimiter, getFeaturedProducts);

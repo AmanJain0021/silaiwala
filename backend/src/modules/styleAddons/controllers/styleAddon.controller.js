@@ -1,4 +1,4 @@
-const StyleAddon = require('../../../models/StyleAddon');
+const StyleAddon = require("../../../models/StyleAddon.js");
 
 // @desc    Create new style add-on (Admin)
 // @route   POST /api/v1/style-addons

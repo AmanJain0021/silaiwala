@@ -1,13 +1,13 @@
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const Order = require("../../../models/Order");
-const Tailor = require("../../../models/Tailor");
-const Product = require("../../../models/Product");
-const ShiprocketLog = require("../../../models/ShiprocketLog");
-const ShiprocketValidationService = require("../services/shiprocketValidation.service");
-const { sendNotification } = require("../../../utils/notification");
-const { getIO } = require("../../../config/socket");
-const { createOrder, generateAWB, requestPickup, generateLabel } = require("../../../utils/shiprocket");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const Order = require("../../../models/Order.js");
+const Tailor = require("../../../models/Tailor.js");
+const Product = require("../../../models/Product.js");
+const ShiprocketLog = require("../../../models/ShiprocketLog.js");
+const ShiprocketValidationService = require("../services/shiprocketValidation.service.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const { getIO } = require("../../../config/socket.js");
+const { createOrder, generateAWB, requestPickup, generateLabel } = require("../../../utils/shiprocket.js");
 
 // Helper to check if order is strictly a ready-made product order
 const isReadyMadeProductOrder = (order) => {
@@ -140,7 +140,7 @@ exports.createShipment = asyncHandler(async (req, res, next) => {
     };
 
     // Move status to ready internally
-    const { transitionOrder } = require("../../../utils/orderStateMachine");
+    const { transitionOrder } = require("../../../utils/orderStateMachine.js");
     if (order.status !== 'ready' && order.status !== 'ready-for-delivery') {
       transitionOrder(order, 'ready', 'Order packed and Shiprocket shipment generated');
     }
@@ -352,7 +352,7 @@ exports.webhookListener = asyncHandler(async (req, res, next) => {
   }
 
   if (internalStatusUpdate && order.status !== internalStatusUpdate) {
-    const { transitionOrder } = require("../../../utils/orderStateMachine");
+    const { transitionOrder } = require("../../../utils/orderStateMachine.js");
     transitionOrder(order, internalStatusUpdate, `Shiprocket update: ${currentStatus}`);
   }
 
@@ -467,7 +467,7 @@ exports.createReturnShipment = asyncHandler(async (req, res, next) => {
     weight: totalWeight || 0.5,
   };
 
-  const { createReturnOrder, generateAWB, requestPickup } = require("../../../utils/shiprocket");
+  const { createReturnOrder, generateAWB, requestPickup } = require("../../../utils/shiprocket.js");
   
   // 1. Create Return Order
   const srReturnOrder = await createReturnOrder(shiprocketReturnData);

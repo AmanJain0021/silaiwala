@@ -2,10 +2,10 @@ require("dotenv").config();
 // Trigger nodemon restart
 
 const http = require("http");
-const app = require("./app");
-const connectDB = require("./config/db");
-const { initSocket } = require("./config/socket");
-const { initCronJobs } = require("./utils/cronJobs");
+const app = require("./app.js");
+const connectDB = require("./config/db.js");
+const { initSocket } = require("./config/socket.js");
+const { initCronJobs } = require("./utils/cronJobs.js");
 
 const PORT = process.env.PORT || 5000;
 
@@ -22,7 +22,7 @@ initSocket(server);
 const startServer = async () => {
   try {
     // 1. Initialize Redis if enabled (optional, fail-soft)
-    const { isRedisEnabled, getRedisClient } = require("./config/redis");
+    const { isRedisEnabled, getRedisClient } = require("./config/redis.js");
     if (isRedisEnabled) {
       console.log("🟡 Initializing Redis connection...");
       getRedisClient(); // This will connect and log success/failure

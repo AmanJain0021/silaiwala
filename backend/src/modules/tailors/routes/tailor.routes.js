@@ -13,7 +13,7 @@ const {
   getMeasurementReport,
   sendMeasurementForConfirmation,
   updateMeasurementReport
-} = require("../controllers/tailor.controller");
+} = require("../controllers/tailor.controller.js");
 const {
   getMyWorkSamples,
   createWorkSample,
@@ -21,23 +21,23 @@ const {
   deleteWorkSample,
   getTailorWorkSamples,
   getAllWorkSamples
-} = require("../controllers/workSample.controller");
+} = require("../controllers/workSample.controller.js");
 const {
   getMyProducts,
   createProduct,
   updateProduct,
   deleteProduct,
   getTailorFabrics
-} = require("../controllers/tailorProduct.controller");
+} = require("../controllers/tailorProduct.controller.js");
 const {
   getMyServices,
   createService: createTailorService,
   updateService: updateTailorService,
   deleteService: deleteTailorService,
   getTailorServices
-} = require("../controllers/tailorService.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
-const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware");
+} = require("../controllers/tailorService.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware.js");
 
 const router = express.Router();
 

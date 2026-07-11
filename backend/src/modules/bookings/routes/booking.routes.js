@@ -1,5 +1,5 @@
 const express = require("express");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 const {
   createBooking,
@@ -8,7 +8,7 @@ const {
   assignTailor,
   getTailorBookings,
   updateBookingStatus,
-} = require("../controllers/booking.controller");
+} = require("../controllers/booking.controller.js");
 
 const router = express.Router();
 

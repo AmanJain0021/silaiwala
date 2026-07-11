@@ -1,7 +1,7 @@
 const cron = require('node-cron');
-const Order = require('../models/Order');
-const { sendNotification } = require('./notification');
-const { isRedisEnabled, getRedisClient } = require('../config/redis');
+const Order = require("../models/Order.js");
+const { sendNotification } = require("./notification.js");
+const { isRedisEnabled, getRedisClient } = require("../config/redis.js");
 
 const initCronJobs = () => {
     // Run every 5 minutes

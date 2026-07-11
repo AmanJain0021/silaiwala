@@ -380,7 +380,8 @@ export const useDeliveryAuthStore = create(
       cancelOrder: async (id, reason) => {
         set({ isUpdatingOrderStatus: true });
         try {
-          const res = await api.post(`/delivery/orders/${id}/cancel`, { reason });
+          // The backend route for a partner canceling/rejecting an assigned task is /deliveries/orders/:id/reject
+          const res = await api.post(`/deliveries/orders/${id}/reject`, { reason });
           const payload = res.data?.data || res.data || res;
           const order = normalizeOrder(payload.order || payload);
           set({

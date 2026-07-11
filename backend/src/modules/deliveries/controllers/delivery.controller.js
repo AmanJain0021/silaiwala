@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
-const Delivery = require("../../../models/Delivery");
-const Order = require("../../../models/Order");
-const { transitionOrder } = require("../../../utils/orderStateMachine");
-const User = require("../../../models/User");
-const Tailor = require("../../../models/Tailor");
-const Settings = require("../../../models/Settings");
-const Notification = require("../../../models/Notification");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const Delivery = require("../../../models/Delivery.js");
+const Order = require("../../../models/Order.js");
+const { transitionOrder } = require("../../../utils/orderStateMachine.js");
+const User = require("../../../models/User.js");
+const Tailor = require("../../../models/Tailor.js");
+const Settings = require("../../../models/Settings.js");
+const Notification = require("../../../models/Notification.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get currently logged-in delivery partner profile
@@ -110,9 +110,9 @@ exports.updateStatus = asyncHandler(async (req, res, next) => {
     };
 
     // Update active DeliveryTracking documents
-    const DeliveryTracking = require("../../../models/DeliveryTracking");
-    const Order = require("../../../models/Order");
-    const { getIO } = require("../../../config/socket");
+    const DeliveryTracking = require("../../../models/DeliveryTracking.js");
+    const Order = require("../../../models/Order.js");
+    const { getIO } = require("../../../config/socket.js");
 
     // Find active orders for this rider
     const activeOrders = await Order.find({
@@ -246,7 +246,7 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
             vendorLatitude = tailorProfile.location.coordinates[1];
         }
       } else {
-        const User = require("../../../models/User");
+        const User = require("../../../models/User.js");
         const tailorUser = await User.findById(order.tailor).lean();
         if (tailorUser) {
           tailorProfile = {
@@ -271,7 +271,7 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     }
 
     // Extract Customer details
-    const Customer = require("../../../models/Customer");
+    const Customer = require("../../../models/Customer.js");
     const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
     
     let address = 'Address not available';
@@ -380,7 +380,7 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
           vendorLatitude = tailorProfile.location.coordinates[1];
       }
     } else {
-      const User = require("../../../models/User");
+      const User = require("../../../models/User.js");
       const tailorUser = await User.findById(order.tailor).lean();
       if (tailorUser) {
         tailorProfile = {
@@ -405,7 +405,7 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
   }
 
   // Extract Customer details
-  const Customer = require("../../../models/Customer");
+  const Customer = require("../../../models/Customer.js");
   const customerDoc = await Customer.findOne({ user: order.customer?._id || order.customer }).lean();
   
   let address = 'Customer Address Not Provided';
@@ -507,7 +507,7 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
     }
   ]);
 
-  const WalletTransaction = require("../../../models/WalletTransaction");
+  const WalletTransaction = require("../../../models/WalletTransaction.js");
   
   // Calculate today's actual wallet earnings to prevent mismatch with wallet balance
   const todayEarningsResult = await WalletTransaction.aggregate([
@@ -640,7 +640,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       console.log(`🔐 DELIVERY OTP GENERATED: ${otp}`);
       console.log(`======================================================\n\n`);
       
-      const { sendNotification } = require("../../../utils/notification");
+      const { sendNotification } = require("../../../utils/notification.js");
       
       // Notify Customer
       await sendNotification({
@@ -691,7 +691,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
   // New: Notifications for fabric pickup
   if (status === "fabric-picked-up") {
-    const { sendNotification } = require("../../../utils/notification");
+    const { sendNotification } = require("../../../utils/notification.js");
     await sendNotification({
       recipient: order.customer,
       type: "FABRIC_PICKED_UP",
@@ -707,7 +707,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     order.deliveryPartner = null;
     
     // Notify Tailor that fabric has arrived
-    const { sendNotification } = require("../../../utils/notification");
+    const { sendNotification } = require("../../../utils/notification.js");
     await sendNotification({
       recipient: order.tailor,
       type: "FABRIC_DELIVERED",
@@ -724,7 +724,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       if (!earnedAmount || earnedAmount <= 0) {
         console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId}. Wallet will not be credited.`);
       } else {
-        const WalletTransaction = require("../../../models/WalletTransaction");
+        const WalletTransaction = require("../../../models/WalletTransaction.js");
         // Prevent duplicate credit by matching the exact status at the start of the description
         const existingTx = await WalletTransaction.findOne({
           user: req.user.id,
@@ -776,7 +776,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     if (proof) order.deliveryProof = proof;
 
     // Notify Customer
-    const { sendNotification } = require("../../../utils/notification");
+    const { sendNotification } = require("../../../utils/notification.js");
     await sendNotification({
       recipient: order.customer,
       type: "ORDER_DELIVERED",
@@ -786,7 +786,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     });
 
     // Distribute Tailor Earnings
-    const { distributeEarnings } = require("../../../utils/earningsEngine");
+    const { distributeEarnings } = require("../../../utils/earningsEngine.js");
     try {
       await distributeEarnings(order._id);
     } catch (err) {
@@ -796,7 +796,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
   // Notify for out-for-delivery
   if (status === "out-for-delivery") {
-    const { sendNotification } = require("../../../utils/notification");
+    const { sendNotification } = require("../../../utils/notification.js");
     await sendNotification({
       recipient: order.customer,
       type: "OUT_FOR_DELIVERY",
@@ -817,7 +817,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
   // --- Socket Emissions ---
   try {
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
         // 1. Notify Customer
@@ -914,7 +914,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
       }
     }
 
-    const Customer = require("../../../models/Customer");
+    const Customer = require("../../../models/Customer.js");
     const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
     let latitude = null;
     let longitude = null;
@@ -1053,7 +1053,7 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
   await order.save();
 
   // Notify customer
-  const { sendNotification } = require("../../../utils/notification");
+  const { sendNotification } = require("../../../utils/notification.js");
   await sendNotification({
     recipient: order.customer,
     type: "PARTNER_ASSIGNED",
@@ -1072,7 +1072,7 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
   });
 
   // Notify other partners that this task is no longer available
-  const { getIO } = require("../../../config/socket");
+  const { getIO } = require("../../../config/socket.js");
   const io = getIO();
   if (io) {
     io.to("delivery_partners").emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
@@ -1184,7 +1184,7 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
   await order.save();
   
   // Trigger auto-assign again
-  const { autoAssignDelivery } = require("../../../utils/deliveryAssignment");
+  const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
   await autoAssignDelivery(order._id, cycle);
 
   res.status(200).json({ success: true, message: "Order rejected and reassigned" });
@@ -1218,7 +1218,7 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
   // Generate 6 digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  const { sendNotification } = require("../../../utils/notification");
+  const { sendNotification } = require("../../../utils/notification.js");
 
   if (cycle === 'pickup') {
     order.pickupDeliveryOtp = otp;
@@ -1299,9 +1299,9 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       cycle = 'pickup';
   }
 
-  const { sendNotification } = require("../../../utils/notification");
-  const Settings = require("../../../models/Settings");
-  const WalletTransaction = require("../../../models/WalletTransaction");
+  const { sendNotification } = require("../../../utils/notification.js");
+  const Settings = require("../../../models/Settings.js");
+  const WalletTransaction = require("../../../models/WalletTransaction.js");
   
   // Calculate delivery earnings
   let earnings = order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0;
@@ -1455,7 +1455,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
 
     // Ensure platform and delivery fees are populated before distributing earnings
     if (!order.platformFee) {
-       const Settings = require("../../../models/Settings");
+       const Settings = require("../../../models/Settings.js");
        const settings = await Settings.getSettings();
        const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
        order.platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
@@ -1463,7 +1463,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
 
     
     // Distribute Earnings (Tailor)
-    const { distributeEarnings } = require("../../../utils/earningsEngine");
+    const { distributeEarnings } = require("../../../utils/earningsEngine.js");
     try {
       await order.save({ session }); // Save the status to paid before distributing
       await distributeEarnings(order._id);
@@ -1475,7 +1475,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   await order.save({ session });
 
   // Socket push for live UI updates
-  const { getIO } = require("../../../config/socket");
+  const { getIO } = require("../../../config/socket.js");
   const io = getIO();
   if (io) {
     if (cycle === 'pickup') {
@@ -1491,7 +1491,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   const returnOrder = order.toObject();
 
   // Extract Tailor Profile for vendorAddress
-  const Tailor = require("../../../models/Tailor");
+  const Tailor = require("../../../models/Tailor.js");
   if (returnOrder.tailor) {
     const tailorDoc = await Tailor.findOne({ user: returnOrder.tailor }).session(session).populate("user", "name phoneNumber").lean();
     if (tailorDoc) {
@@ -1510,7 +1510,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   }
 
   // Extract Customer Profile for address
-  const Customer = require("../../../models/Customer");
+  const Customer = require("../../../models/Customer.js");
   const customerDoc = await Customer.findOne({ user: returnOrder.customer?._id || returnOrder.customer }).session(session).populate("user", "name phoneNumber").lean();
   
   if (customerDoc) {

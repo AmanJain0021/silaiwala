@@ -7,8 +7,8 @@ const {
   deleteNotification,
   registerFcmToken,
   testPushNotification
-} = require("../controllers/notification.controller");
-const { protect } = require("../../../middlewares/auth.middleware");
+} = require("../controllers/notification.controller.js");
+const { protect } = require("../../../middlewares/auth.middleware.js");
 
 router.use(protect);
 

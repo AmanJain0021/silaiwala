@@ -18,8 +18,8 @@ const {
   getAllRequests,
   adminAssignExecutive,
   getDashboardStats,
-} = require("../controllers/measurementExecutive.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+} = require("../controllers/measurementExecutive.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 // All routes require authentication
 router.use(protect);

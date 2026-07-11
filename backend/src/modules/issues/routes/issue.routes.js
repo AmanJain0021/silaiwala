@@ -11,8 +11,8 @@ const {
   adminUpdateIssueStatus,
   getIssueChat,
   sendIssueMessage
-} = require("../controllers/issue.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+} = require("../controllers/issue.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 router.use(protect);
 

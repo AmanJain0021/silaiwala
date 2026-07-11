@@ -1,5 +1,5 @@
-const User = require("../models/User");
-const Settings = require("../models/Settings");
+const User = require("../models/User.js");
+const Settings = require("../models/Settings.js");
 const mongoose = require("mongoose");
 
 /**

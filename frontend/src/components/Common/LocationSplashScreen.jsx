@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from 'framer-motion';
 import { MapPin, Navigation } from 'lucide-react';
+import { useJsApiLoader } from '@react-google-maps/api';
 import api from '../../utils/api';
 import { getToken } from '../../utils/auth';
+
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const LocationSplashScreen = ({ onComplete, role, token }) => {
     const [status, setStatus] = useState('finding'); // finding, success, error
     const [errorMsg, setErrorMsg] = useState('');
     const hasFetched = useRef(false);
     const isMounted = useRef(true);
+
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        libraries: GOOGLE_MAPS_LIBRARIES,
+    });
 
     const getLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -42,14 +51,24 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                     let address = "Current Location";
 
                     try {
-                        const { API_URL } = await import('../../config/constants');
-                        const res = await fetch(`${API_URL}/distance/geocode?lat=${latitude}&lng=${longitude}`);
-                        const result = await res.json();
-                        if (result.success && result.data && result.data.address) {
-                            address = result.data.address;
+                        if (isLoaded && window.google) {
+                            const geocoder = new window.google.maps.Geocoder();
+                            const response = await geocoder.geocode({ location: { lat: latitude, lng: longitude } });
+                            if (response.results && response.results[0]) {
+                                address = response.results[0].formatted_address;
+                            }
+                        } else {
+                            const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+                            if (apiKey) {
+                                const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`);
+                                const result = await res.json();
+                                if (result.status === 'OK' && result.results[0]) {
+                                    address = result.results[0].formatted_address;
+                                }
+                            }
                         }
                     } catch (e) {
-                        console.log("Reverse geocoding failed, using placeholder");
+                        console.log("Reverse geocoding failed, using placeholder", e);
                     }
 
                     import('../../store/locationStore').then((module) => {
@@ -89,16 +108,17 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
             },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
-    }, [onComplete, role, token]);
+    }, [onComplete, role, token, isLoaded]);
 
     useEffect(() => {
         isMounted.current = true;
-        if (hasFetched.current) return;
-        hasFetched.current = true;
         
         const timer = setTimeout(() => {
-            getLocation();
-        }, 200);
+            if (!hasFetched.current) {
+                hasFetched.current = true;
+                getLocation();
+            }
+        }, 500);
 
         return () => {
             isMounted.current = false;
@@ -182,7 +202,7 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                         </div>
                         <h2 className="text-xl font-black text-white mb-2 tracking-tight text-center">Enable Location Services</h2>
                         <p className="text-indigo-200 text-xs font-medium mb-6 leading-relaxed text-center">
-                            We cannot detect your location. Please turn on your device's GPS and allow location permissions in your browser settings.
+                            {errorMsg || "We cannot detect your location. Please turn on your device's GPS and allow location permissions in your browser settings."}
                         </p>
                         
                         <div className="w-full space-y-3">

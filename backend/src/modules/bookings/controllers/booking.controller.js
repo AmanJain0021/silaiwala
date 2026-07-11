@@ -1,6 +1,6 @@
-const asyncHandler = require("../../../utils/asyncHandler");
-const CustomBooking = require("../../../models/CustomBooking");
-const ErrorResponse = require("../../../utils/errorResponse");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const CustomBooking = require("../../../models/CustomBooking.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Create a custom booking (e.g. Bridal)
@@ -82,7 +82,7 @@ exports.assignTailor = asyncHandler(async (req, res, next) => {
   }
   
   // tailorId comes as User._id from Admin Panel dropdown. Map it to Tailor Profile _id.
-  const Tailor = require("../../../models/Tailor");
+  const Tailor = require("../../../models/Tailor.js");
   const tailorDoc = await Tailor.findOne({ user: tailorId });
   if (!tailorDoc) {
     return next(new ErrorResponse("Tailor profile not found for this user", 404));
@@ -111,7 +111,7 @@ exports.assignTailor = asyncHandler(async (req, res, next) => {
 exports.getTailorBookings = asyncHandler(async (req, res, next) => {
   // Assuming tailorId is fetched from user's tailor profile
   // The Tailor model has user reference.
-  const Tailor = require("../../../models/Tailor");
+  const Tailor = require("../../../models/Tailor.js");
   const tailor = await Tailor.findOne({ user: req.user.id });
 
   if (!tailor) {

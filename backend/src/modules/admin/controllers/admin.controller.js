@@ -1,20 +1,20 @@
 const mongoose = require("mongoose");
-const User = require("../../../models/User");
-const Order = require("../../../models/Order");
-const Banner = require("../../../models/Banner");
-const Delivery = require("../../../models/Delivery");
-const Tailor = require("../../../models/Tailor");
-const Customer = require("../../../models/Customer");
-const Category = require("../../../models/Category");
-const CMSContent = require("../../../models/CMSContent");
-const Product = require("../../../models/Product");
-const PromoCode = require("../../../models/PromoCode");
-const Payout = require("../../../models/Payout");
-const Settings = require("../../../models/Settings");
-const Alteration = require("../../../models/Alteration");
+const User = require("../../../models/User.js");
+const Order = require("../../../models/Order.js");
+const Banner = require("../../../models/Banner.js");
+const Delivery = require("../../../models/Delivery.js");
+const Tailor = require("../../../models/Tailor.js");
+const Customer = require("../../../models/Customer.js");
+const Category = require("../../../models/Category.js");
+const CMSContent = require("../../../models/CMSContent.js");
+const Product = require("../../../models/Product.js");
+const PromoCode = require("../../../models/PromoCode.js");
+const Payout = require("../../../models/Payout.js");
+const Settings = require("../../../models/Settings.js");
+const Alteration = require("../../../models/Alteration.js");
 const path = require("path");
-const { sendNotification } = require("../../../utils/notification");
-const { getCached, invalidateCache } = require("../../../utils/cache");
+const { sendNotification } = require("../../../utils/notification.js");
+const { getCached, invalidateCache } = require("../../../utils/cache.js");
 
 // --- DASHBOARD & GENERAL ---
 
@@ -419,15 +419,15 @@ exports.updateTailorShiprocketLocation = async (req, res) => {
 
 exports.getDeliveryStats = async (req, res) => {
   try {
-    const Order = require("../../../models/Order");
-    const Delivery = require("../../../models/Delivery");
+    const Order = require("../../../models/Order.js");
+    const Delivery = require("../../../models/Delivery.js");
 
     const pendingTasks = await Order.countDocuments({
       deliveryPartner: null,
       status: { $nin: ['delivered', 'cancelled', 'product-delivered', 'order-completed', 'failed-delivery'] }
     });
 
-    const User = require("../../../models/User");
+    const User = require("../../../models/User.js");
 
     const deliveryUsers = await User.find({ role: 'delivery' }).select('_id').lean();
     const deliveryUserIds = deliveryUsers.map(u => u._id);
@@ -691,7 +691,7 @@ exports.updateOrderStatus = async (req, res) => {
 
     // Handle Measurement Executive Assignment
     if (measurementExecutive) {
-      const MeasurementRequest = require("../../../models/MeasurementRequest");
+      const MeasurementRequest = require("../../../models/MeasurementRequest.js");
       let mRequest = await MeasurementRequest.findOne({ order: oldOrder._id });
       
       if (!mRequest) {
@@ -768,7 +768,7 @@ exports.updateOrderStatus = async (req, res) => {
       });
 
       // Clear from general fleet
-      const { getIO } = require("../../../config/socket");
+      const { getIO } = require("../../../config/socket.js");
       const io = getIO();
       if (io) io.to("delivery_partners").emit("task_claimed", { orderId: id });
     }
@@ -786,7 +786,7 @@ exports.updateOrderStatus = async (req, res) => {
         }
       });
       
-      const { getIO } = require("../../../config/socket");
+      const { getIO } = require("../../../config/socket.js");
       const io = getIO();
       if (io) {
         io.to(`user_${measurementExecutive}`).emit("new_measurement_request", {
@@ -800,7 +800,7 @@ exports.updateOrderStatus = async (req, res) => {
     if (order && status && status !== oldOrder.status) {
         // Earnings Distribution
         if (status === 'delivered') {
-          const { distributeEarnings } = require("../../../utils/earningsEngine");
+          const { distributeEarnings } = require("../../../utils/earningsEngine.js");
           try {
             await distributeEarnings(order._id);
           } catch (err) {
@@ -900,8 +900,8 @@ exports.sendBroadcastNotification = async (req, res) => {
   try {
     const { targetAudience, title, message } = req.body;
     
-    const User = require('../../../models/User');
-    const admin = require('../../../config/firebase');
+    const User = require("../../../models/User.js");
+    const admin = require("../../../config/firebase.js");
     
     // Find all active users for the target role who have fcmToken or fcmTokenMobile
     const users = await User.find({ 
@@ -919,7 +919,7 @@ exports.sendBroadcastNotification = async (req, res) => {
     });
     
     // 1. Send via Socket.io (In-app realtime broadcast)
-    const { getIO } = require("../../../config/socket");
+    const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
       if (targetAudience === 'delivery') {
@@ -1375,7 +1375,7 @@ exports.updatePayoutStatus = async (req, res) => {
     await payout.save({ session });
 
     // Handle Wallet Transaction Update
-    const WalletTransaction = require("../../../models/WalletTransaction");
+    const WalletTransaction = require("../../../models/WalletTransaction.js");
     const transaction = await WalletTransaction.findOne({ 
       user: payout.user, // Payout model uses 'user' for user ref
       amount: payout.amount,
@@ -1391,15 +1391,15 @@ exports.updatePayoutStatus = async (req, res) => {
 
     // Refund logic if payout failed and it was previously pending/processing
     if (status === 'failed' && oldStatus !== 'failed' && oldStatus !== 'completed') {
-      const User = require("../../../models/User");
+      const User = require("../../../models/User.js");
       const user = await User.findById(payout.user);
       
       let profile;
       if (user.role === 'tailor') {
-        const Tailor = require("../../../models/Tailor");
+        const Tailor = require("../../../models/Tailor.js");
         profile = await Tailor.findOne({ user: user._id }).session(session);
       } else if (user.role === 'delivery') {
-        const Delivery = require("../../../models/Delivery");
+        const Delivery = require("../../../models/Delivery.js");
         profile = await Delivery.findOne({ user: user._id }).session(session);
       }
 

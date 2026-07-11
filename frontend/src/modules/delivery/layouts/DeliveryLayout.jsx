@@ -176,29 +176,39 @@ const DeliveryLayout = () => {
     const [currentLocationStr, setCurrentLocationStr] = useState('Fetching Location...');
     const [headerLocationCoords, setHeaderLocationCoords] = useState(null);
 
-    const { detectLocation } = useUnifiedLocation({ fetchAddress: true });
+    const { location: unifiedLocation, error: locationError, startTracking, stopTracking } = useUnifiedLocation({ fetchAddress: true });
 
     React.useEffect(() => {
-        const fetchAndSyncLocation = async () => {
-            try {
-                const data = await detectLocation();
-                if (data && data.address) {
-                    setCurrentLocationStr(data.address);
-                    setHeaderLocationCoords({ lat: data.latitude, lng: data.longitude });
-                    // Sync this formatted address to the delivery partner's profile
-                    deliveryService.updateStatus({ 
-                        address: data.address,
-                        lat: data.latitude,
-                        lng: data.longitude
-                    }).catch(err => console.error("Failed to sync delivery address:", err));
+        startTracking();
+        return () => stopTracking();
+    }, [startTracking, stopTracking]);
+
+    React.useEffect(() => {
+        if (unifiedLocation.lat && unifiedLocation.lng) {
+            setHeaderLocationCoords({ lat: unifiedLocation.lat, lng: unifiedLocation.lng });
+            
+            let displayAddress = unifiedLocation.address;
+            if (!displayAddress) {
+                if (unifiedLocation.isAddressLoading) {
+                    displayAddress = 'Resolving Address...';
+                } else {
+                    displayAddress = `${unifiedLocation.lat.toFixed(4)}, ${unifiedLocation.lng.toFixed(4)}`;
                 }
-            } catch (error) {
-                console.warn('Geolocation error:', error);
-                setCurrentLocationStr('Location Unknown');
             }
-        };
-        fetchAndSyncLocation();
-    }, [detectLocation]);
+            setCurrentLocationStr(displayAddress);
+
+            // Sync to backend if we have a valid address or coordinates
+            const syncAddress = unifiedLocation.address || `${unifiedLocation.lat.toFixed(4)}, ${unifiedLocation.lng.toFixed(4)}`;
+            deliveryService.updateStatus({ 
+                address: syncAddress,
+                lat: unifiedLocation.lat,
+                lng: unifiedLocation.lng
+            }).catch(err => console.warn("Failed to sync delivery address:", err));
+            
+        } else if (locationError) {
+            setCurrentLocationStr('Location Unavailable');
+        }
+    }, [unifiedLocation.lat, unifiedLocation.lng, unifiedLocation.address, unifiedLocation.isAddressLoading, locationError]);
 
     const [pullState, setPullState] = useState({ startY: 0, currentY: 0, isPulling: false });
 

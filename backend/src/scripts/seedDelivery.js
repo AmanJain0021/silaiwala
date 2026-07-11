@@ -4,9 +4,9 @@ const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-const User = require('../models/User');
-const Delivery = require('../models/Delivery');
-const Order = require('../models/Order');
+const User = require("../models/User.js");
+const Delivery = require("../models/Delivery.js");
+const Order = require("../models/Order.js");
 
 const seedDeliveryData = async () => {
     try {

@@ -14,9 +14,9 @@ const {
   rejectOrder,
   resendDeliveryOtp,
   completeDeliveryFlow
-} = require("../controllers/delivery.controller");
-const { requestCashDeposit, getMyDepositHistory, createRazorpayDepositOrder, verifyRazorpayDeposit } = require("../controllers/cashDeposit.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+} = require("../controllers/delivery.controller.js");
+const { requestCashDeposit, getMyDepositHistory, createRazorpayDepositOrder, verifyRazorpayDeposit } = require("../controllers/cashDeposit.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 // All routes are protected and for delivery partners only
 router.use(protect);

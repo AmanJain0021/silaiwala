@@ -1,15 +1,15 @@
-const MeasurementExecutive = require("../../../models/MeasurementExecutive");
+const MeasurementExecutive = require("../../../models/MeasurementExecutive.js");
 const mongoose = require("mongoose");
-const MeasurementRequest = require("../../../models/MeasurementRequest");
-const MeasurementReport = require("../../../models/MeasurementReport");
-const Order = require("../../../models/Order");
-const { transitionOrder } = require("../../../utils/orderStateMachine");
-const User = require("../../../models/User");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { sendNotification } = require("../../../utils/notification");
-const { getIO } = require("../../../config/socket");
-const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment");
+const MeasurementRequest = require("../../../models/MeasurementRequest.js");
+const MeasurementReport = require("../../../models/MeasurementReport.js");
+const Order = require("../../../models/Order.js");
+const { transitionOrder } = require("../../../utils/orderStateMachine.js");
+const User = require("../../../models/User.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const { getIO } = require("../../../config/socket.js");
+const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
 const crypto = require("crypto");
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -467,7 +467,7 @@ exports.generateOTP = asyncHandler(async (req, res, next) => {
     
     // Also emit to the order room so the OrderTracking page receives it immediately
     if (request.order) {
-        const Order = require("../../../models/Order");
+        const Order = require("../../../models/Order.js");
         const orderDoc = await Order.findById(request.order).lean();
         if (orderDoc) {
             io.to(`order_${orderDoc._id}`).emit("measurement_otp_sent", otpEventData);
@@ -733,8 +733,8 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
       distance = parseFloat((R * c).toFixed(1));
     }
 
-    const Settings = require("../../../models/Settings");
-    const WalletTransaction = require("../../../models/WalletTransaction");
+    const Settings = require("../../../models/Settings.js");
+    const WalletTransaction = require("../../../models/WalletTransaction.js");
     const settings = await Settings.findOne().session(session).lean();
 
     const baseFee = settings?.executiveRates?.baseFee || 50;

@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
-const Order = require("../../../models/Order");
-const User = require("../../../models/User");
-const Tailor = require("../../../models/Tailor");
-const Delivery = require("../../../models/Delivery");
-const WalletTransaction = require("../../../models/WalletTransaction");
-const WithdrawalRequest = require("../../../models/WithdrawalRequest");
-const PaymentLedger = require("../../../models/PaymentLedger");
-const Settings = require("../../../models/Settings");
-const { getCached } = require("../../../utils/cache");
+const Order = require("../../../models/Order.js");
+const User = require("../../../models/User.js");
+const Tailor = require("../../../models/Tailor.js");
+const Delivery = require("../../../models/Delivery.js");
+const WalletTransaction = require("../../../models/WalletTransaction.js");
+const WithdrawalRequest = require("../../../models/WithdrawalRequest.js");
+const PaymentLedger = require("../../../models/PaymentLedger.js");
+const Settings = require("../../../models/Settings.js");
+const { getCached } = require("../../../utils/cache.js");
 
 // ─── FINANCE DASHBOARD ──────────────────────────────────────────────────────
 

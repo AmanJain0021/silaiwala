@@ -1,5 +1,5 @@
 const rateLimit = require("express-rate-limit");
-const { isRedisEnabled, getRedisClient } = require("../config/redis");
+const { isRedisEnabled, getRedisClient } = require("../config/redis.js");
 
 // Custom key generator that uses both IP and User-Agent to differentiate devices on the same network
 const customKeyGenerator = (req) => {

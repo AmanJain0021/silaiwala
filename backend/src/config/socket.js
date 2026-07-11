@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const { isRedisEnabled, getRedisClient, getRedisSubClient } = require("./redis");
+const { isRedisEnabled, getRedisClient, getRedisSubClient } = require("./redis.js");
 
 let io;
 
@@ -108,7 +108,7 @@ const initSocket = (httpServer) => {
     // ── Join a room by orderId for real-time order tracking ──────────────────
     socket.on("join_order_room", async (orderId) => {
       try {
-        const Order = require("../models/Order");
+        const Order = require("../models/Order.js");
         const order = await Order.findById(orderId);
         
         if (!order) {

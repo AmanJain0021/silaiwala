@@ -1,7 +1,7 @@
-const Service = require("../../../models/Service");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
-const { getCached, invalidateCache } = require("../../../utils/cache");
+const Service = require("../../../models/Service.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+const { getCached, invalidateCache } = require("../../../utils/cache.js");
 
 /**
  * @desc    Get all services
@@ -20,7 +20,7 @@ exports.getServices = asyncHandler(async (req, res, next) => {
   // 1. Handle Location Based Filtering (Temporarily Disabled)
   /*
   if (lat && lng) {
-    const Tailor = require("../../../models/Tailor");
+    const Tailor = require("../../../models/Tailor.js");
     const nearbyTailors = await Tailor.find({
       location: {
         $near: {

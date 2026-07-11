@@ -1,5 +1,5 @@
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 const axios = require("axios");
 
 // Haversine formula fallback
@@ -162,7 +162,41 @@ exports.geocode = asyncHandler(async (req, res, next) => {
             throw new Error(data.error_message || 'Google Maps Geocoding failed or returned no results');
         }
     } catch (error) {
-        console.error("Geocoding API Failed:", error.message);
+        console.error("Google Geocoding API Failed:", error.message);
+        console.log("Trying Nominatim (OpenStreetMap) fallback...");
+
+        try {
+            const fallbackResponse = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+                params: {
+                    format: 'json',
+                    lat: lat,
+                    lon: lng
+                },
+                headers: {
+                    'User-Agent': 'SilaiwalaApp/1.0 (Development)'
+                }
+            });
+
+            if (fallbackResponse.data && fallbackResponse.data.address) {
+                const fData = fallbackResponse.data;
+                const fAddr = fData.address;
+                
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        address: fData.display_name,
+                        city: fAddr.city || fAddr.town || fAddr.village || "",
+                        state: fAddr.state || "",
+                        pincode: fAddr.postcode || "",
+                        street: fAddr.road || fAddr.suburb || "",
+                        raw: fData
+                    }
+                });
+            }
+        } catch (fallbackError) {
+            console.error("Nominatim Fallback Failed:", fallbackError.message);
+        }
+
         return res.status(200).json({
             success: true,
             data: {
@@ -171,7 +205,7 @@ exports.geocode = asyncHandler(async (req, res, next) => {
                 state: "Unknown",
                 pincode: "000000",
                 street: "Unknown",
-                raw: {}
+                raw: { error: error.message }
             }
         });
     }

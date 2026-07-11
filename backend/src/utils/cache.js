@@ -1,4 +1,4 @@
-const { isRedisEnabled, getRedisClient } = require("../config/redis");
+const { isRedisEnabled, getRedisClient } = require("../config/redis.js");
 
 /**
  * Get a cached value or compute it fresh.

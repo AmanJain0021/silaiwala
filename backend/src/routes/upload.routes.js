@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const cloudinary = require("../config/cloudinary");
-const upload = require("../middlewares/upload.middleware");
-const { protect } = require("../middlewares/auth.middleware");
-const { uploadLimiter } = require("../middlewares/rateLimiter.middleware");
+const cloudinary = require("../config/cloudinary.js");
+const upload = require("../middlewares/upload.middleware.js");
+const { protect } = require("../middlewares/auth.middleware.js");
+const { uploadLimiter } = require("../middlewares/rateLimiter.middleware.js");
 
 // Helper to determine the target folder
 const getFolder = (req, defaultFolder) => {

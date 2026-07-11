@@ -1,7 +1,7 @@
-const Banner = require("../../../models/Banner");
-const CMSContent = require("../../../models/CMSContent");
-const Settings = require("../../../models/Settings");
-const { getCached } = require("../../../utils/cache");
+const Banner = require("../../../models/Banner.js");
+const CMSContent = require("../../../models/CMSContent.js");
+const Settings = require("../../../models/Settings.js");
+const { getCached } = require("../../../utils/cache.js");
 
 // --- PUBLIC CMS CONTROLLERS ---
 

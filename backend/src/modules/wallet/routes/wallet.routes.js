@@ -5,9 +5,9 @@ const {
   requestWithdrawal,
   getAllWithdrawals,
   updateWithdrawalStatus
-} = require("../controllers/wallet.controller");
+} = require("../controllers/wallet.controller.js");
 
-const { protect, authorize } = require("../../../middleware/auth");
+const { protect, authorize } = require("../../../middleware/auth.js");
 
 const router = express.Router();
 

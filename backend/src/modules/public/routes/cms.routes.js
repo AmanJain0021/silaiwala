@@ -1,6 +1,6 @@
 const express = require("express");
-const { getActiveBanners, getCMSContent, getCMSContentBySlug, getSettings } = require("../controllers/cms.controller");
-const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware");
+const { getActiveBanners, getCMSContent, getCMSContentBySlug, getSettings } = require("../controllers/cms.controller.js");
+const { publicLimiter } = require("../../../middlewares/rateLimiter.middleware.js");
 
 const router = express.Router();
 

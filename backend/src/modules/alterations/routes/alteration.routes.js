@@ -1,5 +1,5 @@
 const express = require("express");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 const {
   submitAlterationRequest,
@@ -7,7 +7,7 @@ const {
   submitQuote,
   createRazorpayAlterationOrder,
   verifyAlterationPayment
-} = require("../controllers/alteration.controller");
+} = require("../controllers/alteration.controller.js");
 
 const router = express.Router();
 

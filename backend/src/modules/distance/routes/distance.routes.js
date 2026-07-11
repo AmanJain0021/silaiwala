@@ -1,5 +1,5 @@
 const express = require('express');
-const { calculateDistance, geocode, forwardGeocode } = require('../controllers/distance.controller');
+const { calculateDistance, geocode, forwardGeocode } = require("../controllers/distance.controller.js");
 
 const router = express.Router();
 

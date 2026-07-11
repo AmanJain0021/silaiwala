@@ -1,7 +1,7 @@
-const WalletTransaction = require("../models/WalletTransaction");
-const Tailor = require("../models/Tailor");
-const Delivery = require("../models/Delivery");
-const Order = require("../models/Order");
+const WalletTransaction = require("../models/WalletTransaction.js");
+const Tailor = require("../models/Tailor.js");
+const Delivery = require("../models/Delivery.js");
+const Order = require("../models/Order.js");
 const mongoose = require("mongoose");
 
 /**
@@ -34,7 +34,7 @@ const distributeEarnings = async (orderId) => {
     // Deduct any advance payment they already received in their wallet
     let tailorAdvanceReceived = 0;
     if (order.advancePaymentStatus === 'paid' && order.advancePaymentAmount > 0) {
-       const Settings = require("../models/Settings");
+       const Settings = require("../models/Settings.js");
        const settings = await Settings.findOne() || await Settings.create({});
        const advancePct = settings?.walletConfig?.advancePercentage || 30;
        tailorAdvanceReceived = Math.round(tailorShare * (advancePct / 100));

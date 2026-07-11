@@ -5,10 +5,10 @@ const bcrypt = require('bcryptjs');
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-const User = require('../models/User');
-const Tailor = require('../models/Tailor');
-const Category = require('../models/Category');
-const Service = require('../models/Service');
+const User = require("../models/User.js");
+const Tailor = require("../models/Tailor.js");
+const Category = require("../models/Category.js");
+const Service = require("../models/Service.js");
 
 const seedData = async () => {
     try {
@@ -110,7 +110,7 @@ const seedData = async () => {
             await customer.save();
         }
 
-        const Order = require('../models/Order');
+        const Order = require("../models/Order.js");
         await Order.deleteMany({ tailor: royalUser._id });
         await Order.deleteMany({ orderId: { $in: ['ORD-101', 'ORD-102', 'ORD-103'] } });
         

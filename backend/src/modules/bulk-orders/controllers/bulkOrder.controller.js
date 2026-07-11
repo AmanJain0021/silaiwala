@@ -1,7 +1,7 @@
-const BulkOrder = require("../../../models/BulkOrder");
-const User = require("../../../models/User");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const BulkOrder = require("../../../models/BulkOrder.js");
+const User = require("../../../models/User.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 // @desc    Create a new bulk order inquiry
 // @route   POST /api/v1/bulk-orders

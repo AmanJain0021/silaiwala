@@ -1,8 +1,8 @@
-const Delivery = require("../models/Delivery");
-const Tailor = require("../models/Tailor");
-const Order = require("../models/Order");
-const { sendNotification } = require("./notification");
-const { getIO } = require("../config/socket");
+const Delivery = require("../models/Delivery.js");
+const Tailor = require("../models/Tailor.js");
+const Order = require("../models/Order.js");
+const { sendNotification } = require("./notification.js");
+const { getIO } = require("../config/socket.js");
 
 /**
  * Assigns a delivery partner to an order for a specific cycle.
@@ -25,7 +25,7 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
 
     // Determine where the rider needs to go first
     if (cycle === "pickup") {
-        const Customer = require("../models/Customer");
+        const Customer = require("../models/Customer.js");
         const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
         if (customerDoc?.addresses?.length > 0) {
             const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];

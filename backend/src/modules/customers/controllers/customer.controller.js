@@ -1,11 +1,11 @@
-const User = require("../../../models/User");
-const Customer = require("../../../models/Customer");
-const Tailor = require("../../../models/Tailor");
-const Product = require("../../../models/Product");
-const Order = require("../../../models/Order");
-const PromoCode = require("../../../models/PromoCode");
-const asyncHandler = require("../../../utils/asyncHandler");
-const ErrorResponse = require("../../../utils/errorResponse");
+const User = require("../../../models/User.js");
+const Customer = require("../../../models/Customer.js");
+const Tailor = require("../../../models/Tailor.js");
+const Product = require("../../../models/Product.js");
+const Order = require("../../../models/Order.js");
+const PromoCode = require("../../../models/PromoCode.js");
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
 
 /**
  * @desc    Get current customer profile
@@ -100,7 +100,7 @@ exports.getTailors = asyncHandler(async (req, res, next) => {
   const { lat, lng, search, minPrice, maxPrice, rating, sortBy, strictRadius } = req.query;
   const isStrict = strictRadius === 'true';
 
-  const Settings = require("../../../models/Settings");
+  const Settings = require("../../../models/Settings.js");
   const settings = await Settings.findOne();
   const searchRadiusKmRaw = settings?.tailorSearch?.searchRadiusKm;
   const searchRadiusKm = (searchRadiusKmRaw === 'default' || searchRadiusKmRaw === 0 || searchRadiusKmRaw == null) ? 0 : Number(searchRadiusKmRaw);

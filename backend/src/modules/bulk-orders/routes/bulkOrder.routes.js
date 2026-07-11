@@ -6,8 +6,8 @@ const {
   getAllBulkOrders,
   getBulkOrder,
   updateBulkOrderStatus,
-} = require("../controllers/bulkOrder.controller");
-const { protect, authorize } = require("../../../middlewares/auth.middleware");
+} = require("../controllers/bulkOrder.controller.js");
+const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 // All routes require protection
 router.use(protect);
