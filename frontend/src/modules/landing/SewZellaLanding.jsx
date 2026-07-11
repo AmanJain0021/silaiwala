@@ -258,20 +258,22 @@ const SewZellaLanding = () => {
 
               <motion.div variants={fadeUp} custom={2} className="flex flex-wrap gap-3 mb-8">
                 <a
-                  href="https://play.google.com/store"
+                  href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-7 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#622999] transition-all duration-300 shadow-[0_4px_20px_rgba(74,5,129,0.3)] hover:shadow-[0_6px_25px_rgba(74,5,129,0.4)] hover:-translate-y-[1px]"
                 >
                   Download App <Download size={16} />
                 </a>
-                <Link
-                  to="/partner/welcome"
+                <a
+                  href="https://play.google.com/store/apps/details?id=com.sewzella.tailor&pcampaignid=web_share"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 border-2 border-[#4a0581] text-[#4a0581] px-7 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#4a0581] hover:text-white transition-all duration-300"
                 >
                   <Scissors size={16} />
                   Become a Tailor
-                </Link>
+                </a>
               </motion.div>
 
               <motion.div variants={fadeUp} custom={3} className="flex items-center gap-3 text-[13px] text-[#7d7483]">
@@ -601,12 +603,24 @@ const SewZellaLanding = () => {
                   ))}
                 </div>
 
-                <Link
-                  to="/partner/welcome"
-                  className="inline-flex items-center gap-2 bg-white text-[#4a0581] px-8 py-3.5 rounded-full text-[14px] font-bold hover:bg-[#f0dbff] transition-all duration-300 shadow-lg"
-                >
-                  Join as Tailor <ChevronRight size={16} />
-                </Link>
+                <div className="flex flex-wrap gap-4">
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.sewzella.tailor&pcampaignid=web_share"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-white text-[#4a0581] px-8 py-3.5 rounded-full text-[14px] font-bold hover:bg-[#f0dbff] transition-all duration-300 shadow-lg"
+                  >
+                    Join as Tailor <ChevronRight size={16} />
+                  </a>
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.sewzella.delivery&pcampaignid=web_share"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-transparent text-white border-2 border-white px-8 py-3.5 rounded-full text-[14px] font-bold hover:bg-white hover:text-[#4a0581] transition-all duration-300 shadow-lg"
+                  >
+                    Join as Delivery Boy <ChevronRight size={16} />
+                  </a>
+                </div>
               </div>
 
               <div className="hidden lg:flex items-end justify-end flex-shrink-0 pr-8">
