@@ -164,10 +164,51 @@ const createReturnOrder = async (orderData) => {
   }
 };
 
+/**
+ * Create Pickup Location in Shiprocket
+ * Required fields: pickup_location, name, email, phone, address, address_2, city, state, country, pin_code
+ */
+const createPickupLocation = async (locationData) => {
+  const token = await getToken();
+
+  if (token === 'SIMULATED_TOKEN') {
+    return {
+      pickup_id: Math.floor(Math.random() * 100000),
+      pickup_location: locationData.pickup_location,
+      status: 'CREATED',
+      simulated: true,
+    };
+  }
+
+  try {
+    const response = await axios.post(`${BASE_URL}/settings/company/addpickup`, locationData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.response?.data?.errors || error.message;
+    const errorStr = typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg);
+
+    // Handle "pickup location already exists" gracefully — treat as success
+    if (errorStr.toLowerCase().includes('already') || errorStr.toLowerCase().includes('exists') || errorStr.toLowerCase().includes('duplicate')) {
+      console.warn(`Shiprocket Pickup Location already exists for "${locationData.pickup_location}", treating as success.`);
+      return {
+        pickup_location: locationData.pickup_location,
+        status: 'ALREADY_EXISTS',
+        reused: true,
+      };
+    }
+
+    console.error("Shiprocket Create Pickup Location Error:", error.response?.data || error.message);
+    throw new ErrorResponse(errorStr || "Failed to create Shiprocket pickup location", 500);
+  }
+};
+
 module.exports = {
   createOrder,
   generateAWB,
   requestPickup,
   generateLabel,
-  createReturnOrder
+  createReturnOrder,
+  createPickupLocation
 };

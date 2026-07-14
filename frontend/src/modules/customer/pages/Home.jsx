@@ -1,4 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, ChevronRight, Wand2 } from 'lucide-react';
+import api from '../../../utils/api';
 // Components
 import HomeHeader from '../components/HomeHeader';
 import PromoBanner from '../components/PromoBanner';
@@ -19,10 +22,28 @@ import useOrderStore from '../../../store/orderStore';
 const Home = () => {
     const user = useAuthStore((state) => state.user);
     const { orders, fetchOrders } = useOrderStore();
+    const [activeCustomDesign, setActiveCustomDesign] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchOrders();
+        fetchCustomDesigns();
     }, [fetchOrders]);
+
+    const fetchCustomDesigns = async () => {
+        try {
+            const res = await api.get('/custom-designs');
+            if (res.data.success) {
+                const designs = res.data.data || [];
+                const active = designs.find(d => !['completed', 'cancelled', 'rejected'].includes((d.status || '').toLowerCase()));
+                if (active) {
+                    setActiveCustomDesign(active);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch custom designs', error);
+        }
+    };
 
     // Find the latest active order (not delivered or cancelled)
     const activeOrder = orders.find(o =>
@@ -53,6 +74,31 @@ const Home = () => {
 
             {/* 7. Active Order (Untouched) */}
             {activeOrder && <ActiveOrderBanner order={activeOrder} />}
+
+            {/* 7.5 Active Custom Design Notification */}
+            {activeCustomDesign && (
+                <div 
+                    onClick={() => navigate('/user/orders')}
+                    className="mx-4 md:mx-6 lg:mx-8 mb-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-500/20 flex items-center justify-between cursor-pointer active:scale-95 transition-all"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            <Wand2 size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-sm leading-tight">
+                                Custom Order {activeCustomDesign.status === 'quote_received' ? 'Quote Received!' : 'Update'}
+                            </h4>
+                            <p className="text-xs text-white/90 mt-0.5 leading-tight">
+                                {activeCustomDesign.status === 'quote_received' 
+                                    ? `Tailor has sent a quote of ₹${activeCustomDesign.quote?.price || 0}. Tap to pay.`
+                                    : `Your custom design is currently ${activeCustomDesign.status.replace('_', ' ')}.`}
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronRight size={20} className="text-white/80 shrink-0" />
+                </div>
+            )}
 
             {/* 8. Expert Tailors Near You */}
             <PopularTailors />

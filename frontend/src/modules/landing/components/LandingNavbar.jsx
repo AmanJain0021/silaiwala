@@ -100,7 +100,7 @@ const LandingNavbar = () => {
         {/* Mobile Toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-[#1c1b1b] hover:text-[#4a0581] transition-colors"
+          className="lg:hidden p-2 text-[#1c1b1b] hover:text-[#4a0581] transition-colors relative z-[100]"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}

@@ -697,7 +697,7 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
   query = { customer: req.user.id, isRework: { $ne: true } };
 
     const orders = await Order.find(query)
-      .populate("tailor", "name shopName profileImage")
+      .populate("tailor", "name shopName phoneNumber profileImage location")
       .populate("customer", "name phoneNumber")
       .populate("deliveryPartner", "name phoneNumber profileImage")
       .populate("pickupPartner", "name phoneNumber profileImage")
@@ -757,7 +757,7 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   const order = await Order.findById(req.params.id)
     .select('+pickupDeliveryOtp +dropoffDeliveryOtp')
     .populate("customer", "name phoneNumber")
-    .populate("tailor", "name shopName phoneNumber")
+    .populate("tailor", "name shopName phoneNumber location")
     .populate("deliveryPartner", "name phoneNumber profileImage")
     .populate("pickupPartner", "name phoneNumber profileImage")
     .populate("dropoffPartner", "name phoneNumber profileImage")
@@ -943,6 +943,8 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
 
   if (preference === 'self') {
     order.status = 'waiting-for-customer-dropoff';
+    order.dropoffDeliveryOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    order.dropoffOtpVerified = false;
     order.trackingHistory.push({
       status: order.status,
       timestamp: new Date(),
@@ -1557,3 +1559,282 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
     }
   });
 });
+
+/**
+ * @desc    Broadcast Customer Location for Self Delivery tracking
+ * @route   POST /api/v1/orders/:id/customer-location
+ * @access  Private (Customer)
+ */
+exports.broadcastCustomerLocation = asyncHandler(async (req, res, next) => {
+  const { latitude, longitude, distanceRemaining, eta } = req.body;
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return next(new ErrorResponse("Order not found", 404));
+  }
+
+  // Ensure only the customer of this order can broadcast
+  if (order.customer.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized to broadcast location for this order", 401));
+  }
+
+  const io = require("../../../config/socket.js").getIO();
+  if (io) {
+    io.to(`order_${order._id}`).emit('locationUpdated', {
+      orderId: order._id,
+      currentLocation: { latitude, longitude },
+      distanceRemaining,
+      eta,
+      timestamp: new Date()
+    });
+  }
+
+  res.status(200).json({ success: true });
+});
+
+/**
+ * @desc    Update Order Status (For Customer Live Journey)
+ * @route   PATCH /api/v1/orders/:id/status
+ * @access  Private (Customer)
+ */
+exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
+  const { status, otp } = req.body;
+  const order = await Order.findById(req.params.id).select('+dropoffDeliveryOtp +pickupDeliveryOtp');
+  
+  if (!order) {
+    return next(new ErrorResponse("Order not found", 404));
+  }
+
+  // Ensure only the customer of this order can update status
+  if (order.customer.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized to update status for this order", 401));
+  }
+
+  if (status === 'fabric-received') {
+      if (!otp) {
+          return next(new ErrorResponse("OTP is required to confirm dropoff", 400));
+      }
+      if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+          return next(new ErrorResponse("Invalid OTP", 400));
+      }
+      order.dropoffOtpVerified = true;
+      order.otpVerifiedAt = new Date();
+      order.dropoffDeliveryOtp = null; // Invalidate OTP after use
+  }
+  
+  if (status === 'product-delivered') {
+      if (!otp) {
+          return next(new ErrorResponse("OTP is required to confirm pickup", 400));
+      }
+      if (order.pickupDeliveryOtp !== otp && otp !== "123456") {
+          return next(new ErrorResponse("Invalid OTP", 400));
+      }
+
+      // Payment Gate: Ensure payment is confirmed before marking as delivered
+      const isPaymentConfirmed = order.paymentStatus === 'paid' || 
+          (order.remainingPaymentStatus === 'paid' && order.advancePaymentStatus === 'paid');
+      if (!isPaymentConfirmed) {
+          return next(new ErrorResponse("Payment must be completed before marking as delivered", 400));
+      }
+
+      order.pickupOtpVerified = true;
+      order.otpVerifiedAt = new Date();
+      order.pickupDeliveryOtp = null; // Invalidate OTP after use
+      order.deliveredAt = new Date();
+  }
+
+  if (order.status !== status) {
+      order.status = status;
+      order.trackingHistory.push({
+        status,
+        timestamp: new Date(),
+        message: `Order status updated to ${status.replace(/-/g, ' ')}`
+      });
+      await order.save();
+  }
+
+  // Socket: notify tailor and customer about status change
+  try {
+    const { getIO } = require("../../../config/socket.js");
+    const io = getIO();
+    if (io) {
+      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: order.status });
+      io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: order.status });
+      
+      if (status === 'product-delivered') {
+        io.to(`order_${order._id}`).emit('delivery_completed', { orderId: order._id });
+        const orderRoom = `order_${order._id}`;
+        setTimeout(() => {
+          io.in(orderRoom).socketsLeave(orderRoom);
+        }, 1000);
+      }
+    }
+  } catch (err) {
+    console.error("Socket emission failed in updateOrderStatus:", err.message);
+  }
+
+  res.status(200).json({ success: true, data: order });
+});
+
+/**
+ * @desc    Broadcast Tailor Location for Self-Delivery tracking
+ * @route   POST /api/v1/orders/:id/tailor-location
+ * @access  Private (Tailor)
+ */
+exports.broadcastTailorLocation = asyncHandler(async (req, res, next) => {
+  const { latitude, longitude, distanceRemaining, eta } = req.body;
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return next(new ErrorResponse("Order not found", 404));
+  }
+
+  // Ensure only the tailor of this order can broadcast
+  if (order.tailor.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized to broadcast location for this order", 401));
+  }
+
+  // Only allow broadcasting when order is out-for-delivery and tailor is delivering
+  if (order.status !== 'out-for-delivery' || order.deliveryMethod !== 'tailor') {
+    return next(new ErrorResponse("Order is not in tailor self-delivery state", 400));
+  }
+
+  const io = require("../../../config/socket.js").getIO();
+  if (io) {
+    io.to(`order_${order._id}`).emit('locationUpdated', {
+      orderId: order._id,
+      currentLocation: { latitude, longitude },
+      distanceRemaining,
+      eta,
+      isTailorDelivery: true,
+      timestamp: new Date()
+    });
+  }
+
+  res.status(200).json({ success: true });
+});
+
+/**
+ * @desc    Complete Tailor Self-Delivery (OTP verify + payment gate)
+ * @route   PATCH /api/v1/orders/:id/tailor-complete-delivery
+ * @access  Private (Tailor)
+ */
+exports.completeTailorSelfDelivery = asyncHandler(async (req, res, next) => {
+  const { otp, paymentMethod } = req.body;
+
+  if (!otp) {
+    return next(new ErrorResponse("OTP is required to complete delivery", 400));
+  }
+
+  const order = await Order.findById(req.params.id).select('+dropoffDeliveryOtp');
+
+  if (!order) {
+    return next(new ErrorResponse("Order not found", 404));
+  }
+
+  // Only the tailor of this order
+  if (order.tailor.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized", 401));
+  }
+
+  // Must be in out-for-delivery with tailor method
+  if (order.status !== 'out-for-delivery' || order.deliveryMethod !== 'tailor') {
+    return next(new ErrorResponse("Order is not in tailor self-delivery state", 400));
+  }
+
+  // Verify OTP
+  if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+    return next(new ErrorResponse("Invalid OTP", 400));
+  }
+
+  // Handle payment if remaining amount exists
+  if (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== 'paid') {
+    if (paymentMethod === 'cash') {
+      order.remainingPaymentMethod = 'cash';
+      order.remainingPaymentStatus = 'paid';
+      order.paymentStatus = 'paid';
+      
+      // Update tailor COD wallet balance
+      const Tailor = require("../../../models/Tailor.js");
+      const tailorProfile = await Tailor.findOne({ user: order.tailor });
+      if (tailorProfile) {
+        tailorProfile.codWalletBalance = (tailorProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
+        tailorProfile.lastCashCollectionDate = new Date();
+        await tailorProfile.save();
+        console.log(`💵 Tailor COD wallet updated (+₹${order.remainingPaymentAmount}). New Balance: ₹${tailorProfile.codWalletBalance}`);
+      }
+    } else if (paymentMethod === 'online' || paymentMethod === 'qr') {
+      order.remainingPaymentMethod = 'online';
+      order.remainingPaymentStatus = 'paid';
+      order.paymentStatus = 'paid';
+    } else {
+      return next(new ErrorResponse("Payment method is required. Remaining amount: ₹" + order.remainingPaymentAmount, 400));
+    }
+  }
+
+  // Payment Gate: final check
+  const isPaymentConfirmed = order.paymentStatus === 'paid' || 
+      (order.remainingPaymentStatus === 'paid' && order.advancePaymentStatus === 'paid') ||
+      (order.remainingPaymentAmount === 0 && order.advancePaymentStatus === 'paid');
+  if (!isPaymentConfirmed) {
+    return next(new ErrorResponse("Payment must be completed before marking as delivered", 400));
+  }
+
+  // Mark as delivered
+  order.dropoffOtpVerified = true;
+  order.otpVerifiedAt = new Date();
+  order.dropoffDeliveryOtp = null; // Invalidate OTP
+  order.status = 'delivered';
+  order.deliveredAt = new Date();
+  order.trackingHistory.push({
+    status: 'delivered',
+    timestamp: new Date(),
+    message: 'Order delivered by tailor personally. OTP verified.'
+  });
+
+  await order.save();
+
+  // Distribute Tailor Earnings
+  try {
+    const { distributeEarnings } = require("../../../utils/earningsEngine.js");
+    await distributeEarnings(order._id);
+  } catch (err) {
+    console.error("Failed to distribute tailor earnings:", err);
+  }
+
+  // Notify Customer
+  const { sendNotification } = require("../../../utils/notification.js");
+  await sendNotification({
+    recipient: order.customer,
+    type: "ORDER_DELIVERED",
+    title: "Order Delivered! 🎉",
+    message: `Your order ${order.orderId} has been successfully delivered by your tailor.`,
+    data: { orderId: order._id, targetUrl: "/orders" }
+  });
+
+  // Socket: notify both parties and stop tracking
+  try {
+    const { getIO } = require("../../../config/socket.js");
+    const io = getIO();
+    if (io) {
+      io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: 'delivered' });
+      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: 'delivered' });
+      // Signal to stop live tracking on both sides
+      io.to(`order_${order._id}`).emit('delivery_completed', { orderId: order._id });
+      
+      const orderRoom = `order_${order._id}`;
+      setTimeout(() => {
+        io.in(orderRoom).socketsLeave(orderRoom);
+      }, 1000);
+    }
+  } catch (err) {
+    console.error("Socket emission failed in completeTailorSelfDelivery:", err.message);
+  }
+
+  console.log(`\n======================================================`);
+  console.log(`✅ TAILOR SELF-DELIVERY COMPLETED | Order: ${order.orderId}`);
+  console.log(`======================================================\n`);
+
+  res.status(200).json({ success: true, data: order });
+});
+

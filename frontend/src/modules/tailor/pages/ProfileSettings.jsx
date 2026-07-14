@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import PlacesAutocompleteField from '../../../shared/components/PlacesAutocompleteField';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
@@ -23,6 +23,7 @@ const ProfileSettings = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [profile, setProfile] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [formData, setFormData] = useState({
@@ -44,6 +45,17 @@ const ProfileSettings = () => {
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
         libraries: GOOGLE_MAPS_LIBRARIES,
     });
+
+    useEffect(() => {
+        if (showDeleteModal || showLogoutModal || activeModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [showDeleteModal, showLogoutModal, activeModal]);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -90,6 +102,30 @@ const ProfileSettings = () => {
         }
     };
 
+    const handleMapClick = (e) => {
+        if (!e.latLng) return;
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === "OK" && results[0]) {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: lat,
+                    longitude: lng,
+                    address: results[0].formatted_address
+                }));
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: lat,
+                    longitude: lng
+                }));
+            }
+        });
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setIsSaving(true);
@@ -128,10 +164,8 @@ const ProfileSettings = () => {
     };
 
     const handleLogout = () => {
-        if (window.confirm("Are you sure you want to logout?")) {
-            logout();
-            navigate('/partner/login');
-        }
+        logout();
+        navigate('/partner/login');
     };
 
     const handleDeleteAccount = async () => {
@@ -190,23 +224,39 @@ const ProfileSettings = () => {
                                 setIsEditingPickup(false);
                             }} className="space-y-4 mt-4 animate-in fade-in zoom-in-95 duration-200">
                                 {isLoaded ? (
-                                    <PlacesAutocompleteField
-                                        label="Shop Address"
-                                        name="address"
-                                        placeholder="Start typing your shop address..."
-                                        required
-                                        value={formData.address}
-                                        onChange={(val) => setFormData({ ...formData, address: val })}
-                                        onClear={() => setFormData({ ...formData, address: '', latitude: null, longitude: null })}
-                                        onPlaceSelect={(placeData) => {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                address: placeData.address,
-                                                latitude: placeData.latitude,
-                                                longitude: placeData.longitude
-                                            }));
-                                        }}
-                                    />
+                                    <div className="space-y-3">
+                                        <PlacesAutocompleteField
+                                            label="Shop Address"
+                                            name="address"
+                                            placeholder="Start typing your shop address..."
+                                            required
+                                            value={formData.address}
+                                            onChange={(val) => setFormData({ ...formData, address: val })}
+                                            onClear={() => setFormData({ ...formData, address: '', latitude: null, longitude: null })}
+                                            onPlaceSelect={(placeData) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    address: placeData.address,
+                                                    latitude: placeData.latitude,
+                                                    longitude: placeData.longitude
+                                                }));
+                                            }}
+                                        />
+                                        <div className="h-48 w-full rounded-2xl overflow-hidden border border-gray-200 relative">
+                                            <GoogleMap
+                                                mapContainerStyle={{ width: '100%', height: '100%' }}
+                                                center={formData.latitude ? { lat: Number(formData.latitude), lng: Number(formData.longitude) } : { lat: 20.5937, lng: 78.9629 }}
+                                                zoom={formData.latitude ? 15 : 4}
+                                                options={{ disableDefaultUI: true, zoomControl: true }}
+                                                onClick={handleMapClick}
+                                            >
+                                                {formData.latitude && (
+                                                    <Marker position={{ lat: Number(formData.latitude), lng: Number(formData.longitude) }} />
+                                                )}
+                                            </GoogleMap>
+                                            <div className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 shadow-sm pointer-events-none">Tap map to set location</div>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-2">Shop Address</label>
@@ -424,12 +474,47 @@ const ProfileSettings = () => {
                                                 {isLocating ? 'Locating...' : 'Detect Exact Location'}
                                             </button>
                                         </div>
-                                        <input 
-                                            className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
-                                            value={formData.address} 
-                                            onChange={(e) => setFormData({...formData, address: e.target.value})}
-                                            placeholder="Detect exact location or enter address"
-                                        />
+                                        {isLoaded ? (
+                                            <div className="space-y-3">
+                                                <PlacesAutocompleteField
+                                                    label=""
+                                                    name="address"
+                                                    placeholder="Search or detect exact location"
+                                                    value={formData.address}
+                                                    onChange={(val) => setFormData({ ...formData, address: val })}
+                                                    onClear={() => setFormData({ ...formData, address: '', latitude: null, longitude: null })}
+                                                    onPlaceSelect={(placeData) => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: placeData.address,
+                                                            latitude: placeData.latitude,
+                                                            longitude: placeData.longitude
+                                                        }));
+                                                    }}
+                                                />
+                                                <div className="h-48 w-full rounded-2xl overflow-hidden border border-gray-200 relative">
+                                                    <GoogleMap
+                                                        mapContainerStyle={{ width: '100%', height: '100%' }}
+                                                        center={formData.latitude ? { lat: Number(formData.latitude), lng: Number(formData.longitude) } : { lat: 20.5937, lng: 78.9629 }}
+                                                        zoom={formData.latitude ? 15 : 4}
+                                                        options={{ disableDefaultUI: true, zoomControl: true }}
+                                                        onClick={handleMapClick}
+                                                    >
+                                                        {formData.latitude && (
+                                                            <Marker position={{ lat: Number(formData.latitude), lng: Number(formData.longitude) }} />
+                                                        )}
+                                                    </GoogleMap>
+                                                    <div className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 shadow-sm pointer-events-none">Tap map to set location</div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <input 
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                value={formData.address} 
+                                                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                                placeholder="Detect exact location or enter address"
+                                            />
+                                        )}
                                     </div>
                                     <div className="flex gap-4 pt-4">
                                         <button 
@@ -535,7 +620,7 @@ const ProfileSettings = () => {
                         {/* Logout Section */}
                         <div className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm">
                             <button
-                                onClick={handleLogout}
+                                onClick={() => setShowLogoutModal(true)}
                                 className="w-full p-4 bg-rose-50 hover:bg-rose-100 rounded-2xl border border-rose-100 flex items-center justify-between group transition-all"
                             >
                                 <div className="flex items-center gap-4">
@@ -637,6 +722,35 @@ const ProfileSettings = () => {
                                 className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowLogoutModal(false)}>
+                    <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center gap-3">
+                            <div className="w-14 h-14 rounded-2xl bg-rose-100 flex items-center justify-center">
+                                <LogOut size={28} className="text-rose-600" />
+                            </div>
+                            <h3 className="text-lg font-black text-gray-900 tracking-tight">Logout Account?</h3>
+                            <p className="text-xs text-gray-500 leading-relaxed">Are you sure you want to end your current session? You will need to login again to access your account.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowLogoutModal(false)}
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-rose-700 transition-all"
+                            >
+                                Logout
                             </button>
                         </div>
                     </div>

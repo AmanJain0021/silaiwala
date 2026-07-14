@@ -57,6 +57,12 @@ const DeliveryLogin = () => {
                 return;
             }
             try {
+                const checkRes = await api.post('/auth/check-user', { phoneNumber: mobileNumber });
+                if (!checkRes.data.exists) {
+                    setError('First you must register, then login');
+                    return;
+                }
+
                 const user = await useAuthStore.getState().login(mobileNumber, password, 'delivery');
                 if (user?.role !== 'delivery') {
                     logout();

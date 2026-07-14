@@ -68,6 +68,19 @@ router.get("/:id", publicLimiter, getTailorDetails);
 // ─── OTHER PROTECTED TAILOR ACTIONS ──────────────────────────────────────────
 router.use(protect, authorize("tailor"));
 
+// COD Cash Deposit Routes
+const {
+  requestTailorCashDeposit,
+  getTailorDepositHistory,
+  createTailorRazorpayDepositOrder,
+  verifyTailorRazorpayDeposit
+} = require("../../deliveries/controllers/cashDeposit.controller.js");
+
+router.post("/cod-deposit/request", requestTailorCashDeposit);
+router.post("/cod-deposit/razorpay/create", createTailorRazorpayDepositOrder);
+router.post("/cod-deposit/razorpay/verify", verifyTailorRazorpayDeposit);
+router.get("/cod-deposit/history", getTailorDepositHistory);
+
 router.patch("/profile", updateProfile);
 router.patch("/documents", updateDocuments);
 router.patch("/orders/:id/status", updateOrderStatus);

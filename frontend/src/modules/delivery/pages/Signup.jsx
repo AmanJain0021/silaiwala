@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX, FiAlertCircle } from 'react-icons/fi';
 import { Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import { validatePassword } from '../../../utils/validation';
@@ -11,14 +11,17 @@ const DeliverySignup = () => {
     const signup = useAuthStore((state) => state.signup);
     const isLoading = useAuthStore((state) => state.isLoading);
 
-    const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(() => {
+        const savedStep = localStorage.getItem('deliverySignupStep');
+        return savedStep ? parseInt(savedStep, 10) : 1;
+    });
+    
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState(() => {
         const savedData = localStorage.getItem('deliverySignupData');
         if (savedData) {
             try {
                 const parsed = JSON.parse(savedData);
-                // Ensure files are set to null initially since they can't be serialized
                 return {
                     ...parsed,
                     drivingLicense: null,
@@ -63,13 +66,19 @@ const DeliverySignup = () => {
         delete dataToSave.profileImage;
         localStorage.setItem('deliverySignupData', JSON.stringify(dataToSave));
     }, [formData]);
-    const [error, setError] = useState('');
+
+    useEffect(() => {
+        localStorage.setItem('deliverySignupStep', currentStep.toString());
+    }, [currentStep]);
+
+    const [errors, setErrors] = useState({});
     const fileInputRefs = useRef({});
     const lastStepChangeRef = useRef(0);
 
     const handleChange = (e) => {
-        setError('');
         const { name, value, files } = e.target;
+        setErrors((prev) => ({ ...prev, [name]: '' }));
+        
         if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack', 'profileImage'].includes(name)) {
             setFormData((prev) => ({ ...prev, [name]: files?.[0] || null }));
             return;
@@ -88,82 +97,56 @@ const DeliverySignup = () => {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleRoleToggle = (role) => {
-        setFormData(prev => {
-            const roles = prev.partnerRoles.includes(role)
-                ? prev.partnerRoles.filter(r => r !== role)
-                : [...prev.partnerRoles, role];
-            if (roles.length === 0) return prev; // prevent unchecking both
-            return { ...prev, partnerRoles: roles };
-        });
-    };
-
     const validateStep = (step) => {
-        setError('');
+        const newErrors = {};
         if (step === 1) {
-            if (!formData.profileImage) {
-                setError('Profile photo is required');
-                return false;
-            }
-            if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.aadharNumber) {
-                setError('All personal details are required');
-                return false;
-            }
-            if (formData.name.trim().length < 3) {
-                setError('Name must be at least 3 characters long');
-                return false;
-            }
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-                setError('Enter a valid email address');
-                return false;
-            }
-            if (!/^[6-9]\d{9}$/.test(formData.phone)) {
-                setError('Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9');
-                return false;
-            }
+            if (!formData.profileImage) newErrors.profileImage = 'Profile photo is required';
+            if (!formData.name || formData.name.trim().length < 3) newErrors.name = 'Name must be at least 3 characters long';
+            if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Enter a valid email address';
+            if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) newErrors.phone = 'Enter a valid 10-digit mobile number';
+            
             const passErr = validatePassword(formData.password);
-            if (passErr) {
-                setError(passErr);
-                return false;
-            }
-            if (!/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) {
-                setError('Enter a valid 12-digit Aadhaar Number');
-                return false;
-            }
+            if (passErr) newErrors.password = passErr;
+            
+            if (!formData.aadharNumber || !/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) newErrors.aadharNumber = 'Enter a valid 12-digit Aadhaar Number';
         }
         if (step === 2) {
-            if (!formData.drivingLicense || !formData.drivingLicenseBack || !formData.aadharCard || !formData.aadharCardBack) {
-                setError('All front and back document images are required');
-                return false;
-            }
+            if (!formData.drivingLicense) newErrors.drivingLicense = 'Required';
+            if (!formData.drivingLicenseBack) newErrors.drivingLicenseBack = 'Required';
+            if (!formData.aadharCard) newErrors.aadharCard = 'Required';
+            if (!formData.aadharCardBack) newErrors.aadharCardBack = 'Required';
         }
         if (step === 3) {
-             if (!formData.vehicleNumber || !formData.address) {
-                setError('Vehicle details and residential address are required');
-                return false;
+             if (!formData.vehicleNumber || !/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) {
+                newErrors.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
             }
-            if (formData.address.trim().length < 10) {
-                setError('Please provide a complete residential address');
-                return false;
-            }
-            if (!/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) {
-                setError('Enter a valid vehicle number (e.g. MH 12 AB 1234)');
-                return false;
+            if (!formData.address || formData.address.trim().length < 10) {
+                newErrors.address = 'Please provide a complete residential address';
             }
         }
-        return true;
+        
+        setErrors(newErrors);
+        
+        if (Object.keys(newErrors).length > 0) {
+            // Check if errors exist in non-visible fields for step 2 summary
+            if (step === 2) {
+                const formError = 'Please upload all required documents';
+                setErrors(prev => ({ ...prev, formError }));
+            }
+        }
+        return Object.keys(newErrors).length === 0;
     };
 
     const nextStep = () => {
         if (validateStep(currentStep)) {
-            setError('');
+            setErrors({});
             lastStepChangeRef.current = Date.now();
             setCurrentStep((s) => Math.min(s + 1, 3));
         }
     };
 
     const prevStep = () => {
-        setError('');
+        setErrors({});
         lastStepChangeRef.current = Date.now();
         setCurrentStep((s) => Math.max(s - 1, 1));
     };
@@ -199,7 +182,6 @@ const DeliverySignup = () => {
         // Prevent double-click from 'Continue' triggering an immediate submit
         if (Date.now() - lastStepChangeRef.current < 500) return;
         
-        setError('');
         // If not on the last step, advance instead of submitting
         if (currentStep < 3) {
             nextStep();
@@ -256,12 +238,16 @@ const DeliverySignup = () => {
 
             // Note: The backend register function expects 'phoneNumber' or 'phone'
             await signup(payloadData);
+            
+            // On successful registration, clear localStorage data
             localStorage.removeItem('deliverySignupData');
+            localStorage.removeItem('deliverySignupStep');
+            
             // If signup is successful, redirect to a "waiting for approval" or dashboard
             // Based on auth controller, new delivery partners are isActive: false
             navigate('/delivery'); 
         } catch (err) {
-            setError(err.message || 'Signup failed');
+            setErrors({ formError: err.message || 'Signup failed' });
             useAuthStore.setState({ isLoading: false });
         }
     };
@@ -270,7 +256,9 @@ const DeliverySignup = () => {
         <div
             onClick={() => !formData[name] && fileInputRefs.current[name]?.click()}
             className={`relative flex-1 flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${
-                formData[name] 
+                errors[name] 
+                ? 'border-red-400 bg-red-50' 
+                : formData[name] 
                 ? 'border-purple-200/50' 
                 : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-[#843D9B] hover:bg-pink-50/50'
             }`}
@@ -280,16 +268,16 @@ const DeliverySignup = () => {
                 type="file" name={name} accept="image/*" onChange={handleChange} className="hidden"
             />
             {formData[name] ? (
-                <div className="relative w-full h-full group">
+                <div className="relative w-full h-full">
                     <img src={URL.createObjectURL(formData[name])} alt={label} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-3 transition-opacity">
                         <button 
                             type="button"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 fileInputRefs.current[name]?.click();
                             }}
-                            className="bg-white text-[#843D9B] p-2 rounded-full hover:bg-gray-100 shadow-md"
+                            className="bg-white text-[#843D9B] p-2 rounded-full hover:bg-gray-100 shadow-md active:scale-95 transition-transform"
                         >
                             <FiCamera size={16} />
                         </button>
@@ -301,8 +289,9 @@ const DeliverySignup = () => {
                                 if (fileInputRefs.current[name]) {
                                     fileInputRefs.current[name].value = '';
                                 }
+                                setErrors(prev => ({ ...prev, [name]: 'Required' }));
                             }}
-                            className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-md"
+                            className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-md active:scale-95 transition-transform"
                         >
                             <FiX size={16} />
                         </button>
@@ -310,11 +299,20 @@ const DeliverySignup = () => {
                 </div>
             ) : (
                 <>
-                    <FiCamera size={24} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-center">{label}</span>
+                    <FiCamera size={24} className={errors[name] ? 'text-red-400' : ''} />
+                    <span className={`text-[10px] font-bold uppercase tracking-wider text-center ${errors[name] ? 'text-red-500' : ''}`}>{label}</span>
                 </>
             )}
         </div>
+    );
+
+    const ErrorMsg = ({ name }) => (
+        errors[name] ? (
+            <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1 mt-1 ml-1 text-red-500">
+                <FiAlertCircle size={10} />
+                <span className="text-[10px] font-bold">{errors[name]}</span>
+            </motion.div>
+        ) : null
     );
 
     return (
@@ -339,9 +337,10 @@ const DeliverySignup = () => {
                 </div>
             </div>
 
-            {error && (
-                <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center">
-                    {error}
+            {errors.formError && (
+                <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center flex items-center justify-center gap-2">
+                    <FiAlertCircle size={16} />
+                    <span>{errors.formError}</span>
                 </div>
             )}
 
@@ -357,8 +356,10 @@ const DeliverySignup = () => {
                         >
                             <div className="flex flex-col items-center justify-center mb-4">
                                 <div 
-                                    className="relative w-20 h-20 rounded-full border-2 border-dashed border-[#843D9B]/30 bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-[#843D9B] hover:bg-pink-50/50 transition-all shadow-sm"
-                                    onClick={() => fileInputRefs.current.profileImage?.click()}
+                                    className={`relative w-20 h-20 rounded-full border-2 border-dashed bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden transition-all shadow-sm ${
+                                        errors.profileImage ? 'border-red-400 bg-red-50' : 'border-[#843D9B]/30 hover:border-[#843D9B] hover:bg-pink-50/50'
+                                    }`}
+                                    onClick={() => !formData.profileImage && fileInputRefs.current.profileImage?.click()}
                                 >
                                     <input 
                                         type="file" 
@@ -369,49 +370,76 @@ const DeliverySignup = () => {
                                         className="hidden" 
                                     />
                                     {formData.profileImage ? (
-                                        <img src={URL.createObjectURL(formData.profileImage)} alt="Profile" className="w-full h-full object-cover" />
+                                        <>
+                                            <img src={URL.createObjectURL(formData.profileImage)} alt="Profile" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2">
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRefs.current.profileImage?.click(); }} className="bg-white text-[#843D9B] p-1.5 rounded-full shadow-md active:scale-95"><FiCamera size={12} /></button>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); setFormData(prev => ({ ...prev, profileImage: null })); if(fileInputRefs.current.profileImage) fileInputRefs.current.profileImage.value = ''; }} className="bg-red-500 text-white p-1.5 rounded-full shadow-md active:scale-95"><FiX size={12} /></button>
+                                            </div>
+                                        </>
                                     ) : (
                                         <div className="flex flex-col items-center">
-                                            <FiCamera className="text-[#843D9B]/60 group-hover:text-[#843D9B] mb-1" size={20} />
-                                            <span className="text-[9px] font-bold text-[#843D9B]/60 uppercase">Photo</span>
+                                            <FiCamera className={errors.profileImage ? 'text-red-400 mb-1' : 'text-[#843D9B]/60 group-hover:text-[#843D9B] mb-1'} size={20} />
+                                            <span className={`text-[9px] font-bold uppercase ${errors.profileImage ? 'text-red-500' : 'text-[#843D9B]/60'}`}>Photo</span>
                                         </div>
                                     )}
                                 </div>
+                                <ErrorMsg name="profileImage" />
                             </div>
-                            <div className="relative group">
-                                <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                            
+                            <div>
+                                <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.name ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiUser className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.name ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
+                                <ErrorMsg name="name" />
                             </div>
-                            <div className="relative group">
-                                <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+
+                            <div>
+                                <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.email ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiMail className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.email ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
+                                <ErrorMsg name="email" />
                             </div>
-                            <div className="relative group">
-                                <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">+91</span>
-                                <input name="phone" placeholder="Phone Number" value={formData.phone} maxLength={10} onChange={handleChange} className="w-full pl-16 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+
+                            <div>
+                                <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.phone ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiPhone className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.phone ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">+91</span>
+                                    <input name="phone" placeholder="Phone Number" value={formData.phone} maxLength={10} onChange={handleChange} className="w-full pl-16 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
+                                <ErrorMsg name="phone" />
                             </div>
-                            <div className="relative group flex items-center bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
-                                <FiLock className="absolute left-4 text-[#843D9B]" />
-                                <input 
-                                    name="password" 
-                                    type={showPassword ? "text" : "password"} 
-                                    placeholder="Create Password" 
-                                    value={formData.password} 
-                                    onChange={handleChange} 
-                                    className="w-full pl-12 pr-10 py-3 bg-transparent border-none outline-none font-medium text-sm" 
-                                />
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 text-gray-400 hover:text-[#843D9B] focus:outline-none"
-                                >
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
+
+                            <div>
+                                <div className={`relative group flex items-center bg-gray-50 border rounded-xl transition-all ${errors.password ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiLock className={`absolute left-4 ${errors.password ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <input 
+                                        name="password" 
+                                        type={showPassword ? "text" : "password"} 
+                                        placeholder="Create Password" 
+                                        value={formData.password} 
+                                        onChange={handleChange} 
+                                        className="w-full pl-12 pr-10 py-3 bg-transparent border-none outline-none font-medium text-sm" 
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 text-gray-400 hover:text-[#843D9B] focus:outline-none"
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                                <ErrorMsg name="password" />
                             </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="aadharNumber" placeholder="Aadhaar Number (e.g. 1234 5678 9012)" value={formData.aadharNumber} maxLength={14} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+
+                            <div>
+                                <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.aadharNumber ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiShield className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.aadharNumber ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <input name="aadharNumber" placeholder="Aadhaar Number (e.g. 1234 5678 9012)" value={formData.aadharNumber} maxLength={14} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
+                                <ErrorMsg name="aadharNumber" />
                             </div>
                         </motion.div>
                     )}
@@ -425,14 +453,18 @@ const DeliverySignup = () => {
                             className="space-y-4"
                         >
                             <div className="space-y-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Driving License</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    Driving License { (errors.drivingLicense || errors.drivingLicenseBack) && <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded-full lowercase">required</span> }
+                                </p>
                                 <div className="flex gap-3">
                                     <DocUpload name="drivingLicense" label="Front" />
                                     <DocUpload name="drivingLicenseBack" label="Back" />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Aadhaar Card</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    Aadhaar Card { (errors.aadharCard || errors.aadharCardBack) && <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded-full lowercase">required</span> }
+                                </p>
                                 <div className="flex gap-3">
                                     <DocUpload name="aadharCard" label="Front" />
                                     <DocUpload name="aadharCardBack" label="Back" />
@@ -449,38 +481,58 @@ const DeliverySignup = () => {
                             exit={{ opacity: 0, x: 10 }} 
                             className="space-y-2.5"
                         >
-                            <div className="relative group">
-                                <FiTruck className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] outline-none transition-all font-bold text-gray-700 text-sm appearance-none">
-                                    <option value="bike">Bike</option>
-                                    <option value="scooter">Scooter</option>
-                                    <option value="car">Car</option>
-                                    <option value="cycle">Cycle</option>
-                                </select>
+                            <div>
+                                <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
+                                    <FiTruck className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                    <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-bold text-gray-700 text-sm appearance-none">
+                                        <option value="bike">Bike</option>
+                                        <option value="scooter">Scooter</option>
+                                        <option value="car">Car</option>
+                                        <option value="cycle">Cycle</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div className="relative group">
-                                <FiFileText className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="vehicleNumber" placeholder="Vehicle No. (e.g., MH 12 AB 1234)" value={formData.vehicleNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-bold text-[#843D9B] text-sm" />
+
+                            <div>
+                                <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.vehicleNumber ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiFileText className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.vehicleNumber ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <input name="vehicleNumber" placeholder="Vehicle No. (e.g., MH 12 AB 1234)" value={formData.vehicleNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-bold text-[#843D9B] text-sm" />
+                                </div>
+                                <ErrorMsg name="vehicleNumber" />
                             </div>
-                            <div className="relative group">
-                                <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+
+                            <div>
+                                <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.address ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
+                                    <FiMapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.address ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
+                                <ErrorMsg name="address" />
                             </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="accountName" placeholder="Account Holder Name (Optional)" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+
+                            {/* Optional Fields */}
+                            <div>
+                                <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input name="accountName" placeholder="Account Holder Name (Optional)" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
                             </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="bankName" placeholder="Bank Name (Optional)" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                            <div>
+                                <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input name="bankName" placeholder="Bank Name (Optional)" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
                             </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="accountNumber" placeholder="Bank Account Number (Optional)" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                            <div>
+                                <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input name="accountNumber" placeholder="Bank Account Number (Optional)" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                </div>
                             </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="ifscCode" placeholder="IFSC Code (Optional)" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm uppercase" />
+                            <div>
+                                <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input name="ifscCode" placeholder="IFSC Code (Optional)" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm uppercase" />
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -508,9 +560,11 @@ const DeliverySignup = () => {
                         <button 
                             type="submit" 
                             disabled={isLoading} 
-                            className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70"
+                            className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70 flex justify-center items-center"
                         >
-                            {isLoading ? 'Processing...' : 'Register Now'}
+                            {isLoading ? (
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                            ) : 'Register Now'}
                         </button>
                     )}
                 </div>

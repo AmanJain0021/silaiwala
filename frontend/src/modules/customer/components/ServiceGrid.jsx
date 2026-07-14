@@ -74,6 +74,14 @@ const ServiceGrid = () => {
                 <div className="relative bg-[#F7F8FC] px-4">
                     <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.3em] whitespace-nowrap">What We Offer</h2>
                 </div>
+                <div className="absolute right-2 bg-[#F7F8FC] pl-2 sm:pl-4">
+                    <button 
+                        onClick={() => navigate('/user/what-we-offer')}
+                        className="text-[10px] font-black text-[#843D9B] hover:text-[#E04D79] uppercase tracking-widest transition-colors flex items-center gap-1"
+                    >
+                        View All
+                    </button>
+                </div>
             </div>
 
             <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x">

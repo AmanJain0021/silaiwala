@@ -68,21 +68,21 @@ const Overview = () => {
     return (
         <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
             {/* ── HEADER (MOBILE ONLY) ── */}
-            <div className="md:hidden bg-white px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
+            <div className="md:hidden bg-[#843D9B] px-4 pt-3 pb-2 flex items-center justify-between shadow-lg shadow-indigo-900/10 shrink-0 border-b border-indigo-400/20">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0">
-                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+                    <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-indigo-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0 p-0.5">
+                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover rounded-lg" />
                     </button>
-                    <h1 className="text-[16px] font-black text-[#843D9B] tracking-tight mb-0.5">SEWZELLA</h1>
+                    <h1 className="text-[16px] font-black text-white tracking-tight mb-0.5">SEWZELLA</h1>
                 </div>
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => navigate('/partner/notifications')}
-                        className="relative text-gray-400 hover:text-[#843D9B] transition-colors flex items-center justify-center p-1"
+                        className="relative text-white/80 hover:text-white transition-colors flex items-center justify-center p-1"
                     >
                         <Bell size={22} />
                         {unreadCount > 0 && (
-                            <span className="absolute top-0 right-0 h-4 w-4 bg-[#843D9B] rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
+                            <span className="absolute top-0 right-0 h-4 w-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
                                 {unreadCount > 99 ? '99+' : unreadCount}
                             </span>
                         )}
@@ -91,7 +91,7 @@ const Overview = () => {
                         onClick={() => navigate('/partner/settings')}
                         className="relative"
                     >
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden">
+                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#843D9B] font-black text-xs overflow-hidden shadow-sm">
                             {user?.profile?.profileImage || user?.profileImage ? (
                                 <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
@@ -105,15 +105,15 @@ const Overview = () => {
             {/* ── CONTENT AREA ── */}
             <div className="flex-1 p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
                 
-                {/* ── WELCOME SECTION (DESKTOP) ── */}
-                <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-2">
+                {/* ── WELCOME SECTION (DESKTOP & MOBILE) ── */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-2">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5 md:mb-1">Dashboard Overview</p>
-                        <h2 className="text-xl md:text-3xl font-black text-gray-900 leading-tight">
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest md:tracking-[0.2em] mb-0.5 md:mb-1">Dashboard Overview</p>
+                        <h2 className="text-xl md:text-3xl font-black text-gray-900 leading-tight truncate">
                             Welcome back, {dashboardData?.tailorName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Partner'}
                         </h2>
                     </div>
-                    <div className="flex items-center gap-4 bg-gray-900 px-5 py-3 rounded-[1.25rem] shadow-xl shadow-[#843D9B]/10 border border-[#843D9B]/30 self-start md:self-auto">
+                    <div className="hidden md:flex items-center gap-4 bg-gray-900 px-5 py-3 rounded-[1.25rem] shadow-xl shadow-[#843D9B]/10 border border-[#843D9B]/30 self-start md:self-auto">
                         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                             <Star size={20} className="text-amber-400 fill-amber-400" />
                         </div>
@@ -206,51 +206,69 @@ const Overview = () => {
                 {/* ── KEY METRICS ── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                     {/* Total Earnings */}
-                    <div className="bg-gray-900 rounded-2xl md:rounded-[2rem] p-4 md:p-6 relative overflow-hidden group">
+                    <div 
+                        onClick={() => navigate('/partner/wallet')} 
+                        className="bg-gray-900 rounded-2xl md:rounded-[2rem] p-4 md:p-6 relative overflow-hidden group cursor-pointer hover:shadow-lg hover:shadow-gray-900/20 active:scale-95 transition-all duration-300 flex flex-col justify-between"
+                    >
                         <div className="absolute -right-4 -bottom-4 w-16 h-16 md:w-24 md:h-24 bg-[#843D9B]/20 rounded-full blur-2xl md:blur-3xl group-hover:bg-[#843D9B]/40 transition-all"></div>
-                        <p className="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest mb-1 md:mb-2">Total Earnings</p>
-                        <p className="text-xl md:text-3xl font-black text-white tracking-tight leading-none mb-1.5 md:mb-2">
+                        <p className="text-[8px] md:text-[10px] font-black text-white/50 uppercase tracking-wider md:tracking-widest mb-1 md:mb-2 truncate">Total Earnings</p>
+                        <p className="text-lg md:text-3xl font-black text-white tracking-tight leading-none mb-2 md:mb-2 truncate">
                             ₹{summary.totalEarnings.toLocaleString('en-IN') || '0'}
                         </p>
-                        <div className="flex items-center gap-1 md:gap-1.5">
-                            <div className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/10 text-emerald-500">
+                        <div className="flex items-center gap-1 md:gap-1.5 mt-auto">
+                            <div className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform shrink-0">
                                 <ArrowUpRight size={10} className="md:w-3 md:h-3" strokeWidth={3} />
                             </div>
-                            <span className="text-[9px] md:text-[11px] font-black text-emerald-500">View Details</span>
+                            <span className="text-[8px] md:text-[11px] font-black text-emerald-500 truncate">View Details</span>
                         </div>
                     </div>
 
                     {/* New Orders */}
-                    <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-[#843D9B]">
+                    <div 
+                        onClick={() => navigate('/partner/orders', { state: { status: 'pending' } })}
+                        className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-indigo-100 active:scale-95 transition-all duration-300 group flex flex-col"
+                    >
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-[#843D9B] group-hover:scale-110 group-hover:bg-[#843D9B] group-hover:text-white transition-all shrink-0">
                             <ShoppingBag size={16} className="md:w-5 md:h-5" />
                         </div>
-                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">New Orders</p>
-                        <p className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
-                            {String(summary.pendingOrders || 0).padStart(2, '0')}
-                        </p>
+                        <div className="mt-auto">
+                            <p className="text-[8px] md:text-[10px] text-gray-400 font-black uppercase tracking-wider md:tracking-widest mb-1 truncate">New Orders</p>
+                            <p className="text-xl md:text-3xl font-black text-gray-900 leading-none truncate">
+                                {String(summary.pendingOrders || 0).padStart(2, '0')}
+                            </p>
+                        </div>
                     </div>
 
                     {/* In Progress */}
-                    <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-blue-600">
+                    <div 
+                        onClick={() => navigate('/partner/orders', { state: { status: 'in-progress' } })}
+                        className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-100 active:scale-95 transition-all duration-300 group flex flex-col"
+                    >
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-blue-600 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
                             <Clock size={16} className="md:w-5 md:h-5" />
                         </div>
-                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">In Progress</p>
-                        <p className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
-                            {String(Math.max(summary.totalOrders - summary.completedThisWeek, 0)).padStart(2, '0')}
-                        </p>
+                        <div className="mt-auto">
+                            <p className="text-[8px] md:text-[10px] text-gray-400 font-black uppercase tracking-wider md:tracking-widest mb-1 truncate">In Progress</p>
+                            <p className="text-xl md:text-3xl font-black text-gray-900 leading-none truncate">
+                                {String(Math.max(summary.totalOrders - summary.completedThisWeek, 0)).padStart(2, '0')}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Completed */}
-                    <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-emerald-600">
+                    <div 
+                        onClick={() => navigate('/partner/orders', { state: { status: 'completed' } })}
+                        className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-emerald-100 active:scale-95 transition-all duration-300 group flex flex-col"
+                    >
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-50 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 text-emerald-600 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shrink-0">
                             <CheckCircle size={16} className="md:w-5 md:h-5" />
                         </div>
-                        <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Completed</p>
-                        <p className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
-                            {summary.completedThisWeek || 0}
-                        </p>
+                        <div className="mt-auto">
+                            <p className="text-[8px] md:text-[10px] text-gray-400 font-black uppercase tracking-wider md:tracking-widest mb-1 truncate">Completed</p>
+                            <p className="text-xl md:text-3xl font-black text-gray-900 leading-none truncate">
+                                {summary.completedThisWeek || 0}
+                            </p>
+                        </div>
                     </div>
                 </div>
 

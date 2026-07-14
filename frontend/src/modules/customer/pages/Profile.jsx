@@ -155,11 +155,18 @@ const ProfilePage = () => {
                             to="/user/loyalty"
                         />
                         <MenuOption
+                            icon={Wallet}
+                            color="bg-[#843D9B]"
+                            label="Wallet"
+                            subLabel="View your balance"
+                            to="/user/wallet"
+                        />
+                        <MenuOption
                             icon={Ticket}
                             color="bg-[#843D9B]"
                             label="Coupons"
                             subLabel="View available offers"
-                            onClick={() => toast.success('Coupons feature coming soon!')}
+                            to="/user/coupons"
                         />
                         <MenuOption
                             icon={Share2}
@@ -182,14 +189,14 @@ const ProfilePage = () => {
                             label="Language"
                             subLabel="Change app language"
                             extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
-                            onClick={() => toast.success('Language settings coming soon!')}
+                            to="/user/language"
                         />
                         <MenuOption
                             icon={Bell}
                             color="bg-[#843D9B]"
                             label="Notifications"
                             subLabel="Manage preferences"
-                            onClick={() => toast.success('Notification settings coming soon!')}
+                            to="/user/notifications"
                         />
                         <MenuOption
                             icon={MessageSquare}

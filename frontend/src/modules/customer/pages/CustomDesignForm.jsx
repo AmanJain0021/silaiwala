@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, X, Loader2, Star, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, UploadCloud, X, Loader2, Star, Plus, Trash2, Camera } from 'lucide-react';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
 import SafeImage from '../../../components/Common/SafeImage';
@@ -202,11 +202,18 @@ const CustomDesignForm = () => {
                         ))}
                         
                         {images.length < 10 && (
-                            <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
-                                {isUploading ? <Loader2 size={20} className="animate-spin" /> : <UploadCloud size={20} />}
-                                <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">Upload</span>
-                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
-                            </label>
+                            <div className="flex gap-2">
+                                <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
+                                    {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+                                    <span className="text-[8px] font-bold mt-1 uppercase tracking-wider text-center leading-tight">Camera</span>
+                                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                </label>
+                                <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
+                                    {isUploading ? <Loader2 size={20} className="animate-spin" /> : <UploadCloud size={20} />}
+                                    <span className="text-[8px] font-bold mt-1 uppercase tracking-wider text-center leading-tight">Gallery</span>
+                                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                </label>
+                            </div>
                         )}
                     </div>
                 </div>

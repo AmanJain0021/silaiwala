@@ -17,7 +17,7 @@ const AdminProtectedRoute = () => {
         );
     }
 
-    if (!isAuthenticated || role !== 'admin') {
+    if (!isAuthenticated || (role !== 'admin' && role !== 'super_admin')) {
         return <Navigate to="/admin/login" replace />;
     }
 

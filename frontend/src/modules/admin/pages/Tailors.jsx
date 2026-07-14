@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Scissors, Building, Star, Mail, Phone, Clock, FileText, Ban } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Scissors, Building, Star, Mail, Phone, Clock, FileText, Ban, Truck, RefreshCw, ChevronDown } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
@@ -20,6 +20,10 @@ const AdminTailors = () => {
     const [isEditLocationModalOpen, setIsEditLocationModalOpen] = useState(false);
     const [newShiprocketLocation, setNewShiprocketLocation] = useState('');
     const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+    const [isRetryingShiprocket, setIsRetryingShiprocket] = useState(false);
+    const [showAdvancedOverride, setShowAdvancedOverride] = useState(false);
+    const [isShiprocketSetupModalOpen, setIsShiprocketSetupModalOpen] = useState(false);
+    const [shiprocketSetupForm, setShiprocketSetupForm] = useState({ city: '', state: '', pincode: '', address: '' });
 
     const tabs = ['All Tailors', 'Pending Applications'];
 
@@ -37,6 +41,10 @@ const AdminTailors = () => {
                 joined: new Date(t.createdAt).toLocaleDateString(),
                 specialty: t.profile?.specializations?.join(', ') || 'General Tailoring',
                 location: t.profile?.location?.address || 'Not Provided',
+                rawAddress: t.profile?.location?.address || '',
+                city: t.profile?.location?.city || '',
+                state: t.profile?.location?.state || '',
+                pincode: t.profile?.location?.pincode || '',
                 rating: t.profile?.rating || 4.8,
                 completedOrders: t.profile?.totalReviews || 0,
                 commission: t.profile?.commissionPercentage !== undefined ? `${t.profile.commissionPercentage}%` : '20%',
@@ -48,7 +56,8 @@ const AdminTailors = () => {
                 shopName: t.profile?.shopName,
                 experience: t.profile?.experienceInYears,
                 bio: t.profile?.bio,
-                shiprocketPickupLocation: t.profile?.shiprocketPickupLocation || ''
+                shiprocketPickupLocation: t.profile?.shiprocketPickupLocation || '',
+                isShiprocketConfigured: t.profile?.isShiprocketConfigured || false
             })));
 
             setPendingData(pendingRes.data.data.map(t => ({
@@ -160,6 +169,66 @@ const AdminTailors = () => {
             toast.error(error.response?.data?.message || 'Failed to update location');
         } finally {
             setIsUpdatingLocation(false);
+        }
+    };
+
+    const handleRetryShiprocketSetup = async () => {
+        if (!selectedTailor) return;
+        
+        setIsRetryingShiprocket(true);
+        try {
+            const body = {};
+            if (shiprocketSetupForm.city) body.city = shiprocketSetupForm.city;
+            if (shiprocketSetupForm.state) body.state = shiprocketSetupForm.state;
+            if (shiprocketSetupForm.pincode) body.pincode = shiprocketSetupForm.pincode;
+            if (shiprocketSetupForm.address) body.address = shiprocketSetupForm.address;
+
+            const res = await api.post(`/admin/tailors/${selectedTailor.id}/shiprocket-setup`, body);
+            
+            toast.success(res.data?.message || 'Shiprocket pickup location created successfully');
+            
+            setSelectedTailor(prev => ({
+                ...prev,
+                shiprocketPickupLocation: res.data?.data?.shiprocketPickupLocation || prev.shiprocketPickupLocation,
+                isShiprocketConfigured: true
+            }));
+            
+            setIsShiprocketSetupModalOpen(false);
+            setShiprocketSetupForm({ city: '', state: '', pincode: '', address: '' });
+            fetchData();
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            toast.error(error.response?.data?.message || 'Failed to setup Shiprocket pickup location');
+        } finally {
+            setIsRetryingShiprocket(false);
+        }
+    };
+
+    const openShiprocketSetupModal = async () => {
+        setIsRetryingShiprocket(true);
+        try {
+            const res = await api.get(`/admin/tailors/${selectedTailor.id}`);
+            const profile = res.data?.data?.profile;
+            setShiprocketSetupForm({
+                city: profile?.location?.city || selectedTailor?.city || '',
+                state: profile?.location?.state || selectedTailor?.state || '',
+                pincode: profile?.location?.pincode || selectedTailor?.pincode || '',
+                address: profile?.location?.address || selectedTailor?.rawAddress || ''
+            });
+            setIsShiprocketSetupModalOpen(true);
+        } catch (error) {
+            console.error("Failed to fetch tailor profile details", error);
+            toast.error("Could not fetch latest address details");
+            // Fallback to local state if fetch fails
+            setShiprocketSetupForm({
+                city: selectedTailor?.city || '',
+                state: selectedTailor?.state || '',
+                pincode: selectedTailor?.pincode || '',
+                address: selectedTailor?.rawAddress || ''
+            });
+            setIsShiprocketSetupModalOpen(true);
+        } finally {
+            setIsRetryingShiprocket(false);
         }
     };
 
@@ -311,38 +380,46 @@ const AdminTailors = () => {
                         </table>
                     </div>
                 ) : (
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto">
-                        {filteredPending.map((app) => (
-                            <div key={app.id} className="bg-white border text-left border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-                                <div>
-                                    <div className="flex justify-between items-start">
-                                        <div className="h-12 w-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-primary font-black text-lg">
-                                            {app.name.charAt(0)}
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto h-full">
+                        {filteredPending.length > 0 ? (
+                            filteredPending.map((app) => (
+                                <div key={app.id} className="bg-white border text-left border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex justify-between items-start">
+                                            <div className="h-12 w-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-primary font-black text-lg">
+                                                {app.name.charAt(0)}
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${getStatusStyle(app.status)}`}>
+                                                {app.status}
+                                            </span>
                                         </div>
-                                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${getStatusStyle(app.status)}`}>
-                                            {app.status}
-                                        </span>
+                                        <h3 className="text-base font-black text-gray-900 mt-4">{app.name}</h3>
+                                        <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 font-medium">
+                                            <Scissors size={12} className="text-gray-400" /> {app.specialty}
+                                        </div>
+                                        <div className="flex gap-4 mt-4 text-[10px] text-gray-400 font-bold">
+                                            <div className="flex items-center gap-1">
+                                                <MapPin size={12} /> {app.location}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Clock size={12} /> {app.submittedDate}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <h3 className="text-base font-black text-gray-900 mt-4">{app.name}</h3>
-                                    <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 font-medium">
-                                        <Scissors size={12} className="text-gray-400" /> {app.specialty}
-                                    </div>
-                                    <div className="flex gap-4 mt-4 text-[10px] text-gray-400 font-bold">
-                                        <div className="flex items-center gap-1">
-                                            <MapPin size={12} /> {app.location}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Clock size={12} /> {app.submittedDate}
-                                        </div>
+                                    <div className="mt-6 flex gap-3">
+                                        <button onClick={() => setSelectedApp(app)} className="flex-1 py-2.5 bg-gray-50 text-primary hover:bg-primary hover:text-white transition-colors text-xs font-black uppercase tracking-widest rounded-xl border border-gray-100">
+                                            Review Docs
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="mt-6 flex gap-3">
-                                    <button onClick={() => setSelectedApp(app)} className="flex-1 py-2.5 bg-gray-50 text-primary hover:bg-primary hover:text-white transition-colors text-xs font-black uppercase tracking-widest rounded-xl border border-gray-100">
-                                        Review Docs
-                                    </button>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full flex flex-col items-center justify-center py-24 text-gray-400">
+                                <FileText size={48} className="mb-4 opacity-20" />
+                                <p className="text-lg font-black text-gray-900 uppercase tracking-widest">No Data Found</p>
+                                <p className="text-xs font-medium mt-2 max-w-sm text-center">There are no pending applications at the moment.</p>
                             </div>
-                        ))}
+                        )}
                     </div>
                 )}
             </div>
@@ -457,22 +534,56 @@ const AdminTailors = () => {
                                         <div className="flex justify-between items-center py-4 border-b border-gray-50">
                                             <div>
                                                 <p className="text-xs font-bold text-gray-600">Shiprocket Pickup Location</p>
-                                                <p className="text-[10px] text-gray-400 font-medium">Mapped location name in Shiprocket</p>
+                                                <p className="text-[10px] text-gray-400 font-medium">Auto-created when tailor is approved</p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-gray-900 max-w-[120px] truncate" title={selectedTailor.shiprocketPickupLocation || 'Not Set'}>
-                                                    {selectedTailor.shiprocketPickupLocation || 'Not Set'}
-                                                </span>
-                                                <button 
-                                                    onClick={() => {
-                                                        setNewShiprocketLocation(selectedTailor.shiprocketPickupLocation || '');
-                                                        setIsEditLocationModalOpen(true);
-                                                    }}
-                                                    className="text-[10px] text-primary hover:underline font-bold"
-                                                >
-                                                    Edit
-                                                </button>
+                                                {selectedTailor.isShiprocketConfigured ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-black rounded-full border border-green-100">
+                                                        <CheckCircle2 size={10} /> {selectedTailor.shiprocketPickupLocation}
+                                                    </span>
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-black rounded-full border border-amber-100">
+                                                            Not Configured
+                                                        </span>
+                                                        <button 
+                                                            onClick={openShiprocketSetupModal}
+                                                            disabled={isRetryingShiprocket}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-full hover:bg-primary/20 transition-colors disabled:opacity-50"
+                                                        >
+                                                            <RefreshCw size={10} className={isRetryingShiprocket ? 'animate-spin' : ''} />
+                                                            {isRetryingShiprocket ? 'Setting up...' : 'Setup Now'}
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
+                                        </div>
+                                        {/* Advanced override — collapsible */}
+                                        <div className="pt-3 border-b border-gray-50 pb-3">
+                                            <button 
+                                                onClick={() => setShowAdvancedOverride(!showAdvancedOverride)}
+                                                className="flex items-center gap-1 text-[10px] font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                                            >
+                                                <ChevronDown size={10} className={`transition-transform ${showAdvancedOverride ? 'rotate-180' : ''}`} />
+                                                Manual Override
+                                            </button>
+                                            {showAdvancedOverride && (
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <span className="text-[10px] text-gray-400 font-medium">Current:</span>
+                                                    <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]" title={selectedTailor.shiprocketPickupLocation || 'Primary'}>
+                                                        {selectedTailor.shiprocketPickupLocation || 'Primary'}
+                                                    </span>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setNewShiprocketLocation(selectedTailor.shiprocketPickupLocation || '');
+                                                            setIsEditLocationModalOpen(true);
+                                                        }}
+                                                        className="text-[10px] text-primary hover:underline font-bold"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex justify-between items-center pt-4">
                                             <div>
@@ -740,6 +851,109 @@ const AdminTailors = () => {
                                     className="flex-1 py-3 bg-primary text-white hover:bg-primary-dark transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
                                 >
                                     {isUpdatingLocation ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Shiprocket Setup Modal */}
+            <AnimatePresence>
+                {isShiprocketSetupModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+                        onClick={() => !isRetryingShiprocket && setIsShiprocketSetupModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col p-6"
+                        >
+                            <h3 className="text-lg font-black text-gray-900 mb-1">Shiprocket Pickup Setup</h3>
+                            <p className="text-xs text-gray-500 font-medium mb-6">
+                                Provide the tailor's address details to create their Shiprocket pickup location. These will be saved to their profile.
+                            </p>
+                            
+                            <div className="space-y-4 mb-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Street Address *</label>
+                                    <input 
+                                        type="text"
+                                        value={shiprocketSetupForm.address}
+                                        onChange={(e) => setShiprocketSetupForm(prev => ({ ...prev, address: e.target.value }))}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-900 focus:outline-none focus:border-primary"
+                                        placeholder="e.g. 123 Main Road, Sector 5"
+                                    />
+                                    {shiprocketSetupForm.address && (shiprocketSetupForm.address.length < 10 || !/\d/.test(shiprocketSetupForm.address)) && (
+                                        <p className="text-[10px] text-red-500 font-bold mt-1.5">
+                                            Must be at least 10 chars and include a house/flat/road number.
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">City *</label>
+                                        <input 
+                                            type="text"
+                                            value={shiprocketSetupForm.city}
+                                            onChange={(e) => setShiprocketSetupForm(prev => ({ ...prev, city: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-900 focus:outline-none focus:border-primary"
+                                            placeholder="e.g. Delhi"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">State *</label>
+                                        <input 
+                                            type="text"
+                                            value={shiprocketSetupForm.state}
+                                            onChange={(e) => setShiprocketSetupForm(prev => ({ ...prev, state: e.target.value }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-900 focus:outline-none focus:border-primary"
+                                            placeholder="e.g. Delhi"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Pincode *</label>
+                                    <input 
+                                        type="text"
+                                        maxLength={6}
+                                        value={shiprocketSetupForm.pincode}
+                                        onChange={(e) => setShiprocketSetupForm(prev => ({ ...prev, pincode: e.target.value.replace(/\D/g, '') }))}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm text-gray-900 focus:outline-none focus:border-primary"
+                                        placeholder="e.g. 110001"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setIsShiprocketSetupModalOpen(false)}
+                                    disabled={isRetryingShiprocket}
+                                    className="flex-1 py-3 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleRetryShiprocketSetup}
+                                    disabled={
+                                        isRetryingShiprocket || 
+                                        !shiprocketSetupForm.city || 
+                                        !shiprocketSetupForm.state || 
+                                        !shiprocketSetupForm.pincode || 
+                                        !shiprocketSetupForm.address || 
+                                        shiprocketSetupForm.address.length < 10 || 
+                                        !/\d/.test(shiprocketSetupForm.address)
+                                    }
+                                    className="flex-1 py-3 bg-primary text-white hover:bg-primary-dark transition-colors text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-primary/20"
+                                >
+                                    <Truck size={14} />
+                                    {isRetryingShiprocket ? 'Creating...' : 'Create Pickup Location'}
                                 </button>
                             </div>
                         </motion.div>

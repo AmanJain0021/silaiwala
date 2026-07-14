@@ -40,6 +40,8 @@ exports.createService = asyncHandler(async (req, res, next) => {
   
   // Default values or adjustments
   if (!req.body.isActive) req.body.isActive = true;
+  req.body.status = "pending";
+  req.body.rejectionReason = null;
 
   const service = await Service.create(req.body);
 
@@ -108,7 +110,7 @@ exports.deleteService = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.getTailorServices = asyncHandler(async (req, res, next) => {
-  const services = await Service.find({ tailor: req.params.tailorId, isActive: true })
+  const services = await Service.find({ tailor: req.params.tailorId, isActive: true, status: "approved" })
     .populate("category", "name")
     .sort("-createdAt");
 

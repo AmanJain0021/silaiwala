@@ -685,9 +685,43 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
       await autoAssignDelivery(order._id, "dropoff");
     }
 
-    // If tailor specifically requested Manual or Shiprocket
+    // If tailor specifically requested Manual or Shiprocket or Self or Tailor Self-Deliver
     if ((status === "ready-for-pickup" || status === "ready-for-delivery") && deliveryMethod && deliveryMethod !== 'auto') {
         order.deliveryMethod = deliveryMethod;
+        
+        // Generate OTP for Self Delivery (Customer Pickup)
+        if (deliveryMethod === 'self' && (status === 'ready-for-pickup' || status === 'ready-for-delivery')) {
+            order.pickupDeliveryOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            order.pickupOtpVerified = false;
+        }
+
+        // Tailor Self-Delivery: Tailor delivers to customer themselves
+        if (deliveryMethod === 'tailor') {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            order.dropoffDeliveryOtp = otp;
+            order.dropoffOtpVerified = false;
+            order.status = 'out-for-delivery';
+            order.trackingHistory.push({
+                status: 'out-for-delivery',
+                timestamp: new Date(),
+                message: 'Tailor is personally delivering your order.'
+            });
+
+            console.log(`\n======================================================`);
+            console.log(`🧵 TAILOR SELF-DELIVERY STARTED | OTP: ${otp}`);
+            console.log(`Order: ${order.orderId} | Tailor: ${req.user.id}`);
+            console.log(`======================================================\n`);
+
+            // Notify Customer
+            await sendNotification({
+                recipient: order.customer,
+                type: "OUT_FOR_DELIVERY",
+                title: "Your Tailor is on the Way! 🚗",
+                message: `Your tailor is personally delivering order ${order.orderId}. Track their live location in the app.`,
+                data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
+            });
+        }
+
         await order.save();
     }
 

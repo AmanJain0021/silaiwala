@@ -103,7 +103,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
+        <div className="min-h-screen bg-gray-50 pb-32 md:pb-12 font-sans text-gray-900">
 
             {/* ── HEADER ─────────────────────── */}
             <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">

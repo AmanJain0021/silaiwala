@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit3, Search, Scissors, Layers, ShoppingBag, Package, ChevronRight, X, Clock, Star } from 'lucide-react';
+import { Plus, Trash2, Edit3, Search, Scissors, Layers, ShoppingBag, Package, ChevronRight, X, Clock, Star, Camera } from 'lucide-react';
 import { Button } from '../components/UIElements';
 import api from '../services/api';
+import toast from 'react-hot-toast';
 import SafeImage from '../../../components/Common/SafeImage';
 import GarmentForm from '../components/GarmentForm';
 
@@ -54,10 +55,8 @@ const Products = () => {
 
             // Fetch top-level categories
             if (catsRes.data.success) {
-                // For 'fabrics', we only want categories with parentCategory: null
-                // The API now supports 'parent' query param
-                const topLevelRes = await api.get('/products/categories?parent=null');
-                setCategories(topLevelRes.data.data);
+                // Set categories directly from the first fetch, avoiding an extra API call that might fail
+                setCategories(catsRes.data.data);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -65,6 +64,17 @@ const Products = () => {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showModal]);
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -236,9 +246,11 @@ const Products = () => {
                 else endpoint = `/tailors/products/${id}`;
 
                 await api.delete(endpoint);
+                toast.success(`${typeLabels[type]} deleted successfully!`);
                 fetchData();
             } catch (error) {
                 console.error('Delete error:', error);
+                toast.error(`Failed to delete ${typeLabels[type]}`);
             }
         }
     };
@@ -250,8 +262,8 @@ const Products = () => {
     );
 
     return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-8 px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h3 className="text-[24px] font-black text-[#843D9B] tracking-tight leading-none">
                         {activeTab === 'samples' ? 'Stitching Services' : activeTab === 'fabrics' ? 'Fabric Inventory' : 'Ready-made Garments'}
@@ -265,7 +277,7 @@ const Products = () => {
                         setIsEditing(false);
                         setShowModal(true);
                     }}
-                    className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#843D9B] to-[#B35BCB] text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-[#843D9B]/15 hover:shadow-xl hover:shadow-[#843D9B]/20 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
+                    className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#843D9B] to-[#B35BCB] text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-[#843D9B]/15 hover:shadow-xl hover:shadow-[#843D9B]/20 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
                 >
                     <Plus size={16} strokeWidth={3} />
                     <span>Add {activeTab === 'samples' ? 'Service' : activeTab === 'fabrics' ? 'Fabric' : 'Garment'}</span>
@@ -362,23 +374,7 @@ const Products = () => {
                                             )}
                                         </div>
 
-                                        {/* Actions Hover Overlay */}
-                                        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 z-10">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
-                                                className="p-3 bg-white hover:bg-[#843D9B] text-[#843D9B] hover:text-white rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95"
-                                                title="Edit Product"
-                                            >
-                                                <Edit3 size={15} strokeWidth={2.5} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(item._id, activeTab); }}
-                                                className="p-3 bg-white hover:bg-rose-500 text-rose-500 hover:text-white rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95 delay-75"
-                                                title="Delete Product"
-                                            >
-                                                <Trash2 size={15} strokeWidth={2.5} />
-                                            </button>
-                                        </div>
+
                                     </div>
 
                                     {/* Compact details matching E-commerce style */}
@@ -426,8 +422,21 @@ const Products = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="h-6 w-6 rounded-lg bg-gray-50 group-hover:bg-[#843D9B]/10 flex items-center justify-center text-gray-400 group-hover:text-[#843D9B] transition-all">
-                                                <ChevronRight size={14} strokeWidth={3} />
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                    className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-[#843D9B] hover:text-white transition-colors border border-gray-100 shadow-sm active:scale-95"
+                                                    title="Edit"
+                                                >
+                                                    <Edit3 size={13} strokeWidth={2.5} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item._id, activeTab); }}
+                                                    className="h-8 w-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors border border-rose-100 shadow-sm active:scale-95"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={13} strokeWidth={2.5} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -442,7 +451,7 @@ const Products = () => {
             {showModal && activeTab === 'garments' ? (
                 <GarmentForm 
                     initialData={isEditing ? garments.find(g => g._id === editId) : null}
-                    categories={categories.filter(c => c.type === 'product')}
+                    categories={categories.filter(c => c.type === 'product' && !c.parentCategory)}
                     onClose={closeModal}
                     onSubmitSuccess={() => {
                         closeModal();
@@ -584,7 +593,7 @@ const Products = () => {
                                         >
                                             <option value="">Choose a category</option>
                                             {categories
-                                                .filter(cat => activeTab === 'samples' ? cat.type === 'service' : cat.type === 'product')
+                                                .filter(cat => activeTab === 'samples' ? cat.type === 'service' : (cat.type === 'product' && !cat.parentCategory))
                                                 .map(cat => (
                                                     <option key={cat._id} value={cat._id}>{cat.name}</option>
                                                 ))}
@@ -619,18 +628,36 @@ const Products = () => {
                                                 )}
                                             </div>
                                             <div className="flex-1 flex flex-col justify-center gap-2">
-                                                <div className="relative">
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={handleImageUpload}
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                        disabled={isImageUploading}
-                                                    />
-                                                    <button className="w-full py-2.5 bg-white rounded-xl text-[10px] font-black text-[#843D9B] border border-gray-100 shadow-sm flex items-center justify-center gap-2 uppercase tracking-widest cursor-pointer hover:bg-gray-50 active:scale-95 transition-all">
-                                                        {isImageUploading ? <div className="h-3 w-3 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" /> : <Plus size={14} />}
-                                                        {isImageUploading ? 'Uploading...' : 'Upload Image'}
-                                                    </button>
+                                                <div className="flex gap-2">
+                                                    <div className="relative flex-1">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={handleImageUpload}
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                            disabled={isImageUploading}
+                                                        />
+                                                        <button type="button" className="w-full h-[38px] bg-white rounded-xl text-[10px] font-black text-[#843D9B] border border-gray-100 shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-widest cursor-pointer hover:bg-gray-50 active:scale-95 transition-all">
+                                                            {isImageUploading ? <div className="h-3 w-3 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" /> : <Plus size={14} />}
+                                                            <span className="hidden sm:inline">{isImageUploading ? 'Uploading...' : 'Upload Image'}</span>
+                                                            <span className="sm:hidden">{isImageUploading ? '...' : 'Gallery'}</span>
+                                                        </button>
+                                                    </div>
+                                                    <div className="relative flex-1">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            capture="environment"
+                                                            onChange={handleImageUpload}
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                            disabled={isImageUploading}
+                                                        />
+                                                        <button type="button" className="w-full h-[38px] bg-white rounded-xl text-[10px] font-black text-[#843D9B] border border-gray-100 shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-widest cursor-pointer hover:bg-gray-50 active:scale-95 transition-all">
+                                                            {isImageUploading ? <div className="h-3 w-3 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" /> : <Camera size={14} />}
+                                                            <span className="hidden sm:inline">{isImageUploading ? 'Uploading...' : 'Take Photo'}</span>
+                                                            <span className="sm:hidden">{isImageUploading ? '...' : 'Camera'}</span>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <input
                                                     className="w-full px-4 py-2 bg-transparent border-b border-gray-200 text-[10px] font-black text-gray-400 focus:text-gray-900 focus:border-[#843D9B] outline-none transition-all"

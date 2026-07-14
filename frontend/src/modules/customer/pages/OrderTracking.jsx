@@ -4,7 +4,7 @@ import {
     ArrowLeft, MapPin, Phone, MessageSquare,
     AlertCircle, HelpCircle, Package, Truck,
     Calendar, ExternalLink, ChevronRight, ShieldCheck,
-    Loader2, CheckCircle2, Star, User, Scissors
+    Loader2, CheckCircle2, Star, User, Scissors, Store
 } from 'lucide-react';
 import api from '../../../utils/api';
 import TrackingTimeline from '../components/orders/TrackingTimeline';
@@ -354,6 +354,7 @@ const OrderTracking = () => {
         : isAlteration
         ? [
             { key: 'pending', label: 'Order Received', icon: Package },
+            ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Dropoff', icon: Package }] : []),
             { key: 'fabric-received', label: 'Garment Received', icon: Package },
             { key: 'in-progress', label: 'Alteration Started', icon: Scissors },
             { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
@@ -382,6 +383,7 @@ const OrderTracking = () => {
         ]
         : [
             { key: 'pending', label: 'Order Received', icon: Package },
+            ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Dropoff', icon: Package }] : []),
             { key: 'fabric-received', label: 'Fabric Received', icon: Package },
             { key: 'cutting', label: 'Cutting', icon: Scissors },
             { key: 'stitching', label: 'Stitching', icon: Scissors },
@@ -416,6 +418,7 @@ const OrderTracking = () => {
             'fabric-picked-up',
             'fabric-delivered',
             'order-received',
+            'waiting-for-customer-dropoff',
             'fabric-received',
             'fabric-selected',
             'measurement-verification',
@@ -679,17 +682,104 @@ const OrderTracking = () => {
                     // Show for dropoff: active partner or searching for dropoff
                     const shouldShowForDropoff = hasActiveDropoffPartner || isSearchingDropoff;
 
-                    if (shouldShowForPickup || shouldShowForDropoff) {
+                    const isTailorSelfDelivery = order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor';
+
+                    if (shouldShowForPickup || shouldShowForDropoff || isTailorSelfDelivery) {
                         return <LiveDeliveryTracker 
                             order={order} 
                             socket={socketInstance} 
-                            forceSearching={isSearchingPickup || isSearchingDropoff} 
+                            forceSearching={(isSearchingPickup || isSearchingDropoff) && !isTailorSelfDelivery} 
                         />;
                     }
                     return null;
                 })()}
 
-                {/* 3.4 Payment Actions (if applicable) */}
+                {/* 3.3.6 Customer Self Delivery Tracking CTA */}
+                {order.fabricDeliveryPreference === 'self' && ['accepted', 'waiting-for-customer-dropoff'].includes(order.status) && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-4">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#843D9B] shadow-sm mb-1">
+                            <MapPin size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-gray-900 mb-1">Drop-off Your Fabric</h3>
+                            <p className="text-[11px] text-gray-600 max-w-[260px] mx-auto leading-relaxed">
+                                Please deliver your fabric to the tailor's shop to begin the stitching process.
+                            </p>
+                        </div>
+
+                        {order.tailor && (
+                            <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-indigo-50 text-left flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                                    <Store size={20} className="text-[#843D9B]" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Tailor Shop</p>
+                                    <p className="text-sm font-black text-gray-900">{order.tailor.shopName || order.tailor.name || 'SilaiWala Tailor'}</p>
+                                    <p className="text-xs font-medium text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+                                        {order.tailor.location?.address || order.tailor.address || 'Address provided upon order confirmation.'}
+                                    </p>
+                                    {order.tailor.phoneNumber && (
+                                        <p className="text-xs font-bold text-[#843D9B] mt-2 flex items-center gap-1.5">
+                                            <Phone size={12} /> {order.tailor.phoneNumber}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => navigate(`/user/orders/${id}/journey`)}
+                            className="w-full py-3.5 bg-[#843D9B] text-white rounded-2xl font-black text-[12px] uppercase tracking-wider shadow-lg shadow-[#843D9B]/25 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            Start Live Trip to Shop
+                        </button>
+                    </div>
+                )}
+
+        {/* Final Product Customer Pickup (Self Delivery) */}
+        {['ready-for-pickup', 'ready-for-delivery'].includes(order.status) && order.deliveryMethod === 'self' && (
+            <div className="mt-8 bg-green-50/50 rounded-3xl p-6 border border-green-100 flex flex-col gap-5 text-center animate-in fade-in zoom-in duration-500">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-green-100 relative">
+                    <MapPin className="text-green-600 animate-bounce" size={28} />
+                    <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
+                </div>
+                <div>
+                    <h3 className="text-sm font-black text-gray-900 mb-1">Pick Up Your Garment</h3>
+                    <p className="text-[11px] text-gray-600 max-w-[260px] mx-auto leading-relaxed">
+                        Your garment is ready! Please travel to the tailor's shop to collect it.
+                    </p>
+                </div>
+
+                {order.tailor && (
+                    <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-green-50 text-left flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                            <Store size={20} className="text-green-600" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Tailor Shop</p>
+                            <p className="text-sm font-black text-gray-900">{order.tailor.shopName || order.tailor.name || 'SilaiWala Tailor'}</p>
+                            <p className="text-xs font-medium text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+                                {order.tailor.location?.address || order.tailor.address || 'Address provided upon order confirmation.'}
+                            </p>
+                            {order.tailor.phoneNumber && (
+                                <p className="text-xs font-bold text-green-700 mt-2 flex items-center gap-1.5">
+                                    <Phone size={12} /> {order.tailor.phoneNumber}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <button
+                    onClick={() => navigate(`/user/orders/${id}/journey`)}
+                    className="w-full py-3.5 bg-green-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-wider shadow-lg shadow-green-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-green-700"
+                >
+                    Start Live Trip to Shop
+                </button>
+            </div>
+        )}
+
+        {/* 3.4 Payment Actions (if applicable) */}
                 {/* 3.4.0 Advance Payment CTA */}
                 {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && order.advancePaymentAmount > 0 && (
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-3">
@@ -909,12 +999,25 @@ const OrderTracking = () => {
                                 <span className="text-sm font-black text-emerald-600">₹{order.remainingPaymentAmount}</span>
                             </div>
                         )}
-                        {(order.paymentStatus === 'paid' || (order.advancePaymentAmount === 0 && order.totalAmount > 0)) && (
-                            <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
-                                <span className="text-sm font-black text-gray-900">Total Paid</span>
-                                <span className="text-sm font-black text-primary">₹{order.totalAmount}</span>
-                            </div>
-                        )}
+                        {(() => {
+                            let totalPaid = 0;
+                            if (order.advancePaymentAmount > 0) {
+                                totalPaid += order.advancePaymentAmount;
+                            }
+                            if (order.remainingPaymentStatus === 'paid' && order.remainingPaymentAmount > 0) {
+                                totalPaid += order.remainingPaymentAmount;
+                            }
+                            if (order.advancePaymentAmount === 0 && order.paymentStatus === 'paid') {
+                                totalPaid = order.totalAmount;
+                            }
+                            
+                            return totalPaid > 0 ? (
+                                <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
+                                    <span className="text-sm font-black text-gray-900">Total Paid</span>
+                                    <span className="text-sm font-black text-primary">₹{totalPaid}</span>
+                                </div>
+                            ) : null;
+                        })()}
                     </div>
                 </div>
 

@@ -48,7 +48,7 @@ const TailorAuthLayout = () => {
                     </div>
 
                     {/* Footer Section */}
-                    <div className="mt-auto pt-4 md:pt-10 border-t border-slate-50">
+                    <div className="mt-8 md:mt-auto pt-4 md:pt-10 border-t border-slate-50">
                         <div className="flex flex-col items-center justify-center gap-4">
                             <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest text-center">
                                 Trusted by 10,000+ <br/>

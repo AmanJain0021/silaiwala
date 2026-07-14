@@ -77,13 +77,13 @@ const LocationBanner = () => {
     };
 
     return (
-        <div className="bg-[#8B3D9A] text-white px-4 py-3 flex items-center justify-between shadow-md z-10 relative">
+        <div className="bg-[#843D9B] text-white backdrop-blur-2xl border-b border-indigo-400/20 px-4 py-3 flex items-center justify-between shadow-lg shadow-indigo-900/10 z-10 relative">
             <div className="flex items-center flex-1 min-w-0">
                 <div className="bg-white/20 p-2 rounded-full mr-3 flex-shrink-0">
                     <MapPin className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex flex-col truncate pr-4">
-                    <span className="text-[10px] font-bold tracking-wider text-purple-200 uppercase">Current Location</span>
+                    <span className="text-[10px] font-bold tracking-wider text-indigo-100 uppercase">Current Location</span>
                     <span className="text-sm font-semibold truncate text-white">
                         {addressName}
                     </span>

@@ -33,6 +33,13 @@ const TailorLogin = () => {
         clearErrors('root');
         setSendingOtp(true);
         try {
+            // First check if user exists
+            const checkRes = await api.post('/auth/check-user', { phoneNumber: mobileNumber });
+            if (!checkRes.data.exists) {
+                setFormError('root', { type: 'manual', message: 'First you registered & then login' });
+                return;
+            }
+
             await api.post('/auth/send-otp', { phoneNumber: mobileNumber });
             setOtpSent(true);
         } catch (error) {
@@ -74,8 +81,12 @@ const TailorLogin = () => {
                 setIsLocating(true);
             }
         } catch (error) {
-            const message = error.response?.data?.message || "Invalid OTP or server error";
-            setFormError('root', { type: 'manual', message });
+            if (error.response?.status === 404) {
+                setFormError('root', { type: 'manual', message: 'First you registered & then login' });
+            } else {
+                const message = error.response?.data?.message || "Invalid OTP or server error";
+                setFormError('root', { type: 'manual', message });
+            }
         } finally {
             setIsLoading(false);
         }

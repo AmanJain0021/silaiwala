@@ -8,10 +8,18 @@ import { ChevronLeft, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { compressImage } from '../../../utils/imageCompression';
 
 const TailorRegistration = () => {
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(() => {
+        const savedStep = localStorage.getItem('tailorSignupStep');
+        return savedStep ? parseInt(savedStep, 10) : 1;
+    });
     const [isSubmitted, setIsSubmitted] = useState(false);
+    
+    useEffect(() => {
+        localStorage.setItem('tailorSignupStep', step);
+    }, [step]);
     const [isValidating, setIsValidating] = useState(false);
     const { login } = useTailorAuth();
     const navigate = useNavigate();
@@ -70,41 +78,68 @@ const TailorRegistration = () => {
         }
 
         const isStepValid = await trigger(fieldsToValidate);
-        if (isStepValid) {
-            if (step === 1) {
-                setIsLoading(true);
-                try {
-                    const response = await api.post('/auth/check-user', { email: watch('email'), phoneNumber: watch('phone') });
-                    if (response.data.exists) {
-                        setError(response.data.field, { type: 'manual', message: response.data.message });
-                        setIsValidating(false);
-                        setIsLoading(false);
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Check user failed:', error);
-                } finally {
-                    setIsLoading(false);
-                }
-                
-                // Process Profile Image upload for Step 1
-                const uploadsSuccess = await processStepUploads(['profileImage']);
-                if (!uploadsSuccess) {
-                    setIsValidating(false);
-                    return;
-                }
+        if (!isStepValid) {
+            if (step === 1 && (!watch('otp') || watch('otp').length < 6)) {
+                toast.error("Please verify your mobile number by sending OTP first.");
             }
-
-            if (step === 3) {
-                // Process Document uploads for Step 3
-                const uploadsSuccess = await processStepUploads(['aadharFront', 'aadharBack', 'panImage', 'licenseImage']);
-                if (!uploadsSuccess) {
-                    setIsValidating(false);
-                    return;
-                }
-            }
-            nextStep();
+            setIsValidating(false);
+            return;
         }
+
+        if (step === 1) {
+            setIsLoading(true);
+            try {
+                const otpResponse = await api.post('/auth/verify-otp', {
+                    phone: watch('phone'),
+                    otp: watch('otp')
+                });
+                
+                if (!otpResponse.data.success) {
+                    setError('otp', { type: 'manual', message: 'Invalid OTP' });
+                    setIsValidating(false);
+                    setIsLoading(false);
+                    return;
+                }
+
+                const response = await api.post('/auth/check-user', { email: watch('email'), phoneNumber: watch('phone') });
+                if (response.data.exists) {
+                    setError(response.data.field, { type: 'manual', message: response.data.message });
+                    setIsValidating(false);
+                    setIsLoading(false);
+                    return;
+                }
+            } catch (error) {
+                console.error('Validation failed:', error);
+                const errMsg = error.response?.data?.message || 'Verification failed';
+                if (error.config?.url?.includes('verify-otp')) {
+                    setError('otp', { type: 'manual', message: errMsg });
+                } else {
+                    toast.error(errMsg);
+                }
+                setIsValidating(false);
+                setIsLoading(false);
+                return;
+            } finally {
+                setIsLoading(false);
+            }
+            
+            // Process Profile Image upload for Step 1
+            const uploadsSuccess = await processStepUploads(['profileImage']);
+            if (!uploadsSuccess) {
+                setIsValidating(false);
+                return;
+            }
+        }
+
+        if (step === 3) {
+            // Process Document uploads for Step 3
+            const uploadsSuccess = await processStepUploads(['aadharFront', 'aadharBack', 'panImage', 'licenseImage']);
+            if (!uploadsSuccess) {
+                setIsValidating(false);
+                return;
+            }
+        }
+        nextStep();
         setIsValidating(false);
     };
 
@@ -114,12 +149,13 @@ const TailorRegistration = () => {
         const formData = new FormData();
         let hasFiles = false;
         
-        filesArray.forEach(item => {
+        for (const item of filesArray) {
             if (item.file instanceof File) {
-                formData.append('images', item.file);
+                const compressedFile = await compressImage(item.file);
+                formData.append('images', compressedFile);
                 hasFiles = true;
             }
-        });
+        }
         
         if (!hasFiles) return [];
         
@@ -215,6 +251,7 @@ const TailorRegistration = () => {
             if (response.data.success) {
                 const { token, data: result } = response.data;
                 localStorage.removeItem('tailorSignupData');
+                localStorage.removeItem('tailorSignupStep');
                 setIsSubmitted(true);
                 login(result.user, token);
             }

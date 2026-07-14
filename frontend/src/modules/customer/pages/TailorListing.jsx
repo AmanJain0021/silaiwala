@@ -54,9 +54,10 @@ const TailorListing = () => {
         fetchTailors();
     }, [coordinates, filters]);
 
+    const searchTerm = search.trim().toLowerCase();
     const filteredTailors = tailors.filter(t =>
-        (t.shopName || t.user?.name || "").toLowerCase().includes(search.toLowerCase()) ||
-        (t.specializations || []).some(s => s.toLowerCase().includes(search.toLowerCase()))
+        (t.shopName || t.user?.name || "").toLowerCase().includes(searchTerm) ||
+        (t.specializations || []).some(s => s.toLowerCase().includes(searchTerm))
     );
 
     if (isLoading && tailors.length === 0) {
@@ -96,7 +97,7 @@ const TailorListing = () => {
                     </div>
                     <button 
                         onClick={() => setIsFilterOpen(true)}
-                        className="p-2.5 bg-gray-50 rounded-xl text-gray-500 border border-gray-100 active:scale-95 transition-all relative"
+                        className="p-2.5 bg-gray-50 rounded-xl text-gray-500 border border-gray-100 active:scale-95 transition-all relative z-50 cursor-pointer"
                     >
                         <Filter size={18} />
                         {(filters.rating || filters.maxPrice < 10000 || filters.sortBy !== 'priority') && (

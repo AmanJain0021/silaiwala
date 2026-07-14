@@ -37,6 +37,18 @@ const TailorCustomDesigns = () => {
         return () => socket.disconnect();
     }, [user]);
 
+    // Prevent body scrolling when a modal is open
+    useEffect(() => {
+        if (detailsModalOpen || quoteModalOpen || fullscreenImage) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [detailsModalOpen, quoteModalOpen, fullscreenImage]);
+
     const fetchDesigns = async () => {
         try {
             const res = await api.get('/custom-designs');
@@ -252,11 +264,11 @@ const TailorCustomDesigns = () => {
 
             {/* Quote Modal */}
             {quoteModalOpen && selectedDesign && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm relative">
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-sm relative animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:fade-in-0 duration-300">
                         <button 
                             onClick={() => setQuoteModalOpen(false)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors bg-gray-100 rounded-full p-1"
                         >
                             <X size={20} />
                         </button>

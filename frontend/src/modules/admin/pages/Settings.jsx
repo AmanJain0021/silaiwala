@@ -13,6 +13,32 @@ const AdminSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [settings, setSettings] = useState(null);
 
+    // Admin Users State for Security Tab
+    const [adminUsers, setAdminUsers] = useState([]);
+    const [isFetchingAdmins, setIsFetchingAdmins] = useState(false);
+    const [isSavingAdmin, setIsSavingAdmin] = useState(false);
+    const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+    const [selectedAdmin, setSelectedAdmin] = useState(null);
+
+    const fetchAdmins = async () => {
+        setIsFetchingAdmins(true);
+        try {
+            const res = await api.get('/admin/users?role=admins');
+            setAdminUsers(res.data.data || []);
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to fetch admins:', error);
+        } finally {
+            setIsFetchingAdmins(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedTab === 'Security') {
+            fetchAdmins();
+        }
+    }, [selectedTab]);
+
     const tabs = [
         { id: 'General', icon: <Globe size={16} />, desc: 'Platform basics' },
         { id: 'Pricing & Fees', icon: <DollarSign size={16} />, desc: 'GST & Visit charges' },
@@ -155,8 +181,13 @@ const AdminSettings = () => {
                                     <input 
                                         type="tel" 
                                         value={settings.general.supportPhone} 
-                                        onChange={(e) => updateNestedSetting('general', 'supportPhone', e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                            updateNestedSetting('general', 'supportPhone', val);
+                                        }}
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        maxLength={10}
+                                        placeholder="1234567890"
                                     />
                                 </div>
                                 <div>
@@ -584,12 +615,10 @@ const AdminSettings = () => {
                             </div>
 
                             <div className="space-y-4">
-                                {[
-                                    { name: 'Ritesh Kumar', email: 'ritesh@silaiwala.com', role: 'Super Admin', status: 'Active' },
-                                    { name: 'Aman Singh', email: 'aman@silaiwala.com', role: 'Support Agent', status: 'Active' },
-                                    { name: 'Neha Gupta', email: 'neha@silaiwala.com', role: 'Finance Manager', status: 'Inactive' },
-                                ].map((admin, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-5 border border-gray-100 rounded-2xl hover:border-gray-200 transition-all hover:shadow-sm bg-white">
+                                {isFetchingAdmins ? (
+                                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-gray-400" /></div>
+                                ) : adminUsers.map((admin) => (
+                                    <div key={admin._id} className="flex items-center justify-between p-5 border border-gray-100 rounded-2xl hover:border-gray-200 transition-all hover:shadow-sm bg-white">
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center text-primary border border-gray-100">
                                                 <User size={18} />
@@ -600,10 +629,18 @@ const AdminSettings = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <span className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${admin.status === 'Active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
-                                                {admin.role}
+                                            <span className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border ${admin.isActive ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                                {admin.role ? admin.role.replace('_', ' ') : 'Admin'}
                                             </span>
-                                            <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest">Manage</button>
+                                            <button 
+                                                onClick={() => {
+                                                    setSelectedAdmin(admin);
+                                                    setIsManageModalOpen(true);
+                                                }}
+                                                className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest"
+                                            >
+                                                Manage
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -629,6 +666,97 @@ const AdminSettings = () => {
                     )}
                 </div>
             </div>
+
+            {/* Manage Admin Modal */}
+            <AnimatePresence>
+                {isManageModalOpen && selectedAdmin && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setIsManageModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                        >
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                                <h2 className="text-lg font-black tracking-tight text-gray-900">Manage Admin User</h2>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Update roles and permissions</p>
+                            </div>
+                            
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Name</label>
+                                    <input type="text" value={selectedAdmin.name} readOnly className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 outline-none cursor-not-allowed" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Email</label>
+                                    <input type="text" value={selectedAdmin.email} readOnly className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 outline-none cursor-not-allowed" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Role</label>
+                                    <select 
+                                        value={selectedAdmin.role} 
+                                        onChange={(e) => setSelectedAdmin({...selectedAdmin, role: e.target.value})}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors appearance-none"
+                                    >
+                                        <option value="super_admin">Super Admin</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="support_agent">Support Agent</option>
+                                        <option value="finance_manager">Finance Manager</option>
+                                        <option value="content_manager">Content Manager</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Status</label>
+                                    <select 
+                                        value={selectedAdmin.isActive ? 'true' : 'false'} 
+                                        onChange={(e) => setSelectedAdmin({...selectedAdmin, isActive: e.target.value === 'true'})}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors appearance-none"
+                                    >
+                                        <option value="true">Active</option>
+                                        <option value="false">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 rounded-b-3xl">
+                                <button onClick={() => setIsManageModalOpen(false)} className="px-6 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-xl hover:bg-gray-50 transition-colors uppercase tracking-widest">
+                                    Cancel
+                                </button>
+                                <button 
+                                    disabled={isSavingAdmin}
+                                    onClick={async () => {
+                                        setIsSavingAdmin(true);
+                                        try {
+                                            await api.put(`/admin/users/${selectedAdmin._id}/status`, {
+                                                isActive: selectedAdmin.isActive,
+                                                role: selectedAdmin.role
+                                            });
+                                            toast.success('Admin updated successfully');
+                                            setIsManageModalOpen(false);
+                                            fetchAdmins();
+                                        } catch (error) {
+                                            toast.error('Failed to update admin');
+                                        } finally {
+                                            setIsSavingAdmin(false);
+                                        }
+                                    }} 
+                                    className="px-6 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest flex items-center gap-2"
+                                >
+                                    {isSavingAdmin ? <Loader2 size={16} className="animate-spin" /> : null}
+                                    Save Changes
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

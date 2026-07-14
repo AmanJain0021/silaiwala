@@ -57,7 +57,14 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                 placeholder="Enter your full name"
                 {...register('fullName', { 
                     required: 'Name is required',
-                    minLength: { value: 2, message: 'Name must be at least 2 characters' }
+                    minLength: { value: 2, message: 'Name must be at least 2 characters' },
+                    pattern: {
+                        value: /^[A-Za-z\s]+$/,
+                        message: 'Name can only contain alphabets'
+                    },
+                    onChange: (e) => {
+                        e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                    }
                 })}
                 error={errors.fullName?.message}
             />
@@ -81,6 +88,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                                     e.target.value = e.target.value.replace(/\D/g, '');
                                 }
                             })}
+                            onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                             className="flex-1 bg-transparent border-none focus:ring-0 font-medium text-sm text-gray-900 placeholder:text-gray-300 outline-none w-full"
                         />
                     </div>
@@ -140,6 +148,7 @@ export const Step1Basic = ({ register, errors, setValue, watch }) => {
                             required: 'Password is required',
                             validate: validatePassword
                         })}
+                        onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                         className="flex-1 bg-transparent border-none focus:ring-0 font-medium text-sm text-gray-900 placeholder:text-gray-300 outline-none w-full"
                     />
                     <button 
@@ -210,7 +219,16 @@ export const Step2Business = ({ register, errors, setValue }) => {
                 <Input
                     label="City"
                     placeholder="e.g. Mumbai"
-                    {...register('city', { required: 'City is required' })}
+                    {...register('city', { 
+                        required: 'City is required',
+                        pattern: {
+                            value: /^[A-Za-z\s]+$/,
+                            message: 'City can only contain alphabets'
+                        },
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                        }
+                    })}
                     error={errors.city?.message}
                 />
                 <Input

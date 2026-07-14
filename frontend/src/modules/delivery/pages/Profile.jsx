@@ -530,7 +530,7 @@ const DeliveryProfile = () => {
               initial={{ y: '100%' }} 
               animate={{ y: 0 }} 
               exit={{ y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] flex gap-3 max-w-lg mx-auto"
+              className="fixed bottom-[80px] left-0 right-0 p-4 bg-white border-t border-slate-200 z-[60] shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] flex gap-3 max-w-lg mx-auto rounded-t-2xl"
             >
               <button onClick={handleCancel} disabled={isLoading} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest text-[11px] active:scale-95 transition-all">
                 Cancel

@@ -57,13 +57,13 @@ const ImageUploader = ({
     };
 
     const triggerCamera = () => {
-        setShowOptions(false);
         if (cameraInputRef.current) cameraInputRef.current.click();
+        setShowOptions(false);
     };
 
     const triggerGallery = () => {
-        setShowOptions(false);
         if (galleryInputRef.current) galleryInputRef.current.click();
+        setShowOptions(false);
     };
 
     return (

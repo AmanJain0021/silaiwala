@@ -31,6 +31,7 @@ const Signup = React.lazy(() => import('./modules/customer/pages/Signup'));
 // Tailor Module Pages
 const TailorLogin = React.lazy(() => import('./modules/tailor/pages/Login'));
 const TailorRegistration = React.lazy(() => import('./modules/tailor/pages/Registration'));
+import CustomerLiveJourney from './modules/customer/pages/CustomerLiveJourney';
 import { UnderReview, RejectedPage } from './modules/tailor/pages/StatusPages';
 import TailorProtectedRoute from './modules/tailor/components/ProtectedRoute';
 import TailorAuthLayout from './modules/tailor/layouts/TailorAuthLayout';
@@ -55,6 +56,7 @@ const TailorIssueDetails = React.lazy(() => import('./modules/tailor/pages/Tailo
 
 // Customer Pages
 const CustomerHome = React.lazy(() => import('./modules/customer/pages/Home'));
+const WhatWeOffer = React.lazy(() => import('./modules/customer/pages/WhatWeOffer'));
 const ServicesPage = React.lazy(() => import('./modules/customer/pages/Services'));
 const ServiceDetailPage = React.lazy(() => import('./modules/customer/pages/ServiceDetail'));
 const StorePage = React.lazy(() => import('./modules/customer/pages/Store')); // NEW
@@ -71,6 +73,9 @@ const WishlistPage = React.lazy(() => import('./modules/customer/pages/Wishlist'
 const TailorProfile = React.lazy(() => import('./modules/customer/pages/TailorProfile')); // NEW
 const TailorListing = React.lazy(() => import('./modules/customer/pages/TailorListing')); // NEW
 const TailorSelection = React.lazy(() => import('./modules/customer/pages/TailorSelection')); // NEW
+const CouponsPage = React.lazy(() => import('./modules/customer/pages/Coupons'));
+const LanguageSettingsPage = React.lazy(() => import('./modules/customer/pages/LanguageSettings'));
+const NotificationSettingsPage = React.lazy(() => import('./modules/customer/pages/NotificationSettings'));
 import CustomerProtectedRoute from './modules/customer/components/CustomerProtectedRoute';
 import CustomerMainLayout from './modules/customer/layouts/CustomerMainLayout';
 const CustomerOnboarding = React.lazy(() => import('./modules/customer/pages/Onboarding'));
@@ -126,6 +131,7 @@ const AdminSupport = React.lazy(() => import('./modules/admin/pages/Support'));
 const AdminMeasurementExecutives = React.lazy(() => import('./modules/admin/pages/MeasurementExecutives'));
 const AdminIssues = React.lazy(() => import('./modules/admin/pages/IssuesManagement')); // NEW
 const AdminIssueDetails = React.lazy(() => import('./modules/admin/pages/AdminIssueDetails')); // NEW
+const AdminShiprocket = React.lazy(() => import('./modules/admin/pages/ShiprocketShipments'));
 import AdminProtectedRoute from './modules/admin/components/AdminProtectedRoute';
 
 const ReferEarn = React.lazy(() => import('./modules/customer/pages/ReferEarn')); // NEW
@@ -186,6 +192,7 @@ const AppRoutes = () => {
                     <Route element={<CustomerMainLayout />}>
                         <Route index element={<CustomerHome />} />
                         <Route path="services" element={<ServicesPage />} />
+                        <Route path="what-we-offer" element={<WhatWeOffer />} />
                         <Route path="services/:id" element={<ServiceDetailPage />} />
                         <Route path="embellishments" element={<Embellishments />} />
                         <Route path="alteration" element={<AlterationForm />} />
@@ -203,6 +210,10 @@ const AppRoutes = () => {
                         <Route path="activity" element={<ActivityHistory />} />
                         <Route path="loyalty" element={<LoyaltyPoints />} />
                         <Route path="refer" element={<ReferEarn />} />
+                        <Route path="wallet" element={<WalletPage />} />
+                        <Route path="coupons" element={<CouponsPage />} />
+                        <Route path="language" element={<LanguageSettingsPage />} />
+                        <Route path="notifications" element={<NotificationSettingsPage />} />
                         {/* Fixed path from /tailor/:id to /shop/:id to avoid conflict or keep it customer centric */}
                         <Route path="tailor/:id" element={<TailorProfile />} />
                         <Route path="tailors" element={<TailorListing />} />
@@ -213,6 +224,7 @@ const AppRoutes = () => {
                         <Route path="checkout/summary" element={<CheckoutSummary />} />
                         <Route path="checkout/success" element={<OrderSuccess />} />
                         <Route path="orders/:id/track" element={<OrderTracking />} />
+                        <Route path="orders/:id/journey" element={<CustomerLiveJourney />} />
                         <Route path="support" element={<Support />} />
                         <Route path="legal/:slug" element={<CMSContent />} />
 
@@ -337,6 +349,7 @@ const AppRoutes = () => {
                     <Route path="/admin/measurement-executives" element={<AdminMeasurementExecutives />} />
                     <Route path="/admin/issues" element={<AdminIssues />} />
                     <Route path="/admin/issues/:issueId" element={<AdminIssueDetails />} />
+                    <Route path="/admin/shiprocket" element={<AdminShiprocket />} />
                 </Route>
             </Route>
 

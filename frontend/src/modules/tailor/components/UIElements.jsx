@@ -23,11 +23,20 @@ export const Button = ({ children, onClick, type = 'button', variant = 'primary'
     );
 };
 
-export const Input = ({ label, error, ...props }) => {
+export const Input = ({ label, error, onFocus, ...props }) => {
+    const handleFocus = (e) => {
+        // Delay scroll slightly to allow virtual keyboard to appear on mobile
+        setTimeout(() => {
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+        if (onFocus) onFocus(e);
+    };
+
     return (
         <div className="space-y-1.5 w-full group">
             {label && <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#843D9B]">{label}</label>}
             <input
+                onFocus={handleFocus}
                 {...props}
                 className={`w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus:outline-none transition-all duration-300 font-medium text-sm placeholder:text-gray-300 ${error ? 'border-red-100 bg-red-50/30' : 'border-transparent focus:border-[#843D9B] focus:bg-white'
                     }`}

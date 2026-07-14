@@ -1359,6 +1359,8 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     }
     
     order.pickupOtpVerified = true;
+    order.otpVerifiedAt = new Date();
+    order.pickupDeliveryOtp = null; // Invalidate OTP after use
     order.deliveryStatus = "delivered";
     order.pickupDeliveryStatus = "delivered";
     order.status = "fabric-received";
@@ -1387,6 +1389,8 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     }
     
     order.dropoffOtpVerified = true;
+    order.otpVerifiedAt = new Date();
+    order.dropoffDeliveryOtp = null; // Invalidate OTP after use
     order.deliveryStatus = "delivered";
     order.dropoffDeliveryStatus = "delivered";
     order.status = "delivered";
@@ -1492,6 +1496,15 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
       // Also notify tailor that final delivery is complete
       io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
+      
+      // Emit delivery_completed to stop live tracking maps
+      io.to(`order_${order._id}`).emit('delivery_completed', { orderId: order._id });
+      
+      // Leave room after 1 second delay
+      const orderRoom = `order_${order._id}`;
+      setTimeout(() => {
+        io.in(orderRoom).socketsLeave(orderRoom);
+      }, 1000);
     }
   }
 

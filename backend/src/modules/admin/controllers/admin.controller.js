@@ -13,8 +13,11 @@ const Payout = require("../../../models/Payout.js");
 const Settings = require("../../../models/Settings.js");
 const Alteration = require("../../../models/Alteration.js");
 const path = require("path");
+const Service = require("../../../models/Service.js");
 const { sendNotification } = require("../../../utils/notification.js");
 const { getCached, invalidateCache } = require("../../../utils/cache.js");
+const ShiprocketLog = require("../../../models/ShiprocketLog.js");
+const { createPickupLocation } = require("../../../utils/shiprocket.js");
 
 // --- DASHBOARD & GENERAL ---
 
@@ -164,7 +167,9 @@ exports.getAllUsers = async (req, res) => {
     const { role, limit = 50, page = 1 } = req.query;
     const skip = (page - 1) * limit;
     let query = {};
-    if (role) {
+    if (role === 'admins') {
+      query.role = { $in: ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'] };
+    } else if (role) {
       query.role = role;
     }
 
@@ -225,12 +230,38 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+exports.getTailorById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password").lean();
+    if (!user || user.role !== 'tailor') {
+      return res.status(404).json({ success: false, message: "Tailor not found" });
+    }
+    
+    const profile = await Tailor.findOne({ user: req.params.id }).lean();
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        ...user,
+        profile: profile || null
+      }
+    });
+  } catch (error) {
+    console.error("Error in getTailorById:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
+    const { isActive, role } = req.body;
     
-    const user = await User.findByIdAndUpdate(id, { isActive }, { new: true });
+    let updateFields = {};
+    if (isActive !== undefined) updateFields.isActive = isActive;
+    if (role !== undefined) updateFields.role = role;
+    
+    const user = await User.findByIdAndUpdate(id, updateFields, { new: true });
     
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -240,7 +271,7 @@ exports.updateUserStatus = async (req, res) => {
     await invalidateCache("cache:admin:crm-dashboard");
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error("Error in getAllUsers:", error);
+    console.error("Error in updateUserStatus:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -314,6 +345,65 @@ exports.approveTailor = async (req, res) => {
       await tailor.save();
     }
 
+    // --- Auto-create Shiprocket Pickup Location ---
+    let shiprocketSetupFailed = false;
+    let shiprocketError = null;
+
+    if (tailor) {
+      try {
+        const shopNameSlug = (tailor.shopName || user.name || 'Shop')
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .trim()
+          .replace(/\s+/g, '_');
+        const pickupLocationName = `${shopNameSlug}_${tailor._id.toString().slice(-6)}`;
+
+        const pickupPayload = {
+          pickup_location: pickupLocationName,
+          name: user.name,
+          email: user.email,
+          phone: user.phoneNumber?.replace(/^\+91/, '') || '9999999999',
+          address: tailor.location?.address || 'Address not provided',
+          address_2: '',
+          city: tailor.location?.city || '',
+          state: tailor.location?.state || '',
+          country: 'India',
+          pin_code: tailor.location?.pincode || '',
+        };
+
+        const srResponse = await createPickupLocation(pickupPayload);
+
+        // Save the pickup location name to tailor profile
+        tailor.shiprocketPickupLocation = pickupLocationName;
+        tailor.isShiprocketConfigured = true;
+        await tailor.save();
+
+        // Log success
+        await ShiprocketLog.create({
+          tailor: tailor._id,
+          action: 'CREATE_PICKUP_LOCATION',
+          requestPayload: pickupPayload,
+          responseData: srResponse,
+          status: 'SUCCESS',
+        });
+
+        console.log(`✅ Shiprocket pickup location created for tailor ${user.name}: ${pickupLocationName}`);
+      } catch (srError) {
+        // Do NOT block tailor approval — just log the failure
+        shiprocketSetupFailed = true;
+        shiprocketError = srError.message || 'Unknown Shiprocket error';
+
+        await ShiprocketLog.create({
+          tailor: tailor._id,
+          action: 'CREATE_PICKUP_LOCATION',
+          requestPayload: { tailorId: tailor._id, shopName: tailor.shopName },
+          status: 'FAILED',
+          errorMessage: shiprocketError,
+        }).catch(logErr => console.error('Failed to save ShiprocketLog:', logErr));
+
+        console.error(`⚠️ Shiprocket pickup location creation failed for tailor ${user.name}:`, shiprocketError);
+      }
+    }
+
     // Notify Tailor
     await sendNotification({
       recipient: user._id,
@@ -326,7 +416,18 @@ exports.approveTailor = async (req, res) => {
     await invalidateCache("cache:admin:dashboard-stats");
     await invalidateCache("cache:admin:crm-dashboard");
     await invalidateCache("cache:tailors:*");
-    res.status(200).json({ success: true, message: "Tailor approved and notified", data: user });
+
+    const responseData = {
+      success: true,
+      message: shiprocketSetupFailed
+        ? "Tailor approved and notified, but Shiprocket pickup location setup failed. Use the retry endpoint to try again."
+        : "Tailor approved and notified",
+      data: user,
+      shiprocketSetupFailed,
+    };
+    if (shiprocketError) responseData.shiprocketError = shiprocketError;
+
+    res.status(200).json(responseData);
   } catch (error) {
     console.error("Error in approveTailor:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -411,6 +512,134 @@ exports.updateTailorShiprocketLocation = async (req, res) => {
     res.status(200).json({ success: true, message: "Shiprocket location updated successfully", data: tailor });
   } catch (error) {
     console.error("Error in updateTailorShiprocketLocation:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Retry Shiprocket pickup location setup for a tailor
+ * @route   POST /api/v1/admin/tailors/:id/shiprocket-setup
+ * @access  Private (Admin)
+ * @body    { city?, state?, pincode?, address? } — optional overrides saved to tailor profile
+ */
+exports.retryShiprocketSetup = async (req, res) => {
+  try {
+    const tailor = await Tailor.findOne({ user: req.params.id });
+    if (!tailor) {
+      return res.status(404).json({ success: false, message: "Tailor profile not found" });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Accept address overrides from request body and save to tailor profile
+    const { city, state, pincode, address } = req.body;
+    
+    if (city) tailor.location.city = city;
+    if (state) tailor.location.state = state;
+    if (pincode) tailor.location.pincode = pincode;
+    if (address) tailor.location.address = address;
+
+    // Save any updated address fields first
+    if (city || state || pincode || address) {
+      await tailor.save();
+    }
+
+    // Validate required fields before calling Shiprocket
+    const missingFields = [];
+    if (!tailor.location?.city) missingFields.push('city');
+    if (!tailor.location?.state) missingFields.push('state');
+    if (!tailor.location?.pincode) missingFields.push('pincode');
+    if (!tailor.location?.address) missingFields.push('address');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Tailor profile is missing required address fields: ${missingFields.join(', ')}. Pass them in the request body: { city, state, pincode, address }`,
+        missingFields,
+      });
+    }
+
+    // Shiprocket requires address >= 10 chars and must include a house/flat/road number
+    const addr = tailor.location.address;
+    if (addr.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Address must be at least 10 characters long (Shiprocket requirement).',
+      });
+    }
+    if (!/\d/.test(addr)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Address must include a House No / Flat No / Road No (Shiprocket requirement). Example: "12, Main Road, Sector 5"',
+      });
+    }
+
+    const shopNameSlug = (tailor.shopName || user.name || 'Shop')
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '_');
+    const pickupLocationName = `${shopNameSlug}_${tailor._id.toString().slice(-6)}`;
+
+    const pickupPayload = {
+      pickup_location: pickupLocationName,
+      name: user.name,
+      email: user.email,
+      phone: user.phoneNumber?.replace(/^\+91/, '') || '9999999999',
+      address: tailor.location.address,
+      address_2: '',
+      city: tailor.location.city,
+      state: tailor.location.state,
+      country: 'India',
+      pin_code: tailor.location.pincode,
+    };
+
+    const srResponse = await createPickupLocation(pickupPayload);
+
+    // Update tailor profile
+    tailor.shiprocketPickupLocation = pickupLocationName;
+    tailor.isShiprocketConfigured = true;
+    await tailor.save();
+
+    // Log success
+    await ShiprocketLog.create({
+      tailor: tailor._id,
+      action: 'CREATE_PICKUP_LOCATION',
+      requestPayload: pickupPayload,
+      responseData: srResponse,
+      status: 'SUCCESS',
+    });
+
+    await invalidateCache("cache:tailors:*");
+
+    res.status(200).json({
+      success: true,
+      message: `Shiprocket pickup location "${pickupLocationName}" created successfully`,
+      data: {
+        shiprocketPickupLocation: pickupLocationName,
+        isShiprocketConfigured: true,
+        shiprocketResponse: srResponse,
+      }
+    });
+  } catch (error) {
+    // Log the failure
+    try {
+      const tailor = await Tailor.findOne({ user: req.params.id });
+      if (tailor) {
+        await ShiprocketLog.create({
+          tailor: tailor._id,
+          action: 'CREATE_PICKUP_LOCATION',
+          status: 'FAILED',
+          errorMessage: error.message,
+        });
+      }
+    } catch (logErr) {
+      console.error('Failed to save ShiprocketLog:', logErr);
+    }
+
+    console.error("Error in retryShiprocketSetup:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -957,6 +1186,24 @@ exports.sendBroadcastNotification = async (req, res) => {
     }
   } catch (error) {
     console.error("Error in sendBroadcastNotification:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getNotificationLogs = async (req, res) => {
+  try {
+    const Notification = require("../../../models/Notification.js");
+    
+    // Fetch logs, sorted by most recent
+    const logs = await Notification.find()
+      .sort("-createdAt")
+      .limit(100)
+      .populate("recipient", "name email role")
+      .lean();
+      
+    res.status(200).json({ success: true, data: logs });
+  } catch (error) {
+    console.error("Error in getNotificationLogs:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -1560,6 +1807,219 @@ exports.generateReport = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in generateReport:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ==========================================
+// 6. SERVICE APPROVAL MANAGEMENT
+// ==========================================
+
+const asyncHandler = require("../../../utils/asyncHandler.js");
+const ErrorResponse = require("../../../utils/errorResponse.js");
+
+/**
+ * @desc    Get all pending services
+ * @route   GET /api/v1/admin/services/pending
+ * @access  Private/Admin
+ */
+exports.getPendingServices = asyncHandler(async (req, res, next) => {
+  const pendingServices = await Service.find({ status: "pending" })
+    .populate("tailor", "shopName user")
+    .populate("category", "name")
+    .sort("-createdAt");
+
+  res.status(200).json({
+    success: true,
+    count: pendingServices.length,
+    data: pendingServices,
+  });
+});
+
+/**
+ * @desc    Approve a pending service
+ * @route   PATCH /api/v1/admin/services/:id/approve
+ * @access  Private/Admin
+ */
+exports.approveServiceStatus = asyncHandler(async (req, res, next) => {
+  const service = await Service.findById(req.params.id);
+  if (!service) {
+    return next(new ErrorResponse("Service not found", 404));
+  }
+
+  service.status = "approved";
+  service.isActive = true;
+  await service.save();
+
+  res.status(200).json({
+    success: true,
+    data: service,
+  });
+});
+
+/**
+ * @desc    Reject a pending service
+ * @route   PATCH /api/v1/admin/services/:id/reject
+ * @access  Private/Admin
+ */
+exports.rejectServiceStatus = asyncHandler(async (req, res, next) => {
+  const { reason } = req.body;
+  const service = await Service.findById(req.params.id);
+  
+  if (!service) {
+    return next(new ErrorResponse("Service not found", 404));
+  }
+
+  service.status = "rejected";
+  service.isActive = false;
+  service.rejectionReason = reason || "Does not meet our guidelines";
+  await service.save();
+
+  res.status(200).json({
+    success: true,
+    data: service,
+  });
+});
+
+// ==========================================
+// 7. SHIPROCKET SHIPMENTS DASHBOARD
+// ==========================================
+
+/**
+ * @desc    Get all Shiprocket shipments for admin dashboard
+ * @route   GET /api/v1/admin/shiprocket/shipments
+ * @access  Private (Admin)
+ * @query   page, limit, status (shiprocket currentStatus), tailorId, search (orderId/AWB)
+ */
+exports.getShiprocketShipments = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status, tailorId, search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Build query filter
+    const query = { deliveryProvider: 'shiprocket' };
+
+    if (tailorId) {
+      query.tailor = tailorId;
+    }
+
+    if (status) {
+      query['shiprocketDetails.currentStatus'] = status;
+    }
+
+    if (search) {
+      query.$or = [
+        { orderId: { $regex: search, $options: 'i' } },
+        { 'shiprocketDetails.awbCode': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // Get paginated shipments
+    const [shipments, total] = await Promise.all([
+      Order.find(query)
+        .populate('customer', 'name email phoneNumber')
+        .populate('tailor', 'name email phoneNumber')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Order.countDocuments(query),
+    ]);
+
+    // Get tailor profiles for shop name & pickup location
+    const tailorUserIds = [...new Set(shipments.map(s => s.tailor?._id?.toString()).filter(Boolean))];
+    const tailorProfiles = await Tailor.find({ user: { $in: tailorUserIds } }).lean();
+    const tailorProfileMap = {};
+    tailorProfiles.forEach(tp => {
+      tailorProfileMap[tp.user.toString()] = tp;
+    });
+
+    // Format response
+    const formattedShipments = shipments.map(order => {
+      const tailorProfile = tailorProfileMap[order.tailor?._id?.toString()];
+      return {
+        _id: order._id,
+        orderId: order.orderId,
+        tailor: {
+          _id: order.tailor?._id,
+          name: order.tailor?.name || 'Unknown',
+          shopName: tailorProfile?.shopName || '',
+          pickupLocation: tailorProfile?.shiprocketPickupLocation || 'Not Set',
+          isShiprocketConfigured: tailorProfile?.isShiprocketConfigured || false,
+        },
+        customer: {
+          _id: order.customer?._id,
+          name: order.customer?.name || 'Unknown',
+          phone: order.customer?.phoneNumber || '',
+        },
+        shiprocket: {
+          shipmentId: order.shiprocketDetails?.shipmentId || '',
+          orderId: order.shiprocketDetails?.orderId || '',
+          awbCode: order.shiprocketDetails?.awbCode || '',
+          courierName: order.shiprocketDetails?.courierName || '',
+          trackingUrl: order.shiprocketDetails?.trackingUrl || '',
+          currentStatus: order.shiprocketDetails?.currentStatus || 'UNKNOWN',
+          pickupScheduled: order.shiprocketDetails?.pickupScheduled || false,
+        },
+        totalAmount: order.totalAmount,
+        paymentStatus: order.paymentStatus,
+        orderStatus: order.status,
+        updatedAt: order.updatedAt,
+        createdAt: order.createdAt,
+      };
+    });
+
+    // Summary aggregation (counts by Shiprocket status + total value)
+    const summaryAgg = await Order.aggregate([
+      { $match: { deliveryProvider: 'shiprocket' } },
+      {
+        $group: {
+          _id: '$shiprocketDetails.currentStatus',
+          count: { $sum: 1 },
+          totalValue: { $sum: '$totalAmount' },
+        },
+      },
+    ]);
+
+    const summary = {
+      total: 0,
+      totalValue: 0,
+      byStatus: {},
+    };
+
+    summaryAgg.forEach(item => {
+      const statusKey = item._id || 'UNKNOWN';
+      summary.byStatus[statusKey] = { count: item.count, totalValue: item.totalValue };
+      summary.total += item.count;
+      summary.totalValue += item.totalValue;
+    });
+
+    // Count tailors with failed/missing Shiprocket setup
+    const failedSetupCount = await Tailor.countDocuments({
+      registrationStatus: 'verified',
+      $or: [
+        { isShiprocketConfigured: false },
+        { isShiprocketConfigured: { $exists: false } },
+      ],
+    });
+
+    summary.failedPickupLocations = failedSetupCount;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        shipments: formattedShipments,
+        summary,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit)),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error in getShiprocketShipments:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

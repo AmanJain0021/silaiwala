@@ -14,9 +14,6 @@ const getBaseUrl = () => {
 const api = axios.create({
     baseURL: getBaseUrl(),
     withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json',
-    },
 });
 
 // Map to store active requests
@@ -43,6 +40,15 @@ api.interceptors.request.use(
             const controller = new AbortController();
             config.signal = controller.signal;
             activeRequests.set(requestKey, controller);
+        }
+
+        // Global fix for FormData boundary issues
+        if (config.data instanceof FormData) {
+            if (config.headers && config.headers.has && config.headers.has('Content-Type')) {
+                 config.headers.delete('Content-Type');
+            } else if (config.headers && config.headers['Content-Type']) {
+                 delete config.headers['Content-Type'];
+            }
         }
 
         const token = getToken();

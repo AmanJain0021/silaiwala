@@ -6,6 +6,7 @@ import ProductCard from '../components/store/ProductCard';
 import useCheckoutStore from '../../../store/checkoutStore';
 import api from '../../../utils/api';
 import SafeImage from '../../../components/Common/SafeImage';
+import toast from 'react-hot-toast';
 
 const TailorProfile = () => {
     const { id } = useParams();
@@ -110,6 +111,23 @@ const TailorProfile = () => {
         <button onClick={() => navigate(-1)} className="mt-4 text-[#843D9B] font-bold">Go Back</button>
     </div>;
 
+    const handleShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: tailor.shopName || tailor.user?.name,
+                    text: `Check out ${tailor.shopName || tailor.user?.name} on SilaiWala!`,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.error('Error sharing:', err);
+            }
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            toast.success('Link copied to clipboard!');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans overflow-x-hidden">
             {/* 1. Dynamic Header with Parallax-like feel */}
@@ -130,7 +148,10 @@ const TailorProfile = () => {
                         <ArrowLeft size={20} />
                     </button>
                     <div className="flex gap-2">
-                        <button className="p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white border border-white/20 active:scale-90 transition-all">
+                        <button 
+                            onClick={handleShare}
+                            className="p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white border border-white/20 active:scale-90 transition-all cursor-pointer z-50"
+                        >
                             <Share2 size={18} />
                         </button>
                         <button

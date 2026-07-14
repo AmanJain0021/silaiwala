@@ -25,25 +25,9 @@ const DeliveryBottomNav = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Animation variants for icon
-  const iconVariants = {
-    inactive: {
-      scale: 1,
-      color: "#94a3b8", // slate-400
-    },
-    active: {
-      scale: 1.1,
-      color: "#ffffff",
-      transition: {
-        duration: 0.3,
-        ease: "easeOut",
-      },
-    },
-  };
-
   const navContent = (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#843D9B] text-white rounded-t-[2rem] z-[9999] safe-area-bottom shadow-[0_-10px_40px_rgba(45,47,110,0.5)]">
-      <div className="flex items-center justify-around h-20 px-2 pb-1">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
+      <div className="flex justify-between w-full max-w-md mx-auto relative">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -52,37 +36,42 @@ const DeliveryBottomNav = () => {
             <Link
               key={item.path}
               to={item.path}
-              className="flex flex-col items-center justify-center flex-1 h-full gap-1 pt-2">
-              <motion.div
-                className={`relative flex items-center justify-center w-12 h-12 rounded-[1.2rem] transition-colors duration-300 ${active ? 'bg-white/20 text-white shadow-inner' : 'bg-transparent text-indigo-200/70'}`}
-                variants={iconVariants}
-                initial="inactive"
-                animate={active ? "active" : "inactive"}>
+              className="flex flex-col items-center gap-1 relative min-w-[56px] py-1"
+            >
+              {active && (
+                  <motion.span 
+                      layoutId="deliveryBottomNavActive"
+                      className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#843D9B] rounded-full" 
+                  />
+              )}
+              <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
+                  active
+                      ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/30 scale-110'
+                      : 'text-gray-400 active:scale-90'
+              }`}>
                 {item.path === "/delivery/profile" && deliveryBoy?.avatar ? (
-                  <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-colors ${active ? 'border-white' : 'border-indigo-200/50'}`}>
+                  <div className={`w-5 h-5 rounded-full overflow-hidden border-2 transition-colors ${active ? 'border-white' : 'border-transparent'}`}>
                     <img src={deliveryBoy.avatar} className="w-full h-full object-cover" alt="P" />
                   </div>
                 ) : (
                   <Icon
-                    className="text-xl"
+                    className="text-lg"
                     style={{
-                      fill: "none",
-                      stroke: "currentColor",
                       strokeWidth: active ? 2.5 : 2,
                     }}
                   />
                 )}
                 {item.path === "/delivery/notifications" && unreadCount > 0 && (
-                  <span className="absolute -top-1 right-0 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black text-center leading-4 border-2 border-[#843D9B]">
+                  <span className="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-1 bg-rose-500 rounded-full border-[1.5px] border-white flex items-center justify-center text-[7px] font-black text-white shadow-sm z-10">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
-              </motion.div>
-              {active && (
-                <span className="text-[9px] font-black tracking-widest uppercase text-white mt-1 drop-shadow-sm">
-                  {item.label}
-                </span>
-              )}
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                  active ? 'text-[#843D9B]' : 'text-gray-400'
+              }`}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -90,7 +79,6 @@ const DeliveryBottomNav = () => {
     </nav>
   );
 
-  // Use portal to render outside of transformed containers (like PageTransition)
   return createPortal(navContent, document.body);
 };
 

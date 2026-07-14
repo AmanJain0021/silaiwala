@@ -10,6 +10,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [eta, setEta] = useState(null);
   const [distance, setDistance] = useState(null);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -29,16 +30,26 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
       }
     };
 
+    const handleDeliveryCompleted = (data) => {
+      if (data.orderId === order._id || data.orderId === order.id) {
+        setIsCompleted(true);
+      }
+    };
+
     socket.on('locationUpdated', handleLocationUpdate);
+    socket.on('delivery_completed', handleDeliveryCompleted);
 
     return () => {
       socket.off('locationUpdated', handleLocationUpdate);
+      socket.off('delivery_completed', handleDeliveryCompleted);
     };
   }, [socket, order]);
 
   // Determine Destination based on Order phase
   const isPickupPhase = ['fabric-ready-for-pickup', 'fabric-picked-up', 'pickup-assigned'].includes(order.status) || 
-                        ['assigned', 'accepted', 'reached-pickup', 'picked-up'].includes(order.pickupDeliveryStatus);
+                        ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
+
+  const isTailorDelivery = order.deliveryMethod === 'tailor';
 
   let destination = null;
   if (isPickupPhase && order.vendorLatitude && order.vendorLongitude) {
@@ -47,11 +58,16 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     destination = { lat: Number(order.customerLatitude), lng: Number(order.customerLongitude) };
   }
 
-  const rider = isPickupPhase ? order.pickupPartner : (order.dropoffPartner || order.deliveryPartner);
-  const riderStatus = isPickupPhase ? order.pickupDeliveryStatus : order.dropoffDeliveryStatus;
+  const rider = isTailorDelivery 
+    ? order.tailor 
+    : (isPickupPhase ? order.pickupPartner : (order.dropoffPartner || order.deliveryPartner));
+  const riderStatus = isTailorDelivery 
+    ? 'accepted' 
+    : (isPickupPhase ? order.pickupDeliveryStatus : order.dropoffDeliveryStatus);
 
   console.log("LiveDeliveryTracker rider logic:", {
     isPickupPhase,
+    isTailorDelivery,
     status: order.status,
     pickupDeliveryStatus: order.pickupDeliveryStatus,
     dropoffDeliveryStatus: order.dropoffDeliveryStatus,
@@ -63,13 +79,20 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     forceSearching
   });
 
+  const isCustomerDelivering = order.fabricDeliveryPreference === 'customer' && order.status === 'accepted';
+
+  // If order is completed or delivered, hide the live map tracking
+  if (isCompleted || ['delivered', 'product-delivered', 'order-completed'].includes(order.status)) {
+    return null;
+  }
+
   // Show searching animation only when rider is assigned but hasn't accepted yet, or forced searching
-  const isSearching = forceSearching || riderStatus === 'assigned' || riderStatus === 'pending' || !riderStatus;
+  const isSearching = !isTailorDelivery && (forceSearching || riderStatus === 'assigned' || riderStatus === 'pending' || (!riderStatus && !isCustomerDelivering));
 
-  // If no rider is assigned at all AND we are not searching — don't render anything
-  if (!rider && !isSearching) return null;
+  // If no rider is assigned at all AND we are not searching AND it's not customer self-delivering — don't render anything
+  if (!rider && !isSearching && !isCustomerDelivering) return null;
 
-  if (isSearching) {
+  if (isSearching && !isCustomerDelivering && !riderLocation) {
     return (
       <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden">
         {/* Radar/Pulse circles in background */}
@@ -108,6 +131,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
             0% { left: -30%; width: 30%; }
             50% { left: 35%; width: 40%; }
             100% { left: 100%; width: 30%; }
+
           }
           .animate-\\[loading-slide_1\\.5s_infinite_ease-in-out\\] {
             animation: loading-slide 1.5s infinite ease-in-out;
@@ -117,11 +141,27 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     );
   }
 
+  if (isCustomerDelivering && !riderLocation) {
+    return (
+      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+        <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
+          <Navigation className="text-white w-8 h-8 animate-pulse" />
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-gray-900 tracking-tight">Waiting for Customer</h4>
+          <p className="text-xs text-gray-500 mt-1 max-w-[240px]">
+            The customer has opted to deliver the fabric themselves. Waiting for them to start their journey.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
       <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
         <Navigation size={16} className="text-[#843D9B]" />
-        Live Tracking
+        {isCustomerDelivering ? 'Customer Live Tracking' : 'Live Tracking'}
       </h3>
 
       {/* Map Section */}
@@ -139,7 +179,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
             {distance && (
               <div className="flex items-center gap-1.5">
                 <MapPin size={14} className="text-primary" />
-                <span className="text-xs font-bold text-gray-800">{(distance / 1000).toFixed(1)} km</span>
+                <span className="text-xs font-bold text-gray-800">{typeof distance === 'number' ? (distance / 1000).toFixed(1) + ' km' : distance}</span>
               </div>
             )}
             {eta && (
@@ -156,27 +196,41 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-[#843D9B]/10 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-xl font-black text-[#843D9B]">{rider.name?.charAt(0) || 'R'}</span>
+            <span className="text-xl font-black text-[#843D9B]">
+              {isCustomerDelivering 
+                ? (order.customer?.name?.charAt(0) || 'C') 
+                : (isTailorDelivery ? (order.tailor?.shopName?.charAt(0) || order.tailor?.name?.charAt(0) || 'T') : (rider?.name?.charAt(0) || 'R'))}
+            </span>
           </div>
           <div>
-            <h4 className="text-sm font-bold text-gray-900">{rider.name || 'Delivery Partner'}</h4>
+            <h4 className="text-sm font-bold text-gray-900">
+              {isCustomerDelivering 
+                ? (order.customer?.name || 'Customer') 
+                : (isTailorDelivery ? (order.tailor?.shopName || order.tailor?.name || 'Artisan Tailor') : (rider?.name || 'Delivery Partner'))}
+            </h4>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100 shadow-sm">
-                {rider.vehicleNumber || 'Vehicle'}
+                {isCustomerDelivering 
+                  ? 'Self Delivery' 
+                  : (isTailorDelivery ? 'Tailor Delivering' : (rider?.vehicleNumber || 'Vehicle'))}
               </span>
-              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100 shadow-sm">
-                ★ {rider.rating || '4.5'}
-              </span>
+              {!isCustomerDelivering && !isTailorDelivery && (
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100 shadow-sm">
+                  ★ {rider?.rating || '4.5'}
+                </span>
+              )}
             </div>
           </div>
         </div>
         
-        <a 
-          href={`tel:${rider.phoneNumber || rider.phone}`}
-          className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 hover:text-green-700 transition-colors shadow-sm"
-        >
-          <Phone size={18} fill="currentColor" />
-        </a>
+        {(!isCustomerDelivering || order.customer?.phoneNumber) && (
+          <a 
+            href={`tel:${isCustomerDelivering ? order.customer?.phoneNumber : (rider?.phoneNumber || rider?.phone)}`}
+            className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 hover:text-green-700 transition-colors shadow-sm"
+          >
+            <Phone size={18} fill="currentColor" />
+          </a>
+        )}
       </div>
       
       {lastUpdated && (

@@ -45,6 +45,10 @@ const tailorSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isShiprocketConfigured: {
+      type: Boolean,
+      default: false,
+    },
     location: {
       type: {
         type: String,
@@ -57,11 +61,34 @@ const tailorSchema = new mongoose.Schema(
       address: {
         type: String,
         trim: true,
-      }
+      },
+      city: {
+        type: String,
+        trim: true,
+      },
+      state: {
+        type: String,
+        trim: true,
+      },
+      pincode: {
+        type: String,
+        trim: true,
+      },
     },
     walletBalance: {
       type: Number,
       default: 0,
+    },
+    codWalletBalance: {
+      type: Number,
+      default: 0,
+    },
+    cashBlocked: {
+      type: Boolean,
+      default: false,
+    },
+    lastCashCollectionDate: {
+      type: Date,
     },
     totalWithdrawn: {
       type: Number,

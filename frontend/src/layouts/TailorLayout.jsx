@@ -147,22 +147,22 @@ const TailorLayout = () => {
             <div className="flex-1 flex flex-col min-w-0 relative">
                 {/* Mobile Header */}
                 {(!isOverview && location.pathname !== '/partner/settings' && location.pathname !== '/partner/wallet' && location.pathname !== '/partner/earnings') && (
-                    <header className="md:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 pt-5 pb-4 px-5 flex items-center justify-between">
+                    <header className="md:hidden sticky top-0 z-40 bg-[#843D9B] text-white backdrop-blur-2xl border-b border-indigo-400/20 pt-5 pb-4 px-5 flex items-center justify-between shadow-lg shadow-indigo-900/10 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white border border-gray-100 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden shrink-0">
-                                <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
+                            <div className="w-10 h-10 bg-white border border-indigo-100 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden shrink-0 p-1">
+                                <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover rounded-xl" />
                             </div>
                             <div>
-                                <h2 className="text-[17px] font-black text-gray-900 tracking-tight leading-none capitalize">
+                                <h2 className="text-[17px] font-black text-white tracking-tight leading-none capitalize">
                                     {menuItems.find(i => i.path === location.pathname)?.label || 'SewZella'}
                                 </h2>
                                 <div className="flex items-center gap-1.5 mt-1">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-[#843D9B]' : 'bg-orange-400'}`}></span>
-                                    <span className="text-[9px] font-bold uppercase text-gray-400 tracking-widest leading-none">{status}</span>
+                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-green-400' : 'bg-orange-400'}`}></span>
+                                    <span className="text-[9px] font-bold uppercase text-indigo-100 tracking-widest leading-none">{status}</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="h-9 w-9 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[#843D9B]/20">
+                        <div className="h-9 w-9 rounded-2xl bg-white flex items-center justify-center text-[#843D9B] font-black text-xs shadow-lg shadow-[#843D9B]/20">
                             {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                         </div>
                     </header>

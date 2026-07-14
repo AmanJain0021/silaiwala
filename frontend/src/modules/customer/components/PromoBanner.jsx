@@ -6,6 +6,7 @@ import api from '../../../utils/api';
 const PromoBanner = () => {
     const [banners, setBanners] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [direction, setDirection] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
 
     const defaultBanners = [
@@ -66,8 +67,38 @@ const PromoBanner = () => {
         return () => clearInterval(timer);
     }, [banners.length]);
 
-    const next = () => setCurrentIndex(prev => (prev + 1) % banners.length);
-    const prev = () => setCurrentIndex(prev => (prev - 1 + banners.length) % banners.length);
+    const next = () => {
+        setDirection(1);
+        setCurrentIndex(prev => (prev + 1) % banners.length);
+    };
+    const prev = () => {
+        setDirection(-1);
+        setCurrentIndex(prev => (prev - 1 + banners.length) % banners.length);
+    };
+
+    const variants = {
+        enter: (direction) => {
+            return {
+                x: direction > 0 ? '100%' : '-100%',
+                opacity: 0,
+                scale: 0.95
+            };
+        },
+        center: {
+            zIndex: 1,
+            x: 0,
+            opacity: 1,
+            scale: 1
+        },
+        exit: (direction) => {
+            return {
+                zIndex: 0,
+                x: direction < 0 ? '100%' : '-100%',
+                opacity: 0,
+                scale: 0.95
+            };
+        }
+    };
 
     if (isLoading) {
         return (
@@ -84,29 +115,45 @@ const PromoBanner = () => {
     const currentBanner = banners[currentIndex];
 
     return (
-        <div className="px-3 md:px-6 lg:px-8 py-1.5 relative group">
-            <AnimatePresence mode="wait">
+        <div className="px-3 md:px-6 lg:px-8 py-1.5 relative group overflow-hidden">
+            <AnimatePresence initial={false} custom={direction} mode="popLayout">
                 <motion.div
                     key={currentIndex}
-                    initial={{ opacity: 0, scale: 1.05 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.6 }}
-                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-40 sm:h-64 lg:h-72 w-full flex items-center`}
+                    custom={direction}
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{
+                        x: { type: "spring", stiffness: 300, damping: 30 },
+                        opacity: { duration: 0.2 }
+                    }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.8}
+                    onDragEnd={(e, { offset }) => {
+                        const swipe = offset.x;
+                        if (swipe < -50) {
+                            next();
+                        } else if (swipe > 50) {
+                            prev();
+                        }
+                    }}
+                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-40 sm:h-64 lg:h-72 w-full flex items-center cursor-grab active:cursor-grabbing`}
                 >
                     {/* Full Background Image */}
-                    <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 z-0 pointer-events-none">
                         <img
                             src={currentBanner.image}
                             alt={currentBanner.title}
-                            className="w-full h-full object-cover opacity-60"
+                            className="w-full h-full object-cover opacity-60 pointer-events-none"
                             onError={(e) => { e.target.style.display = 'none'; }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none"></div>
                     </div>
 
-                    <div className="absolute inset-0 z-10 flex flex-col justify-center gap-1.5 sm:gap-3 px-6 sm:px-12">
-                        <div className="bg-white/20 w-fit px-2.5 py-1 rounded-full text-[8px] sm:text-[10px] font-black tracking-widest backdrop-blur-md flex items-center gap-1.5 border border-white/10 uppercase">
+                    <div className="absolute inset-0 z-10 flex flex-col justify-center gap-1.5 sm:gap-3 px-6 sm:px-12 pointer-events-none">
+                        <div className="bg-white/20 w-fit px-2.5 py-1 rounded-full text-[8px] sm:text-[10px] font-black tracking-widest backdrop-blur-md flex items-center gap-1.5 border border-white/10 uppercase pointer-events-auto">
                             <Sparkles size={8} className="text-indigo-300" /> {currentBanner.badge || 'PROMO'}
                         </div>
                         <div className="max-w-md">
@@ -115,8 +162,8 @@ const PromoBanner = () => {
                             </h2>
                             <p className="text-[10px] sm:text-sm lg:text-base text-white/90 mt-0.5 sm:mt-3 font-bold tracking-tight drop-shadow-md leading-tight">{currentBanner.subtitle}</p>
                         </div>
-                        <div className="flex items-center gap-4 mt-2 sm:mt-6">
-                            <button className="bg-[#843D9B] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-indigo-900/20 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest">
+                        <div className="flex items-center gap-4 mt-2 sm:mt-6 pointer-events-auto">
+                            <button className="bg-[#843D9B] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-indigo-900/20 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest cursor-pointer z-50">
                                 Book Now <ArrowRight size={12} />
                             </button>
                         </div>

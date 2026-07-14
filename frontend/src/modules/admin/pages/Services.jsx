@@ -9,13 +9,14 @@ const AdminServices = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [categoriesData, setCategoriesData] = useState([]);
     const [tailorServices, setTailorServices] = useState([]);
+    const [pendingServices, setPendingServices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [newService, setNewService] = useState({ title: '', price: '', deliveryTime: '', description: '', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImageUploading, setIsImageUploading] = useState(false);
 
-    const tabs = ['Stitching Categories', 'Tailor Services', 'Pricing & Commissions'];
+    const tabs = ['Stitching Categories', 'Tailor Services', 'Pending Approvals', 'Pricing & Commissions'];
 
     const fetchCategories = async () => {
         setIsLoading(true);
@@ -45,11 +46,27 @@ const AdminServices = () => {
         }
     };
 
+    const fetchPendingServices = async () => {
+        setIsLoading(true);
+        try {
+            const res = await api.get('/admin/tailors/services/pending');
+            setPendingServices(res.data.data);
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to fetch pending services:', error);
+            toast.error('Failed to load pending services');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (selectedTab === 'Stitching Categories') {
             fetchCategories();
         } else if (selectedTab === 'Tailor Services') {
             fetchTailorServices();
+        } else if (selectedTab === 'Pending Approvals') {
+            fetchPendingServices();
         }
     }, [selectedTab]);
 
@@ -62,9 +79,7 @@ const AdminServices = () => {
 
         setIsImageUploading(true);
         try {
-            const res = await api.post('/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const res = await api.post('/upload', formData);
             setNewService({ ...newService, image: res.data.data });
             toast.success('Image uploaded successfully');
         } catch (error) {
@@ -112,6 +127,28 @@ const AdminServices = () => {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to delete service:', error);
             toast.error('Failed to delete category');
+        }
+    };
+
+    const handleApproveService = async (id) => {
+        try {
+            await api.patch(`/admin/tailors/services/${id}/approve`);
+            toast.success('Service approved');
+            fetchPendingServices();
+        } catch (error) {
+            toast.error('Failed to approve service');
+        }
+    };
+
+    const handleRejectService = async (id) => {
+        const reason = window.prompt("Enter reason for rejection:");
+        if (reason === null) return;
+        try {
+            await api.patch(`/admin/tailors/services/${id}/reject`, { reason });
+            toast.success('Service rejected');
+            fetchPendingServices();
+        } catch (error) {
+            toast.error('Failed to reject service');
         }
     };
 
@@ -300,6 +337,64 @@ const AdminServices = () => {
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ) : selectedTab === 'Pending Approvals' ? (
+                    <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
+                        {isLoading ? (
+                            <div className="h-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                            </div>
+                        ) : pendingServices.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
+                                <Package size={48} className="opacity-20" />
+                                <p className="text-sm font-bold">No pending approvals</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {pendingServices.map((service) => (
+                                    <div key={service._id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between">
+                                        <div className="flex gap-4 mb-4">
+                                            <div className="h-16 w-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                                                <img 
+                                                    src={service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'} 
+                                                    alt={service.title} 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="text-sm font-black text-gray-900 truncate pr-2">{service.title}</h4>
+                                                    <span className="text-xs font-black text-primary">₹{service.basePrice}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <span className="text-[10px] font-bold text-gray-500 truncate">Tailor: {service.tailor?.shopName}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-3">
+                                                    <div className="flex items-center gap-1 text-[9px] font-bold text-gray-400">
+                                                        <Clock size={12} /> {service.deliveryTime}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => handleApproveService(service._id)}
+                                                className="flex-1 bg-green-500 hover:bg-green-600 text-white text-[10px] font-black py-2 rounded-xl uppercase tracking-widest transition-colors"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button 
+                                                onClick={() => handleRejectService(service._id)}
+                                                className="flex-1 bg-red-500 hover:bg-red-600 text-white text-[10px] font-black py-2 rounded-xl uppercase tracking-widest transition-colors"
+                                            >
+                                                Reject
+                                            </button>
                                         </div>
                                     </div>
                                 ))}

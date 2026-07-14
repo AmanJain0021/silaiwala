@@ -142,6 +142,35 @@ const initSocket = (httpServer) => {
       console.log(`🚪 Socket ${socket.id} left room: order_${orderId}`);
     });
 
+    // ── Tailor location update via Socket.IO ─────────────────────────────────
+    socket.on("tailor_location_update", async (data) => {
+      try {
+        const { orderId, latitude, longitude, distanceRemaining, eta } = data;
+        if (!orderId || latitude === undefined || longitude === undefined) return;
+
+        const Order = require("../models/Order.js");
+        const order = await Order.findById(orderId);
+        if (!order) return;
+
+        // Ensure only the tailor of this order can broadcast
+        if (order.tailor.toString() !== socket.user.id) return;
+
+        // Ensure the order is in self-delivery out-for-delivery state
+        if (order.status !== 'out-for-delivery' || order.deliveryMethod !== 'tailor') return;
+
+        io.to(`order_${orderId}`).emit('locationUpdated', {
+          orderId,
+          currentLocation: { latitude, longitude },
+          distanceRemaining,
+          eta,
+          isTailorDelivery: true,
+          timestamp: new Date()
+        });
+      } catch (err) {
+        console.error("tailor_location_update socket error:", err);
+      }
+    });
+
     // ── Issue chat rooms ─────────────────────────────────────────────────────
     socket.on("join_issue_room", (issueId) => {
       socket.join(`issue_${issueId}`);

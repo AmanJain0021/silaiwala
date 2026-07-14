@@ -8,6 +8,7 @@ const {
   updateUserStatus,
   getDeliveryPartners,
   getPendingTailors,
+  getTailorById,
   approveTailor,
   rejectTailor,
   updateTailorCommission,
@@ -23,6 +24,7 @@ const {
   updateBanner,
   deleteBanner,
   sendBroadcastNotification,
+  getNotificationLogs,
   getAllCMSContent,
   createCMSContent,
   updateCMSContent,
@@ -47,6 +49,11 @@ const {
   updateSettings,
   generateReport,
   updateTailorShiprocketLocation,
+  retryShiprocketSetup,
+  getShiprocketShipments,
+  getPendingServices,
+  approveServiceStatus,
+  rejectServiceStatus,
 } = require("../controllers/admin.controller.js");
 
 const {
@@ -87,10 +94,16 @@ router.put("/users/:id/status", updateUserStatus);
 
 // Tailor Approvals
 router.get("/tailors/pending", getPendingTailors);
+router.get("/tailors/:id", getTailorById);
 router.put("/tailors/:id/approve", approveTailor);
 router.put("/tailors/:id/reject", rejectTailor);
 router.put("/tailors/:id/commission", updateTailorCommission);
 router.put("/tailors/:id/shiprocket-location", updateTailorShiprocketLocation);
+router.post("/tailors/:id/shiprocket-setup", retryShiprocketSetup);
+// Tailor Service Approvals
+router.get("/tailors/services/pending", getPendingServices);
+router.patch("/tailors/services/:id/approve", approveServiceStatus);
+router.patch("/tailors/services/:id/reject", rejectServiceStatus);
 
 // Delivery Partner Approvals
 router.get("/delivery-partners/stats", getDeliveryStats);
@@ -115,6 +128,7 @@ router.delete("/cms/banners/:id", deleteBanner);
 
 // Notifications
 router.post("/cms/notifications/broadcast", sendBroadcastNotification);
+router.get("/cms/notifications/logs", getNotificationLogs);
 
 // Legal & FAQ Content
 router.get("/cms/content", getAllCMSContent);
@@ -166,5 +180,8 @@ router.patch("/settings/cod-wallet", updateCodSettings);
 
 // Reports Management
 router.get("/reports/generate", generateReport);
+
+// Shiprocket Shipments Dashboard
+router.get("/shiprocket/shipments", getShiprocketShipments);
 
 module.exports = router;

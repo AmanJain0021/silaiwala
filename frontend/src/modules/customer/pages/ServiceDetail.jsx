@@ -311,11 +311,14 @@ const ServiceDetail = () => {
     };
 
     const tailorAtHomePrice = calculateVisitPrice();
-    const subtotal = basePrice + deliveryPrice + fabricPrice + addonsPrice + tailorAtHomePrice;
-    const platformFee = Math.round(subtotal * (platformFeePercentage / 100));
-    const taxableAmount = subtotal + platformFee;
+    
+    // Match backend calculation: Platform fee on base + addons only
+    const platformFee = Math.round((basePrice + addonsPrice) * (platformFeePercentage / 100));
+    const taxableAmount = basePrice + addonsPrice + fabricPrice + tailorAtHomePrice + platformFee;
     const taxes = Math.round(taxableAmount * (gstPercentage / 100));
-    const currentTotal = taxableAmount + taxes;
+    
+    // Delivery fee is outside GST calculation on backend
+    const currentTotal = taxableAmount + taxes + deliveryPrice;
 
     // Grand Total (Basket + Current)
     const basketTotal = serviceItems.reduce((sum, item) => sum + item.pricing.total, 0);
@@ -342,11 +345,12 @@ const ServiceDetail = () => {
         // If user requested to save this measurement profile
         if (measurements?.saveProfile) {
             try {
+                const { notes, ...pureMeasurements } = measurements.data;
                 await addMeasurement({
                     profileName: measurements.saveProfile.name,
                     garmentType: serviceData.category?.name || "Other",
-                    measurements: measurements.data,
-                    notes: measurements.data.notes
+                    measurements: pureMeasurements,
+                    notes: notes
                 });
                 finalMeasurements = measurements.data;
             } catch (err) {
@@ -379,8 +383,10 @@ const ServiceDetail = () => {
                 fabric: fabricPrice, 
                 addons: addonsPrice,
                 tailorAtHome: tailorAtHomePrice,
+                platformFee,
                 taxes, 
                 gstPercentage,
+                platformFeePercentage,
                 total: currentTotal, 
                 deliveryDays: getDeliveryDays() 
             },

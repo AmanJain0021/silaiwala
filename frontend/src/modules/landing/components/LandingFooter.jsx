@@ -23,14 +23,16 @@ const LandingFooter = () => {
               </p>
               <div className="flex gap-3">
                 {[
-                  { icon: <Instagram size={16} />, href: '#' },
-                  { icon: <Facebook size={16} />, href: '#' },
-                  { icon: <Twitter size={16} />, href: '#' },
-                  { icon: <Youtube size={16} />, href: '#' },
+                  { icon: <Instagram size={16} />, href: 'https://instagram.com/sewzella' },
+                  { icon: <Facebook size={16} />, href: 'https://facebook.com/sewzella' },
+                  { icon: <Twitter size={16} />, href: 'https://twitter.com/sewzella' },
+                  { icon: <Youtube size={16} />, href: 'https://youtube.com/@sewzella' },
                 ].map((social, i) => (
                   <a
                     key={i}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-[#4a0581] hover:text-white transition-all duration-300"
                   >
                     {social.icon}
@@ -135,7 +137,7 @@ const LandingFooter = () => {
             <div className="flex gap-6 text-white/35 text-[12px]">
               <Link to="/page/privacy-policy" className="hover:text-white/70 transition-colors">Privacy Policy</Link>
               <Link to="/page/terms-of-service" className="hover:text-white/70 transition-colors">Terms of Service</Link>
-              <Link to="/page/accessibility-report" className="hover:text-white/70 transition-colors">Accessibility</Link>
+              <Link to="/page/accessibility" className="hover:text-white/70 transition-colors">Accessibility</Link>
             </div>
           </div>
         </div>

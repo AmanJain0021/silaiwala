@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Trash2, Image as ImageIcon, Camera } from 'lucide-react';
 import api from '../services/api';
 
 const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
@@ -392,7 +392,25 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                                 ) : (
                                     <>
                                         <ImageIcon size={24} className="text-gray-400 mb-2" />
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Upload Image</span>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-2">Upload Image</span>
+                                    </>
+                                )}
+                            </div>
+                            <div className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 flex flex-col items-center justify-center relative hover:bg-gray-100/50 hover:border-gray-300 transition-colors cursor-pointer">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    onChange={handleImageUpload}
+                                    disabled={isImageUploading}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                />
+                                {isImageUploading ? (
+                                    <div className="h-6 w-6 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" />
+                                ) : (
+                                    <>
+                                        <Camera size={24} className="text-gray-400 mb-2" />
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-2">Take Photo</span>
                                     </>
                                 )}
                             </div>

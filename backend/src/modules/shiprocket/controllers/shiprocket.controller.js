@@ -444,15 +444,15 @@ exports.createReturnShipment = asyncHandler(async (req, res, next) => {
     pickup_email: order.customer.email,
     pickup_phone: order.customer.phone || "9999999999",
     
-    shipping_customer_name: tailorProfile.businessName || tailorProfile.user.name,
+    shipping_customer_name: tailorProfile.shopName || tailorProfile.user.name,
     shipping_last_name: "",
-    shipping_address: tailorProfile.address.street,
-    shipping_city: tailorProfile.address.city,
+    shipping_address: tailorProfile.location?.address || 'Address not provided',
+    shipping_city: tailorProfile.location?.city || '',
     shipping_country: "India",
-    shipping_pincode: tailorProfile.address.zipCode,
-    shipping_state: tailorProfile.address.state,
+    shipping_pincode: tailorProfile.location?.pincode || '',
+    shipping_state: tailorProfile.location?.state || '',
     shipping_email: tailorProfile.user.email,
-    shipping_phone: tailorProfile.user.phone,
+    shipping_phone: tailorProfile.user.phoneNumber || "9999999999",
     
     order_items: orderItems,
     payment_method: "Prepaid", // Returns don't collect COD

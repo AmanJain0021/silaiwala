@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, FileText, Image as ImageIcon, Camera } from 'lucide-react';
 import { cn } from '../../../../../utils/cn';
 
 const UploadSlip = ({ onUpload, onCancel }) => {
     const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
     const [preview, setPreview] = useState(null);
     const [notes, setNotes] = useState('');
     const [error, setError] = useState('');
@@ -31,7 +32,8 @@ const UploadSlip = ({ onUpload, onCancel }) => {
 
     const handleRemove = () => {
         setPreview(null);
-        fileInputRef.current.value = null; // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = null;
+        if (cameraInputRef.current) cameraInputRef.current.value = null;
     };
 
     const handleSubmit = () => {
@@ -50,46 +52,65 @@ const UploadSlip = ({ onUpload, onCancel }) => {
         <div className="bg-gray-50 border border-t-0 border-gray-100 rounded-b-2xl p-4 animate-in slide-in-from-top-2 duration-300">
 
             {/* Upload Area */}
-            <div
-                onClick={() => !preview && fileInputRef.current?.click()}
-                className={cn(
-                    "relative w-full aspect-[4/3] rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all bg-white cursor-pointer group mb-4 overflow-hidden",
-                    error ? "border-red-300 bg-indigo-50" : "border-gray-200 hover:border-primary hover:bg-[#f2fcf9]"
-                )}
-            >
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                />
-
-                {preview ? (
-                    <>
-                        <img src={preview} alt="Measurement Slip" className="w-full h-full object-contain" />
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemove();
-                            }}
-                            className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow-md hover:bg-indigo-50 text-error transition-colors"
-                        >
-                            <X size={16} />
-                        </button>
-                    </>
-                ) : (
-                    <div className="text-center p-6">
-                        <div className="w-12 h-12 rounded-full bg-indigo-50 text-primary flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                            <Upload size={20} />
+            {!preview ? (
+                <div className="flex gap-3 mb-4">
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                            "flex-1 aspect-[4/3] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group bg-white",
+                            error ? "border-rose-300 bg-rose-50" : "border-gray-200 hover:border-[#843D9B] hover:bg-[#843D9B]/5"
+                        )}
+                    >
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                        />
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-[#843D9B] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <ImageIcon size={18} />
                         </div>
-                        <p className="text-sm font-semibold text-gray-700">Click to Upload Slip</p>
-                        <p className="text-[10px] text-gray-400 mt-1">Accepts JPG, PNG (Max 5MB)</p>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Gallery</span>
                     </div>
-                )}
-            </div>
 
-            {error && <p className="text-xs text-error text-center mb-4">{error}</p>}
+                    <div 
+                        onClick={() => cameraInputRef.current?.click()}
+                        className={cn(
+                            "flex-1 aspect-[4/3] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group bg-white",
+                            error ? "border-rose-300 bg-rose-50" : "border-gray-200 hover:border-[#843D9B] hover:bg-[#843D9B]/5"
+                        )}
+                    >
+                        <input
+                            type="file"
+                            ref={cameraInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileChange}
+                        />
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-[#843D9B] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <Camera size={18} />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Camera</span>
+                    </div>
+                </div>
+            ) : (
+                <div className="relative w-full aspect-[4/3] rounded-xl border-2 border-gray-200 mb-4 overflow-hidden bg-gray-50">
+                    <img src={preview} alt="Measurement Slip" className="w-full h-full object-contain" />
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemove();
+                        }}
+                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow-md hover:bg-rose-50 text-rose-500 transition-colors z-10 cursor-pointer"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+
+            {error && <p className="text-[11px] font-bold text-rose-500 text-center mb-4 uppercase tracking-wider">{error}</p>}
 
             {/* Notes Section */}
             <div className="mb-6">

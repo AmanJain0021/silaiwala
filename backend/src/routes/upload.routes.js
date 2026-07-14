@@ -11,10 +11,16 @@ const getFolder = (req, defaultFolder) => {
   return req.body.folder || defaultFolder;
 };
 
-// Helper function to handle the actual upload logic
 const processUpload = async (req, res, isMultiple) => {
+  console.log("=== UPLOAD DEBUG ===");
+  console.log("Headers:", req.headers['content-type']);
+  console.log("Files:", req.files);
+  console.log("File:", req.file);
+  console.log("Body:", req.body);
+  console.log("====================");
+
   try {
-    const files = isMultiple ? req.files : (req.file ? [req.file] : null);
+    const files = isMultiple ? req.files : (req.file ? [req.file] : (req.files && req.files.length > 0 ? [req.files[0]] : null));
     
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, message: "Please upload at least one file" });
@@ -77,24 +83,26 @@ const processUpload = async (req, res, isMultiple) => {
 // ---------------- PROTECTED ROUTES ---------------- //
 
 // Single upload (Protected)
-router.post("/", uploadLimiter, protect, upload.single("image"), (req, res) => {
+router.post("/", uploadLimiter, protect, upload.any(), (req, res) => {
+  if (req.files && req.files.length > 0) req.file = req.files[0];
   return processUpload(req, res, false);
 });
 
 // Bulk upload (Protected)
-router.post("/bulk", uploadLimiter, protect, upload.array("images", 10), (req, res) => {
+router.post("/bulk", uploadLimiter, protect, upload.any(), (req, res) => {
   return processUpload(req, res, true);
 });
 
 // ---------------- PUBLIC ROUTES ---------------- //
 
 // Single upload (Public - useful for registration)
-router.post("/public", uploadLimiter, upload.single("image"), (req, res) => {
+router.post("/public", uploadLimiter, upload.any(), (req, res) => {
+  if (req.files && req.files.length > 0) req.file = req.files[0];
   return processUpload(req, res, false);
 });
 
 // Bulk upload (Public - useful for bulk registration docs)
-router.post("/public/bulk", uploadLimiter, upload.array("images", 10), (req, res) => {
+router.post("/public/bulk", uploadLimiter, upload.any(), (req, res) => {
   return processUpload(req, res, true);
 });
 

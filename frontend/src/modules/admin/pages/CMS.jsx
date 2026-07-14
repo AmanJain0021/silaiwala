@@ -36,6 +36,31 @@ const AdminCMS = () => {
     const [notification, setNotification] = useState({ title: '', message: '', targetAudience: 'customer' });
     const [isSending, setIsSending] = useState(false);
 
+    // Notification Logs
+    const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+    const [notificationLogs, setNotificationLogs] = useState([]);
+    const [isFetchingLogs, setIsFetchingLogs] = useState(false);
+
+    const fetchNotificationLogs = async () => {
+        setIsFetchingLogs(true);
+        try {
+            const res = await api.get('/admin/cms/notifications/logs');
+            setNotificationLogs(res.data.data || []);
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to fetch logs:', error);
+            toast.error('Failed to fetch notification logs');
+        } finally {
+            setIsFetchingLogs(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isLogsModalOpen) {
+            fetchNotificationLogs();
+        }
+    }, [isLogsModalOpen]);
+
     const tabs = ['Banners', 'Notifications', 'Pages', 'FAQs'];
 
     const fetchData = async () => {
@@ -380,7 +405,7 @@ const AdminCMS = () => {
                             <Smartphone size={48} className="text-white/80 mb-4 relative z-10" />
                             <h3 className="text-lg font-black tracking-tight relative z-10">Automated Flows</h3>
                             <p className="text-xs text-white/70 mt-2 max-w-sm relative z-10">Transactional notifications (order updates, shipping, payments) are handled automatically by the system algorithms.</p>
-                            <button className="mt-6 px-6 py-2.5 bg-white text-primary text-[10px] font-black rounded-xl hover:shadow-lg transition-all uppercase tracking-widest relative z-10">
+                            <button onClick={() => setIsLogsModalOpen(true)} className="mt-6 px-6 py-2.5 bg-white text-primary text-[10px] font-black rounded-xl hover:shadow-lg transition-all uppercase tracking-widest relative z-10">
                                 View Notification Logs
                             </button>
                         </div>
@@ -674,6 +699,91 @@ const AdminCMS = () => {
                             </motion.div>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* Notification Logs Modal */}
+            <AnimatePresence>
+                {isLogsModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setIsLogsModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+                        >
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-lg font-black tracking-tight text-gray-900">Notification Logs</h2>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Recent Automated & Broadcast Alerts</p>
+                                </div>
+                                <button onClick={() => setIsLogsModalOpen(false)} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-0">
+                                {isFetchingLogs ? (
+                                    <div className="flex flex-col items-center justify-center h-64 space-y-4">
+                                        <div className="w-8 h-8 border-4 border-primary border-t-transparent animate-spin rounded-full"></div>
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Loading Logs...</span>
+                                    </div>
+                                ) : notificationLogs.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-64 space-y-2">
+                                        <Bell size={32} className="text-gray-300" />
+                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">No logs found</span>
+                                    </div>
+                                ) : (
+                                    <table className="w-full text-left whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em] border-b border-gray-100 sticky top-0 backdrop-blur-md">
+                                                <th className="px-6 py-4">Date/Time</th>
+                                                <th className="px-6 py-4">Type</th>
+                                                <th className="px-6 py-4">Title & Message</th>
+                                                <th className="px-6 py-4">Recipient</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {notificationLogs.map((log, i) => (
+                                                <tr key={i} className="hover:bg-primary/5 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs font-bold text-gray-900 block">{new Date(log.createdAt).toLocaleDateString()}</span>
+                                                        <span className="text-[10px] font-medium text-gray-500">{new Date(log.createdAt).toLocaleTimeString()}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider bg-blue-50 text-blue-700 border-blue-200">
+                                                            {log.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm font-bold text-gray-900 block truncate max-w-sm">{log.title}</span>
+                                                        <span className="text-[10px] font-medium text-gray-500 block truncate max-w-sm">{log.message}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {log.recipient ? (
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-bold text-gray-900">{log.recipient.name || 'Unknown'}</span>
+                                                                <span className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">{log.recipient.role || 'User'}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-gray-400">System</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
 

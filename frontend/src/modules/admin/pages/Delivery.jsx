@@ -476,10 +476,16 @@ const AdminDelivery = () => {
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase">{new Date(deposit.createdAt).toLocaleString()}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-gray-900">{deposit.deliveryPartner?.user?.name || 'Unknown Partner'}</span>
-                                                        <span className="text-[9px] font-bold text-gray-400">{deposit.deliveryPartner?.user?.phoneNumber}</span>
-                                                    </div>
+                                                     <div className="flex flex-col">
+                                                         <span className="text-xs font-black text-gray-900">
+                                                             {deposit.deliveryPartner?.user?.name || deposit.tailor?.user?.name || 'Unknown Partner'}
+                                                             {deposit.tailor && <span className="ml-1.5 text-[8px] bg-[#843D9B]/10 text-[#843D9B] px-1 py-0.5 rounded font-black">TAILOR</span>}
+                                                             {deposit.deliveryPartner && <span className="ml-1.5 text-[8px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded font-black">RIDER</span>}
+                                                         </span>
+                                                         <span className="text-[9px] font-bold text-gray-400">
+                                                             {deposit.deliveryPartner?.user?.phoneNumber || deposit.tailor?.user?.phoneNumber || ''}
+                                                         </span>
+                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-sm font-black text-primary">₹{deposit.amount}</span>

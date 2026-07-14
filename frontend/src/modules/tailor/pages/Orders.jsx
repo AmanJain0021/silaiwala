@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw } from 'lucide-react';
+import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw, Navigation } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -8,6 +8,8 @@ import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { cn } from '../../../utils/cn';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
+import CustomerDropoffTracker from '../../../shared/components/CustomerDropoffTracker';
+import TailorLiveDeliveryTracker from '../../../shared/components/TailorLiveDeliveryTracker';
 import toast from 'react-hot-toast';
 import MeasurementDetail from './MeasurementDetail';
 
@@ -179,6 +181,12 @@ const Orders = () => {
                 const status = location.state.orderStatus;
                 if (status === 'Pending' || status === 'Active') setActiveTab('active');
                 if (status === 'Done') setActiveTab('history');
+            }
+            if (location.state.status) {
+                const s = location.state.status;
+                if (s === 'pending') setActiveTab('new');
+                if (s === 'in-progress') setActiveTab('active');
+                if (s === 'completed') setActiveTab('history');
             }
         }
     }, [location]);
@@ -433,6 +441,7 @@ const Orders = () => {
 
                                     const steps = isAlteration ? [
                                         { key: 'order-received',     label: 'Order Received' },
+                                        ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Dropoff' }] : []),
                                         { key: 'fabric-received',    label: 'Garment Received' },
                                         { key: 'in-progress',        label: 'Alteration Started' },
                                         { key: 'quality-check',      label: 'Completed' },
@@ -454,6 +463,7 @@ const Orders = () => {
                                     ] : [
                                         ...(order.isMeasurementHome ? [{ key: 'measurements-approved', label: 'Measurements Done' }] : []),
                                         { key: 'order-received',     label: 'Order Received' },
+                                        ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting for Dropoff' }] : []),
                                         { key: 'fabric-received',    label: 'Fabric Received' },
                                         { key: 'cutting',            label: 'Cutting' },
                                         { key: 'stitching',          label: 'Stitching' },
@@ -476,6 +486,7 @@ const Orders = () => {
                                         'fabric-picked-up',
                                         'fabric-delivered',
                                         'order-received',
+                                        'waiting-for-customer-dropoff',
                                         'fabric-received',
                                         'fabric-selected',
                                         'measurement-verification',
@@ -532,6 +543,28 @@ const Orders = () => {
                                                     <Calendar size={48} />
                                                 </div>
                                             </div>
+                                            
+                                            {/* Customer Dropoff / Pickup Tracker & OTP */}
+                                            {(order.status === 'waiting-for-customer-dropoff' || (['ready-for-pickup', 'ready-for-delivery'].includes(order.status) && order.deliveryMethod === 'self')) && (
+                                                <div className="mb-4">
+                                                    {(order.dropoffDeliveryOtp || order.pickupDeliveryOtp) && (
+                                                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4 flex items-center justify-between">
+                                                            <div>
+                                                                <p className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-1">
+                                                                    {['ready-for-pickup', 'ready-for-delivery'].includes(order.status) ? 'Product Pickup OTP' : 'Customer Dropoff OTP'}
+                                                                </p>
+                                                                <p className="text-sm text-blue-600 font-medium">Share this with the customer when they arrive</p>
+                                                            </div>
+                                                            <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-blue-100">
+                                                                <span className="text-2xl font-black text-blue-900 tracking-[0.2em]">
+                                                                    {['ready-for-pickup', 'ready-for-delivery'].includes(order.status) ? order.pickupDeliveryOtp : order.dropoffDeliveryOtp}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <CustomerDropoffTracker order={order} />
+                                                </div>
+                                            )}
 
                                             {/* Instructional Note */}
                                             <div className="mb-4 bg-amber-50/80 border border-amber-100 rounded-xl p-3">
@@ -1005,8 +1038,20 @@ const Orders = () => {
                         const isSearchingPickup = order.pickupPartner && order.pickupDeliveryStatus === 'pending';
                         const isSearchingDropoff = order.dropoffPartner && order.dropoffDeliveryStatus === 'pending';
 
-                        const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner || isSearchingPickup) && order.fabricDeliveryPreference === 'partner';
-                        const shouldShowForDropoff = isDropoffPhaseStatus || hasActiveDropoffPartner || isSearchingDropoff;
+                        const isCustomerDelivering = order.fabricDeliveryPreference === 'customer' && order.status === 'accepted';
+                        const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner || isSearchingPickup) && order.fabricDeliveryPreference === 'partner' || isCustomerDelivering;
+                        const shouldShowForDropoff = (isDropoffPhaseStatus || hasActiveDropoffPartner || isSearchingDropoff) && order.deliveryMethod !== 'self' && order.deliveryMethod !== 'shiprocket';
+
+                        if (order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor') {
+                            return <TailorLiveDeliveryTracker 
+                                order={order} 
+                                socket={socketInstance} 
+                                onDeliveryComplete={(updatedOrder) => {
+                                    setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+                                    setSelectedOrder(updatedOrder);
+                                }}
+                            />;
+                        }
 
                         if (shouldShowForPickup || shouldShowForDropoff) {
                             return <LiveDeliveryTracker order={order} socket={socketInstance} />;
@@ -1185,7 +1230,8 @@ const Orders = () => {
                                                         { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
                                                         { current: 'stitching', next: 'quality-check', label: 'Mark Completed' },
                                                         { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
-                                                        { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' }
+                                                        { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' },
+                                                        { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ]
                                                     : [
                                                         { current: 'measurements-approved', next: 'fabric-received', label: 'Receive Fabric/Order' },
@@ -1194,7 +1240,8 @@ const Orders = () => {
                                                         { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
                                                         { current: 'stitching', next: 'quality-check', label: 'Mark Completed' },
                                                         { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
-                                                        { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' }
+                                                        { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' },
+                                                        { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ];
                                                 
                                                 // Handle intermediate statuses for flow
@@ -1206,12 +1253,20 @@ const Orders = () => {
  
                                                 const nextStep = flow.find(f => f.current === currentStatusForFlow);
                                                 
+                                                if (order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor') {
+                                                    return (
+                                                        <div className="flex-1 text-center py-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                            Use the OTP form in the live tracking area above to complete delivery
+                                                        </div>
+                                                    );
+                                                }
+
                                                 return (
                                                     <button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (nextStep) {
-                                                                if (nextStep.current === 'quality-check' || order.status === 'ready-for-pickup' || order.status === 'ready-for-delivery') {
+                                                                if (nextStep.current === 'quality-check' || (order.status === 'ready-for-pickup' && order.deliveryMethod !== 'self') || (order.status === 'ready-for-delivery' && order.deliveryMethod !== 'self')) {
                                                                     setDispatchOrder({ order, targetStatus: nextStep.next });
                                                                 } else {
                                                                     handleStatusUpdate(order._id, nextStep.next);
@@ -1226,7 +1281,7 @@ const Orders = () => {
                                                         {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : (nextStep ? nextStep.label : 'Update Status')}
                                                     </button>
                                                 );
-                            })()
+                                            })()
                                         )}
                                     </div>
                                 </div>
@@ -1311,6 +1366,8 @@ const Orders = () => {
                                     <p className="text-[10px] font-bold text-purple-600/70">Handover to courier service for long distance.</p>
                                 </div>
                             </button>
+
+
                         </div>
                     </div>
                 </div>

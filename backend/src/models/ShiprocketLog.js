@@ -5,7 +5,10 @@ const shiprocketLogSchema = new mongoose.Schema(
     order: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
-      required: true,
+    },
+    tailor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tailor",
     },
     shipmentId: {
       type: String,
@@ -13,7 +16,7 @@ const shiprocketLogSchema = new mongoose.Schema(
     action: {
       type: String,
       required: true,
-      enum: ["CREATE_SHIPMENT", "GENERATE_AWB", "SCHEDULE_PICKUP", "GET_LABEL"],
+      enum: ["CREATE_SHIPMENT", "GENERATE_AWB", "SCHEDULE_PICKUP", "GET_LABEL", "CREATE_PICKUP_LOCATION"],
     },
     requestPayload: {
       type: mongoose.Schema.Types.Mixed,

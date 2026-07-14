@@ -248,7 +248,7 @@ const FinanceDashboardOverview = ({ data }) => {
                     
                     <div className="flex items-center gap-6 mt-6">
                         {/* Static Donut Chart Representation using CSS */}
-                        <div className="relative w-32 h-32 rounded-full flex items-center justify-center shrink-0 border-[16px] border-purple-500" style={{ borderRightColor: '#10b981', borderBottomColor: '#f59e0b', borderLeftColor: '#ef4444'}}>
+                        <div className="relative w-32 h-32 rounded-full flex items-center justify-center shrink-0 border-[16px] border-purple-500 cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg hover:shadow-purple-500/20" style={{ borderRightColor: '#10b981', borderBottomColor: '#f59e0b', borderLeftColor: '#ef4444'}}>
                            <div className="absolute inset-0 m-auto flex flex-col items-center justify-center bg-white rounded-full">
                                <span className="text-[10px] font-bold text-gray-400 text-center leading-tight">Total Net<br/>Earned</span>
                                <span className="text-xs font-black text-gray-900 mt-1">{formatCurrency(summary.netPlatformEarnings)}</span>

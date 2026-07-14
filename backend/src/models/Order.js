@@ -134,8 +134,11 @@ const orderSchema = new mongoose.Schema(
     },
     deliveryMethod: {
       type: String,
-      enum: ['auto', 'manual', 'shiprocket'],
+      enum: ['auto', 'manual', 'shiprocket', 'self', 'tailor'],
       default: 'auto'
+    },
+    otpVerifiedAt: {
+      type: Date
     },
     loyaltyPointsAwarded: {
       type: Boolean,

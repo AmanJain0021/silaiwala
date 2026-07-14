@@ -5,7 +5,10 @@ const cashDepositSchema = new mongoose.Schema(
     deliveryPartner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Delivery",
-      required: true,
+    },
+    tailor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tailor",
     },
     amount: {
       type: Number,
