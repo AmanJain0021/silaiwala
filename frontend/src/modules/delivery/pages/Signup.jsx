@@ -26,8 +26,7 @@ const DeliverySignup = () => {
         const savedStep = localStorage.getItem('deliverySignupStep');
         return savedStep ? parseInt(savedStep, 10) : 1;
     });
-    
-    const [currentStep, setCurrentStep] = useState(1);
+
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState(() => {
@@ -183,15 +182,15 @@ const DeliverySignup = () => {
                 setErrors(prev => ({ ...prev, formError }));
             }
             if (!formData.accountName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) {
-                setError('All bank details are required');
+                setErrors(prev => ({ ...prev, formError: 'All bank details are required' }));
                 return false;
             }
             if (!/^\d{9,18}$/.test(formData.accountNumber)) {
-                setError('Enter a valid Bank Account Number (9-18 digits)');
+                setErrors(prev => ({ ...prev, formError: 'Enter a valid Bank Account Number (9-18 digits)' }));
                 return false;
             }
             if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.toUpperCase())) {
-                setError('Enter a valid 11-character IFSC Code');
+                setErrors(prev => ({ ...prev, formError: 'Enter a valid 11-character IFSC Code' }));
                 return false;
             }
         }
@@ -564,66 +563,54 @@ const DeliverySignup = () => {
 
                             <div>
                                 <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.address ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
-                                    <FiMapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.address ? 'text-red-400' : 'text-[#843D9B]'}`} />
-                                    <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                    <FiMapPin className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none ${errors.address ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                    {isLoaded ? (
+                                        <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged} className="w-full block">
+                                            <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                                        </Autocomplete>
+                                    ) : (
+                                        <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleFetchLocation}
+                                        disabled={isFetchingLocation}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-50 text-[#843D9B] rounded-lg hover:bg-indigo-100 transition-colors z-10 disabled:opacity-50 flex items-center justify-center"
+                                        title="Fetch current location"
+                                    >
+                                        <FiNavigation className={`w-4 h-4 ${isFetchingLocation ? 'animate-pulse' : ''}`} />
+                                    </button>
                                 </div>
                                 <ErrorMsg name="address" />
-                            <div className="relative group">
-                                <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B] z-10 pointer-events-none" />
-                                {isLoaded ? (
-                                    <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged} className="w-full block">
-                                        <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
-                                    </Autocomplete>
-                                ) : (
-                                    <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={handleFetchLocation}
-                                    disabled={isFetchingLocation}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-50 text-[#843D9B] rounded-lg hover:bg-indigo-100 transition-colors z-10 disabled:opacity-50 flex items-center justify-center"
-                                    title="Fetch current location"
-                                >
-                                    <FiNavigation className={`w-4 h-4 ${isFetchingLocation ? 'animate-pulse' : ''}`} />
-                                </button>
                             </div>
 
                             {/* Optional Fields */}
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
-                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input name="accountName" placeholder="Account Holder Name (Optional)" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                    <input name="accountName" placeholder="Account Holder Name" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="accountName" placeholder="Account Holder Name" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
+                            
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
-                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input name="bankName" placeholder="Bank Name (Optional)" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                    <input name="bankName" placeholder="Bank Name" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="bankName" placeholder="Bank Name" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
+                            
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
-                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input name="accountNumber" placeholder="Bank Account Number (Optional)" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                    <input name="accountNumber" placeholder="Bank Account Number" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="accountNumber" placeholder="Bank Account Number" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
+                            
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
-                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input name="ifscCode" placeholder="IFSC Code (Optional)" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm uppercase" />
+                                    <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                    <input name="ifscCode" placeholder="IFSC Code" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm uppercase" />
                                 </div>
-                            <div className="relative group">
-                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
-                                <input name="ifscCode" placeholder="IFSC Code" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm uppercase" />
                             </div>
                         </motion.div>
                     )}
@@ -668,10 +655,8 @@ const DeliverySignup = () => {
                     ) : (
                         <button 
                             type="submit" 
-                            disabled={isLoading} 
-                            className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70 flex justify-center items-center"
                             disabled={isLoading || !agreedToTerms} 
-                            className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
                         >
                             {isLoading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
