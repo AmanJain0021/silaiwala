@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, User, Phone, MapPin, CreditCard, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [formData, setFormData] = useState(() => {
         const savedData = localStorage.getItem('execSignupData');
         if (savedData) {
@@ -127,12 +128,23 @@ const Signup = () => {
                     <input id="aadharNumber" name="aadharNumber" type="text" placeholder="Aadhar Number" maxLength={14} required value={formData.aadharNumber} onChange={handleChange} className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full" />
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer mb-4">
+                        <input
+                            type="checkbox"
+                            checked={agreedToTerms}
+                            onChange={(e) => setAgreedToTerms(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                        />
+                        <span className="text-xs text-gray-500 font-medium">
+                            I agree to the <button type="button" onClick={() => window.location.href='/user/legal/terms-and-conditions'} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => window.location.href='/user/legal/privacy-policy'} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>
+                        </span>
+                    </label>
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !agreedToTerms}
                         className={`w-full h-14 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                            loading ? 'bg-[#843D9B]/50' : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                            loading || !agreedToTerms ? 'bg-[#843D9B]/50 cursor-not-allowed' : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
                         }`}
                     >
                         {loading ? 'Registering...' : (
@@ -153,9 +165,6 @@ const Signup = () => {
                 </div>
             </form>
 
-            <div className="mt-8 text-[10px] text-gray-400 font-medium text-center pb-4">
-                By signing up, you agree to our <button onClick={() => window.location.href='/user/legal/terms-and-conditions'} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => window.location.href='/user/legal/privacy-policy'} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
-            </div>
         </motion.div>
     );
 };

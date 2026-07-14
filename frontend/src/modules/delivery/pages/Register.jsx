@@ -41,6 +41,7 @@ const DeliveryRegister = () => {
   const [showOtpField, setShowOtpField] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [previews, setPreviews] = useState({});
 
@@ -507,6 +508,20 @@ const DeliveryRegister = () => {
                       Approval takes 24-48 hours. You will receive an email notification.
                     </p>
                   </div>
+
+                  <div className="pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-[#0f172a] focus:ring-[#0f172a]"
+                      />
+                      <span className="text-xs text-gray-500 font-medium">
+                        I agree to the <button type="button" onClick={() => window.open('/user/legal/terms-and-conditions', '_blank')} className="text-[#0f172a] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => window.open('/user/legal/privacy-policy', '_blank')} className="text-[#0f172a] hover:underline mx-1">Privacy Policy</button>
+                      </span>
+                    </label>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -526,7 +541,7 @@ const DeliveryRegister = () => {
                   Next <FiChevronRight size={18} />
                 </button>
               ) : (
-                <button type="submit" disabled={isLoading} className="flex items-center gap-2 px-6 sm:px-8 py-3.5 bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm hover:bg-emerald-700 active:scale-95 transition-all shadow-xl disabled:opacity-50">
+                <button type="submit" disabled={isLoading || !agreedToTerms} className={`flex items-center gap-2 px-6 sm:px-8 py-3.5 bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-xl ${isLoading || !agreedToTerms ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-700 active:scale-95'}`}>
                   {isLoading ? 'Submitting...' : 'Submit Now'}
                 </button>
               )}

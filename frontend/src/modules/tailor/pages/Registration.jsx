@@ -21,6 +21,7 @@ const TailorRegistration = () => {
         localStorage.setItem('tailorSignupStep', step);
     }, [step]);
     const [isValidating, setIsValidating] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const { login } = useTailorAuth();
     const navigate = useNavigate();
 
@@ -365,31 +366,43 @@ const TailorRegistration = () => {
                             </button>
                         </>
                     ) : (
-                        <div className="flex gap-3 w-full">
-                            <button
-                                type="button"
-                                onClick={prevStep}
-                                disabled={isLoading}
-                                className="w-1/3 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
-                            >
-                                <ChevronLeft className="w-5 h-5" /> BACK
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleSubmit(onSubmit)}
-                                disabled={isLoading}
-                                className={`flex-1 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading ? 'bg-gray-300 text-gray-600' : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20'}`}
-                            >
-                                {isLoading ? 'Submitting...' : 'SUBMIT APPLICATION'}
-                            </button>
+                        <div className="flex flex-col gap-3 w-full">
+                            <div className="pt-2 mb-2">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={agreedToTerms}
+                                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                        className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                                    />
+                                    <span className="text-xs text-gray-500 font-medium">
+                                        I agree to the <button type="button" onClick={() => window.open('/partner/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => window.open('/partner/legal/privacy-policy', '_blank')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>
+                                    </span>
+                                </label>
+                            </div>
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    type="button"
+                                    onClick={prevStep}
+                                    disabled={isLoading}
+                                    className="w-1/3 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                                >
+                                    <ChevronLeft className="w-5 h-5" /> BACK
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSubmit(onSubmit)}
+                                    disabled={isLoading || !agreedToTerms}
+                                    className={`flex-1 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading || !agreedToTerms ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20'}`}
+                                >
+                                    {isLoading ? 'Submitting...' : 'SUBMIT APPLICATION'}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
             </form>
 
-            <div className="mt-8 text-[10px] text-gray-400 font-medium text-center pb-4">
-                By applying, you agree to our <button onClick={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
-            </div>
         </motion.div>
     );
 };

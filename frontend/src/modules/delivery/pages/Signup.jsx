@@ -2,20 +2,34 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX, FiNavigation } from 'react-icons/fi';
 import { Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import { validatePassword } from '../../../utils/validation';
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+
+const libraries = ['places'];
 
 const DeliverySignup = () => {
     const navigate = useNavigate();
     const signup = useAuthStore((state) => state.signup);
     const isLoading = useAuthStore((state) => state.isLoading);
 
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        libraries,
+    });
+    const [autocomplete, setAutocomplete] = useState(null);
+    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
     const [currentStep, setCurrentStep] = useState(() => {
         const savedStep = localStorage.getItem('deliverySignupStep');
         return savedStep ? parseInt(savedStep, 10) : 1;
     });
     
+    const [currentStep, setCurrentStep] = useState(1);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState(() => {
         const savedData = localStorage.getItem('deliverySignupData');
@@ -75,6 +89,42 @@ const DeliverySignup = () => {
     const fileInputRefs = useRef({});
     const lastStepChangeRef = useRef(0);
 
+    const onPlaceChanged = () => {
+        if (autocomplete !== null) {
+            const place = autocomplete.getPlace();
+            if (place && place.formatted_address) {
+                setFormData(prev => ({ ...prev, address: place.formatted_address }));
+            }
+        }
+    };
+
+    const handleFetchLocation = () => {
+        if (navigator.geolocation) {
+            setIsFetchingLocation(true);
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    try {
+                        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
+                        const data = await response.json();
+                        if (data.results && data.results.length > 0) {
+                            setFormData(prev => ({ ...prev, address: data.results[0].formatted_address }));
+                        }
+                    } catch (error) {
+                        console.error('Error fetching location:', error);
+                    } finally {
+                        setIsFetchingLocation(false);
+                    }
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    setIsFetchingLocation(false);
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value, files } = e.target;
         setErrors((prev) => ({ ...prev, [name]: '' }));
@@ -132,6 +182,18 @@ const DeliverySignup = () => {
             if (step === 2) {
                 const formError = 'Please upload all required documents';
                 setErrors(prev => ({ ...prev, formError }));
+            }
+            if (!formData.accountName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) {
+                setError('All bank details are required');
+                return false;
+            }
+            if (!/^\d{9,18}$/.test(formData.accountNumber)) {
+                setError('Enter a valid Bank Account Number (9-18 digits)');
+                return false;
+            }
+            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.toUpperCase())) {
+                setError('Enter a valid 11-character IFSC Code');
+                return false;
             }
         }
         return Object.keys(newErrors).length === 0;
@@ -507,6 +569,24 @@ const DeliverySignup = () => {
                                     <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
                                 <ErrorMsg name="address" />
+                            <div className="relative group">
+                                <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B] z-10 pointer-events-none" />
+                                {isLoaded ? (
+                                    <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged} className="w-full block">
+                                        <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                                    </Autocomplete>
+                                ) : (
+                                    <input name="address" placeholder="Residential Address" value={formData.address} onChange={handleChange} className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleFetchLocation}
+                                    disabled={isFetchingLocation}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-50 text-[#843D9B] rounded-lg hover:bg-indigo-100 transition-colors z-10 disabled:opacity-50 flex items-center justify-center"
+                                    title="Fetch current location"
+                                >
+                                    <FiNavigation className={`w-4 h-4 ${isFetchingLocation ? 'animate-pulse' : ''}`} />
+                                </button>
                             </div>
 
                             {/* Optional Fields */}
@@ -515,25 +595,55 @@ const DeliverySignup = () => {
                                     <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input name="accountName" placeholder="Account Holder Name (Optional)" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                <input name="accountName" placeholder="Account Holder Name" value={formData.accountName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
                                     <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input name="bankName" placeholder="Bank Name (Optional)" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                <input name="bankName" placeholder="Bank Name" value={formData.bankName} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
                                     <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input name="accountNumber" placeholder="Bank Account Number (Optional)" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                <input name="accountNumber" placeholder="Bank Account Number" value={formData.accountNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm" />
                             </div>
                             <div>
                                 <div className="relative group bg-gray-50 border border-gray-100 rounded-xl focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B] transition-all">
                                     <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input name="ifscCode" placeholder="IFSC Code (Optional)" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm uppercase" />
                                 </div>
+                            <div className="relative group">
+                                <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#843D9B]" />
+                                <input name="ifscCode" placeholder="IFSC Code" value={formData.ifscCode} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#843D9B] focus:ring-1 focus:ring-[#843D9B] outline-none transition-all font-medium text-sm uppercase" />
                             </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {currentStep === 3 && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-2">
+                            <label className="flex items-center justify-center sm:justify-start gap-2 cursor-pointer mt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={agreedToTerms}
+                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                                />
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    I agree to the <button type="button" onClick={() => window.open('/delivery/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] hover:underline mx-1">Terms</button> & <button type="button" onClick={() => window.open('/delivery/legal/privacy-policy', '_blank')} className="text-[#843D9B] hover:underline mx-1">Privacy</button>
+                                </span>
+                            </label>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -561,6 +671,8 @@ const DeliverySignup = () => {
                             type="submit" 
                             disabled={isLoading} 
                             className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70 flex justify-center items-center"
+                            disabled={isLoading || !agreedToTerms} 
+                            className="flex-[2] py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white font-black rounded-full shadow-lg shadow-[#843D9B]/30 transition-all text-sm uppercase tracking-widest disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
@@ -570,9 +682,6 @@ const DeliverySignup = () => {
                 </div>
             </form>
 
-            <div className="mt-8 text-[10px] text-gray-400 font-medium text-center pb-4">
-                By signing up, you agree to our <button onClick={() => navigate('/delivery/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/delivery/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
-            </div>
         </motion.div>
     );
 };
