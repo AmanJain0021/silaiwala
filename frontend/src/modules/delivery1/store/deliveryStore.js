@@ -246,7 +246,7 @@ export const useDeliveryAuthStore = create(
         set({ isUpdatingStatus: true, deliveryBoy: normalizeDeliveryBoy({ ...current, status }) });
 
         try {
-          const res = await api.put('/delivery/auth/profile', { 
+          const res = await api.patch('/deliveries/status', { 
             isAvailable: status === 'available', 
             status 
           });
@@ -274,7 +274,7 @@ export const useDeliveryAuthStore = create(
         if (now - get()._lastLocationUpdate < 10000) return;
         set({ _lastLocationUpdate: now });
         try {
-          const res = await api.put('/delivery/auth/profile', { currentLocation: { type: 'Point', coordinates: [longitude, latitude] } });
+          const res = await api.patch('/deliveries/status', { lat: latitude, lng: longitude });
           set({ deliveryBoy: normalizeDeliveryBoy({ ...current, ...(res.data || res) }) });
         } catch (e) { console.error("Location Update Failed", e); }
       },
