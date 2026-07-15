@@ -118,11 +118,9 @@ const DashboardMap = ({ currentLocation, activeOrder, isOnline, isLoaded, height
       <div style={{ height }} className="w-full relative">
         {currentLocation ? (
           <TrackingMap 
-            deliveryLocation={currentLocation}
+            riderLocation={currentLocation}
             customerLocation={customerCoords}
             vendorLocation={vendorCoords}
-            customerAddress={activeOrder?.address}
-            vendorAddress={activeOrder?.vendorAddress}
             status={activeOrder?.status}
             isLoaded={isLoaded}
           />

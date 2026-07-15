@@ -12,11 +12,16 @@ function PushNotificationManager() {
 
   useEffect(() => {
     const checkUser = () => {
-      const userStr = localStorage.getItem('user');
-      const tailorStr = localStorage.getItem('tailor_user');
-      const deliveryStr = localStorage.getItem('delivery_user');
-      const adminStr = localStorage.getItem('admin_user');
-      const meStr = localStorage.getItem('me_user');
+      let userStr, tailorStr, deliveryStr, adminStr, meStr;
+      try {
+          userStr = localStorage.getItem('user');
+          tailorStr = localStorage.getItem('tailor_user');
+          deliveryStr = localStorage.getItem('delivery_user');
+          adminStr = localStorage.getItem('admin_user');
+          meStr = localStorage.getItem('me_user');
+      } catch (e) {
+          console.error("Error reading localStorage", e);
+      }
 
       let activeUser = null;
 
@@ -94,11 +99,16 @@ function App() {
     // Check if user is logged in
     const checkAndConnectSocket = () => {
       try {
-        const userStr = localStorage.getItem('user');
-        const tailorStr = localStorage.getItem('tailor_user');
-        const deliveryStr = localStorage.getItem('delivery_user');
-        const adminStr = localStorage.getItem('admin_user');
-        const meStr = localStorage.getItem('me_user');
+      let userStr, tailorStr, deliveryStr, adminStr, meStr;
+      try {
+          userStr = localStorage.getItem('user');
+          tailorStr = localStorage.getItem('tailor_user');
+          deliveryStr = localStorage.getItem('delivery_user');
+          adminStr = localStorage.getItem('admin_user');
+          meStr = localStorage.getItem('me_user');
+      } catch (e) {
+          console.error("Error reading localStorage", e);
+      }
 
         let activeUser = null;
         let role = null;

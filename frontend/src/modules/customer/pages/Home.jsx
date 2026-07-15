@@ -46,7 +46,7 @@ const Home = () => {
     };
 
     // Find the latest active order (not delivered or cancelled)
-    const activeOrder = orders.find(o =>
+    const activeOrder = (orders || []).find(o =>
         !['delivered', 'cancelled'].includes(o.status?.toLowerCase())
     );
 
@@ -79,7 +79,7 @@ const Home = () => {
             {activeCustomDesign && (
                 <div 
                     onClick={() => navigate('/user/orders')}
-                    className="mx-4 md:mx-6 lg:mx-8 mb-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-500/20 flex items-center justify-between cursor-pointer active:scale-95 transition-all"
+                    className="mx-4 md:mx-6 lg:mx-8 mb-6 bg-gradient-to-r from-[#843D9B] to-[#6b2f7d] rounded-2xl p-4 text-white shadow-lg shadow-[#843D9B]/30 flex items-center justify-between cursor-pointer active:scale-95 transition-all"
                 >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -92,7 +92,7 @@ const Home = () => {
                             <p className="text-xs text-white/90 mt-0.5 leading-tight">
                                 {activeCustomDesign.status === 'quote_received' 
                                     ? `Tailor has sent a quote of ₹${activeCustomDesign.quote?.price || 0}. Tap to pay.`
-                                    : `Your custom design is currently ${activeCustomDesign.status.replace('_', ' ')}.`}
+                                    : `Your custom design is currently ${(activeCustomDesign.status || 'pending').replace('_', ' ')}.`}
                             </p>
                         </div>
                     </div>

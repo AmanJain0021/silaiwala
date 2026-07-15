@@ -8,7 +8,7 @@ const DeliveryAuthLayout = () => {
     const isLogin = location.pathname.includes('login');
 
     return (
-        <div className="min-h-screen bg-white flex flex-col-reverse justify-end md:justify-start md:flex-row font-sans selection:bg-[#843D9B]/20 overflow-x-hidden">
+        <div className="h-screen bg-white flex flex-col-reverse justify-end md:justify-start md:flex-row font-sans selection:bg-[#843D9B]/20 overflow-x-hidden">
             {/* Left Side: Auth Content */}
             <div className="w-full md:w-3/5 lg:w-[55%] flex flex-col flex-1 min-h-0 overflow-y-auto">
                 <div className="p-4 md:p-10 flex flex-col flex-1 max-w-[550px] mx-auto w-full min-h-min">

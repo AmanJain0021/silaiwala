@@ -23,28 +23,36 @@ const DeliverySignup = () => {
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
     const [currentStep, setCurrentStep] = useState(() => {
-        const savedStep = localStorage.getItem('deliverySignupStep');
-        return savedStep ? parseInt(savedStep, 10) : 1;
+        try {
+            const savedStep = localStorage.getItem('deliverySignupStep');
+            return savedStep ? parseInt(savedStep, 10) : 1;
+        } catch (e) {
+            return 1;
+        }
     });
 
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState(() => {
-        const savedData = localStorage.getItem('deliverySignupData');
-        if (savedData) {
-            try {
-                const parsed = JSON.parse(savedData);
-                return {
-                    ...parsed,
-                    drivingLicense: null,
-                    drivingLicenseBack: null,
-                    aadharCard: null,
-                    aadharCardBack: null,
-                    profileImage: null,
-                };
-            } catch (e) {
-                console.error("Error parsing saved signup data", e);
+        try {
+            const savedData = localStorage.getItem('deliverySignupData');
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    return {
+                        ...parsed,
+                        drivingLicense: null,
+                        drivingLicenseBack: null,
+                        aadharCard: null,
+                        aadharCardBack: null,
+                        profileImage: null,
+                    };
+                } catch (e) {
+                    console.error("Error parsing saved signup data", e);
+                }
             }
+        } catch (error) {
+            console.error("Error accessing localStorage", error);
         }
         return {
             name: '', 
@@ -70,17 +78,25 @@ const DeliverySignup = () => {
     });
 
     useEffect(() => {
-        const dataToSave = { ...formData };
-        delete dataToSave.drivingLicense;
-        delete dataToSave.drivingLicenseBack;
-        delete dataToSave.aadharCard;
-        delete dataToSave.aadharCardBack;
-        delete dataToSave.profileImage;
-        localStorage.setItem('deliverySignupData', JSON.stringify(dataToSave));
+        try {
+            const dataToSave = { ...formData };
+            delete dataToSave.drivingLicense;
+            delete dataToSave.drivingLicenseBack;
+            delete dataToSave.aadharCard;
+            delete dataToSave.aadharCardBack;
+            delete dataToSave.profileImage;
+            localStorage.setItem('deliverySignupData', JSON.stringify(dataToSave));
+        } catch (e) {
+            console.error("Error setting localStorage", e);
+        }
     }, [formData]);
 
     useEffect(() => {
-        localStorage.setItem('deliverySignupStep', currentStep.toString());
+        try {
+            localStorage.setItem('deliverySignupStep', currentStep.toString());
+        } catch (e) {
+            console.error("Error setting localStorage", e);
+        }
     }, [currentStep]);
 
     const [errors, setErrors] = useState({});
@@ -300,8 +316,12 @@ const DeliverySignup = () => {
             await signup(payloadData);
             
             // On successful registration, clear localStorage data
-            localStorage.removeItem('deliverySignupData');
-            localStorage.removeItem('deliverySignupStep');
+            try {
+                localStorage.removeItem('deliverySignupData');
+                localStorage.removeItem('deliverySignupStep');
+            } catch (e) {
+                console.error("Error removing from localStorage", e);
+            }
             
             // If signup is successful, redirect to a "waiting for approval" or dashboard
             // Based on auth controller, new delivery partners are isActive: false
@@ -312,7 +332,7 @@ const DeliverySignup = () => {
         }
     };
 
-    const DocUpload = ({ name, label }) => (
+    const renderDocUpload = (name, label) => (
         <div
             onClick={() => !formData[name] && fileInputRefs.current[name]?.click()}
             className={`relative flex-1 flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${
@@ -366,7 +386,7 @@ const DeliverySignup = () => {
         </div>
     );
 
-    const ErrorMsg = ({ name }) => (
+    const renderErrorMsg = (name) => (
         errors[name] ? (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1 mt-1 ml-1 text-red-500">
                 <FiAlertCircle size={10} />
@@ -444,7 +464,7 @@ const DeliverySignup = () => {
                                         </div>
                                     )}
                                 </div>
-                                <ErrorMsg name="profileImage" />
+                                {renderErrorMsg("profileImage")}
                             </div>
                             
                             <div>
@@ -452,7 +472,7 @@ const DeliverySignup = () => {
                                     <FiUser className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.name ? 'text-red-400' : 'text-[#843D9B]'}`} />
                                     <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                                <ErrorMsg name="name" />
+                                {renderErrorMsg("name")}
                             </div>
 
                             <div>
@@ -460,16 +480,16 @@ const DeliverySignup = () => {
                                     <FiMail className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.email ? 'text-red-400' : 'text-[#843D9B]'}`} />
                                     <input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                                <ErrorMsg name="email" />
+                                {renderErrorMsg("email")}
                             </div>
 
                             <div>
                                 <div className={`relative group bg-gray-50 border rounded-xl transition-all ${errors.phone ? 'border-red-400' : 'border-gray-100 focus-within:border-[#843D9B] focus-within:ring-1 focus-within:ring-[#843D9B]'}`}>
                                     <FiPhone className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.phone ? 'text-red-400' : 'text-[#843D9B]'}`} />
                                     <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-800 font-bold text-sm">+91</span>
-                                    <input name="phone" placeholder="Phone Number" value={formData.phone} maxLength={10} onChange={handleChange} className="w-full pl-16 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
+                                    <input name="phone" placeholder="Phone Number" value={formData.phone} maxLength={10} onChange={handleChange} className="w-full pl-20 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                                <ErrorMsg name="phone" />
+                                {renderErrorMsg("phone")}
                             </div>
 
                             <div>
@@ -491,7 +511,7 @@ const DeliverySignup = () => {
                                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
-                                <ErrorMsg name="password" />
+                                {renderErrorMsg("password")}
                             </div>
 
                             <div>
@@ -499,7 +519,7 @@ const DeliverySignup = () => {
                                     <FiShield className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.aadharNumber ? 'text-red-400' : 'text-[#843D9B]'}`} />
                                     <input name="aadharNumber" placeholder="Aadhaar Number (e.g. 1234 5678 9012)" value={formData.aadharNumber} maxLength={14} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-medium text-sm" />
                                 </div>
-                                <ErrorMsg name="aadharNumber" />
+                                {renderErrorMsg("aadharNumber")}
                             </div>
                         </motion.div>
                     )}
@@ -517,8 +537,8 @@ const DeliverySignup = () => {
                                     Driving License { (errors.drivingLicense || errors.drivingLicenseBack) && <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded-full lowercase">required</span> }
                                 </p>
                                 <div className="flex gap-3">
-                                    <DocUpload name="drivingLicense" label="Front" />
-                                    <DocUpload name="drivingLicenseBack" label="Back" />
+                                    {renderDocUpload("drivingLicense", "Front")}
+                                    {renderDocUpload("drivingLicenseBack", "Back")}
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -526,8 +546,8 @@ const DeliverySignup = () => {
                                     Aadhaar Card { (errors.aadharCard || errors.aadharCardBack) && <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded-full lowercase">required</span> }
                                 </p>
                                 <div className="flex gap-3">
-                                    <DocUpload name="aadharCard" label="Front" />
-                                    <DocUpload name="aadharCardBack" label="Back" />
+                                    {renderDocUpload("aadharCard", "Front")}
+                                    {renderDocUpload("aadharCardBack", "Back")}
                                 </div>
                             </div>
                         </motion.div>
@@ -558,7 +578,7 @@ const DeliverySignup = () => {
                                     <FiFileText className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.vehicleNumber ? 'text-red-400' : 'text-[#843D9B]'}`} />
                                     <input name="vehicleNumber" placeholder="Vehicle No. (e.g., MH 12 AB 1234)" value={formData.vehicleNumber} onChange={handleChange} className="w-full pl-12 pr-4 py-3 bg-transparent border-none outline-none font-bold text-[#843D9B] text-sm" />
                                 </div>
-                                <ErrorMsg name="vehicleNumber" />
+                                {renderErrorMsg("vehicleNumber")}
                             </div>
 
                             <div>
@@ -581,7 +601,7 @@ const DeliverySignup = () => {
                                         <FiNavigation className={`w-4 h-4 ${isFetchingLocation ? 'animate-pulse' : ''}`} />
                                     </button>
                                 </div>
-                                <ErrorMsg name="address" />
+                                {renderErrorMsg("address")}
                             </div>
 
                             {/* Optional Fields */}
