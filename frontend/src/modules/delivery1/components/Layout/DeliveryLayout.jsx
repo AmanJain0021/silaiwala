@@ -182,9 +182,12 @@ const DeliveryLayout = () => {
     if (!isOnline || !deliveryBoy?.id) return;
 
     socketService.connect();
-    socketService.deliveryRegister(deliveryBoy.id);
+    
+    // The backend uses the User._id for the room, not the Delivery._id
+    const userIdToRegister = deliveryBoy?.user?._id || deliveryBoy?.user || deliveryBoy?.id;
+    socketService.deliveryRegister(userIdToRegister);
 
-    const registerOnConnect = () => socketService.deliveryRegister(deliveryBoy.id);
+    const registerOnConnect = () => socketService.deliveryRegister(userIdToRegister);
     socketService.socket?.on('connect', registerOnConnect);
 
     socketService.on('order_ready_for_pickup', handleNewOrder);
