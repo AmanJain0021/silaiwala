@@ -20,7 +20,7 @@ const DeliveryLayout = () => {
   const { 
     deliveryBoy, logout, isAuthenticated, acceptOrder, 
     acceptReturn, fetchProfileSummary, updateStatus, 
-    isUpdatingStatus 
+    isUpdatingStatus, fetchOrderById
   } = useDeliveryAuthStore();
   const isOnline = deliveryBoy?.status === 'available';
 
@@ -190,6 +190,26 @@ const DeliveryLayout = () => {
     socketService.on('order_ready_for_pickup', handleNewOrder);
     socketService.on('return_ready_for_pickup', handleNewReturn);
     
+    const onNewNotification = async (notification) => {
+       if (notification?.type === 'NEW_DELIVERY_TASK' && notification?.data?.orderId) {
+           try {
+               // Fetch full order details so the modal has everything (vendorName, address, earnings)
+               const fullOrder = await fetchOrderById(notification.data.orderId);
+               handleNewOrder(fullOrder);
+           } catch (err) {
+               console.error("Failed to fetch order details for popup", err);
+               // Fallback to notification data
+               handleNewOrder({
+                   ...notification.data,
+                   id: notification.data.orderId,
+                   orderId: notification.data.orderId_str || notification.data.orderId,
+                   deliveryFee: notification.data.deliveryEarnings
+               });
+           }
+       }
+    };
+    socketService.on('new_notification', onNewNotification);
+    
     const onOrderTaken = (data) => {
       // Use ref-like logic or fresh state from store inside the callback
       const currentModalOpen = showNewOrderModal; // This might be stale if not careful
@@ -208,6 +228,7 @@ const DeliveryLayout = () => {
       socketService.socket?.off('connect', registerOnConnect);
       socketService.off('order_ready_for_pickup', handleNewOrder);
       socketService.off('return_ready_for_pickup', handleNewReturn);
+      socketService.off('new_notification', onNewNotification);
       socketService.off('order_taken');
       socketService.off('balance_updated');
       window.removeEventListener('delivery-view-order', handleViewOrder);
