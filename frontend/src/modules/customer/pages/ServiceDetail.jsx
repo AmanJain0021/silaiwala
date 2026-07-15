@@ -395,13 +395,6 @@ const ServiceDetail = () => {
     };
 
     const checkCartConflict = () => {
-        if (cartItems && cartItems.length > 0) {
-            import('react-hot-toast').then(({ toast }) => {
-                toast.error("This cart already contains a different service type. Please complete this order or clear your cart before adding another service category.");
-            });
-            return true;
-        }
-
         const isCurrentAlteration = serviceData?.category?.name?.toLowerCase().includes('alteration') || serviceData?.tags?.some(t => t.toLowerCase().includes('alteration'));
 
         if (serviceItems && serviceItems.length > 0) {

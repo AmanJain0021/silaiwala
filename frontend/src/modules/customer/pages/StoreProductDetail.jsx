@@ -81,16 +81,7 @@ const StoreProductDetail = () => {
         }
     };
 
-    const checkCartConflict = () => {
-        if (serviceItems && serviceItems.length > 0) {
-            showToast("This cart already contains a different service type. Please complete this order or clear your cart before adding another service category.", "error");
-            return true;
-        }
-        return false;
-    };
-
     const handleAddToCart = () => {
-        if (checkCartConflict()) return;
         const hasSizes = productData.variants?.some(v => v.size);
         const hasColors = productData.variants?.some(v => v.color);
 
@@ -107,7 +98,6 @@ const StoreProductDetail = () => {
     };
 
     const handleBuyNow = () => {
-        if (checkCartConflict()) return;
         const hasSizes = productData.variants?.some(v => v.size);
         const hasColors = productData.variants?.some(v => v.color);
 

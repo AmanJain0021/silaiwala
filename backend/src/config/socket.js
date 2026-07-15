@@ -53,7 +53,7 @@ const initSocket = (httpServer) => {
   const jwt = require("jsonwebtoken");
   
   // Middleware to authenticate socket connections via JWT
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(" ")[1];
     if (!token) {
       console.log(`🔌 [SOCKET AUTH ERROR] No token provided for socket: ${socket.id}`);
@@ -61,7 +61,16 @@ const initSocket = (httpServer) => {
     }
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded;
+      
+      const User = require("../models/User.js");
+      const user = await User.findById(decoded.id);
+      
+      if (!user) {
+        console.log(`🔌 [SOCKET AUTH ERROR] User not found in database: ${decoded.id}`);
+        return next(new Error("Authentication error: User not found"));
+      }
+
+      socket.user = user;
       next();
     } catch (err) {
       console.log(`🔌 [SOCKET AUTH ERROR] Invalid token for socket: ${socket.id} | Error: ${err.message}`);
@@ -74,8 +83,9 @@ const initSocket = (httpServer) => {
 
     // ── Join a room by userId for targeted notifications ─────────────────────
     socket.on("join_user_room", (userId) => {
-      if (userId !== socket.user?.id) {
-        console.warn(`⚠️ Unauthorized attempt to join user room for user ${userId} by user ${socket.user?.id}`);
+      const currentUserId = socket.user?.id || socket.user?._id?.toString();
+      if (userId !== currentUserId) {
+        console.warn(`⚠️ Unauthorized attempt to join user room for user ${userId} by user ${currentUserId}`);
         return;
       }
       socket.join(`user_${userId}`);
@@ -83,21 +93,22 @@ const initSocket = (httpServer) => {
     });
 
     socket.on("join", (room) => {
+      const currentUserId = socket.user?.id || socket.user?._id?.toString();
       // Basic authorization for sensitive rooms
       if (room === "delivery_partners" && socket.user?.role !== "delivery") {
-        console.warn(`⚠️ Unauthorized attempt to join delivery_partners by user ${socket.user?.id}`);
+        console.warn(`⚠️ Unauthorized attempt to join delivery_partners by user ${currentUserId}`);
         return;
       }
       if (room === "admin_room" && socket.user?.role !== "admin") {
-        console.warn(`⚠️ Unauthorized attempt to join admin_room by user ${socket.user?.id}`);
+        console.warn(`⚠️ Unauthorized attempt to join admin_room by user ${currentUserId}`);
         return;
       }
       if (room === "measurement_executives" && socket.user?.role !== "measurement_executive") {
-        console.warn(`⚠️ Unauthorized attempt to join measurement_executives by user ${socket.user?.id}`);
+        console.warn(`⚠️ Unauthorized attempt to join measurement_executives by user ${currentUserId}`);
         return;
       }
-      if (room.startsWith("user_") && room !== `user_${socket.user?.id}`) {
-        console.warn(`⚠️ Unauthorized attempt to join another user's room (${room}) by user ${socket.user?.id}`);
+      if (room.startsWith("user_") && room !== `user_${currentUserId}`) {
+        console.warn(`⚠️ Unauthorized attempt to join another user's room (${room}) by user ${currentUserId}`);
         return;
       }
 

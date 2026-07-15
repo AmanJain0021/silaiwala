@@ -20,7 +20,8 @@ const CheckoutSummary = () => {
         buyNowItem,
         isBuyNowMode,
         clearCheckout,
-        removeServiceItem
+        removeServiceItem,
+        checkoutType
     } = useCheckoutStore(state => state);
     const { items: cartItems, getTotalPrice, clearCart } = useCartStore(state => state);
     const addOrder = useOrderStore(state => state.addOrder);
@@ -43,8 +44,8 @@ const CheckoutSummary = () => {
     const currentCheckoutItems = React.useMemo(() => {
         return isBuyNowMode && buyNowItem ? [buyNowItem] : serviceItems;
     }, [isBuyNowMode, buyNowItem, serviceItems]);
-    const isServiceCheckout = currentCheckoutItems.length > 0;
-    const isCartCheckout = cartItems.length > 0;
+    const isServiceCheckout = checkoutType === 'service' || (!checkoutType && currentCheckoutItems.length > 0);
+    const isCartCheckout = checkoutType === 'cart' || (!checkoutType && cartItems.length > 0 && currentCheckoutItems.length === 0);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [loadingText, setLoadingText] = useState('Initializing...');

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ShoppingBag, ShoppingCart, Info, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
+import useCheckoutStore from '../../../store/checkoutStore';
 import CartItem from '../components/cart/CartItem';
 import { cn } from '../../../utils/cn';
 
@@ -16,6 +17,7 @@ const CartPage = () => {
 
     const handleCheckout = () => {
         setIsCheckoutLoading(true);
+        useCheckoutStore.getState().setCheckoutType('cart');
         setTimeout(() => {
             navigate('/user/checkout/address'); // Proceed to checkout flow
         }, 1000);

@@ -5,9 +5,18 @@ import { getToken, setToken, removeToken } from '../utils/auth';
 
 const getInitialUser = () => {
     try {
-        const user = localStorage.getItem('user');
-        if (!user || user === 'undefined') return null;
-        return JSON.parse(user);
+        const path = window.location.pathname;
+        let storageKey = 'user';
+        if (path.startsWith('/delivery')) storageKey = 'delivery_user';
+        else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+
+        let userStr = localStorage.getItem(storageKey);
+        // Fallback to legacy 'user' if specific key not found
+        if (!userStr || userStr === 'undefined') {
+             userStr = localStorage.getItem('user');
+        }
+        if (!userStr || userStr === 'undefined') return null;
+        return JSON.parse(userStr);
     } catch (e) {
         console.error('Error parsing user from localStorage:', e);
         return null;
@@ -37,7 +46,13 @@ const useAuthStore = create((set) => ({
             }
 
             setToken(token);
-            localStorage.setItem('user', JSON.stringify(user));
+            
+            const path = window.location.pathname;
+            let storageKey = 'user';
+            if (path.startsWith('/delivery')) storageKey = 'delivery_user';
+            else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+            
+            localStorage.setItem(storageKey, JSON.stringify(user));
 
             set({
                 user,
@@ -83,7 +98,13 @@ const useAuthStore = create((set) => ({
             const token = response.data.token;
 
             setToken(token);
-            localStorage.setItem('user', JSON.stringify(user));
+            
+            const path = window.location.pathname;
+            let storageKey = 'user';
+            if (path.startsWith('/delivery')) storageKey = 'delivery_user';
+            else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+            
+            localStorage.setItem(storageKey, JSON.stringify(user));
 
             set({
                 user,
@@ -128,8 +149,14 @@ const useAuthStore = create((set) => ({
 
     logout: () => {
         removeToken();
-        localStorage.removeItem('user');
-        set({ user: null, isAuthenticated: false, role: null });
+        const path = window.location.pathname;
+        let storageKey = 'user';
+        if (path.startsWith('/delivery')) storageKey = 'delivery_user';
+        else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+        
+        localStorage.removeItem(storageKey);
+        
+        set({ user: null, isAuthenticated: false, role: null, error: null });
     },
 
     signup: async (userData) => {

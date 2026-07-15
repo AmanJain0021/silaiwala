@@ -8,6 +8,7 @@ const useCheckoutStore = create(
             serviceItems: [],    // Array of { serviceDetails, configuration, pricing, addons, basketId }
             buyNowItem: null,    // Single item for 'Book Now' flow
             isBuyNowMode: false, // Flag to determine checkout flow mode
+            checkoutType: null,  // 'service' or 'cart' to distinguish checkout flows
             
             // Drafting State
             serviceDetails: null, // Current drafting { id, title, image, basePrice, tailorId, tailorName }
@@ -17,8 +18,11 @@ const useCheckoutStore = create(
 
             // Actions
             addServiceItem: (item) => set((state) => ({
-                serviceItems: [...state.serviceItems, item]
+                serviceItems: [...state.serviceItems, item],
+                checkoutType: 'service'
             })),
+
+            setCheckoutType: (type) => set({ checkoutType: type }),
 
             removeServiceItem: (index) => set((state) => ({
                 serviceItems: state.serviceItems.filter((_, i) => i !== index)
@@ -55,10 +59,11 @@ const useCheckoutStore = create(
                 };
             }),
 
-            setBuyNowMode: (isBuyNowMode, buyNowItem = null) => set({
+            setBuyNowMode: (isBuyNowMode, buyNowItem = null) => set((state) => ({
                 isBuyNowMode,
-                buyNowItem
-            }),
+                buyNowItem,
+                checkoutType: isBuyNowMode ? 'service' : state.checkoutType
+            })),
 
             clearCheckout: () => set({
                 serviceItems: [],
@@ -67,7 +72,8 @@ const useCheckoutStore = create(
                 serviceDetails: null,
                 configuration: null,
                 pricing: null,
-                addons: []
+                addons: [],
+                checkoutType: null
             }),
             
             clearDrafting: () => set({
@@ -86,7 +92,8 @@ const useCheckoutStore = create(
                 serviceDetails: state.serviceDetails,
                 configuration: state.configuration,
                 pricing: state.pricing,
-                addons: state.addons
+                addons: state.addons,
+                checkoutType: state.checkoutType
             }),
         }
     )
