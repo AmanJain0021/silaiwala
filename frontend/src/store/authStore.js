@@ -11,10 +11,6 @@ const getInitialUser = () => {
         else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
 
         let userStr = localStorage.getItem(storageKey);
-        // Fallback to legacy 'user' if specific key not found
-        if (!userStr || userStr === 'undefined') {
-             userStr = localStorage.getItem('user');
-        }
         if (!userStr || userStr === 'undefined') return null;
         return JSON.parse(userStr);
     } catch (e) {

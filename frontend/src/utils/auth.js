@@ -7,13 +7,13 @@ export const getToken = () => {
             if (path.startsWith('/delivery')) {
                 const stored = JSON.parse(localStorage.getItem('delivery-auth-storage') || '{}');
                 if (stored.state?.token) return stored.state.token;
-                return localStorage.getItem("delivery_token") || localStorage.getItem(TOKEN_KEY);
+                return localStorage.getItem("delivery_token");
             }
             if (path.startsWith('/partner')) {
-                return localStorage.getItem("tailor_token") || localStorage.getItem(TOKEN_KEY);
+                return localStorage.getItem("tailor_token");
             }
             if (path.startsWith('/executive')) {
-                return localStorage.getItem("executive_token") || localStorage.getItem(TOKEN_KEY);
+                return localStorage.getItem("executive_token");
             }
         }
         return localStorage.getItem(TOKEN_KEY);
