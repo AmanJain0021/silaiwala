@@ -20,6 +20,7 @@ export const useUnifiedLocation = ({
     const [isLocating, setIsLocating] = useState(autoDetect || enableTracking);
     const [error, setError] = useState(null);
     const watchIdRef = useRef(null);
+    const lastGeocodeCoords = useRef({ lat: null, lng: null, addressData: null });
 
     const getErrorMessage = (err) => {
         let errMsg = "Location access denied.";
@@ -82,17 +83,31 @@ export const useUnifiedLocation = ({
 
         // Fetch address only if required
         if (fetchAddress) {
-            const data = await fetchAddressData(latitude, longitude);
-            if (data) {
-                addressData = data;
+            const isSignificantChange = !lastGeocodeCoords.current.lat || 
+                Math.abs(lastGeocodeCoords.current.lat - latitude) > 0.0005 || 
+                Math.abs(lastGeocodeCoords.current.lng - longitude) > 0.0005;
+
+            if (isSignificantChange) {
+                const data = await fetchAddressData(latitude, longitude);
+                if (data) {
+                    addressData = data;
+                    lastGeocodeCoords.current = { lat: latitude, lng: longitude, addressData: data };
+                    setLocation(prev => ({
+                        ...prev,
+                        ...addressData,
+                        isAddressLoading: false
+                    }));
+                } else {
+                    setLocation(prev => ({
+                        ...prev,
+                        isAddressLoading: false
+                    }));
+                }
+            } else {
+                addressData = lastGeocodeCoords.current.addressData || {};
                 setLocation(prev => ({
                     ...prev,
                     ...addressData,
-                    isAddressLoading: false
-                }));
-            } else {
-                setLocation(prev => ({
-                    ...prev,
                     isAddressLoading: false
                 }));
             }

@@ -5,6 +5,7 @@ import { getToken } from '../../utils/auth';
 class SocketService {
   constructor() {
     this.socket = null;
+    this.currentUserId = null;
   }
 
   connect() {
@@ -17,6 +18,14 @@ class SocketService {
         reconnectionAttempts: 5,
         auth: {
           token: getToken()
+        }
+      });
+      
+      // Automatically rejoin rooms on reconnection
+      this.socket.on('connect', () => {
+        if (this.currentUserId) {
+          this.socket.emit('join_user_room', this.currentUserId);
+          this.socket.emit('join', 'delivery_partners');
         }
       });
     }
@@ -44,6 +53,7 @@ class SocketService {
 
   deliveryRegister(userId) {
     const socket = this.getSocket();
+    this.currentUserId = userId;
     if (userId) {
       socket.emit('join_user_room', userId);
     }

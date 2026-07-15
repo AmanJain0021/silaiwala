@@ -104,6 +104,9 @@ const deliverySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    lastLocationUpdatedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

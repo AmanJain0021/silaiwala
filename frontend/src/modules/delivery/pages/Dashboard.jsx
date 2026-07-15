@@ -54,7 +54,9 @@ const DeliveryDashboard = () => {
 
     if (deliveryBoy?.id) {
        socketService.connect();
-       socketService.deliveryRegister(deliveryBoy.id);
+       // Use User ID for socket room, as backend expects User ID, not Delivery ID
+       const userId = deliveryBoy?.user?._id || deliveryBoy?.user || useDeliveryAuthStore.getState().user?.id || deliveryBoy?.id;
+       socketService.deliveryRegister(userId);
     }
 
     const handleRefresh = () => {

@@ -5,22 +5,28 @@ const { sendNotification } = require("./notification.js");
 const { getIO } = require("../config/socket.js");
 
 /**
- * Assigns a delivery partner to an order for a specific cycle.
+ * Broadcasts a delivery job request to all available, in-radius partners.
  * @param {ObjectId} orderId - The Order ID
  * @param {String} cycle - "pickup" (Customer -> Tailor) or "dropoff" (Tailor -> Customer)
  */
 exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
   try {
     const order = await Order.findById(orderId).populate("tailor customer");
-    if (!order) return;
+    if (!order) return false;
+
+    const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+    const freshnessTime = new Date(Date.now() - STALE_THRESHOLD_MS);
 
     const query = {
       isAvailable: true,
       cashBlocked: { $ne: true },
-      user: { $nin: order.rejectedBy || [] }
+      user: { $nin: order.rejectedBy || [] },
+      $or: [
+        { lastLocationUpdatedAt: { $exists: false } },
+        { lastLocationUpdatedAt: { $gt: freshnessTime } }
+      ]
     };
 
-    let nearestRider = null;
     let startCoords = null; // [lng, lat]
 
     // Determine where the rider needs to go first
@@ -41,6 +47,8 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     }
 
     let candidateRiders = [];
+    const searchRadius = order.currentSearchRadius || 15000;
+
     if (startCoords) {
         try {
             candidateRiders = await Delivery.find({
@@ -48,175 +56,218 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
                 currentLocation: {
                     $near: {
                        $geometry: { type: "Point", coordinates: startCoords },
-                       $maxDistance: 15000 // 15km search radius
+                       $maxDistance: searchRadius
                     }
                 }
-            }).populate("user").limit(25); // Max 25 origins for Google Distance Matrix API
+            }).populate("user");
         } catch (geoError) {
-            console.error("⚠️ Geospatial search failed. Using availability query fallback:", geoError.message);
+            console.error("⚠️ Geospatial search failed:", geoError.message);
         }
     }
 
-    if (!candidateRiders.length) {
-        candidateRiders = await Delivery.find(query).populate("user").limit(5);
-    }
-
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY;
-
-    if (candidateRiders.length > 0 && startCoords && apiKey) {
-        try {
-            // Google Maps uses Lat,Lng order. MongoDB uses [Lng, Lat]
-            const destLat = startCoords[1];
-            const destLng = startCoords[0];
+    if (candidateRiders.length === 0) {
+        if (searchRadius >= 35000) {
+            console.warn(`⚠️ [deliveryAssignment] No candidates found in maximum search radius of ${searchRadius / 1000}km. Initiating last resort database-wide search...`);
             
-            // Build origins string: lat1,lng1|lat2,lng2...
-            const validOrigins = candidateRiders.filter(r => r.currentLocation?.coordinates?.length >= 2);
-            
-            if (validOrigins.length > 0) {
-                const originsStr = validOrigins.map(r => `${r.currentLocation.coordinates[1]},${r.currentLocation.coordinates[0]}`).join('|');
-                
-                console.log(`🛣️ [deliveryAssignment] Calling Distance Matrix API...`);
-                console.log(`   Origins (${validOrigins.length} Riders):`, originsStr);
-                console.log(`   Destination:`, `${destLat},${destLng}`);
+            let allRiders = await Delivery.find(query).populate("user");
+            if (allRiders.length > 0 && startCoords) {
+                const { getDistanceFromLatLonInKm } = require("./haversine.js");
+                const destLat = startCoords[1];
+                const destLng = startCoords[0];
 
-                const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originsStr}&destinations=${destLat},${destLng}&key=${apiKey}`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                console.log(`📏 [deliveryAssignment] Distance Matrix Response Status:`, data.status);
-                if (data.status === "OK") {
-                    console.log(`   Distance Matrix Rows:`, JSON.stringify(data.rows, null, 2));
-                }
-                
-                if (data.status === "OK" && data.rows?.length > 0) {
-                    let bestRider = null;
-                    let minTime = Infinity; // Using duration in seconds
-                    
-                    data.rows.forEach((row, index) => {
-                        const element = row.elements[0];
-                        if (element && element.status === "OK") {
-                            const duration = element.duration.value; 
-                            if (duration < minTime) {
-                                minTime = duration;
-                                bestRider = validOrigins[index];
-                            }
-                        }
-                    });
-                    
-                    if (bestRider) {
-                        nearestRider = bestRider;
-                        console.log(`🗺️ Assigned best rider via Google Maps API (ETA: ${Math.round(minTime/60)} mins)`);
+                const ridersWithDistance = allRiders.map(r => {
+                    let distance = Infinity;
+                    if (r.currentLocation?.coordinates?.length >= 2) {
+                        distance = getDistanceFromLatLonInKm(
+                            r.currentLocation.coordinates[1],
+                            r.currentLocation.coordinates[0],
+                            destLat,
+                            destLng
+                        );
                     }
-                } else {
-                    console.error("Google Maps API returned error status:", data.status || data.error_message);
-                }
+                    return { rider: r, distance };
+                });
+
+                // Sort by distance ascending
+                ridersWithDistance.sort((a, b) => a.distance - b.distance);
+
+                // Map back to Delivery document structure, limited to top 5
+                candidateRiders = ridersWithDistance.slice(0, 5).map(item => item.rider);
+            } else {
+                candidateRiders = allRiders.slice(0, 5);
             }
-        } catch (apiErr) {
-            console.error("Google Maps API request failed:", apiErr);
+        } else {
+            console.log(`No delivery partner available in current radius ${searchRadius / 1000}km for order ${order.orderId} (${cycle}). Waiting for timeout expansion.`);
+            return false;
         }
     }
 
-    // Fallback if Google Maps fails, no coordinates, or API key missing
-    if (!nearestRider && candidateRiders.length > 0) {
-        nearestRider = candidateRiders[0];
-    }
+    if (candidateRiders.length > 0) {
+        console.log(`\n================================`);
+        console.log(`🏍️  BROADCASTING TO ${candidateRiders.length} DELIVERY PARTNER(S)`);
+        console.log(`Order ID: ${order.orderId}`);
+        console.log(`Cycle: ${cycle}`);
+        console.log(`Radius: ${searchRadius / 1000}km`);
+        console.log(`================================\n`);
 
-    if (nearestRider && nearestRider.user) {
-       console.log(`\n================================`);
-       console.log(`🏍️  DELIVERY PARTNER NOTIFIED (Pending Accept)`);
-       console.log(`Name: ${nearestRider.user.name}`);
-       console.log(`Order ID: ${order.orderId}`);
-       console.log(`Cycle: ${cycle}`);
-       console.log(`================================\n`);
+        const candidateIds = candidateRiders.map(r => r.user._id);
 
-       // Update Order fields based on cycle
-       const partnerId = nearestRider.user._id;
-       order.deliveryPartner = partnerId; // Keep for legacy compatibility
-       
-       // Set status to PENDING (not assigned) so partner must explicitly accept
-       if (cycle === "pickup") {
-         order.pickupPartner = partnerId;
-         order.pickupDeliveryStatus = "pending";
-       } else {
-         order.dropoffPartner = partnerId;
-         order.dropoffDeliveryStatus = "pending";
-       }
+        order.pendingPartnerCandidates = candidateIds;
+        order.requestSentAt = new Date();
+        order.currentSearchRadius = searchRadius;
 
-       order.deliveryStatus = 'pending';
-       order.assignedAt = new Date();
-       order.trackingHistory.push({
-          status: "searching-delivery-partner",
-          message: `Searching for delivery partner for ${cycle}. Notification sent to nearest available partner.`,
-          timestamp: new Date()
-       });
-       await order.save();
+        // Clean any stale assignments from previous cycle/failure
+        if (cycle === "pickup") {
+          order.pickupPartner = undefined;
+          order.pickupDeliveryStatus = "pending";
+        } else {
+          order.dropoffPartner = undefined;
+          order.dropoffDeliveryStatus = "pending";
+        }
+        order.deliveryPartner = undefined;
+        order.deliveryStatus = 'pending';
 
-       // Notify assigned rider — they must accept or reject
-       const title = cycle === "pickup" ? "New Fabric Pickup Request! 🛵" : "New Delivery Request! 🛵";
-       const message = cycle === "pickup" 
-          ? `New job: Fabric pickup for order ${order.orderId}. Please accept or reject.`
-          : `New job: Final delivery for order ${order.orderId}. Please accept or reject.`;
+        order.trackingHistory.push({
+           status: "searching-delivery-partner",
+           message: `Broadcasted job request for ${cycle} to ${candidateRiders.length} nearby available partners within ${searchRadius / 1000}km.`,
+           timestamp: new Date()
+        });
+        await order.save();
+
+        // Notify assigned riders — they must accept or reject
+        const title = cycle === "pickup" ? "New Fabric Pickup Request! 🛵" : "New Delivery Request! 🛵";
+        const message = cycle === "pickup" 
+           ? `New job: Fabric pickup for order ${order.orderId}. Please accept or reject.`
+           : `New job: Final delivery for order ${order.orderId}. Please accept or reject.`;
+           
+        for (const rider of candidateRiders) {
+          const partnerId = rider.user._id.toString();
           
-       await sendNotification({
-         recipient: partnerId,
-         type: "NEW_DELIVERY_TASK",
-         title,
-         message,
-         data: { 
-           orderId: order._id, 
-           orderId_str: order.orderId,
-           type: cycle === "pickup" ? "fabric-ready-for-pickup" : "ready-for-delivery", 
-           taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
-           requiresAcceptance: true,
-           targetUrl: "/delivery/tasks",
-           deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
-           deliveryDistance: order.deliveryDistance
-         }
-       });
-       
-       // Emit socket notification directly to the partner
-       const io = getIO();
-       if (io) {
-         // Notify assigned partner of the new task request
-         io.to(`user_${partnerId}`).emit('new_notification', {
-           type: 'NEW_DELIVERY_TASK',
-           title,
-           message,
-           data: { 
-             orderId: order._id,
-             requiresAcceptance: true,
-             taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
-             targetUrl: "/delivery/tasks",
-             deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
-             deliveryDistance: order.deliveryDistance
-           }
-         });
+          await sendNotification({
+            recipient: partnerId,
+            type: "NEW_DELIVERY_TASK",
+            title,
+            message,
+            data: { 
+              orderId: order._id, 
+              orderId_str: order.orderId,
+              type: cycle === "pickup" ? "fabric-ready-for-pickup" : "ready-for-delivery", 
+              taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
+              requiresAcceptance: true,
+              targetUrl: "/delivery/tasks",
+              deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
+              deliveryDistance: order.deliveryDistance
+            }
+          });
+          
+          // Emit socket notification directly to the partner
+          const io = getIO();
+          if (io) {
+            io.to(`user_${partnerId}`).emit('new_notification', {
+              type: 'NEW_DELIVERY_TASK',
+              title,
+              message,
+              data: { 
+                orderId: order._id,
+                requiresAcceptance: true,
+                taskType: cycle === "pickup" ? 'fabric-pickup' : 'final-delivery',
+                targetUrl: "/delivery/tasks",
+                deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
+                deliveryDistance: order.deliveryDistance
+              }
+            });
 
-         // Notify tailor panel to show "Searching" state
-         io.to(`user_${order.tailor?._id || order.tailor}`).emit('order_status_updated', {
-           orderId: order.orderId,
-           _id: order._id,
-           status: order.status,
-           pickupDeliveryStatus: order.pickupDeliveryStatus,
-           dropoffDeliveryStatus: order.dropoffDeliveryStatus
-         });
+            // Emit new_order to trigger the popup on Delivery Dashboard
+            const defaultAddress = order.customer?.addresses?.find(a => a.isDefault) || order.customer?.addresses?.[0];
+            io.to(`user_${partnerId}`).emit('new_order', {
+               ...order.toObject(),
+               id: order._id,
+               vendorName: order.tailor?.shopName || order.tailor?.name,
+               vendorAddress: order.tailor?.address,
+               vendorLocation: order.tailor?.location,
+               customerLocation: defaultAddress?.location,
+               address: defaultAddress,
+               customer: order.customer?.name,
+               isReturn: false,
+               deliveryFee: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0
+            });
+          }
+        }
+        
+        const io = getIO();
+        if (io) {
+          // Notify tailor panel to show "Searching" state
+          io.to(`user_${order.tailor?._id || order.tailor}`).emit('order_status_updated', {
+            orderId: order.orderId,
+            _id: order._id,
+            status: order.status,
+            pickupDeliveryStatus: order.pickupDeliveryStatus,
+            dropoffDeliveryStatus: order.dropoffDeliveryStatus
+          });
 
-         // Also notify customer tracking page
-         io.to(`user_${order.customer?._id || order.customer}`).emit('order_status_updated', {
-           orderId: order.orderId,
-           _id: order._id,
-           status: order.status
-         });
-       }
-       
-       return true;
+          // Also notify customer tracking page
+          io.to(`user_${order.customer?._id || order.customer}`).emit('order_status_updated', {
+            orderId: order.orderId,
+            _id: order._id,
+            status: order.status
+          });
+        }
+        
+        return true;
     } else {
-        console.log(`No delivery partner available for order ${order.orderId} (${cycle})`);
+        console.log(`No delivery partner available in radius for order ${order.orderId} (${cycle})`);
         return false;
     }
   } catch (error) {
     console.error("Auto-assignment failed:", error.message);
     return false;
+  }
+};
+
+/**
+ * Checks for orders that have been awaiting delivery partner acceptance for too long,
+ * expands their search radius, and triggers a new broadcast.
+ */
+exports.checkStuckDeliveryAssignments = async () => {
+  try {
+    const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout
+    const thresholdTime = new Date(Date.now() - TIMEOUT_MS);
+
+    // Find orders that are in a delivery phase, have no assigned partner, and exceeded timeout
+    const stuckOrders = await Order.find({
+      status: { $in: ["pending", "fabric-ready-for-pickup", "ready", "ready-for-delivery", "ready-for-pickup"] },
+      requestSentAt: { $lt: thresholdTime },
+      $or: [
+        { pickupPartner: null, status: { $in: ["pending", "fabric-ready-for-pickup"] } },
+        { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] } }
+      ]
+    });
+
+    if (stuckOrders.length === 0) return;
+
+    console.log(`⏳ [Cron] Found ${stuckOrders.length} stuck delivery assignments. Processing expansion...`);
+
+    for (const order of stuckOrders) {
+      // Determine cycle
+      const isFabricPhase = ["pending", "fabric-ready-for-pickup"].includes(order.status);
+      const cycle = isFabricPhase ? "pickup" : "dropoff";
+
+      // Expand radius: e.g. 15km -> 25km -> 35km...
+      const currentRadius = order.currentSearchRadius || 15000;
+      const nextRadius = currentRadius + 10000; // expand by 10km
+
+      order.currentSearchRadius = nextRadius;
+      order.trackingHistory.push({
+        status: "searching-delivery-partner",
+        message: `No partner accepted within timeout. Expanding search radius from ${currentRadius / 1000}km to ${nextRadius / 1000}km and rebroadcasting.`,
+        timestamp: new Date()
+      });
+      await order.save();
+
+      // Trigger autoAssignDelivery with the expanded radius
+      await exports.autoAssignDelivery(order._id, cycle);
+    }
+  } catch (error) {
+    console.error("❌ Error in checkStuckDeliveryAssignments:", error);
   }
 };

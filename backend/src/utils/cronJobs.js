@@ -68,6 +68,36 @@ const initCronJobs = () => {
         }
     });
 
+    // Run every 2 minutes to check for stuck delivery assignments
+    cron.schedule('*/2 * * * *', async () => {
+        try {
+            if (isRedisEnabled) {
+                try {
+                    const redisClient = getRedisClient();
+                    if (redisClient) {
+                        const acquired = await redisClient.set(
+                            'cron-lock:delivery-timeout-check',
+                            '1',
+                            'PX',
+                            90 * 1000, // 90 seconds TTL
+                            'NX'
+                        );
+                        if (!acquired) {
+                            return;
+                        }
+                    }
+                } catch (lockErr) {
+                    console.warn(`⚠️ [Cron] Redis lock error for delivery check — ${lockErr.message}. Running fallback.`);
+                }
+            }
+
+            const { checkStuckDeliveryAssignments } = require("./deliveryAssignment.js");
+            await checkStuckDeliveryAssignments();
+        } catch (error) {
+            console.error('❌ Error in delivery assignment cron job:', error);
+        }
+    });
+
     console.log('⏰ Cron jobs initialized.');
 };
 

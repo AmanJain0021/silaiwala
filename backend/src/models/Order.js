@@ -33,6 +33,17 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     }],
+    pendingPartnerCandidates: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
+    requestSentAt: {
+      type: Date
+    },
+    currentSearchRadius: {
+      type: Number,
+      default: 15000 // 15km in meters
+    },
     items: [
       {
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },

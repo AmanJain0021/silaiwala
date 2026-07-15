@@ -108,6 +108,7 @@ exports.updateStatus = asyncHandler(async (req, res, next) => {
       type: "Point",
       coordinates: [parseFloat(lng), parseFloat(lat)],
     };
+    delivery.lastLocationUpdatedAt = new Date();
 
     // Update active DeliveryTracking documents
     const DeliveryTracking = require("../../../models/DeliveryTracking.js");
@@ -176,7 +177,8 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     $or: [
       { deliveryPartner: req.user.id },
       { pickupPartner: req.user.id },
-      { dropoffPartner: req.user.id }
+      { dropoffPartner: req.user.id },
+      { pendingPartnerCandidates: req.user.id }
     ]
   };
 
@@ -197,26 +199,33 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     .sort("-updatedAt")
     .lean();
 
-  // FILTER OUT orders where the current phase does not match the specific partner assignment
-  // This prevents the pickup partner from seeing the order in Active Dispatch during the dropoff phase
+  // FILTER OUT orders where the current phase does not match the specific partner assignment or candidate broadcast
   orders = orders.filter(order => {
     const isPickupPhase = ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
     const isDropoffPhase = ["ready", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"].includes(order.status);
 
     if (isPickupPhase) {
-      return (order.pickupPartner?.toString() === req.user.id) || 
-             (!order.pickupPartner && order.deliveryPartner?.toString() === req.user.id);
+      if (order.pickupPartner?.toString() === req.user.id || (!order.pickupPartner && order.deliveryPartner?.toString() === req.user.id)) {
+        return true;
+      }
+      if (!order.pickupPartner && order.pendingPartnerCandidates?.some(id => id.toString() === req.user.id)) {
+        return true;
+      }
+      return false;
     }
     
     if (isDropoffPhase) {
-      return (order.dropoffPartner?.toString() === req.user.id) || 
-             (!order.dropoffPartner && !order.fabricPickupRequired && order.deliveryPartner?.toString() === req.user.id);
+      if (order.dropoffPartner?.toString() === req.user.id || (!order.dropoffPartner && !order.fabricPickupRequired && order.deliveryPartner?.toString() === req.user.id)) {
+        return true;
+      }
+      if (!order.dropoffPartner && order.pendingPartnerCandidates?.some(id => id.toString() === req.user.id)) {
+        return true;
+      }
+      return false;
     }
 
-    return true; // For any other statuses (like delivered), return them if they somehow match the initial db query
+    return true; // For any other statuses (like delivered), return them if they match the initial db query
   });
-
-
 
   // Enrich each order with Tailor profile data (shopName, location, phone)
   const formattedOrders = await Promise.all(orders.map(async (order) => {
@@ -275,6 +284,8 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
     
     let address = 'Address not available';
+    let latitude = null;
+    let longitude = null;
 
     if (order.deliveryAddress) {
         const parts = [order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean);
@@ -299,8 +310,11 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
 
     let deliveryDistance = order.deliveryDistance;
     let deliveryEarnings = order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20;
-    
 
+    const isPickupPhase = ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
+    const assignedPartner = isPickupPhase ? order.pickupPartner : order.dropoffPartner;
+    const isClaimed = !!assignedPartner;
+    const isAcceptedByMe = assignedPartner?.toString() === req.user.id;
 
     return {
       ...order,
@@ -318,7 +332,9 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
       vendorLongitude,
       vendorPhone,
       deliveryDistance,
-      deliveryEarnings
+      deliveryEarnings,
+      isClaimed,
+      isAcceptedByMe
     };
   }));
 
@@ -1050,6 +1066,10 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
     timestamp: new Date(),
   });
 
+  // Track candidates to notify, then clear them
+  const otherCandidates = (order.pendingPartnerCandidates || []).filter(c => c.toString() !== req.user.id);
+  order.pendingPartnerCandidates = [];
+
   await order.save();
 
   // Notify customer
@@ -1075,6 +1095,11 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
   const { getIO } = require("../../../config/socket.js");
   const io = getIO();
   if (io) {
+    // Notify the other broadcast candidates directly
+    for (const candidateId of otherCandidates) {
+      io.to(`user_${candidateId.toString()}`).emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
+    }
+
     io.to("delivery_partners").emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
     
     // Update tailor panel to show partner name instead of "Searching"
@@ -1152,7 +1177,8 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
     $or: [
       { deliveryPartner: req.user.id },
       { pickupPartner: req.user.id },
-      { dropoffPartner: req.user.id }
+      { dropoffPartner: req.user.id },
+      { pendingPartnerCandidates: req.user.id }
     ]
   });
 
@@ -1160,34 +1186,54 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
-  // Add partner to rejectedBy
-  if (!order.rejectedBy.includes(req.user.id)) {
-    order.rejectedBy.push(req.user.id);
-  }
+  // Determine cycle
+  const isFabricPhase = ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
+  let cycle = isFabricPhase ? "pickup" : "dropoff";
 
-  let cycle = "pickup";
+  let wasAssigned = false;
   if (order.pickupPartner?.toString() === req.user.id) {
-     order.pickupPartner = null;
+     order.pickupPartner = undefined;
      order.pickupDeliveryStatus = "pending";
+     wasAssigned = true;
   } else if (order.dropoffPartner?.toString() === req.user.id) {
-     order.dropoffPartner = null;
+     order.dropoffPartner = undefined;
      order.dropoffDeliveryStatus = "pending";
+     wasAssigned = true;
      cycle = "dropoff";
   }
   
   // Legacy fields
   if (order.deliveryPartner?.toString() === req.user.id) {
-    order.deliveryPartner = null;
+    order.deliveryPartner = undefined;
     order.deliveryStatus = "pending";
+    wasAssigned = true;
+  }
+
+  // Remove from candidates list
+  const wasCandidate = order.pendingPartnerCandidates?.some(id => id.toString() === req.user.id);
+  order.pendingPartnerCandidates = (order.pendingPartnerCandidates || []).filter(c => c.toString() !== req.user.id);
+
+  // Add partner to rejectedBy
+  if (!order.rejectedBy.includes(req.user.id)) {
+    order.rejectedBy.push(req.user.id);
   }
   
   await order.save();
   
-  // Trigger auto-assign again
-  const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
-  await autoAssignDelivery(order._id, cycle);
+  // Emit task_claimed so their frontend removes it immediately if they rejected it
+  const { getIO } = require("../../../config/socket.js");
+  const io = getIO();
+  if (io) {
+    io.to(`user_${req.user.id}`).emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
+  }
 
-  res.status(200).json({ success: true, message: "Order rejected and reassigned" });
+  // Trigger auto-assign again if they were the assigned partner or all candidates have rejected
+  if (wasAssigned || (wasCandidate && order.pendingPartnerCandidates.length === 0)) {
+    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+    await autoAssignDelivery(order._id, cycle);
+  }
+
+  res.status(200).json({ success: true, message: "Order rejected and updated" });
 });
 
 /**
