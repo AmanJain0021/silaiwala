@@ -5,6 +5,7 @@ import { Home, ClipboardList, User, LogOut, Menu, X, MapPin, Bell, Navigation, W
 import { MeasurementAuthProvider } from '../context/MeasurementAuthContext';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import toast from 'react-hot-toast';
+import { removeToken } from '../../../utils/auth';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import ManualLocationModal from '../../../shared/components/ManualLocationModal';
 
@@ -132,7 +133,7 @@ const LayoutContent = () => {
     ];
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        removeToken();
         localStorage.removeItem('user');
         navigate('/executive/login');
     };

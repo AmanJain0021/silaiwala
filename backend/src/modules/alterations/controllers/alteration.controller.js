@@ -264,7 +264,7 @@ exports.verifyAlterationPayment = asyncHandler(async (req, res, next) => {
     await session.commitTransaction();
 
     // Trigger auto-assignment of delivery partner for fabric pickup
-    await autoAssignDelivery(newOrder[0]._id, "pickup");
+    // await autoAssignDelivery(newOrder[0]._id, "pickup");
 
     res.status(200).json({
       success: true,

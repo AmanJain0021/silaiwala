@@ -30,11 +30,9 @@ import {
 } from 'lucide-react';
 import { MdTwoWheeler } from "react-icons/md";
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { SOCKET_URL } from '../../../../config/constants';
 import useAuthStore from '../../../../store/authStore';
-import { getToken } from '../../../../utils/auth';
+import socketService from '../../../../shared/utils/socket';
 import deliveryService from '../../services/deliveryService';
-import { io } from 'socket.io-client';
 import { Power } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -95,32 +93,24 @@ const DeliveryDashboard = () => {
     useEffect(() => {
         fetchDashboardData();
 
-        const socket = io(SOCKET_URL, {
-            auth: {
-                token: getToken()
-            }
-        });
-
-        socket.emit('join', 'delivery_partners');
-        const userId = user?._id || user?.id;
-        if (userId) {
-            socket.emit('join', `user_${userId}`);
-        }
-
-        socket.on('new_task', () => {
+        const handleNewTask = () => {
             toast.success('New delivery task available!', { icon: '🚚' });
             fetchDashboardData();
-        });
+        };
 
-        socket.on('new_notification', (data) => {
+        const handleNewNotification = (data) => {
             toast(data.message, { icon: '🔔' });
             fetchDashboardData();
-        });
+        };
+
+        socketService.on('new_task', handleNewTask);
+        socketService.on('new_notification', handleNewNotification);
 
         return () => {
-            socket.disconnect();
+            socketService.off('new_task', handleNewTask);
+            socketService.off('new_notification', handleNewNotification);
         };
-    }, [user?._id]);
+    }, []);
 
     if (loading) {
         return (

@@ -10,7 +10,8 @@ import socketService from '../../../shared/utils/socket';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
 import { formatPrice } from '../../../shared/utils/helpers';
 import DashboardMap from '../components/DashboardMap';
-import NewOrderModal from '../components/NewOrderModal';
+import { Bell } from 'lucide-react';
+import useSocketStore from '../../../store/socketStore';
 
 const DeliveryDashboard = () => {
   const { isLoaded } = useOutletContext();
@@ -21,17 +22,17 @@ const DeliveryDashboard = () => {
   } = useDeliveryAuthStore();
 
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
+  const { socket } = useSocketStore();
   const isOnline = deliveryBoy?.status === 'available';
 
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
-  const [newOrderRequest, setNewOrderRequest] = useState(null);
   const [isAccepting, setIsAccepting] = useState(false);
 
   // --- Real-time Delivery Tracking ---
   const activeTasks = (orders || []).filter(o => 
     ['assigned', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'picked-up', 'out-for-delivery', 'arrived'].includes(o.status?.toLowerCase())
   );
-  
+
   // Prioritize "on-going" tasks for the map focus
   const primaryOrder = activeTasks.find(o => ['picked_up', 'out_for_delivery', 'picked-up', 'out-for-delivery', 'arrived'].includes(o.status?.toLowerCase())) || activeTasks[0];
 
@@ -52,70 +53,34 @@ const DeliveryDashboard = () => {
   useEffect(() => {
     loadDashboardData();
 
-    if (deliveryBoy?.id) {
-       socketService.connect();
-       // Use User ID for socket room, as backend expects User ID, not Delivery ID
-       const userId = deliveryBoy?.user?._id || deliveryBoy?.user || useDeliveryAuthStore.getState().user?.id || deliveryBoy?.id;
-       socketService.deliveryRegister(userId);
-    }
+    // Socket registration is handled globally in DeliveryLayout.jsx
 
     const handleRefresh = () => {
       loadDashboardData();
     };
+
     window.addEventListener('delivery-dashboard-refresh', handleRefresh);
 
-    const handleNewOrder = (data) => {
-      console.log("🔔 [SOCKET] New Order Request Recieved:", data);
-      
-      // Play Buzzer Sound
-      try {
-        const audio = new Audio('/sounds/buzzer.mp3');
-        audio.play().catch(() => {});
-      } catch {}
-
-      setNewOrderRequest(data);
-    };
-
-    socketService.on('order_ready_for_pickup', handleNewOrder);
-    socketService.on('return_ready_for_pickup', handleNewOrder);
-    socketService.on('newOrder', handleNewOrder);
-    socketService.on('new_order', handleNewOrder);
-    
-    socketService.on('order_assigned', () => {
-      setNewOrderRequest(null);
-      handleRefresh();
-    });
-
-    socketService.on('order_taken', (data) => {
-       setNewOrderRequest(prev => {
-          if (prev?.id === data.id || prev?.orderId === data.orderId) {
-             toast('Order taken by another partner', { icon: 'ℹ️' });
-             return null;
-          }
-          return prev;
-       });
-    });
-
-    socketService.on('order_picked_up', handleRefresh);
-    socketService.on('order_delivered', handleRefresh);
-    socketService.on('order_updated', handleRefresh);
-    socketService.on('payment_collected', handleRefresh);
+    if (socket) {
+      socket.on('order_picked_up', handleRefresh);
+      socket.on('order_delivered', handleRefresh);
+      socket.on('order_updated', handleRefresh);
+      socket.on('payment_collected', handleRefresh);
+    }
 
     const interval = setInterval(loadDashboardData, 120000); // Polling every 2 minutes instead of 1
 
     return () => {
       window.removeEventListener('delivery-dashboard-refresh', handleRefresh);
-      socketService.off('order_ready_for_pickup');
-      socketService.off('return_ready_for_pickup');
-      socketService.off('order_assigned');
-      socketService.off('order_taken');
-      socketService.off('order_picked_up');
-      socketService.off('order_delivered');
-      socketService.off('order_updated');
-      socketService.off('payment_collected');
+      if (socket) {
+        socket.off('order_picked_up', handleRefresh);
+        socket.off('order_delivered', handleRefresh);
+        socket.off('order_updated', handleRefresh);
+        socket.off('payment_collected', handleRefresh);
+      }
       clearInterval(interval);
     };
-  }, [deliveryBoy?.id]); // Removed newOrderRequest dependency
+  }, [deliveryBoy?.id, socket]); 
 
   const handleToggleOnline = async () => {
     if (isUpdatingStatus) return;
@@ -222,6 +187,7 @@ const DeliveryDashboard = () => {
               <FiAlertCircle size={20} />
             </motion.button>
           </div>
+        </div>
 
           {/* EARNINGS & STATS SUMMARY OVERLAY */}
           {dashboardStats && (
@@ -339,32 +305,6 @@ const DeliveryDashboard = () => {
           onClose={() => setShowWithdrawalModal(false)}
           balance={deliveryBoy?.availableBalance || 0}
           onWithdrawalRequested={() => { setShowWithdrawalModal(false); loadDashboardData(); }}
-        />
-
-        <NewOrderModal
-          isOpen={!!newOrderRequest && activeTasks.length === 0}
-          order={newOrderRequest}
-          onClose={() => setNewOrderRequest(null)}
-          onAccept={async (id) => {
-            setIsAccepting(true);
-            try {
-              if (newOrderRequest?.type === 'return') {
-                 await useDeliveryAuthStore.getState().acceptReturn(id);
-              } else {
-                 await useDeliveryAuthStore.getState().acceptOrder(id);
-              }
-              toast.success('Order Accepted!');
-              setNewOrderRequest(null);
-              loadDashboardData();
-              navigate(`/delivery/orders/${id}`);
-            } catch (err) {
-              toast.error(err?.response?.data?.message || 'Failed to accept order');
-            } finally {
-              setIsAccepting(false);
-            }
-          }}
-          isAccepting={isAccepting}
-          riderLocation={currentLocation}
         />
       </div>
     </PageTransition>

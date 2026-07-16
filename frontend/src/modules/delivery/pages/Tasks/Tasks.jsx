@@ -20,9 +20,8 @@ import {
 import { MdTwoWheeler } from "react-icons/md";
 import deliveryService from '../../services/deliveryService';
 import { toast } from 'react-hot-toast';
-import { io } from 'socket.io-client';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { SOCKET_URL } from '../../../../config/constants';
+import socketService from '../../../../shared/utils/socket';
 import useAuthStore from '../../../../store/authStore';
 import { getToken } from '../../../../utils/auth';
 
@@ -70,44 +69,35 @@ const Tasks = () => {
     useEffect(() => {
         fetchTasks();
 
-        const socket = io(SOCKET_URL, {
-            auth: {
-                token: getToken()
-            }
-        });
-        
-        // Join general delivery fleet room and personal room
-        socket.emit('join', 'delivery_partners');
-        const user = useAuthStore.getState().user;
-        const userId = user?._id || user?.id;
-        if (userId) {
-            socket.emit('join', `user_${userId}`);
-        }
-
-        socket.on('new_task', (data) => {
+        const handleNewTask = (data) => {
             console.log('New task received:', data);
             toast.success('New delivery task available!', {
                 icon: '🚚',
                 duration: 5000
             });
             fetchTasks(); // Refresh lists
-        });
+        };
 
-        socket.on('new_notification', (data) => {
+        const handleReceiveNewOrder = (data) => {
+            console.log('Broadcasted pool order received:', data);
+            fetchTasks(); // Refresh lists
+        };
+
+        const handleNewNotification = (data) => {
              if (data.type === 'TASK_ASSIGNED' || data.type === 'NEW_DELIVERY_TASK') {
-                 toast.success(data.message || 'New delivery task available!', {
-                    icon: '🚚',
-                    duration: 6000
-                 });
+                  toast.success(data.message || 'New delivery task available!', {
+                     icon: '🚚',
+                     duration: 6000
+                  });
              } else {
-                 toast(data.message, {
-                    icon: '🔔',
-                 });
+                  toast(data.message, {
+                     icon: '🔔',
+                  });
              }
              fetchTasks();
-        });
+        };
 
-        socket.on('task_claimed', (data) => {
+        const handleTaskClaimed = (data) => {
             const currentUserId = useAuthStore.getState().user?._id || useAuthStore.getState().user?.id;
             
             if (data.claimedBy === currentUserId) {
@@ -118,10 +108,18 @@ const Tasks = () => {
                 setAvailableTasks(prev => prev.filter(t => t._id !== data.orderId));
                 setTasks(prev => prev.filter(t => t._id !== data.orderId));
             }
-        });
+        };
+
+        socketService.on('new_task', handleNewTask);
+        socketService.on('receive_new_order', handleReceiveNewOrder);
+        socketService.on('new_notification', handleNewNotification);
+        socketService.on('task_claimed', handleTaskClaimed);
 
         return () => {
-            socket.disconnect();
+            socketService.off('new_task', handleNewTask);
+            socketService.off('receive_new_order', handleReceiveNewOrder);
+            socketService.off('new_notification', handleNewNotification);
+            socketService.off('task_claimed', handleTaskClaimed);
         };
     }, []);
 

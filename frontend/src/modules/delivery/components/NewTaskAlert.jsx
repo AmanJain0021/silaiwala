@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import { Truck, MapPin, X, ArrowRight, Check, Package } from 'lucide-react';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../../../config/constants';
 import useAuthStore from '../../../store/authStore';
+import useSocketStore from '../../../store/socketStore';
 import { getToken } from '../../../utils/auth';
 import deliveryService from '../services/deliveryService';
 import api from '../../../utils/api';
@@ -93,6 +92,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
     const { user } = useAuthStore();
     const [isAccepting, setIsAccepting] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const { socket } = useSocketStore();
 
     // Swipe interaction setup
     const x = useMotionValue(0);
@@ -189,38 +189,25 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
     }, [newTask]);
 
     useEffect(() => {
-        const socket = io(SOCKET_URL, {
-            auth: {
-                token: getToken()
-            }
-        });
-
-        socket.emit('join', 'delivery_partners');
-        const userId = user?._id || user?.id;
-        if (userId) {
-            socket.emit('join', `user_${userId}`);
-            console.log(`📡 Socket: Joined user room: user_${userId}`);
-        }
-
-        socket.on('new_task', (taskData) => {
+        const handleNewTask = (taskData) => {
             console.log('New task alert received via socket:', taskData);
             const payload = taskData.data || taskData;
             setNewTask({
                 ...payload,
                 message: taskData.message || payload.message
             });
-        });
+        };
 
-        socket.on('receive_new_order', (taskData) => {
+        const handleReceiveNewOrder = (taskData) => {
             console.log('Broadcasted order received via socket:', taskData);
             const payload = taskData.data || taskData;
             setNewTask({
                 ...payload,
                 message: taskData.message || payload.message || "New Task Available in Pool!"
             });
-        });
+        };
 
-        socket.on('new_notification', (data) => {
+        const handleNewNotification = (data) => {
             console.log('New notification received on delivery partner app:', data);
             if (data.type === 'NEW_DELIVERY_TASK' || data.type === 'TASK_ASSIGNED') {
                 const payload = data.data || {};
@@ -238,12 +225,46 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                     message: data.message || payload.message
                 });
             }
-        });
+        };
+
+        const handleFCMMessage = (event) => {
+            const payload = event.detail;
+            console.log('FCM Message received in NewTaskAlert:', payload);
+            const data = payload.data || {};
+            if (data.type === 'NEW_DELIVERY_TASK' || data.type === 'TASK_ASSIGNED' || data.type === 'new_task') {
+                let resolvedTaskType = data.taskType;
+                if (!resolvedTaskType) {
+                    const statusVal = data.status || '';
+                    resolvedTaskType = (statusVal === 'fabric-ready-for-pickup' || statusVal === 'pending') 
+                        ? 'fabric-pickup' 
+                        : 'final-delivery';
+                }
+                setNewTask({
+                    ...data,
+                    taskType: resolvedTaskType,
+                    message: payload.notification?.body || data.message || "New Task Available!"
+                });
+            }
+        };
+
+        if (socket) {
+            socket.on('new_task', handleNewTask);
+            socket.on('new_order', handleNewTask);
+            socket.on('receive_new_order', handleReceiveNewOrder);
+            socket.on('new_notification', handleNewNotification);
+        }
+        window.addEventListener('fcm_message', handleFCMMessage);
 
         return () => {
-            socket.disconnect();
+            if (socket) {
+                socket.off('new_task', handleNewTask);
+                socket.off('new_order', handleNewTask);
+                socket.off('receive_new_order', handleReceiveNewOrder);
+                socket.off('new_notification', handleNewNotification);
+            }
+            window.removeEventListener('fcm_message', handleFCMMessage);
         };
-    }, [user?._id, user?.id]);
+    }, [socket]);
 
     const handleAccept = async () => {
         const orderId = newTask?._id || newTask?.orderId;

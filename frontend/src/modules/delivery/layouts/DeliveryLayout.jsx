@@ -21,14 +21,13 @@ import NewTaskAlert from '../components/NewTaskAlert';
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 import deliveryService from '../services/deliveryService';
 import { toast } from 'react-hot-toast';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../../../config/constants';
-import { getToken } from '../../../utils/auth';
+import { useDeliveryAuthStore } from '../store/deliveryStore';
 import useAuthStore from '../../../store/authStore';
 
 import api from '../../../utils/api';
 import { playNotificationSound } from '../../../utils/audio';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
+import useSocketStore from '../../../store/socketStore';
 
 const silaiwalaLogo = '/sewzella_logo-removebg-preview.png';
 
@@ -74,6 +73,7 @@ const DeliveryLayout = () => {
         fetchPlatformSettings();
     }, []);
 
+
     const toggleAvailability = async () => {
         const newStatus = !isOnline;
         setIsOnline(newStatus);
@@ -88,6 +88,7 @@ const DeliveryLayout = () => {
     };
 
     const { user } = useAuthStore();
+    const { deliveryBoy } = useDeliveryAuthStore();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -133,37 +134,35 @@ const DeliveryLayout = () => {
         libraries: GOOGLE_MAPS_LIBRARIES
     });
 
+    const { socket } = useSocketStore();
+
     React.useEffect(() => {
         fetchNotifications();
 
-        const socket = io(SOCKET_URL, {
-            auth: {
-                token: getToken()
-            }
-        });
-        socket.emit('join', 'delivery_partners');
-        const userId = user?._id || user?.id;
-        if (userId) {
-            socket.emit('join', `user_${userId}`);
-        }
-
-        socket.on('new_notification', (data) => {
+        const handleNewNotification = (data) => {
             try { playNotificationSound('delivery'); } catch(e) { console.error(e); }
             setNotifications(prev => [data, ...prev]);
             setUnreadCount(prev => prev + 1);
             toast(data.message, { icon: '🔔' });
-        });
+        };
 
-        socket.on('new_task', (data) => {
+        const handleNewTask = (data) => {
             try { playNotificationSound('delivery'); } catch(e) { console.error(e); }
-            // NewTaskAlert handles the UI, but we can also refresh notifications
             fetchNotifications();
-        });
+        };
+
+        if (socket) {
+            socket.on('new_notification', handleNewNotification);
+            socket.on('new_task', handleNewTask);
+        }
 
         return () => {
-            socket.disconnect();
+            if (socket) {
+                socket.off('new_notification', handleNewNotification);
+                socket.off('new_task', handleNewTask);
+            }
         };
-    }, [user?._id]);
+    }, [socket]);
 
     const navItems = [
         { name: 'Home', icon: LayoutDashboard, path: '/delivery/dashboard' },

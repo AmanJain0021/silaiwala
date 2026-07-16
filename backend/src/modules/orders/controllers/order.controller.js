@@ -130,7 +130,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        if (order.isMeasurementHome) {
            nextStatus = 'measurement-requested';
        } else if (fabricPickupRequired) {
-           nextStatus = 'fabric-ready-for-pickup';
+           nextStatus = 'accepted';
        }
        
        order.status = nextStatus;
@@ -261,7 +261,7 @@ ledgerId,
        order.remainingPaymentId = razorpay_payment_id;
        order.remainingPaymentAmount = 0;
        order.paymentStatus = "paid"; // <--- ADDED THIS LINE
-       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'fabric-ready-for-pickup' : 'in-progress';
+       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'accepted' : 'in-progress';
        order.trackingHistory.push({
          status: order.status,
          timestamp: new Date(),
@@ -313,7 +313,7 @@ user: tailorProfile.user,
        order.paymentId = razorpay_payment_id;
        order.razorpayOrderId = razorpay_order_id;
        order.paidAt = new Date();
-       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'fabric-ready-for-pickup' : 'in-progress';
+       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'accepted' : 'in-progress';
        
        // Calculate and store fees for full payment
        const settings = await Settings.getSettings();
@@ -1114,200 +1114,7 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Get Measurement Report for Customer
- * @route   GET /api/v1/orders/:id/measurements
- * @access  Private (Customer, Admin)
- */
-exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) => {
-  const order = await Order.findById(req.params.id);
 
-  if (!order) {
-    return next(new ErrorResponse(`Order not found with id of ${req.params.id}`, 404));
-  }
-
-  if (order.customer.toString() !== req.user.id && req.user.role !== "admin") {
-    return next(new ErrorResponse("Not authorized to view this order", 401));
-    return next(new ErrorResponse("Order not found", 404));
-  }
-
-  // Ensure this order belongs to the customer
-  if (order.customer.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new ErrorResponse("Not authorized to update this order", 403));
-  }
-
-  order.fabricDeliveryPreference = preference;
-
-  if (preference === 'self') {
-    order.status = 'waiting-for-customer-dropoff';
-    order.trackingHistory.push({
-      status: order.status,
-      timestamp: new Date(),
-      message: "Customer opted for self delivery of fabric.",
-    });
-  } else if (preference === 'partner') {
-    order.status = 'fabric-ready-for-pickup';
-    // If partner, trigger auto-assignment
-    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
-    await autoAssignDelivery(order._id, "pickup");
-    
-    order.trackingHistory.push({
-      status: order.status,
-      timestamp: new Date(),
-      message: "Customer requested a delivery partner. Searching for partners.",
-    });
-  }
-
-  await order.save();
-
-  try {
-    const { getIO } = require("../../../config/socket.js");
-    const io = getIO();
-    if (io && order.tailor) {
-      io.to(`user_${order.tailor}`).emit('order_status_updated', {
-          orderId: order.orderId,
-          status: order.status
-      });
-    }
-  } catch (err) {
-    console.error("Socket emission failed:", err);
-  }
-
-  res.status(200).json({
-    success: true,
-    message: "Delivery preference updated successfully",
-    data: order
-  });
-});
-
-/**
- * @desc    Approve measurements for an order
- * @route   POST /api/v1/orders/:id/measurements/approve
- * @access  Private (Customer)
- */
-exports.approveMeasurements = asyncHandler(async (req, res, next) => {
-  const orderId = req.params.id;
-
-  const order = await Order.findById(orderId);
-  if (!order) {
-    return next(new ErrorResponse("Order not found", 404));
-  }
-
-  // Ensure this order belongs to the customer
-  if (order.customer.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new ErrorResponse("Not authorized to update this order", 403));
-  }
-
-  order.status = 'measurements-approved';
-  order.trackingHistory.push({
-    status: order.status,
-    timestamp: new Date(),
-    message: "Customer approved the uploaded measurements.",
-  });
-
-  await order.save();
-
-  try {
-    const { getIO } = require("../../../config/socket.js");
-    const io = getIO();
-    if (io && order.tailor) {
-      io.to(`user_${order.tailor}`).emit('order_status_updated', {
-          orderId: order.orderId,
-          status: order.status
-      });
-    }
-  } catch (err) {
-    console.error("Socket emission failed:", err);
-  }
-
-  res.status(200).json({
-    success: true,
-    message: "Measurements approved successfully",
-    data: order
-  });
-});
-
-/**
- * @desc    Request revision for measurements
- * @route   POST /api/v1/orders/:id/measurements/request-revision
- * @access  Private (Customer)
- */
-exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
-  const { notes } = req.body;
-  const orderId = req.params.id;
-
-  if (!notes) {
-    return next(new ErrorResponse("Please provide revision notes", 400));
-  }
-
-  const order = await Order.findById(orderId);
-  if (!order) {
-    return next(new ErrorResponse("Order not found", 404));
-  }
-
-  if (order.customer.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new ErrorResponse("Not authorized to update this order", 403));
-  }
-
-  order.status = 'measurement-revision-required';
-  order.trackingHistory.push({
-    status: order.status,
-    timestamp: new Date(),
-    message: "Customer requested changes to the measurements.",
-  });
-
-  await order.save();
-
-  // Find corresponding MeasurementRequest and set its status to rejected/revision
-  const MeasurementRequest = require("../../../models/MeasurementRequest.js");
-  const mRequest = await MeasurementRequest.findOne({ order: order._id }).sort("-createdAt");
-  
-  if (mRequest) {
-    mRequest.status = 'rejected';
-    mRequest.notes = (mRequest.notes ? mRequest.notes + "\n" : "") + `Revision Request: ${notes}`;
-    await mRequest.save();
-
-    // Notify executive if assigned
-    if (mRequest.executive) {
-      const { sendNotification } = require("../../../utils/notification.js");
-      await sendNotification({
-          recipient: mRequest.executive,
-          type: "MEASUREMENT_REJECTED",
-          title: "Measurement Revision Needed",
-          message: `Customer requested changes for order ${order.orderId}.`,
-          data: { orderId: order._id }
-      });
-      
-      try {
-        const { getIO } = require("../../../config/socket.js");
-        const io = getIO();
-        if (io) {
-          io.to(`user_${mRequest.executive}`).emit('measurement_request_updated', {
-              requestId: mRequest.requestId,
-              status: mRequest.status
-          });
-        }
-      } catch (err) {}
-    }
-  }
-
-  try {
-    const { getIO } = require("../../../config/socket.js");
-    const io = getIO();
-    if (io && order.tailor) {
-      io.to(`user_${order.tailor}`).emit('order_status_updated', {
-          orderId: order.orderId,
-          status: order.status
-      });
-    }
-  } catch (err) {}
-
-  res.status(200).json({
-    success: true,
-    message: "Measurement revision requested",
-    data: order
-  });
-});
 
 /**
  * @desc    Get Measurement Report for Customer

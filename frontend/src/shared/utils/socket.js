@@ -9,6 +9,7 @@ class SocketService {
   }
 
   connect() {
+    const token = getToken();
     if (!this.socket) {
       this.socket = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
@@ -17,7 +18,7 @@ class SocketService {
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
         auth: {
-          token: getToken()
+          token: token
         }
       });
       
@@ -28,6 +29,12 @@ class SocketService {
           this.socket.emit('join', 'delivery_partners');
         }
       });
+    } else {
+      this.socket.auth = { token: token };
+    }
+
+    if (token && !this.socket.connected) {
+      this.socket.connect();
     }
     return this.socket;
   }

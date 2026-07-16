@@ -92,7 +92,7 @@ const initCronJobs = () => {
             }
 
             const { checkStuckDeliveryAssignments } = require("./deliveryAssignment.js");
-            await checkStuckDeliveryAssignments();
+            // await checkStuckDeliveryAssignments();
         } catch (error) {
             console.error('❌ Error in delivery assignment cron job:', error);
         }

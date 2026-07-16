@@ -9,10 +9,10 @@ import { useDeliveryNotificationStore } from "../../store/deliveryNotificationSt
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import DeliveryBottomNav from "./DeliveryBottomNav";
+import NewTaskAlert from "../NewTaskAlert";
 import { useDeliveryTracking } from "../../../../shared/hooks/useDeliveryTracking";
 import { formatPrice } from "../../../../shared/utils/helpers";
 import socketService from "../../../../shared/utils/socket";
-import NewOrderModal from "../NewOrderModal";
 import { useJsApiLoader } from "@react-google-maps/api";
 import useUnifiedLocation from "../../../../shared/hooks/useUnifiedLocation";
 
@@ -114,13 +114,8 @@ const DeliveryLayout = () => {
       window.removeEventListener('click', unlock);
       window.removeEventListener('touchstart', unlock);
     };
-  }, []);
-
-  // Global Buzzer & Notification State
+  }, []);  // Global Buzzer & Notification State
   const [isBuzzerActive, setIsBuzzerActive] = useState(false);
-  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
-  const [selectedNewOrder, setSelectedNewOrder] = useState(null);
-  const [isAcceptingOrder, setIsAcceptingOrder] = useState(false);
   const buzzerRef = useRef(null);
 
   const stopBuzzer = useCallback(() => {
@@ -149,57 +144,6 @@ const DeliveryLayout = () => {
     } catch (e) { }
   }, [stopBuzzer]);
 
-  // Global listeners for new tasks
-  const handleNewOrder = useCallback((data) => {
-    console.log('⚡ Incoming Socket Order:', data);
-    
-    const currentStatus = useDeliveryAuthStore.getState().deliveryBoy?.status;
-    // Aggressive: Show popup even if store is slightly out of sync, as long as we expected to be available
-    if (currentStatus === 'offline') {
-      console.warn('⚠️ Order received while offline. Ignoring popup.');
-      return;
-    }
-
-    setIsAcceptingOrder(false); 
-    startBuzzer();
-    
-    // Full details required for the modal
-    setSelectedNewOrder(data);
-    setShowNewOrderModal(true);
-    
-    toast.success(`⚡ NEW ORDER AVAILABLE!`, { 
-      duration: 8000, 
-      icon: '📦',
-      style: { fontWeight: '900', border: '2px solid #4f46e5' } 
-    });
-
-    // Vibrate if mobile
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200, 100, 200]);
-    }
-
-    window.dispatchEvent(new CustomEvent('delivery-dashboard-refresh'));
-  }, [startBuzzer]);
-
-  const handleNewReturn = useCallback((data) => {
-    const currentStatus = useDeliveryAuthStore.getState().deliveryBoy?.status;
-    if (currentStatus === 'offline') return;
-    
-    startBuzzer();
-    setSelectedNewOrder({ ...data, isReturn: true });
-    setShowNewOrderModal(true);
-    toast.success(`📦 NEW RETURN PICKUP!`, { duration: 8000 });
-    window.dispatchEvent(new CustomEvent('delivery-dashboard-refresh'));
-  }, [startBuzzer]);
-
-  const handleViewOrder = useCallback((e) => {
-    const order = e.detail;
-    if (order) {
-      setSelectedNewOrder(order);
-      setShowNewOrderModal(true);
-    }
-  }, []);
-
   // Socket management
   useEffect(() => {
     const isOnline = deliveryBoy?.status === 'available' || deliveryBoy?.status === 'busy';
@@ -211,27 +155,7 @@ const DeliveryLayout = () => {
     const registerOnConnect = () => socketService.deliveryRegister(deliveryBoy.id);
     socketService.socket?.on('connect', registerOnConnect);
 
-    socketService.on('order_ready_for_pickup', handleNewOrder);
-    socketService.on('return_ready_for_pickup', handleNewReturn);
-    
-    // Listen for direct assignments from Admin
-    socketService.on('new_notification', (data) => {
-      if (data && data.type === 'NEW_DELIVERY_TASK') {
-        const fakeOrder = {
-           _id: data.data?.orderId,
-           id: data.data?.orderId,
-           isReturn: data.data?.type === 'return',
-           ...data.data
-        };
-        if (fakeOrder.isReturn) handleNewReturn(fakeOrder);
-        else handleNewOrder(fakeOrder);
-      }
-    });
-    
     const onOrderTaken = (data) => {
-      // Use ref-like logic or fresh state from store inside the callback
-      const currentModalOpen = showNewOrderModal; // This might be stale if not careful
-      // Better to check global dashboard refresh trigger or store
       window.dispatchEvent(new CustomEvent('delivery-dashboard-refresh'));
     };
     socketService.on('order_taken', onOrderTaken);
@@ -240,37 +164,13 @@ const DeliveryLayout = () => {
       useDeliveryAuthStore.getState().setBalance(data);
     });
 
-    window.addEventListener('delivery-view-order', handleViewOrder);
-
     return () => {
       socketService.socket?.off('connect', registerOnConnect);
-      socketService.off('order_ready_for_pickup', handleNewOrder);
-      socketService.off('return_ready_for_pickup', handleNewReturn);
-      socketService.off('order_taken');
+      socketService.off('order_taken', onOrderTaken);
       socketService.off('balance_updated');
-      window.removeEventListener('delivery-view-order', handleViewOrder);
       stopBuzzer();
     };
-  }, [deliveryBoy?.id, deliveryBoy?.status]); // Removed selectedNewOrder dependency
-
-  const handleAcceptNewTask = async (id) => {
-    setIsAcceptingOrder(true);
-    try {
-      if (selectedNewOrder?.isReturn) {
-        await acceptReturn(id);
-      } else {
-        await acceptOrder(id);
-      }
-      stopBuzzer();
-      setShowNewOrderModal(false);
-      toast.success('Accepted successfully');
-      window.dispatchEvent(new CustomEvent('delivery-dashboard-refresh'));
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to accept task');
-    } finally {
-      setIsAcceptingOrder(false);
-    }
-  };
+  }, [deliveryBoy?.id, deliveryBoy?.status, stopBuzzer]);
 
   const riderLocation = useDeliveryTracking(deliveryBoy?.id);
 
@@ -442,6 +342,12 @@ const DeliveryLayout = () => {
         <Outlet context={{ startBuzzer, stopBuzzer, isLoaded }} />
       </main>
 
+      <NewTaskAlert onTaskAccepted={(orderId) => {
+        if (location.pathname.includes('dashboard') || location.pathname.includes('orders')) {
+           navigate('/delivery/orders');
+        }
+      }} />
+
       <DeliveryBottomNav />
 
       {/* Global Notifications Layer */}
@@ -462,19 +368,6 @@ const DeliveryLayout = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <NewOrderModal
-        isOpen={showNewOrderModal}
-        order={selectedNewOrder}
-        isAccepting={isAcceptingOrder}
-        onAccept={handleAcceptNewTask}
-        onClose={() => { 
-          stopBuzzer(); 
-          setShowNewOrderModal(false); 
-          setIsAcceptingOrder(false); // Safety reset
-        }}
-        riderLocation={riderLocation}
-      />
     </div>
   );
 };

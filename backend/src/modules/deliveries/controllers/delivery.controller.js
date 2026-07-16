@@ -281,7 +281,10 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
 
     // Extract Customer details
     const Customer = require("../../../models/Customer.js");
-    const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+    let customerDoc = null;
+    if (order.customer) {
+      customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+    }
     
     let address = 'Address not available';
     let latitude = null;
@@ -908,7 +911,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
 
 
   // Enrich with Tailor profile data
-  const formattedOrders = await Promise.all(orders.map(async (order) => {
+  const enrichedOrders = await Promise.all(orders.map(async (order) => {
     const isFabric = order.status === "fabric-ready-for-pickup";
 
     let vendorLatitude, vendorLongitude;
@@ -931,7 +934,10 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     }
 
     const Customer = require("../../../models/Customer.js");
-    const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+    let customerDoc = null;
+    if (order.customer) {
+      customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+    }
     let latitude = null;
     let longitude = null;
     let address = 'Address not available';
@@ -971,6 +977,29 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
       deliveryEarnings
     };
   }));
+
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine.js");
+  const riderCoords = deliveryProfile.currentLocation?.coordinates; // [lng, lat]
+  const maxRadiusKm = 15; // Only show orders within 15km
+
+  const formattedOrders = enrichedOrders.filter(order => {
+     if (!riderCoords || riderCoords.length < 2) return true; // Show all if rider location not set
+     
+     const isFabric = order.status === "fabric-ready-for-pickup";
+     const startLat = isFabric ? order.latitude : (order.tailor?.location?.coordinates?.[1]);
+     const startLng = isFabric ? order.longitude : (order.tailor?.location?.coordinates?.[0]);
+     
+     if (!startLat || !startLng) return true; // Show if order location not set
+     
+     const distance = getDistanceFromLatLonInKm(
+       riderCoords[1], // rider lat
+       riderCoords[0], // rider lng
+       startLat,
+       startLng
+     );
+     
+     return distance <= maxRadiusKm;
+  });
 
   res.status(200).json({
     success: true,
@@ -1229,8 +1258,8 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
 
   // Trigger auto-assign again if they were the assigned partner or all candidates have rejected
   if (wasAssigned || (wasCandidate && order.pendingPartnerCandidates.length === 0)) {
-    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
-    await autoAssignDelivery(order._id, cycle);
+    // const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+    // await autoAssignDelivery(order._id, cycle);
   }
 
   res.status(200).json({ success: true, message: "Order rejected and updated" });

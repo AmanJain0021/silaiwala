@@ -20,7 +20,6 @@ import PageTransition from '../../../shared/components/PageTransition';
 import { formatPrice } from '../../../shared/utils/helpers';
 import toast from 'react-hot-toast';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
-import NewOrderModal from '../components/NewOrderModal';
 import socketService from '../../../shared/utils/socket';
 import OrderCardSkeleton from '../../../shared/components/Skeletons/OrderCardSkeleton';
 
@@ -40,8 +39,6 @@ const DeliveryOrders = () => {
   const isOnline = deliveryBoy?.status === 'available';
   const [filter, setFilter] = useState(isOnline ? 'available' : 'delivered');
   const [currentPage, setCurrentPage] = useState(1);
-  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
-  const [selectedNewOrder, setSelectedNewOrder] = useState(null);
   const PAGE_SIZE = 20;
 
   const getBackendStatusFilter = (value) => {
@@ -75,20 +72,6 @@ const DeliveryOrders = () => {
     socketService.on('order_ready_for_pickup', (data) => {
       const currentStatus = useDeliveryAuthStore.getState().deliveryBoy?.status;
       if (currentStatus === 'available') {
-        // Show popup modal with the new order
-        if (data && (data.orderId || data.id)) {
-          setSelectedNewOrder({
-            id: data.orderId || data.id,
-            orderId: data.orderId || data.id,
-            total: data.total || 0,
-            deliveryFee: data.deliveryFee || 0,
-            customer: data.pickupName || 'Vendor',
-            address: data.address || 'Address available in details',
-            distance: data.distance || '-',
-            estimatedTime: data.estimatedTime || '15 min',
-          });
-          setShowNewOrderModal(true);
-        }
         if (filter === 'available') loadOrders(currentPage, filter);
       }
     });
@@ -241,14 +224,6 @@ const DeliveryOrders = () => {
             )}
           </div>
         </div>
-
-        <NewOrderModal
-          isOpen={showNewOrderModal}
-          order={selectedNewOrder}
-          isAccepting={isUpdatingOrderStatus}
-          onClose={() => !isUpdatingOrderStatus && setShowNewOrderModal(false)}
-          onAccept={async (id) => { await handleAcceptOrder(id); setShowNewOrderModal(false); }}
-        />
       </div>
     </PageTransition>
   );

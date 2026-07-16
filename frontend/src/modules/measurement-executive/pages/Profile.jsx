@@ -5,6 +5,7 @@ import { ArrowLeft, Edit2, History, MapPin, Shield, LogOut, ChevronRight, Phone,
 import MenuOption from '../../customer/components/profile/MenuOption';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import { removeToken } from '../../../utils/auth';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const Profile = () => {
@@ -108,7 +109,7 @@ const Profile = () => {
 
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to logout?")) {
-            localStorage.removeItem('token');
+            removeToken();
             localStorage.removeItem('user');
             navigate('/executive/login');
         }
@@ -119,7 +120,7 @@ const Profile = () => {
         setIsDeleting(true);
         try {
             await api.delete('/auth/delete-account');
-            localStorage.removeItem('token');
+            removeToken();
             localStorage.removeItem('user');
             navigate('/executive/login');
         } catch (err) {

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import api from '../../../shared/utils/api';
 import { GoogleLogin } from '@react-oauth/google';
+import { setToken, removeToken } from '../../../utils/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -22,13 +23,13 @@ const Login = () => {
             // Check if user is Measurement Executive
             if (res.data?.role !== 'measurement_executive') {
                 toast.error('Unauthorized access. Only Measurement Executives can log in here.');
-                localStorage.removeItem('token');
+                removeToken();
                 localStorage.removeItem('user');
                 useMeasurementStore.setState({ loading: false });
                 return;
             }
 
-            localStorage.setItem('token', res.token);
+            setToken(res.token);
             localStorage.setItem('user', JSON.stringify(res.data));
             toast.success('Login successful!');
             navigate('/executive/dashboard');
@@ -44,12 +45,12 @@ const Login = () => {
             
             if (responseData.data?.role !== 'measurement_executive') {
                 toast.error('Unauthorized access. Only Measurement Executives can log in here.');
-                localStorage.removeItem('token');
+                removeToken();
                 localStorage.removeItem('user');
                 return;
             }
 
-            localStorage.setItem('token', responseData.token);
+            setToken(responseData.token);
             localStorage.setItem('user', JSON.stringify(responseData.data));
             toast.success('Login successful!');
             navigate('/executive/dashboard');

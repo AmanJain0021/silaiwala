@@ -54,6 +54,9 @@ export const usePushNotifications = (user) => {
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Foreground Message received:', payload);
       
+      // Dispatch a global event so any component can listen to FCM messages
+      window.dispatchEvent(new CustomEvent('fcm_message', { detail: payload }));
+      
       // Play sound for all foreground push notifications based on role
       try { playNotificationSound(user?.role || 'customer'); } catch(e) { console.error(e); }
       

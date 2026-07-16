@@ -6,7 +6,7 @@ import { getToken, setToken, removeToken } from '../../../utils/auth';
 const normalizeDeliveryBoy = (input) => {
   if (!input) return null;
   // Handle ApiResponse wrapper
-  const raw = input.data && input.statusCode ? input.data : input;
+  const raw = (input.data && (typeof input.success !== 'undefined' || typeof input.statusCode !== 'undefined')) ? input.data : input;
 
   const id = raw.id || raw._id;
   let status = raw.status;
@@ -156,31 +156,31 @@ export const useDeliveryAuthStore = create(
       sendOtp: async (phone) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/delivery/auth/send-otp', { phone });
+          const res = await api.post('/auth/send-otp', { phone, expectedRole: 'delivery' });
           set({ isLoading: false }); return res.data || res;
         } catch (e) { set({ isLoading: false }); throw e; }
       },
       verifyOtpAndLogin: async (phone, otp) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/delivery/auth/verify-otp', { phone, otp });
+          const res = await api.post('/auth/verify-otp', { phone, otp, expectedRole: 'delivery' });
           const payload = res.data || res;
-          const user = normalizeDeliveryBoy(payload.deliveryBoy);
-          setToken(payload.accessToken);
-          localStorage.setItem('delivery-refresh-token', payload.refreshToken);
-          set({ deliveryBoy: user, token: payload.accessToken, refreshToken: payload.refreshToken, isAuthenticated: true, isLoading: false });
+          const user = normalizeDeliveryBoy(payload.data);
+          setToken(payload.token);
+          localStorage.setItem('delivery-refresh-token', payload.refreshToken || payload.token);
+          set({ deliveryBoy: user, token: payload.token, refreshToken: payload.refreshToken || payload.token, isAuthenticated: true, isLoading: false });
           return { success: true, deliveryBoy: user };
         } catch (e) { set({ isLoading: false }); throw e; }
       },
       login: async (email, password) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/delivery/auth/login', { email, password });
+          const res = await api.post('/auth/login', { email, password, expectedRole: 'delivery' });
           const payload = res.data || res;
-          const user = normalizeDeliveryBoy(payload.deliveryBoy);
-          setToken(payload.accessToken);
-          localStorage.setItem('delivery-refresh-token', payload.refreshToken);
-          set({ deliveryBoy: user, token: payload.accessToken, refreshToken: payload.refreshToken, isAuthenticated: true, isLoading: false });
+          const user = normalizeDeliveryBoy(payload.data);
+          setToken(payload.token);
+          localStorage.setItem('delivery-refresh-token', payload.refreshToken || payload.token);
+          set({ deliveryBoy: user, token: payload.token, refreshToken: payload.refreshToken || payload.token, isAuthenticated: true, isLoading: false });
           return { success: true, deliveryBoy: user };
         } catch (e) { set({ isLoading: false }); throw e; }
       },
@@ -308,7 +308,9 @@ export const useDeliveryAuthStore = create(
         set({ isLoadingOrders: true });
         try {
           const res = await api.get('/deliveries/available-orders', { params: opt });
-          const list = ((res.data || res)?.orders || []).map(normalizeOrder);
+          const p = res.data || res;
+          const ordersList = p?.orders || p?.data || (Array.isArray(p) ? p : []);
+          const list = (Array.isArray(ordersList) ? ordersList : []).map(normalizeOrder);
           set({ orders: list, isLoadingOrders: false }); return list;
         } catch (e) { set({ isLoadingOrders: false }); throw e; }
       },
@@ -317,8 +319,9 @@ export const useDeliveryAuthStore = create(
         try {
           const res = await api.get('/deliveries/orders', { params: opt });
           const p = res.data || res;
+          const ordersList = p?.orders || p?.data || (Array.isArray(p) ? p : []);
           // Sort by latest update to ensure status changes are seen first
-          const orders = (p?.orders || (Array.isArray(p) ? p : []))
+          const orders = (Array.isArray(ordersList) ? ordersList : [])
             .map(normalizeOrder)
             .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
           set({ orders, isLoadingOrders: false }); return orders;

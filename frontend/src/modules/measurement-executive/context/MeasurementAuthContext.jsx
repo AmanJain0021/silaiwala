@@ -4,6 +4,7 @@ import socket from '../../../shared/utils/socket';
 import { playNotificationSound } from '../../../utils/audio';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { getToken } from '../../../utils/auth';
 
 const MeasurementAuthContext = createContext();
 
@@ -13,7 +14,7 @@ export const MeasurementAuthProvider = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         const userStr = localStorage.getItem('user');
         
         if (token && userStr) {

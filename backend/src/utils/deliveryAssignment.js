@@ -14,17 +14,10 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     const order = await Order.findById(orderId).populate("tailor customer");
     if (!order) return false;
 
-    const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
-    const freshnessTime = new Date(Date.now() - STALE_THRESHOLD_MS);
-
     const query = {
       isAvailable: true,
       cashBlocked: { $ne: true },
-      user: { $nin: order.rejectedBy || [] },
-      $or: [
-        { lastLocationUpdatedAt: { $exists: false } },
-        { lastLocationUpdatedAt: { $gt: freshnessTime } }
-      ]
+      user: { $nin: order.rejectedBy || [] }
     };
 
     let startCoords = null; // [lng, lat]
@@ -32,7 +25,10 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     // Determine where the rider needs to go first
     if (cycle === "pickup") {
         const Customer = require("../models/Customer.js");
-        const customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+        let customerDoc = null;
+        if (order.customer) {
+            customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
+        }
         if (customerDoc?.addresses?.length > 0) {
             const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
             if (defaultAddress.location?.coordinates?.length >= 2) {
@@ -66,39 +62,34 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     }
 
     if (candidateRiders.length === 0) {
-        if (searchRadius >= 35000) {
-            console.warn(`⚠️ [deliveryAssignment] No candidates found in maximum search radius of ${searchRadius / 1000}km. Initiating last resort database-wide search...`);
-            
-            let allRiders = await Delivery.find(query).populate("user");
-            if (allRiders.length > 0 && startCoords) {
-                const { getDistanceFromLatLonInKm } = require("./haversine.js");
-                const destLat = startCoords[1];
-                const destLng = startCoords[0];
+        console.warn(`⚠️ [deliveryAssignment] No candidates found in search radius of ${searchRadius / 1000}km. Initiating fallback database-wide search...`);
+        
+        let allRiders = await Delivery.find(query).populate("user");
+        if (allRiders.length > 0 && startCoords) {
+            const { getDistanceFromLatLonInKm } = require("./haversine.js");
+            const destLat = startCoords[1];
+            const destLng = startCoords[0];
 
-                const ridersWithDistance = allRiders.map(r => {
-                    let distance = Infinity;
-                    if (r.currentLocation?.coordinates?.length >= 2) {
-                        distance = getDistanceFromLatLonInKm(
-                            r.currentLocation.coordinates[1],
-                            r.currentLocation.coordinates[0],
-                            destLat,
-                            destLng
-                        );
-                    }
-                    return { rider: r, distance };
-                });
+            const ridersWithDistance = allRiders.map(r => {
+                let distance = Infinity;
+                if (r.currentLocation?.coordinates?.length >= 2) {
+                    distance = getDistanceFromLatLonInKm(
+                        r.currentLocation.coordinates[1],
+                        r.currentLocation.coordinates[0],
+                        destLat,
+                        destLng
+                    );
+                }
+                return { rider: r, distance };
+            });
 
-                // Sort by distance ascending
-                ridersWithDistance.sort((a, b) => a.distance - b.distance);
+            // Sort by distance ascending
+            ridersWithDistance.sort((a, b) => a.distance - b.distance);
 
-                // Map back to Delivery document structure, limited to top 5
-                candidateRiders = ridersWithDistance.slice(0, 5).map(item => item.rider);
-            } else {
-                candidateRiders = allRiders.slice(0, 5);
-            }
+            // Map back to Delivery document structure, limited to top 5
+            candidateRiders = ridersWithDistance.slice(0, 5).map(item => item.rider);
         } else {
-            console.log(`No delivery partner available in current radius ${searchRadius / 1000}km for order ${order.orderId} (${cycle}). Waiting for timeout expansion.`);
-            return false;
+            candidateRiders = allRiders.slice(0, 5);
         }
     }
 
@@ -216,6 +207,16 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
         return true;
     } else {
         console.log(`No delivery partner available in radius for order ${order.orderId} (${cycle})`);
+        const io = getIO();
+        if (io) {
+            io.to('delivery_partners').emit('receive_new_order', {
+                orderId: order.orderId,
+                _id: order._id,
+                status: order.status,
+                taskType: cycle === "pickup" ? 'fabric-pickup' : 'order-delivery'
+            });
+            console.log(`📡 Socket: Broadcasted pool task ${order.orderId} to general delivery_partners room`);
+        }
         return false;
     }
   } catch (error) {

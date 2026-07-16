@@ -99,11 +99,12 @@ function App() {
     // Check if user is logged in
     const checkAndConnectSocket = () => {
       try {
-      let userStr, tailorStr, deliveryStr, adminStr, meStr;
+      let userStr, tailorStr, deliveryStr, adminStr, meStr, deliveryAuthStorage;
       try {
           userStr = localStorage.getItem('user');
           tailorStr = localStorage.getItem('tailor_user');
           deliveryStr = localStorage.getItem('delivery_user');
+          deliveryAuthStorage = localStorage.getItem('delivery-auth-storage');
           adminStr = localStorage.getItem('admin_user');
           meStr = localStorage.getItem('me_user');
       } catch (e) {
@@ -113,15 +114,23 @@ function App() {
         let activeUser = null;
         let role = null;
 
-        if (userStr && userStr !== 'undefined') {
+        // Give priority to the current route's role if possible
+        const path = window.location.pathname;
+
+        if (path.startsWith('/delivery') && (deliveryStr || deliveryAuthStorage)) {
+            if (deliveryAuthStorage && deliveryAuthStorage !== 'undefined') {
+                const parsed = JSON.parse(deliveryAuthStorage);
+                activeUser = parsed?.state?.deliveryBoy;
+            } else if (deliveryStr && deliveryStr !== 'undefined') {
+                activeUser = JSON.parse(deliveryStr);
+            }
+            role = 'delivery';
+        } else if (userStr && userStr !== 'undefined') {
             activeUser = JSON.parse(userStr);
             role = activeUser.role || 'customer';
         } else if (tailorStr && tailorStr !== 'undefined') {
             activeUser = JSON.parse(tailorStr);
             role = 'tailor';
-        } else if (deliveryStr && deliveryStr !== 'undefined') {
-            activeUser = JSON.parse(deliveryStr);
-            role = 'delivery';
         } else if (adminStr && adminStr !== 'undefined') {
             activeUser = JSON.parse(adminStr);
             role = 'admin';
@@ -131,28 +140,34 @@ function App() {
         }
 
         if (activeUser) {
-          // If activeUser is a profile (Tailor, Delivery, etc.), the base User ID is stored in activeUser.user
+          console.log('[Socket Debug] activeUser found:', activeUser);
           let userId = activeUser._id || activeUser.id;
           if (activeUser.user) {
             userId = typeof activeUser.user === 'string' ? activeUser.user : (activeUser.user._id || userId);
           }
+          console.log('[Socket Debug] Evaluated userId:', userId, 'Role:', role);
           
           if (userId) {
-            // Only connect if the user ID has changed to prevent infinite socket room joins
             const connectionKey = `${userId}-${role}`;
+            console.log(`[Socket Debug] ConnectionKey: ${connectionKey}, lastConnected: ${lastConnectedUserRef.current}`);
             if (lastConnectedUserRef.current !== connectionKey) {
+              console.log(`[Socket] Connecting with User ID: ${userId}, Role: ${role}`);
               connect(userId, role);
               lastConnectedUserRef.current = connectionKey;
             }
+          } else {
+             console.log('[Socket Debug] userId is falsy');
           }
         } else {
+          console.log('[Socket Debug] No activeUser found');
           if (lastConnectedUserRef.current !== null) {
+            console.log('[Socket] Disconnecting socket, no active user found');
             disconnect();
             lastConnectedUserRef.current = null;
           }
         }
       } catch (error) {
-        console.error('Socket connection error:', error);
+        console.error('[Socket Debug] Socket connection error:', error);
       }
     };
 

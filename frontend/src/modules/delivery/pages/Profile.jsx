@@ -11,6 +11,7 @@ import PageTransition from '../../../shared/components/PageTransition';
 import toast from 'react-hot-toast';
 import { formatPrice } from '../../../shared/utils/helpers';
 import api from '../../../utils/api';
+import NewOrderModal from '../components/NewOrderModal';
 
 import { useRef } from 'react';
 
@@ -25,6 +26,7 @@ const DeliveryProfile = () => {
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' or 'banking'
   const [isEditing, setIsEditing] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [testOrderRequest, setTestOrderRequest] = useState(null);
   
   const [profileMetrics, setProfileMetrics] = useState({
     totalDeliveries: 0,
@@ -240,15 +242,23 @@ const DeliveryProfile = () => {
               <h1 className="text-xl font-bold text-white tracking-tight">Partner Account</h1>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Status & Credentials</p>
             </div>
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center text-white">
-                <FiEdit2 size={16} />
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setTestOrderRequest({ _id: "test1234", customer: { name: "Test Customer", phone: "9999999999" }, deliveryAddress: { street: "123 Test Street", city: "Indore" }, totalAmount: 500, type: "delivery" })}
+                className="px-3 py-1.5 bg-rose-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/20 flex items-center"
+              >
+                Test Popup
               </button>
-            ) : (
-              <div className="px-3 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-indigo-500/30">
-                Editing Mode
-              </div>
-            )}
+              {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center text-white">
+                  <FiEdit2 size={16} />
+                </button>
+              ) : (
+                <div className="px-3 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-indigo-500/30 flex items-center">
+                  Editing Mode
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="relative z-10 flex items-center gap-4">
@@ -541,6 +551,16 @@ const DeliveryProfile = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <NewOrderModal
+          isOpen={!!testOrderRequest}
+          order={testOrderRequest}
+          onClose={() => setTestOrderRequest(null)}
+          onAccept={() => {
+            toast.success('Test Order Accepted!');
+            setTestOrderRequest(null);
+          }}
+        />
       </div>
   );
 };
