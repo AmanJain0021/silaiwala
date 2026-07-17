@@ -345,7 +345,7 @@ const DeliverySignup = () => {
         >
             <input
                 ref={(el) => (fileInputRefs.current[name] = el)}
-                type="file" name={name} accept="image/*" onChange={handleChange} className="hidden"
+                type="file" name={name} accept="image/*" capture="environment" onChange={handleChange} className="hidden"
             />
             {formData[name] ? (
                 <div className="relative w-full h-full">
@@ -445,6 +445,7 @@ const DeliverySignup = () => {
                                         type="file" 
                                         name="profileImage" 
                                         accept="image/*"
+                                        capture="user"
                                         ref={(el) => (fileInputRefs.current.profileImage = el)}
                                         onChange={handleChange}
                                         className="hidden" 

@@ -53,6 +53,7 @@ const OrderTracking = () => {
 
             if (response?.data?.success) {
                 const fetchedOrder = response.data.data;
+                console.log('--- DEBUG: fetchedOrder from backend ---', { status: fetchedOrder.status, measurementOtp: fetchedOrder.measurementOtp });
                 setOrder(fetchedOrder);
                 if (fetchedOrder.measurementOtp) {
                     setMeasurementOtp(fetchedOrder.measurementOtp);
@@ -544,7 +545,7 @@ const OrderTracking = () => {
             <div className="max-w-xl mx-auto p-4 space-y-4 animate-in fade-in duration-500">
             
                 {/* OTP Banner */}
-                {measurementOtp && order.status === 'measurements-uploaded' && (
+                {measurementOtp && (
                     <motion.div 
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}

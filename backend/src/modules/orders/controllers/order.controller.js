@@ -261,11 +261,17 @@ ledgerId,
        order.remainingPaymentId = razorpay_payment_id;
        order.remainingPaymentAmount = 0;
        order.paymentStatus = "paid"; // <--- ADDED THIS LINE
-       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'accepted' : 'in-progress';
+       if (order.isMeasurementHome) {
+           order.status = 'measurement-requested';
+       } else if (order.items.some(item => item.fabricSource === 'customer')) {
+           order.status = 'accepted';
+       } else {
+           order.status = 'in-progress';
+       }
        order.trackingHistory.push({
          status: order.status,
          timestamp: new Date(),
-         message: `Full payment of ₹${order.totalAmount} successful. Order accepted.`,
+         message: `Full payment of ₹${order.totalAmount} successful. Order confirmed.`,
        });
        await sendNotification({
            recipient: order.tailor,
@@ -313,7 +319,13 @@ user: tailorProfile.user,
        order.paymentId = razorpay_payment_id;
        order.razorpayOrderId = razorpay_order_id;
        order.paidAt = new Date();
-       order.status = order.items.some(item => item.fabricSource === 'customer') ? 'accepted' : 'in-progress';
+       if (order.isMeasurementHome) {
+           order.status = 'measurement-requested';
+       } else if (order.items.some(item => item.fabricSource === 'customer')) {
+           order.status = 'accepted';
+       } else {
+           order.status = 'in-progress';
+       }
        
        // Calculate and store fees for full payment
        const settings = await Settings.getSettings();
@@ -357,6 +369,38 @@ ledgerId,
        } catch (ledgerErr) {
          console.error("Failed to create PaymentLedger entry:", ledgerErr);
        }
+    }
+
+    // --- Create Measurement Request if applicable ---
+    if (order.isMeasurementHome && (paymentType === 'advance' || paymentType === 'full' || !['advance', 'remaining', 'full'].includes(paymentType))) {
+        try {
+            console.log(`[verifyPayment] Attempting to create MeasurementRequest for order: ${order.orderId}, paymentType: ${paymentType}`);
+            const MeasurementRequest = require("../../../models/MeasurementRequest.js");
+            const existing = await MeasurementRequest.findOne({ order: order._id }).session(session);
+            if (!existing) {
+                const mRequest = await MeasurementRequest.create([{
+                    requestId: `MR${Date.now()}`,
+                    order: order._id,
+                    customer: order.customer,
+                    tailor: order.tailor,
+                    status: "pending",
+                    customerAddress: order.deliveryAddress ? {
+                        street: order.deliveryAddress.street,
+                        city: order.deliveryAddress.city,
+                        state: order.deliveryAddress.state,
+                        zipCode: order.deliveryAddress.zipCode
+                    } : undefined,
+                    customerLocation: order.deliveryAddress?.location?.coordinates?.length === 2 ? order.deliveryAddress.location : undefined
+                }], { session });
+                order.measurementRequest = mRequest[0]._id;
+                console.log(`[verifyPayment] Successfully created MeasurementRequest: ${mRequest[0]._id}`);
+            } else {
+                console.log(`[verifyPayment] MeasurementRequest already exists for order: ${order.orderId}`);
+            }
+        } catch (mErr) {
+            console.error(`[verifyPayment] ERROR creating MeasurementRequest:`, mErr);
+            throw mErr; // Throw to abort transaction
+        }
     }
 
     await order.save({ session });
@@ -433,6 +477,15 @@ user: customerProfile.user,
     }
     // ---------------------
     await session.commitTransaction();
+
+    if (order.isMeasurementHome && paymentType !== 'remaining') {
+        try {
+            const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
+            await autoAssignMeasurementExecutive(order);
+        } catch (assignErr) {
+            console.error("Failed to auto-assign measurement executive:", assignErr);
+        }
+    }
 
     // Invalidate dashboard caches after successful payment
     await invalidateCache("cache:admin:dashboard-stats");

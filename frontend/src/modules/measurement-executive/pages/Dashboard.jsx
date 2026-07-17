@@ -281,7 +281,7 @@ const Dashboard = () => {
                             <h3 className="text-[15px] font-black text-gray-800 mb-1">
                                 You have active tasks, there {stats.totalPending === 1 ? 'is' : 'are'} <span className="text-[#843D9B]">{stats.totalPending} pending</span> {stats.totalPending === 1 ? 'request' : 'requests'}!
                             </h3>
-                            <button className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
+                            <button onClick={() => navigate('/executive/requests')} className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
                                 VIEW LIVE POOL
                             </button>
                         </>
@@ -291,7 +291,7 @@ const Dashboard = () => {
                                 You have no active tasks currently.
                             </h3>
                             <p className="text-xs text-gray-500 font-medium mt-1">Keep your status online to receive new requests.</p>
-                            <button className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
+                            <button onClick={() => navigate('/executive/requests')} className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
                                 VIEW LIVE POOL
                             </button>
                         </>

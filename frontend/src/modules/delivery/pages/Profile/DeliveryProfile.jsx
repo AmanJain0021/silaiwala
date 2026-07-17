@@ -676,7 +676,7 @@ const DeliveryProfile = () => {
                                         Aadhar Core / Voter ID
                                     </label>
                                     <label className="w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-indigo-50 hover:border-blue-200 hover:text-primary transition-all text-slate-400 group cursor-pointer relative overflow-hidden">
-                                        <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                        <input type="file" className="hidden" accept="image/*" capture="environment" onChange={async (e) => {
                                             if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
                                                 const formData = new FormData();
@@ -714,7 +714,7 @@ const DeliveryProfile = () => {
                                         Valid Driving License
                                     </label>
                                     <label className="w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-slate-50 hover:border-slate-200 hover:text-slate-500 transition-all text-slate-400 group cursor-pointer relative overflow-hidden">
-                                        <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                        <input type="file" className="hidden" accept="image/*" capture="environment" onChange={async (e) => {
                                             if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
                                                 const formData = new FormData();
@@ -810,6 +810,7 @@ const DeliveryProfile = () => {
                                             type="file"
                                             className="hidden"
                                             accept="image/*"
+                                            capture="user"
                                             onChange={(e) => {
                                                 const file = e.target.files[0];
                                                 if (file) {
