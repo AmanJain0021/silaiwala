@@ -21,15 +21,19 @@ class ErrorBoundary extends React.Component {
     console.error("ErrorBoundary caught an error", error, errorInfo);
     
     // Auto-reload on chunk loading error (happens after new deployments)
-    const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') || 
-                         error?.message?.includes('Importing a module script failed');
+    const errStr = error?.toString() || '';
+    const isChunkError = errStr.includes('Failed to fetch dynamically imported module') || 
+                         errStr.includes('Importing a module script failed') ||
+                         errStr.includes('dynamically imported module') ||
+                         errStr.includes('ChunkLoadError');
                          
     if (isChunkError) {
       const hasReloaded = sessionStorage.getItem('chunk_failed_reload');
       if (!hasReloaded) {
         sessionStorage.setItem('chunk_failed_reload', 'true');
         this.setState({ isReloading: true });
-        window.location.reload(true);
+        // Force hard reload
+        window.location.href = window.location.href + (window.location.href.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
         return;
       }
     }
@@ -54,8 +58,11 @@ class ErrorBoundary extends React.Component {
     }
 
     if (this.state.hasError) {
-      const isChunkError = this.state.error?.message?.includes('Failed to fetch dynamically imported module') ||
-                           this.state.error?.message?.includes('Importing a module script failed');
+      const errStr = (this.state.error && this.state.error.toString()) || '';
+      const isChunkError = errStr.includes('Failed to fetch dynamically imported module') ||
+                           errStr.includes('Importing a module script failed') ||
+                           errStr.includes('dynamically imported module') ||
+                           errStr.includes('ChunkLoadError');
       
       return (
         <div style={{ padding: '40px 20px', backgroundColor: '#fef2f2', color: '#991b1b', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'system-ui, sans-serif' }}>
