@@ -354,6 +354,13 @@ const DeliveryOrderDetail = () => {
     try {
       // Use stable id from useParams
       await updateOrderStatus(id, status, options);
+      
+      // Clear OTP and photo states to prevent autofill on the next phase
+      setOtpValue('');
+      setPickupPhoto(null);
+      setDeliveryPhoto(null);
+      setHasArrived(false);
+      
       await loadOrder();
       toast.success(msg);
     } catch (err) {
@@ -453,7 +460,7 @@ const DeliveryOrderDetail = () => {
 
   const handleFinalize = async () => {
     if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
-    if (isCod && !paymentSelection) return toast.error('Select payment method');
+    if (isCod && isFinalDelivery && !paymentSelection) return toast.error('Select payment method');
     if (!deliveryPhoto) return toast.error('Delivery photo required');
 
     try {
@@ -469,11 +476,13 @@ const DeliveryOrderDetail = () => {
     }
   };
 
-  const handleImage = (file, setter) => {
+  const handleImage = (e, setter) => {
+    const file = e.target?.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setter(reader.result);
     reader.readAsDataURL(file);
+    e.target.value = null; // Reset input so same camera photo or new photo triggers change again
   };
 
   console.log("OrderDetail Render:", { isInitialLoading, isLoadingOrder, isLoaded, order: !!order, id });
@@ -859,7 +868,7 @@ const DeliveryOrderDetail = () => {
                           </div>
 
                           {/* PAYMENT OPTIONS */}
-                          {isCod && currentPhase === 'delivery' && (
+                          {isCod && currentPhase === 'delivery' && isFinalDelivery && (
                             <div className="mt-6 pt-5 border-t border-slate-50 text-left">
                                <div className="flex items-center justify-between mb-4">
                                   <div className="min-w-0">
@@ -939,10 +948,10 @@ const DeliveryOrderDetail = () => {
                         const correctStatus = (order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup') ? 'fabric-picked-up' : 'picked-up-from-tailor';
                         handleUpdateStatus(correctStatus, 'Items picked up!', { pickupPhoto, otp: otpValue.trim() });
                     } : handleFinalize}
-                    disabled={isUpdatingOrderStatus || (currentPhase === 'pickup' && (otpValue.length < 6 || !pickupPhoto)) || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))))}
+                    disabled={isUpdatingOrderStatus || (currentPhase === 'pickup' && (otpValue.length < 6 || !pickupPhoto)) || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && isFinalDelivery && !paymentSelection)))}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                    {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin text-white" /> WAITING...</> : (currentPhase === 'pickup' ? ((otpValue.length < 6 || !pickupPhoto) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'MARK AS PICKED UP') : ((otpValue.length < 6 || !deliveryPhoto || (isCod && (!paymentSelection))) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'COMPLETE DELIVERY'))}
+                    {isUpdatingOrderStatus ? <><FiLoader className="w-3.5 h-3.5 animate-spin text-white" /> WAITING...</> : (currentPhase === 'pickup' ? ((otpValue.length < 6 || !pickupPhoto) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'MARK AS PICKED UP') : ((otpValue.length < 6 || !deliveryPhoto || (isCod && isFinalDelivery && !paymentSelection)) ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'COMPLETE DELIVERY'))}
                 </button>
               )}
               
@@ -1008,10 +1017,10 @@ const DeliveryOrderDetail = () => {
         />
 
         {/* HIDDEN INPUTS FOR FILE UPLOAD */}
-        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImage(e.target.files[0], setPickupPhoto)} className="hidden" />
-        <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImage(e.target.files[0], setPickupPhoto)} className="hidden" />
-        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImage(e.target.files[0], setDeliveryPhoto)} className="hidden" />
-        <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImage(e.target.files[0], setDeliveryPhoto)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
+        <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
+        <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
       </div>
     </PageTransition>
   );

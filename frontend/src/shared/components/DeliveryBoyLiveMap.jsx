@@ -37,7 +37,7 @@ const DeliveryBoyLiveMap = ({
         {
           origin: { lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) },
           destination: routeDestination,
-          travelMode: window.google.maps.TravelMode.DRIVING,
+          travelMode: window.google.maps.TravelMode.TWO_WHEELER || window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK) {
@@ -104,6 +104,7 @@ const DeliveryBoyLiveMap = ({
             directions={directions}
             options={{
               suppressMarkers: true,
+              preserveViewport: true, // Prevents map from snapping back constantly while driving
               polylineOptions: {
                 strokeColor: '#2563EB', // Blue line
                 strokeWeight: 5,
