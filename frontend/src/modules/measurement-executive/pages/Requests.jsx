@@ -170,15 +170,17 @@ const Requests = () => {
                                 </div>
 
                                 <div className="flex items-center justify-end gap-1.5 sm:gap-3">
-                                    {req.status === 'assigned' && (
+                                    {(req.status === 'assigned' || req.status === 'pending') && (
                                         <>
-                                            <button
-                                                onClick={() => handleReject(req._id)}
-                                                className="flex-1 py-1.5 sm:py-3 px-2 sm:px-4 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg sm:rounded-xl font-black text-[9px] sm:text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-1 sm:gap-2 min-w-0"
-                                            >
-                                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                                                <span className="truncate">Reject</span>
-                                            </button>
+                                            {req.status === 'assigned' && (
+                                                <button
+                                                    onClick={() => handleReject(req._id)}
+                                                    className="flex-1 py-1.5 sm:py-3 px-2 sm:px-4 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg sm:rounded-xl font-black text-[9px] sm:text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-1 sm:gap-2 min-w-0"
+                                                >
+                                                    <XCircle className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                                                    <span className="truncate">Reject</span>
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => handleAccept(req._id)}
                                                 className="flex-1 py-1.5 sm:py-3 px-2 sm:px-4 bg-[#843D9B] hover:bg-[#6b2f81] text-white rounded-lg sm:rounded-xl font-black text-[9px] sm:text-xs uppercase tracking-widest shadow-md sm:shadow-lg shadow-purple-200 transition-all flex items-center justify-center gap-1 sm:gap-2 min-w-0"

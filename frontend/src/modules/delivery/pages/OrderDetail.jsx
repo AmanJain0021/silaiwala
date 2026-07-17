@@ -789,27 +789,13 @@ const DeliveryOrderDetail = () => {
                     <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center border border-emerald-100 shrink-0">
                        <FiCreditCard size={14}/>
                     </div>
-                    <div className="w-full">
+                     <div className="w-full">
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Your earning</p>
                        <h2 className="text-lg font-black text-slate-800 leading-tight">
-                          {formatPrice(order.deliveryFee || order.deliveryEarnings || (totalTripDistanceKm !== null && feeSettings ? Math.round(feeSettings.baseFee + (totalTripDistanceKm * feeSettings.perKmRate)) : 0))}
+                          {formatPrice(order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20)}
                        </h2>
-                       
-                       {totalTripDistanceKm !== null && feeSettings && (
-                         <div className="mt-2 bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col gap-1.5">
-                           <div className="flex justify-between items-center">
-                             <span className="text-[9px] font-bold text-slate-500">Base Fee</span>
-                             <span className="text-[10px] font-black text-slate-700">{formatPrice(feeSettings.baseFee)}</span>
-                           </div>
-                           <div className="flex justify-between items-center">
-                             <span className="text-[9px] font-bold text-slate-500">Distance ({totalTripDistanceKm.toFixed(1)} km × {formatPrice(feeSettings.perKmRate)})</span>
-                             <span className="text-[10px] font-black text-slate-700">{formatPrice(Math.round(totalTripDistanceKm * feeSettings.perKmRate))}</span>
-                           </div>
-                         </div>
-                       )}
-                       
                        <p className="text-[9px] text-slate-400 mt-2 leading-snug">Net amount after platform commission. Credited to your wallet once the trip is completed.</p>
-                    </div>
+                     </div>
                 </div>
              </div>
 
