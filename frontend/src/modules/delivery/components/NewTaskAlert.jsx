@@ -94,6 +94,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const { socket } = useSocketStore();
     const dismissedTasksRef = useRef(new Set());
+    const isBusyRef = useRef(false); // Ref to track if delivery partner has an active task
 
     // Swipe interaction setup
     const x = useMotionValue(0);
@@ -191,6 +192,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
 
     useEffect(() => {
         const handleNewTask = (taskData) => {
+            if (isBusyRef.current) return;
             console.log('New task alert received via socket:', taskData);
             const payload = taskData.data || taskData;
             setNewTask({
@@ -200,6 +202,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
         };
 
         const handleReceiveNewOrder = (taskData) => {
+            if (isBusyRef.current) return;
             console.log('Broadcasted order received via socket:', taskData);
             const payload = taskData.data || taskData;
             setNewTask({
@@ -209,6 +212,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
         };
 
         const handleNewNotification = (data) => {
+            if (isBusyRef.current) return;
             console.log('New notification received on delivery partner app:', data);
             if (data.type === 'NEW_DELIVERY_TASK' || data.type === 'TASK_ASSIGNED') {
                 const payload = data.data || {};
@@ -229,6 +233,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
         };
 
         const handleFCMMessage = (event) => {
+            if (isBusyRef.current) return;
             const payload = event.detail;
             console.log('FCM Message received in NewTaskAlert:', payload);
             const data = payload.data || {};
@@ -283,6 +288,29 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                 const allPending = [];
 
                 if (assignedRes?.success && assignedRes.data) {
+                    // Check if delivery partner is currently busy with an active order
+                    const hasActiveOrder = assignedRes.data.some(t => {
+                        const uid = user?._id || user?.id;
+                        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
+                        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
+                        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
+                        
+                        const isLegacyActive = !!dpId && dpId === uid && ['accepted', 'picked-up', 'out-for-delivery'].includes(t.deliveryStatus);
+                        const isPickupActive = !!ppId && ppId === uid && ['accepted', 'picked-up', 'out-for-delivery'].includes(t.pickupDeliveryStatus);
+                        const isDropoffActive = !!dopId && dopId === uid && ['accepted', 'picked-up', 'out-for-delivery'].includes(t.dropoffDeliveryStatus);
+                        
+                        const isActiveStatus = ['accepted', 'picked_up', 'out_for_delivery'].includes(t.status);
+                        const isAssignedToMe = dpId === uid || ppId === uid || dopId === uid;
+                        
+                        return isLegacyActive || isPickupActive || isDropoffActive || (isActiveStatus && isAssignedToMe);
+                    });
+
+                    isBusyRef.current = hasActiveOrder;
+                    
+                    if (hasActiveOrder) {
+                        return; // Stop polling for new tasks if busy
+                    }
+
                     const targeted = assignedRes.data.filter(t => {
                         const uid = user?._id || user?.id; 
                         const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
