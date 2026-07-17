@@ -174,18 +174,26 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
 exports.getMyRequests = asyncHandler(async (req, res, next) => {
   const { status } = req.query;
 
-  const query = { executive: req.user.id };
+  let query = {};
 
   if (status) {
     if (status === "active") {
-      query.status = { $in: ["assigned", "accepted", "otp_sent", "otp_verified", "measurements_uploaded"] };
+      query = { executive: req.user.id, status: { $in: ["accepted", "otp_sent", "otp_verified", "measurements_uploaded"] } };
     } else if (status === "completed") {
-      query.status = "completed";
+      query = { executive: req.user.id, status: "completed" };
     } else if (status === "pending") {
-      query.status = { $in: ["assigned"] };
+      // Show assigned to them OR unassigned pending (broadcast pool fallback)
+      query = {
+        $or: [
+          { executive: req.user.id, status: "assigned" },
+          { executive: null, status: "pending" }
+        ]
+      };
     } else {
-      query.status = status;
+      query = { executive: req.user.id, status: status };
     }
+  } else {
+    query = { executive: req.user.id };
   }
 
   const requests = await MeasurementRequest.find(query)
@@ -292,12 +300,17 @@ exports.acceptRequest = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Measurement request not found", 404));
   }
 
-  if (request.executive?.toString() !== req.user.id) {
-    return next(new ErrorResponse("This request is not assigned to you", 403));
+  if (request.executive && request.executive.toString() !== req.user.id) {
+    return next(new ErrorResponse("This request is assigned to someone else", 403));
   }
 
-  if (request.status !== "assigned") {
+  if (request.status !== "assigned" && request.status !== "pending") {
     return next(new ErrorResponse(`Cannot accept request in '${request.status}' state`, 400));
+  }
+
+  // If it was unassigned, assign it now
+  if (!request.executive) {
+    request.executive = req.user.id;
   }
 
   request.status = "accepted";
@@ -1016,8 +1029,10 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
     await Promise.all([
       MeasurementExecutive.findOne({ user: req.user.id }),
       MeasurementRequest.countDocuments({
-        executive: req.user.id,
-        status: { $in: ["assigned"] },
+        $or: [
+          { executive: req.user.id, status: "assigned" },
+          { executive: null, status: "pending" }
+        ]
       }),
       MeasurementRequest.countDocuments({
         executive: req.user.id,
