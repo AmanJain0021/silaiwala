@@ -20,11 +20,12 @@ import PageTransition from '../../../shared/components/PageTransition';
 import { formatPrice } from '../../../shared/utils/helpers';
 import toast from 'react-hot-toast';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
-import socketService from '../../../shared/utils/socket';
+import useSocketStore from '../../../store/socketStore';
 import OrderCardSkeleton from '../../../shared/components/Skeletons/OrderCardSkeleton';
 
 const DeliveryOrders = () => {
   const navigate = useNavigate();
+  const { socket } = useSocketStore();
   const {
     orders,
     ordersPagination,
@@ -69,28 +70,32 @@ const DeliveryOrders = () => {
     const interval = setInterval(() => loadOrders(currentPage, filter), 120000);
 
     // Socket listeners (connection managed by DeliveryLayout)
-    socketService.on('order_ready_for_pickup', (data) => {
-      const currentStatus = useDeliveryAuthStore.getState().deliveryBoy?.status;
-      if (currentStatus === 'available') {
-        if (filter === 'available') loadOrders(currentPage, filter);
-      }
-    });
+    if (socket) {
+      socket.on('order_ready_for_pickup', (data) => {
+        const currentStatus = useDeliveryAuthStore.getState().deliveryBoy?.status;
+        if (currentStatus === 'available') {
+          if (filter === 'available') loadOrders(currentPage, filter);
+        }
+      });
 
-    socketService.on('order_taken', (data) => {
-      // Remove the order from local state immediately if another rider took it
-      if (filter === 'available') {
-        const { orders } = useDeliveryAuthStore.getState();
-        const updated = orders.filter(o => o.id !== data.id && o.orderId !== data.orderId);
-        useDeliveryAuthStore.setState({ orders: updated });
-      }
-    });
+      socket.on('order_taken', (data) => {
+        // Remove the order from local state immediately if another rider took it
+        if (filter === 'available') {
+          const { orders } = useDeliveryAuthStore.getState();
+          const updated = orders.filter(o => o.id !== data.id && o.orderId !== data.orderId);
+          useDeliveryAuthStore.setState({ orders: updated });
+        }
+      });
+    }
 
     return () => {
       clearInterval(interval);
-      socketService.off('order_ready_for_pickup');
-      socketService.off('order_taken');
+      if (socket) {
+        socket.off('order_ready_for_pickup');
+        socket.off('order_taken');
+      }
     };
-  }, [currentPage, filter]);
+  }, [currentPage, filter, socket]);
 
   const getStatusStyle = (status) => {
     const s = String(status).toLowerCase();

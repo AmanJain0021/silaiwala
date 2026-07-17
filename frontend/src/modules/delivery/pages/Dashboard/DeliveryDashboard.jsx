@@ -31,13 +31,14 @@ import {
 import { MdTwoWheeler } from "react-icons/md";
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import useAuthStore from '../../../../store/authStore';
-import socketService from '../../../../shared/utils/socket';
+import useSocketStore from '../../../../store/socketStore';
 import deliveryService from '../../services/deliveryService';
 import { Power } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const DeliveryDashboard = () => {
     const navigate = useNavigate();
+    const { socket } = useSocketStore();
     const { isLoaded } = useOutletContext() || { isOnline: true, isLoaded: false };
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
@@ -103,14 +104,18 @@ const DeliveryDashboard = () => {
             fetchDashboardData();
         };
 
-        socketService.on('new_task', handleNewTask);
-        socketService.on('new_notification', handleNewNotification);
+        if (socket) {
+            socket.on('new_task', handleNewTask);
+            socket.on('new_notification', handleNewNotification);
+        }
 
         return () => {
-            socketService.off('new_task', handleNewTask);
-            socketService.off('new_notification', handleNewNotification);
+            if (socket) {
+                socket.off('new_task', handleNewTask);
+                socket.off('new_notification', handleNewNotification);
+            }
         };
-    }, []);
+    }, [socket]);
 
     if (loading) {
         return (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../../../store/authStore';
+import PendingApproval from '../pages/PendingApproval';
 
 const DeliveryProtectedRoute = () => {
     const { isAuthenticated, user, isLoading } = useAuthStore();
@@ -15,6 +16,10 @@ const DeliveryProtectedRoute = () => {
 
     if (!isAuthenticated || user?.role !== 'delivery') {
         return <Navigate to="/delivery/login" replace />;
+    }
+
+    if (user && !user.isActive) {
+        return <PendingApproval />;
     }
 
     return <Outlet />;

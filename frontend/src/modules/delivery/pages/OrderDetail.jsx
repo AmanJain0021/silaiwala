@@ -31,7 +31,7 @@ import toast from 'react-hot-toast';
 import api from '../../../shared/utils/api';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
-import socketService from '../../../shared/utils/socket';
+import useSocketStore from '../../../store/socketStore';
 import { useJsApiLoader } from '@react-google-maps/api';
 import useAuthStore from '../../../store/authStore';
 
@@ -40,6 +40,7 @@ const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 const DeliveryOrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { socket } = useSocketStore();
   const outletCtx = useOutletContext();
   const { layoutLocationStr, layoutLocationCoords } = outletCtx || {};
   
@@ -315,20 +316,25 @@ const DeliveryOrderDetail = () => {
   useEffect(() => {
     loadOrder();
     const handleUpdate = () => loadOrder();
-    socketService.on('order_status_updated', handleUpdate);
-    socketService.on('order_taken', (data) => {
-      if (data.id === id || data.orderId === id) {
-        toast.error('Mission taken by another partner');
-        navigate('/delivery/dashboard');
-      }
-    });
+    
+    if (socket) {
+      socket.on('order_status_updated', handleUpdate);
+      socket.on('order_taken', (data) => {
+        if (data.id === id || data.orderId === id) {
+          toast.error('Mission taken by another partner');
+          navigate('/delivery/dashboard');
+        }
+      });
+      if (id) socket.emit('join', `order_${id}`);
+    }
 
-    if (id) socketService.emit('join', `order_${id}`);
     return () => {
-       socketService.off('order_status_updated');
-       socketService.off('order_taken');
+      if (socket) {
+        socket.off('order_status_updated', handleUpdate);
+        socket.off('order_taken');
+      }
     };
-  }, [id, loadOrder, navigate]);
+  }, [id, loadOrder, navigate, socket]);
 
   const handleAcceptMission = async () => {
     try {

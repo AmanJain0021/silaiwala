@@ -21,12 +21,13 @@ import { MdTwoWheeler } from "react-icons/md";
 import deliveryService from '../../services/deliveryService';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import socketService from '../../../../shared/utils/socket';
+import useSocketStore from '../../../../store/socketStore';
 import useAuthStore from '../../../../store/authStore';
 import { getToken } from '../../../../utils/auth';
 
 const Tasks = () => {
     const user = useAuthStore((state) => state.user);
+    const { socket } = useSocketStore();
     const { isOnline } = useOutletContext() || { isOnline: true };
     const [activeTab, setActiveTab] = useState('assigned'); // 'assigned' or 'available'
     const [loading, setLoading] = useState(true);
@@ -110,18 +111,22 @@ const Tasks = () => {
             }
         };
 
-        socketService.on('new_task', handleNewTask);
-        socketService.on('receive_new_order', handleReceiveNewOrder);
-        socketService.on('new_notification', handleNewNotification);
-        socketService.on('task_claimed', handleTaskClaimed);
+        if (socket) {
+            socket.on('new_task', handleNewTask);
+            socket.on('receive_new_order', handleReceiveNewOrder);
+            socket.on('new_notification', handleNewNotification);
+            socket.on('task_claimed', handleTaskClaimed);
+        }
 
         return () => {
-            socketService.off('new_task', handleNewTask);
-            socketService.off('receive_new_order', handleReceiveNewOrder);
-            socketService.off('new_notification', handleNewNotification);
-            socketService.off('task_claimed', handleTaskClaimed);
+            if (socket) {
+                socket.off('new_task', handleNewTask);
+                socket.off('receive_new_order', handleReceiveNewOrder);
+                socket.off('new_notification', handleNewNotification);
+                socket.off('task_claimed', handleTaskClaimed);
+            }
         };
-    }, []);
+    }, [socket]);
 
     const activeTask = tasks.find(t => t._id === activeTaskId);
     // Tasks needing acceptance (pending = partner notified but not yet accepted)
