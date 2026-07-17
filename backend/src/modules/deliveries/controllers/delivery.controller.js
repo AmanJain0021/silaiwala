@@ -896,6 +896,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
 
   const orders = await Order.find({
     status: { $in: allowedStatuses },
+    rejectedBy: { $ne: req.user.id },
     $or: [
       { deliveryPartner: null },
       { deliveryPartner: { $exists: false } },
@@ -1201,15 +1202,7 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
   const isObjectId = mongoose.isValidObjectId(req.params.id);
   const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
 
-  const order = await Order.findOne({
-    ...query,
-    $or: [
-      { deliveryPartner: req.user.id },
-      { pickupPartner: req.user.id },
-      { dropoffPartner: req.user.id },
-      { pendingPartnerCandidates: req.user.id }
-    ]
-  });
+  const order = await Order.findOne(query);
 
   if (!order) {
     return next(new ErrorResponse("Order not found or not assigned to you", 404));

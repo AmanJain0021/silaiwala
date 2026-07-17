@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import { Truck, MapPin, X, ArrowRight, Check, Package } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
@@ -93,6 +93,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
     const [isAccepting, setIsAccepting] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const { socket } = useSocketStore();
+    const dismissedTasksRef = useRef(new Set());
 
     // Swipe interaction setup
     const x = useMotionValue(0);
@@ -266,11 +267,79 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
         };
     }, [socket]);
 
+    // Polling fallback mechanism
+    useEffect(() => {
+        const pollForTasks = async () => {
+            if (newTask || isAccepting || !user) return; // Don't interrupt or poll if not logged in
+
+            try {
+                const [assignedRes, availableRes] = await Promise.all([
+                    deliveryService.getAssignedOrders(null, true),
+                    deliveryService.getAvailableOrders(true)
+                ]);
+
+                console.log('Polling raw responses:', { assigned: assignedRes?.data?.length, available: availableRes?.data?.length });
+
+                const allPending = [];
+
+                if (assignedRes?.success && assignedRes.data) {
+                    const targeted = assignedRes.data.filter(t => {
+                        const uid = user?._id || user?.id; 
+                        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
+                        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
+                        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
+                        
+                        const isLegacy = !!dpId && dpId === uid && t.deliveryStatus === 'pending';
+                        const isPickup = !!ppId && ppId === uid && t.pickupDeliveryStatus === 'pending';
+                        const isDropoff = !!dopId && dopId === uid && t.dropoffDeliveryStatus === 'pending';
+                        
+                        if (isLegacy || isPickup || isDropoff) return true;
+                        
+                        // Broadcast candidate
+                        if (!t.isClaimed && !t.isAcceptedByMe) return true;
+                        
+                        return false;
+                    });
+                    allPending.push(...targeted);
+                }
+
+                if (availableRes?.success && availableRes.data) {
+                    const poolOrders = availableRes.data.filter(t => !allPending.some(p => p._id === t._id));
+                    allPending.push(...poolOrders);
+                }
+
+                console.log('Polling allPending length:', allPending.length);
+
+                // Find first task not dismissed in this session
+                const taskToShow = allPending.find(t => !dismissedTasksRef.current.has(t._id));
+                
+                console.log('taskToShow found:', !!taskToShow, 'dismissedTasks count:', dismissedTasksRef.current.size);
+
+                if (taskToShow) {
+                    console.log('Polling found a pending/available task:', taskToShow);
+                    setNewTask({
+                        ...taskToShow,
+                        orderId_str: taskToShow.orderId,
+                        message: "New Task Available!"
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to poll for new tasks:", error);
+            }
+        };
+
+        pollForTasks();
+        const pollInterval = setInterval(pollForTasks, 15000);
+        return () => clearInterval(pollInterval);
+    }, [newTask, isAccepting, user]);
+
     const handleAccept = async () => {
         const orderId = newTask?._id || newTask?.orderId;
         if (!orderId || isAccepting) return;
 
         setIsAccepting(true);
+        if (newTask?._id) dismissedTasksRef.current.add(newTask._id);
+        
         try {
             const res = await deliveryService.acceptOrder(orderId);
             if (res.success) {
@@ -303,6 +372,8 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
             setNewTask(null);
             return;
         }
+
+        if (newTask?._id) dismissedTasksRef.current.add(newTask._id);
 
         try {
             await deliveryService.rejectOrder(orderId);
@@ -377,7 +448,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                                         <div className="bg-white/5 p-2 rounded-lg border border-white/5">
                                             <p className="text-xs font-black text-emerald-400 mb-0.5">
                                                 Pickup: {newTask.taskType === 'fabric-pickup'
-                                                    ? (newTask.customer || newTask.customer?.name || 'Customer')
+                                                    ? (newTask.customer?.name || (typeof newTask.customer === 'string' ? newTask.customer : 'Customer'))
                                                     : (newTask.vendorName || newTask.tailor?.shopName || 'Artisan')}
                                             </p>
                                             {isLoadingDetails ? (
@@ -392,7 +463,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                                             <p className="text-xs font-black text-amber-400 mb-0.5">
                                                 Drop to: {newTask.taskType === 'fabric-pickup'
                                                     ? (newTask.vendorName || newTask.tailor?.shopName || 'Workshop')
-                                                    : (newTask.customer || newTask.customer?.name || 'Requester')}
+                                                    : (newTask.customer?.name || (typeof newTask.customer === 'string' ? newTask.customer : 'Requester'))}
                                             </p>
                                             {isLoadingDetails ? (
                                                 <p className="text-[10px] font-medium text-white/40 leading-tight animate-pulse">Fetching address details...</p>

@@ -28,8 +28,9 @@ const deliveryService = {
     },
 
     // Orders
-    getAssignedOrders: async (status) => {
-        const url = status ? `/deliveries/orders?status=${status}` : '/deliveries/orders';
+    getAssignedOrders: async (status, noCache = false) => {
+        let url = status ? `/deliveries/orders?status=${status}` : '/deliveries/orders';
+        if (noCache) url += (url.includes('?') ? '&' : '?') + `_t=${Date.now()}`;
         const response = await api.get(url);
         return response.data;
     },
@@ -39,8 +40,9 @@ const deliveryService = {
         return response.data;
     },
 
-    getAvailableOrders: async () => {
-        const response = await api.get('/deliveries/available-orders');
+    getAvailableOrders: async (noCache = false) => {
+        const url = noCache ? `/deliveries/available-orders?_t=${Date.now()}` : '/deliveries/available-orders';
+        const response = await api.get(url);
         return response.data;
     },
 
