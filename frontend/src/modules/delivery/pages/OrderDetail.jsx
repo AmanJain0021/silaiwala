@@ -421,14 +421,14 @@ const DeliveryOrderDetail = () => {
 
   const isFinalDelivery = order?.taskType === 'order-delivery';
   
-  const calculatedTotal = (isFinalDelivery && order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid')
+  const calculatedTotal = (order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid')
     ? order.remainingPaymentAmount
     : (order?.isTryAndBuy 
         ? order.items.reduce((sum, item) => selectedItemIds.has(item.productId || item._id) ? sum + (item.price * item.quantity) : sum, 0)
         : order?.totalAmount || order?.total || 0);
 
   const isCod = calculatedTotal > 0 && (
-    (isFinalDelivery && order?.remainingPaymentStatus !== 'paid' && order?.remainingPaymentAmount > 0) ||
+    (order?.remainingPaymentStatus !== 'paid' && order?.remainingPaymentAmount > 0) ||
     order?.paymentMethod === 'cod' || 
     order?.paymentMethod === 'cash'
   );
