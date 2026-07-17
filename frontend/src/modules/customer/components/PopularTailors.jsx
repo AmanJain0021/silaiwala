@@ -20,9 +20,10 @@ const PopularTailors = () => {
     }, [fetchTailors, coordinates]);
 
     // Show top 4 prominently
-    const displayTailors = tailors.length > 0 ? tailors.slice(0, 4) : [];
+    const safeTailors = Array.isArray(tailors) ? tailors : [];
+    const displayTailors = safeTailors.length > 0 ? safeTailors.slice(0, 4) : [];
 
-    if (isLoading && tailors.length === 0) {
+    if (isLoading && safeTailors.length === 0) {
         return <div className="px-4 py-8 text-center text-gray-500">Finding best tailors...</div>;
     }
 

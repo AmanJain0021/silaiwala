@@ -20,8 +20,8 @@ const HomeHeader = ({ user }) => {
     const [showNotifications, setShowNotifications] = useState(false);
     const { items: productCartItems } = useCartStore(state => state);
     const { serviceItems } = useCheckoutStore(state => state);
-    const cartCount = productCartItems.length + serviceItems.length;
-    const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+    const cartCount = (productCartItems || []).length + (serviceItems || []).length;
+    const { notifications = [], unreadCount, markAsRead, markAllRead } = useNotifications();
     const navigate = useNavigate();
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -115,7 +115,7 @@ const HomeHeader = ({ user }) => {
                         </button>
 
                         <Link
-                            to={serviceItems.length > 0 && productCartItems.length === 0 ? "/user/checkout/summary" : "/user/cart"}
+                            to={(serviceItems || []).length > 0 && (productCartItems || []).length === 0 ? "/user/checkout/summary" : "/user/cart"}
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
                             className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
                         >
@@ -193,7 +193,7 @@ const HomeHeader = ({ user }) => {
                             </div>
 
                             <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                                {notifications.length > 0 ? notifications.map(n => (
+                                {(notifications || []).length > 0 ? (notifications || []).map(n => (
                                     <div
                                         key={n._id}
                                         onClick={() => markAsRead(n._id)}

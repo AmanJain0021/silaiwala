@@ -15,7 +15,7 @@ const useTailorStore = create((set) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.get('/customers/tailors', { params });
-            set({ tailors: response.data.data, isLoading: false });
+            set({ tailors: response.data.data || [], isLoading: false });
         } catch (err) {
             if (!axios.isCancel(err)) {
                 set({ error: err.message, isLoading: false });
