@@ -61,7 +61,7 @@ exports.checkUserExists = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.register = asyncHandler(async (req, res, next) => {
-  const { name, email, phoneNumber, phone, otp, password, role, shopName, experienceInYears, coordinates, specializations, referralCode, profileImage } = req.body;
+  const { name, email, phoneNumber, phone, otp, password, role, shopName, experienceInYears, coordinates, specializations, referralCode, profileImage, fcmToken, platform } = req.body;
   let finalPhoneNumber = phoneNumber || phone;
 
   if (!finalPhoneNumber) {
@@ -116,6 +116,10 @@ exports.register = asyncHandler(async (req, res, next) => {
   // 4. Create User - Tailors and Delivery partners are inactive until approved
   const isAutoActive = !["tailor", "delivery", "measurement_executive"].includes(finalRole.toLowerCase());
   
+  const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
+  const fcmTokenArray = fcmToken && !isMobile ? [fcmToken] : [];
+  const fcmTokenMobileArray = fcmToken && isMobile ? [fcmToken] : [];
+
   const user = await User.create({
     name,
     email,
@@ -123,7 +127,9 @@ exports.register = asyncHandler(async (req, res, next) => {
     password,
     role: finalRole,
     isActive: isAutoActive,
-    profileImage: profileImage || "default_profile.png"
+    profileImage: profileImage || "default_profile.png",
+    fcmToken: fcmTokenArray,
+    fcmTokenMobile: fcmTokenMobileArray
   });
 
   let profile = null;
@@ -320,7 +326,7 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.login = asyncHandler(async (req, res, next) => {
-  const { email, password, otp, expectedRole } = req.body;
+  const { email, password, otp, expectedRole, fcmToken, platform } = req.body;
 
   // 1. Identify User (By Email OR Phone Number)
   if (!email) return next(new ErrorResponse("Identifier is required", 400));
@@ -362,6 +368,27 @@ exports.login = asyncHandler(async (req, res, next) => {
 
   if (!verified) {
     return next(new ErrorResponse("Invalid credentials or incorrect OTP", 401));
+  }
+
+  if (fcmToken) {
+    let isTokenUpdated = false;
+    const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
+    
+    if (isMobile) {
+      if (!user.fcmTokenMobile.includes(fcmToken)) {
+        user.fcmTokenMobile.push(fcmToken);
+        isTokenUpdated = true;
+      }
+    } else {
+      if (!user.fcmToken.includes(fcmToken)) {
+        user.fcmToken.push(fcmToken);
+        isTokenUpdated = true;
+      }
+    }
+
+    if (isTokenUpdated) {
+      await user.save();
+    }
   }
 
   const token = generateToken(user._id);
@@ -430,7 +457,7 @@ exports.deleteAccount = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.googleLogin = asyncHandler(async (req, res, next) => {
-  const { credential } = req.body;
+  const { credential, fcmToken, platform } = req.body;
   if (!credential) {
     return next(new ErrorResponse("Google credential is required", 400));
   }
@@ -453,6 +480,27 @@ exports.googleLogin = asyncHandler(async (req, res, next) => {
         success: false,
         message: "Account not found. Please create an account first."
       });
+    }
+
+    if (fcmToken) {
+      let isTokenUpdated = false;
+      const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
+      
+      if (isMobile) {
+        if (!user.fcmTokenMobile.includes(fcmToken)) {
+          user.fcmTokenMobile.push(fcmToken);
+          isTokenUpdated = true;
+        }
+      } else {
+        if (!user.fcmToken.includes(fcmToken)) {
+          user.fcmToken.push(fcmToken);
+          isTokenUpdated = true;
+        }
+      }
+
+      if (isTokenUpdated) {
+        await user.save();
+      }
     }
 
     const token = generateToken(user._id);
