@@ -192,7 +192,10 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
 
     useEffect(() => {
         const handleNewTask = (taskData) => {
-            if (isBusyRef.current) return;
+            if (isBusyRef.current) {
+                console.log('Ignored new task alert because partner is busy');
+                return;
+            }
             console.log('New task alert received via socket:', taskData);
             const payload = taskData.data || taskData;
             setNewTask({
@@ -202,7 +205,10 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
         };
 
         const handleReceiveNewOrder = (taskData) => {
-            if (isBusyRef.current) return;
+            if (isBusyRef.current) {
+                console.log('Ignored broadcasted order because partner is busy');
+                return;
+            }
             console.log('Broadcasted order received via socket:', taskData);
             const payload = taskData.data || taskData;
             setNewTask({
@@ -299,7 +305,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                         const isPickupActive = !!ppId && ppId === uid && ['accepted', 'picked-up', 'out-for-delivery'].includes(t.pickupDeliveryStatus);
                         const isDropoffActive = !!dopId && dopId === uid && ['accepted', 'picked-up', 'out-for-delivery'].includes(t.dropoffDeliveryStatus);
                         
-                        const isActiveStatus = ['accepted', 'picked_up', 'out_for_delivery'].includes(t.status);
+                        const isActiveStatus = ['accepted', 'picked_up', 'picked-up', 'out_for_delivery', 'out-for-delivery', 'fabric-picked-up', 'picked-up-from-tailor'].includes(t.status);
                         const isAssignedToMe = dpId === uid || ppId === uid || dopId === uid;
                         
                         return isLegacyActive || isPickupActive || isDropoffActive || (isActiveStatus && isAssignedToMe);

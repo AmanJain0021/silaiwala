@@ -945,6 +945,7 @@ const DeliveryOrderDetail = () => {
               ) : (
                 <button 
                     onClick={currentPhase === 'pickup' ? () => {
+                        if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
                         const correctStatus = (order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup') ? 'fabric-picked-up' : 'picked-up-from-tailor';
                         handleUpdateStatus(correctStatus, 'Items picked up!', { pickupPhoto, otp: otpValue.trim() });
                     } : handleFinalize}
@@ -1017,9 +1018,9 @@ const DeliveryOrderDetail = () => {
         />
 
         {/* HIDDEN INPUTS FOR FILE UPLOAD */}
-        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
+        <input type="file" accept="image/*" ref={pickupInputRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
         <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
-        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
+        <input type="file" accept="image/*" ref={deliveryInputRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
         <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
       </div>
     </PageTransition>

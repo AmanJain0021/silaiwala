@@ -91,8 +91,11 @@ const Orders = () => {
         setDispatchingMethod(method);
         setIsDispatching(true);
         try {
-            await handleStatusUpdate(dispatchOrder.order._id, dispatchOrder.targetStatus, { 
-                autoAssign: method === 'auto',
+            const isBroadcastOrAuto = method === 'broadcast' || method === 'auto';
+            const statusToSend = isBroadcastOrAuto ? dispatchOrder.order.status : dispatchOrder.targetStatus;
+            
+            await handleStatusUpdate(dispatchOrder.order._id, statusToSend, { 
+                autoAssign: isBroadcastOrAuto,
                 deliveryMethod: method 
             });
             setDispatchOrder(null);
