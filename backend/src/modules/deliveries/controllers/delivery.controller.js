@@ -589,6 +589,83 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Reject/Cancel an assigned delivery task
+ * @route   POST /api/v1/deliveries/orders/:id/reject
+ * @access  Private (Delivery)
+ */
+exports.rejectOrder = asyncHandler(async (req, res, next) => {
+  const isObjectId = mongoose.isValidObjectId(req.params.id);
+  const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
+
+  const order = await Order.findOne(query);
+
+  if (!order) {
+    return next(new ErrorResponse("Order not found", 404));
+  }
+
+  // Check if they are currently assigned
+  const isDeliveryPartner = order.deliveryPartner?.toString() === req.user.id;
+  const isPickupPartner = order.pickupPartner?.toString() === req.user.id;
+  const isDropoffPartner = order.dropoffPartner?.toString() === req.user.id;
+
+  if (!isDeliveryPartner && !isPickupPartner && !isDropoffPartner) {
+    return next(new ErrorResponse("You are not assigned to this order", 403));
+  }
+
+  // Clear assignment and revert status
+  if (isPickupPartner) {
+    order.pickupPartner = null;
+    order.pickupDeliveryStatus = "pending";
+    order.deliveryStatus = "pending";
+    if (["accepted", "fabric-ready-for-pickup", "reached-pickup"].includes(order.status)) {
+       order.status = order.fabricPickupRequired ? 'fabric-ready-for-pickup' : 'pending';
+    }
+  } else if (isDropoffPartner) {
+    order.dropoffPartner = null;
+    order.dropoffDeliveryStatus = "pending";
+    order.deliveryStatus = "pending";
+    if (["out-for-delivery", "reached-pickup", "ready-for-delivery", "ready"].includes(order.status)) {
+       order.status = 'ready-for-delivery';
+    }
+  } else if (isDeliveryPartner) {
+    order.deliveryPartner = null;
+    order.deliveryStatus = "pending";
+    if (["out-for-delivery", "reached-pickup", "ready-for-delivery", "ready"].includes(order.status)) {
+       order.status = 'ready-for-delivery';
+    }
+  }
+
+  // Add to rejectedBy
+  if (!order.rejectedBy) order.rejectedBy = [];
+  if (!order.rejectedBy.includes(req.user.id)) {
+    order.rejectedBy.push(req.user.id);
+  }
+
+  // Remove from pendingPartnerCandidates if they were in there
+  if (order.pendingPartnerCandidates) {
+    order.pendingPartnerCandidates = order.pendingPartnerCandidates.filter(id => id.toString() !== req.user.id);
+  }
+
+  order.trackingHistory.push({
+    status: `delivery-cancelled`,
+    message: req.body.reason ? `Delivery partner cancelled trip: ${req.body.reason}` : `Delivery partner cancelled trip`,
+    timestamp: new Date()
+  });
+
+  await order.save();
+
+  // Trigger auto-assignment again to find a new partner
+  const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+  const cycle = (isPickupPartner || order.status === 'fabric-ready-for-pickup') ? 'pickup' : 'dropoff';
+  await autoAssignDelivery(order._id, cycle);
+
+  res.status(200).json({
+    success: true,
+    data: order
+  });
+});
+
+/**
  * @desc    Update delivery status of an order
  * @route   PATCH /api/v1/deliveries/orders/:id/status
  * @access  Private (Delivery)
@@ -1373,7 +1450,10 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
-  let cycle = order.pickupOtpVerified ? 'dropoff' : 'pickup';
+  let cycle = 'dropoff'; // Default to final product delivery
+  if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status)) {
+      cycle = 'pickup'; // Fabric Delivery Task (Customer -> Tailor)
+  }
 
   const { sendNotification } = require("../../../utils/notification.js");
   const Settings = require("../../../models/Settings.js");
