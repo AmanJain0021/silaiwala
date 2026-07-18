@@ -285,8 +285,11 @@ const DeliveryOrderDetail = () => {
       const rawS = String(response?.rawStatus || response?.status || '').toLowerCase();
       const isDeliveryPhase = ['picked-up', 'picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s) || ['picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out_for_delivery'].includes(rawS);
       
+      // Fabric C→T dropoff stores stage on pickupDeliveryStatus (same partner)
       const isArrivedStatus = isDeliveryPhase 
-        ? ['reached-dropoff'].includes(response?.deliveryStatus) || ['reached-dropoff'].includes(response?.dropoffDeliveryStatus)
+        ? ['reached-dropoff'].includes(response?.deliveryStatus)
+          || ['reached-dropoff'].includes(response?.dropoffDeliveryStatus)
+          || ['reached-dropoff'].includes(response?.pickupDeliveryStatus)
         : ['reached-pickup'].includes(response?.deliveryStatus) || ['reached-pickup'].includes(response?.pickupDeliveryStatus);
 
       if (isArrivedStatus || (currentPhase === 'pickup' && (response?.arrivedAt || response?.deliveryFlow?.arrivedAt))) {
@@ -463,14 +466,35 @@ const DeliveryOrderDetail = () => {
     if (isCod && isFinalDelivery && !paymentSelection) return toast.error('Select payment method');
     if (!deliveryPhoto) return toast.error('Delivery photo required');
 
+    // Must arrive at drop-off first so recipient OTP exists
+    const partnerStage = order?.pickupDeliveryStatus || order?.dropoffDeliveryStatus || order?.deliveryStatus;
+    if (
+      currentPhase === 'delivery' &&
+      partnerStage !== 'reached-dropoff' &&
+      ['fabric-picked-up', 'out-for-delivery'].includes(order?.status)
+    ) {
+      try {
+        await updateOrderStatus(id, 'reached-dropoff');
+        await loadOrder();
+        setHasArrived(true);
+        setOtpValue('');
+        toast('OTP sent to recipient — enter that OTP to complete', { icon: '🔐' });
+        return;
+      } catch (e) {
+        toast.error(e?.response?.data?.message || 'Mark arrival at drop-off first');
+        return;
+      }
+    }
+
     try {
       const updated = await completeDeliveryFlow(id, { 
         otp: otpValue.trim(), 
         deliveryProofPhoto: deliveryPhoto,
-        paymentMethod: paymentSelection // Pass selected payment method (cash or qr)
+        paymentMethod: paymentSelection
       });
       setOrder(updated);
       setShowSuccess(true);
+      toast.success('Delivery completed!');
     } catch(err) {
       toast.error(err?.response?.data?.message || 'Delivery failed');
     }
@@ -510,7 +534,7 @@ const DeliveryOrderDetail = () => {
     );
   }
 
-  if (showSuccess || order.status === 'delivered') {
+  if (showSuccess || ['delivered', 'fabric-received', 'fabric-delivered'].includes(order.status)) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white mb-4 border-4 border-emerald-50">
@@ -823,7 +847,8 @@ const DeliveryOrderDetail = () => {
                                   <>
                                     <img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} className="w-full h-full object-cover" />
                                     <button onClick={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
-                                  </>                               ) : (
+                                  </>
+                               ) : (
                                   <div className="flex flex-col items-center gap-3">
                                      <button onClick={() => currentPhase === 'pickup' ? pickupInputRef.current?.click() : deliveryInputRef.current?.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform">
                                         <FiCamera size={28}/>

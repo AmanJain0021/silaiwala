@@ -724,42 +724,63 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   } else if (status === "reached-pickup" || status === "reached-dropoff") {
       const cycle = status === "reached-pickup" ? "pickup" : "dropoff";
       order.deliveryStatus = status;
-      if (isPickupCycle && cycle === 'pickup') order.pickupDeliveryStatus = status;
-      if (isDropoffCycle && cycle === 'dropoff') order.dropoffDeliveryStatus = status;
+
+      // Fabric C→T: same pickupPartner does customer pickup AND tailor dropoff
+      if (status === "reached-pickup") {
+        if (isPickupCycle) order.pickupDeliveryStatus = "reached-pickup";
+        if (isDropoffCycle) order.dropoffDeliveryStatus = "reached-pickup";
+      } else {
+        // reached-dropoff
+        if (isPickupCycle && ["fabric-picked-up", "fabric-ready-for-pickup"].includes(order.status)) {
+          order.pickupDeliveryStatus = "reached-dropoff";
+        }
+        if (isDropoffCycle) order.dropoffDeliveryStatus = "reached-dropoff";
+        // Legacy single deliveryPartner field
+        if (!isPickupCycle && !isDropoffCycle && order.deliveryPartner?.toString() === req.user.id) {
+          order.deliveryStatus = "reached-dropoff";
+        }
+      }
       
       // Generate OTP automatically on arrival
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       if (cycle === 'pickup') {
           order.pickupDeliveryOtp = otp;
-          order.pickupOtpVerified = false; // Reset verification flag for new cycle
+          order.pickupOtpVerified = false;
       }
       if (cycle === 'dropoff') {
           order.dropoffDeliveryOtp = otp;
-          order.dropoffOtpVerified = false; // Reset verification flag for new cycle
+          order.dropoffOtpVerified = false;
       }
       
       console.log(`\n\n======================================================`);
-      console.log(`🔐 DELIVERY OTP GENERATED: ${otp}`);
+      console.log(`🔐 DELIVERY OTP GENERATED (${cycle}): ${otp}`);
       console.log(`======================================================\n\n`);
       
       const { sendNotification } = require("../../../utils/notification.js");
-      
-      // Notify Customer
-      await sendNotification({
-        recipient: order.customer,
-        type: "OTP_GENERATED",
-        title: "Delivery OTP",
-        message: `Your OTP for the delivery partner is ${otp}. Share this only when the partner arrives.`,
-        data: { orderId: order._id, otp }
-      });
-      
-      // Notify Tailor
-      if (order.tailor) {
+
+      // Pickup at customer → OTP to customer; Dropoff at tailor (fabric) or customer (final) → right recipient
+      if (cycle === 'pickup') {
+        await sendNotification({
+          recipient: order.customer,
+          type: "OTP_GENERATED",
+          title: "Delivery OTP",
+          message: `Your OTP for fabric pickup is ${otp}. Share this only when the partner arrives.`,
+          data: { orderId: order._id, otp }
+        });
+      } else if (order.status === "fabric-picked-up" && order.tailor) {
         await sendNotification({
           recipient: order.tailor,
           type: "OTP_GENERATED",
+          title: "Fabric Delivery OTP",
+          message: `OTP for fabric drop-off is ${otp}. Share this only when the partner arrives.`,
+          data: { orderId: order._id, otp }
+        });
+      } else {
+        await sendNotification({
+          recipient: order.customer,
+          type: "OTP_GENERATED",
           title: "Delivery OTP",
-          message: `The OTP for the delivery partner is ${otp}. Share this only when the partner arrives.`,
+          message: `Your OTP for the delivery partner is ${otp}. Share this only when the partner arrives.`,
           data: { orderId: order._id, otp }
         });
       }
@@ -776,17 +797,53 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       
       order.pickupOtpVerified = true;
       order.deliveryStatus = "picked-up";
+      order.pickupDeliveryStatus = "picked-up";
       order.pickupAt = new Date();
       order.status = status === "fabric-picked-up" ? "fabric-picked-up" : "out-for-delivery";
+      if (status === "picked-up-from-tailor") {
+        if (isDropoffCycle) order.dropoffDeliveryStatus = "picked-up";
+      }
   } else if (status === "fabric-delivered") {
+      const { otp } = req.body;
+      if (!otp) {
+        await session.abortTransaction();
+        return next(new ErrorResponse("OTP is required to complete fabric delivery", 400));
+      }
+      if (!order.dropoffDeliveryOtp) {
+        await session.abortTransaction();
+        return next(new ErrorResponse("Please tap 'Reached Drop-off' first so the tailor OTP can be generated", 400));
+      }
+      if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+        await session.abortTransaction();
+        return next(new ErrorResponse("Invalid OTP", 400));
+      }
+
+      order.dropoffOtpVerified = true;
       order.deliveryStatus = "delivered";
-      order.status = "fabric-delivered";
+      order.pickupDeliveryStatus = "delivered";
+      order.status = "fabric-received";
+      if (req.body.proof) order.deliveryProof = req.body.proof;
   } else if (status === "out-for-delivery") {
       order.deliveryStatus = "out-for-delivery";
+      if (isDropoffCycle) order.dropoffDeliveryStatus = "out-for-delivery";
       order.status = "out-for-delivery";
   } else if (status === "delivered") {
+      const { otp } = req.body;
+      if (otp) {
+        if (!order.dropoffDeliveryOtp) {
+          await session.abortTransaction();
+          return next(new ErrorResponse("Please tap 'Reached Drop-off' first so the customer OTP can be generated", 400));
+        }
+        if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+          await session.abortTransaction();
+          return next(new ErrorResponse("Invalid OTP", 400));
+        }
+        order.dropoffOtpVerified = true;
+      }
       order.deliveryStatus = "delivered";
+      if (isDropoffCycle) order.dropoffDeliveryStatus = "delivered";
       order.status = "delivered";
+      if (req.body.proof) order.deliveryProof = req.body.proof;
   } else if (status === "failed-delivery") {
       // Just keep existing main status, update delivery history
   }
@@ -807,6 +864,8 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   // so a new delivery partner (or same) can pick it up for final delivery later.
   if (status === "fabric-delivered") {
     order.deliveryPartner = null;
+    order.pickupPartner = null;
+    order.pendingPartnerCandidates = [];
     
     // Notify Tailor that fabric has arrived
     const { sendNotification } = require("../../../utils/notification.js");
@@ -1597,6 +1656,13 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   } else {
     // This is the dropoff cycle (completing a journey).
     // Validate dropoff OTP
+    if (!order.dropoffDeliveryOtp) {
+      await session.abortTransaction();
+      return next(new ErrorResponse(
+        "Please mark 'Reached Drop-off Location' first so the OTP can be generated for the recipient",
+        400
+      ));
+    }
     if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
       await session.abortTransaction();
       return next(new ErrorResponse("Invalid OTP", 400));
@@ -1614,8 +1680,10 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       order.pickupDeliveryStatus = "delivered"; // Fabric journey completed
       order.status = "fabric-received";
       
-      // Clear delivery partner so a new one can be assigned for final dropoff later
+      // Clear partners so a fresh partner can be assigned for final delivery later
       order.deliveryPartner = null;
+      order.pickupPartner = null;
+      order.pendingPartnerCandidates = [];
 
       if (deliveryProofPhoto) order.deliveryProof = deliveryProofPhoto;
       

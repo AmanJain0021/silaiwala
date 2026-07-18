@@ -181,15 +181,15 @@ const Tasks = () => {
             const res = await deliveryService.updateDeliveryStatus(orderId, newStatus, message, proof, otp);
             if (res.success) {
                 toast.success(`Status updated to ${newStatus}`);
-                if (newStatus === 'delivered' || newStatus === 'fabric-delivered') {
+                if (newStatus === 'delivered' || newStatus === 'fabric-delivered' || newStatus === 'fabric-received') {
                     setActiveTaskId(null);
                     setTaskProof(null);
                     setOtpInput('');
-                } else if (newStatus === 'out-for-delivery') {
+                } else if (newStatus === 'out-for-delivery' || newStatus === 'fabric-picked-up') {
                     setActiveTaskId(orderId);
                 }
                 
-                if (newStatus === 'fabric-picked-up' || newStatus === 'picked-up-from-tailor') {
+                if (newStatus === 'fabric-picked-up' || newStatus === 'picked-up-from-tailor' || newStatus === 'reached-dropoff') {
                     setOtpInput('');
                 }
                 fetchTasks();
@@ -300,7 +300,7 @@ const Tasks = () => {
                     </button>
                 </div>
             );
-        } else if (currentStage === 'picked-up' || currentStage === 'fabric-picked-up' || currentStage === 'out-for-delivery') {
+        } else if (currentStage === 'fabric-picked-up' || currentStage === 'picked-up' || currentStage === 'out-for-delivery') {
             actionUI = (
                 <button 
                     onClick={() => handleUpdateStatus(task._id, 'reached-dropoff')} 
@@ -320,7 +320,7 @@ const Tasks = () => {
                         className="w-full text-center tracking-[0.5em] font-black py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 outline-none"
                         maxLength={6}
                     />
-                    {!taskProof && !isFabric ? (
+                    {!taskProof && (
                         <button
                             onClick={() => {
                                 setTaskProof("https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=400&auto=format&fit=crop");
@@ -330,30 +330,37 @@ const Tasks = () => {
                         >
                             <Camera size={14} /> Take Delivery Photo
                         </button>
-                    ) : (
-                        <div className="space-y-3">
-                            {taskProof && (
-                                <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-slate-800 relative">
-                                    <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
-                                    <button onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
-                                        <X size={12} />
-                                    </button>
-                                </div>
-                            )}
-                            <button
-                                onClick={() => {
-                                    if (!otpInput || otpInput.length < 6) {
-                                        toast.error('Please enter the 6-digit OTP');
-                                        return;
-                                    }
-                                    handleUpdateStatus(task._id, isFabric ? 'fabric-delivered' : 'delivered', 'Order successfully delivered', taskProof, otpInput);
-                                }}
-                                className={`${btnClass} bg-primary text-white hover:bg-slate-900 shadow-indigo-100`}
-                            >
-                                <CheckCircle2 size={14} /> Complete Delivery
+                    )}
+                    {taskProof && (
+                        <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-slate-800 relative">
+                            <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
+                            <button onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
+                                <X size={12} />
                             </button>
                         </div>
                     )}
+                    <button
+                        onClick={() => {
+                            if (!otpInput || otpInput.length < 6) {
+                                toast.error('Please enter the 6-digit OTP');
+                                return;
+                            }
+                            if (!taskProof) {
+                                toast.error('Please take a delivery photo first');
+                                return;
+                            }
+                            handleUpdateStatus(
+                                task._id,
+                                isFabric ? 'fabric-delivered' : 'delivered',
+                                'Order successfully delivered',
+                                taskProof,
+                                otpInput
+                            );
+                        }}
+                        className={`${btnClass} bg-primary text-white hover:bg-slate-900 shadow-indigo-100`}
+                    >
+                        <CheckCircle2 size={14} /> Complete Delivery
+                    </button>
                 </div>
             );
         }
