@@ -525,12 +525,24 @@ const DeliveryOrderDetail = () => {
     if (isCod && isFinalDelivery && !paymentSelection) return toast.error('Select payment method');
     if (!deliveryPhoto) return toast.error('Delivery photo required');
 
-    // Must arrive at drop-off first so recipient OTP exists
-    const partnerStage = order?.pickupDeliveryStatus || order?.dropoffDeliveryStatus || order?.deliveryStatus;
+    const backendStatus = order?.rawStatus || order?.status;
+    const isFabricJourney = backendStatus === 'fabric-picked-up';
+    // Final T→C must use dropoff stage — NEVER prefer leftover fabric pickupDeliveryStatus
+    const partnerStage = isFabricJourney
+      ? (order?.pickupDeliveryStatus || order?.deliveryStatus)
+      : (order?.dropoffDeliveryStatus || order?.deliveryStatus);
+
+    const alreadyAtDropoff =
+      hasArrived ||
+      partnerStage === 'reached-dropoff' ||
+      order?.dropoffDeliveryStatus === 'reached-dropoff' ||
+      (isFabricJourney && order?.pickupDeliveryStatus === 'reached-dropoff');
+
+    // Only generate drop-off OTP once — do NOT re-run on Complete Delivery
     if (
       currentPhase === 'delivery' &&
-      partnerStage !== 'reached-dropoff' &&
-      ['fabric-picked-up', 'out-for-delivery'].includes(order?.status)
+      !alreadyAtDropoff &&
+      ['fabric-picked-up', 'out-for-delivery'].includes(backendStatus)
     ) {
       try {
         await updateOrderStatus(id, 'reached-dropoff');
@@ -538,7 +550,7 @@ const DeliveryOrderDetail = () => {
         setHasArrived(true);
         setOtpValue('');
         toast.success(
-          (order?.rawStatus || order?.status) === 'fabric-picked-up'
+          isFabricJourney
             ? 'OTP sent to tailor — enter that OTP to complete'
             : 'OTP sent to customer — enter that OTP to complete'
         );
@@ -558,7 +570,7 @@ const DeliveryOrderDetail = () => {
       setOrder(updated);
       setShowSuccess(true);
       toast.success(
-        order?.status === 'fabric-picked-up'
+        isFabricJourney
           ? 'Fabric delivered to tailor!'
           : 'Delivery completed!'
       );
@@ -969,6 +981,7 @@ const DeliveryOrderDetail = () => {
                                 </div>
                             </div>
                             <button 
+                              type="button"
                               onClick={handleOtpResend} 
                               disabled={isResending}
                               className="w-full flex items-center justify-center gap-2 py-2.5 text-[9px] font-bold text-indigo-600 bg-indigo-50/50 rounded-xl active:bg-indigo-50 transition-colors uppercase tracking-[0.1em] shadow-sm active:scale-95"
@@ -1048,6 +1061,7 @@ const DeliveryOrderDetail = () => {
             <>
               {!hasArrived ? (
                  <button 
+                    type="button"
                     onClick={handleArrivalUpdate}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 active:scale-95 transition-all flex items-center justify-center gap-2"
                  >
@@ -1055,6 +1069,7 @@ const DeliveryOrderDetail = () => {
                  </button>
               ) : (
                 <button 
+                    type="button"
                     onClick={currentPhase === 'pickup' ? () => {
                         if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
                         const correctStatus = (order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup') ? 'fabric-picked-up' : 'picked-up-from-tailor';
