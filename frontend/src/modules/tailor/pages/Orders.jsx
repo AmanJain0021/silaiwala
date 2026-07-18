@@ -41,7 +41,14 @@ const Orders = () => {
         try {
             const response = await api.get(`/tailors/orders?status=${activeTab}`);
             if (response.data.success) {
-                setOrders(response.data.data);
+                const list = response.data.data || [];
+                setOrders(list);
+                // Keep open modal OTP/status in sync with server (select+ includes OTPs)
+                setSelectedOrder((prev) => {
+                    if (!prev) return prev;
+                    const fresh = list.find((o) => String(o._id) === String(prev._id));
+                    return fresh || prev;
+                });
             }
         } catch (error) {
             console.error('Error fetching orders:', error);
@@ -159,14 +166,20 @@ const Orders = () => {
         
         // Refresh orders when delivery partner accepts/rejects (real-time update)
         socket.on('order_status_updated', (data) => {
-            fetchOrders();
-            // If the updated order is currently open in modal, refresh it
+            // Merge OTP into open modal immediately (don't wait for refetch)
             setSelectedOrder(prev => {
-                if (prev && (prev._id === data._id || prev.orderId === data.orderId)) {
-                    return { ...prev, ...data };
+                if (prev && (String(prev._id) === String(data._id) || prev.orderId === data.orderId)) {
+                    return {
+                        ...prev,
+                        ...data,
+                        // Keep newest OTP if payload includes it
+                        dropoffDeliveryOtp: data.dropoffDeliveryOtp ?? prev.dropoffDeliveryOtp,
+                        pickupDeliveryOtp: data.pickupDeliveryOtp ?? prev.pickupDeliveryOtp,
+                    };
                 }
                 return prev;
             });
+            fetchOrders();
         });
 
         socket.on('new_notification', (data) => {
@@ -980,8 +993,8 @@ const Orders = () => {
                     {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['fabric-picked-up'].includes(order.status) && (
                         <div className="mb-4 p-4 bg-green-50 rounded-3xl border border-green-100 flex items-center justify-between">
                             <div>
-                                <p className="text-[11px] font-black uppercase text-green-700 tracking-wider">Delivery OTP</p>
-                                <p className="text-[12px] text-gray-600 font-medium">Share with delivery partner to receive fabric</p>
+                                <p className="text-[11px] font-black uppercase text-green-700 tracking-wider">Fabric Receive OTP</p>
+                                <p className="text-[12px] text-gray-600 font-medium">Share this with the delivery partner to accept fabric</p>
                             </div>
                             <div className="text-2xl font-black text-green-700 tracking-widest bg-white px-4 py-2 rounded-xl border border-green-100">
                                 {order.dropoffDeliveryOtp}

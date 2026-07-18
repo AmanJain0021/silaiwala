@@ -410,6 +410,9 @@ const DeliveryOrderDetail = () => {
     }
   };
 
+  const orderBackendStatus = order?.rawStatus || order?.status;
+  const isFabricDropToTailor = orderBackendStatus === 'fabric-picked-up';
+
   const handleArrivalUpdate = async () => {
     if (!id) return;
     try {
@@ -417,9 +420,18 @@ const DeliveryOrderDetail = () => {
       await updateOrderStatus(id, status);
       await loadOrder();
       setHasArrived(true);
-      toast.success('Arrival marked successfully');
+      setOtpValue('');
+      if (status === 'reached-dropoff' && isFabricDropToTailor) {
+        toast.success('OTP sent to tailor — enter the code they share');
+      } else if (status === 'reached-pickup') {
+        toast.success('OTP sent to customer — enter the code they share');
+      } else if (status === 'reached-dropoff') {
+        toast.success('OTP sent to customer — enter the code they share');
+      } else {
+        toast.success('Arrival marked successfully');
+      }
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to mark arrival');
+      toast.error(apiErr(err, 'Failed to mark arrival'));
     }
   };
 
@@ -429,8 +441,14 @@ const DeliveryOrderDetail = () => {
       setIsResending(true);
       const res = await resendDeliveryOtp(id);
       setOtpValue('');
-      const msg = res?.message || (order?.status === 'fabric-picked-up' ? 'OTP sent to tailor' : 'OTP sent to customer');
-      toast.success(msg);
+      // Prefer journey-based copy so we never say "customer" on fabric→tailor
+      if (isFabricDropToTailor || (order?.rawStatus || order?.status) === 'fabric-picked-up') {
+        toast.success('OTP sent to tailor');
+      } else if (currentPhase === 'pickup') {
+        toast.success('OTP sent to customer');
+      } else {
+        toast.success(res?.message || 'OTP sent to customer');
+      }
     } catch (err) {
       toast.error(apiErr(err, 'Failed to resend OTP'));
     } finally {
@@ -520,7 +538,7 @@ const DeliveryOrderDetail = () => {
         setHasArrived(true);
         setOtpValue('');
         toast.success(
-          order?.status === 'fabric-picked-up'
+          (order?.rawStatus || order?.status) === 'fabric-picked-up'
             ? 'OTP sent to tailor — enter that OTP to complete'
             : 'OTP sent to customer — enter that OTP to complete'
         );
@@ -931,7 +949,7 @@ const DeliveryOrderDetail = () => {
                           <p className="text-[9px] font-bold text-slate-800 uppercase tracking-[0.2em] mb-4">Security Terminal</p>
                           
                           <p className="text-[9px] text-slate-500 font-bold mb-3 px-2">
-                            {order?.status === 'fabric-picked-up'
+                            {(order?.rawStatus || order?.status) === 'fabric-picked-up'
                               ? 'Enter the OTP from the TAILOR (not the customer pickup OTP).'
                               : currentPhase === 'pickup'
                                 ? 'Enter the OTP from the CUSTOMER at pickup.'

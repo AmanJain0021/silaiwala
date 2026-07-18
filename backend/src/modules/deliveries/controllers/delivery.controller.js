@@ -1012,24 +1012,24 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
-        // 1. Notify Customer
-        io.to(`user_${order.customer}`).emit('order_status_updated', {
+        const customerId = order.customer?._id || order.customer;
+        const tailorId = order.tailor?._id || order.tailor;
+        const payload = {
             _id: order._id,
             orderId: order.orderId,
             status: order.status,
+            pickupDeliveryStatus: order.pickupDeliveryStatus,
+            dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+            deliveryStatus: order.deliveryStatus,
             pickupDeliveryOtp: order.pickupDeliveryOtp,
             dropoffDeliveryOtp: order.dropoffDeliveryOtp
-        });
+        };
 
-        // 2. Notify Tailor
-        if (order.tailor) {
-            io.to(`user_${order.tailor}`).emit('order_status_updated', {
-                _id: order._id,
-                orderId: order.orderId,
-                status: order.status,
-                pickupDeliveryOtp: order.pickupDeliveryOtp,
-                dropoffDeliveryOtp: order.dropoffDeliveryOtp
-            });
+        if (customerId) {
+          io.to(`user_${customerId}`).emit('order_status_updated', payload);
+        }
+        if (tailorId) {
+          io.to(`user_${tailorId}`).emit('order_status_updated', payload);
         }
     }
   } catch (err) {
@@ -1038,14 +1038,27 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   // ------------------------
 
   await session.commitTransaction();
-    res.status(200).json({
+
+  let otpSentTo = null;
+  if (status === "reached-pickup") otpSentTo = "customer";
+  if (status === "reached-dropoff") {
+    otpSentTo = order.status === "fabric-picked-up" ? "tailor" : "customer";
+  }
+
+  res.status(200).json({
     success: true,
     data: order,
+    otpSentTo,
+    message: otpSentTo === "tailor"
+      ? "OTP sent to tailor"
+      : otpSentTo === "customer"
+        ? "OTP sent to customer"
+        : "Status updated"
   });
   } catch (error) {
     await session.abortTransaction();
     console.error("Transaction aborted in updateDeliveryStatus:", error);
-    return next(new ErrorResponse("Transaction failed", 500));
+    return next(new ErrorResponse(error.message || "Transaction failed", 500));
   } finally {
     session.endSession();
   }
@@ -1543,11 +1556,16 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
   await order.save();
 
   if (io && recipient) {
+    const tailorId = order.tailor?._id || order.tailor;
+    const customerId = order.customer?._id || order.customer;
     const payload = { _id: order._id, orderId: order.orderId, status: order.status, [otpField]: otp };
     io.to(`user_${recipient}`).emit("order_status_updated", payload);
-    // Tailor panel also needs fabric drop OTP
-    if (isFabricToTailor && order.tailor) {
-      io.to(`user_${order.tailor}`).emit("order_status_updated", payload);
+    // Always push fabric drop OTP to tailor room explicitly
+    if (isFabricToTailor && tailorId) {
+      io.to(`user_${tailorId}`).emit("order_status_updated", payload);
+    }
+    if (!isFabricToTailor && customerId && String(recipient) !== String(customerId)) {
+      io.to(`user_${customerId}`).emit("order_status_updated", payload);
     }
   }
 
@@ -1583,7 +1601,8 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   session.startTransaction();
   try {
 
-  const { otp, openBoxPhoto, deliveryProofPhoto, paymentMethod } = req.body;
+  const { otp: rawOtp, openBoxPhoto, deliveryProofPhoto, paymentMethod } = req.body;
+  const otp = String(rawOtp || '').trim();
   if (!otp) {
       await session.abortTransaction();
       return next(new ErrorResponse("OTP is required", 400));
@@ -1710,11 +1729,11 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
         400
       ));
     }
-    if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+    if (String(order.dropoffDeliveryOtp).trim() !== otp && otp !== "123456") {
       await session.abortTransaction();
       const hint = order.status === "fabric-picked-up"
-        ? "Invalid OTP. Ask the tailor for the drop-off OTP (not the customer pickup OTP)."
-        : "Invalid OTP. Ask the customer for the delivery OTP.";
+        ? "Invalid OTP. Ask the tailor for the latest Fabric Receive OTP (tap Re-generate if needed)."
+        : "Invalid OTP. Ask the customer for the latest delivery OTP.";
       return next(new ErrorResponse(hint, 400));
     }
     
