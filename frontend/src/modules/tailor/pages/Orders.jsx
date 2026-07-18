@@ -75,7 +75,7 @@ const Orders = () => {
                 }
                 
                 if (selectedOrder && selectedOrder._id === orderId) {
-                    setSelectedOrder({ ...selectedOrder, status });
+                    setSelectedOrder(response.data.data);
                 }
                 return response.data;
             }
@@ -92,7 +92,13 @@ const Orders = () => {
         setIsDispatching(true);
         try {
             const isBroadcastOrAuto = method === 'broadcast' || method === 'auto';
-            const statusToSend = isBroadcastOrAuto ? dispatchOrder.order.status : dispatchOrder.targetStatus;
+            let statusToSend = dispatchOrder.targetStatus || dispatchOrder.order.status;
+
+            // Broadcast must stay on ready-for-delivery so partners can accept.
+            // out-for-delivery only happens after a partner claims the job.
+            if (isBroadcastOrAuto && statusToSend === 'out-for-delivery') {
+                statusToSend = 'ready-for-delivery';
+            }
             
             await handleStatusUpdate(dispatchOrder.order._id, statusToSend, { 
                 autoAssign: isBroadcastOrAuto,
@@ -1038,8 +1044,8 @@ const Orders = () => {
                         const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
                         const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
                         // Also show "Searching" state when partner has been notified (pending) but not yet accepted
-                        const isSearchingPickup = order.pickupPartner && order.pickupDeliveryStatus === 'pending';
-                        const isSearchingDropoff = order.dropoffPartner && order.dropoffDeliveryStatus === 'pending';
+                        const isSearchingPickup = order.pickupDeliveryStatus === 'pending' || order.pickupDeliveryStatus === 'searching';
+                        const isSearchingDropoff = order.dropoffDeliveryStatus === 'pending' || order.dropoffDeliveryStatus === 'searching';
 
                         const isCustomerDelivering = order.fabricDeliveryPreference === 'customer' && order.status === 'accepted';
                         const shouldShowForPickup = (isPickupPhaseStatus || hasActivePickupPartner || isSearchingPickup) && order.fabricDeliveryPreference === 'partner' || isCustomerDelivering;

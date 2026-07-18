@@ -561,6 +561,41 @@ const OrderTracking = () => {
                     </motion.div>
                 )}
 
+                {/* Delivery OTP Banners (For Customer) */}
+                {/* 1. Fabric Pickup from Customer */}
+                {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['pending', 'accepted', 'pickup-assigned'].includes(order.status) && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+                    >
+                        <div>
+                            <p className="text-sm text-indigo-700 font-bold uppercase tracking-wider">Fabric Pickup OTP</p>
+                            <p className="text-xs text-indigo-600/80 mt-0.5 font-medium">Share with delivery partner to hand over fabric</p>
+                        </div>
+                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-indigo-100">
+                            <span className="text-2xl font-black tracking-widest text-indigo-700">{order.pickupDeliveryOtp}</span>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* 2. Final Dropoff to Customer */}
+                {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['out-for-delivery', 'shipped', 'delivery-assigned'].includes(order.status) && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+                    >
+                        <div>
+                            <p className="text-sm text-green-700 font-bold uppercase tracking-wider">Order Delivery OTP</p>
+                            <p className="text-xs text-green-600/80 mt-0.5 font-medium">Share with delivery partner to receive your order</p>
+                        </div>
+                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100">
+                            <span className="text-2xl font-black tracking-widest text-green-700">{order.dropoffDeliveryOtp}</span>
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* 2. Order Quick Summary */}
                 <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
@@ -670,13 +705,19 @@ const OrderTracking = () => {
                 {(() => {
                     const hasPickupPartner = !!order.pickupPartner;
                     const hasDropoffPartner = !!order.dropoffPartner;
-
                     const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
                     const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
 
-                    // For "searching" state: partner is pending, or we are in a phase that requires a partner but none is assigned yet
-                    const isSearchingPickup = (order.fabricDeliveryPreference === 'partner' && order.status === 'fabric-ready-for-pickup' && !hasPickupPartner) || (hasPickupPartner && order.pickupDeliveryStatus === 'pending') || order.pickupDeliveryStatus === 'assigned';
-                    const isSearchingDropoff = (order.status === 'ready-for-delivery' && !hasDropoffPartner) || (hasDropoffPartner && order.dropoffDeliveryStatus === 'pending') || order.dropoffDeliveryStatus === 'assigned';
+                    const isInvalidSearchState = ['pending', 'reviewing', 'quoted', 'cancelled'].includes(order.status);
+
+                    const isSearchingPickup = !isInvalidSearchState && (order.pickupDeliveryStatus === 'pending' || order.pickupDeliveryStatus === 'searching') && 
+                        (['pickup-assigned', 'fabric-ready-for-pickup'].includes(order.status) || 
+                         (order.status === 'accepted' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount))) &&
+                        order.fabricDeliveryPreference === 'partner';
+
+                    const isSearchingDropoff = !isInvalidSearchState && (order.dropoffDeliveryStatus === 'pending' || order.dropoffDeliveryStatus === 'searching') && 
+                        ['ready-for-delivery', 'ready-for-pickup', 'delivery-assigned'].includes(order.status) &&
+                        order.deliveryMethod !== 'self' && order.deliveryMethod !== 'tailor';
 
                     // Show for pickup: active partner or searching for pickup
                     const shouldShowForPickup = hasActivePickupPartner || isSearchingPickup;

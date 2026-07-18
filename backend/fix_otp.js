@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); require('dotenv').config(); mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/silaiwala').then(async () => { await mongoose.connection.collection('orders').updateOne({ orderId: 'ORD-0AF24240' }, { $set: { pickupOtpVerified: false } }); console.log('Fixed OTP flag for order'); process.exit(); }).catch(e => console.error(e));

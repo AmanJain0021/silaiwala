@@ -243,4 +243,7 @@ const getIO = () => {
   return io;
 };
 
-module.exports = { initSocket, getIO };
+/** Safe variant — returns null if socket is not ready (scripts / early boot). */
+const tryGetIO = () => io || null;
+
+module.exports = { initSocket, getIO, tryGetIO };

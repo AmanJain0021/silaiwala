@@ -729,8 +729,14 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       
       // Generate OTP automatically on arrival
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      if (cycle === 'pickup') order.pickupDeliveryOtp = otp;
-      if (cycle === 'dropoff') order.dropoffDeliveryOtp = otp;
+      if (cycle === 'pickup') {
+          order.pickupDeliveryOtp = otp;
+          order.pickupOtpVerified = false; // Reset verification flag for new cycle
+      }
+      if (cycle === 'dropoff') {
+          order.dropoffDeliveryOtp = otp;
+          order.dropoffOtpVerified = false; // Reset verification flag for new cycle
+      }
       
       console.log(`\n\n======================================================`);
       console.log(`🔐 DELIVERY OTP GENERATED: ${otp}`);
@@ -918,15 +924,23 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     if (io) {
         // 1. Notify Customer
         io.to(`user_${order.customer}`).emit('order_status_updated', {
+            _id: order._id,
             orderId: order.orderId,
-            status: status
+            status: order.status,
+            pickupDeliveryOtp: order.pickupDeliveryOtp,
+            dropoffDeliveryOtp: order.dropoffDeliveryOtp
         });
 
         // 2. Notify Tailor
-        io.to(`user_${order.tailor}`).emit('order_status_updated', {
-            orderId: order.orderId,
-            status: status
-        });
+        if (order.tailor) {
+            io.to(`user_${order.tailor}`).emit('order_status_updated', {
+                _id: order._id,
+                orderId: order.orderId,
+                status: order.status,
+                pickupDeliveryOtp: order.pickupDeliveryOtp,
+                dropoffDeliveryOtp: order.dropoffDeliveryOtp
+            });
+        }
     }
   } catch (err) {
     console.error("Socket emission failed in updateDeliveryStatus:", err.message);
@@ -953,6 +967,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
  * @access  Private (Delivery)
  */
 exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
+  console.log(`[available-orders] partner=${req.user.id} at ${new Date().toISOString()}`);
   const deliveryProfile = await Delivery.findOne({ user: req.user.id }).lean();
   if (!deliveryProfile) {
     return next(new ErrorResponse("Delivery profile not found", 404));
@@ -960,7 +975,6 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
 
   const roles = deliveryProfile.partnerRoles || ["delivery"];
   const isDelivery = roles.includes("delivery");
-  const isMeasurement = roles.includes("measurement");
 
   let allowedStatuses = [];
   if (isDelivery) {
@@ -971,78 +985,96 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
     return res.status(200).json({ success: true, count: 0, data: [] });
   }
 
+  const userId = req.user.id;
+
+  // Unassigned phase orders OR orders where this partner was explicitly broadcasted to
   const orders = await Order.find({
     status: { $in: allowedStatuses },
-    rejectedBy: { $ne: req.user.id },
+    rejectedBy: { $nin: [userId] },
     $or: [
-      { deliveryPartner: null },
-      { deliveryPartner: { $exists: false } },
-      { pickupPartner: null, status: "fabric-ready-for-pickup" },
-      { dropoffPartner: null, status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] } },
-      { status: { $in: ["measurement-verification", "pending-measurement"] } } // For measurement tasks
-    ]
+      { pendingPartnerCandidates: userId },
+      {
+        status: "fabric-ready-for-pickup",
+        $and: [
+          { $or: [{ pickupPartner: null }, { pickupPartner: { $exists: false } }] },
+        ],
+      },
+      {
+        status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] },
+        $and: [
+          { $or: [{ dropoffPartner: null }, { dropoffPartner: { $exists: false } }] },
+        ],
+      },
+    ],
   })
     .populate("customer", "name phoneNumber profileImage")
     .sort("-updatedAt")
     .lean();
 
+  const Customer = require("../../../models/Customer.js");
+  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine.js");
+  const { resolvePickupStartCoords, coordsFromLocation } = require("../../../utils/resolveDeliveryCoords.js");
 
-
-  // Enrich with Tailor profile data
   const enrichedOrders = await Promise.all(orders.map(async (order) => {
     const isFabric = order.status === "fabric-ready-for-pickup";
 
-    let vendorLatitude, vendorLongitude;
+    // Skip if this phase is already claimed by someone else
+    if (isFabric && order.pickupPartner && order.pickupPartner.toString() !== userId) {
+      return null;
+    }
+    if (!isFabric && order.dropoffPartner && order.dropoffPartner.toString() !== userId) {
+      return null;
+    }
+
+    const candidates = order.pendingPartnerCandidates || [];
+    const isCandidate = candidates.some((id) => id.toString() === userId);
+    // If a targeted broadcast exists, only those candidates may see it
+    if (candidates.length > 0 && !isCandidate) {
+      return null;
+    }
+
     let tailorProfile = null;
-    
     if (order.tailor) {
       const tailorDoc = await Tailor.findOne({ user: order.tailor }).populate("user", "name phoneNumber").lean();
       if (tailorDoc) {
         tailorProfile = {
           _id: order.tailor,
-          shopName: tailorDoc.shopName || tailorDoc.user?.name || 'Tailor Workshop',
+          shopName: tailorDoc.shopName || tailorDoc.user?.name || "Tailor Workshop",
           phone: tailorDoc.user?.phoneNumber,
-          location: tailorDoc.location
+          location: tailorDoc.location,
         };
-        if (tailorProfile.location?.coordinates?.length >= 2) {
-            vendorLongitude = tailorProfile.location.coordinates[0];
-            vendorLatitude = tailorProfile.location.coordinates[1];
-        }
       }
     }
 
-    const Customer = require("../../../models/Customer.js");
     let customerDoc = null;
     if (order.customer) {
       customerDoc = await Customer.findOne({ user: order.customer._id || order.customer }).lean();
     }
-    let latitude = null;
-    let longitude = null;
-    let address = 'Address not available';
 
+    let address = "Address not available";
     if (order.deliveryAddress) {
-        const parts = [order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean);
-        address = parts.join(', ');
-        if (order.deliveryAddress.zipCode) address += ` - ${order.deliveryAddress.zipCode}`;
-        if (!address.trim() || address === ' - ') address = 'Address not available';
+      const parts = [order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean);
+      address = parts.join(", ");
+      if (order.deliveryAddress.zipCode) address += ` - ${order.deliveryAddress.zipCode}`;
+      if (!address.trim() || address === " - ") address = "Address not available";
+    } else if (customerDoc?.addresses?.length) {
+      const defaultAddress = customerDoc.addresses.find((a) => a.isDefault) || customerDoc.addresses[0];
+      const parts = [defaultAddress.street, defaultAddress.city, defaultAddress.state].filter(Boolean);
+      address = parts.join(", ");
+      if (defaultAddress.zipCode) address += ` - ${defaultAddress.zipCode}`;
+      if (!address.trim() || address === " - ") address = "Address not available";
     }
 
-    if (customerDoc && customerDoc.addresses && customerDoc.addresses.length > 0) {
-        const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
-        if (!order.deliveryAddress) {
-            const parts = [defaultAddress.street, defaultAddress.city, defaultAddress.state].filter(Boolean);
-            address = parts.join(', ');
-            if (defaultAddress.zipCode) address += ` - ${defaultAddress.zipCode}`;
-            if (!address.trim() || address === ' - ') address = 'Address not available';
-        }
-        if (defaultAddress.location?.coordinates?.length >= 2) {
-            longitude = defaultAddress.location.coordinates[0];
-            latitude = defaultAddress.location.coordinates[1];
-        }
+    // Resolve start coords (handles stale/wrong geocodes on the order)
+    let startCoords = null;
+    if (isFabric) {
+      startCoords = resolvePickupStartCoords(order, customerDoc);
+    } else {
+      startCoords = coordsFromLocation(tailorProfile?.location);
     }
 
-    let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20;
+    const latitude = startCoords ? startCoords[1] : null;
+    const longitude = startCoords ? startCoords[0] : null;
 
     return {
       ...order,
@@ -1051,32 +1083,34 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
       address,
       latitude,
       longitude,
-      deliveryDistance,
-      deliveryEarnings
+      deliveryDistance: order.deliveryDistance,
+      deliveryEarnings: order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20,
+      requiresAcceptance: true,
+      isBroadcastCandidate: isCandidate,
     };
   }));
 
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine.js");
   const riderCoords = deliveryProfile.currentLocation?.coordinates; // [lng, lat]
-  const maxRadiusKm = 15; // Only show orders within 15km
+  const maxRadiusKm = 15;
 
-  const formattedOrders = enrichedOrders.filter(order => {
-     if (!riderCoords || riderCoords.length < 2) return true; // Show all if rider location not set
-     
-     const isFabric = order.status === "fabric-ready-for-pickup";
-     const startLat = isFabric ? order.latitude : (order.tailor?.location?.coordinates?.[1]);
-     const startLng = isFabric ? order.longitude : (order.tailor?.location?.coordinates?.[0]);
-     
-     if (!startLat || !startLng) return true; // Show if order location not set
-     
-     const distance = getDistanceFromLatLonInKm(
-       riderCoords[1], // rider lat
-       riderCoords[0], // rider lng
-       startLat,
-       startLng
-     );
-     
-     return distance <= maxRadiusKm;
+  const formattedOrders = enrichedOrders.filter((order) => {
+    if (!order) return false;
+
+    // Always show if this partner was explicitly broadcasted to
+    if (order.isBroadcastCandidate) return true;
+
+    // Open pool: within 15km (or show if either side lacks location)
+    if (!riderCoords || riderCoords.length < 2) return true;
+    if (order.latitude == null || order.longitude == null) return true;
+
+    const distance = getDistanceFromLatLonInKm(
+      riderCoords[1],
+      riderCoords[0],
+      order.latitude,
+      order.longitude
+    );
+    order.deliveryDistance = order.deliveryDistance || distance;
+    return distance <= maxRadiusKm;
   });
 
   res.status(200).json({
@@ -1173,9 +1207,10 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
     timestamp: new Date(),
   });
 
-  // Track candidates to notify, then clear them
+  // Track candidates to notify, then clear them so the request vanishes for everyone else
   const otherCandidates = (order.pendingPartnerCandidates || []).filter(c => c.toString() !== req.user.id);
   order.pendingPartnerCandidates = [];
+  order.requestSentAt = undefined;
 
   await order.save();
 
@@ -1202,12 +1237,23 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
   const { getIO } = require("../../../config/socket.js");
   const io = getIO();
   if (io) {
-    // Notify the other broadcast candidates directly
+    const claimPayload = {
+      orderId: order._id,
+      orderId_str: order.orderId,
+      claimedBy: req.user.id,
+    };
+
     for (const candidateId of otherCandidates) {
-      io.to(`user_${candidateId.toString()}`).emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
+      io.to(`user_${candidateId.toString()}`).emit("task_claimed", claimPayload);
+      io.to(`user_${candidateId.toString()}`).emit("new_notification", {
+        type: "TASK_CLAIMED",
+        title: "Task Taken",
+        message: "Another partner accepted this delivery request.",
+        data: claimPayload,
+      });
     }
 
-    io.to("delivery_partners").emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
+    io.to("delivery_partners").emit("task_claimed", claimPayload);
     
     // Update tailor panel to show partner name instead of "Searching"
     io.to(`user_${order.tailor}`).emit('order_status_updated', {
@@ -1216,7 +1262,9 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
       status: order.status,
       pickupDeliveryStatus: order.pickupDeliveryStatus,
       dropoffDeliveryStatus: order.dropoffDeliveryStatus,
-      deliveryPartner: req.user.id
+      deliveryPartner: req.user.id,
+      pickupPartner: order.pickupPartner,
+      dropoffPartner: order.dropoffPartner,
     });
 
     // Update customer tracking page
@@ -1224,7 +1272,9 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
       orderId: order.orderId,
       _id: order._id,
       status: order.status,
-      deliveryPartner: req.user.id
+      deliveryPartner: req.user.id,
+      pickupPartner: order.pickupPartner,
+      dropoffPartner: order.dropoffPartner,
     });
   }
 
@@ -1450,9 +1500,23 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
-  let cycle = 'dropoff'; // Default to final product delivery
-  if (["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status)) {
-      cycle = 'pickup'; // Fabric Delivery Task (Customer -> Tailor)
+  // --- 2. Determine Current Cycle ---
+  // If the status is pending/accepted/fabric-ready-for-pickup, they are still trying to pickup the fabric.
+  // But wait, /complete is ONLY called when DROPPING OFF at the destination (either tailor or customer).
+  // The frontend calls PATCH /status (fabric-picked-up) when picking up from customer.
+  // The frontend calls /complete when dropping off at tailor (fabric-picked-up -> fabric-delivered).
+  // The frontend calls /complete when dropping off at customer (out-for-delivery -> delivered).
+  // Therefore, for /complete, the cycle should ALWAYS be 'dropoff' because we are completing a delivery journey.
+  // Wait, let's just base it on the status to be completely safe.
+  let cycle = 'dropoff'; // Default to final product delivery (out-for-delivery)
+  if (["pending", "accepted", "fabric-ready-for-pickup"].includes(order.status)) {
+      // If we are somehow calling /complete during pickup phase? This shouldn't happen from the app, but if it does:
+      cycle = 'pickup'; 
+  }
+  // If status is "fabric-picked-up", they have picked up from customer and are dropping off at tailor. 
+  // Dropoff OTP was generated when they arrived at tailor.
+  if (order.status === "fabric-picked-up") {
+      cycle = 'dropoff';
   }
 
   const { sendNotification } = require("../../../utils/notification.js");
@@ -1531,6 +1595,8 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     });
 
   } else {
+    // This is the dropoff cycle (completing a journey).
+    // Validate dropoff OTP
     if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
       await session.abortTransaction();
       return next(new ErrorResponse("Invalid OTP", 400));
@@ -1539,96 +1605,122 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     order.dropoffOtpVerified = true;
     order.otpVerifiedAt = new Date();
     order.dropoffDeliveryOtp = null; // Invalidate OTP after use
-    order.deliveryStatus = "delivered";
-    order.dropoffDeliveryStatus = "delivered";
-    order.status = "delivered";
-    order.deliveredAt = new Date();
     
-    if (deliveryProofPhoto) order.deliveryProof = deliveryProofPhoto;
-
-    // Credit Wallet for Dropoff
-    await creditDeliveryWallet(req.user.id, earnings, `Earnings for Delivery of order ${order.orderId}`);
-
-    // Notify Customer
-    await sendNotification({
-      recipient: order.customer,
-      type: "ORDER_DELIVERED",
-      title: "Order Delivered! 🎉",
-      message: `Your order ${order.orderId} has been successfully delivered.`,
-      data: { orderId: order._id, targetUrl: "/orders" }
-    });
-
-    // Handle Partial Payment Logic before completing
-    if (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== 'paid') {
-       if (paymentMethod === 'qr' || paymentMethod === 'online') {
-           // Delivery Partner verified UPI payment to Admin
-           order.remainingPaymentMethod = 'online';
-           order.remainingPaymentStatus = 'paid';
-           order.paymentStatus = 'paid';
-       } else if (paymentMethod === 'cash') {
-           // Delivery Partner collected cash
-           order.remainingPaymentMethod = 'cash';
-           order.remainingPaymentStatus = 'paid';
-           order.paymentStatus = 'paid';
-           
-           // Add collected cash to Delivery Partner's COD Wallet
-           const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
-           if (deliveryProfile) {
-              deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
-              deliveryProfile.lastCashCollectionDate = new Date();
-              
-              // Check COD Limits
-              const settings = await Settings.getSettings();
-              const limit = settings.codWalletConfig?.maxCashLimit || 5000;
-              const autoBlock = settings.codWalletConfig?.autoBlockOnLimit !== false;
-
-              if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
-                 deliveryProfile.cashBlocked = true;
-                 
-                 // Notify Delivery Partner
-                 await Notification.create([{
-                     user: req.user.id,
-                     title: "COD Limit Exceeded ⚠️",
-                     message: `You have reached the maximum cash collection limit of ₹${limit}. Please deposit cash to receive new assignments.`,
-                     type: "alert",
-                 }], { session });
-              } else if (deliveryProfile.codWalletBalance >= limit * 0.8) {
-                 // Warning near limit
-                 await Notification.create([{
-                     user: req.user.id,
-                     title: "COD Limit Warning ⚠️",
-                     message: `Your cash collection balance (₹${deliveryProfile.codWalletBalance}) is nearing the limit of ₹${limit}.`,
-                     type: "alert",
-                 }], { session });
-              }
-
-              await deliveryProfile.save({ session });
-              
-              // We no longer debit the earnings wallet!
-           }
-       } else {
-           // Fallback if frontend didn't send payment method but there's a remaining amount
-           await session.abortTransaction();
-      return next(new ErrorResponse("Please select a payment method for the remaining amount.", 400));
-       }
-    }
-
-    // Ensure platform and delivery fees are populated before distributing earnings
-    if (!order.platformFee) {
-       const Settings = require("../../../models/Settings.js");
-       const settings = await Settings.getSettings();
-       const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
-       order.platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
-    }
-
+    // Check if this was the Fabric Dropoff to Tailor, or Final Dropoff to Customer
+    const isFabricDropoff = order.status === "fabric-picked-up";
     
-    // Distribute Earnings (Tailor)
-    const { distributeEarnings } = require("../../../utils/earningsEngine.js");
-    try {
-      await order.save({ session }); // Save the status to paid before distributing
-      await distributeEarnings(order._id);
-    } catch (err) {
-      console.error("Failed to distribute earnings automatically:", err);
+    if (isFabricDropoff) {
+      order.deliveryStatus = "delivered";
+      order.pickupDeliveryStatus = "delivered"; // Fabric journey completed
+      order.status = "fabric-received";
+      
+      // Clear delivery partner so a new one can be assigned for final dropoff later
+      order.deliveryPartner = null;
+
+      if (deliveryProofPhoto) order.deliveryProof = deliveryProofPhoto;
+      
+      // Credit Wallet for Fabric Delivery Trip
+      await creditDeliveryWallet(req.user.id, earnings, `Earnings for Fabric Delivery of order ${order.orderId}`);
+
+      // Notify Tailor
+      await sendNotification({
+        recipient: order.tailor,
+        type: "FABRIC_DELIVERED",
+        title: "Fabric Received!",
+        message: `The fabric for order ${order.orderId} has been successfully delivered.`,
+        data: { orderId: order._id, targetUrl: "/partner/orders" }
+      });
+      
+    } else {
+      // This is the FINAL Dropoff to Customer
+      order.deliveryStatus = "delivered";
+      order.dropoffDeliveryStatus = "delivered";
+      order.status = "delivered";
+      order.deliveredAt = new Date();
+      
+      if (deliveryProofPhoto) order.deliveryProof = deliveryProofPhoto;
+
+      // Credit Wallet for Final Dropoff
+      await creditDeliveryWallet(req.user.id, earnings, `Earnings for Delivery of order ${order.orderId}`);
+
+      // Notify Customer
+      await sendNotification({
+        recipient: order.customer,
+        type: "ORDER_DELIVERED",
+        title: "Order Delivered! 🎉",
+        message: `Your order ${order.orderId} has been successfully delivered.`,
+        data: { orderId: order._id, targetUrl: "/orders" }
+      });
+
+      // Handle Partial Payment Logic before completing
+      if (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== 'paid') {
+         if (paymentMethod === 'qr' || paymentMethod === 'online') {
+             // Delivery Partner verified UPI payment to Admin
+             order.remainingPaymentMethod = 'online';
+             order.remainingPaymentStatus = 'paid';
+             order.paymentStatus = 'paid';
+         } else if (paymentMethod === 'cash') {
+             // Delivery Partner collected cash
+             order.remainingPaymentMethod = 'cash';
+             order.remainingPaymentStatus = 'paid';
+             order.paymentStatus = 'paid';
+             
+             // Add collected cash to Delivery Partner's COD Wallet
+             const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
+             if (deliveryProfile) {
+                deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
+                deliveryProfile.lastCashCollectionDate = new Date();
+                
+                // Check COD Limits
+                const settings = await Settings.getSettings();
+                const limit = settings.codWalletConfig?.maxCashLimit || 5000;
+                const autoBlock = settings.codWalletConfig?.autoBlockOnLimit !== false;
+
+                if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
+                   deliveryProfile.cashBlocked = true;
+                   
+                   // Notify Delivery Partner
+                   await Notification.create([{
+                       user: req.user.id,
+                       title: "COD Limit Exceeded ⚠️",
+                       message: `You have reached the maximum cash collection limit of ₹${limit}. Please deposit cash to receive new assignments.`,
+                       type: "alert",
+                   }], { session });
+                } else if (deliveryProfile.codWalletBalance >= limit * 0.8) {
+                   // Warning near limit
+                   await Notification.create([{
+                       user: req.user.id,
+                       title: "COD Limit Warning ⚠️",
+                       message: `Your cash collection balance (₹${deliveryProfile.codWalletBalance}) is nearing the limit of ₹${limit}.`,
+                       type: "alert",
+                   }], { session });
+                }
+
+                await deliveryProfile.save({ session });
+             }
+         } else {
+             // Fallback if frontend didn't send payment method but there's a remaining amount
+             await session.abortTransaction();
+             return next(new ErrorResponse("Please select a payment method for the remaining amount.", 400));
+         }
+      }
+
+      // Ensure platform and delivery fees are populated before distributing earnings
+      if (!order.platformFee) {
+         const Settings = require("../../../models/Settings.js");
+         const settings = await Settings.getSettings();
+         const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
+         order.platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
+      }
+
+      // Distribute Earnings (Tailor)
+      const { distributeEarnings } = require("../../../utils/earningsEngine.js");
+      try {
+        await order.save({ session }); // Save the status to paid before distributing
+        await distributeEarnings(order._id);
+      } catch (err) {
+        console.error("Failed to distribute earnings automatically:", err);
+      }
     }
   }
 

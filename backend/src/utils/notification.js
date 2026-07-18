@@ -1,5 +1,5 @@
 const Notification = require("../models/Notification.js");
-const { getIO } = require("../config/socket.js");
+const { tryGetIO } = require("../config/socket.js");
 
 /**
  * Service to create and send real-time notifications
@@ -42,7 +42,7 @@ const sendNotification = async (options) => {
     }
 
     // 2. Emit Real-time via Socket.io
-    const io = getIO();
+    const io = tryGetIO();
     if (io) {
       if (recipient === "admins") {
         const User = require("../models/User.js");

@@ -46,8 +46,9 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   }, [socket, order]);
 
   // Determine Destination based on Order phase
-  const isPickupPhase = ['fabric-ready-for-pickup', 'fabric-picked-up', 'pickup-assigned'].includes(order.status) || 
-                        ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
+  const isDropoffPhase = ['ready', 'ready-for-delivery', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(order.status);
+  const isPickupPhase = !isDropoffPhase && (['fabric-ready-for-pickup', 'fabric-picked-up', 'pickup-assigned'].includes(order.status) || 
+                        ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus));
 
   const isTailorDelivery = order.deliveryMethod === 'tailor';
 
@@ -92,7 +93,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   // If no rider is assigned at all AND we are not searching AND it's not customer self-delivering — don't render anything
   if (!rider && !isSearching && !isCustomerDelivering) return null;
 
-  if (isSearching && !isCustomerDelivering && !riderLocation) {
+  if (isSearching && !isCustomerDelivering) {
     return (
       <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden">
         {/* Radar/Pulse circles in background */}
@@ -208,6 +209,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
                 ? (order.customer?.name || 'Customer') 
                 : (isTailorDelivery ? (order.tailor?.shopName || order.tailor?.name || 'Artisan Tailor') : (rider?.name || 'Delivery Partner'))}
             </h4>
+
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100 shadow-sm">
                 {isCustomerDelivering 

@@ -7,6 +7,7 @@ import { getToken } from '../../../utils/auth';
 import deliveryService from '../services/deliveryService';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { isPendingAcceptanceTask } from '../utils/taskStatus';
 
 // Web Audio API Buzzer Audio Context & Nodes
 let audioCtx = null;
@@ -95,6 +96,11 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
     const { socket } = useSocketStore();
     const dismissedTasksRef = useRef(new Set());
     const isBusyRef = useRef(false); // Ref to track if delivery partner has an active task
+    const newTaskRef = useRef(null);
+
+    useEffect(() => {
+        newTaskRef.current = newTask;
+    }, [newTask]);
 
     // Swipe interaction setup
     const x = useMotionValue(0);
@@ -148,13 +154,20 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
         };
     }, [newTask]);
 
-    // Handle Auto-Reject Timeout (30 seconds)
+    // Handle popup timeout (30s) — dismiss only, do NOT permanently reject.
+    // Permanent reject was hiding the order forever via rejectedBy.
     useEffect(() => {
         if (!newTask) return;
 
         const timer = setTimeout(() => {
-            console.log('Task alert timed out. Auto-rejecting order...');
-            handleReject();
+            console.log('Task alert timed out. Dismissing popup (order stays available).');
+            const orderId = newTask?._id || newTask?.orderId;
+            if (orderId) dismissedTasksRef.current.add(orderId.toString());
+            setNewTask(null);
+            toast('Request moved to Tasks — accept it anytime.', {
+                icon: '📋',
+                duration: 4000,
+            });
         }, 30000);
 
         return () => {
@@ -259,11 +272,25 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
             }
         };
 
+        const handleTaskClaimed = (data) => {
+            const claimedId = data?.orderId?.toString?.() || data?.orderId;
+            const current = newTaskRef.current;
+            const currentId = current?._id?.toString?.() || current?.orderId?.toString?.() || current?._id || current?.orderId;
+            if (claimedId) {
+                dismissedTasksRef.current.add(claimedId);
+            }
+            if (claimedId && currentId && claimedId === currentId.toString()) {
+                console.log('Dismissing alert — task claimed by another partner');
+                setNewTask(null);
+            }
+        };
+
         if (socket) {
             socket.on('new_task', handleNewTask);
             socket.on('new_order', handleNewTask);
             socket.on('receive_new_order', handleReceiveNewOrder);
             socket.on('new_notification', handleNewNotification);
+            socket.on('task_claimed', handleTaskClaimed);
         }
         window.addEventListener('fcm_message', handleFCMMessage);
 
@@ -273,6 +300,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                 socket.off('new_order', handleNewTask);
                 socket.off('receive_new_order', handleReceiveNewOrder);
                 socket.off('new_notification', handleNewNotification);
+                socket.off('task_claimed', handleTaskClaimed);
             }
             window.removeEventListener('fcm_message', handleFCMMessage);
         };
@@ -318,21 +346,8 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                     }
 
                     const targeted = assignedRes.data.filter(t => {
-                        const uid = user?._id || user?.id; 
-                        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
-                        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
-                        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
-                        
-                        const isLegacy = !!dpId && dpId === uid && t.deliveryStatus === 'pending';
-                        const isPickup = !!ppId && ppId === uid && t.pickupDeliveryStatus === 'pending';
-                        const isDropoff = !!dopId && dopId === uid && t.dropoffDeliveryStatus === 'pending';
-                        
-                        if (isLegacy || isPickup || isDropoff) return true;
-                        
-                        // Broadcast candidate
-                        if (!t.isClaimed && !t.isAcceptedByMe) return true;
-                        
-                        return false;
+                        // Only surface tasks that still need Accept/Reject
+                        return isPendingAcceptanceTask(t, user);
                     });
                     allPending.push(...targeted);
                 }

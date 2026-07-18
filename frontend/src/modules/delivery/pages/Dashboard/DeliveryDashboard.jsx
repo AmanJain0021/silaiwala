@@ -35,6 +35,7 @@ import useSocketStore from '../../../../store/socketStore';
 import deliveryService from '../../services/deliveryService';
 import { Power } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { isPendingAcceptanceTask, isAcceptedActiveTask } from '../../utils/taskStatus';
 
 const DeliveryDashboard = () => {
     const navigate = useNavigate();
@@ -104,15 +105,23 @@ const DeliveryDashboard = () => {
             fetchDashboardData();
         };
 
+        const handleTaskClaimed = () => fetchDashboardData();
+
         if (socket) {
             socket.on('new_task', handleNewTask);
+            socket.on('new_order', handleNewTask);
+            socket.on('receive_new_order', handleNewTask);
             socket.on('new_notification', handleNewNotification);
+            socket.on('task_claimed', handleTaskClaimed);
         }
 
         return () => {
             if (socket) {
                 socket.off('new_task', handleNewTask);
+                socket.off('new_order', handleNewTask);
+                socket.off('receive_new_order', handleNewTask);
                 socket.off('new_notification', handleNewNotification);
+                socket.off('task_claimed', handleTaskClaimed);
             }
         };
     }, [socket]);
@@ -163,22 +172,12 @@ const DeliveryDashboard = () => {
         }
     };
 
-    const pendingRequests = activeOrders.filter(t => {
-        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
-        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
-        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
-        const uid = user?._id || user?.id;
-
-        const isLegacyDelivery = !!dpId && dpId === uid && t.deliveryStatus === 'pending';
-        const isPickupAssigned = !!ppId && ppId === uid && t.pickupDeliveryStatus === 'pending';
-        const isDropoffAssigned = !!dopId && dopId === uid && t.dropoffDeliveryStatus === 'pending';
-        
-        return isLegacyDelivery || isPickupAssigned || isDropoffAssigned;
-    });
-
-    const activeTasksList = activeOrders.filter(t => !pendingRequests.find(p => p._id === t._id));
-    const currentTask = activeTasksList.length > 0 ? activeTasksList[0] : (pendingRequests.length > 0 ? pendingRequests[0] : null);
-    const isPendingTask = pendingRequests.some(p => p._id === currentTask?._id);
+    const pendingRequests = activeOrders.filter((t) => isPendingAcceptanceTask(t, user));
+    // Active Dispatch ONLY after partner has accepted — never for broadcast-only requests
+    const activeTasksList = activeOrders.filter((t) => isAcceptedActiveTask(t, user));
+    // Prefer showing a real active job; otherwise show pending accept/reject request
+    const currentTask = activeTasksList[0] || pendingRequests[0] || null;
+    const isPendingTask = currentTask ? isPendingAcceptanceTask(currentTask, user) : false;
 
     return (
         <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">

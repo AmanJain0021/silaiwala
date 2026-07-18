@@ -20,9 +20,40 @@ const axios = require("axios");
 
 const autoGeocode = async (addressObj) => {
   if (!addressObj) return addressObj;
-  // If coordinates already exist, skip
-  if (addressObj.location && addressObj.location.coordinates && addressObj.location.coordinates.length === 2 && addressObj.location.coordinates[0] !== null) {
-      return addressObj; 
+
+  const { resolvePickupStartCoords, inferCityFromText, normalizeCity, isValidIndiaCoords } = require("../../../utils/resolveDeliveryCoords.js");
+
+  // Infer city from street when Unknown
+  if (!normalizeCity(addressObj.city)) {
+    const inferred = inferCityFromText(addressObj.street, addressObj.state);
+    if (inferred) {
+      addressObj.city = inferred.charAt(0).toUpperCase() + inferred.slice(1);
+    }
+  }
+
+  const existing = addressObj.location?.coordinates;
+  const hasCoords =
+    existing &&
+    existing.length === 2 &&
+    existing[0] !== null &&
+    isValidIndiaCoords(existing[0], existing[1]);
+
+  // If coords exist but don't match city in the address text, force re-geocode
+  let coordsLookWrong = false;
+  if (hasCoords && addressObj.city) {
+    const fakeOrder = { deliveryAddress: addressObj, orderId: "geocode-check" };
+    const resolved = resolvePickupStartCoords(fakeOrder, null);
+    if (
+      resolved &&
+      (Math.abs(resolved[0] - existing[0]) > 0.01 || Math.abs(resolved[1] - existing[1]) > 0.01)
+    ) {
+      coordsLookWrong = true;
+      console.warn(`⚠️ [order.controller] Existing coords look wrong for city ${addressObj.city}, re-geocoding`);
+    }
+  }
+
+  if (hasCoords && !coordsLookWrong) {
+    return addressObj;
   }
   
   try {
@@ -1005,10 +1036,10 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
     });
   } else if (preference === 'partner') {
     order.status = 'fabric-ready-for-pickup';
-    // If partner, trigger auto-assignment
-    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
-    await autoAssignDelivery(order._id, "pickup");
-    
+    order.pickupDeliveryStatus = 'pending';
+    order.set('pickupPartner', undefined);
+    order.set('deliveryPartner', undefined);
+    order.pendingPartnerCandidates = [];
     order.trackingHistory.push({
       status: order.status,
       timestamp: new Date(),
@@ -1017,6 +1048,11 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
   }
 
   await order.save();
+
+  if (preference === 'partner') {
+    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+    await autoAssignDelivery(order._id, "pickup");
+  }
 
   try {
     const { getIO } = require("../../../config/socket.js");

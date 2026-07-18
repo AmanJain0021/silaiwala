@@ -1,0 +1,400 @@
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717635104052007,75.87196037915362], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717635104052007,75.87196037915362], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717635104052007,75.87196037915362], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717635104052007,75.87196037915362], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717635104052007,75.87196037915362], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717635104052007,75.87196037915362], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.717630978532014,75.87194433728007], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG filter] order ORD-D51E4CC2: distance=1259.86, rider=[22.71760675607358,75.87195635921337], start=[34.0110715,74.8324485]
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 2
+  - ORD-FF94DB92: status=fabric-ready-for-pickup, pickupPartner=undefined
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-FF94DB92: distance=0, rider=[22.71760675607358,75.87195635921337], start=[22.71759801437672,75.87191923322668]
+[DEBUG filter] order ORD-D51E4CC2: distance=0, rider=[22.71760675607358,75.87195635921337], start=[22.71759801437672,75.87191923322668]
+[DEBUG getAvailableOrders] returning count: 2
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 1
+  - ORD-D51E4CC2: status=fabric-ready-for-pickup, pickupPartner=undefined
+[DEBUG filter] order ORD-D51E4CC2: distance=0, rider=[22.71760675607358,75.87195635921337], start=[22.71759801437672,75.87191923322668]
+[DEBUG getAvailableOrders] returning count: 1
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0
+[DEBUG getAvailableOrders] user=6a3a7683c5aff048880cb90c, isDelivery=true
+[DEBUG getAvailableOrders] allowedStatuses: fabric-ready-for-pickup,ready,ready-for-delivery,ready-for-pickup
+[DEBUG getAvailableOrders] orders found from DB: 0
+[DEBUG getAvailableOrders] returning count: 0

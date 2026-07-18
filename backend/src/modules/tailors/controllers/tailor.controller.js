@@ -474,6 +474,8 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
   const orders = await Order.find(query)
     .populate('customer', 'name profileImage phoneNumber')
     .populate('deliveryPartner', 'name phoneNumber profileImage')
+    .populate('pickupPartner', 'name phoneNumber profileImage')
+    .populate('dropoffPartner', 'name phoneNumber profileImage')
     .populate({
       path: 'items.service',
       select: 'title image'
@@ -513,12 +515,18 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
   // Active deliveries (those assigned to a partner and NOT delivered yet)
   const activeOrders = await Order.find({
     tailor: tailorId,
-    deliveryPartner: { $exists: true, $ne: null },
+    $or: [
+      { deliveryPartner: { $exists: true, $ne: null } },
+      { pickupPartner: { $exists: true, $ne: null } },
+      { dropoffPartner: { $exists: true, $ne: null } }
+    ],
     isRework: { $ne: true },
     status: { $in: ["fabric-ready-for-pickup", "fabric-picked-up", "ready-for-pickup", "out-for-delivery"] }
   })
   .populate("customer", "name phoneNumber")
   .populate("deliveryPartner", "name phoneNumber profileImage email")
+  .populate("pickupPartner", "name phoneNumber profileImage email")
+  .populate("dropoffPartner", "name phoneNumber profileImage email")
   .sort("-updatedAt");
 
   // Recent history (already delivered)
@@ -528,11 +536,16 @@ exports.getDeliveryDetails = asyncHandler(async (req, res, next) => {
     status: "delivered"
   })
   .populate("deliveryPartner", "name phoneNumber")
+  .populate("dropoffPartner", "name phoneNumber")
   .sort("-deliveredAt")
   .limit(10);
 
   // Get active courier (the one from the most recent active order)
-  const activePartner = activeOrders.length > 0 ? activeOrders[0].deliveryPartner : null;
+  const activePartner = activeOrders.length > 0 
+    ? (['ready-for-pickup', 'out-for-delivery'].includes(activeOrders[0].status) 
+        ? (activeOrders[0].dropoffPartner || activeOrders[0].deliveryPartner) 
+        : (activeOrders[0].pickupPartner || activeOrders[0].deliveryPartner))
+    : null;
 
   res.status(200).json({
     success: true,
@@ -679,14 +692,35 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     });
     
     // Auto-Assignment Logic for Deliveries (Second Cycle)
-    // For Bridal Consultations, we bypass delivery partner assignment as the tailor handles it manually
-    if ((status === "ready" || status === "ready-for-delivery") && autoAssign && !order.isBridalConsultation) {
+    // For Bridal Consultations, we bypass delivery partner assignment as the tailor handles it manually.
+    // Broadcast/autoAssign must stay on ready-for-delivery until a partner accepts — do NOT jump to out-for-delivery.
+    const shouldAutoAssign =
+      !!autoAssign &&
+      !order.isBridalConsultation &&
+      (status === "ready" ||
+        status === "ready-for-delivery" ||
+        status === "out-for-delivery" ||
+        deliveryMethod === "broadcast" ||
+        deliveryMethod === "auto");
+
+    if (shouldAutoAssign) {
+      if (status === "out-for-delivery") {
+        // Hold at ready-for-delivery while searching for a partner
+        order.status = "ready-for-delivery";
+        order.dropoffDeliveryStatus = "pending";
+        order.trackingHistory.push({
+          status: "ready-for-delivery",
+          timestamp: new Date(),
+          message: "Broadcasting delivery request to nearby partners.",
+        });
+        await order.save();
+      }
       const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
       await autoAssignDelivery(order._id, "dropoff");
     }
 
     // If tailor specifically requested Manual or Shiprocket or Self or Tailor Self-Deliver
-    if ((status === "ready-for-pickup" || status === "ready-for-delivery") && deliveryMethod && deliveryMethod !== 'auto') {
+    if ((status === "ready-for-pickup" || status === "ready-for-delivery" || status === "out-for-delivery") && deliveryMethod && deliveryMethod !== 'auto' && deliveryMethod !== 'broadcast') {
         order.deliveryMethod = deliveryMethod;
         
         // Generate OTP for Self Delivery (Customer Pickup)
@@ -729,11 +763,13 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
-        let finalStatus = status;
+        const finalStatus = order.status;
         io.to(`user_${order.customer}`).emit('order_status_updated', {
             orderId: order.orderId,
             _id: order._id,
-            status: finalStatus
+            status: finalStatus,
+            dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+            pickupDeliveryStatus: order.pickupDeliveryStatus,
         });
 
         if (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery' || finalStatus === 'fabric-ready-for-pickup' || finalStatus === 'ready') {

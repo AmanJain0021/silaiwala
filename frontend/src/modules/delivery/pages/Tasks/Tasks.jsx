@@ -24,6 +24,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import useSocketStore from '../../../../store/socketStore';
 import useAuthStore from '../../../../store/authStore';
 import { getToken } from '../../../../utils/auth';
+import { isPendingAcceptanceTask, isAcceptedActiveTask, getPartnerActionStage } from '../../utils/taskStatus';
 
 const Tasks = () => {
     const user = useAuthStore((state) => state.user);
@@ -41,16 +42,32 @@ const Tasks = () => {
         setLoading(true);
         try {
             const [assignedRes, availableRes, completedRes] = await Promise.all([
-                deliveryService.getAssignedOrders(),
-                deliveryService.getAvailableOrders(),
-                deliveryService.getCompletedOrders()
+                deliveryService.getAssignedOrders(null, true),
+                deliveryService.getAvailableOrders(true),
+                deliveryService.getAssignedOrders('completed', true)
             ]);
 
             if (assignedRes.success) {
                 setTasks(assignedRes.data);
-                // Check if any task is already "active" (not just pending)
-                const inProgress = assignedRes.data.find(t => ['out-for-delivery', 'fabric-picked-up'].includes(t.status));
-                if (inProgress) setActiveTaskId(inProgress._id);
+                // Only treat as "Active Dispatch" if this partner has already accepted
+                const inProgress = assignedRes.data.find((t) => {
+                    if (!isAcceptedActiveTask(t, user)) return false;
+                    const stage = getPartnerActionStage(t, user);
+                    return ['reached-pickup', 'picked-up', 'out-for-delivery', 'reached-dropoff', 'fabric-picked-up'].includes(stage)
+                        || ['out-for-delivery', 'fabric-picked-up'].includes(t.status);
+                });
+                if (inProgress) {
+                    setActiveTaskId(inProgress._id);
+                } else {
+                    // Clear stale active view if nothing is truly in progress
+                    setActiveTaskId((prev) => {
+                        if (!prev) return null;
+                        const stillActive = assignedRes.data.find(
+                            (t) => t._id === prev && isAcceptedActiveTask(t, user)
+                        );
+                        return stillActive ? prev : null;
+                    });
+                }
             }
             if (availableRes.success) {
                 setAvailableTasks(availableRes.data);
@@ -100,14 +117,15 @@ const Tasks = () => {
 
         const handleTaskClaimed = (data) => {
             const currentUserId = useAuthStore.getState().user?._id || useAuthStore.getState().user?.id;
+            const claimedId = data?.orderId?.toString?.() || data?.orderId;
             
             if (data.claimedBy === currentUserId) {
                 // We claimed it! Just remove from available, keep in tasks
-                setAvailableTasks(prev => prev.filter(t => t._id !== data.orderId));
+                setAvailableTasks(prev => prev.filter(t => t._id !== claimedId && t._id?.toString() !== claimedId));
             } else {
-                console.log('Task claimed by another partner:', data.orderId);
-                setAvailableTasks(prev => prev.filter(t => t._id !== data.orderId));
-                setTasks(prev => prev.filter(t => t._id !== data.orderId));
+                console.log('Task claimed by another partner:', claimedId);
+                setAvailableTasks(prev => prev.filter(t => t._id !== claimedId && t._id?.toString() !== claimedId));
+                setTasks(prev => prev.filter(t => t._id !== claimedId && t._id?.toString() !== claimedId));
             }
         };
 
@@ -128,35 +146,17 @@ const Tasks = () => {
         };
     }, [socket]);
 
-    const activeTask = tasks.find(t => t._id === activeTaskId);
-    // Tasks needing acceptance (pending = partner notified but not yet accepted)
-    const pendingAcceptanceTasks = tasks.filter(t => {
-        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
-        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
-        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
-        const uid = user?._id || user?.id; // Fallback to user.id if user._id is undefined
+    const activeTask = tasks.find(t => t._id === activeTaskId && isAcceptedActiveTask(t, user));
 
-        const isLegacyDelivery = !!dpId && dpId === uid && t.deliveryStatus === 'pending';
-        const isPickupAssigned = !!ppId && ppId === uid && t.pickupDeliveryStatus === 'pending';
-        const isDropoffAssigned = !!dopId && dopId === uid && t.dropoffDeliveryStatus === 'pending';
-        
-        return isLegacyDelivery || isPickupAssigned || isDropoffAssigned;
-    });
+    // Awaiting Accept / Reject — NOT active dispatch
+    const pendingAcceptanceTasks = tasks.filter((t) => isPendingAcceptanceTask(t, user));
 
-    // Active accepted/assigned tasks
-    const pendingTasks = tasks.filter(t => {
-        const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
-        const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;
-        const dopId = typeof t.dropoffPartner === 'object' ? t.dropoffPartner?._id : t.dropoffPartner;
-        const uid = user?._id || user?.id;
-
-        const isStatusValid = ['pending', 'accepted', 'ready', 'ready-for-pickup', 'fabric-ready-for-pickup', 'ready-for-delivery'].includes(t.status);
-        
-        const isLegacyActive = !!dpId && dpId === uid && ['accepted', 'reached-pickup'].includes(t.deliveryStatus);
-        const isPickupActive = !!ppId && ppId === uid && ['accepted', 'reached-pickup'].includes(t.pickupDeliveryStatus);
-        const isDropoffActive = !!dopId && dopId === uid && ['accepted', 'reached-pickup'].includes(t.dropoffDeliveryStatus);
-
-        return isStatusValid && (isLegacyActive || isPickupActive || isDropoffActive);
+    // Accepted but not yet in full-screen active execution view
+    const pendingTasks = tasks.filter((t) => {
+        if (!isAcceptedActiveTask(t, user)) return false;
+        if (activeTask && t._id === activeTask._id) return false;
+        const isStatusValid = ['pending', 'accepted', 'ready', 'ready-for-pickup', 'fabric-ready-for-pickup', 'ready-for-delivery', 'out-for-delivery', 'fabric-picked-up'].includes(t.status);
+        return isStatusValid;
     });
 
     const handleAcceptOrder = async (orderId) => {
@@ -164,8 +164,10 @@ const Tasks = () => {
             const res = await deliveryService.acceptOrder(orderId);
             if (res.success) {
                 toast.success('Task claimed successfully!');
-                fetchTasks();
+                await fetchTasks();
                 setActiveTab('assigned');
+                // After accept, show Start Dispatch — not full Active Dispatch yet
+                setActiveTaskId(null);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to claim task');
@@ -204,20 +206,22 @@ const Tasks = () => {
         }
 
         try {
-            // Find the task in our local list to check current status
             const task = tasks.find(t => t._id === taskId);
-            
-            // Determine the next status based on current status
-            let nextStatus;
-            if (task.status === 'fabric-ready-for-pickup') {
-                nextStatus = 'accepted'; // Start heading for fabric pickup
-            } else if (task.status === 'ready-for-pickup') {
-                nextStatus = 'accepted'; // Start heading for order pickup
-            } else {
-                nextStatus = task.status;
+            if (!task || !isAcceptedActiveTask(task, user)) {
+                toast.error('Accept the request first before starting dispatch.');
+                return;
             }
 
-            // Sync with backend that we are starting this specific dispatch
+            // Already accepted — move into execution (reached-pickup flow)
+            let nextStatus;
+            const stage = getPartnerActionStage(task, user);
+            if (stage === 'accepted' || ['fabric-ready-for-pickup', 'ready-for-pickup', 'ready-for-delivery', 'ready', 'pending'].includes(task.status)) {
+                // Stay on accepted partner status; UI will show Reached Pickup
+                nextStatus = 'accepted';
+            } else {
+                nextStatus = stage || task.status;
+            }
+
             const res = await deliveryService.updateDeliveryStatus(taskId, nextStatus, "Starting dispatch flow");
             
             if (res.success) {
@@ -250,11 +254,20 @@ const Tasks = () => {
         const btnClass = "w-full rounded-xl py-3 font-black tracking-[0.12em] text-[10px] uppercase flex items-center justify-center gap-2 transition-all shadow-md active:scale-95";
         const isFabric = task.taskType === 'fabric-pickup';
 
-        // Use deliveryStatus if available for granular tracking, fallback to main status
-        const currentStage = task.deliveryStatus || task.status;
-
-        if (currentStage === 'accepted' || currentStage === 'fabric-ready-for-pickup' || currentStage === 'ready-for-pickup') {
+        // Use partner-phase status only — never treat order.status as "accepted" before accept
+        const currentStage = getPartnerActionStage(task, user);
+        if (!currentStage || currentStage === 'pending') {
             return (
+                <p className="text-center text-xs font-bold text-amber-600">
+                    Accept this request first to start dispatch.
+                </p>
+            );
+        }
+
+        let actionUI = null;
+
+        if (currentStage === 'accepted') {
+            actionUI = (
                 <button 
                     onClick={() => handleUpdateStatus(task._id, 'reached-pickup')} 
                     className={`${btnClass} bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100 uppercase tracking-widest font-black`}
@@ -262,10 +275,8 @@ const Tasks = () => {
                     <MapPin size={14} /> Reached Pickup Location
                 </button>
             );
-        }
-
-        if (currentStage === 'reached-pickup') {
-            return (
+        } else if (currentStage === 'reached-pickup') {
+            actionUI = (
                 <div className="space-y-3">
                     <input
                         type="text"
@@ -289,21 +300,17 @@ const Tasks = () => {
                     </button>
                 </div>
             );
-        }
-
-        if (currentStage === 'picked-up' || currentStage === 'fabric-picked-up' || currentStage === 'out-for-delivery') {
-            return (
+        } else if (currentStage === 'picked-up' || currentStage === 'fabric-picked-up' || currentStage === 'out-for-delivery') {
+            actionUI = (
                 <button 
                     onClick={() => handleUpdateStatus(task._id, 'reached-dropoff')} 
-                    className={`${btnClass} bg-primary-dark text-white hover:bg-black shadow-slate-100 uppercase tracking-widest font-black`}
+                    className={`${btnClass} bg-slate-900 text-white hover:bg-black shadow-slate-100 uppercase tracking-widest font-black`}
                 >
                     <Store size={14} /> Reached Drop-off Location
                 </button>
             );
-        }
-
-        if (currentStage === 'reached-dropoff') {
-            return (
+        } else if (currentStage === 'reached-dropoff') {
+            actionUI = (
                 <div className="space-y-3">
                     <input
                         type="text"
@@ -319,14 +326,14 @@ const Tasks = () => {
                                 setTaskProof("https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=400&auto=format&fit=crop");
                                 toast.success("Photo captured!");
                             }}
-                            className={`${btnClass} bg-slate-100 text-primary-dark border border-slate-200 hover:bg-white`}
+                            className={`${btnClass} bg-slate-100 text-slate-900 border border-slate-200 hover:bg-white`}
                         >
                             <Camera size={14} /> Take Delivery Photo
                         </button>
                     ) : (
                         <div className="space-y-3">
                             {taskProof && (
-                                <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-primary relative">
+                                <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-slate-800 relative">
                                     <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
                                     <button onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
                                         <X size={12} />
@@ -341,7 +348,7 @@ const Tasks = () => {
                                     }
                                     handleUpdateStatus(task._id, isFabric ? 'fabric-delivered' : 'delivered', 'Order successfully delivered', taskProof, otpInput);
                                 }}
-                                className={`${btnClass} bg-primary text-white hover:bg-primary-dark shadow-indigo-100`}
+                                className={`${btnClass} bg-primary text-white hover:bg-slate-900 shadow-indigo-100`}
                             >
                                 <CheckCircle2 size={14} /> Complete Delivery
                             </button>
@@ -351,7 +358,11 @@ const Tasks = () => {
             );
         }
 
-        return null;
+        return (
+            <div>
+                {actionUI}
+            </div>
+        );
     };
 
     if (loading) {
@@ -463,7 +474,7 @@ const Tasks = () => {
                                     const isFabricPickup = activeTask.taskType === 'fabric-pickup';
                                     
                                     // Robust logic for determining stage:
-                                    const pickupStatuses = ['pending', 'accepted', 'fabric-ready-for-pickup', 'ready-for-pickup', 'reached-pickup'];
+                                    const pickupStatuses = ['pending', 'accepted', 'fabric-ready-for-pickup', 'ready-for-pickup', 'ready-for-delivery', 'reached-pickup'];
                                     const isPickupStage = pickupStatuses.includes(activeTask.status);
                                     
                                     const stopLabel = isPickupStage ? "Pickup Location" : "Drop-off Location";
