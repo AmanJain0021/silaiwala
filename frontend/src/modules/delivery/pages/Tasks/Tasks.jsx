@@ -305,6 +305,14 @@ const Tasks = () => {
         if (currentStage === 'reached-dropoff') {
             return (
                 <div className="space-y-3">
+                    <input
+                        type="text"
+                        placeholder="Enter 6-digit OTP"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value)}
+                        className="w-full text-center tracking-[0.5em] font-black py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 outline-none"
+                        maxLength={6}
+                    />
                     {!taskProof && !isFabric ? (
                         <button
                             onClick={() => {
@@ -326,7 +334,13 @@ const Tasks = () => {
                                 </div>
                             )}
                             <button
-                                onClick={() => handleUpdateStatus(task._id, isFabric ? 'fabric-delivered' : 'delivered', 'Order successfully delivered', taskProof)}
+                                onClick={() => {
+                                    if (!otpInput || otpInput.length < 6) {
+                                        toast.error('Please enter the 6-digit OTP');
+                                        return;
+                                    }
+                                    handleUpdateStatus(task._id, isFabric ? 'fabric-delivered' : 'delivered', 'Order successfully delivered', taskProof, otpInput);
+                                }}
                                 className={`${btnClass} bg-primary text-white hover:bg-primary-dark shadow-indigo-100`}
                             >
                                 <CheckCircle2 size={14} /> Complete Delivery

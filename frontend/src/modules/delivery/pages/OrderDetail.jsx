@@ -956,14 +956,20 @@ const DeliveryOrderDetail = () => {
                 </button>
               )}
               
-              {/* Cancel Trip Button */}
-              <button 
-                onClick={handleCancelOrder}
-                className="w-full py-2 flex items-center justify-center gap-1.5 text-[9px] font-black text-rose-500 rounded-xl active:bg-rose-50 transition-colors uppercase tracking-widest mt-1"
-              >
-                 <FiX size={12}/> Cancel Trip
-              </button>
+              {/* Cancel Trip Button - Only available during pickup phase */}
+              {currentPhase === 'pickup' && (
+                  <button 
+                    onClick={handleCancelOrder}
+                    className="w-full py-2 flex items-center justify-center gap-1.5 text-[9px] font-black text-rose-500 rounded-xl active:bg-rose-50 transition-colors uppercase tracking-widest mt-1"
+                  >
+                     <FiX size={12}/> Cancel Trip
+                  </button>
+              )}
             </>
+          ) : isCancelling || order.status === 'cancelled' || order.status === 'searching-delivery-partner' ? (
+            <div className="text-center py-2 px-4">
+                <p className="text-sm font-black text-slate-400">Cancelling...</p>
+            </div>
           ) : (
             <div className="text-center py-2 px-4 bg-rose-50 rounded-xl border border-rose-100">
                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">UNAUTHORIZED ACCESS</p>
