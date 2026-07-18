@@ -150,34 +150,11 @@ const DeliveryDashboard = () => {
         return 'Dispatch Task';
     };
 
-    const handleAccept = async (orderId) => {
-        try {
-            const res = await deliveryService.acceptOrder(orderId);
-            if (res.success) {
-                toast.success('Task claimed successfully!');
-                fetchDashboardData();
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to claim task');
-        }
-    };
-
-    const handleReject = async (orderId) => {
-        try {
-            await deliveryService.rejectOrder(orderId);
-            toast.success('Task rejected');
-            fetchDashboardData();
-        } catch (e) {
-            toast.error('Failed to reject task');
-        }
-    };
-
-    const pendingRequests = activeOrders.filter((t) => isPendingAcceptanceTask(t, user));
-    // Active Dispatch ONLY after partner has accepted — never for broadcast-only requests
+    // Home card: ONLY after Accept. Pending requests use the swipe popup only.
     const activeTasksList = activeOrders.filter((t) => isAcceptedActiveTask(t, user));
-    // Prefer showing a real active job; otherwise show pending accept/reject request
-    const currentTask = activeTasksList[0] || pendingRequests[0] || null;
-    const isPendingTask = currentTask ? isPendingAcceptanceTask(currentTask, user) : false;
+    const currentTask = activeTasksList[0] || null;
+    const hasPendingPopupOnly =
+        activeOrders.some((t) => isPendingAcceptanceTask(t, user)) || (availableOrders?.length > 0);
 
     return (
         <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">
@@ -251,21 +228,17 @@ const DeliveryDashboard = () => {
                     </div>
                 </div>
 
-                {/* Active Dispatch / Tasks */}
+                {/* Active Dispatch — only after Accept (pending = swipe popup only) */}
                 {currentTask ? (
                     <div 
-                        className={`bg-white rounded-[2rem] p-5 border shadow-sm relative overflow-hidden ${isPendingTask ? 'border-amber-200 shadow-amber-900/5' : 'border-slate-100 cursor-pointer'}`}
-                        onClick={() => {
-                            if (!isPendingTask) {
-                                navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`);
-                            }
-                        }}
+                        className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer"
+                        onClick={() => navigate(`/delivery/orders/${currentTask.orderId || currentTask._id}`)}
                     >
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 ${isPendingTask ? 'bg-amber-500' : 'bg-[#843D9B]'} rounded-full animate-pulse`}></div>
-                                <span className={`text-[10px] font-black ${isPendingTask ? 'text-amber-600 bg-amber-50' : 'text-[#843D9B] bg-indigo-50'} uppercase tracking-widest px-2 py-1 rounded-md`}>
-                                    {isPendingTask ? 'Pending Acceptance' : 'Active Dispatch'}
+                                <div className="w-2 h-2 bg-[#843D9B] rounded-full animate-pulse"></div>
+                                <span className="text-[10px] font-black text-[#843D9B] bg-indigo-50 uppercase tracking-widest px-2 py-1 rounded-md">
+                                    Active Dispatch
                                 </span>
                             </div>
                             <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center border border-indigo-100">
@@ -325,36 +298,19 @@ const DeliveryDashboard = () => {
                             </div>
                         </div>
 
-                        {isPendingTask ? (
-                            <div className="flex gap-3 mt-6">
-                                <button onClick={(e) => { e.stopPropagation(); handleReject(currentTask._id); }} className="flex-1 bg-rose-50 text-rose-600 rounded-2xl py-3 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-100 transition-all shadow-sm">
-                                    Reject <X size={14} />
-                                </button>
-                                <button onClick={(e) => { e.stopPropagation(); handleAccept(currentTask._id); }} className="flex-1 bg-[#843D9B] text-white rounded-2xl py-3 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20">
-                                    Accept <Check size={14} />
-                                </button>
-                            </div>
-                        ) : (
-                            <button className="w-full bg-[#843D9B] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
-                                View Dispatch Details <ChevronRight size={14} />
-                            </button>
-                        )}
+                        <button className="w-full bg-[#843D9B] text-white rounded-2xl py-4 mt-6 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-xl shadow-indigo-900/10">
+                            View Dispatch Details <ChevronRight size={14} />
+                        </button>
                     </div>
                 ) : (
                     <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center">
                         <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
                             <Package size={32} />
                         </div>
-                        {availableOrders?.length > 0 ? (
-                            <>
-                                <p className="text-slate-600 font-bold mb-4">You have no active tasks, but there {availableOrders.length === 1 ? 'is' : 'are'} <span className="text-[#843D9B]">{availableOrders.length} live order{availableOrders.length === 1 ? '' : 's'}</span> waiting!</p>
-                                <button
-                                    onClick={() => navigate('/delivery/tasks')}
-                                    className="px-6 py-3 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-indigo-900/20 active:scale-95"
-                                >
-                                    View Live Pool
-                                </button>
-                            </>
+                        {hasPendingPopupOnly ? (
+                            <p className="text-slate-500 font-bold text-sm">
+                                New request waiting — swipe to accept on the popup.
+                            </p>
                         ) : (
                             <p className="text-slate-500 font-bold text-sm">No active tasks at the moment.</p>
                         )}
