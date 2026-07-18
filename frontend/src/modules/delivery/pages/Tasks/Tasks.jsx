@@ -181,15 +181,44 @@ const Tasks = () => {
 
     const [taskProof, setTaskProof] = useState(null);
 
-    const handlePhotoSelect = (e) => {
+    const handlePhotoSelect = async (e) => {
         const file = e.target?.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            setTaskProof(reader.result);
+        try {
+            if (file.size > 12 * 1024 * 1024) {
+                toast.error('Image too large. Please choose a smaller photo.');
+                e.target.value = null;
+                return;
+            }
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('read failed'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('invalid'));
+                    img.onload = () => {
+                        let w = img.width;
+                        let h = img.height;
+                        const max = 1280;
+                        if (w > max || h > max) {
+                            if (w > h) { h = Math.round((h * max) / w); w = max; }
+                            else { w = Math.round((w * max) / h); h = max; }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.72));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            setTaskProof(dataUrl);
             toast.success('Photo captured!');
-        };
-        reader.readAsDataURL(file);
+        } catch {
+            toast.error('Could not process photo');
+        }
         e.target.value = null;
     };
 

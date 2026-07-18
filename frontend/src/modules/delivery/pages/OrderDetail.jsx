@@ -28,6 +28,45 @@ import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import PageTransition from '../../../shared/components/PageTransition';
 import { formatPrice } from '../../../shared/utils/helpers';
 import toast from 'react-hot-toast';
+
+const apiErr = (err, fallback = 'Something went wrong') =>
+  err?.response?.data?.message ||
+  err?.response?.data?.error ||
+  (Array.isArray(err?.response?.data?.errors) ? err.response.data.errors.join(', ') : null) ||
+  err?.message ||
+  fallback;
+
+/** Compress image to JPEG data URL (max edge 1280px) to avoid oversized payloads */
+const compressImageFile = (file, maxEdge = 1280, quality = 0.72) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read image'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Invalid image'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxEdge || height > maxEdge) {
+          if (width > height) {
+            height = Math.round((height * maxEdge) / width);
+            width = maxEdge;
+          } else {
+            width = Math.round((width * maxEdge) / height);
+            height = maxEdge;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
 import api from '../../../shared/utils/api';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
@@ -388,10 +427,12 @@ const DeliveryOrderDetail = () => {
     if (isResending || !id) return;
     try {
       setIsResending(true);
-      await resendDeliveryOtp(id);
-      toast.success('OTP sent to customer');
-    } catch {
-      toast.error('Failed to resend OTP');
+      const res = await resendDeliveryOtp(id);
+      setOtpValue('');
+      const msg = res?.message || (order?.status === 'fabric-picked-up' ? 'OTP sent to tailor' : 'OTP sent to customer');
+      toast.success(msg);
+    } catch (err) {
+      toast.error(apiErr(err, 'Failed to resend OTP'));
     } finally {
       setIsResending(false);
     }
@@ -478,10 +519,14 @@ const DeliveryOrderDetail = () => {
         await loadOrder();
         setHasArrived(true);
         setOtpValue('');
-        toast('OTP sent to recipient — enter that OTP to complete', { icon: '🔐' });
+        toast.success(
+          order?.status === 'fabric-picked-up'
+            ? 'OTP sent to tailor — enter that OTP to complete'
+            : 'OTP sent to customer — enter that OTP to complete'
+        );
         return;
       } catch (e) {
-        toast.error(e?.response?.data?.message || 'Mark arrival at drop-off first');
+        toast.error(apiErr(e, 'Mark arrival at drop-off first'));
         return;
       }
     }
@@ -494,19 +539,32 @@ const DeliveryOrderDetail = () => {
       });
       setOrder(updated);
       setShowSuccess(true);
-      toast.success('Delivery completed!');
+      toast.success(
+        order?.status === 'fabric-picked-up'
+          ? 'Fabric delivered to tailor!'
+          : 'Delivery completed!'
+      );
     } catch(err) {
-      toast.error(err?.response?.data?.message || 'Delivery failed');
+      toast.error(apiErr(err, 'Delivery failed'));
     }
   };
 
-  const handleImage = (e, setter) => {
+  const handleImage = async (e, setter) => {
     const file = e.target?.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setter(reader.result);
-    reader.readAsDataURL(file);
-    e.target.value = null; // Reset input so same camera photo or new photo triggers change again
+    try {
+      if (file.size > 12 * 1024 * 1024) {
+        toast.error('Image too large. Please choose a smaller photo.');
+        e.target.value = null;
+        return;
+      }
+      const dataUrl = await compressImageFile(file);
+      setter(dataUrl);
+      toast.success('Photo added');
+    } catch {
+      toast.error('Could not process photo');
+    }
+    e.target.value = null;
   };
 
   console.log("OrderDetail Render:", { isInitialLoading, isLoadingOrder, isLoaded, order: !!order, id });
@@ -872,6 +930,14 @@ const DeliveryOrderDetail = () => {
                        <div className="pt-4 border-t border-slate-100/50 text-center">
                           <p className="text-[9px] font-bold text-slate-800 uppercase tracking-[0.2em] mb-4">Security Terminal</p>
                           
+                          <p className="text-[9px] text-slate-500 font-bold mb-3 px-2">
+                            {order?.status === 'fabric-picked-up'
+                              ? 'Enter the OTP from the TAILOR (not the customer pickup OTP).'
+                              : currentPhase === 'pickup'
+                                ? 'Enter the OTP from the CUSTOMER at pickup.'
+                                : 'Enter the OTP from the CUSTOMER at drop-off.'}
+                          </p>
+
                           <div className="max-w-[210px] mx-auto space-y-3">
                             <div className="relative group">
                                 <input 

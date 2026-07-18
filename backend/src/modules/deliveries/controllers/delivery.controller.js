@@ -1495,66 +1495,82 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
 
   if (!order) return next(new ErrorResponse("Order not found or not assigned to you", 404));
 
-  let cycle = order.pickupOtpVerified ? 'dropoff' : 'pickup';
-  
-  // Generate 6 digit OTP
+  // Fabric C→T dropoff vs customer pickup vs final T→C
+  const isFabricToTailor = order.status === "fabric-picked-up";
+  const isFabricFromCustomer =
+    ["fabric-ready-for-pickup", "accepted", "pending"].includes(order.status) &&
+    !order.pickupOtpVerified;
+  const isFinalToCustomer =
+    ["out-for-delivery", "ready", "ready-for-delivery", "ready-for-pickup"].includes(order.status) ||
+    (order.pickupOtpVerified && !isFabricToTailor && !isFabricFromCustomer);
+
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
   const { sendNotification } = require("../../../utils/notification.js");
-
-  if (cycle === 'pickup') {
-    order.pickupDeliveryOtp = otp;
-    order.pickupOtpVerified = false;
-  } else {
-    order.dropoffDeliveryOtp = otp;
-    order.dropoffOtpVerified = false;
-  }
-  
-  await order.save();
-  
-  // Emit socket event to ensure partner/customer panels instantly update with the new OTP
   const { getIO } = require("../../../config/socket.js");
   const io = getIO();
-  if (io) {
-    if (cycle === 'pickup') {
-      io.to(`user_${order.tailor}`).emit('order_status_updated', { _id: order._id, orderId: order.orderId, pickupDeliveryOtp: otp, status: order.status });
-    } else {
-      io.to(`user_${order.customer}`).emit('order_status_updated', { _id: order._id, orderId: order.orderId, dropoffDeliveryOtp: otp, status: order.status });
-      if (order.tailor) {
-        io.to(`user_${order.tailor}`).emit('order_status_updated', { _id: order._id, orderId: order.orderId, dropoffDeliveryOtp: otp, status: order.status });
-      }
+
+  let recipient;
+  let title;
+  let message;
+  let otpField;
+
+  if (isFabricToTailor) {
+    // At tailor shop — OTP for fabric handoff
+    order.dropoffDeliveryOtp = otp;
+    order.dropoffOtpVerified = false;
+    recipient = order.tailor;
+    title = "Fabric Drop-off OTP";
+    message = `OTP for fabric drop-off is ${otp}. Share this only when the delivery partner arrives.`;
+    otpField = "dropoffDeliveryOtp";
+  } else if (isFabricFromCustomer || (!order.pickupOtpVerified && !isFinalToCustomer)) {
+    // At customer — OTP for fabric pickup
+    order.pickupDeliveryOtp = otp;
+    order.pickupOtpVerified = false;
+    recipient = order.customer;
+    title = "Fabric Pickup OTP";
+    message = `Your OTP for fabric pickup is ${otp}. Share this only when the partner arrives.`;
+    otpField = "pickupDeliveryOtp";
+  } else {
+    // Final delivery to customer
+    order.dropoffDeliveryOtp = otp;
+    order.dropoffOtpVerified = false;
+    recipient = order.customer;
+    title = "Delivery OTP";
+    message = `Your OTP for final delivery is ${otp}. Share this only when the partner arrives.`;
+    otpField = "dropoffDeliveryOtp";
+  }
+
+  await order.save();
+
+  if (io && recipient) {
+    const payload = { _id: order._id, orderId: order.orderId, status: order.status, [otpField]: otp };
+    io.to(`user_${recipient}`).emit("order_status_updated", payload);
+    // Tailor panel also needs fabric drop OTP
+    if (isFabricToTailor && order.tailor) {
+      io.to(`user_${order.tailor}`).emit("order_status_updated", payload);
     }
   }
 
   console.log(`\n\n======================================================`);
-  console.log(`🔐 DELIVERY OTP RE-GENERATED: ${otp}`);
+  console.log(`🔐 DELIVERY OTP RE-GENERATED (${isFabricToTailor ? "fabric→tailor" : isFabricFromCustomer ? "fabric←customer" : "final→customer"}): ${otp}`);
   console.log(`======================================================\n\n`);
 
-  if (cycle === 'pickup') {
-    // Send to Tailor
+  if (recipient) {
     await sendNotification({
-      recipient: order.tailor,
-      type: "DELIVERY_OTP",
-      title: "Fabric Delivery OTP",
-      message: `Your delivery OTP for fabric collection is ${otp}. Please provide this to the delivery partner.`,
-      data: { orderId: order._id, otp }
-    });
-  } else {
-    order.dropoffDeliveryOtp = otp;
-    order.dropoffOtpVerified = false;
-    await order.save();
-    
-    // Send to Customer
-    await sendNotification({
-      recipient: order.customer,
-      type: "DELIVERY_OTP",
-      title: "Delivery OTP",
-      message: `Your OTP for final delivery is ${otp}. Please provide this to the delivery partner.`,
+      recipient,
+      type: "OTP_GENERATED",
+      title,
+      message,
       data: { orderId: order._id, otp }
     });
   }
 
-  res.status(200).json({ success: true, message: "OTP sent successfully" });
+  res.status(200).json({
+    success: true,
+    message: isFabricToTailor
+      ? "OTP sent to tailor"
+      : "OTP sent to customer"
+  });
 });
 
 /**
@@ -1696,7 +1712,10 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     }
     if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
       await session.abortTransaction();
-      return next(new ErrorResponse("Invalid OTP", 400));
+      const hint = order.status === "fabric-picked-up"
+        ? "Invalid OTP. Ask the tailor for the drop-off OTP (not the customer pickup OTP)."
+        : "Invalid OTP. Ask the customer for the delivery OTP.";
+      return next(new ErrorResponse(hint, 400));
     }
     
     order.dropoffOtpVerified = true;
@@ -1887,9 +1906,12 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   await session.commitTransaction();
     res.status(200).json({ success: true, data: returnOrder });
   } catch (error) {
-    await session.abortTransaction();
+    try { await session.abortTransaction(); } catch (_) { /* already aborted */ }
     console.error("Transaction aborted in completeDeliveryFlow:", error);
-    return next(new ErrorResponse("Transaction failed", 500));
+    if (error.statusCode) {
+      return next(error);
+    }
+    return next(new ErrorResponse(error.message || "Could not complete delivery. Please try again.", 500));
   } finally {
     session.endSession();
   }
