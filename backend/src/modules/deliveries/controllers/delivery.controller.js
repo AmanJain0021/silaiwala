@@ -118,9 +118,11 @@ exports.updateStatus = asyncHandler(async (req, res, next) => {
     // Find active orders for this rider
     const activeOrders = await Order.find({
       $or: [
-        { pickupPartner: req.user.id, pickupDeliveryStatus: { $in: ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'] } },
-        { dropoffPartner: req.user.id, dropoffDeliveryStatus: { $in: ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'] } },
-        { deliveryPartner: req.user.id, deliveryStatus: { $in: ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'] } }
+        { pickupPartner: req.user.id, pickupDeliveryStatus: { $in: ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'out-for-delivery'] } },
+        { dropoffPartner: req.user.id, dropoffDeliveryStatus: { $in: ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'out-for-delivery'] } },
+        { deliveryPartner: req.user.id, deliveryStatus: { $in: ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'out-for-delivery'] } },
+        { pickupPartner: req.user.id, status: { $in: ['fabric-ready-for-pickup', 'fabric-picked-up'] } },
+        { dropoffPartner: req.user.id, status: { $in: ['ready', 'ready-for-delivery', 'ready-for-pickup', 'out-for-delivery'] } }
       ]
     }).select('_id');
 
@@ -800,6 +802,9 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       order.pickupDeliveryStatus = "picked-up";
       order.pickupAt = new Date();
       order.status = status === "fabric-picked-up" ? "fabric-picked-up" : "out-for-delivery";
+      if (req.body.proof || req.body.pickupPhoto) {
+        order.deliveryProof = req.body.proof || req.body.pickupPhoto;
+      }
       if (status === "picked-up-from-tailor") {
         if (isDropoffCycle) order.dropoffDeliveryStatus = "picked-up";
       }
@@ -828,18 +833,44 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       if (isDropoffCycle) order.dropoffDeliveryStatus = "out-for-delivery";
       order.status = "out-for-delivery";
   } else if (status === "delivered") {
-      const { otp } = req.body;
-      if (otp) {
-        if (!order.dropoffDeliveryOtp) {
-          await session.abortTransaction();
-          return next(new ErrorResponse("Please tap 'Reached Drop-off' first so the customer OTP can be generated", 400));
-        }
-        if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
-          await session.abortTransaction();
-          return next(new ErrorResponse("Invalid OTP", 400));
-        }
-        order.dropoffOtpVerified = true;
+      const { otp, paymentMethod } = req.body;
+      if (!otp) {
+        await session.abortTransaction();
+        return next(new ErrorResponse("OTP is required to complete delivery", 400));
       }
+      if (!order.dropoffDeliveryOtp) {
+        await session.abortTransaction();
+        return next(new ErrorResponse("Please tap 'Reached Drop-off' first so the customer OTP can be generated", 400));
+      }
+      if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+        await session.abortTransaction();
+        return next(new ErrorResponse("Invalid OTP", 400));
+      }
+      // Final delivery: unpaid balance / COD must be collected before complete
+      const needsPayment =
+        (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== "paid") ||
+        (["cod", "cash"].includes(String(order.paymentMethod || "").toLowerCase()) &&
+          order.paymentStatus !== "paid" &&
+          order.remainingPaymentStatus !== "paid");
+
+      if (needsPayment) {
+        if (!paymentMethod || !["cash", "qr", "online"].includes(paymentMethod)) {
+          await session.abortTransaction();
+          return next(new ErrorResponse("Collect final payment (Cash or UPI) before completing delivery", 400));
+        }
+        order.remainingPaymentMethod = paymentMethod === "cash" ? "cash" : "online";
+        order.remainingPaymentStatus = "paid";
+        order.paymentStatus = "paid";
+        if (paymentMethod === "cash" && order.remainingPaymentAmount > 0) {
+          const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
+          if (deliveryProfile) {
+            deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
+            deliveryProfile.lastCashCollectionDate = new Date();
+            await deliveryProfile.save({ session });
+          }
+        }
+      }
+      order.dropoffOtpVerified = true;
       order.deliveryStatus = "delivered";
       if (isDropoffCycle) order.dropoffDeliveryStatus = "delivered";
       order.status = "delivered";
@@ -1700,7 +1731,57 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
       });
       
     } else {
-      // This is the FINAL Dropoff to Customer
+      // This is the FINAL Dropoff to Customer — require payment before marking delivered
+      const needsPayment =
+        (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== 'paid') ||
+        (['cod', 'cash'].includes(String(order.paymentMethod || '').toLowerCase()) &&
+          order.paymentStatus !== 'paid' &&
+          order.remainingPaymentStatus !== 'paid');
+
+      if (needsPayment) {
+         if (paymentMethod === 'qr' || paymentMethod === 'online') {
+             order.remainingPaymentMethod = 'online';
+             order.remainingPaymentStatus = 'paid';
+             order.paymentStatus = 'paid';
+         } else if (paymentMethod === 'cash') {
+             order.remainingPaymentMethod = 'cash';
+             order.remainingPaymentStatus = 'paid';
+             order.paymentStatus = 'paid';
+             
+             const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
+             if (deliveryProfile) {
+                deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + (order.remainingPaymentAmount || 0);
+                deliveryProfile.lastCashCollectionDate = new Date();
+                
+                const settings = await Settings.getSettings();
+                const limit = settings.codWalletConfig?.maxCashLimit || 5000;
+                const autoBlock = settings.codWalletConfig?.autoBlockOnLimit !== false;
+
+                if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
+                   deliveryProfile.cashBlocked = true;
+                   await Notification.create([{
+                       user: req.user.id,
+                       title: "COD Limit Exceeded ⚠️",
+                       message: `You have reached the maximum cash collection limit of ₹${limit}. Please deposit cash to receive new assignments.`,
+                       type: "alert",
+                   }], { session });
+                } else if (deliveryProfile.codWalletBalance >= limit * 0.8) {
+                   await Notification.create([{
+                       user: req.user.id,
+                       title: "COD Limit Warning ⚠️",
+                       message: `Your cash collection balance (₹${deliveryProfile.codWalletBalance}) is nearing the limit of ₹${limit}.`,
+                       type: "alert",
+                   }], { session });
+                }
+
+                await deliveryProfile.save({ session });
+             }
+         } else {
+             await session.abortTransaction();
+             return next(new ErrorResponse("Collect final payment (Cash or UPI) before completing delivery", 400));
+         }
+      }
+
       order.deliveryStatus = "delivered";
       order.dropoffDeliveryStatus = "delivered";
       order.status = "delivered";
@@ -1719,59 +1800,6 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
         message: `Your order ${order.orderId} has been successfully delivered.`,
         data: { orderId: order._id, targetUrl: "/orders" }
       });
-
-      // Handle Partial Payment Logic before completing
-      if (order.remainingPaymentAmount > 0 && order.remainingPaymentStatus !== 'paid') {
-         if (paymentMethod === 'qr' || paymentMethod === 'online') {
-             // Delivery Partner verified UPI payment to Admin
-             order.remainingPaymentMethod = 'online';
-             order.remainingPaymentStatus = 'paid';
-             order.paymentStatus = 'paid';
-         } else if (paymentMethod === 'cash') {
-             // Delivery Partner collected cash
-             order.remainingPaymentMethod = 'cash';
-             order.remainingPaymentStatus = 'paid';
-             order.paymentStatus = 'paid';
-             
-             // Add collected cash to Delivery Partner's COD Wallet
-             const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
-             if (deliveryProfile) {
-                deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
-                deliveryProfile.lastCashCollectionDate = new Date();
-                
-                // Check COD Limits
-                const settings = await Settings.getSettings();
-                const limit = settings.codWalletConfig?.maxCashLimit || 5000;
-                const autoBlock = settings.codWalletConfig?.autoBlockOnLimit !== false;
-
-                if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
-                   deliveryProfile.cashBlocked = true;
-                   
-                   // Notify Delivery Partner
-                   await Notification.create([{
-                       user: req.user.id,
-                       title: "COD Limit Exceeded ⚠️",
-                       message: `You have reached the maximum cash collection limit of ₹${limit}. Please deposit cash to receive new assignments.`,
-                       type: "alert",
-                   }], { session });
-                } else if (deliveryProfile.codWalletBalance >= limit * 0.8) {
-                   // Warning near limit
-                   await Notification.create([{
-                       user: req.user.id,
-                       title: "COD Limit Warning ⚠️",
-                       message: `Your cash collection balance (₹${deliveryProfile.codWalletBalance}) is nearing the limit of ₹${limit}.`,
-                       type: "alert",
-                   }], { session });
-                }
-
-                await deliveryProfile.save({ session });
-             }
-         } else {
-             // Fallback if frontend didn't send payment method but there's a remaining amount
-             await session.abortTransaction();
-             return next(new ErrorResponse("Please select a payment method for the remaining amount.", 400));
-         }
-      }
 
       // Ensure platform and delivery fees are populated before distributing earnings
       if (!order.platformFee) {

@@ -877,12 +877,20 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
 
   if (order.customer?._id) {
     const customerDoc = await Customer.findOne({ user: order.customer._id }).lean();
-    if (customerDoc?.addresses?.length > 0) {
-      // Find the address that matches the delivery address or default
-      const defaultAddress = customerDoc.addresses.find(a => a.isDefault) || customerDoc.addresses[0];
-      if (defaultAddress?.location?.coordinates?.length >= 2) {
-        customerLongitude = defaultAddress.location.coordinates[0];
-        customerLatitude = defaultAddress.location.coordinates[1];
+    // Prefer order.deliveryAddress coords, then matching saved address, then default
+    if (order.deliveryAddress?.location?.coordinates?.length >= 2) {
+      customerLongitude = order.deliveryAddress.location.coordinates[0];
+      customerLatitude = order.deliveryAddress.location.coordinates[1];
+    } else if (customerDoc?.addresses?.length > 0) {
+      const matched =
+        customerDoc.addresses.find((a) =>
+          order.deliveryAddress?.street && a.street === order.deliveryAddress.street
+        ) ||
+        customerDoc.addresses.find((a) => a.isDefault) ||
+        customerDoc.addresses[0];
+      if (matched?.location?.coordinates?.length >= 2) {
+        customerLongitude = matched.location.coordinates[0];
+        customerLatitude = matched.location.coordinates[1];
       }
     }
   }

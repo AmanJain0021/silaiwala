@@ -56,9 +56,20 @@ const deliveryService = {
         return response.data;
     },
 
-    updateDeliveryStatus: async (orderId, status, message, proof, otp) => {
-        const response = await api.patch(`/deliveries/orders/${orderId}/status`, { status, message, proof, otp });
+    updateDeliveryStatus: async (orderId, status, message, proof, otp, paymentMethod = null) => {
+        const body = { status, message, proof, otp };
+        if (paymentMethod) body.paymentMethod = paymentMethod;
+        const response = await api.patch(`/deliveries/orders/${orderId}/status`, body);
         return response.data;
+    },
+
+    completeDelivery: async (orderId, { otp, deliveryProofPhoto, paymentMethod }) => {
+        const response = await api.patch(`/deliveries/orders/${orderId}/complete`, {
+            otp,
+            deliveryProofPhoto,
+            paymentMethod
+        });
+        return response.data?.data || response.data;
     },
 
     // Notifications

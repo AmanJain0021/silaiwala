@@ -429,7 +429,8 @@ const DeliveryOrderDetail = () => {
     }
   };
 
-  const isFinalDelivery = order?.taskType === 'order-delivery';
+  const isFinalDelivery = order?.taskType === 'order-delivery' ||
+    ['out-for-delivery', 'ready-for-delivery', 'ready-for-pickup', 'ready'].includes(order?.status);
   
   const calculatedTotal = (order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid')
     ? order.remainingPaymentAmount
@@ -437,11 +438,10 @@ const DeliveryOrderDetail = () => {
         ? order.items.reduce((sum, item) => selectedItemIds.has(item.productId || item._id) ? sum + (item.price * item.quantity) : sum, 0)
         : order?.totalAmount || order?.total || 0);
 
-  const isCod = calculatedTotal > 0 && (
-    (order?.remainingPaymentStatus !== 'paid' && order?.remainingPaymentAmount > 0) ||
-    order?.paymentMethod === 'cod' || 
-    order?.paymentMethod === 'cash'
-  );
+  // Gate final complete on unpaid remaining (or COD/cash), not just UI labels
+  const isCod = (Number(order?.remainingPaymentAmount || 0) > 0 && order?.remainingPaymentStatus !== 'paid') ||
+    order?.paymentMethod === 'cod' ||
+    order?.paymentMethod === 'cash';
   const handleCancelOrder = () => {
     setIsCancellationModalOpen(true);
   };
@@ -576,7 +576,11 @@ const DeliveryOrderDetail = () => {
              <div className={`w-full bg-white relative transition-all duration-300 ${hasArrived ? 'h-[140px]' : 'h-[260px]'}`}>
                  <DeliveryBoyLiveMap 
                   currentLocation={currentLocation}
-                  fallbackOrigin={{ lat: Number(pickupLat), lng: Number(pickupLng) }}
+                  fallbackOrigin={
+                    currentPhase === 'delivery' && pickupLat && pickupLng
+                      ? { lat: Number(pickupLat), lng: Number(pickupLng) }
+                      : null
+                  }
                   destination={
                     currentPhase === 'pickup' 
                       ? (pickupLat ? { lat: Number(pickupLat), lng: Number(pickupLng) } : null)
@@ -590,9 +594,7 @@ const DeliveryOrderDetail = () => {
                     if (currentLocation?.lat && currentLocation?.lng && data.distanceValue !== -1) {
                       setEta(data.duration);
                       setDistanceRemaining(data.distanceValue);
-                      if (currentPhase === 'pickup') {
-                        useDeliveryAuthStore.getState().updateLocation(currentLocation.lat, currentLocation.lng, data.duration, data.distanceValue);
-                      }
+                      useDeliveryAuthStore.getState().updateLocation(currentLocation.lat, currentLocation.lng, data.duration, data.distanceValue);
                     }
                   }}
                 />
@@ -972,7 +974,7 @@ const DeliveryOrderDetail = () => {
                     onClick={currentPhase === 'pickup' ? () => {
                         if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
                         const correctStatus = (order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup') ? 'fabric-picked-up' : 'picked-up-from-tailor';
-                        handleUpdateStatus(correctStatus, 'Items picked up!', { pickupPhoto, otp: otpValue.trim() });
+                        handleUpdateStatus(correctStatus, 'Items picked up!', { proof: pickupPhoto, otp: otpValue.trim() });
                     } : handleFinalize}
                     disabled={isUpdatingOrderStatus || (currentPhase === 'pickup' && (otpValue.length < 6 || !pickupPhoto)) || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && isFinalDelivery && !paymentSelection)))}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
@@ -999,11 +1001,6 @@ const DeliveryOrderDetail = () => {
             <div className="text-center py-2 px-4 bg-rose-50 rounded-xl border border-rose-100">
                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">UNAUTHORIZED ACCESS</p>
                <p className="text-[8px] font-bold text-rose-400 uppercase leading-none">This task is assigned to another partner.</p>
-               <div className="text-[8px] text-left overflow-auto break-all mt-2 text-rose-800">
-                  <p>dBoyId: {String(dBoyId)}</p>
-                  <p>deliveryPartner: {typeof order?.deliveryPartner === 'object' ? order?.deliveryPartner?._id : order?.deliveryPartner}</p>
-                  <p>pickupPartner: {typeof order?.pickupPartner === 'object' ? order?.pickupPartner?._id : order?.pickupPartner}</p>
-               </div>
             </div>
           )}
         </div>
@@ -1049,9 +1046,9 @@ const DeliveryOrderDetail = () => {
         />
 
         {/* HIDDEN INPUTS FOR FILE UPLOAD */}
-        <input type="file" accept="image/*" ref={pickupInputRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
         <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
-        <input type="file" accept="image/*" ref={deliveryInputRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
         <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
       </div>
     </PageTransition>

@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Phone, Clock, MapPin, Navigation, Bike, Loader2 } from 'lucide-react';
 import DeliveryBoyLiveMap from './DeliveryBoyLiveMap';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
+
+const toCoord = (lat, lng) => {
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln) || la === 0 || ln === 0) return null;
+  return { lat: la, lng: ln };
+};
 
 const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   const [riderLocation, setRiderLocation] = useState(null);
@@ -19,21 +26,24 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
   });
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !order) return;
 
     const handleLocationUpdate = (data) => {
-      if (data.orderId === order._id || data.orderId === order.id) {
-        setRiderLocation({ lat: data.currentLocation.latitude, lng: data.currentLocation.longitude });
+      const oid = order._id || order.id;
+      if (String(data.orderId) === String(oid)) {
+        setRiderLocation({
+          lat: data.currentLocation.latitude,
+          lng: data.currentLocation.longitude,
+        });
         setLastUpdated(data.timestamp || new Date());
         if (data.eta) setEta(data.eta);
-        if (data.distanceRemaining) setDistance(data.distanceRemaining);
+        if (data.distanceRemaining != null) setDistance(data.distanceRemaining);
       }
     };
 
     const handleDeliveryCompleted = (data) => {
-      if (data.orderId === order._id || data.orderId === order.id) {
-        setIsCompleted(true);
-      }
+      const oid = order._id || order.id;
+      if (String(data.orderId) === String(oid)) setIsCompleted(true);
     };
 
     socket.on('locationUpdated', handleLocationUpdate);
@@ -45,58 +55,132 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     };
   }, [socket, order]);
 
-  // Determine Destination based on Order phase
-  const isDropoffPhase = ['ready', 'ready-for-delivery', 'ready-for-pickup', 'out-for-delivery', 'delivered'].includes(order.status);
-  const isPickupPhase = !isDropoffPhase && (['fabric-ready-for-pickup', 'fabric-picked-up', 'pickup-assigned'].includes(order.status) || 
-                        ['assigned', 'accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus));
+  const { customer, tailor, destination, fallbackOrigin, destinationAddress, journeyLabel } = useMemo(() => {
+    const customerCoords =
+      toCoord(order.customerLatitude, order.customerLongitude) ||
+      toCoord(
+        order.deliveryAddress?.location?.coordinates?.[1],
+        order.deliveryAddress?.location?.coordinates?.[0]
+      ) ||
+      toCoord(order.latitude, order.longitude);
+
+    const tailorCoords =
+      toCoord(order.vendorLatitude, order.vendorLongitude) ||
+      toCoord(order.tailor?.location?.coordinates?.[1], order.tailor?.location?.coordinates?.[0]);
+
+    const customerAddr =
+      order.deliveryAddress?.street ||
+      [order.deliveryAddress?.city, order.deliveryAddress?.state].filter(Boolean).join(', ') ||
+      order.address ||
+      null;
+    const tailorAddr =
+      order.tailor?.location?.address ||
+      order.vendorAddress ||
+      order.tailor?.shopName ||
+      null;
+
+    const status = order.status;
+    const pickupStage = order.pickupDeliveryStatus;
+    const dropoffStage = order.dropoffDeliveryStatus;
+
+    // Fabric C→T: to customer until picked up, then to tailor
+    const isFabricToCustomer =
+      status === 'fabric-ready-for-pickup' ||
+      (['accepted', 'reached-pickup'].includes(pickupStage) &&
+        ['fabric-ready-for-pickup', 'accepted', 'pending', 'pickup-assigned'].includes(status));
+
+    const isFabricToTailor =
+      status === 'fabric-picked-up' ||
+      (['picked-up', 'reached-dropoff'].includes(pickupStage) &&
+        ['fabric-picked-up', 'fabric-ready-for-pickup'].includes(status));
+
+    // Final T→C: to tailor until garment picked, then to customer
+    const isFinalToTailor =
+      ['ready', 'ready-for-delivery', 'ready-for-pickup'].includes(status) ||
+      (['accepted', 'reached-pickup'].includes(dropoffStage) &&
+        !['out-for-delivery', 'delivered'].includes(status));
+
+    const isFinalToCustomer =
+      status === 'out-for-delivery' ||
+      ['picked-up', 'reached-dropoff', 'out-for-delivery'].includes(dropoffStage);
+
+    let dest = null;
+    let origin = null;
+    let addr = null;
+    let label = 'Live Tracking';
+
+    if (isFabricToCustomer) {
+      dest = customerCoords;
+      addr = customerAddr;
+      label = 'Heading to pickup';
+    } else if (isFabricToTailor) {
+      dest = tailorCoords;
+      origin = customerCoords;
+      addr = tailorAddr;
+      label = 'Delivering fabric to tailor';
+    } else if (isFinalToTailor) {
+      dest = tailorCoords;
+      addr = tailorAddr;
+      label = 'Heading to tailor pickup';
+    } else if (isFinalToCustomer) {
+      dest = customerCoords;
+      origin = tailorCoords;
+      addr = customerAddr;
+      label = 'Delivering to customer';
+    } else if (customerCoords || tailorCoords) {
+      // Fallback: prefer customer for unknown final-ish states
+      dest = isFinalToCustomer || status === 'delivered' ? customerCoords : (tailorCoords || customerCoords);
+      addr = dest === customerCoords ? customerAddr : tailorAddr;
+    }
+
+    return {
+      customer: customerCoords,
+      tailor: tailorCoords,
+      destination: dest,
+      fallbackOrigin: origin,
+      destinationAddress: addr,
+      journeyLabel: label,
+    };
+  }, [order]);
+
+  const isPickupPhase =
+    order.status === 'fabric-ready-for-pickup' ||
+    order.status === 'fabric-picked-up' ||
+    ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
 
   const isTailorDelivery = order.deliveryMethod === 'tailor';
 
-  let destination = null;
-  if (isPickupPhase && order.vendorLatitude && order.vendorLongitude) {
-    destination = { lat: Number(order.vendorLatitude), lng: Number(order.vendorLongitude) };
-  } else if (!isPickupPhase && order.customerLatitude && order.customerLongitude) {
-    destination = { lat: Number(order.customerLatitude), lng: Number(order.customerLongitude) };
-  }
+  const rider = isTailorDelivery
+    ? order.tailor
+    : isPickupPhase
+      ? order.pickupPartner
+      : order.dropoffPartner || order.deliveryPartner;
 
-  const rider = isTailorDelivery 
-    ? order.tailor 
-    : (isPickupPhase ? order.pickupPartner : (order.dropoffPartner || order.deliveryPartner));
-  const riderStatus = isTailorDelivery 
-    ? 'accepted' 
-    : (isPickupPhase ? order.pickupDeliveryStatus : order.dropoffDeliveryStatus);
+  const riderStatus = isTailorDelivery
+    ? 'accepted'
+    : isPickupPhase
+      ? order.pickupDeliveryStatus
+      : order.dropoffDeliveryStatus;
 
-  console.log("LiveDeliveryTracker rider logic:", {
-    isPickupPhase,
-    isTailorDelivery,
-    status: order.status,
-    pickupDeliveryStatus: order.pickupDeliveryStatus,
-    dropoffDeliveryStatus: order.dropoffDeliveryStatus,
-    pickupPartner: order.pickupPartner,
-    dropoffPartner: order.dropoffPartner,
-    deliveryPartner: order.deliveryPartner,
-    rider,
-    riderStatus,
-    forceSearching
-  });
+  const isCustomerDelivering =
+    order.fabricDeliveryPreference === 'customer' && order.status === 'accepted';
 
-  const isCustomerDelivering = order.fabricDeliveryPreference === 'customer' && order.status === 'accepted';
-
-  // If order is completed or delivered, hide the live map tracking
-  if (isCompleted || ['delivered', 'product-delivered', 'order-completed'].includes(order.status)) {
+  if (isCompleted || ['delivered', 'product-delivered', 'order-completed', 'fabric-received'].includes(order.status)) {
     return null;
   }
 
-  // Show searching animation only when rider is assigned but hasn't accepted yet, or forced searching
-  const isSearching = !isTailorDelivery && (forceSearching || riderStatus === 'assigned' || riderStatus === 'pending' || (!riderStatus && !isCustomerDelivering));
+  const isSearching =
+    !isTailorDelivery &&
+    (forceSearching ||
+      riderStatus === 'assigned' ||
+      riderStatus === 'pending' ||
+      (!riderStatus && !isCustomerDelivering));
 
-  // If no rider is assigned at all AND we are not searching AND it's not customer self-delivering — don't render anything
   if (!rider && !isSearching && !isCustomerDelivering) return null;
 
   if (isSearching && !isCustomerDelivering) {
     return (
       <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden">
-        {/* Radar/Pulse circles in background */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="absolute w-40 h-40 bg-indigo-50/40 rounded-full animate-ping opacity-75" style={{ animationDuration: '3s' }} />
           <div className="absolute w-24 h-24 bg-indigo-50/60 rounded-full animate-ping opacity-50" style={{ animationDuration: '2s' }} />
@@ -113,31 +197,28 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
           <div>
             <h4 className="text-sm font-bold text-gray-900 tracking-tight">Searching for Delivery Partner</h4>
             <p className="text-xs text-gray-500 mt-1 max-w-[240px]">
-              {isPickupPhase 
-                ? "Assigning the nearest partner to pick up your fabric from your address." 
-                : "Assigning the nearest partner to deliver your finished garment."
-              }
+              {isPickupPhase
+                ? 'Assigning the nearest partner to pick up your fabric from your address.'
+                : 'Assigning the nearest partner to deliver your finished garment.'}
             </p>
           </div>
 
-          {/* Premium loading bar */}
           <div className="w-full max-w-[180px] h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
             <div className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-primary to-[#4f46e5] rounded-full animate-[loading-slide_1.5s_infinite_ease-in-out]" />
           </div>
         </div>
 
-        {/* Custom CSS Animation for loading slider */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           @keyframes loading-slide {
             0% { left: -30%; width: 30%; }
             50% { left: 35%; width: 40%; }
             100% { left: 100%; width: 30%; }
-
           }
-          .animate-\\[loading-slide_1\\.5s_infinite_ease-in-out\\] {
-            animation: loading-slide 1.5s infinite ease-in-out;
-          }
-        `}} />
+        `,
+          }}
+        />
       </div>
     );
   }
@@ -162,25 +243,33 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
       <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
         <Navigation size={16} className="text-[#843D9B]" />
-        {isCustomerDelivering ? 'Customer Live Tracking' : 'Live Tracking'}
+        {isCustomerDelivering ? 'Customer Live Tracking' : journeyLabel}
       </h3>
 
-      {/* Map Section */}
       <div className="w-full h-64 rounded-xl overflow-hidden relative border border-gray-100">
-        <DeliveryBoyLiveMap 
+        <DeliveryBoyLiveMap
           currentLocation={riderLocation}
+          fallbackOrigin={fallbackOrigin || (!riderLocation ? (isPickupPhase ? customer : tailor) : null)}
           destination={destination}
+          destinationAddress={destinationAddress}
           isLoaded={isLoaded}
           height="100%"
+          onRouteCalculated={(data) => {
+            if (data?.distanceValue !== -1) {
+              if (data.distance) setDistance(data.distanceValue ?? data.distance);
+              if (data.duration) setEta(data.duration);
+            }
+          }}
         />
-        
-        {/* Distance/ETA Overlay */}
+
         {(distance || eta) && (
           <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-gray-100/50 flex gap-4">
-            {distance && (
+            {distance != null && (
               <div className="flex items-center gap-1.5">
                 <MapPin size={14} className="text-primary" />
-                <span className="text-xs font-bold text-gray-800">{typeof distance === 'number' ? (distance / 1000).toFixed(1) + ' km' : distance}</span>
+                <span className="text-xs font-bold text-gray-800">
+                  {typeof distance === 'number' ? (distance / 1000).toFixed(1) + ' km' : distance}
+                </span>
               </div>
             )}
             {eta && (
@@ -193,28 +282,33 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
         )}
       </div>
 
-      {/* Rider Info Section */}
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-[#843D9B]/10 rounded-full flex items-center justify-center shrink-0">
             <span className="text-xl font-black text-[#843D9B]">
-              {isCustomerDelivering 
-                ? (order.customer?.name?.charAt(0) || 'C') 
-                : (isTailorDelivery ? (order.tailor?.shopName?.charAt(0) || order.tailor?.name?.charAt(0) || 'T') : (rider?.name?.charAt(0) || 'R'))}
+              {isCustomerDelivering
+                ? order.customer?.name?.charAt(0) || 'C'
+                : isTailorDelivery
+                  ? order.tailor?.shopName?.charAt(0) || order.tailor?.name?.charAt(0) || 'T'
+                  : rider?.name?.charAt(0) || 'R'}
             </span>
           </div>
           <div>
             <h4 className="text-sm font-bold text-gray-900">
-              {isCustomerDelivering 
-                ? (order.customer?.name || 'Customer') 
-                : (isTailorDelivery ? (order.tailor?.shopName || order.tailor?.name || 'Artisan Tailor') : (rider?.name || 'Delivery Partner'))}
+              {isCustomerDelivering
+                ? order.customer?.name || 'Customer'
+                : isTailorDelivery
+                  ? order.tailor?.shopName || order.tailor?.name || 'Artisan Tailor'
+                  : rider?.name || 'Delivery Partner'}
             </h4>
 
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100 shadow-sm">
-                {isCustomerDelivering 
-                  ? 'Self Delivery' 
-                  : (isTailorDelivery ? 'Tailor Delivering' : (rider?.vehicleNumber || 'Vehicle'))}
+                {isCustomerDelivering
+                  ? 'Self Delivery'
+                  : isTailorDelivery
+                    ? 'Tailor Delivering'
+                    : rider?.vehicleNumber || 'Vehicle'}
               </span>
               {!isCustomerDelivering && !isTailorDelivery && (
                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100 shadow-sm">
@@ -224,17 +318,17 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
             </div>
           </div>
         </div>
-        
+
         {(!isCustomerDelivering || order.customer?.phoneNumber) && (
-          <a 
-            href={`tel:${isCustomerDelivering ? order.customer?.phoneNumber : (rider?.phoneNumber || rider?.phone)}`}
+          <a
+            href={`tel:${isCustomerDelivering ? order.customer?.phoneNumber : rider?.phoneNumber || rider?.phone}`}
             className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 hover:text-green-700 transition-colors shadow-sm"
           >
             <Phone size={18} fill="currentColor" />
           </a>
         )}
       </div>
-      
+
       {lastUpdated && (
         <p className="text-[10px] text-center text-gray-400 font-medium pt-2">
           Last updated: {new Date(lastUpdated).toLocaleTimeString()}

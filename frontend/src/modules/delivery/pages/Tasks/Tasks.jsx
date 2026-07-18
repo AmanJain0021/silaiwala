@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Package,
     Navigation,
     Phone,
     Camera,
+    Image as ImageIcon,
     CheckCircle2,
     Check,
     Store,
@@ -15,7 +16,8 @@ import {
     Search,
     RefreshCw,
     X,
-    Power
+    Power,
+    CreditCard
 } from 'lucide-react';
 import { MdTwoWheeler } from "react-icons/md";
 import deliveryService from '../../services/deliveryService';
@@ -37,6 +39,9 @@ const Tasks = () => {
     const [completedTasks, setCompletedTasks] = useState([]);
     const [activeTaskId, setActiveTaskId] = useState(null);
     const [otpInput, setOtpInput] = useState('');
+    const [paymentSelection, setPaymentSelection] = useState(null);
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
 
     const fetchTasks = async () => {
         setLoading(true);
@@ -176,21 +181,55 @@ const Tasks = () => {
 
     const [taskProof, setTaskProof] = useState(null);
 
-    const handleUpdateStatus = async (orderId, newStatus, message, proof = null, otp = null) => {
+    const handlePhotoSelect = (e) => {
+        const file = e.target?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            setTaskProof(reader.result);
+            toast.success('Photo captured!');
+        };
+        reader.readAsDataURL(file);
+        e.target.value = null;
+    };
+
+    const needsFinalPayment = (task) => {
+        if (!task || task.taskType === 'fabric-pickup') return false;
+        const due = Number(task.remainingPaymentAmount || 0);
+        return due > 0 && task.remainingPaymentStatus !== 'paid';
+    };
+
+    const handleUpdateStatus = async (orderId, newStatus, message, proof = null, otp = null, paymentMethod = null) => {
         try {
-            const res = await deliveryService.updateDeliveryStatus(orderId, newStatus, message, proof, otp);
-            if (res.success) {
+            const isFinalComplete = newStatus === 'delivered';
+
+            let res;
+            if (isFinalComplete) {
+                // Final T→C must go through /complete (payment + OTP enforced)
+                await deliveryService.completeDelivery(orderId, {
+                    otp,
+                    deliveryProofPhoto: proof,
+                    paymentMethod: paymentMethod || undefined,
+                });
+                res = { success: true };
+            } else {
+                res = await deliveryService.updateDeliveryStatus(orderId, newStatus, message, proof, otp, paymentMethod);
+            }
+
+            if (res.success || res) {
                 toast.success(`Status updated to ${newStatus}`);
                 if (newStatus === 'delivered' || newStatus === 'fabric-delivered' || newStatus === 'fabric-received') {
                     setActiveTaskId(null);
                     setTaskProof(null);
                     setOtpInput('');
+                    setPaymentSelection(null);
                 } else if (newStatus === 'out-for-delivery' || newStatus === 'fabric-picked-up') {
                     setActiveTaskId(orderId);
                 }
-                
+
                 if (newStatus === 'fabric-picked-up' || newStatus === 'picked-up-from-tailor' || newStatus === 'reached-dropoff') {
                     setOtpInput('');
+                    setTaskProof(null);
                 }
                 fetchTasks();
             }
@@ -310,35 +349,74 @@ const Tasks = () => {
                 </button>
             );
         } else if (currentStage === 'reached-dropoff') {
+            const duePayment = needsFinalPayment(task) ||
+                (['cod', 'cash'].includes(String(task.paymentMethod || '').toLowerCase()) &&
+                task.paymentStatus !== 'paid' &&
+                task.remainingPaymentStatus !== 'paid');
+            const amountDue = Number(task.remainingPaymentAmount || task.totalAmount || task.total || 0);
             actionUI = (
                 <div className="space-y-3">
                     <input
                         type="text"
                         placeholder="Enter 6-digit OTP"
                         value={otpInput}
-                        onChange={(e) => setOtpInput(e.target.value)}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
                         className="w-full text-center tracking-[0.5em] font-black py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 outline-none"
                         maxLength={6}
                     />
-                    {!taskProof && (
-                        <button
-                            onClick={() => {
-                                setTaskProof("https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=400&auto=format&fit=crop");
-                                toast.success("Photo captured!");
-                            }}
-                            className={`${btnClass} bg-slate-100 text-slate-900 border border-slate-200 hover:bg-white`}
-                        >
-                            <Camera size={14} /> Take Delivery Photo
-                        </button>
-                    )}
-                    {taskProof && (
+                    {!taskProof ? (
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => cameraInputRef.current?.click()}
+                                className={`${btnClass} bg-slate-100 text-slate-900 border border-slate-200 hover:bg-white`}
+                            >
+                                <Camera size={14} /> Camera
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => galleryInputRef.current?.click()}
+                                className={`${btnClass} bg-slate-100 text-slate-900 border border-slate-200 hover:bg-white`}
+                            >
+                                <ImageIcon size={14} /> Gallery
+                            </button>
+                        </div>
+                    ) : (
                         <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-slate-800 relative">
                             <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
-                            <button onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
+                            <button type="button" onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
                                 <X size={12} />
                             </button>
                         </div>
                     )}
+
+                    {duePayment && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-amber-800 flex items-center gap-1">
+                                    <CreditCard size={12} /> Collect payment
+                                </p>
+                                <p className="text-sm font-black text-slate-900">₹{amountDue}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentSelection('cash')}
+                                    className={`${btnClass} ${paymentSelection === 'cash' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+                                >
+                                    Cash
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentSelection('qr')}
+                                    className={`${btnClass} ${paymentSelection === 'qr' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+                                >
+                                    UPI QR
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <button
                         onClick={() => {
                             if (!otpInput || otpInput.length < 6) {
@@ -349,12 +427,17 @@ const Tasks = () => {
                                 toast.error('Please take a delivery photo first');
                                 return;
                             }
+                            if (duePayment && !paymentSelection) {
+                                toast.error('Collect final payment (Cash or UPI) before completing');
+                                return;
+                            }
                             handleUpdateStatus(
                                 task._id,
                                 isFabric ? 'fabric-delivered' : 'delivered',
                                 'Order successfully delivered',
                                 taskProof,
-                                otpInput
+                                otpInput,
+                                duePayment ? paymentSelection : null
                             );
                         }}
                         className={`${btnClass} bg-primary text-white hover:bg-slate-900 shadow-indigo-100`}
@@ -817,6 +900,21 @@ const Tasks = () => {
                 </AnimatePresence>
                 </>
             )}
+            <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoSelect}
+            />
+            <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoSelect}
+            />
         </div>
     );
 };

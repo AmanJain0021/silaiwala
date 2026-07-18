@@ -282,9 +282,9 @@ export const useDeliveryAuthStore = create(
       updateLocation: async (latitude, longitude, eta, distanceRemaining, address = null) => {
         const current = get().deliveryBoy;
         if (!current || current.status === 'offline') return;
-        // Throttle: max once per 10 seconds
+        // Throttle: max once per 5 seconds for smoother live tracking
         const now = Date.now();
-        if (now - get()._lastLocationUpdate < 10000) return;
+        if (now - get()._lastLocationUpdate < 5000) return;
         set({ _lastLocationUpdate: now });
         try {
           const payload = { lat: latitude, lng: longitude, eta, distanceRemaining };
