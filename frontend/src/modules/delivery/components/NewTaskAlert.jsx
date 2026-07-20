@@ -211,9 +211,13 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
             }
             console.log('New task alert received via socket:', taskData);
             const payload = taskData.data || taskData;
+            const orderMongoId = payload.orderId || taskData._id || payload._id;
             setNewTask({
                 ...payload,
-                message: taskData.message || payload.message
+                _id: taskData._id || payload._id || orderMongoId,
+                orderId_str: payload.orderId_str || taskData.orderId,
+                assignedByAdmin: !!(taskData.assignedByAdmin || payload.assignedByAdmin),
+                message: taskData.message || payload.message,
             });
         };
 
@@ -240,13 +244,17 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                     const statusVal = payload.type || '';
                     resolvedTaskType = (statusVal === 'fabric-ready-for-pickup' || statusVal === 'pending') 
                         ? 'fabric-pickup' 
-                        : 'final-delivery';
+                        : 'order-delivery';
                 }
 
+                const orderMongoId = payload.orderId || payload._id;
                 setNewTask({
                     ...payload,
+                    _id: orderMongoId,
+                    orderId_str: payload.orderId_str,
                     taskType: resolvedTaskType,
-                    message: data.message || payload.message
+                    assignedByAdmin: !!payload.assignedByAdmin,
+                    message: data.message || payload.message,
                 });
             }
         };
@@ -259,20 +267,28 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
             if (data.type === 'NEW_DELIVERY_TASK' || data.type === 'TASK_ASSIGNED' || data.type === 'new_task') {
                 let resolvedTaskType = data.taskType;
                 if (!resolvedTaskType) {
-                    const statusVal = data.status || '';
+                    const statusVal = data.status || data.type || '';
                     resolvedTaskType = (statusVal === 'fabric-ready-for-pickup' || statusVal === 'pending') 
                         ? 'fabric-pickup' 
-                        : 'final-delivery';
+                        : 'order-delivery';
                 }
                 setNewTask({
                     ...data,
+                    _id: data.orderId || data._id,
+                    orderId_str: data.orderId_str,
                     taskType: resolvedTaskType,
-                    message: payload.notification?.body || data.message || "New Task Available!"
+                    assignedByAdmin: data.assignedByAdmin === 'true' || data.assignedByAdmin === true,
+                    message: payload.notification?.body || data.message || "New Task Available!",
                 });
             }
         };
 
         const handleTaskClaimed = (data) => {
+            const assignedTo = data?.assignedTo?.toString?.();
+            const myId = (user?._id || user?.id)?.toString?.();
+            if (assignedTo && myId && assignedTo === myId) {
+                return;
+            }
             const claimedId = data?.orderId?.toString?.() || data?.orderId;
             const current = newTaskRef.current;
             const currentId = current?._id?.toString?.() || current?.orderId?.toString?.() || current?._id || current?.orderId;
@@ -285,11 +301,23 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
             }
         };
 
+        const handleAdminTaskAssigned = (data) => {
+            if (isBusyRef.current) return;
+            setNewTask({
+                ...data,
+                _id: data._id,
+                orderId_str: data.orderId,
+                assignedByAdmin: true,
+                message: data.message || `Admin assigned order ${data.orderId} to you.`,
+            });
+        };
+
         if (socket) {
             socket.on('new_task', handleNewTask);
             socket.on('new_order', handleNewTask);
             socket.on('receive_new_order', handleReceiveNewOrder);
             socket.on('new_notification', handleNewNotification);
+            socket.on('admin_task_assigned', handleAdminTaskAssigned);
             socket.on('task_claimed', handleTaskClaimed);
         }
         window.addEventListener('fcm_message', handleFCMMessage);
@@ -300,11 +328,12 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                 socket.off('new_order', handleNewTask);
                 socket.off('receive_new_order', handleReceiveNewOrder);
                 socket.off('new_notification', handleNewNotification);
+                socket.off('admin_task_assigned', handleAdminTaskAssigned);
                 socket.off('task_claimed', handleTaskClaimed);
             }
             window.removeEventListener('fcm_message', handleFCMMessage);
         };
-    }, [socket]);
+    }, [socket, user]);
 
     // Polling fallback mechanism
     useEffect(() => {
@@ -468,7 +497,9 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                                 <Truck size={20} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-white tracking-widest uppercase mb-0.5 animate-pulse">New Dispatch Request</h3>
+                                <h3 className="text-sm font-black text-white tracking-widest uppercase mb-0.5 animate-pulse">
+                                    {newTask.assignedByAdmin ? 'Admin Assigned Order' : 'New Dispatch Request'}
+                                </h3>
                                 <p className="text-[10px] font-bold text-indigo-300/80 tracking-widest leading-none">
                                     {isLoadingDetails ? 'CALCULATING EARNINGS...' : `EST. EARNINGS: ₹${newTask.deliveryEarnings || 20}.00`}
                                 </p>

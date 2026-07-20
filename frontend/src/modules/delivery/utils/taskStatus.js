@@ -30,9 +30,11 @@ export const isPendingAcceptanceTask = (task, user) => {
   const { uid, dpId, ppId, dopId } = getPartnerIds(task, user);
   if (!uid || !task) return false;
 
-  const isLegacyPending = !!dpId && dpId === uid && task.deliveryStatus === "pending";
-  const isPickupPending = !!ppId && ppId === uid && task.pickupDeliveryStatus === "pending";
-  const isDropoffPending = !!dopId && dopId === uid && task.dropoffDeliveryStatus === "pending";
+  const isLegacyPending = !!dpId && dpId === uid && ["pending", "assigned"].includes(task.deliveryStatus);
+  const isPickupPending =
+    !!ppId && ppId === uid && ["pending", "assigned"].includes(task.pickupDeliveryStatus);
+  const isDropoffPending =
+    !!dopId && dopId === uid && ["pending", "assigned"].includes(task.dropoffDeliveryStatus);
 
   const isCandidate = (task.pendingPartnerCandidates || []).some((id) => toId(id) === uid);
   const isBroadcastPending =

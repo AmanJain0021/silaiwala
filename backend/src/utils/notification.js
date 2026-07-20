@@ -70,6 +70,19 @@ const sendNotification = async (options) => {
         io.to(`user_${recipientId}`).emit("new_notification", {
            title, message, type, data, createdAt: new Date()
         });
+
+        if (type === "TASK_ASSIGNED" || type === "NEW_DELIVERY_TASK") {
+          io.to(`user_${recipientId}`).emit("new_task", {
+            title,
+            message,
+            type,
+            data,
+            _id: data?.orderId,
+            orderId: data?.orderId_str || data?.orderId,
+            taskType: data?.taskType,
+            assignedByAdmin: !!data?.assignedByAdmin,
+          });
+        }
         
         // Also emit specific type events if needed
         if (type === "ORDER_CREATED") {

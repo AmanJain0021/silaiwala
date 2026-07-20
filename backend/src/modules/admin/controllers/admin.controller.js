@@ -917,11 +917,11 @@ exports.updateOrderStatus = async (req, res) => {
         (oldOrder.fabricPickupRequired && ["pending", "accepted"].includes(oldOrder.status));
       if (isDropoffPhase) {
         updateData.dropoffPartner = deliveryPartner;
-        updateData.dropoffDeliveryStatus = "accepted";
+        updateData.dropoffDeliveryStatus = "assigned";
       }
       if (isPickupPhase) {
         updateData.pickupPartner = deliveryPartner;
-        updateData.pickupDeliveryStatus = "accepted";
+        updateData.pickupDeliveryStatus = "assigned";
       }
       
       // LOGIC: If we are assigning a delivery partner and the order was pending/accepted,
@@ -996,26 +996,45 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     if (deliveryPartner && deliveryPartner !== oldOrder.deliveryPartner?.toString()) {
-      const isPickup = order.status === 'fabric-ready-for-pickup' || (order.fabricPickupRequired && order.status === 'pending');
+      const isPickup =
+        order.status === "fabric-ready-for-pickup" ||
+        (order.fabricPickupRequired && ["pending", "accepted"].includes(order.status));
+      const taskType = isPickup ? "fabric-pickup" : "order-delivery";
+      const notifyTitle = isPickup ? "Admin assigned fabric pickup 📍" : "Admin assigned delivery 📍";
+      const notifyMessage = isPickup
+        ? `Admin assigned order ${order.orderId || id} to you for fabric pickup. Open the app to accept.`
+        : `Admin assigned order ${order.orderId || id} to you for final delivery. Open the app to accept.`;
+
       await sendNotification({
         recipient: deliveryPartner,
         type: "TASK_ASSIGNED",
-        title: isPickup ? "New Fabric Task Assigned! 📍" : "New Final Delivery Task! 📍",
-        message: isPickup 
-          ? `Order ${order.orderId || id} has been assigned to you for fabric pickup.`
-          : `Order ${order.orderId || id} has been assigned to you for final delivery.`,
-        data: { 
-          orderId: id, 
+        title: notifyTitle,
+        message: notifyMessage,
+        data: {
+          orderId: order._id,
+          orderId_str: order.orderId,
           type: order.status,
-          taskType: isPickup ? 'fabric-pickup' : 'final-delivery',
-          targetUrl: "/delivery/tasks" 
-        }
+          taskType,
+          assignedByAdmin: true,
+          targetUrl: "/delivery/tasks",
+        },
       });
 
-      // Clear from general fleet
       const { getIO } = require("../../../config/socket.js");
       const io = getIO();
-      if (io) io.to("delivery_partners").emit("task_claimed", { orderId: id });
+      if (io) {
+        io.to(`user_${deliveryPartner}`).emit("admin_task_assigned", {
+          _id: order._id,
+          orderId: order.orderId,
+          taskType,
+          message: notifyMessage,
+          assignedByAdmin: true,
+        });
+        io.to("delivery_partners").emit("task_claimed", {
+          orderId: order._id,
+          assignedTo: deliveryPartner.toString(),
+        });
+      }
     }
 
     if (measurementExecutive) {
