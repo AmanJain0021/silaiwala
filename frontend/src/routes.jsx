@@ -155,6 +155,7 @@ const ReportIssue = React.lazy(() => import('./modules/customer/pages/ReportIssu
 const IssueDetails = React.lazy(() => import('./modules/customer/pages/IssueDetails')); // NEW
 const SharedLegalPage = React.lazy(() => import('./shared/components/LegalPage')); // NEW
 const LoyaltyPoints = React.lazy(() => import('./modules/customer/pages/LoyaltyPoints')); // NEW
+const CustomerMembership = React.lazy(() => import('./modules/customer/pages/CustomerMembership'));
 
 const AppRoutes = () => {
     return (
@@ -209,6 +210,7 @@ const AppRoutes = () => {
                         <Route path="profile/addresses" element={<SavedAddresses />} />
                         <Route path="activity" element={<ActivityHistory />} />
                         <Route path="loyalty" element={<LoyaltyPoints />} />
+                        <Route path="membership" element={<CustomerMembership />} />
                         <Route path="refer" element={<ReferEarn />} />
                         <Route path="wallet" element={<WalletPage />} />
                         <Route path="coupons" element={<CouponsPage />} />

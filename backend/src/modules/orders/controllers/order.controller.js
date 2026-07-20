@@ -464,47 +464,10 @@ ledgerId,
     }
     // ---------------------------------
 
-    // --- Referral Flow ---
-    // Check if this is the customer's first order
-    const customerProfile = await Customer.findOne({ user: order.customer });
-    if (customerProfile && customerProfile.totalOrders === 0) {
-        customerProfile.totalOrders = 1;
-
-        // If referred by someone, give them both a bonus
-        if (customerProfile.referredBy) {
-            const referrerProfile = await Customer.findOne({ user: customerProfile.referredBy });
-            if (referrerProfile) {
-                const REFERRER_BONUS = 50;
-                const CUSTOMER_BONUS = 25;
-
-                // 1. Reward Referrer
-                referrerProfile.walletBalance += REFERRER_BONUS;
-                referrerProfile.referralEarnings += REFERRER_BONUS;
-                await referrerProfile.save({ session });
-
-                await WalletTransaction.create([{
-user: referrerProfile.user,
-                    amount: REFERRER_BONUS,
-                    type: "credit",
-                    category: "referral_bonus",
-                    description: `Bonus for referring ${customerProfile.user.name || 'a new user'}`
-}], { session });
-
-                // 2. Reward New Customer
-                customerProfile.walletBalance += CUSTOMER_BONUS;
-                await WalletTransaction.create([{
-user: customerProfile.user,
-                    amount: CUSTOMER_BONUS,
-                    type: "credit",
-                    category: "referral_bonus",
-                    description: "Welcome bonus from referral"
-}], { session });
-            }
-        }
-        await customerProfile.save({ session });
-    } else if (customerProfile) {
-        customerProfile.totalOrders += 1;
-        await customerProfile.save({ session });
+    // --- Referral / first-payment loyalty (advance or full only) ---
+    const { processReferralRewardsOnFirstPayment } = require("../../../utils/referralRewards.js");
+    if (paymentType === "advance" || paymentType === "full") {
+      await processReferralRewardsOnFirstPayment(order, session, paymentType);
     }
     // ---------------------
     await session.commitTransaction();

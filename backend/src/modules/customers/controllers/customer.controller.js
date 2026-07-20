@@ -1,5 +1,6 @@
 const User = require("../../../models/User.js");
 const Customer = require("../../../models/Customer.js");
+const Settings = require("../../../models/Settings.js");
 const Tailor = require("../../../models/Tailor.js");
 const Product = require("../../../models/Product.js");
 const Order = require("../../../models/Order.js");
@@ -304,15 +305,22 @@ exports.getReferralStats = asyncHandler(async (req, res, next) => {
   if (!customer) {
     customer = await Customer.create({ user: req.user.id });
   }
-  const referralsCount = await Customer.countDocuments({ referredBy: req.user.id });
+  const user = await User.findById(req.user.id).select("loyaltyPoints name");
+  const settings = await Settings.getSettings();
+  const referralConfig = settings.referralConfig || {};
 
   res.status(200).json({
     success: true,
     data: {
       referralCode: customer.referralCode || "NOT_GENERATED",
       totalReferrals: customer.referredCount || 0,
-      rewardPoints: customer.walletBalance || 0,
+      loyaltyPoints: user?.loyaltyPoints || 0,
       referralEarnings: customer.referralEarnings || 0,
+      referralConfig: {
+        enabled: referralConfig.enabled !== false,
+        referrerPointsOnFirstAdvance: Number(referralConfig.referrerPointsOnFirstAdvance) || 0,
+        refereePointsOnFirstAdvance: Number(referralConfig.refereePointsOnFirstAdvance) || 0,
+      },
     },
   });
 });

@@ -57,6 +57,20 @@ const subscriptionPlanSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    /** tailor = Razorpay tailor plans; customer = redeem with loyalty points */
+    audience: {
+      type: String,
+      enum: ["tailor", "customer"],
+      default: "tailor",
+    },
+    pointsPrice: {
+      type: Number,
+      default: 0,
+    },
+    durationDays: {
+      type: Number,
+      default: 30,
+    },
   },
   {
     timestamps: true,

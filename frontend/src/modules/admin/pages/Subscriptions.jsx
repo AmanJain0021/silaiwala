@@ -22,7 +22,10 @@ const AdminSubscriptions = () => {
         isActive: true,
         maxOrdersPerMonth: -1,
         sortOrder: 0,
-        description: ''
+        description: '',
+        audience: 'tailor',
+        pointsPrice: 0,
+        durationDays: 30,
     });
 
     useEffect(() => {
@@ -59,7 +62,10 @@ const AdminSubscriptions = () => {
                 isActive: plan.isActive ?? true,
                 maxOrdersPerMonth: plan.maxOrdersPerMonth ?? -1,
                 sortOrder: plan.sortOrder ?? 0,
-                description: plan.description || ''
+                description: plan.description || '',
+                audience: plan.audience || 'tailor',
+                pointsPrice: plan.pointsPrice ?? 0,
+                durationDays: plan.durationDays ?? 30,
             });
         } else {
             setEditingPlan(null);
@@ -74,7 +80,10 @@ const AdminSubscriptions = () => {
                 isActive: true,
                 maxOrdersPerMonth: -1,
                 sortOrder: 0,
-                description: ''
+                description: '',
+                audience: 'tailor',
+                pointsPrice: 0,
+                durationDays: 30,
             });
         }
         setIsModalOpen(true);
@@ -106,6 +115,8 @@ const AdminSubscriptions = () => {
                 price: Number(formData.price),
                 maxOrdersPerMonth: Number(formData.maxOrdersPerMonth),
                 sortOrder: Number(formData.sortOrder),
+                pointsPrice: Number(formData.pointsPrice) || 0,
+                durationDays: Number(formData.durationDays) || 30,
                 features: featuresArray
             };
 
@@ -209,9 +220,21 @@ const AdminSubscriptions = () => {
                             </div>
                             
                             <div className="mt-4 flex items-end gap-1">
-                                <span className="text-3xl font-black text-gray-900">{plan.price === 0 ? 'Free' : `₹${plan.price}`}</span>
-                                <span className="text-sm font-medium text-gray-500 mb-1">/{plan.billingCycle.toLowerCase()}</span>
+                                {plan.audience === 'customer' ? (
+                                    <>
+                                        <span className="text-3xl font-black text-gray-900">{plan.pointsPrice || 0}</span>
+                                        <span className="text-sm font-medium text-gray-500 mb-1">pts / {plan.durationDays || 30} days</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-3xl font-black text-gray-900">{plan.price === 0 ? 'Free' : `₹${plan.price}`}</span>
+                                        <span className="text-sm font-medium text-gray-500 mb-1">/{plan.billingCycle.toLowerCase()}</span>
+                                    </>
+                                )}
                             </div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-2">
+                                {plan.audience === 'customer' ? 'Customer · points' : 'Tailor · Razorpay'}
+                            </p>
                             {plan.description && (
                                 <p className="text-sm text-gray-600 mt-3">{plan.description}</p>
                             )}
@@ -308,6 +331,47 @@ const AdminSubscriptions = () => {
                                         />
                                     </div>
                                     
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Audience</label>
+                                        <select
+                                            name="audience"
+                                            value={formData.audience}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                        >
+                                            <option value="tailor">Tailor (Razorpay)</option>
+                                            <option value="customer">Customer (loyalty points)</option>
+                                        </select>
+                                    </div>
+                                    {formData.audience === 'customer' && (
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Points price</label>
+                                                <input
+                                                    type="number"
+                                                    name="pointsPrice"
+                                                    value={formData.pointsPrice}
+                                                    onChange={handleInputChange}
+                                                    min="1"
+                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Duration (days)</label>
+                                                <input
+                                                    type="number"
+                                                    name="durationDays"
+                                                    value={formData.durationDays}
+                                                    onChange={handleInputChange}
+                                                    min="1"
+                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    required
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-1.5">Billing Cycle</label>
                                         <select

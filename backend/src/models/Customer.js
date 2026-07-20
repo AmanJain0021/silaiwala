@@ -61,6 +61,17 @@ const customerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    referralBonusAwarded: {
+      type: Boolean,
+      default: false,
+    },
+    activeCustomerPlan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubscriptionPlan",
+    },
+    customerPlanExpiryDate: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

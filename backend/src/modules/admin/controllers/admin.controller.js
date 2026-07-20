@@ -1749,6 +1749,7 @@ exports.updateSettings = async (req, res) => {
     if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
     if (updateData.executiveRates) settings.executiveRates = updateData.executiveRates;
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
+    if (updateData.referralConfig) settings.referralConfig = updateData.referralConfig;
     if (updateData.tailorSearch) settings.tailorSearch = updateData.tailorSearch;
 
     await settings.save();

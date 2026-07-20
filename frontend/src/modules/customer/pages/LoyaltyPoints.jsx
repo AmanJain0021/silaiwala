@@ -42,7 +42,7 @@ const LoyaltyPointsPage = () => {
     }
 
     const points = profile?.loyaltyPoints || 0;
-    const redemptionValue = settings?.redemptionValueInINR || 1;
+    const redemptionValue = settings?.redemptionValuePerPoint ?? settings?.redemptionValueInINR ?? 1;
     const totalValue = (points * redemptionValue).toFixed(2);
 
     return (

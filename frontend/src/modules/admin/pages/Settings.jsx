@@ -475,8 +475,8 @@ const AdminSettings = () => {
                                     <input 
                                         type="number" 
                                         step="0.1"
-                                        value={settings.loyaltyConfig?.redemptionValueInINR ?? 1} 
-                                        onChange={(e) => updateNestedSetting('loyaltyConfig', 'redemptionValueInINR', Number(e.target.value))}
+                                        value={settings.loyaltyConfig?.redemptionValuePerPoint ?? settings.loyaltyConfig?.redemptionValueInINR ?? 1} 
+                                        onChange={(e) => updateNestedSetting('loyaltyConfig', 'redemptionValuePerPoint', Number(e.target.value))}
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                     />
                                 </div>
@@ -489,6 +489,44 @@ const AdminSettings = () => {
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-red-500 transition-colors shadow-sm" 
                                     />
                                     <p className="text-[10px] text-red-400 font-medium mt-1">Deducted when order is cancelled.</p>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-gray-100 pt-8">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-1">Referral rewards</h3>
+                                <p className="text-xs text-gray-500 font-medium mb-4">
+                                    Loyalty points when a referred friend pays their first advance (or full payment). 1 point = ₹1.
+                                </p>
+                                <label className="flex items-center gap-3 mb-4 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.referralConfig?.enabled !== false}
+                                        onChange={(e) => updateNestedSetting('referralConfig', 'enabled', e.target.checked)}
+                                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <span className="text-sm font-bold text-gray-800">Enable referral point rewards</span>
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Referrer points (first advance paid)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            value={settings.referralConfig?.referrerPointsOnFirstAdvance ?? 50}
+                                            onChange={(e) => updateNestedSetting('referralConfig', 'referrerPointsOnFirstAdvance', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">New friend points (first advance paid)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            value={settings.referralConfig?.refereePointsOnFirstAdvance ?? 25}
+                                            onChange={(e) => updateNestedSetting('referralConfig', 'refereePointsOnFirstAdvance', Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

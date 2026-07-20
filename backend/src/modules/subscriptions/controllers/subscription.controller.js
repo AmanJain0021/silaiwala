@@ -1,5 +1,8 @@
 const SubscriptionPlan = require("../../../models/SubscriptionPlan.js");
 const Tailor = require("../../../models/Tailor.js");
+const Customer = require("../../../models/Customer.js");
+const User = require("../../../models/User.js");
+const LoyaltyPointTransaction = require("../../../models/LoyaltyPointTransaction.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const razorpay = require("../../../config/razorpay.js");
@@ -11,8 +14,14 @@ const crypto = require("crypto");
  * @access  Public or Authenticated
  */
 exports.getPlans = asyncHandler(async (req, res, next) => {
-  // Use $ne: false so that older documents without the isActive field are also returned
-  const plans = await SubscriptionPlan.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, price: 1 });
+  const audience = req.query.audience === "customer" ? "customer" : "tailor";
+  const filter = { isActive: { $ne: false } };
+  if (audience === "customer") {
+    filter.audience = "customer";
+  } else {
+    filter.$or = [{ audience: "tailor" }, { audience: { $exists: false } }];
+  }
+  const plans = await SubscriptionPlan.find(filter).sort({ sortOrder: 1, price: 1, pointsPrice: 1 });
 
   res.status(200).json({
     success: true,
@@ -35,6 +44,9 @@ exports.createSubscriptionOrder = asyncHandler(async (req, res, next) => {
   const plan = await SubscriptionPlan.findById(planId);
   if (!plan) {
     return next(new ErrorResponse("Subscription plan not found", 404));
+  }
+  if (plan.audience !== "tailor") {
+    return next(new ErrorResponse("This plan must be redeemed with loyalty points", 400));
   }
   
   if (plan.price <= 0) {
@@ -80,6 +92,9 @@ exports.subscribe = asyncHandler(async (req, res, next) => {
   if (!plan) {
     return next(new ErrorResponse("Subscription plan not found", 404));
   }
+  if (plan.audience !== "tailor") {
+    return next(new ErrorResponse("Use points redemption for customer plans", 400));
+  }
 
   if (plan.price > 0) {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -104,7 +119,7 @@ exports.subscribe = asyncHandler(async (req, res, next) => {
 
   // Calculate expiry date (30 days from now)
   const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + 30);
+  expiryDate.setDate(expiryDate.getDate() + (plan.durationDays || 30));
 
   tailor.activePlan = plan._id;
   tailor.planExpiryDate = expiryDate;
@@ -121,6 +136,75 @@ exports.subscribe = asyncHandler(async (req, res, next) => {
       activePlan: plan,
       planExpiryDate: expiryDate
     }
+  });
+});
+
+/**
+ * @desc    Redeem a customer subscription plan with loyalty points
+ * @route   POST /api/v1/subscriptions/redeem-with-points
+ * @access  Private (Customer)
+ */
+exports.redeemWithPoints = asyncHandler(async (req, res, next) => {
+  const { planId } = req.body;
+
+  if (req.user.role !== "customer") {
+    return next(new ErrorResponse("Only customers can redeem plans with points", 403));
+  }
+
+  const plan = await SubscriptionPlan.findById(planId);
+  if (!plan || plan.audience !== "customer") {
+    return next(new ErrorResponse("Customer subscription plan not found", 404));
+  }
+  if (plan.isActive === false) {
+    return next(new ErrorResponse("This plan is not available", 400));
+  }
+
+  const pointsCost = Number(plan.pointsPrice) || 0;
+  if (pointsCost <= 0) {
+    return next(new ErrorResponse("This plan is not configured for points redemption", 400));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse("User not found", 404));
+  }
+  if ((user.loyaltyPoints || 0) < pointsCost) {
+    return next(new ErrorResponse("Insufficient loyalty points", 400));
+  }
+
+  let customer = await Customer.findOne({ user: req.user.id });
+  if (!customer) {
+    customer = await Customer.create({ user: req.user.id });
+  }
+
+  user.loyaltyPoints = (user.loyaltyPoints || 0) - pointsCost;
+  await user.save();
+
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + (plan.durationDays || 30));
+
+  customer.activeCustomerPlan = plan._id;
+  customer.customerPlanExpiryDate = expiryDate;
+  await customer.save();
+
+  await LoyaltyPointTransaction.create({
+    user: user._id,
+    points: pointsCost,
+    type: "debit",
+    reason: "subscription_redeem",
+    subscriptionPlan: plan._id,
+    description: `Redeemed ${plan.name} (${pointsCost} points)`,
+    balanceAfter: user.loyaltyPoints,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Plan activated with loyalty points",
+    data: {
+      activePlan: plan,
+      planExpiryDate: expiryDate,
+      loyaltyPoints: user.loyaltyPoints,
+    },
   });
 });
 

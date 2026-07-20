@@ -75,6 +75,12 @@ const settingsSchema = new mongoose.Schema(
       redemptionValuePerPoint: { type: Number, default: 1 },
       cancellationPenalty: { type: Number, default: 0 },
     },
+    referralConfig: {
+      enabled: { type: Boolean, default: true },
+      /** Loyalty points for referrer when referee's first advance/full payment succeeds */
+      referrerPointsOnFirstAdvance: { type: Number, default: 50 },
+      refereePointsOnFirstAdvance: { type: Number, default: 25 },
+    },
     tailorSearch: {
       searchRadiusKm: { type: mongoose.Schema.Types.Mixed, default: "default" },
     }

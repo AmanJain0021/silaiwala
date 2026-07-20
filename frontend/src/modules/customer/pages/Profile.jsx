@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     User, ShoppingBag, MapPin, Ruler, Grid, LogOut, Wallet, Star,
-    Settings, Headset, ChevronRight, Share2, Heart, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Sparkles, Package, Trash2, AlertTriangle
+    Settings, Headset, ChevronRight, Share2, Heart, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Sparkles, Package, Trash2, AlertTriangle, Crown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -153,6 +153,13 @@ const ProfilePage = () => {
                             subLabel="View your earned points"
                             extra={<span className="bg-gray-100 text-[10px] font-black px-2.5 py-1 rounded-full text-gray-900 border border-gray-200">{displayUser.loyaltyPoints || 0}</span>}
                             to="/user/loyalty"
+                        />
+                        <MenuOption
+                            icon={Crown}
+                            color="bg-[#843D9B]"
+                            label="Membership"
+                            subLabel="Redeem plans with points"
+                            to="/user/membership"
                         />
                         <MenuOption
                             icon={Wallet}
