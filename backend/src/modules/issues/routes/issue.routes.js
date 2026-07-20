@@ -6,6 +6,8 @@ const {
   getIssueDetails,
   getTailorIssues,
   updateIssueStatus,
+  getReworkDeliveryQuote,
+  dispatchReworkDelivery,
   arrangePickup,
   getAdminIssues,
   adminUpdateIssueStatus,
@@ -28,6 +30,8 @@ router.post("/:id/chat", authorize("customer", "tailor", "admin"), sendIssueMess
 // Tailor Routes
 router.get("/tailor/list", authorize("tailor"), getTailorIssues);
 router.patch("/:id/status", authorize("tailor"), updateIssueStatus);
+router.get("/:id/delivery-quote", authorize("tailor"), getReworkDeliveryQuote);
+router.post("/:id/dispatch-delivery", authorize("tailor"), dispatchReworkDelivery);
 router.post("/:id/arrange-pickup", authorize("tailor"), arrangePickup);
 
 // Admin Routes

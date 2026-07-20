@@ -16,28 +16,38 @@ const ReportIssue = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleImageUpload = async (e) => {
-        const files = Array.from(e.target.files);
+        const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
         setIsUploading(true);
         const newImageUrls = [];
         
         for (const file of files) {
+            const safeName =
+                file.name && /\.(jpe?g|png|webp)$/i.test(file.name)
+                    ? file.name
+                    : `issue-photo-${Date.now()}.jpg`;
+            const uploadFile = new File([file], safeName, {
+                type: file.type || 'image/jpeg',
+            });
+
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('image', uploadFile);
             try {
-                const res = await api.post('/upload', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                newImageUrls.push(res.data.data); // Upload API returns url inside .data
+                const res = await api.post('/upload', formData);
+                const url = res.data?.data;
+                if (url) newImageUrls.push(url);
+                else toast.error('Upload returned no URL');
             } catch (err) {
-                toast.error(`Failed to upload ${file.name}`);
+                const msg = err.response?.data?.message || err.message;
+                toast.error(msg || `Failed to upload ${safeName}`);
             }
         }
         
         setImageUrls(prev => [...prev, ...newImageUrls]);
         setImages(prev => [...prev, ...files]);
         setIsUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const removeImage = (index) => {
@@ -142,6 +152,7 @@ const ReportIssue = () => {
                             ref={fileInputRef}
                             onChange={handleImageUpload}
                             accept="image/*"
+                            capture="environment"
                             multiple
                             className="hidden"
                         />

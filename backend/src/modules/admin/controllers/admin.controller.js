@@ -772,7 +772,10 @@ exports.getAllOrders = async (req, res) => {
   try {
     const { status, type, customer, tailor, deliveryPartner, deliveryMethod, search, limit = 50, page = 1 } = req.query;
     
-    let query = { isRework: { $ne: true } };
+    let query = {};
+    if (deliveryMethod !== "manual") {
+      query.isRework = { $ne: true };
+    }
     if (status) query.status = status;
     if (customer) query.customer = customer;
     if (tailor) query.tailor = tailor;

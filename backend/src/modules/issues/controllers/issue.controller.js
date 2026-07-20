@@ -193,10 +193,10 @@ exports.updateIssueStatus = asyncHandler(async (req, res, next) => {
   }
 
     await sendNotification({
-      user: issue.customer,
+      recipient: issue.customer,
+      type: "ISSUE_UPDATED",
       title: "Issue Status Updated",
       message: message,
-      type: "info",
       data: { issueId: issue._id, targetUrl: `/user/issues/${issue._id}` }
     });
 
@@ -206,10 +206,212 @@ exports.updateIssueStatus = asyncHandler(async (req, res, next) => {
   });
 });
 
+async function ensureReworkOrder(issue, original) {
+  if (issue.reworkOrder) {
+    return Order.findById(issue.reworkOrder);
+  }
+
+  const newOrderId = `ORD-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+
+  const reworkOrder = await Order.create({
+    orderId: newOrderId,
+    customer: original.customer,
+    tailor: original.tailor,
+    deliveryAddress: original.deliveryAddress,
+    items: original.items.map((i) => ({
+      ...i.toObject(),
+      price: 0,
+    })),
+    totalAmount: 0,
+    status: "accepted",
+    fabricPickupRequired: true,
+    isRework: true,
+    parentOrder: original._id,
+    relatedIssue: issue._id,
+  });
+
+  issue.reworkOrder = reworkOrder._id;
+  await issue.save();
+  return reworkOrder;
+}
+
+/**
+ * @desc    Distance-based delivery quote for rework (tailor pays)
+ * @route   GET /api/v1/issues/:id/delivery-quote?cycle=pickup|dropoff
+ */
+exports.getReworkDeliveryQuote = asyncHandler(async (req, res, next) => {
+  const cycle = req.query.cycle === "dropoff" ? "dropoff" : "pickup";
+  const issue = await Issue.findById(req.params.id).populate("originalOrder");
+
+  if (!issue) return next(new ErrorResponse("Issue not found", 404));
+  if (issue.tailor.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized", 403));
+  }
+  if (!["accepted", "pickup_pending", "pickup_completed", "rework_in_progress", "ready_for_delivery"].includes(issue.status)) {
+    return next(new ErrorResponse("Delivery can be arranged only after accepting the issue", 400));
+  }
+
+  const { calculateOrderLegFee } = require("../../../utils/deliveryFeeCalculator.js");
+  const Tailor = require("../../../models/Tailor.js");
+  const tailorProfile = await Tailor.findOne({ user: req.user.id }).lean();
+
+  const orderForQuote = issue.originalOrder;
+  const quote = await calculateOrderLegFee(orderForQuote, cycle);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      ...quote,
+      walletBalance: tailorProfile?.walletBalance || 0,
+      canAfford: (tailorProfile?.walletBalance || 0) >= quote.deliveryFee,
+      cycle,
+    },
+  });
+});
+
+/**
+ * @desc    Tailor pays distance-based fee and assigns delivery (broadcast / manual)
+ * @route   POST /api/v1/issues/:id/dispatch-delivery
+ */
+exports.dispatchReworkDelivery = asyncHandler(async (req, res, next) => {
+  const { deliveryMethod, cycle: cycleBody } = req.body;
+  const cycle = cycleBody === "dropoff" ? "dropoff" : "pickup";
+
+  if (!deliveryMethod || !["broadcast", "manual"].includes(deliveryMethod)) {
+    return next(new ErrorResponse("deliveryMethod must be broadcast or manual", 400));
+  }
+
+  const issue = await Issue.findById(req.params.id).populate("originalOrder");
+  if (!issue) return next(new ErrorResponse("Issue not found", 404));
+  if (issue.tailor.toString() !== req.user.id) {
+    return next(new ErrorResponse("Not authorized", 403));
+  }
+  if (issue.status === "pending" || issue.status === "rejected") {
+    return next(new ErrorResponse("Accept the issue before assigning delivery", 400));
+  }
+
+  const original = issue.originalOrder;
+  let reworkOrder = await ensureReworkOrder(issue, original);
+
+  const { calculateOrderLegFee } = require("../../../utils/deliveryFeeCalculator.js");
+  const Tailor = require("../../../models/Tailor.js");
+  const WalletTransaction = require("../../../models/WalletTransaction.js");
+  const quote = await calculateOrderLegFee(original, cycle);
+
+  const tailorProfile = await Tailor.findOne({ user: req.user.id });
+  if (!tailorProfile) return next(new ErrorResponse("Tailor profile not found", 404));
+
+  if ((tailorProfile.walletBalance || 0) < quote.deliveryFee) {
+    return next(
+      new ErrorResponse(
+        `Insufficient wallet balance. Need ₹${quote.deliveryFee} (distance ~${quote.distanceKm} km). Please top up your wallet.`,
+        400
+      )
+    );
+  }
+
+  const chargeKey =
+    cycle === "pickup" ? "reworkPickupDeliveryPaid" : "reworkReturnDeliveryPaid";
+  if (reworkOrder[chargeKey]) {
+    return next(new ErrorResponse(`Delivery charge for ${cycle} leg already paid`, 400));
+  }
+
+  tailorProfile.walletBalance -= quote.deliveryFee;
+  await tailorProfile.save();
+
+  await WalletTransaction.create({
+    user: req.user.id,
+    amount: quote.deliveryFee,
+    type: "debit",
+    category: "commission_deduction",
+    order: reworkOrder._id,
+    status: "completed",
+    description: `Rework ${cycle} delivery partner charge (₹${quote.deliveryFee}, ${quote.distanceKm} km)`,
+  });
+
+  reworkOrder.deliveryFee = quote.deliveryFee;
+  reworkOrder.deliveryPartnerEarning = quote.deliveryFee;
+  reworkOrder.deliveryEarnings = quote.deliveryFee;
+  reworkOrder.deliveryDistance = quote.distanceKm;
+  reworkOrder.deliveryMethod = deliveryMethod;
+  reworkOrder[chargeKey] = true;
+
+  if (cycle === "pickup") {
+    reworkOrder.status = "fabric-ready-for-pickup";
+    reworkOrder.fabricPickupRequired = true;
+    issue.status = "pickup_pending";
+  } else {
+    reworkOrder.status = "ready-for-delivery";
+    reworkOrder.fabricPickupRequired = false;
+    issue.status = "ready_for_delivery";
+  }
+
+  reworkOrder.trackingHistory = reworkOrder.trackingHistory || [];
+  reworkOrder.trackingHistory.push({
+    status: reworkOrder.status,
+    message: `Tailor paid ₹${quote.deliveryFee} for ${cycle} delivery (${quote.distanceKm} km) — ${deliveryMethod} assignment`,
+    timestamp: new Date(),
+  });
+
+  await reworkOrder.save();
+  await issue.save();
+
+  if (deliveryMethod === "broadcast") {
+    const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+    await autoAssignDelivery(reworkOrder._id, cycle === "pickup" ? "pickup" : "dropoff");
+  } else {
+    reworkOrder.pendingPartnerCandidates = [];
+    if (cycle === "pickup") {
+      reworkOrder.pickupDeliveryStatus = "pending";
+    } else {
+      reworkOrder.dropoffDeliveryStatus = "pending";
+    }
+    await reworkOrder.save();
+
+    await sendNotification({
+      recipient: "admins",
+      type: "SYSTEM_NOTICE",
+      title: "Rework delivery — manual assignment",
+      message: `Tailor paid for ${cycle} delivery on rework order ${reworkOrder.orderId}. Please assign a partner.`,
+      data: { orderId: reworkOrder._id, targetUrl: "/admin/delivery" },
+    });
+
+    const { tryGetIO } = require("../../../config/socket.js");
+    const adminIo = tryGetIO();
+    if (adminIo) {
+      adminIo.to("admin_room").emit("manual_delivery_request", {
+        orderId: reworkOrder.orderId,
+        _id: reworkOrder._id,
+        isRework: true,
+      });
+    }
+  }
+
+  await sendNotification({
+    recipient: issue.customer,
+    type: "ISSUE_UPDATED",
+    title: "Delivery arranged",
+    message:
+      cycle === "pickup"
+        ? "A delivery partner will pick up your garment for rework."
+        : "A delivery partner will bring your reworked order back to you.",
+    data: { issueId: issue._id, targetUrl: `/user/issues/${issue._id}` },
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      issue,
+      reworkOrder,
+      quote,
+    },
+  });
+});
+
 /**
  * @desc    Arrange pickup for an accepted issue (Creates cloned rework order)
  * @route   POST /api/v1/issues/:id/arrange-pickup
- * @access  Private (Tailor)
+ * @deprecated Use dispatch-delivery with deliveryMethod
  */
 exports.arrangePickup = asyncHandler(async (req, res, next) => {
   const issue = await Issue.findById(req.params.id).populate("originalOrder");
@@ -227,46 +429,12 @@ exports.arrangePickup = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Pickup already arranged for this issue", 400));
   }
 
-  const original = issue.originalOrder;
-
-  // Create Cloned Rework Order
-  const newOrderId = `ORD-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-  
-  const reworkOrder = await Order.create({
-    orderId: newOrderId,
-    customer: original.customer,
-    tailor: original.tailor,
-    items: original.items.map(i => ({
-      ...i.toObject(),
-      price: 0 // No charge for rework
-    })),
-    totalAmount: 0,
-    status: "fabric-ready-for-pickup", // Delivery partners will see this for pickup
-    deliveryMethod: original.deliveryMethod,
-    fabricPickupRequired: true, // Crucial: triggers the pickup from customer to tailor
-    isRework: true,
-    parentOrder: original._id
-  });
-
-  issue.reworkOrder = reworkOrder._id;
-  issue.status = "pickup_pending";
-  await issue.save();
-
-  // The existing delivery.controller will automatically see this new Order 
-  // and assign a delivery partner for fabricPickup because fabricPickupRequired is true.
-  
-  await sendNotification({
-    user: issue.customer,
-    title: "Pickup Arranged",
-    message: `A delivery partner will be assigned to pick up your garment for rework.`,
-    type: "info",
-    data: { issueId: issue._id, orderId: reworkOrder._id, targetUrl: `/user/issues/${issue._id}` }
-  });
-
-  res.status(200).json({
-    success: true,
-    data: issue
-  });
+  return next(
+    new ErrorResponse(
+      "Use dispatch-delivery with broadcast or manual to assign a partner and pay delivery charges.",
+      400
+    )
+  );
 });
 
 // --- ADMIN CONTROLLERS ---

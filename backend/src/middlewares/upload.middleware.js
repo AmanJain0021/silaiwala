@@ -15,9 +15,17 @@ const fileFilter = (req, file, cb) => {
   
   // 2. Strict Extension check (prevent null byte or double extension attacks)
   const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.doc', '.docx'];
-  const ext = path.extname(file.originalname).toLowerCase();
+  const ext = path.extname(file.originalname || "").toLowerCase();
+  const isAllowedMime = allowedMimetypes.includes(file.mimetype);
+  const isAllowedExt = allowedExtensions.includes(ext);
+  const isImageMime =
+    file.mimetype &&
+    ["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(file.mimetype);
 
-  if (allowedMimetypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+  // Mobile camera captures often have no file extension in the name
+  if (isAllowedMime && (isAllowedExt || (isImageMime && !ext))) {
+    cb(null, true);
+  } else if (isImageMime && !isAllowedExt) {
     cb(null, true);
   } else {
     cb(new Error("Invalid file format. Only JPG, PNG, WEBP, PDF, and DOC files are allowed."), false);

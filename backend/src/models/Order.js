@@ -175,6 +175,18 @@ const orderSchema = new mongoose.Schema(
         type: Boolean,
         default: false
     },
+    reworkPickupDeliveryPaid: {
+        type: Boolean,
+        default: false,
+    },
+    reworkReturnDeliveryPaid: {
+        type: Boolean,
+        default: false,
+    },
+    relatedIssue: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Issue",
+    },
     parentOrder: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Order"
