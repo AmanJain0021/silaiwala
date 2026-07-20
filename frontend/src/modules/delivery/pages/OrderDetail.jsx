@@ -36,12 +36,19 @@ const apiErr = (err, fallback = 'Something went wrong') =>
   err?.message ||
   fallback;
 
-/** Compress image to JPEG data URL (max edge 1280px) to avoid oversized payloads */
-const compressImageFile = (file, maxEdge = 1280, quality = 0.72) =>
+const readFileAsDataUrl = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Could not read image'));
-    reader.onload = () => {
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+
+/** Compress image to JPEG data URL; falls back to raw data URL if canvas fails (common on mobile) */
+const processPhotoFile = async (file, maxEdge = 1280, quality = 0.72) => {
+  const raw = await readFileAsDataUrl(file);
+  try {
+    const compressed = await new Promise((resolve, reject) => {
       const img = new Image();
       img.onerror = () => reject(new Error('Invalid image'));
       img.onload = () => {
@@ -59,13 +66,33 @@ const compressImageFile = (file, maxEdge = 1280, quality = 0.72) =>
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas unavailable'));
+          return;
+        }
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
+      img.src = raw;
+    });
+    return compressed;
+  } catch {
+    return typeof raw === 'string' ? raw : null;
+  }
+};
+
+const isValidMapCoord = (lat, lng) => {
+  const la = Number(lat);
+  const ln = Number(lng);
+  return (
+    Number.isFinite(la) &&
+    Number.isFinite(ln) &&
+    la !== 0 &&
+    ln !== 0 &&
+    Math.abs(la) <= 90 &&
+    Math.abs(ln) <= 180
+  );
+};
 
 import api from '../../../shared/utils/api';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
@@ -128,6 +155,7 @@ const DeliveryOrderDetail = () => {
   
   const [totalTripDistanceKm, setTotalTripDistanceKm] = useState(null);
   const [feeSettings, setFeeSettings] = useState(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
 
   const pickupInputRef = useRef(null);
   const pickupGalleryRef = useRef(null);
@@ -179,15 +207,42 @@ const DeliveryOrderDetail = () => {
   // Define source and destination dynamically based on task type
   const pickupName = isFabricPickup ? (order?.customerName || order?.customer) : (order?.vendorName || order?.tailor?.shopName);
   const pickupAddress = isFabricPickup ? customerAddress : tailorAddress;
-  const pickupLat = isFabricPickup ? customerLat : tailorLat;
-  const pickupLng = isFabricPickup ? customerLng : tailorLng;
+  const pickupLatRaw = isFabricPickup ? customerLat : tailorLat;
+  const pickupLngRaw = isFabricPickup ? customerLng : tailorLng;
+  const pickupLat = isValidMapCoord(pickupLatRaw, pickupLngRaw) ? pickupLatRaw : null;
+  const pickupLng = isValidMapCoord(pickupLatRaw, pickupLngRaw) ? pickupLngRaw : null;
   const pickupPhone = isFabricPickup ? customerPhone : tailorPhone;
 
   const dropoffName = isFabricPickup ? (order?.vendorName || order?.tailor?.shopName) : (order?.customerName || order?.customer);
   const dropoffAddress = isFabricPickup ? tailorAddress : customerAddress;
-  const dropoffLat = isFabricPickup ? tailorLat : customerLat;
-  const dropoffLng = isFabricPickup ? tailorLng : customerLng;
+  const dropoffLatRaw = isFabricPickup ? tailorLat : customerLat;
+  const dropoffLngRaw = isFabricPickup ? tailorLng : customerLng;
+  const dropoffLat = isValidMapCoord(dropoffLatRaw, dropoffLngRaw) ? dropoffLatRaw : null;
+  const dropoffLng = isValidMapCoord(dropoffLatRaw, dropoffLngRaw) ? dropoffLngRaw : null;
   const dropoffPhone = isFabricPickup ? tailorPhone : customerPhone;
+
+  const mapNavDestination =
+    currentPhase === 'pickup'
+      ? pickupLat && pickupLng
+        ? { lat: Number(pickupLat), lng: Number(pickupLng) }
+        : null
+      : dropoffLat && dropoffLng
+        ? { lat: Number(dropoffLat), lng: Number(dropoffLng) }
+        : null;
+  const mapNavDestinationAddress = currentPhase === 'pickup' ? pickupAddress : dropoffAddress;
+  const mapFallbackOrigin =
+    layoutLocationCoords?.lat && layoutLocationCoords?.lng
+      ? layoutLocationCoords
+      : null;
+  const mapPreviewRoute =
+    (pickupLat && pickupLng) || pickupAddress
+      ? {
+          origin: pickupLat && pickupLng ? { lat: Number(pickupLat), lng: Number(pickupLng) } : null,
+          originAddress: pickupAddress,
+          destination: dropoffLat && dropoffLng ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : null,
+          destAddress: dropoffAddress,
+        }
+      : null;
   
   const { user } = useAuthStore();
   const dBoyId = user?.id || user?._id || deliveryBoy?.id || deliveryBoy?._id;
@@ -258,55 +313,59 @@ const DeliveryOrderDetail = () => {
           const directionsService = new window.google.maps.DirectionsService();
           const hasCurrentLocation = currentLocation?.lat && currentLocation?.lng;
           
-          const pickupLocation = (pickupLat && pickupLng) ? { lat: Number(pickupLat), lng: Number(pickupLng) } : pickupAddress;
-          const dropoffLocation = (dropoffLat && dropoffLng) ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : dropoffAddress;
-          
-          // 1. Calculate Earnings (Always Pickup -> Dropoff)
-          const earningsRequest = {
-            origin: pickupLocation,
-            destination: dropoffLocation,
-            travelMode: window.google.maps.TravelMode.DRIVING,
+          const pickupLocation = pickupLat && pickupLng ? { lat: Number(pickupLat), lng: Number(pickupLng) } : pickupAddress;
+          const dropoffLocation = dropoffLat && dropoffLng ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : dropoffAddress;
+
+          const routeWithFallback = (req, onOk, label) => {
+            const modes = [
+              window.google.maps.TravelMode.TWO_WHEELER,
+              window.google.maps.TravelMode.DRIVING,
+            ].filter(Boolean);
+            const tryMode = (i) => {
+              if (i >= modes.length) {
+                console.warn(`⚠️ [OrderDetail] Directions failed (${label})`);
+                return;
+              }
+              directionsService.route({ ...req, travelMode: modes[i] }, (result, status) => {
+                if (status === window.google.maps.DirectionsStatus.OK) onOk(result);
+                else tryMode(i + 1);
+              });
+            };
+            tryMode(0);
           };
 
-          directionsService.route(earningsRequest, (result, status) => {
-              if (status === window.google.maps.DirectionsStatus.OK) {
-                const tripLeg = result.routes[0].legs[0];
-                if (tripLeg) {
-                  const km = tripLeg.distance.value / 1000;
-                  setTotalTripDistanceKm(km);
-                  
-                  // If no GPS, fallback to using this trip distance for the display
-                  if (!hasCurrentLocation) {
-                    setDistanceRemaining(tripLeg.distance.value);
-                    setEta(tripLeg.duration.text);
-                  }
+          routeWithFallback(
+            { origin: pickupLocation, destination: dropoffLocation },
+            (result) => {
+              const tripLeg = result.routes[0].legs[0];
+              if (tripLeg) {
+                const km = tripLeg.distance.value / 1000;
+                setTotalTripDistanceKm(km);
+                if (!hasCurrentLocation) {
+                  setDistanceRemaining(tripLeg.distance.value);
+                  setEta(tripLeg.duration.text);
                 }
-              } else {
-                console.warn('⚠️ [OrderDetail] DirectionsService failed (earnings):', status);
               }
-            }
+            },
+            'trip'
           );
 
-          // 2. Calculate Active Navigation Distance (Current Location -> Target)
           if (hasCurrentLocation) {
             const isPickup = currentPhase === 'pickup';
-            const navRequest = {
-              origin: { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) },
-              destination: isPickup ? pickupLocation : dropoffLocation,
-              travelMode: window.google.maps.TravelMode.DRIVING,
-            };
-
-            directionsService.route(navRequest, (result, status) => {
-              if (status === window.google.maps.DirectionsStatus.OK) {
+            routeWithFallback(
+              {
+                origin: { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) },
+                destination: isPickup ? pickupLocation : dropoffLocation,
+              },
+              (result) => {
                 const navLeg = result.routes[0].legs[0];
                 if (navLeg) {
                   setDistanceRemaining(navLeg.distance.value);
                   setEta(navLeg.duration.text);
                 }
-              } else {
-                console.warn('⚠️ [OrderDetail] DirectionsService failed (navigation):', status);
-              }
-            });
+              },
+              'nav'
+            );
           }
       };
       
@@ -394,15 +453,16 @@ const DeliveryOrderDetail = () => {
 
   const handleUpdateStatus = async (status, msg, options = {}) => {
     try {
-      // Use stable id from useParams
       await updateOrderStatus(id, status, options);
-      
-      // Clear OTP and photo states to prevent autofill on the next phase
-      setOtpValue('');
-      setPickupPhoto(null);
-      setDeliveryPhoto(null);
-      setHasArrived(false);
-      
+
+      const isArrivalOnly = ['reached-pickup', 'reached-dropoff'].includes(status);
+      if (!isArrivalOnly) {
+        setOtpValue('');
+        setPickupPhoto(null);
+        setDeliveryPhoto(null);
+        setHasArrived(false);
+      }
+
       await loadOrder();
       toast.success(msg);
     } catch (err) {
@@ -583,22 +643,40 @@ const DeliveryOrderDetail = () => {
     const target = e.target;
     const file = target?.files?.[0];
     if (!file) return;
+    setPhotoProcessing(true);
     try {
-      if (file.size > 12 * 1024 * 1024) {
+      if (file.size > 15 * 1024 * 1024) {
         toast.error('Image too large. Please choose a smaller photo.');
-        if (target) target.value = '';
         return;
       }
-      const dataUrl = await compressImageFile(file);
+      const dataUrl = await processPhotoFile(file);
+      if (!dataUrl || typeof dataUrl !== 'string') {
+        toast.error('Could not process photo');
+        return;
+      }
       setter(dataUrl);
       toast.success('Photo added');
     } catch (err) {
       console.error('Photo processing error:', err);
-      toast.error('Could not process photo');
+      toast.error('Could not process photo — try Gallery');
     } finally {
+      setPhotoProcessing(false);
       if (target) target.value = '';
     }
   };
+
+  const handleMapRouteCalculated = useCallback((data) => {
+    if (!data || data.distanceValue === -1) return;
+    setEta(data.duration);
+    setDistanceRemaining(data.distanceValue);
+    const loc = useDeliveryAuthStore.getState();
+    const cl = layoutLocationCoords;
+    const lat = currentLocation?.lat ?? cl?.lat;
+    const lng = currentLocation?.lng ?? cl?.lng;
+    if (lat && lng) {
+      loc.updateLocation(lat, lng, data.duration, data.distanceValue);
+    }
+  }, [currentLocation?.lat, currentLocation?.lng, layoutLocationCoords]);
 
   console.log("OrderDetail Render:", { isInitialLoading, isLoadingOrder, isLoaded, order: !!order, id });
 
@@ -667,27 +745,13 @@ const DeliveryOrderDetail = () => {
              <div className={`w-full bg-white relative transition-all duration-300 ${hasArrived ? 'h-[140px]' : 'h-[260px]'}`}>
                  <DeliveryBoyLiveMap 
                   currentLocation={currentLocation}
-                  fallbackOrigin={
-                    currentPhase === 'delivery' && pickupLat && pickupLng
-                      ? { lat: Number(pickupLat), lng: Number(pickupLng) }
-                      : null
-                  }
-                  destination={
-                    currentPhase === 'pickup' 
-                      ? (pickupLat ? { lat: Number(pickupLat), lng: Number(pickupLng) } : null)
-                      : (dropoffLat ? { lat: Number(dropoffLat), lng: Number(dropoffLng) } : null)
-                  }
-                  destinationAddress={currentPhase === 'pickup' ? pickupAddress : dropoffAddress}
+                  fallbackOrigin={mapFallbackOrigin}
+                  destination={mapNavDestination}
+                  destinationAddress={mapNavDestinationAddress}
+                  previewRoute={mapPreviewRoute}
                   isLoaded={isLoaded}
                   height="100%"
-                  onRouteCalculated={(data) => {
-                    // Only update state from the live map if we actually have a GPS lock and routing succeeded.
-                    if (currentLocation?.lat && currentLocation?.lng && data.distanceValue !== -1) {
-                      setEta(data.duration);
-                      setDistanceRemaining(data.distanceValue);
-                      useDeliveryAuthStore.getState().updateLocation(currentLocation.lat, currentLocation.lng, data.duration, data.distanceValue);
-                    }
-                  }}
+                  onRouteCalculated={handleMapRouteCalculated}
                 />
                  
                  {/* FLOATING PROMPT LIKE SCREENSHOT */}
@@ -936,19 +1000,24 @@ const DeliveryOrderDetail = () => {
                         
                         <div className="grid grid-cols-1 gap-4">
                             <div className="relative aspect-[16/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 flex items-center justify-center group shadow-inner">
-                               {(currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto) ? (
+                               {photoProcessing ? (
+                                  <div className="flex flex-col items-center gap-2 text-indigo-600">
+                                    <FiLoader className="w-8 h-8 animate-spin" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Processing photo…</span>
+                                  </div>
+                               ) : (currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto) ? (
                                   <>
-                                    <img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} className="w-full h-full object-cover" />
-                                    <button onClick={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
+                                    <img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} alt="Verification" className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
                                   </>
                                ) : (
                                   <div className="flex flex-col items-center gap-3">
-                                     <button onClick={() => currentPhase === 'pickup' ? pickupInputRef.current?.click() : deliveryInputRef.current?.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform">
+                                     <button type="button" disabled={photoProcessing} onClick={() => currentPhase === 'pickup' ? pickupInputRef.current?.click() : deliveryInputRef.current?.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform disabled:opacity-40">
                                         <FiCamera size={28}/>
                                         <span className="text-[9px] font-black uppercase tracking-tight">CAMERA</span>
                                      </button>
                                      <div className="w-12 h-px bg-slate-200" />
-                                     <button onClick={() => currentPhase === 'pickup' ? pickupGalleryRef.current?.click() : deliveryGalleryRef.current?.click()} className="flex flex-col items-center gap-1.5 text-slate-400 active:scale-95 transition-transform">
+                                     <button type="button" disabled={photoProcessing} onClick={() => currentPhase === 'pickup' ? pickupGalleryRef.current?.click() : deliveryGalleryRef.current?.click()} className="flex flex-col items-center gap-1.5 text-slate-400 active:scale-95 transition-transform disabled:opacity-40">
                                         <FiImage size={24}/>
                                         <span className="text-[8px] font-black uppercase tracking-tight">GALLERY</span>
                                      </button>

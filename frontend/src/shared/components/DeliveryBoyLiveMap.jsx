@@ -1,75 +1,130 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 28.6139, lng: 77.2090 };
+
+const requestRoute = (directionsService, request) =>
+  new Promise((resolve) => {
+    const tryModes = [
+      window.google.maps.TravelMode.TWO_WHEELER,
+      window.google.maps.TravelMode.DRIVING,
+    ].filter(Boolean);
+
+    const attempt = (index) => {
+      if (index >= tryModes.length) {
+        resolve({ ok: false, status: 'NO_MODE' });
+        return;
+      }
+      directionsService.route(
+        { ...request, travelMode: tryModes[index] },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            resolve({ ok: true, result, status });
+          } else {
+            attempt(index + 1);
+          }
+        }
+      );
+    };
+    attempt(0);
+  });
 
 /**
  * DeliveryBoyLiveMap - Shows the delivery boy's live location and route to destination
  */
 const DeliveryBoyLiveMap = ({
   currentLocation,
-  riderLocation, // keeping for backwards compatibility if passed
-  fallbackOrigin, // used to draw full trip if live location is missing
+  riderLocation,
+  fallbackOrigin,
   destination,
-  destinationAddress, // Added to support string addresses
+  destinationAddress,
+  previewRoute,
   isLoaded,
   height = '400px',
-  onRouteCalculated
+  onRouteCalculated,
 }) => {
   const [directions, setDirections] = useState(null);
+  const [previewDirections, setPreviewDirections] = useState(null);
   const [routeEndLocation, setRouteEndLocation] = useState(null);
+  const onRouteCalculatedRef = useRef(onRouteCalculated);
+  onRouteCalculatedRef.current = onRouteCalculated;
 
-  // If we have a live location, use it. Otherwise, use the fallback origin (e.g. pickup location)
-  const activeLocation = currentLocation?.lat ? currentLocation : (riderLocation?.lat ? riderLocation : fallbackOrigin);
+  const activeLocation = currentLocation?.lat
+    ? currentLocation
+    : riderLocation?.lat
+      ? riderLocation
+      : fallbackOrigin;
+
+  const runNavRoute = useCallback(async () => {
+    if (!isLoaded || !window.google?.maps?.DirectionsService) return;
+    if (!activeLocation?.lat || !activeLocation?.lng) return;
+    if (!destinationAddress && !(destination?.lat && destination?.lng)) return;
+
+    const directionsService = new window.google.maps.DirectionsService();
+    const routeDestination =
+      destination?.lat && destination?.lng
+        ? { lat: Number(destination.lat), lng: Number(destination.lng) }
+        : destinationAddress;
+
+    const { ok, result } = await requestRoute(directionsService, {
+      origin: { lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) },
+      destination: routeDestination,
+    });
+
+    if (ok && result?.routes?.[0]?.legs?.[0]) {
+      setDirections(result);
+      const leg = result.routes[0].legs[0];
+      setRouteEndLocation({ lat: leg.end_location.lat(), lng: leg.end_location.lng() });
+      onRouteCalculatedRef.current?.({
+        distance: leg.distance.text,
+        duration: leg.duration.text,
+        distanceValue: leg.distance.value,
+      });
+    } else {
+      setDirections(null);
+      onRouteCalculatedRef.current?.({ distance: 'Unknown', duration: 'Unknown', distanceValue: -1 });
+    }
+  }, [
+    activeLocation?.lat,
+    activeLocation?.lng,
+    destination?.lat,
+    destination?.lng,
+    destinationAddress,
+    isLoaded,
+  ]);
 
   useEffect(() => {
-    // We need activeLocation, and EITHER destination coordinates OR a destination address
-    if (isLoaded && activeLocation?.lat && activeLocation?.lng && (destinationAddress || (destination?.lat && destination?.lng)) && window.google?.maps?.DirectionsService) {
-      const directionsService = new window.google.maps.DirectionsService();
-      
-      // Use coordinates if provided, otherwise fallback to string address
-      const routeDestination = (destination?.lat && destination?.lng)
-          ? { lat: Number(destination.lat), lng: Number(destination.lng) }
-          : destinationAddress;
+    runNavRoute();
+  }, [runNavRoute]);
 
-      directionsService.route(
-        {
-          origin: { lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) },
-          destination: routeDestination,
-          travelMode: window.google.maps.TravelMode.TWO_WHEELER || window.google.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
-            if (result.routes[0]?.legs[0]) {
-              const leg = result.routes[0].legs[0];
-              // Save the geocoded end location for the marker
-              setRouteEndLocation({ lat: leg.end_location.lat(), lng: leg.end_location.lng() });
-              
-              if (onRouteCalculated) {
-                onRouteCalculated({
-                  distance: leg.distance.text,
-                  duration: leg.duration.text,
-                  distanceValue: leg.distance.value // in meters
-                });
-              }
-            }
-          } else {
-            console.error('Error fetching directions:', status, result);
-            // If route calculation fails (e.g., address not found), pass a fallback so UI doesn't get stuck
-            if (onRouteCalculated) {
-              onRouteCalculated({
-                distance: 'Unknown',
-                duration: 'Unknown',
-                distanceValue: -1 // use -1 to indicate error
-              });
-            }
-          }
-        }
-      );
+  useEffect(() => {
+    if (!isLoaded || !window.google?.maps?.DirectionsService || !previewRoute) {
+      setPreviewDirections(null);
+      return;
     }
-  }, [activeLocation?.lat, activeLocation?.lng, destination?.lat, destination?.lng, destinationAddress, isLoaded]);
+
+    const { origin, destination: dest, originAddress, destAddress } = previewRoute;
+    const hasOrigin = (origin?.lat && origin?.lng) || originAddress;
+    const hasDest = (dest?.lat && dest?.lng) || destAddress;
+    if (!hasOrigin || !hasDest) return;
+
+    const directionsService = new window.google.maps.DirectionsService();
+    const o = origin?.lat && origin?.lng ? { lat: Number(origin.lat), lng: Number(origin.lng) } : originAddress;
+    const d = dest?.lat && dest?.lng ? { lat: Number(dest.lat), lng: Number(dest.lng) } : destAddress;
+
+    requestRoute(directionsService, { origin: o, destination: d }).then(({ ok, result }) => {
+      if (ok) setPreviewDirections(result);
+    });
+  }, [
+    isLoaded,
+    previewRoute?.origin?.lat,
+    previewRoute?.origin?.lng,
+    previewRoute?.destination?.lat,
+    previewRoute?.destination?.lng,
+    previewRoute?.originAddress,
+    previewRoute?.destAddress,
+  ]);
 
   if (!isLoaded) {
     return (
@@ -79,17 +134,22 @@ const DeliveryBoyLiveMap = ({
     );
   }
 
-  const center = activeLocation?.lat ? activeLocation : (destination?.lat ? { lat: Number(destination.lat), lng: Number(destination.lng) } : defaultCenter);
-  
-  // Use the actual geocoded route end location, or fallback to the provided coordinates
-  const markerDest = routeEndLocation || (destination?.lat ? { lat: Number(destination.lat), lng: Number(destination.lng) } : null);
+  const center = activeLocation?.lat
+    ? activeLocation
+    : destination?.lat
+      ? { lat: Number(destination.lat), lng: Number(destination.lng) }
+      : defaultCenter;
+
+  const markerDest =
+    routeEndLocation ||
+    (destination?.lat ? { lat: Number(destination.lat), lng: Number(destination.lng) } : null);
 
   return (
     <div style={{ height }} className="rounded-2xl overflow-hidden border border-slate-100 relative">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={15}
+        zoom={14}
         options={{
           disableDefaultUI: true,
           zoomControl: true,
@@ -99,35 +159,45 @@ const DeliveryBoyLiveMap = ({
           ],
         }}
       >
+        {previewDirections && (
+          <DirectionsRenderer
+            directions={previewDirections}
+            options={{
+              suppressMarkers: true,
+              preserveViewport: !directions,
+              polylineOptions: {
+                strokeColor: '#94A3B8',
+                strokeWeight: 4,
+                strokeOpacity: 0.45,
+              },
+            }}
+          />
+        )}
+
         {directions && (
           <DirectionsRenderer
             directions={directions}
             options={{
               suppressMarkers: true,
-              preserveViewport: true, // Prevents map from snapping back constantly while driving
+              preserveViewport: true,
               polylineOptions: {
-                strokeColor: '#2563EB', // Blue line
+                strokeColor: '#2563EB',
                 strokeWeight: 5,
-                strokeOpacity: 0.8,
+                strokeOpacity: 0.85,
               },
             }}
           />
         )}
-        
-        {/* Destination Marker */}
+
         {markerDest && (
-          <Marker
-            position={markerDest}
-            label={{ text: '📍', fontSize: '24px' }}
-          />
+          <Marker position={markerDest} label={{ text: '📍', fontSize: '24px' }} />
         )}
 
-        {/* Delivery Partner Marker (Bike Icon) */}
         {activeLocation?.lat && (
           <Marker
             position={{ lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) }}
             icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png', // Motorcycle/scooter delivery icon
+              url: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
               scaledSize: window.google ? new window.google.maps.Size(40, 40) : null,
               anchor: window.google ? new window.google.maps.Point(20, 20) : null,
             }}
