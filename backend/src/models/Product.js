@@ -102,7 +102,16 @@ const productSchema = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
-      default: true,
+      default: false,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    rejectionReason: {
+      type: String,
+      default: null,
     },
     productType: {
       type: String,
@@ -136,5 +145,6 @@ productSchema.index({ name: "text", description: "text" });
 productSchema.index({ category: 1, price: 1 });
 productSchema.index({ tailor: 1 });
 productSchema.index({ tailor: 1, productType: 1, isActive: 1, inStock: 1 });
+productSchema.index({ status: 1, productType: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

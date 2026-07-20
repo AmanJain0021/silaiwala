@@ -2,6 +2,7 @@ const Service = require("../../../models/Service.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const { getCached, invalidateCache } = require("../../../utils/cache.js");
+const { PUBLIC_SERVICE_FILTER } = require("../../../utils/catalogVisibility.js");
 
 /**
  * @desc    Get all services
@@ -15,7 +16,7 @@ exports.getServices = asyncHandler(async (req, res, next) => {
   const cacheKey = `cache:services:list:${paramKey}`;
 
   const result = await getCached(cacheKey, 120, async () => {
-  let query = { isActive };
+  let query = { ...PUBLIC_SERVICE_FILTER };
 
   // 1. Handle Location Based Filtering (Temporarily Disabled)
   /*
@@ -96,6 +97,13 @@ exports.getServiceById = asyncHandler(async (req, res, next) => {
 
   if (!service) {
     return next(new ErrorResponse(`Service not found with id of ${req.params.id}`, 404));
+  }
+
+  const isPubliclyVisible =
+    service.isActive &&
+    (service.status === "approved" || service.status == null || service.status === undefined);
+  if (!isPubliclyVisible) {
+    return next(new ErrorResponse("Service not found with id of " + req.params.id, 404));
   }
 
   res.status(200).json({

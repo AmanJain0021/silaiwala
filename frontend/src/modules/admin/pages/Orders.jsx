@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
+import OrderTrackingTimeline from '../components/OrderTrackingTimeline';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 
 const AdminOrders = () => {
@@ -70,7 +71,10 @@ const AdminOrders = () => {
                 measurements: o.isMeasurementHome ? 'Tailor at Home' : 'Standard Profile',
                 isMeasurementHome: o.isMeasurementHome || false,
                 measurementExecutive: o.measurementRequest?.executive?.name || 'Unassigned',
-                trackingHistory: o.trackingHistory || []
+                trackingHistory: o.trackingHistory || [],
+                createdAt: o.createdAt,
+                deliveredAt: o.deliveredAt,
+                updatedAt: o.updatedAt,
             }));
             setOrdersData(formatted);
             setTotalPages(res.data.pages || 1);
@@ -611,29 +615,14 @@ const AdminOrders = () => {
                                     <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
                                         <Clock size={12} /> Tracking Timeline
                                     </h3>
-                                    <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
-                                        {selectedOrder.trackingHistory.length > 0 ? (
-                                            [...selectedOrder.trackingHistory].reverse().map((event, idx) => (
-                                                <div key={idx} className="relative">
-                                                    <div className={`absolute -left-[19px] top-1 h-3 w-3 rounded-full border-2 border-white shadow-sm ${idx === 0 ? 'bg-primary scale-125' : 'bg-gray-300'}`} />
-                                                    <div className="bg-white p-3 rounded-xl border border-gray-50 shadow-sm">
-                                                        <div className="flex justify-between items-start">
-                                                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">{event.status.replace(/-/g, ' ')}</p>
-                                                            <p className="text-[9px] text-gray-400 font-bold">{new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(event.timestamp).toLocaleDateString()}</p>
-                                                        </div>
-                                                        <p className="text-[10px] text-gray-500 font-medium mt-1 leading-relaxed">{event.message}</p>
-                                                        {event.proof && (
-                                                            <a href={event.proof} target="_blank" rel="noreferrer" className="mt-2 block w-20 h-20 rounded-lg overflow-hidden border border-gray-100">
-                                                                <img src={event.proof} alt="Proof" className="w-full h-full object-cover" />
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-[10px] text-gray-400 font-medium italic">No tracking updates yet.</div>
-                                        )}
-                                    </div>
+                                    <OrderTrackingTimeline
+                                        history={selectedOrder.trackingHistory}
+                                        orderStatus={selectedOrder.status}
+                                        orderCreatedAt={selectedOrder.createdAt}
+                                        deliveredAt={selectedOrder.deliveredAt}
+                                        updatedAt={selectedOrder.updatedAt}
+                                        accent="brand"
+                                    />
                                 </div>
                             </div>
 
@@ -965,29 +954,19 @@ const AdminOrders = () => {
                                 </div>
 
                                 {/* Tracking Timeline */}
-                                {manageOrderData.trackingHistory && manageOrderData.trackingHistory.length > 0 && (
-                                    <div>
+                                <div>
                                         <h4 className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider mb-3 flex items-center gap-1.5">
-                                            <Clock size={12} /> Tracking History ({manageOrderData.trackingHistory.length} events)
+                                            <Clock size={12} /> Tracking History
                                         </h4>
-                                        <div className="relative pl-6 space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
-                                            {[...manageOrderData.trackingHistory].reverse().map((event, idx) => (
-                                                <div key={idx} className="relative">
-                                                    <div className={`absolute -left-[19px] top-1 h-3 w-3 rounded-full border-2 border-white shadow-sm ${idx === 0 ? 'bg-[#843D9B]' : 'bg-gray-300'}`} />
-                                                    <div className="bg-white p-3 rounded-xl border border-gray-50 shadow-sm">
-                                                        <div className="flex justify-between items-start">
-                                                            <p className="text-[11px] font-bold text-gray-900 uppercase tracking-tight">{event.status?.replace(/-/g, ' ')}</p>
-                                                            <p className="text-[9px] text-gray-400 font-medium">
-                                                                {new Date(event.timestamp).toLocaleString()}
-                                                            </p>
-                                                        </div>
-                                                        <p className="text-[10px] text-gray-500 font-medium mt-1">{event.message}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <OrderTrackingTimeline
+                                            history={manageOrderData.trackingHistory}
+                                            orderStatus={manageOrderData.status}
+                                            orderCreatedAt={manageOrderData.createdAt}
+                                            deliveredAt={manageOrderData.deliveredAt}
+                                            updatedAt={manageOrderData.updatedAt}
+                                            accent="brand"
+                                        />
                                     </div>
-                                )}
                             </div>
 
                             {/* Modal Footer */}

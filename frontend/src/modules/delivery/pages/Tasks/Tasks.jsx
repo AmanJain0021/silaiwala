@@ -255,23 +255,10 @@ const Tasks = () => {
                 return;
             }
 
-            // Already accepted — move into execution (reached-pickup flow)
-            let nextStatus;
-            const stage = getPartnerActionStage(task, user);
-            if (stage === 'accepted' || ['fabric-ready-for-pickup', 'ready-for-pickup', 'ready-for-delivery', 'ready', 'pending'].includes(task.status)) {
-                // Stay on accepted partner status; UI will show Reached Pickup
-                nextStatus = 'accepted';
-            } else {
-                nextStatus = stage || task.status;
-            }
-
-            const res = await deliveryService.updateDeliveryStatus(taskId, nextStatus, "Starting dispatch flow");
-            
-            if (res.success) {
-                setActiveTaskId(taskId);
-                toast.success("Dispatch Started! Navigating to destination.");
-                fetchTasks();
-            }
+            // Partner is already accepted — only mark task active in UI (no duplicate status API call)
+            setActiveTaskId(taskId);
+            toast.success('Dispatch started. Tap "Reached Pickup" when you arrive.');
+            return;
         } catch (error) {
             console.error('Error starting task:', error);
             toast.error('Failed to start dispatch. Please try again.');

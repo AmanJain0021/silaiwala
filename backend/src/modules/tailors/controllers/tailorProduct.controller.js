@@ -2,17 +2,14 @@ const Product = require("../../../models/Product.js");
 const Tailor = require("../../../models/Tailor.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
+const { PUBLIC_PRODUCT_FILTER } = require("../../../utils/catalogVisibility.js");
 
-/**
- * @desc    Get all fabrics of a specific tailor (for customers during checkout)
- * @route   GET /api/v1/tailors/:tailorId/fabrics
- * @access  Public (Customer)
- */
 exports.getTailorFabrics = asyncHandler(async (req, res, next) => {
   const fabrics = await Product.find({
     tailor: req.params.tailorId,
     productType: "fabric",
-    isActive: true,
+    ...PUBLIC_PRODUCT_FILTER,
     inStock: true,
   })
     .select("name description price image images stock")
@@ -58,14 +55,23 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
   }
   
   req.body.tailor = tailor._id;
-  
-  // Force it to be active by default
-  req.body.isActive = true;
+  req.body.status = "pending";
+  req.body.rejectionReason = null;
+  req.body.isActive = false;
 
   const product = await Product.create(req.body);
 
+  await sendNotification({
+    recipient: "admins",
+    type: "SYSTEM_NOTICE",
+    title: "New product pending approval",
+    message: `${product.productType === "fabric" ? "Fabric" : "Garment"} "${product.name}" awaits admin review.`,
+    data: { productId: product._id, targetUrl: "/admin/services" },
+  });
+
   res.status(201).json({
     success: true,
+    message: "Submitted for admin approval. It will appear to customers once approved.",
     data: product,
   });
 });
@@ -87,6 +93,14 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Product not found", 404));
   }
 
+  delete req.body.status;
+  delete req.body.isActive;
+  delete req.body.tailor;
+
+  req.body.status = "pending";
+  req.body.isActive = false;
+  req.body.rejectionReason = null;
+
   product = await Product.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -94,6 +108,7 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
+    message: "Changes submitted for admin approval.",
     data: product,
   });
 });

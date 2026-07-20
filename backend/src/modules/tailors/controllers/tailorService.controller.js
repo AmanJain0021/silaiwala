@@ -2,6 +2,7 @@ const Service = require("../../../models/Service.js");
 const Tailor = require("../../../models/Tailor.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
+const { sendNotification } = require("../../../utils/notification.js");
 
 /**
  * @desc    Get all services for logged in tailor
@@ -37,16 +38,23 @@ exports.createService = asyncHandler(async (req, res, next) => {
   }
 
   req.body.tailor = tailor._id;
-  
-  // Default values or adjustments
-  if (!req.body.isActive) req.body.isActive = true;
   req.body.status = "pending";
   req.body.rejectionReason = null;
+  req.body.isActive = false;
 
   const service = await Service.create(req.body);
 
+  await sendNotification({
+    recipient: "admins",
+    type: "SYSTEM_NOTICE",
+    title: "New stitching service pending approval",
+    message: `Service "${service.title}" awaits admin review.`,
+    data: { serviceId: service._id, targetUrl: "/admin/services" },
+  });
+
   res.status(201).json({
     success: true,
+    message: "Submitted for admin approval. It will appear to customers once approved.",
     data: service,
   });
 });
@@ -68,6 +76,14 @@ exports.updateService = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Service not found or not owned by you", 404));
   }
 
+  delete req.body.status;
+  delete req.body.isActive;
+  delete req.body.tailor;
+
+  req.body.status = "pending";
+  req.body.isActive = false;
+  req.body.rejectionReason = null;
+
   service = await Service.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -75,6 +91,7 @@ exports.updateService = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
+    message: "Changes submitted for admin approval.",
     data: service,
   });
 });

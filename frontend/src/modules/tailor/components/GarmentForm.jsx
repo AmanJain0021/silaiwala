@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Image as ImageIcon, Camera } from 'lucide-react';
 import api from '../services/api';
+import toast from 'react-hot-toast';
 
 const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,6 +126,13 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
             }
 
             if (res.data.success) {
+                const msg = res.data.message;
+                if (msg) toast.success(msg);
+                else if (!initialData?._id) {
+                    toast.success('Submitted for admin approval. Customers will see it after approval.');
+                } else {
+                    toast.success('Updated. Changes may need admin approval before going live.');
+                }
                 onSubmitSuccess();
             }
         } catch (error) {

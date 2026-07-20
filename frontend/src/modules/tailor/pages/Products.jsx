@@ -137,7 +137,6 @@ const Products = () => {
                     tags: typeof newItem.tags === 'string'
                         ? newItem.tags.split(',').map(t => t.trim()).filter(t => t !== '')
                         : newItem.tags,
-                    isActive: true
                 };
             } else if (activeTab === 'fabrics') {
                 endpoint = isEditing ? `/tailors/products/${editId}` : '/tailors/products';
@@ -172,6 +171,14 @@ const Products = () => {
             if (res.data.success) {
                 closeModal();
                 fetchData();
+                const approvalMsg = res.data.message;
+                if (approvalMsg) {
+                    toast.success(approvalMsg);
+                } else if (!isEditing) {
+                    toast.success('Submitted for admin approval. It will appear to customers after approval.');
+                } else {
+                    toast.success('Updated. Changes may require admin approval before customers see them.');
+                }
             }
         } catch (error) {
             alert(error.response?.data?.message || 'Something went wrong');
@@ -358,6 +365,16 @@ const Products = () => {
                                         
                                         {/* Status / Discount Badges */}
                                         <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
+                                            {item.status === 'pending' && (
+                                                <div className="bg-amber-500/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
+                                                    Pending approval
+                                                </div>
+                                            )}
+                                            {item.status === 'rejected' && (
+                                                <div className="bg-rose-600/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase" title={item.rejectionReason || ''}>
+                                                    Rejected
+                                                </div>
+                                            )}
                                             {discount > 0 && (
                                                 <div className="bg-[#FFBC00] text-[#843D9B] text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md">
                                                     -{discount}%

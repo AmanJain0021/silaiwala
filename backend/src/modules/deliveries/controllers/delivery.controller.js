@@ -1889,6 +1889,38 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
     }
   }
 
+  const partnerLabel = req.user.name || "Delivery partner";
+  const completionProof = deliveryProofPhoto || openBoxPhoto;
+  if (!order.trackingHistory) order.trackingHistory = [];
+
+  let completionTrack = null;
+  if (cycle === "pickup" || order.status === "fabric-received") {
+    completionTrack = {
+      status: "delivery-fabric-delivered",
+      message: `Fabric delivered to tailor by ${partnerLabel}`,
+    };
+  } else if (order.status === "delivered") {
+    completionTrack = {
+      status: "delivery-delivered",
+      message: `Order delivered successfully to customer by ${partnerLabel}`,
+    };
+  }
+
+  if (completionTrack) {
+    const norm = (s) => String(s || "").toLowerCase().replace(/^delivery-/, "");
+    const target = norm(completionTrack.status);
+    const alreadyLogged = order.trackingHistory.some(
+      (e) => norm(e.status) === target && Date.now() - new Date(e.timestamp).getTime() < 120_000
+    );
+    if (!alreadyLogged) {
+      order.trackingHistory.push({
+        ...completionTrack,
+        timestamp: new Date(),
+        proof: completionProof || undefined,
+      });
+    }
+  }
+
   await order.save({ session });
 
   // Socket push for live UI updates

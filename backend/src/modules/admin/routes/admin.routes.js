@@ -54,6 +54,9 @@ const {
   getPendingServices,
   approveServiceStatus,
   rejectServiceStatus,
+  getPendingProducts,
+  approveProductStatus,
+  rejectProductStatus,
 } = require("../controllers/admin.controller.js");
 
 const {
@@ -104,6 +107,9 @@ router.post("/tailors/:id/shiprocket-setup", retryShiprocketSetup);
 router.get("/tailors/services/pending", getPendingServices);
 router.patch("/tailors/services/:id/approve", approveServiceStatus);
 router.patch("/tailors/services/:id/reject", rejectServiceStatus);
+router.get("/tailors/products/pending", getPendingProducts);
+router.patch("/tailors/products/:id/approve", approveProductStatus);
+router.patch("/tailors/products/:id/reject", rejectProductStatus);
 
 // Delivery Partner Approvals
 router.get("/delivery-partners/stats", getDeliveryStats);

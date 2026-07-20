@@ -4,6 +4,7 @@ const Review = require("../../../models/Review.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const { getCached } = require("../../../utils/cache.js");
+const { PUBLIC_PRODUCT_FILTER } = require("../../../utils/catalogVisibility.js");
 
 exports.getProducts = asyncHandler(async (req, res, next) => {
   const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10, productType = 'store_item' } = req.query;
@@ -13,7 +14,7 @@ exports.getProducts = asyncHandler(async (req, res, next) => {
   const cacheKey = `cache:products:list:${paramKey}`;
 
   const result = await getCached(cacheKey, 120, async () => {
-  let query = { isActive: true, productType };
+  let query = { productType, ...PUBLIC_PRODUCT_FILTER };
 
   // 1. Geo-Spatial Search
   if (lat && lng) {
@@ -109,6 +110,13 @@ exports.getProductDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Product not found", 404));
   }
 
+  const isPubliclyVisible =
+    product.isActive &&
+    (product.status === "approved" || product.status == null || product.status === undefined);
+  if (!isPubliclyVisible) {
+    return next(new ErrorResponse("Product not found", 404));
+  }
+
   // Optimization: Fetch reviews and related products in parallel
   const [reviews, relatedProducts] = await Promise.all([
     Review.find({ targetId: product._id, targetType: "Product" })
@@ -119,7 +127,7 @@ exports.getProductDetails = asyncHandler(async (req, res, next) => {
     Product.find({ 
       category: product.category._id, 
       _id: { $ne: product._id },
-      isActive: true 
+      ...PUBLIC_PRODUCT_FILTER,
     })
       .limit(4)
       .select("name title price originalPrice image discount")
@@ -143,7 +151,7 @@ exports.getProductDetails = asyncHandler(async (req, res, next) => {
  */
 exports.getFeaturedProducts = asyncHandler(async (req, res, next) => {
   const products = await getCached("cache:products:featured", 120, async () => {
-    return await Product.find({ isFeatured: true, isActive: true, productType: 'store_item' })
+    return await Product.find({ isFeatured: true, productType: 'store_item', ...PUBLIC_PRODUCT_FILTER })
       .populate("category", "name")
       .limit(8)
       .lean();

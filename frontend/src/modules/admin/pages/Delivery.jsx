@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Truck, Star, Phone, Clock, FileText, Ban, Power, Package, ShieldCheck } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Truck, Star, Phone, Clock, FileText, Ban, Power, Package, ShieldCheck, Banknote } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
@@ -31,7 +31,7 @@ const AdminDelivery = () => {
             
             setDeliveryData(partnersRes.data.data.map(p => ({
                 id: p._id,
-                name: p.name,
+                name: p.name || 'Unnamed Rider',
                 phone: p.phoneNumber || 'N/A',
                 isVerified: p.isVerified,
                 vehicle: p.profile?.vehicleType || 'Reg. Vehicle',
@@ -294,7 +294,7 @@ const AdminDelivery = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-primary font-black text-sm">
-                                                    {partner.name.charAt(0)}
+                                                    {(partner.name || '?').charAt(0)}
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
@@ -551,7 +551,7 @@ const AdminDelivery = () => {
                             <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gradient-to-br from-primary to-primary-dark text-white">
                                 <div className="flex items-center gap-4">
                                     <div className="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-black text-2xl relative">
-                                        {selectedPartner.name.charAt(0)}
+                                        {(selectedPartner.name || '?').charAt(0)}
                                         <div className={`absolute -right-1 -top-1 w-4 h-4 rounded-full border-2 border-primary ${selectedPartner.status === 'Online' ? 'bg-green-500' : 'bg-gray-400'}`} />
                                     </div>
                                     <div>
@@ -645,7 +645,7 @@ const AdminDelivery = () => {
                                     {selectedPartner.accountStatus === 'Suspended' ? 'Activate' : 'Suspend'}
                                 </button>
                                 <button 
-                                    onClick={() => toast.info('Tracking feature available in next update')}
+                                    onClick={() => toast('Live map tracking is coming soon', { icon: '📍' })}
                                     className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
                                     View Tracking

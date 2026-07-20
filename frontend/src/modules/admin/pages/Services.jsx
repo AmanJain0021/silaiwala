@@ -10,6 +10,7 @@ const AdminServices = () => {
     const [categoriesData, setCategoriesData] = useState([]);
     const [tailorServices, setTailorServices] = useState([]);
     const [pendingServices, setPendingServices] = useState([]);
+    const [pendingProducts, setPendingProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [newService, setNewService] = useState({ title: '', price: '', deliveryTime: '', description: '', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png' });
@@ -49,12 +50,16 @@ const AdminServices = () => {
     const fetchPendingServices = async () => {
         setIsLoading(true);
         try {
-            const res = await api.get('/admin/tailors/services/pending');
-            setPendingServices(res.data.data);
+            const [svcRes, prodRes] = await Promise.all([
+                api.get('/admin/tailors/services/pending'),
+                api.get('/admin/tailors/products/pending'),
+            ]);
+            setPendingServices(svcRes.data.data);
+            setPendingProducts(prodRes.data.data);
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
-            console.error('Failed to fetch pending services:', error);
-            toast.error('Failed to load pending services');
+            console.error('Failed to fetch pending approvals:', error);
+            toast.error('Failed to load pending approvals');
         } finally {
             setIsLoading(false);
         }
@@ -149,6 +154,28 @@ const AdminServices = () => {
             fetchPendingServices();
         } catch (error) {
             toast.error('Failed to reject service');
+        }
+    };
+
+    const handleApproveProduct = async (id) => {
+        try {
+            await api.patch(`/admin/tailors/products/${id}/approve`);
+            toast.success('Product approved');
+            fetchPendingServices();
+        } catch (error) {
+            toast.error('Failed to approve product');
+        }
+    };
+
+    const handleRejectProduct = async (id) => {
+        const reason = window.prompt("Enter reason for rejection:");
+        if (reason === null) return;
+        try {
+            await api.patch(`/admin/tailors/products/${id}/reject`, { reason });
+            toast.success('Product rejected');
+            fetchPendingServices();
+        } catch (error) {
+            toast.error('Failed to reject product');
         }
     };
 
@@ -349,13 +376,19 @@ const AdminServices = () => {
                             <div className="h-full flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                             </div>
-                        ) : pendingServices.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
+                        ) : pendingServices.length === 0 && pendingProducts.length === 0 ? (
+                            <motion.div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
                                 <Package size={48} className="opacity-20" />
                                 <p className="text-sm font-bold">No pending approvals</p>
-                            </div>
+                            </motion.div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="space-y-10">
+                                {pendingServices.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-4">
+                                            Stitching services ({pendingServices.length})
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {pendingServices.map((service) => (
                                     <div key={service._id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between">
                                         <div className="flex gap-4 mb-4">
@@ -398,6 +431,53 @@ const AdminServices = () => {
                                         </div>
                                     </div>
                                 ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {pendingProducts.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-4">
+                                            Garments & fabrics ({pendingProducts.length})
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {pendingProducts.map((product) => (
+                                                <div key={product._id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                                                    <div className="flex gap-4 mb-4">
+                                                        <div className="h-16 w-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                                                            <img
+                                                                src={product.image || product.images?.[0] || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                                alt={product.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-sm font-black text-gray-900 truncate">{product.name}</h4>
+                                                            <span className="text-[9px] font-black uppercase text-indigo-600">
+                                                                {product.productType === 'fabric' ? 'Fabric' : 'Garment'}
+                                                            </span>
+                                                            <p className="text-xs font-black text-primary mt-1">₹{product.price}</p>
+                                                            <p className="text-[10px] text-gray-500 truncate">Tailor: {product.tailor?.shopName}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleApproveProduct(product._id)}
+                                                            className="flex-1 bg-green-500 hover:bg-green-600 text-white text-[10px] font-black py-2 rounded-xl uppercase"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectProduct(product._id)}
+                                                            className="flex-1 bg-red-500 hover:bg-red-600 text-white text-[10px] font-black py-2 rounded-xl uppercase"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

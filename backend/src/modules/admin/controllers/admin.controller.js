@@ -1426,7 +1426,11 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: "A tailor ID is required to create a product. Please seed or create a tailor first." });
     }
 
-    const product = await Product.create(payload);
+    const product = await Product.create({
+      ...payload,
+      status: payload.status || "approved",
+      isActive: payload.isActive !== undefined ? payload.isActive : true,
+    });
     await invalidateCache("cache:products:*");
     res.status(201).json({ success: true, data: product });
   } catch (error) {
@@ -1887,7 +1891,22 @@ exports.approveServiceStatus = asyncHandler(async (req, res, next) => {
 
   service.status = "approved";
   service.isActive = true;
+  service.rejectionReason = null;
   await service.save();
+
+  const { invalidateCache } = require("../../../utils/cache.js");
+  await invalidateCache("cache:services:*");
+
+  const tailor = await Tailor.findById(service.tailor).populate("user");
+  if (tailor?.user) {
+    await sendNotification({
+      recipient: tailor.user._id,
+      type: "SYSTEM_NOTICE",
+      title: "Service approved",
+      message: `Your service "${service.title}" is now live for customers.`,
+      data: { targetUrl: "/partner/products" },
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -1913,10 +1932,98 @@ exports.rejectServiceStatus = asyncHandler(async (req, res, next) => {
   service.rejectionReason = reason || "Does not meet our guidelines";
   await service.save();
 
+  const { invalidateCache } = require("../../../utils/cache.js");
+  await invalidateCache("cache:services:*");
+
+  const tailor = await Tailor.findById(service.tailor).populate("user");
+  if (tailor?.user) {
+    await sendNotification({
+      recipient: tailor.user._id,
+      type: "SYSTEM_NOTICE",
+      title: "Service rejected",
+      message: `Your service "${service.title}" was not approved. Reason: ${service.rejectionReason}`,
+      data: { targetUrl: "/partner/products" },
+    });
+  }
+
   res.status(200).json({
     success: true,
     data: service,
   });
+});
+
+/**
+ * @desc    Get tailor garments/fabrics pending admin approval
+ * @route   GET /api/v1/admin/tailors/products/pending
+ */
+exports.getPendingProducts = asyncHandler(async (req, res, next) => {
+  const pendingProducts = await Product.find({ status: "pending" })
+    .populate({ path: "tailor", select: "shopName user", populate: { path: "user", select: "name" } })
+    .populate("category", "name")
+    .sort("-createdAt");
+
+  res.status(200).json({
+    success: true,
+    count: pendingProducts.length,
+    data: pendingProducts,
+  });
+});
+
+exports.approveProductStatus = asyncHandler(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    return next(new ErrorResponse("Product not found", 404));
+  }
+
+  product.status = "approved";
+  product.isActive = true;
+  product.rejectionReason = null;
+  await product.save();
+
+  const { invalidateCache } = require("../../../utils/cache.js");
+  await invalidateCache("cache:products:*");
+
+  const tailor = await Tailor.findById(product.tailor).populate("user");
+  if (tailor?.user) {
+    await sendNotification({
+      recipient: tailor.user._id,
+      type: "SYSTEM_NOTICE",
+      title: "Product approved",
+      message: `Your ${product.productType === "fabric" ? "fabric" : "garment"} "${product.name}" is now visible to customers.`,
+      data: { targetUrl: "/partner/products" },
+    });
+  }
+
+  res.status(200).json({ success: true, data: product });
+});
+
+exports.rejectProductStatus = asyncHandler(async (req, res, next) => {
+  const { reason } = req.body;
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    return next(new ErrorResponse("Product not found", 404));
+  }
+
+  product.status = "rejected";
+  product.isActive = false;
+  product.rejectionReason = reason || "Does not meet our guidelines";
+  await product.save();
+
+  const { invalidateCache } = require("../../../utils/cache.js");
+  await invalidateCache("cache:products:*");
+
+  const tailor = await Tailor.findById(product.tailor).populate("user");
+  if (tailor?.user) {
+    await sendNotification({
+      recipient: tailor.user._id,
+      type: "SYSTEM_NOTICE",
+      title: "Product rejected",
+      message: `Your product "${product.name}" was not approved. Reason: ${product.rejectionReason}`,
+      data: { targetUrl: "/partner/products" },
+    });
+  }
+
+  res.status(200).json({ success: true, data: product });
 });
 
 // ==========================================
