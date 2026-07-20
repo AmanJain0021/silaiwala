@@ -41,7 +41,7 @@ const AdminSettings = () => {
 
     const tabs = [
         { id: 'General', icon: <Globe size={16} />, desc: 'Platform basics' },
-        { id: 'Pricing & Fees', icon: <DollarSign size={16} />, desc: 'GST & Visit charges' },
+        { id: 'Pricing & Fees', icon: <DollarSign size={16} />, desc: 'GST, delivery & advance' },
         { id: 'Loyalty Points', icon: <Gift size={16} />, desc: 'Points rules' },
         { id: 'Security', icon: <Shield size={16} />, desc: 'Roles & permissions' },
         { id: 'Notifications', icon: <Bell size={16} />, desc: 'Email & SMS setup' },
@@ -241,7 +241,7 @@ const AdminSettings = () => {
                         <div className="p-8 space-y-8 max-w-3xl">
                             <div>
                                 <h3 className="text-lg font-black text-gray-900">Pricing & Fees Configurations</h3>
-                                <p className="text-xs text-gray-500 font-medium mt-1">Manage global GST settings and Tailor at Home visit fees.</p>
+                                <p className="text-xs text-gray-500 font-medium mt-1">GST, platform fee, delivery rates, and free-delivery rules (used on customer checkout).</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -253,7 +253,18 @@ const AdminSettings = () => {
                                         onChange={(e) => updateNestedSetting('pricing', 'gstPercentage', Number(e.target.value))}
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                     />
-                                    <p className="text-[10px] text-gray-400 font-medium mt-1">Applied universally to all order subtotals.</p>
+                                    <p className="text-[10px] text-gray-400 font-medium mt-1">Applied to order subtotal + platform fee (before delivery).</p>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Free delivery above (₹)</label>
+                                    <input 
+                                        type="number" 
+                                        min={0}
+                                        value={settings.pricing?.freeDeliveryMinOrder ?? 999} 
+                                        onChange={(e) => updateNestedSetting('pricing', 'freeDeliveryMinOrder', Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-medium mt-1">Orders above this merchandise amount get ₹0 delivery on checkout. Set 0 to always charge delivery.</p>
                                 </div>
                             </div>
 

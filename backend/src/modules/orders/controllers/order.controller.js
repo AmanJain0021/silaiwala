@@ -660,9 +660,36 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   const isReadyMade = formattedItems.some(item => item.product);
   const initialStatus = isReadyMade ? "in-progress" : "pending";
 
-  // 5. Handle Promo Code / Coupon
+  const settings = await Settings.getSettings();
+
+  // 6. Server-side price verification (same formula as checkout Bill Details)
+  const {
+    computeCheckoutPricing,
+    enrichOrderItemsForPricing,
+  } = require("../../../utils/checkoutPricing.js");
+
+  const isCartCheckout = formattedItems.some((item) => item.product);
+  let pricingItems = items;
+  if (!isCartCheckout) {
+    pricingItems = await enrichOrderItemsForPricing(items);
+  } else {
+    const Tailor = require("../../../models/Tailor.js");
+    const tailorProfile = await Tailor.findOne({ user: targetTailorUserId }).lean();
+    pricingItems = items.map((item) => ({
+      ...item,
+      tailor: tailorProfile ? { location: tailorProfile.location } : undefined,
+    }));
+  }
+
+  const serverPricing = computeCheckoutPricing(
+    pricingItems,
+    deliveryAddress,
+    isCartCheckout,
+    settings
+  );
+
   let discountAmount = 0;
-  let finalAmount = totalAmount;
+  let finalAmount = serverPricing.total;
 
   if (promoCode) {
     const promo = await PromoCode.findOne({ code: promoCode, isActive: true });
@@ -671,18 +698,18 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       const now = new Date();
       const isActive = promo.startDate <= now && (!promo.endDate || promo.endDate >= now);
       const isWithinLimit = promo.usedCount < promo.usageLimit;
-      const isMinAmountMet = totalAmount >= promo.minOrderAmount;
+      const isMinAmountMet = serverPricing.total >= promo.minOrderAmount;
 
       if (isActive && isWithinLimit && isMinAmountMet) {
         if (promo.discountType === "percentage") {
-          discountAmount = (totalAmount * promo.discountValue) / 100;
+          discountAmount = (serverPricing.total * promo.discountValue) / 100;
           if (promo.maxDiscountAmount && discountAmount > promo.maxDiscountAmount) {
             discountAmount = promo.maxDiscountAmount;
           }
         } else {
           discountAmount = promo.discountValue;
         }
-        finalAmount = totalAmount - discountAmount;
+        finalAmount = Math.max(0, serverPricing.total - discountAmount);
         
         // Increment used count
         promo.usedCount += 1;
@@ -691,11 +718,20 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 6. Compute GST from Settings
-  const settings = await Settings.getSettings();
+  const clientTotal = Math.round(Number(totalAmount) || 0);
+  if (!promoCode && Math.abs(clientTotal - serverPricing.total) > 2) {
+    return next(
+      new ErrorResponse(
+        `Price mismatch. Please refresh checkout. Expected ₹${serverPricing.total}, received ₹${clientTotal}.`,
+        400
+      )
+    );
+  }
+
   const gstPct = settings?.pricing?.gstPercentage || 5;
-  const baseAmountForGST = finalAmount - (deliveryFee || 0); // GST on order amount, not delivery
-  const gstAmount = Math.round((baseAmountForGST * gstPct) / (100 + gstPct)); // GST inclusive extraction
+  const gstAmount = serverPricing.taxes;
+  const platformFee = serverPricing.platformFee;
+  const verifiedDeliveryFee = serverPricing.delivery;
 
   // 7. Generate transaction ID
   const transactionId = `TXN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
@@ -707,7 +743,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     tailor: targetTailorUserId,
     items: formattedItems,
     totalAmount: finalAmount,
-    deliveryFee: deliveryFee || 0,
+    deliveryFee: verifiedDeliveryFee,
+    platformFee,
     gstAmount,
     gstPercentage: gstPct,
     transactionId,
@@ -1349,7 +1386,7 @@ exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
 exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   const { items, deliveryAddress, isCartCheckout } = req.body;
   const Settings = require("../../../models/Settings.js");
-  const { getDistanceFromLatLonInKm } = require("../../../utils/haversine.js");
+  const { computeCheckoutPricing } = require("../../../utils/checkoutPricing.js");
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(200).json({
@@ -1359,108 +1396,11 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   }
 
   const settings = await Settings.getSettings();
-  const visitSettings = settings.visitFee || { baseFee: 150, perKmFee: 20, freeKm: 3 };
-  const deliveryRates = settings.deliveryRates || { baseFee: 20, perKmRate: 10 };
-  const platformFeePercentage = settings.walletConfig?.platformFeePercentage || 5;
-  const gstPercentage = settings.pricing?.gstPercentage || 5;
+  const data = computeCheckoutPricing(items, deliveryAddress, !!isCartCheckout, settings);
 
-  let totalBase = 0;
-  let totalAddons = 0;
-  let totalFabric = 0;
-  let totalTailorAtHome = 0;
-  let orderDeliveryFee = 0;
-  
-  let uLat = null, uLng = null;
-  if (deliveryAddress?.location?.coordinates?.length >= 2) {
-    uLng = deliveryAddress.location.coordinates[0];
-    uLat = deliveryAddress.location.coordinates[1];
-  }
-
-  if (isCartCheckout) {
-    // Cart Logic
-    totalBase = items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-    orderDeliveryFee = deliveryRates.baseFee;
-    
-    const firstItem = items[0];
-    let distanceKm = 0;
-    let tLat = null, tLng = null;
-    
-    if (firstItem.tailor?.location?.coordinates?.length >= 2) {
-        tLng = firstItem.tailor.location.coordinates[0];
-        tLat = firstItem.tailor.location.coordinates[1];
-    }
-    
-    if (uLat !== null && uLng !== null && tLat !== null && tLng !== null) {
-        distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
-        if (distanceKm > 0) {
-            orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
-        }
-    }
-    
-    if (totalBase > 999) {
-        orderDeliveryFee = 0;
-    }
-  } else {
-    // Service Checkout Logic
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        
-        let itemBase = item.pricing?.base || 0;
-        let itemAddons = item.pricing?.addons || 0;
-        let itemFabric = item.pricing?.fabric || 0;
-        let dynamicTailorAtHome = item.pricing?.tailorAtHome || 0;
-        
-        let distanceKm = 0;
-        let tLat = null, tLng = null;
-        
-        if (item.serviceDetails?.tailorCoordinates?.length >= 2) {
-            tLng = item.serviceDetails.tailorCoordinates[0];
-            tLat = item.serviceDetails.tailorCoordinates[1];
-        }
-        
-        if (uLat !== null && uLng !== null && tLat !== null && tLng !== null) {
-            distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
-            
-            if (item.configuration?.isTailorAtHome) {
-                if (distanceKm <= visitSettings.freeKm) {
-                    dynamicTailorAtHome = visitSettings.baseFee;
-                } else {
-                    dynamicTailorAtHome = Math.round(visitSettings.baseFee + (distanceKm - visitSettings.freeKm) * visitSettings.perKmFee);
-                }
-            }
-        }
-        
-        totalBase += itemBase;
-        totalAddons += itemAddons;
-        totalFabric += itemFabric;
-        totalTailorAtHome += dynamicTailorAtHome;
-        
-        if (i === 0 && distanceKm > 0) {
-            orderDeliveryFee = Math.round(deliveryRates.baseFee + (distanceKm * deliveryRates.perKmRate));
-        }
-    }
-  }
-  
-  const platformFeeAmount = Math.round((totalBase + totalAddons) * (platformFeePercentage / 100));
-  const taxableAmount = totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount;
-  const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
-  
-  const finalTotal = totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount + totalTaxes + orderDeliveryFee;
-  
   res.status(200).json({
     success: true,
-    data: {
-      total: finalTotal,
-      base: totalBase,
-      taxes: totalTaxes,
-      delivery: orderDeliveryFee,
-      addons: totalAddons,
-      fabric: totalFabric,
-      tailorAtHome: totalTailorAtHome,
-      platformFee: platformFeeAmount,
-      platformFeePercentage,
-      gstPercentage
-    }
+    data,
   });
 });
 

@@ -1,17 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ShoppingBag, ShoppingCart, Info, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
 import useCheckoutStore from '../../../store/checkoutStore';
 import CartItem from '../components/cart/CartItem';
+import api from '../../../utils/api';
 import { cn } from '../../../utils/cn';
 
 const CartPage = () => {
     const navigate = useNavigate();
     const { items, getTotalPrice, removeItem, updateQuantity } = useCartStore(state => state);
     const totalPrice = getTotalPrice();
-    // Delivery fee is calculated dynamically at checkout based on address distance
     const finalTotal = totalPrice;
+    const [freeDeliveryMinOrder, setFreeDeliveryMinOrder] = useState(null);
+
+    useEffect(() => {
+        api.get('/cms/settings')
+            .then((res) => {
+                if (res.data.success) {
+                    const min = res.data.data?.pricing?.freeDeliveryMinOrder;
+                    setFreeDeliveryMinOrder(min != null ? Number(min) : 999);
+                }
+            })
+            .catch(() => setFreeDeliveryMinOrder(999));
+    }, []);
+
+    const qualifiesFreeDelivery =
+        freeDeliveryMinOrder != null &&
+        freeDeliveryMinOrder > 0 &&
+        totalPrice > freeDeliveryMinOrder;
 
     const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
@@ -93,15 +110,15 @@ const CartPage = () => {
                             </div>
                             <div className="flex justify-between text-xs text-gray-600">
                                 <span>Delivery Fee</span>
-                                {totalPrice > 999 ? (
+                                {qualifiesFreeDelivery ? (
                                     <span className="text-[#843D9B] font-bold">FREE</span>
                                 ) : (
                                     <span className="text-gray-400 italic">Calculated at checkout</span>
                                 )}
                             </div>
-                            {totalPrice > 999 && (
+                            {qualifiesFreeDelivery && (
                                 <div className="bg-green-50 text-green-700 p-2 rounded-lg text-[10px] font-medium border border-green-100">
-                                    You've unlocked free delivery!
+                                    Free delivery unlocked (orders above ₹{freeDeliveryMinOrder.toLocaleString('en-IN')})
                                 </div>
                             )}
 

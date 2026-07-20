@@ -9,7 +9,7 @@ import useCartStore from '../../../store/cartStore';
 import BillDetails from '../components/checkout/summary/BillDetails';
 import ServiceReviewCard from '../components/checkout/summary/ServiceReviewCard';
 import { cn } from '../../../utils/cn';
-import { calculateDistance } from '../../../utils/distance';
+import { formatCheckoutAddress } from '../../../utils/checkoutBilling';
 
 import useOrderStore from '../../../store/orderStore';
 
@@ -238,6 +238,7 @@ const CheckoutSummary = () => {
                         totalAmount: finalTotal,
                         deliveryFee: currentPricing.delivery,
                         platformFee: currentPricing.platformFee,
+                        gstAmount: currentPricing.taxes,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,
@@ -258,6 +259,7 @@ const CheckoutSummary = () => {
                         totalAmount: finalTotal,
                         deliveryFee: currentPricing.delivery,
                         platformFee: currentPricing.platformFee,
+                        gstAmount: currentPricing.taxes,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,
@@ -545,8 +547,8 @@ const CheckoutSummary = () => {
                         {selectedAddress ? (
                             <div className="bg-[#843D9B]/[0.02] p-4 rounded-xl border border-[#843D9B]/10 text-xs text-gray-600 leading-relaxed animate-in fade-in duration-300">
                                 <p className="font-bold text-gray-900 mb-2">{selectedAddress?.receiverName} <span className="ml-2 px-2 py-0.5 bg-[#843D9B]/10 text-[#843D9B] rounded-full text-[9px] uppercase tracking-widest">{selectedAddress?.type}</span></p>
-                                <p className="text-gray-600">{selectedAddress?.street}, {selectedAddress?.city}, {selectedAddress?.state} - {selectedAddress?.zipCode}</p>
-                                <p className="mt-2 font-bold text-[#843D9B]">Contact: {selectedAddress?.phone}</p>
+                                <p className="text-gray-600">{formatCheckoutAddress(selectedAddress)}</p>
+                                <p className="mt-2 font-bold text-[#843D9B]">Contact: {selectedAddress?.phone || 'N/A'}</p>
                             </div>
                         ) : (
                             <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 text-center space-y-3">

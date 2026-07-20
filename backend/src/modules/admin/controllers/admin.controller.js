@@ -1747,6 +1747,7 @@ exports.updateSettings = async (req, res) => {
     if (updateData.walletConfig) settings.walletConfig = updateData.walletConfig;
     if (updateData.codWalletConfig) settings.codWalletConfig = updateData.codWalletConfig;
     if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
+    if (updateData.executiveRates) settings.executiveRates = updateData.executiveRates;
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
     if (updateData.tailorSearch) settings.tailorSearch = updateData.tailorSearch;
 

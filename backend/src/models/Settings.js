@@ -47,6 +47,8 @@ const settingsSchema = new mongoose.Schema(
     },
     pricing: {
       gstPercentage: { type: Number, default: 5 },
+      /** Order subtotal (₹) above which customer delivery fee is waived */
+      freeDeliveryMinOrder: { type: Number, default: 999 },
     },
     deliveryRates: {
       baseFee: { type: Number, default: 20 },
