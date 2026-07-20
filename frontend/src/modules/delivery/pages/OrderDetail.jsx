@@ -580,21 +580,24 @@ const DeliveryOrderDetail = () => {
   };
 
   const handleImage = async (e, setter) => {
-    const file = e.target?.files?.[0];
+    const target = e.target;
+    const file = target?.files?.[0];
     if (!file) return;
     try {
       if (file.size > 12 * 1024 * 1024) {
         toast.error('Image too large. Please choose a smaller photo.');
-        e.target.value = null;
+        if (target) target.value = '';
         return;
       }
       const dataUrl = await compressImageFile(file);
       setter(dataUrl);
       toast.success('Photo added');
-    } catch {
+    } catch (err) {
+      console.error('Photo processing error:', err);
       toast.error('Could not process photo');
+    } finally {
+      if (target) target.value = '';
     }
-    e.target.value = null;
   };
 
   console.log("OrderDetail Render:", { isInitialLoading, isLoadingOrder, isLoaded, order: !!order, id });

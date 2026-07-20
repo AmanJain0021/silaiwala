@@ -296,9 +296,14 @@ const DeliveryOrderDetail = () => {
 
   const handleImage = (file, setter) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setter(reader.result);
-    reader.readAsDataURL(file);
+    try {
+      const reader = new FileReader();
+      reader.onload = () => setter(reader.result);
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Photo processing error:', err);
+      toast.error('Could not process photo');
+    }
   };
 
   if (isLoadingOrder || !isLoaded) {
