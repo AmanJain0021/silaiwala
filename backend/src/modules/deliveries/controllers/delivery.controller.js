@@ -1798,17 +1798,17 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
                 if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
                    deliveryProfile.cashBlocked = true;
                    await Notification.create([{
-                       user: req.user.id,
-                       title: "COD Limit Exceeded ⚠️",
+                       recipient: req.user.id,
+                       title: "COD Limit Exceeded",
                        message: `You have reached the maximum cash collection limit of ₹${limit}. Please deposit cash to receive new assignments.`,
-                       type: "alert",
+                       type: "SYSTEM_NOTICE",
                    }], { session });
                 } else if (deliveryProfile.codWalletBalance >= limit * 0.8) {
                    await Notification.create([{
-                       user: req.user.id,
-                       title: "COD Limit Warning ⚠️",
+                       recipient: req.user.id,
+                       title: "COD Limit Warning",
                        message: `Your cash collection balance (₹${deliveryProfile.codWalletBalance}) is nearing the limit of ₹${limit}.`,
-                       type: "alert",
+                       type: "SYSTEM_NOTICE",
                    }], { session });
                 }
 
