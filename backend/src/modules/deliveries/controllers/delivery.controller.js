@@ -1039,6 +1039,13 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
   await session.commitTransaction();
 
+  try {
+    const { syncIssueFromReworkOrder } = require("../../../utils/issueReworkSync.js");
+    await syncIssueFromReworkOrder(order);
+  } catch (syncErr) {
+    console.error("Issue sync after delivery status:", syncErr.message);
+  }
+
   let otpSentTo = null;
   if (status === "reached-pickup") otpSentTo = "customer";
   if (status === "reached-dropoff") {
@@ -1947,6 +1954,14 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   }
 
   await session.commitTransaction();
+
+  try {
+    const { syncIssueFromReworkOrder } = require("../../../utils/issueReworkSync.js");
+    await syncIssueFromReworkOrder(order);
+  } catch (syncErr) {
+    console.error("Issue sync after complete delivery:", syncErr.message);
+  }
+
     res.status(200).json({ success: true, data: returnOrder });
   } catch (error) {
     try { await session.abortTransaction(); } catch (_) { /* already aborted */ }

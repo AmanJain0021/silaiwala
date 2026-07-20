@@ -173,6 +173,35 @@ exports.updateIssueStatus = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not authorized", 403));
   }
 
+  if (status === "ready_for_delivery" && issue.status === "rework_in_progress") {
+    issue.status = "ready_for_delivery";
+    await issue.save();
+
+    if (issue.reworkOrder) {
+      const reworkOrder = await Order.findById(issue.reworkOrder);
+      if (reworkOrder) {
+        reworkOrder.status = "ready-for-delivery";
+        reworkOrder.trackingHistory = reworkOrder.trackingHistory || [];
+        reworkOrder.trackingHistory.push({
+          status: "ready-for-delivery",
+          message: "Tailor completed rework — ready for return delivery.",
+          timestamp: new Date(),
+        });
+        await reworkOrder.save();
+      }
+    }
+
+    await sendNotification({
+      recipient: issue.customer,
+      type: "ISSUE_UPDATED",
+      title: "Rework complete",
+      message: "Your tailor finished the fix. Return delivery will be arranged soon.",
+      data: { issueId: issue._id, targetUrl: `/user/issues/${issue._id}` },
+    });
+
+    return res.status(200).json({ success: true, data: issue });
+  }
+
   if (status === "rejected" && !rejectionReason) {
     return next(new ErrorResponse("Rejection reason is required", 400));
   }

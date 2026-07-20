@@ -41,9 +41,16 @@ const TailorIssueDetails = () => {
             scrollToBottom();
         });
 
+        socket.on('issue_status_updated', (payload) => {
+            if (payload?.issueId === issueId || payload?.issueId?.toString?.() === issueId) {
+                fetchIssueDetails();
+            }
+        });
+
         return () => {
             socket.emit('leave_issue_room', issueId);
             socket.off('receive_issue_message');
+            socket.off('issue_status_updated');
         };
     }, [socket, issueId]);
 
@@ -161,8 +168,17 @@ const TailorIssueDetails = () => {
 
     const showPickupDispatch = issue?.status === 'accepted' && !issue?.reworkOrder;
 
-    const showReturnDispatch =
-        ['rework_in_progress', 'pickup_completed', 'ready_for_delivery'].includes(issue?.status);
+    const showReturnDispatch = issue?.status === 'ready_for_delivery';
+
+    const handleMarkReworkComplete = async () => {
+        try {
+            const res = await api.patch(`/issues/${issueId}/status`, { status: 'ready_for_delivery' });
+            setIssue(res.data.data);
+            toast.success('Rework marked complete — assign return delivery when ready.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update');
+        }
+    };
 
     if (isLoading) return <div className="flex h-[100dvh] items-center justify-center"><Loader2 size={32} className="animate-spin text-primary" /></div>;
 
@@ -204,6 +220,19 @@ const TailorIssueDetails = () => {
                             </button>
                             <p className="text-[10px] text-gray-500 font-medium mt-2 text-center">
                                 Delivery charge (distance-based) will be deducted from your wallet
+                            </p>
+                        </div>
+                    )}
+                    {issue.status === 'rework_in_progress' && (
+                        <div className="mb-5">
+                            <button
+                                onClick={handleMarkReworkComplete}
+                                className="w-full bg-[#843D9B] text-white py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-transform"
+                            >
+                                <CheckCircle2 size={16} /> Mark Rework Complete
+                            </button>
+                            <p className="text-[10px] text-gray-500 font-medium mt-2 text-center">
+                                Garment received — finish stitching, then mark complete to assign return delivery
                             </p>
                         </div>
                     )}
