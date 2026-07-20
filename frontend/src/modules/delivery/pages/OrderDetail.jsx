@@ -36,51 +36,6 @@ const apiErr = (err, fallback = 'Something went wrong') =>
   err?.message ||
   fallback;
 
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Could not read image'));
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
-
-/** Compress image to JPEG data URL; falls back to raw data URL if canvas fails (common on mobile) */
-const processPhotoFile = async (file, maxEdge = 1280, quality = 0.72) => {
-  const raw = await readFileAsDataUrl(file);
-  try {
-    const compressed = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('Invalid image'));
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxEdge || height > maxEdge) {
-          if (width > height) {
-            height = Math.round((height * maxEdge) / width);
-            width = maxEdge;
-          } else {
-            width = Math.round((width * maxEdge) / height);
-            height = maxEdge;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Canvas unavailable'));
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = raw;
-    });
-    return compressed;
-  } catch {
-    return typeof raw === 'string' ? raw : null;
-  }
-};
-
 const isValidMapCoord = (lat, lng) => {
   const la = Number(lat);
   const ln = Number(lng);
@@ -100,6 +55,7 @@ import { useDeliveryTracking } from '../../../shared/hooks/useDeliveryTracking';
 import useSocketStore from '../../../store/socketStore';
 import { useJsApiLoader } from '@react-google-maps/api';
 import useAuthStore from '../../../store/authStore';
+import { pickPhotoFromInput, ensurePhotoDataUrl } from '../utils/pickDeliveryPhoto';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
@@ -622,9 +578,12 @@ const DeliveryOrderDetail = () => {
     }
 
     try {
+      const proof = await ensurePhotoDataUrl(deliveryPhoto);
+      if (!proof) return toast.error('Photo still processing — wait a moment');
+
       const updated = await completeDeliveryFlow(id, { 
         otp: otpValue.trim(), 
-        deliveryProofPhoto: deliveryPhoto,
+        deliveryProofPhoto: proof,
         paymentMethod: paymentSelection
       });
       setOrder(updated);
@@ -639,29 +598,20 @@ const DeliveryOrderDetail = () => {
     }
   };
 
-  const handleImage = async (e, setter) => {
-    const target = e.target;
-    const file = target?.files?.[0];
-    if (!file) return;
-    setPhotoProcessing(true);
+    const handleImagePick = (e, setter, fromCamera) => {
+    const input = e?.target;
+    if (!input) return;
     try {
-      if (file.size > 15 * 1024 * 1024) {
-        toast.error('Image too large. Please choose a smaller photo.');
-        return;
-      }
-      const dataUrl = await processPhotoFile(file);
-      if (!dataUrl || typeof dataUrl !== 'string') {
-        toast.error('Could not process photo');
-        return;
-      }
-      setter(dataUrl);
-      toast.success('Photo added');
+      pickPhotoFromInput(input, (url) => {
+        setter(url);
+        toast.success('Photo added');
+      }, {
+        fromCamera,
+        onProcessing: setPhotoProcessing,
+      });
     } catch (err) {
-      console.error('Photo processing error:', err);
-      toast.error('Could not process photo — try Gallery');
-    } finally {
-      setPhotoProcessing(false);
-      if (target) target.value = '';
+      toast.error(err?.message || 'Could not process photo');
+      if (input) input.value = '';
     }
   };
 
@@ -1000,16 +950,21 @@ const DeliveryOrderDetail = () => {
                         
                         <div className="grid grid-cols-1 gap-4">
                             <div className="relative aspect-[16/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 flex items-center justify-center group shadow-inner">
-                               {photoProcessing ? (
+                               {(currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto) ? (
+                                  <>
+                                    <img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} alt="Verification" className="w-full h-full object-cover" />
+                                    {photoProcessing && (
+                                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                        <FiLoader className="w-8 h-8 text-white animate-spin" />
+                                      </div>
+                                    )}
+                                    <button type="button" disabled={photoProcessing} onClick={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
+                                  </>
+                               ) : photoProcessing ? (
                                   <div className="flex flex-col items-center gap-2 text-indigo-600">
                                     <FiLoader className="w-8 h-8 animate-spin" />
                                     <span className="text-[9px] font-black uppercase tracking-widest">Processing photo…</span>
                                   </div>
-                               ) : (currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto) ? (
-                                  <>
-                                    <img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} alt="Verification" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</button>
-                                  </>
                                ) : (
                                   <div className="flex flex-col items-center gap-3">
                                      <button type="button" disabled={photoProcessing} onClick={() => currentPhase === 'pickup' ? pickupInputRef.current?.click() : deliveryInputRef.current?.click()} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform disabled:opacity-40">
@@ -1142,11 +1097,20 @@ const DeliveryOrderDetail = () => {
               ) : (
                 <button 
                     type="button"
-                    onClick={currentPhase === 'pickup' ? () => {
-                        if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
-                        const correctStatus = (order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup') ? 'fabric-picked-up' : 'picked-up-from-tailor';
-                        handleUpdateStatus(correctStatus, 'Items picked up!', { proof: pickupPhoto, otp: otpValue.trim() });
-                    } : handleFinalize}
+                    onClick={
+                      currentPhase === 'pickup'
+                        ? async () => {
+                            if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
+                            const correctStatus =
+                              order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup'
+                                ? 'fabric-picked-up'
+                                : 'picked-up-from-tailor';
+                            const proof = await ensurePhotoDataUrl(pickupPhoto);
+                            if (!proof) return toast.error('Photo still processing — wait a moment');
+                            handleUpdateStatus(correctStatus, 'Items picked up!', { proof, otp: otpValue.trim() });
+                          }
+                        : handleFinalize
+                    }
                     disabled={isUpdatingOrderStatus || (currentPhase === 'pickup' && (otpValue.length < 6 || !pickupPhoto)) || (currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || (isCod && isFinalDelivery && !paymentSelection)))}
                     className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
@@ -1217,10 +1181,10 @@ const DeliveryOrderDetail = () => {
         />
 
         {/* HIDDEN INPUTS FOR FILE UPLOAD */}
-        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
-        <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImage(e, setPickupPhoto)} className="hidden" />
-        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
-        <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImage(e, setDeliveryPhoto)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={pickupInputRef} onChange={(e) => handleImagePick(e, setPickupPhoto, true)} className="hidden" />
+        <input type="file" accept="image/*" ref={pickupGalleryRef} onChange={(e) => handleImagePick(e, setPickupPhoto, false)} className="hidden" />
+        <input type="file" accept="image/*" capture="environment" ref={deliveryInputRef} onChange={(e) => handleImagePick(e, setDeliveryPhoto, true)} className="hidden" />
+        <input type="file" accept="image/*" ref={deliveryGalleryRef} onChange={(e) => handleImagePick(e, setDeliveryPhoto, false)} className="hidden" />
       </div>
     </PageTransition>
   );

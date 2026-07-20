@@ -26,6 +26,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import useSocketStore from '../../../../store/socketStore';
 import useAuthStore from '../../../../store/authStore';
 import { getToken } from '../../../../utils/auth';
+import { pickPhotoFromInput, ensurePhotoDataUrl } from '../../utils/pickDeliveryPhoto';
 import { isPendingAcceptanceTask, isAcceptedActiveTask, getPartnerActionStage } from '../../utils/taskStatus';
 
 const Tasks = () => {
@@ -180,46 +181,20 @@ const Tasks = () => {
     };
 
     const [taskProof, setTaskProof] = useState(null);
+    const [photoProcessing, setPhotoProcessing] = useState(false);
 
-    const handlePhotoSelect = async (e) => {
-        const file = e.target?.files?.[0];
-        if (!file) return;
+    const handlePhotoSelect = (e, fromCamera) => {
+        const input = e?.target;
+        if (!input) return;
         try {
-            if (file.size > 12 * 1024 * 1024) {
-                toast.error('Image too large. Please choose a smaller photo.');
-                e.target.value = null;
-                return;
-            }
-            const dataUrl = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onerror = () => reject(new Error('read failed'));
-                reader.onload = () => {
-                    const img = new Image();
-                    img.onerror = () => reject(new Error('invalid'));
-                    img.onload = () => {
-                        let w = img.width;
-                        let h = img.height;
-                        const max = 1280;
-                        if (w > max || h > max) {
-                            if (w > h) { h = Math.round((h * max) / w); w = max; }
-                            else { w = Math.round((w * max) / h); h = max; }
-                        }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w;
-                        canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        resolve(canvas.toDataURL('image/jpeg', 0.72));
-                    };
-                    img.src = reader.result;
-                };
-                reader.readAsDataURL(file);
-            });
-            setTaskProof(dataUrl);
-            toast.success('Photo captured!');
-        } catch {
-            toast.error('Could not process photo');
+            pickPhotoFromInput(input, (url) => {
+                setTaskProof(url);
+                toast.success('Photo added');
+            }, { fromCamera, onProcessing: setPhotoProcessing });
+        } catch (err) {
+            toast.error(err?.message || 'Could not process photo');
+            if (input) input.value = '';
         }
-        e.target.value = null;
     };
 
     const needsFinalPayment = (task) => {
@@ -413,7 +388,12 @@ const Tasks = () => {
                     ) : (
                         <div className="h-20 w-full rounded-xl overflow-hidden border-2 border-slate-800 relative">
                             <img src={taskProof} alt="Proof" className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
+                            {photoProcessing && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                </div>
+                            )}
+                            <button type="button" disabled={photoProcessing} onClick={() => setTaskProof(null)} className="absolute top-1 right-1 bg-white/80 p-1 rounded-full text-rose-500">
                                 <X size={12} />
                             </button>
                         </div>
@@ -447,7 +427,7 @@ const Tasks = () => {
                     )}
 
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             if (!otpInput || otpInput.length < 6) {
                                 toast.error('Please enter the 6-digit OTP');
                                 return;
@@ -456,15 +436,24 @@ const Tasks = () => {
                                 toast.error('Please take a delivery photo first');
                                 return;
                             }
+                            if (photoProcessing) {
+                                toast.error('Photo still processing — wait a moment');
+                                return;
+                            }
                             if (duePayment && !paymentSelection) {
                                 toast.error('Collect final payment (Cash or UPI) before completing');
+                                return;
+                            }
+                            const proof = await ensurePhotoDataUrl(taskProof);
+                            if (!proof) {
+                                toast.error('Photo still processing — wait a moment');
                                 return;
                             }
                             handleUpdateStatus(
                                 task._id,
                                 isFabric ? 'fabric-delivered' : 'delivered',
                                 'Order successfully delivered',
-                                taskProof,
+                                proof,
                                 otpInput,
                                 duePayment ? paymentSelection : null
                             );
@@ -935,14 +924,14 @@ const Tasks = () => {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
-                onChange={handlePhotoSelect}
+                onChange={(e) => handlePhotoSelect(e, true)}
             />
             <input
                 ref={galleryInputRef}
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={handlePhotoSelect}
+                onChange={(e) => handlePhotoSelect(e, false)}
             />
         </div>
     );
