@@ -770,12 +770,13 @@ exports.rejectDeliveryPartner = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const { status, type, customer, tailor, deliveryPartner, search, limit = 50, page = 1 } = req.query;
+    const { status, type, customer, tailor, deliveryPartner, deliveryMethod, search, limit = 50, page = 1 } = req.query;
     
     let query = { isRework: { $ne: true } };
     if (status) query.status = status;
     if (customer) query.customer = customer;
     if (tailor) query.tailor = tailor;
+    if (deliveryMethod) query.deliveryMethod = deliveryMethod;
     
     // Handle unassigned orders specifically
     if (deliveryPartner === 'unassigned') {
@@ -907,6 +908,21 @@ exports.updateOrderStatus = async (req, res) => {
       console.log(`================================\n`);
 
       updateData.deliveryPartner = deliveryPartner;
+
+      const isDropoffPhase = ["ready", "ready-for-pickup", "ready-for-delivery", "out-for-delivery"].includes(
+        oldOrder.status
+      );
+      const isPickupPhase =
+        oldOrder.status === "fabric-ready-for-pickup" ||
+        (oldOrder.fabricPickupRequired && ["pending", "accepted"].includes(oldOrder.status));
+      if (isDropoffPhase) {
+        updateData.dropoffPartner = deliveryPartner;
+        updateData.dropoffDeliveryStatus = "accepted";
+      }
+      if (isPickupPhase) {
+        updateData.pickupPartner = deliveryPartner;
+        updateData.pickupDeliveryStatus = "accepted";
+      }
       
       // LOGIC: If we are assigning a delivery partner and the order was pending/accepted,
       // it might need to move to fabric-ready-for-pickup if fabric pickup is required

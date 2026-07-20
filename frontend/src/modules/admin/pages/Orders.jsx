@@ -253,8 +253,10 @@ const AdminOrders = () => {
                 setIsManageOpen(true);
                 
                 // Fetch validation for ready-made products
-                const isReadyMade = res.data.data.items?.some(item => item.productType === 'store_item');
-                if (isReadyMade && !res.data.data.shiprocketDetails?.shipmentId) {
+                const isGarment = res.data.data.items?.some(
+                    (item) => item.product && !item.service && !item.isAlteration && !item.isCustomDesign
+                );
+                if (isGarment && !res.data.data.shiprocketDetails?.shipmentId) {
                     api.get(`/shiprocket/validate/${orderId}`)
                        .then(vRes => setShiprocketValidation(vRes.data.data))
                        .catch(() => setShiprocketValidation({ isValid: false, errors: ['Failed to load validation status'] }));

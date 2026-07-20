@@ -145,7 +145,7 @@ const orderSchema = new mongoose.Schema(
     },
     deliveryMethod: {
       type: String,
-      enum: ['auto', 'manual', 'shiprocket', 'self', 'tailor'],
+      enum: ['auto', 'broadcast', 'manual', 'shiprocket', 'self', 'tailor'],
       default: 'auto'
     },
     otpVerifiedAt: {

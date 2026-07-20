@@ -704,6 +704,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
         deliveryMethod === "auto");
 
     if (shouldAutoAssign) {
+      order.deliveryMethod = deliveryMethod === "broadcast" ? "broadcast" : "auto";
       if (status === "out-for-delivery") {
         // Hold at ready-for-delivery while searching for a partner
         order.status = "ready-for-delivery";
@@ -714,6 +715,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
           message: "Broadcasting delivery request to nearby partners.",
         });
         await order.save();
+      } else {
+        await order.save();
       }
       const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
       await autoAssignDelivery(order._id, "dropoff");
@@ -722,6 +725,31 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     // If tailor specifically requested Manual or Shiprocket or Self or Tailor Self-Deliver
     if ((status === "ready-for-pickup" || status === "ready-for-delivery" || status === "out-for-delivery") && deliveryMethod && deliveryMethod !== 'auto' && deliveryMethod !== 'broadcast') {
         order.deliveryMethod = deliveryMethod;
+
+        if (deliveryMethod === "manual") {
+          order.pendingPartnerCandidates = [];
+          order.dropoffDeliveryStatus = "pending";
+          order.trackingHistory.push({
+            status: order.status,
+            timestamp: new Date(),
+            message: "Tailor requested admin manual assignment of delivery partner.",
+          });
+          await sendNotification({
+            recipient: "admins",
+            type: "SYSTEM_NOTICE",
+            title: "Manual Delivery Assignment Required",
+            message: `Order ${order.orderId} is ready — please assign a delivery partner manually.`,
+            data: { orderId: order._id, targetUrl: "/admin/delivery" },
+          });
+          const { tryGetIO } = require("../../../config/socket.js");
+          const adminIo = tryGetIO();
+          if (adminIo) {
+            adminIo.to("admin_room").emit("manual_delivery_request", {
+              orderId: order.orderId,
+              _id: order._id,
+            });
+          }
+        }
         
         // Generate OTP for Self Delivery (Customer Pickup)
         if (deliveryMethod === 'self' && (status === 'ready-for-pickup' || status === 'ready-for-delivery')) {
@@ -772,7 +800,13 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
             pickupDeliveryStatus: order.pickupDeliveryStatus,
         });
 
-        if (finalStatus === 'ready-for-pickup' || finalStatus === 'ready-for-delivery' || finalStatus === 'fabric-ready-for-pickup' || finalStatus === 'ready') {
+        const skipFleetBroadcast = ["manual", "shiprocket", "self", "tailor"].includes(order.deliveryMethod);
+        const isDispatchStatus =
+          finalStatus === "ready-for-pickup" ||
+          finalStatus === "ready-for-delivery" ||
+          finalStatus === "fabric-ready-for-pickup" ||
+          finalStatus === "ready";
+        if (isDispatchStatus && !skipFleetBroadcast && (shouldAutoAssign || ["auto", "broadcast"].includes(order.deliveryMethod))) {
             io.to('delivery_partners').emit('receive_new_order', {
                 orderId: order.orderId,
                 _id: order._id,

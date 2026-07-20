@@ -1199,8 +1199,21 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
   const formattedOrders = enrichedOrders.filter((order) => {
     if (!order) return false;
 
+    // Admin-assigned / self / courier — not open for partner self-claim
+    if (["manual", "shiprocket", "self", "tailor"].includes(order.deliveryMethod)) {
+      return false;
+    }
+
     // Always show if this partner was explicitly broadcasted to
     if (order.isBroadcastCandidate) return true;
+
+    // Broadcast/auto only: open pool when no targeted candidate list yet
+    if (
+      order.pendingPartnerCandidates?.length > 0 &&
+      !["auto", "broadcast"].includes(order.deliveryMethod)
+    ) {
+      return false;
+    }
 
     // Open pool: within 15km (or show if either side lacks location)
     if (!riderCoords || riderCoords.length < 2) return true;
@@ -1263,6 +1276,17 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
     order.pickupDeliveryStatus = "accepted"; // Upgrade from pending to accepted
     if (!order.deliveryPartner) order.deliveryPartner = req.user.id;
   } else {
+    if (order.deliveryMethod === "manual") {
+      const preAssigned =
+        order.deliveryPartner?.toString() === req.user.id ||
+        order.dropoffPartner?.toString() === req.user.id;
+      if (!preAssigned) {
+        return next(
+          new ErrorResponse("This order must be assigned by admin before you can accept it", 403)
+        );
+      }
+    }
+
     // If pre-assigned pending, or claiming an available task
     if (order.dropoffPartner && order.dropoffPartner.toString() !== req.user.id) {
       return next(new ErrorResponse("Order already has a dropoff partner assigned", 400));

@@ -74,7 +74,7 @@ const AdminDelivery = () => {
 
     const fetchUnassignedTasks = async () => {
         try {
-            const res = await api.get('/admin/orders?deliveryPartner=unassigned');
+            const res = await api.get('/admin/orders?deliveryPartner=unassigned&deliveryMethod=manual');
             const data = res.data.data.map(o => ({
                 id: o.orderId || o._id.substring(0, 8),
                 fullId: o._id,

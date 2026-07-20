@@ -8,14 +8,7 @@ const ShiprocketValidationService = require("../services/shiprocketValidation.se
 const { sendNotification } = require("../../../utils/notification.js");
 const { getIO } = require("../../../config/socket.js");
 const { createOrder, generateAWB, requestPickup, generateLabel } = require("../../../utils/shiprocket.js");
-
-// Helper to check if order is strictly a ready-made product order
-const isReadyMadeProductOrder = (order) => {
-  if (!order.items || order.items.length === 0) return false;
-  // If ANY item has a service, it's not strictly ready-made
-  const hasService = order.items.some(item => !!item.service || item.isAlteration || item.isCustomDesign);
-  return !hasService;
-};
+const { isShiprocketEligibleOrder } = require("../../../utils/shiprocketOrderEligibility.js");
 
 /**
  * @desc    Validate order for Shiprocket Shipment
@@ -46,8 +39,8 @@ exports.createShipment = asyncHandler(async (req, res, next) => {
 
   if (!order) return next(new ErrorResponse("Order not found", 404));
 
-  if (!isReadyMadeProductOrder(order)) {
-    return next(new ErrorResponse("Shiprocket integration is only available for Ready-Made Product orders", 400));
+  if (!isShiprocketEligibleOrder(order)) {
+    return next(new ErrorResponse("Shiprocket is only available for garment store orders from this tailor", 400));
   }
 
   if (order.deliveryProvider === 'shiprocket' && order.shiprocketDetails?.shipmentId) {

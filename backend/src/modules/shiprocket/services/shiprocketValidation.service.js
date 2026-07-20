@@ -18,11 +18,9 @@ class ShiprocketValidationService {
             return { isValid: false, errors };
         }
 
-        const isReadyMadeProductOrder = order.items.some(
-            (item) => item.product
-        );
-        if (!isReadyMadeProductOrder) {
-            errors.push("Shiprocket is only available for Ready-Made Product orders.");
+        const { isShiprocketEligibleOrder } = require("../../../utils/shiprocketOrderEligibility.js");
+        if (!isShiprocketEligibleOrder(order)) {
+            errors.push("Shiprocket is only available for garment store orders (not custom stitching).");
         }
 
         if (order.shiprocketDetails?.shipmentId) {

@@ -12,6 +12,7 @@ import CustomerDropoffTracker from '../../../shared/components/CustomerDropoffTr
 import TailorLiveDeliveryTracker from '../../../shared/components/TailorLiveDeliveryTracker';
 import toast from 'react-hot-toast';
 import MeasurementDetail from './MeasurementDetail';
+import { isGarmentStoreOrder } from '../../../shared/utils/shiprocketEligibility';
 
 const Orders = () => {
     const { user } = useTailorAuth();
@@ -59,8 +60,7 @@ const Orders = () => {
 
     useEffect(() => {
         if (selectedOrder) {
-            const isReadyMade = selectedOrder.items?.some(item => item.productType === 'store_item');
-            if (isReadyMade && !selectedOrder.shiprocketDetails?.shipmentId) {
+            if (isGarmentStoreOrder(selectedOrder) && !selectedOrder.shiprocketDetails?.shipmentId) {
                 api.get(`/shiprocket/validate/${selectedOrder._id}`)
                    .then(res => setShiprocketValidation(res.data.data))
                    .catch(err => setShiprocketValidation({ isValid: false, errors: ['Failed to load validation status'] }));
@@ -111,6 +111,9 @@ const Orders = () => {
                 autoAssign: isBroadcastOrAuto,
                 deliveryMethod: method 
             });
+            if (method === 'shiprocket') {
+                toast.success('Shiprocket selected. Open the order and use the Shiprocket section to create the shipment.');
+            }
             setDispatchOrder(null);
         } finally {
             setIsDispatching(false);
@@ -363,15 +366,15 @@ const Orders = () => {
                                 </div>
                             </div>
 
-                            {/* Shiprocket Delivery Section (For Ready-Made Products) */}
-                            {order.items?.some(item => !!item.product && !item.service && !item.isAlteration && !item.isCustomDesign) && order.items.every(item => !item.service && !item.isAlteration && !item.isCustomDesign) && (
+                            {/* Shiprocket — tailor store garment orders only */}
+                            {isGarmentStoreOrder(order) && (
                                 <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-4 shadow-sm">
                                     <div className="flex items-center justify-between">
                                         <p className="text-[11px] font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
                                             <Package size={14} className="text-[#843D9B]" /> 
                                             Shiprocket Delivery
                                         </p>
-                                        <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-600 px-2 py-1 rounded-full border border-purple-100">Ready-Made</span>
+                                        <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-600 px-2 py-1 rounded-full border border-purple-100">Garment Order</span>
                                     </div>
 
                                     {!order.shiprocketDetails?.shipmentId ? (
@@ -1375,6 +1378,7 @@ const Orders = () => {
                                 </div>
                             </button>
 
+                            {isGarmentStoreOrder(dispatchOrder.order) && (
                             <button 
                                 onClick={() => handleDispatchAction('shiprocket')}
                                 disabled={isDispatching}
@@ -1385,10 +1389,10 @@ const Orders = () => {
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-black text-purple-900 mb-0.5 group-hover:text-purple-700">Shiprocket Delivery</h4>
-                                    <p className="text-[10px] font-bold text-purple-600/70">Handover to courier service for long distance.</p>
+                                    <p className="text-[10px] font-bold text-purple-600/70">Courier pickup for garment orders (long distance).</p>
                                 </div>
                             </button>
-
+                            )}
 
                         </div>
                     </div>
