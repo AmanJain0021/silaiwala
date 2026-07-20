@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
-import { splitAdvanceRemaining } from '../../../../utils/checkoutBilling';
+import { splitAdvanceRemaining } from '../../../../../utils/checkoutBilling';
 
 const BillDetails = ({ pricing, advancePercentage = 50, baseLabel = 'Stitching Charges' }) => {
     if (!pricing) return null;
