@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 const cloudinary = require("../config/cloudinary.js");
 const upload = require("../middlewares/upload.middleware.js");
 const { protect } = require("../middlewares/auth.middleware.js");
@@ -11,12 +12,35 @@ const getFolder = (req, defaultFolder) => {
   return req.body.folder || defaultFolder;
 };
 
+// Multer error handler wrapper — catches file size/type errors before they crash the request
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ 
+        success: false, 
+        message: "File size exceeds the 5MB limit. Please compress your images and try again." 
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Unexpected file field. Please try again." 
+      });
+    }
+    return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
+  }
+  if (err) {
+    // Custom error from fileFilter (invalid file format)
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next();
+};
+
 const processUpload = async (req, res, isMultiple) => {
   console.log("=== UPLOAD DEBUG ===");
   console.log("Headers:", req.headers['content-type']);
-  console.log("Files:", req.files);
-  console.log("File:", req.file);
-  console.log("Body:", req.body);
+  console.log("Files:", req.files?.length || 0, "files received");
+  console.log("Body folder:", req.body?.folder);
   console.log("====================");
 
   try {
@@ -83,27 +107,28 @@ const processUpload = async (req, res, isMultiple) => {
 // ---------------- PROTECTED ROUTES ---------------- //
 
 // Single upload (Protected)
-router.post("/", uploadLimiter, protect, upload.any(), (req, res) => {
+router.post("/", uploadLimiter, protect, upload.any(), handleMulterError, (req, res) => {
   if (req.files && req.files.length > 0) req.file = req.files[0];
   return processUpload(req, res, false);
 });
 
 // Bulk upload (Protected)
-router.post("/bulk", uploadLimiter, protect, upload.any(), (req, res) => {
+router.post("/bulk", uploadLimiter, protect, upload.any(), handleMulterError, (req, res) => {
   return processUpload(req, res, true);
 });
 
 // ---------------- PUBLIC ROUTES ---------------- //
 
 // Single upload (Public - useful for registration)
-router.post("/public", uploadLimiter, upload.any(), (req, res) => {
+router.post("/public", uploadLimiter, upload.any(), handleMulterError, (req, res) => {
   if (req.files && req.files.length > 0) req.file = req.files[0];
   return processUpload(req, res, false);
 });
 
 // Bulk upload (Public - useful for bulk registration docs)
-router.post("/public/bulk", uploadLimiter, upload.any(), (req, res) => {
+router.post("/public/bulk", uploadLimiter, upload.any(), handleMulterError, (req, res) => {
   return processUpload(req, res, true);
 });
 
 module.exports = router;
+

@@ -9,7 +9,10 @@ const ImageUploader = ({
     onChange, 
     maxSizeMB = 5, 
     allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
-    className = ""
+    className = "",
+    cameraFacing = "user",
+    compact = false,
+    error = ""
 }) => {
     const [preview, setPreview] = useState(null);
     const [showOptions, setShowOptions] = useState(false);
@@ -66,6 +69,83 @@ const ImageUploader = ({
         setShowOptions(false);
     };
 
+    // Compact mode: circular avatar-style uploader (e.g. profile photo in delivery signup)
+    if (compact) {
+        return (
+            <div className={`flex flex-col items-center ${className}`}>
+                <div 
+                    className={`relative w-20 h-20 rounded-full border-2 border-dashed bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden transition-all shadow-sm ${
+                        error ? 'border-red-400 bg-red-50' : preview ? 'border-indigo-200' : 'border-[#843D9B]/30 hover:border-[#843D9B] hover:bg-pink-50/50'
+                    }`}
+                    onClick={triggerUpload}
+                >
+                    {preview ? (
+                        <>
+                            <img src={preview} alt="Profile" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2">
+                                <button type="button" onClick={(e) => { e.stopPropagation(); triggerUpload(); }} className="bg-white text-[#843D9B] p-1.5 rounded-full shadow-md active:scale-95">
+                                    <Camera size={12} />
+                                </button>
+                                <button type="button" onClick={handleRemove} className="bg-red-500 text-white p-1.5 rounded-full shadow-md active:scale-95">
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center">
+                            <Camera className={error ? 'text-red-400 mb-1' : 'text-[#843D9B]/60 mb-1'} size={20} />
+                            <span className={`text-[9px] font-bold uppercase ${error ? 'text-red-500' : 'text-[#843D9B]/60'}`}>Photo</span>
+                        </div>
+                    )}
+                </div>
+                {label && (
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mt-1.5">{label}</span>
+                )}
+                {error && (
+                    <span className="text-[10px] text-red-500 font-bold mt-1">{error}</span>
+                )}
+                
+                <input
+                    ref={cameraInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    capture={cameraFacing}
+                    onChange={handleFileChange}
+                />
+                <input
+                    ref={galleryInputRef}
+                    type="file"
+                    className="hidden"
+                    accept={allowedTypes.join(',')}
+                    onChange={handleFileChange}
+                />
+
+                {/* Upload Options Modal */}
+                {showOptions && (
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={() => setShowOptions(false)}>
+                        <div className="bg-white w-full max-w-sm rounded-[2rem] p-4 space-y-2 animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95" onClick={e => e.stopPropagation()}>
+                            <div className="text-center pb-2 pt-2">
+                                <h3 className="text-base font-black text-gray-900 tracking-tight">Upload Photo</h3>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Choose a source for your image</p>
+                            </div>
+                            <button onClick={triggerCamera} className="w-full py-4 bg-gray-50 rounded-2xl flex items-center justify-center gap-3 font-black text-[#843D9B] active:bg-gray-100 transition-colors">
+                                <Camera size={18} /> Take Photo
+                            </button>
+                            <button onClick={triggerGallery} className="w-full py-4 bg-gray-50 rounded-2xl flex items-center justify-center gap-3 font-black text-[#843D9B] active:bg-gray-100 transition-colors">
+                                <ImageIcon size={18} /> Choose from Gallery
+                            </button>
+                            <button onClick={() => setShowOptions(false)} className="w-full py-4 bg-white border border-gray-100 rounded-2xl font-black text-gray-400 active:bg-gray-50 mt-2 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Standard mode: rectangular uploader (documents, portfolio, etc.)
     return (
         <div className={`space-y-2 ${className}`}>
             {label && (
@@ -77,7 +157,7 @@ const ImageUploader = ({
             <div 
                 onClick={triggerUpload}
                 className={`relative overflow-hidden group rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer
-                    ${preview 
+                    ${error ? 'border-red-400 bg-red-50/30' : preview 
                         ? 'border-indigo-200 bg-indigo-50/30' 
                         : 'border-gray-300 bg-gray-50 hover:border-[#843D9B] hover:bg-[#F8F9FD]'
                     }`}
@@ -123,7 +203,7 @@ const ImageUploader = ({
                     type="file"
                     className="hidden"
                     accept="image/*"
-                    capture="environment"
+                    capture={cameraFacing}
                     onChange={handleFileChange}
                 />
                 <input
@@ -134,6 +214,9 @@ const ImageUploader = ({
                     onChange={handleFileChange}
                 />
             </div>
+            {error && (
+                <p className="text-[10px] text-red-500 font-bold pl-2">{error}</p>
+            )}
 
             {/* Upload Options Modal */}
             {showOptions && (

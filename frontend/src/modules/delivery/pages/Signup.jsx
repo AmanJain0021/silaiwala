@@ -6,6 +6,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import { validatePassword } from '../../../utils/validation';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import ImageUploader from '../../../components/Common/ImageUploader';
+import { compressImage } from '../../../utils/imageCompression';
 
 const libraries = ['places'];
 
@@ -192,11 +194,16 @@ const DeliverySignup = () => {
         setErrors(newErrors);
         
         if (Object.keys(newErrors).length > 0) {
-            // Check if errors exist in non-visible fields for step 2 summary
+            // Show a summary error for step 2 document uploads
             if (step === 2) {
                 const formError = 'Please upload all required documents';
                 setErrors(prev => ({ ...prev, formError }));
             }
+            return false;
+        }
+
+        // Bank details validation — only on Step 3 where these fields are actually rendered
+        if (step === 3) {
             if (!formData.accountName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) {
                 setErrors(prev => ({ ...prev, formError: 'All bank details are required' }));
                 return false;
@@ -210,7 +217,8 @@ const DeliverySignup = () => {
                 return false;
             }
         }
-        return Object.keys(newErrors).length === 0;
+
+        return true;
     };
 
     const nextStep = () => {
@@ -227,28 +235,50 @@ const DeliverySignup = () => {
         setCurrentStep((s) => Math.max(s - 1, 1));
     };
 
-    const uploadBulkFiles = async (filesArray) => {
+    const uploadBulkFiles = async (filesArray, retryCount = 0) => {
         const data = new FormData();
         let hasFiles = false;
         
-        filesArray.forEach(item => {
+        for (const item of filesArray) {
             if (item.file) {
-                data.append('images', item.file);
+                // Compress images before upload to stay within 5MB server limit
+                const compressedFile = await compressImage(item.file);
+                data.append('images', compressedFile);
                 hasFiles = true;
             }
-        });
+        }
         
         if (!hasFiles) return [];
         
         try {
+            data.append('folder', 'delivery_registration');
             const { default: api } = await import('../../../utils/api');
             const res = await api.post('/upload/public/bulk', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 60000, // 60s timeout for large files on slow networks
             });
             return res.data.data || [];
         } catch (error) {
-            console.error('Bulk file upload failed:', error);
-            throw new Error('Failed to upload documents. Please try again.');
+            console.error(`Bulk file upload failed (attempt ${retryCount + 1}):`, error);
+            
+            // Retry once on failure (network timeout, server error, etc.)
+            if (retryCount < 1) {
+                console.log('Retrying upload...');
+                return uploadBulkFiles(filesArray, retryCount + 1);
+            }
+            
+            // Surface a meaningful error message based on the failure type
+            const status = error.response?.status;
+            const serverMsg = error.response?.data?.message;
+            if (status === 413 || (serverMsg && serverMsg.toLowerCase().includes('size'))) {
+                throw new Error('Files are too large. Please use smaller images (max 5MB each).');
+            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                throw new Error('Upload timed out. Please check your internet connection and try again.');
+            } else if (!navigator.onLine) {
+                throw new Error('No internet connection. Please connect and try again.');
+            } else {
+                throw new Error(serverMsg || 'Failed to upload documents. Please try again.');
+            }
         }
     };
 
@@ -267,7 +297,9 @@ const DeliverySignup = () => {
 
         try {
             useAuthStore.setState({ isLoading: true });
+            setErrors({});
 
+            // Step 1: Upload files
             const filesToUpload = [
                 { name: 'Profile Image', file: formData.profileImage, isProfile: true },
                 { name: 'Driving License Front', file: formData.drivingLicense },
@@ -276,8 +308,23 @@ const DeliverySignup = () => {
                 { name: 'Aadhar Back', file: formData.aadharCardBack }
             ].filter(item => item.file);
 
-            const uploadedUrls = await uploadBulkFiles(filesToUpload);
+            let uploadedUrls;
+            try {
+                uploadedUrls = await uploadBulkFiles(filesToUpload);
+            } catch (uploadErr) {
+                // Show upload-specific error with retry hint
+                setErrors({ formError: `📸 ${uploadErr.message}` });
+                useAuthStore.setState({ isLoading: false });
+                return;
+            }
 
+            if (!uploadedUrls || uploadedUrls.length !== filesToUpload.length) {
+                setErrors({ formError: 'Some images failed to upload. Please tap "Register Now" to retry.' });
+                useAuthStore.setState({ isLoading: false });
+                return;
+            }
+
+            // Step 2: Build payload
             const documents = [];
             let profileImageUrl = null;
 
@@ -312,7 +359,7 @@ const DeliverySignup = () => {
                 payloadData.profileImage = profileImageUrl;
             }
 
-            // Note: The backend register function expects 'phoneNumber' or 'phone'
+            // Step 3: Register
             await signup(payloadData);
             
             // On successful registration, clear localStorage data
@@ -323,11 +370,9 @@ const DeliverySignup = () => {
                 console.error("Error removing from localStorage", e);
             }
             
-            // If signup is successful, redirect to a "waiting for approval" or dashboard
-            // Based on auth controller, new delivery partners are isActive: false
             navigate('/delivery'); 
         } catch (err) {
-            setErrors({ formError: err.message || 'Signup failed' });
+            setErrors({ formError: err.message || 'Signup failed. Please try again.' });
             useAuthStore.setState({ isLoading: false });
         }
     };
@@ -435,37 +480,16 @@ const DeliverySignup = () => {
                             className="space-y-2.5"
                         >
                             <div className="flex flex-col items-center justify-center mb-4">
-                                <div 
-                                    className={`relative w-20 h-20 rounded-full border-2 border-dashed bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden transition-all shadow-sm ${
-                                        errors.profileImage ? 'border-red-400 bg-red-50' : 'border-[#843D9B]/30 hover:border-[#843D9B] hover:bg-pink-50/50'
-                                    }`}
-                                    onClick={() => !formData.profileImage && fileInputRefs.current.profileImage?.click()}
-                                >
-                                    <input 
-                                        type="file" 
-                                        name="profileImage" 
-                                        accept="image/*"
-                                        capture="user"
-                                        ref={(el) => (fileInputRefs.current.profileImage = el)}
-                                        onChange={handleChange}
-                                        className="hidden" 
-                                    />
-                                    {formData.profileImage ? (
-                                        <>
-                                            <img src={URL.createObjectURL(formData.profileImage)} alt="Profile" className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2">
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRefs.current.profileImage?.click(); }} className="bg-white text-[#843D9B] p-1.5 rounded-full shadow-md active:scale-95"><FiCamera size={12} /></button>
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); setFormData(prev => ({ ...prev, profileImage: null })); if(fileInputRefs.current.profileImage) fileInputRefs.current.profileImage.value = ''; }} className="bg-red-500 text-white p-1.5 rounded-full shadow-md active:scale-95"><FiX size={12} /></button>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="flex flex-col items-center">
-                                            <FiCamera className={errors.profileImage ? 'text-red-400 mb-1' : 'text-[#843D9B]/60 group-hover:text-[#843D9B] mb-1'} size={20} />
-                                            <span className={`text-[9px] font-bold uppercase ${errors.profileImage ? 'text-red-500' : 'text-[#843D9B]/60'}`}>Photo</span>
-                                        </div>
-                                    )}
-                                </div>
-                                {renderErrorMsg("profileImage")}
+                                <ImageUploader
+                                    compact
+                                    cameraFacing="user"
+                                    value={formData.profileImage}
+                                    onChange={(file) => {
+                                        setFormData(prev => ({ ...prev, profileImage: file }));
+                                        setErrors(prev => ({ ...prev, profileImage: '' }));
+                                    }}
+                                    error={errors.profileImage || ''}
+                                />
                             </div>
                             
                             <div>
