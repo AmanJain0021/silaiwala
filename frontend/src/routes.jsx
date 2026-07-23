@@ -116,6 +116,8 @@ const AdminOrders = React.lazy(() => import('./modules/admin/pages/Orders'));
 const AdminTailors = React.lazy(() => import('./modules/admin/pages/Tailors'));
 const AdminDelivery = React.lazy(() => import('./modules/admin/pages/Delivery'));
 const AdminCustomers = React.lazy(() => import('./modules/admin/pages/Customers'));
+const AdminOfflineCustomers = React.lazy(() => import('./modules/admin/pages/OfflineCustomers'));
+const AdminOfflineOrders = React.lazy(() => import('./modules/admin/pages/OfflineOrders'));
 const AdminServices = React.lazy(() => import('./modules/admin/pages/Services'));
 const AdminStore = React.lazy(() => import('./modules/admin/pages/Store'));
 const AdminFinance = React.lazy(() => import('./modules/admin/pages/Finance'));
@@ -333,9 +335,11 @@ const AppRoutes = () => {
                 <Route element={<AdminLayout />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/orders" element={<AdminOrders />} />
+                    <Route path="/admin/offline-orders" element={<AdminOfflineOrders />} />
                     <Route path="/admin/tailors" element={<AdminTailors />} />
                     <Route path="/admin/delivery" element={<AdminDelivery />} />
                     <Route path="/admin/customers" element={<AdminCustomers />} />
+                    <Route path="/admin/offline-customers" element={<AdminOfflineCustomers />} />
                     <Route path="/admin/services" element={<AdminServices />} />
                     <Route path="/admin/store" element={<AdminStore />} />
                     <Route path="/admin/finance" element={<AdminFinance />} />

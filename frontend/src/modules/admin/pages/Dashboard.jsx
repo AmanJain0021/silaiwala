@@ -4,17 +4,17 @@ import { motion } from 'framer-motion';
 import {
     TrendingUp,
     ShoppingBag,
-    Users,
     Scissors,
     ArrowUpRight,
     ArrowDownRight,
-    MoreHorizontal,
     Search,
-    Filter,
     Clock,
     CheckCircle2,
-    Truck,
-    CreditCard
+    CreditCard,
+    Store,
+    ClipboardList,
+    Wallet,
+    UserPlus
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { io } from 'socket.io-client';
@@ -29,6 +29,21 @@ const AdminDashboard = () => {
         totalTailors: 0,
         pendingPayouts: '₹0',
     });
+    const [offlineStats, setOfflineStats] = useState({
+        totalRevenue: 0,
+        totalCollected: 0,
+        pendingPayments: 0,
+        totalOrders: 0,
+        deliveredRevenue: 0,
+        customerCount: 0,
+        statusCounts: {
+            pending: 0,
+            in_progress: 0,
+            ready: 0,
+            delivered: 0,
+            cancelled: 0,
+        },
+    });
     const [liveOrders, setLiveOrders] = useState([]);
     const [topTailorsData, setTopTailorsData] = useState([]);
     const [revenueChartData, setRevenueChartData] = useState([]);
@@ -40,7 +55,10 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const response = await api.get('/admin/dashboard');
+                const [response, offlineRes] = await Promise.all([
+                    api.get('/admin/dashboard'),
+                    api.get('/admin/offline-orders/stats').catch(() => null),
+                ]);
                 const { stats, recentOrders: apiRecentOrders, topTailors: apiTopTailors, revenueChart, systemHealth } = response.data;
                 const { totalRevenue, activeOrdersCount, totalTailors, pendingTailorsCount, pendingPayouts } = stats;
 
@@ -51,6 +69,10 @@ const AdminDashboard = () => {
                     pendingTailorsCount: pendingTailorsCount || 0,
                     pendingPayouts: `₹${(pendingPayouts || 0).toLocaleString()}`,
                 });
+
+                if (offlineRes?.data?.success && offlineRes.data.data) {
+                    setOfflineStats(offlineRes.data.data);
+                }
 
                 if (apiRecentOrders && apiRecentOrders.length > 0) {
                     const formatted = apiRecentOrders.map(o => ({
@@ -131,10 +153,41 @@ const AdminDashboard = () => {
     }, []);
 
     const stats = [
-        { label: 'Total Revenue', value: statsData.totalRevenue, icon: <TrendingUp size={20} />, link: '/admin/finance' },
+        { label: 'Online Revenue', value: statsData.totalRevenue, icon: <TrendingUp size={20} />, link: '/admin/finance' },
         { label: 'Platform Orders', value: statsData.activeOrders, icon: <ShoppingBag size={20} />, link: '/admin/orders' },
         { label: 'Total Tailors', value: statsData.totalTailors, icon: <Scissors size={20} />, link: '/admin/tailors' },
         { label: 'Pending Payouts', value: statsData.pendingPayouts, icon: <CreditCard size={20} />, link: '/admin/finance' },
+    ];
+
+    const offlineCards = [
+        {
+            label: 'Offline Revenue',
+            value: `₹${(offlineStats.totalRevenue || 0).toLocaleString()}`,
+            hint: 'All walk-in order totals',
+            icon: <Store size={20} />,
+            link: '/admin/offline-orders',
+        },
+        {
+            label: 'Collected',
+            value: `₹${(offlineStats.totalCollected || 0).toLocaleString()}`,
+            hint: 'Advance / payments received',
+            icon: <Wallet size={20} />,
+            link: '/admin/offline-orders',
+        },
+        {
+            label: 'Pending Payments',
+            value: `₹${(offlineStats.pendingPayments || 0).toLocaleString()}`,
+            hint: 'Balance still due',
+            icon: <Clock size={20} />,
+            link: '/admin/offline-orders',
+        },
+        {
+            label: 'Offline Orders',
+            value: offlineStats.totalOrders || 0,
+            hint: `${offlineStats.customerCount || 0} walk-in customers`,
+            icon: <ClipboardList size={20} />,
+            link: '/admin/offline-orders',
+        },
     ];
 
     const getStatusStyle = (status) => {
@@ -160,6 +213,14 @@ const AdminDashboard = () => {
         return matchesSearch && matchesStatus;
     });
 
+    const offlineStatusEntries = [
+        { key: 'pending', label: 'Pending' },
+        { key: 'in_progress', label: 'In Progress' },
+        { key: 'ready', label: 'Ready' },
+        { key: 'delivered', label: 'Delivered' },
+        { key: 'cancelled', label: 'Cancelled' },
+    ];
+
     return (
         <div className="space-y-6 lg:space-y-10">
             {/* Header section is in layout, just need page content here */}
@@ -169,36 +230,120 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                {stats.map((stat, idx) => (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        key={idx}
-                        onClick={() => navigate(stat.link)}
-                        className="bg-white p-5 lg:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all group overflow-hidden relative cursor-pointer"
-                    >
-                        <div className="absolute -right-2 -top-2 h-16 w-16 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-                        <div className="flex justify-between items-center relative z-10">
-                            <div className="p-3 bg-gray-50 text-primary rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
-                                {stat.icon}
-                            </div>
-                            {stat.change && (
-                                <div className={`flex items-center gap-1 text-[10px] lg:text-xs font-bold px-2 py-1 rounded-lg ${stat.positive ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                                    {stat.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                    {stat.change}
+            {/* Online marketplace stats */}
+            <div>
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Online Marketplace</span>
+                    <span className="h-px flex-1 bg-gray-100" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                    {stats.map((stat, idx) => (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            key={idx}
+                            onClick={() => navigate(stat.link)}
+                            className="bg-white p-5 lg:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all group overflow-hidden relative cursor-pointer"
+                        >
+                            <div className="absolute -right-2 -top-2 h-16 w-16 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                            <div className="flex justify-between items-center relative z-10">
+                                <div className="p-3 bg-gray-50 text-primary rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
+                                    {stat.icon}
                                 </div>
-                            )}
-                        </div>
-                        <div className="mt-4 lg:mt-5 relative z-10">
-                            <h3 className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">{stat.label}</h3>
-                            <p className="text-xl lg:text-2xl font-black text-gray-900 mt-1">{stat.value}</p>
-                        </div>
-                    </motion.div>
-                ))}
+                                {stat.change && (
+                                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs font-bold px-2 py-1 rounded-lg ${stat.positive ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                                        {stat.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                        {stat.change}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-4 lg:mt-5 relative z-10">
+                                <h3 className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">{stat.label}</h3>
+                                <p className="text-xl lg:text-2xl font-black text-gray-900 mt-1">{stat.value}</p>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
             </div>
+
+            {/* Offline shop stats — separate from online revenue */}
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="bg-primary-soft/60 border border-primary/15 rounded-3xl p-5 lg:p-6 space-y-5"
+            >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <Store size={18} className="text-primary" />
+                            <h2 className="text-base lg:text-lg font-black text-gray-900 tracking-tight">
+                                Offline Shop Revenue
+                            </h2>
+                        </div>
+                        <p className="text-[10px] lg:text-xs text-gray-500 font-medium mt-1">
+                            Walk-in customers &amp; in-store orders only — not mixed with online marketplace totals
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => navigate('/admin/offline-customers')}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-wider rounded-xl hover:border-primary hover:text-primary transition-all"
+                        >
+                            <UserPlus size={14} /> Customers
+                        </button>
+                        <button
+                            onClick={() => navigate('/admin/offline-orders')}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-primary-dark transition-all"
+                        >
+                            <ClipboardList size={14} /> Orders
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                    {offlineCards.map((card, idx) => (
+                        <button
+                            key={idx}
+                            type="button"
+                            onClick={() => navigate(card.link)}
+                            className="text-left bg-white p-4 lg:p-5 rounded-2xl border border-white shadow-sm hover:shadow-md hover:border-primary/20 transition-all"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                                    {card.icon}
+                                </div>
+                            </div>
+                            <h3 className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-3">
+                                {card.label}
+                            </h3>
+                            <p className="text-xl font-black text-gray-900 mt-1">{card.value}</p>
+                            <p className="text-[10px] text-gray-400 font-medium mt-1">{card.hint}</p>
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                    {offlineStatusEntries.map((s) => (
+                        <span
+                            key={s.key}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-100 rounded-full text-[10px] font-bold text-gray-600"
+                        >
+                            <span className="text-gray-400 uppercase tracking-wider">{s.label}</span>
+                            <span className="text-primary font-black">
+                                {offlineStats.statusCounts?.[s.key] || 0}
+                            </span>
+                        </span>
+                    ))}
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-100 rounded-full text-[10px] font-bold text-gray-600">
+                        <span className="text-gray-400 uppercase tracking-wider">Delivered ₹</span>
+                        <span className="text-primary font-black">
+                            {(offlineStats.deliveredRevenue || 0).toLocaleString()}
+                        </span>
+                    </span>
+                </div>
+            </motion.div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">

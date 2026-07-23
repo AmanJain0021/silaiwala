@@ -22,7 +22,9 @@ import {
     CreditCard,
     Ruler,
     AlertTriangle,
-    Feather
+    Feather,
+    UserPlus,
+    ClipboardList
 } from 'lucide-react';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 
@@ -79,6 +81,7 @@ const AdminLayout = () => {
     const menuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
         { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders' },
+        { icon: <ClipboardList size={20} />, label: 'Offline Orders', path: '/admin/offline-orders' },
         { icon: <Package size={20} />, label: 'Bulk Orders', path: '/admin/bulk-orders' },
         { icon: <Scissors size={20} />, label: 'Tailors', path: '/admin/tailors' },
         { icon: <Ruler size={20} />, label: 'Measurement Execs', path: '/admin/measurement-executives' },
@@ -86,6 +89,7 @@ const AdminLayout = () => {
         { icon: <Package size={20} />, label: 'Shiprocket', path: '/admin/shiprocket' },
         { icon: <Users size={20} />, label: 'CRM', path: '/admin/crm' },
         { icon: <Users size={20} />, label: 'Customers', path: '/admin/customers' },
+        { icon: <UserPlus size={20} />, label: 'Offline Customers', path: '/admin/offline-customers' },
         { icon: <Layers size={20} />, label: 'Services', path: '/admin/services' },
         { icon: <Store size={20} />, label: 'Store', path: '/admin/store' },
         { icon: <AlertTriangle size={20} />, label: 'Issues', path: '/admin/issues' },

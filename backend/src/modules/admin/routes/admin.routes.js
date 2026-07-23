@@ -77,6 +77,20 @@ const {
   updateCodSettings
 } = require("../../deliveries/controllers/cashDeposit.controller.js");
 
+const {
+  getOfflineCustomers,
+  getOfflineCustomerById,
+  createOfflineCustomer,
+  updateOfflineCustomer,
+  deleteOfflineCustomer,
+  getOfflineOrders,
+  getOfflineOrderById,
+  createOfflineOrder,
+  updateOfflineOrder,
+  updateOfflineOrderStatus,
+  getOfflineOrderStats,
+} = require("../controllers/offline.controller.js");
+
 const router = express.Router();
 const crmRoutes = require("./crm.routes.js");
 
@@ -121,10 +135,25 @@ router.delete("/delivery-partners/:id/reject", rejectDeliveryPartner);
 router.get("/deliveries/cod-deposit", getAllDepositHistory);
 router.post("/deliveries/:id/cod-deposit/status", updateDepositStatus);
 
-// Orders
+// Orders (online marketplace — unchanged)
 router.get("/orders", getAllOrders);
 router.get("/orders/:id", getOrderById);
 router.put("/orders/:id/status", updateOrderStatus);
+
+// Offline Customers (walk-in / admin-only — separate from User/Customer)
+router.get("/offline-customers", getOfflineCustomers);
+router.post("/offline-customers", createOfflineCustomer);
+router.get("/offline-customers/:id", getOfflineCustomerById);
+router.put("/offline-customers/:id", updateOfflineCustomer);
+router.delete("/offline-customers/:id", deleteOfflineCustomer);
+
+// Offline Orders (walk-in — separate from Order collection & online revenue)
+router.get("/offline-orders/stats", getOfflineOrderStats);
+router.get("/offline-orders", getOfflineOrders);
+router.post("/offline-orders", createOfflineOrder);
+router.get("/offline-orders/:id", getOfflineOrderById);
+router.put("/offline-orders/:id", updateOfflineOrder);
+router.patch("/offline-orders/:id/status", updateOfflineOrderStatus);
 
 // CMS & Marketing
 router.post("/cms/banners", createBanner);
