@@ -117,6 +117,11 @@ const AdminOfflineOrders = () => {
     const [tailors, setTailors] = useState([]);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+    const allGarmentTypes = useMemo(() => {
+        const defaultList = ['Shirt', 'Pant', 'Suit', 'Kurta', 'Blouse', 'Skirt', 'Lehenga', 'Sherwani', 'Anarkali', 'Jacket/Blazer', 'Alteration', 'Pheran', 'Kurti'];
+        return Array.from(new Set([...defaultList, ...(garmentTypes || [])]));
+    }, [garmentTypes]);
+
     const fetchStats = useCallback(async () => {
         try {
             const res = await api.get('/admin/offline-orders/stats');
@@ -1228,17 +1233,40 @@ const AdminOfflineOrders = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">
-                                            Garment Type *
+                                            Garment / Service Type *
                                         </label>
-                                        <select
-                                            value={formData.garmentType}
-                                            onChange={(e) => setFormData({ ...formData, garmentType: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary"
-                                        >
-                                            {garmentTypes.map((g) => (
-                                                <option key={g} value={g}>{g}</option>
-                                            ))}
-                                        </select>
+                                        <div className="space-y-2">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="text"
+                                                    list="garment-options-list-modal"
+                                                    value={formData.garmentType}
+                                                    onChange={(e) => setFormData({ ...formData, garmentType: e.target.value })}
+                                                    placeholder="Type or pick garment / service (e.g. Shirt, Suit)..."
+                                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary pr-28"
+                                                    required
+                                                />
+                                                <select
+                                                    value={allGarmentTypes.includes(formData.garmentType) ? formData.garmentType : ''}
+                                                    onChange={(e) => {
+                                                        if (e.target.value) {
+                                                            setFormData({ ...formData, garmentType: e.target.value });
+                                                        }
+                                                    }}
+                                                    className="absolute right-2 px-2 py-1.5 text-xs font-bold bg-gray-100 border border-gray-200 rounded-lg text-gray-700 outline-none cursor-pointer hover:bg-gray-200 transition-colors max-w-[105px]"
+                                                >
+                                                    <option value="">Category</option>
+                                                    {allGarmentTypes.map((g) => (
+                                                        <option key={g} value={g}>{g}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <datalist id="garment-options-list-modal">
+                                                {allGarmentTypes.map((g) => (
+                                                    <option key={g} value={g} />
+                                                ))}
+                                            </datalist>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">
