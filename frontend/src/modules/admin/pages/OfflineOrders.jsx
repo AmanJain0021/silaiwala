@@ -36,6 +36,18 @@ const CUSTOMIZATION_SLOTS = [
     { key: 'lining', label: 'Lining', checkboxOnly: true },
 ];
 
+const emptyMeasurements = () =>
+    Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, '']));
+
+const emptyCustomizations = () => ({
+    neck: { name: '', price: 0, refImage: '', enabled: false },
+    sleeve: { name: '', price: 0, refImage: '', enabled: false },
+    bottom: { name: '', price: 0, refImage: '', enabled: false },
+    lining: { name: 'Lining', price: 0, refImage: '', enabled: false },
+    embroidery: { name: '', price: 0, refImage: '', enabled: false },
+    lacePiping: { name: '', price: 0, refImage: '', enabled: false },
+});
+
 const emptyForm = {
     offlineCustomer: '',
     garmentType: 'Suit',
@@ -61,18 +73,6 @@ const emptyForm = {
     deliveryFee: '',
     deliveryNotes: '',
 };
-
-const emptyMeasurements = () =>
-    Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, '']));
-
-const emptyCustomizations = () => ({
-    neck: { name: '', price: 0, refImage: '', enabled: false },
-    sleeve: { name: '', price: 0, refImage: '', enabled: false },
-    bottom: { name: '', price: 0, refImage: '', enabled: false },
-    lining: { name: 'Lining', price: 0, refImage: '', enabled: false },
-    embroidery: { name: '', price: 0, refImage: '', enabled: false },
-    lacePiping: { name: '', price: 0, refImage: '', enabled: false },
-});
 
 const paymentStyle = (status) => {
     switch (status) {
