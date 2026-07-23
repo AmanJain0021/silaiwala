@@ -341,7 +341,7 @@ const AdminDashboard = () => {
                         >
                             <span className="text-gray-400 uppercase tracking-wider">{s.label}</span>
                             <span className="text-primary font-black">
-                                {offlineStats.pipelineCounts?.[s.key] ?? offlineStats.statusCounts?.[s.key] || 0}
+                                {(offlineStats.pipelineCounts?.[s.key] ?? offlineStats.statusCounts?.[s.key]) || 0}
                             </span>
                         </span>
                     ))}
