@@ -17,22 +17,26 @@ class ErrorBoundary extends React.Component {
     }, 2000);
   }
 
+  checkChunkError(error) {
+    const errStr = (error && (error.toString() || error.message)) || '';
+    return errStr.includes('Failed to fetch dynamically imported module') || 
+           errStr.includes('Importing a module script failed') ||
+           errStr.includes('dynamically imported module') ||
+           errStr.includes('ChunkLoadError') ||
+           errStr.includes('Loading chunk') ||
+           errStr.includes('Failed to load resource');
+  }
+
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught an error", error, errorInfo);
     
-    // Auto-reload on chunk loading error (happens after new deployments)
-    const errStr = error?.toString() || '';
-    const isChunkError = errStr.includes('Failed to fetch dynamically imported module') || 
-                         errStr.includes('Importing a module script failed') ||
-                         errStr.includes('dynamically imported module') ||
-                         errStr.includes('ChunkLoadError');
+    const isChunkError = this.checkChunkError(error);
                          
     if (isChunkError) {
       const hasReloaded = sessionStorage.getItem('chunk_failed_reload');
       if (!hasReloaded) {
         sessionStorage.setItem('chunk_failed_reload', 'true');
         this.setState({ isReloading: true });
-        // Force hard reload
         window.location.href = window.location.href + (window.location.href.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
         return;
       }
@@ -58,11 +62,7 @@ class ErrorBoundary extends React.Component {
     }
 
     if (this.state.hasError) {
-      const errStr = (this.state.error && this.state.error.toString()) || '';
-      const isChunkError = errStr.includes('Failed to fetch dynamically imported module') ||
-                           errStr.includes('Importing a module script failed') ||
-                           errStr.includes('dynamically imported module') ||
-                           errStr.includes('ChunkLoadError');
+      const isChunkError = this.checkChunkError(this.state.error);
       
       return (
         <div style={{ padding: '40px 20px', backgroundColor: '#fef2f2', color: '#991b1b', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'system-ui, sans-serif' }}>

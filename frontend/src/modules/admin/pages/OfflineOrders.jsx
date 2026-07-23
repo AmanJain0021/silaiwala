@@ -82,6 +82,20 @@ const paymentStyle = (status) => {
     }
 };
 
+const formatPackageLabel = (pkg) => {
+    if (!pkg) return '—';
+    if (typeof pkg === 'string') return pkg;
+    if (typeof pkg === 'object') return pkg.name || pkg.id || '—';
+    return String(pkg);
+};
+
+const formatGarmentLabel = (garment) => {
+    if (!garment) return '—';
+    if (typeof garment === 'string') return garment;
+    if (typeof garment === 'object') return garment.name || garment.label || '—';
+    return String(garment);
+};
+
 const AdminOfflineOrders = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [orders, setOrders] = useState([]);
@@ -247,15 +261,16 @@ const AdminOfflineOrders = () => {
     }, [isModalOpen, customerSearch]);
 
     const addOnsTotal = useMemo(() => {
-        const fromStyle = (formData.styleAddons || []).reduce((sum, a) => sum + (Number(a.price) || 0), 0);
-        const fromCustom = Object.values(formData.customizations || {}).reduce((sum, c) => {
-            if (!c?.enabled && !c?.name) return sum;
-            if (c.enabled === false && !['neck', 'sleeve', 'bottom'].includes(
-                Object.keys(formData.customizations).find((k) => formData.customizations[k] === c)
-            )) {
-                return sum;
-            }
-            const key = Object.entries(formData.customizations).find(([, v]) => v === c)?.[0];
+        const styleList = Array.isArray(formData.styleAddons) ? formData.styleAddons : [];
+        const fromStyle = styleList.reduce((sum, a) => sum + (Number(a?.price) || 0), 0);
+
+        const custObj = (formData.customizations && typeof formData.customizations === 'object')
+            ? formData.customizations
+            : {};
+
+        const fromCustom = Object.entries(custObj).reduce((sum, [key, c]) => {
+            if (!c || typeof c !== 'object') return sum;
+            if (!c.enabled && !c.name) return sum;
             if (['lining', 'embroidery', 'lacePiping'].includes(key) && !c.enabled) return sum;
             if (['neck', 'sleeve', 'bottom'].includes(key) && !c.name) return sum;
             return sum + (Number(c.price) || 0);
@@ -831,11 +846,11 @@ const AdminOfflineOrders = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs font-bold text-gray-700">{order.garmentType}</span>
+                                            <span className="text-xs font-bold text-gray-700">{formatGarmentLabel(order.garmentType)}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="text-[10px] font-black uppercase tracking-wider text-primary">
-                                                {order.stitchingPackage || '—'}
+                                                {formatPackageLabel(order.stitchingPackage)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -903,9 +918,9 @@ const AdminOfflineOrders = () => {
                                         {selectedOrder.orderId}
                                     </h2>
                                     <p className="text-xs text-gray-500 font-medium mt-1 truncate">
-                                        {selectedOrder.garmentType}
+                                        {formatGarmentLabel(selectedOrder.garmentType)}
                                         {selectedOrder.stitchingPackage
-                                            ? ` · ${selectedOrder.stitchingPackage}`
+                                            ? ` · ${formatPackageLabel(selectedOrder.stitchingPackage)}`
                                             : ''}
                                     </p>
                                     <div className="flex flex-wrap gap-2 mt-2">
