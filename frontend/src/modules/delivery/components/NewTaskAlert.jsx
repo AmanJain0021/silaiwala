@@ -353,6 +353,9 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                 if (assignedRes?.success && assignedRes.data) {
                     // Check if delivery partner is currently busy with an active order
                     const hasActiveOrder = assignedRes.data.some(t => {
+                        if (t.isOffline) {
+                            return t.deliveryPartnerStatus === 'accepted' && t.status !== 'delivered';
+                        }
                         const uid = user?._id || user?.id;
                         const dpId = typeof t.deliveryPartner === 'object' ? t.deliveryPartner?._id : t.deliveryPartner;
                         const ppId = typeof t.pickupPartner === 'object' ? t.pickupPartner?._id : t.pickupPartner;

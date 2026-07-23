@@ -343,10 +343,54 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     };
   }));
 
+  const OfflineOrder = require("../../../models/OfflineOrder.js");
+  const offlineOrders = await OfflineOrder.find({
+    deliveryPartner: req.user.id,
+    fulfillmentMethod: "home_delivery",
+    fulfillmentStatus: { $ne: "completed" },
+    deliveryPartnerStatus: { $ne: "rejected" },
+  })
+    .populate("offlineCustomer", "name phone address")
+    .sort("-updatedAt")
+    .lean();
+
+  const formattedOfflineOrders = offlineOrders.map((off) => {
+    const isAccepted = off.deliveryPartnerStatus === "accepted";
+    return {
+      _id: off._id,
+      orderId: off.orderId,
+      isOffline: true,
+      deliveryPartnerStatus: off.deliveryPartnerStatus || "requested",
+      status: isAccepted
+        ? (off.fulfillmentStatus === "completed" ? "delivered" : "out-for-delivery")
+        : "ready-for-delivery",
+      taskType: "offline-order-delivery",
+      garmentType: off.garmentType,
+      customer: off.offlineCustomer?.name || "Offline Customer",
+      phone: off.offlineCustomer?.phone || "N/A",
+      address: off.deliveryAddress || off.offlineCustomer?.address || "Address not provided",
+      vendorName: "SewZella Central Store (Admin Workshop)",
+      vendorAddress: off.pickupAddress || "SewZella Admin Store, Main Market",
+      vendorPhone: "Shop Admin",
+      vendorLatitude: off.pickupLocation?.coordinates?.[1] || 28.6139,
+      vendorLongitude: off.pickupLocation?.coordinates?.[0] || 77.2090,
+      deliveryEarnings: off.deliveryFee || 30,
+      totalAmount: off.totalAmount,
+      advancePaid: off.advancePaid,
+      balanceDue: Math.max(0, (off.totalAmount || 0) - (off.advancePaid || 0)),
+      isClaimed: isAccepted,
+      isAcceptedByMe: isAccepted,
+      createdAt: off.createdAt,
+      updatedAt: off.updatedAt,
+    };
+  });
+
+  const allFormatted = [...formattedOfflineOrders, ...formattedOrders];
+
   res.status(200).json({
     success: true,
-    count: formattedOrders.length,
-    data: formattedOrders,
+    count: allFormatted.length,
+    data: allFormatted,
   });
 });
 
@@ -370,6 +414,42 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
     .lean();
 
   if (!order) {
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const off = await OfflineOrder.findOne(query)
+      .populate("offlineCustomer", "name phone address")
+      .populate("deliveryPartner", "name phoneNumber")
+      .lean();
+
+    if (off) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          _id: off._id,
+          orderId: off.orderId,
+          isOffline: true,
+          status: off.fulfillmentStatus === "completed" ? "delivered" : "out-for-delivery",
+          taskType: "offline-order-delivery",
+          garmentType: off.garmentType,
+          customer: {
+            name: off.offlineCustomer?.name || "Offline Customer",
+            phoneNumber: off.offlineCustomer?.phone || "N/A",
+          },
+          address: off.deliveryAddress || off.offlineCustomer?.address || "Address not provided",
+          vendorName: "SewZella Central Store (Admin Workshop)",
+          vendorAddress: off.pickupAddress || "SewZella Admin Store, Main Market",
+          vendorPhone: "Shop Admin",
+          deliveryEarnings: off.deliveryFee || 30,
+          totalAmount: off.totalAmount,
+          advancePaid: off.advancePaid,
+          balanceDue: Math.max(0, (off.totalAmount || 0) - (off.advancePaid || 0)),
+          isClaimed: true,
+          isAcceptedByMe: off.deliveryPartner?._id?.toString() === req.user.id,
+          createdAt: off.createdAt,
+          updatedAt: off.updatedAt,
+        },
+      });
+    }
+
     return next(new ErrorResponse("Order not found", 404));
   }
 
@@ -599,9 +679,27 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
   const isObjectId = mongoose.isValidObjectId(req.params.id);
   const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
 
-  const order = await Order.findOne(query);
+  let order = await Order.findOne(query);
 
   if (!order) {
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const off = await OfflineOrder.findOne(query);
+    if (off) {
+      off.deliveryPartner = null;
+      off.deliveryPartnerStatus = "rejected";
+      off.history.push({
+        status: off.status,
+        message: "Delivery request rejected by partner",
+        updatedBy: req.user.id,
+        timestamp: new Date(),
+      });
+      await off.save();
+      return res.status(200).json({
+        success: true,
+        message: "Delivery request rejected",
+        data: off,
+      });
+    }
     return next(new ErrorResponse("Order not found", 404));
   }
 
@@ -1255,6 +1353,31 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
   let order = await Order.findOne(query);
 
   if (!order) {
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const off = await OfflineOrder.findOne(query);
+    if (off) {
+      if (off.deliveryPartner?.toString() !== req.user.id) {
+        return next(new ErrorResponse("This delivery request is not assigned to you", 403));
+      }
+      off.deliveryPartnerStatus = "accepted";
+      off.fulfillmentStatus = "out_for_delivery";
+      off.assignedDeliveryAt = new Date();
+      if (!off.outForDeliveryAt) {
+        off.outForDeliveryAt = new Date();
+      }
+      off.history.push({
+        status: off.status,
+        message: "Delivery request accepted by partner",
+        updatedBy: req.user.id,
+        timestamp: new Date(),
+      });
+      await off.save();
+      return res.status(200).json({
+        success: true,
+        message: "Delivery request accepted",
+        data: off,
+      });
+    }
     return next(new ErrorResponse("Order not found", 404));
   }
 

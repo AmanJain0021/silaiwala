@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, X, Plus, Package, User, Phone, Ruler, ChevronDown, ChevronUp,
-    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star
+    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -129,6 +129,12 @@ const AdminOfflineOrders = () => {
     const [garmentTypes, setGarmentTypes] = useState(['Suit', 'Pheran', 'Blouse', 'Kurti', 'Lehenga']);
     const [styleAddonsCatalog, setStyleAddonsCatalog] = useState([]);
     const [tailors, setTailors] = useState([]);
+    const [deliveryPartners, setDeliveryPartners] = useState([]);
+    const [selectedDeliveryPartnerId, setSelectedDeliveryPartnerId] = useState('');
+    const [isAssigningPartner, setIsAssigningPartner] = useState(false);
+    const [assignPickupAddress, setAssignPickupAddress] = useState('SewZella Central Store (Admin Workshop)');
+    const [assignPickupCoords, setAssignPickupCoords] = useState(null);
+    const [isFetchingGPS, setIsFetchingGPS] = useState(false);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
     const allGarmentTypes = useMemo(() => {
@@ -147,15 +153,17 @@ const AdminOfflineOrders = () => {
 
     const fetchMeta = useCallback(async () => {
         try {
-            const [metaRes, addonsRes, tailorsRes] = await Promise.all([
+            const [metaRes, addonsRes, tailorsRes, deliveryRes] = await Promise.all([
                 api.get('/admin/offline-orders/meta'),
                 api.get('/style-addons'),
                 api.get('/admin/users?role=tailor&limit=100'),
+                api.get('/admin/users?role=delivery&limit=100'),
             ]);
             if (metaRes.data?.data?.packages) setPackages(metaRes.data.data.packages);
             if (metaRes.data?.data?.garmentTypes) setGarmentTypes(metaRes.data.data.garmentTypes);
             setStyleAddonsCatalog((addonsRes.data?.data || []).filter((a) => a.isActive !== false));
             setTailors(tailorsRes.data?.data || []);
+            setDeliveryPartners(deliveryRes.data?.data || []);
         } catch (error) {
             if (error?.name === 'CanceledError') return;
             console.error('Failed to load offline order meta:', error);
@@ -546,7 +554,17 @@ const AdminOfflineOrders = () => {
     const openDetail = async (order) => {
         try {
             const res = await api.get(`/admin/offline-orders/${order._id}`);
-            setSelectedOrder(res.data.data);
+            const data = res.data.data;
+            setSelectedOrder(data);
+            setAssignPickupAddress(data.pickupAddress || 'SewZella Central Store (Admin Workshop)');
+            if (data.pickupLocation?.coordinates?.length >= 2) {
+                setAssignPickupCoords({
+                    lng: data.pickupLocation.coordinates[0],
+                    lat: data.pickupLocation.coordinates[1],
+                });
+            } else {
+                setAssignPickupCoords(null);
+            }
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to load order');
@@ -631,6 +649,78 @@ const AdminOfflineOrders = () => {
             toast.error(error.response?.data?.message || 'Failed to update');
         } finally {
             setIsUpdatingStatus(false);
+        }
+    };
+
+    const handleFetchCurrentGPSLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error('Geolocation is not supported by your browser');
+            return;
+        }
+        setIsFetchingGPS(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setAssignPickupCoords({ lat: latitude, lng: longitude });
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    const data = await res.json();
+                    if (data && data.display_name) {
+                        setAssignPickupAddress(data.display_name);
+                        toast.success('Pickup address fetched from GPS');
+                    } else {
+                        setAssignPickupAddress(`Store Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+                    }
+                } catch {
+                    setAssignPickupAddress(`Store Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+                } finally {
+                    setIsFetchingGPS(false);
+                }
+            },
+            (err) => {
+                console.error('GPS error:', err);
+                toast.error('Failed to access GPS location');
+                setIsFetchingGPS(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
+
+    const handleAssignDeliveryPartner = async () => {
+        if (!selectedOrder || !selectedDeliveryPartnerId) return;
+        setIsAssigningPartner(true);
+        try {
+            const res = await api.patch(`/admin/offline-orders/${selectedOrder._id}/assign-delivery`, {
+                deliveryPartnerId: selectedDeliveryPartnerId,
+                pickupAddress: assignPickupAddress,
+                pickupCoordinates: assignPickupCoords,
+            });
+            setSelectedOrder(res.data.data);
+            setSelectedDeliveryPartnerId('');
+            toast.success(res.data.message || 'Delivery request sent');
+            fetchOrders();
+            fetchStats();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send delivery request');
+        } finally {
+            setIsAssigningPartner(false);
+        }
+    };
+
+    const handleCancelDeliveryRequest = async () => {
+        if (!selectedOrder) return;
+        setIsAssigningPartner(true);
+        try {
+            const res = await api.patch(`/admin/offline-orders/${selectedOrder._id}/cancel-delivery-request`);
+            setSelectedOrder(res.data.data);
+            setSelectedDeliveryPartnerId('');
+            toast.success('Delivery request cancelled');
+            fetchOrders();
+            fetchStats();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to cancel request');
+        } finally {
+            setIsAssigningPartner(false);
         }
     };
 
@@ -1013,6 +1103,104 @@ const AdminOfflineOrders = () => {
                                                 </span>
                                             )}
                                         </span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4">
+                                    <h3 className="text-[10px] font-black uppercase text-indigo-700 tracking-widest flex items-center gap-2">
+                                        <Truck size={14} /> Assign Delivery Partner
+                                    </h3>
+                                    
+                                    {/* Store Pickup Location Input & Map/GPS Buttons */}
+                                    <div className="space-y-1.5 bg-white p-3 rounded-xl border border-indigo-100">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                                <MapPin size={12} className="text-indigo-600" /> Store Pickup Location
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={handleFetchCurrentGPSLocation}
+                                                disabled={isFetchingGPS}
+                                                className="text-[10px] text-indigo-700 font-bold hover:text-indigo-900 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 transition-all"
+                                            >
+                                                {isFetchingGPS ? <Loader2 size={10} className="animate-spin" /> : <Navigation size={10} />}
+                                                Live GPS Location
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={assignPickupAddress}
+                                            onChange={(e) => setAssignPickupAddress(e.target.value)}
+                                            placeholder="Enter or pick Store Pickup Address..."
+                                            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium outline-none focus:border-indigo-600 focus:bg-white"
+                                        />
+                                        {assignPickupCoords && (
+                                            <p className="text-[9px] font-medium text-emerald-600 flex items-center gap-1">
+                                                <CheckCircle2 size={10} /> Map Coordinates: {assignPickupCoords.lat?.toFixed(4)}, {assignPickupCoords.lng?.toFixed(4)}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {selectedOrder.deliveryPartner ? (
+                                        <div className="bg-white p-3 rounded-xl border border-indigo-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900">
+                                                    {selectedOrder.deliveryPartner.name || 'Delivery Partner'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500 font-medium">
+                                                    {selectedOrder.deliveryPartner.phoneNumber || selectedOrder.deliveryPartner.email || ''}
+                                                </p>
+                                            </div>
+                                            {selectedOrder.deliveryPartnerStatus === 'accepted' ? (
+                                                <span className="px-2 py-1 bg-green-100 text-green-700 text-[9px] font-black rounded-lg uppercase tracking-wider">
+                                                    Assigned
+                                                </span>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-[9px] font-black rounded-lg uppercase tracking-wider animate-pulse">
+                                                        Request Sent
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCancelDeliveryRequest}
+                                                        disabled={isAssigningPartner}
+                                                        className="text-[10px] text-red-600 underline font-bold hover:text-red-800"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-amber-700 font-medium">
+                                            {selectedOrder.deliveryPartnerStatus === 'rejected'
+                                                ? 'Previous partner rejected request. Select another:'
+                                                : 'No delivery request sent yet'}
+                                        </p>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={selectedDeliveryPartnerId}
+                                            onChange={(e) => setSelectedDeliveryPartnerId(e.target.value)}
+                                            className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-indigo-600"
+                                        >
+                                            <option value="">-- Select Delivery Partner --</option>
+                                            {deliveryPartners.map((dp) => (
+                                                <option key={dp._id} value={dp._id}>
+                                                    {dp.name || dp.phoneNumber} ({dp.phoneNumber || 'Active'})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            disabled={!selectedDeliveryPartnerId || isAssigningPartner}
+                                            onClick={handleAssignDeliveryPartner}
+                                            className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all uppercase tracking-wider disabled:opacity-50 shrink-0 flex items-center gap-1"
+                                        >
+                                            {isAssigningPartner ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                                            {isAssigningPartner ? 'Sending...' : 'Send Request'}
+                                        </button>
                                     </div>
                                 </div>
 

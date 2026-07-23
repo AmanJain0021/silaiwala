@@ -198,6 +198,24 @@ const offlineOrderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    deliveryPartner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
+    deliveryPartnerStatus: {
+      type: String,
+      enum: ["none", "requested", "accepted", "rejected"],
+      default: "none",
+    },
+    assignedDeliveryAt: {
+      type: Date,
+    },
+    pickupAddress: {
+      type: String,
+      trim: true,
+      default: "SewZella Central Store (Admin Workshop)",
+    },
     source: {
       type: String,
       enum: ["offline"],

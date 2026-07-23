@@ -30,6 +30,10 @@ export const isPendingAcceptanceTask = (task, user) => {
   const { uid, dpId, ppId, dopId } = getPartnerIds(task, user);
   if (!uid || !task) return false;
 
+  if (task.isOffline) {
+    return task.deliveryPartnerStatus === "requested";
+  }
+
   const isLegacyPending = !!dpId && dpId === uid && ["pending", "assigned"].includes(task.deliveryStatus);
   const isPickupPending =
     !!ppId && ppId === uid && ["pending", "assigned"].includes(task.pickupDeliveryStatus);
@@ -58,6 +62,10 @@ export const isAcceptedActiveTask = (task, user) => {
   const { uid, dpId, ppId, dopId } = getPartnerIds(task, user);
   if (!uid || !task) return false;
   if (isPendingAcceptanceTask(task, user)) return false;
+
+  if (task.isOffline) {
+    return task.deliveryPartnerStatus === "accepted" && task.status !== "delivered";
+  }
 
   // Still on an active fabric / final delivery job assigned to this partner
   const assignedToMe =
@@ -89,6 +97,12 @@ export const isAcceptedActiveTask = (task, user) => {
 export const getPartnerActionStage = (task, user) => {
   const { uid, ppId, dopId, dpId } = getPartnerIds(task, user);
   if (!task) return null;
+
+  if (task.isOffline) {
+    if (task.deliveryPartnerStatus === "requested") return "pending";
+    if (task.deliveryPartnerStatus === "accepted") return "accepted";
+    return task.status;
+  }
 
   let stage = null;
   if (ppId && ppId === uid && task.pickupDeliveryStatus) stage = task.pickupDeliveryStatus;

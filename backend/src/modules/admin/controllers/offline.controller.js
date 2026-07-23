@@ -469,6 +469,7 @@ exports.getOfflineOrders = async (req, res) => {
     const [orders, total] = await Promise.all([
       OfflineOrder.find(query)
         .populate("offlineCustomer", "name phone address")
+        .populate("deliveryPartner", "name phoneNumber email vehicleNumber")
         .populate("createdBy", "name")
         .populate("shopTailor", "name phoneNumber")
         .sort("-createdAt")
@@ -510,6 +511,7 @@ exports.getOfflineOrderById = async (req, res) => {
     await ensureTrackingToken(order);
     order = await OfflineOrder.findById(order._id)
       .populate("offlineCustomer", "name phone address notes savedMeasurements")
+      .populate("deliveryPartner", "name phoneNumber email vehicleNumber")
       .populate("createdBy", "name")
       .populate("shopTailor", "name phoneNumber")
       .populate("history.updatedBy", "name")
@@ -1165,6 +1167,134 @@ exports.getOfflineOrderStats = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in getOfflineOrderStats:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Assign delivery partner to an offline order
+ * @route   PATCH /api/v1/admin/offline-orders/:id/assign-delivery
+ */
+exports.assignDeliveryPartner = async (req, res) => {
+  try {
+    const { deliveryPartnerId, pickupAddress, pickupCoordinates } = req.body;
+    if (!deliveryPartnerId) {
+      return res.status(400).json({ success: false, message: "Delivery partner ID is required" });
+    }
+
+    const User = require("../../../models/User.js");
+    const partner = await User.findOne({ _id: deliveryPartnerId, role: "delivery" });
+    if (!partner) {
+      return res.status(404).json({ success: false, message: "Delivery partner not found or invalid role" });
+    }
+
+    const order = await OfflineOrder.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Offline order not found" });
+    }
+
+    if (pickupAddress && String(pickupAddress).trim()) {
+      order.pickupAddress = String(pickupAddress).trim();
+    }
+    if (pickupCoordinates) {
+      const lat = pickupCoordinates.lat !== undefined ? Number(pickupCoordinates.lat) : Number(pickupCoordinates[1]);
+      const lng = pickupCoordinates.lng !== undefined ? Number(pickupCoordinates.lng) : Number(pickupCoordinates[0]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        order.pickupLocation = { type: "Point", coordinates: [lng, lat] };
+      }
+    }
+
+    order.deliveryPartner = deliveryPartnerId;
+    order.deliveryPartnerStatus = "requested";
+    order.fulfillmentMethod = "home_delivery";
+    order.fulfillmentStatus = "pending";
+
+    const partnerLabel = partner.name || partner.phoneNumber || "Delivery Partner";
+    order.history.push({
+      status: order.status,
+      message: `Sent delivery request to ${partnerLabel}`,
+      updatedBy: req.user._id,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    const updated = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address notes savedMeasurements")
+      .populate("deliveryPartner", "name phoneNumber email vehicleNumber")
+      .populate("createdBy", "name")
+      .populate("shopTailor", "name phoneNumber")
+      .populate("history.updatedBy", "name")
+      .populate("styleAddons.addon", "name category price image");
+
+    try {
+      const io = req.app.get("io");
+      if (io) {
+        io.to(deliveryPartnerId.toString()).emit("admin_task_assigned", {
+          _id: updated._id,
+          orderId: updated.orderId,
+          isOffline: true,
+          taskType: "offline-order-delivery",
+          message: `Admin assigned offline order ${updated.orderId} to you.`,
+        });
+        io.to(deliveryPartnerId.toString()).emit("new_notification", {
+          type: "TASK_ASSIGNED",
+          title: "New Offline Delivery Request",
+          message: `Admin assigned offline order ${updated.orderId} to you.`,
+          data: { orderId: updated._id, isOffline: true },
+        });
+      }
+    } catch (e) {
+      console.warn("Socket notification failed:", e.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Delivery request sent to ${partnerLabel}`,
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Error in assignDeliveryPartner:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Cancel delivery request for an offline order
+ * @route   PATCH /api/v1/admin/offline-orders/:id/cancel-delivery-request
+ */
+exports.cancelDeliveryRequest = async (req, res) => {
+  try {
+    const order = await OfflineOrder.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Offline order not found" });
+    }
+
+    order.deliveryPartner = null;
+    order.deliveryPartnerStatus = "none";
+    order.history.push({
+      status: order.status,
+      message: "Cancelled delivery request",
+      updatedBy: req.user._id,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    const updated = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address notes savedMeasurements")
+      .populate("createdBy", "name")
+      .populate("shopTailor", "name phoneNumber")
+      .populate("history.updatedBy", "name")
+      .populate("styleAddons.addon", "name category price image");
+
+    res.status(200).json({
+      success: true,
+      message: "Delivery request cancelled",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Error in cancelDeliveryRequest:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
