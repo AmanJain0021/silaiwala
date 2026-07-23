@@ -229,6 +229,38 @@ const initSocket = (httpServer) => {
     });
   });
 
+  // ── Public offline order tracking (no JWT — token is the secret) ───────────
+  const offlineTrackNsp = io.of("/offline-track");
+  offlineTrackNsp.on("connection", (socket) => {
+    console.log(`📋 Offline track socket connected: ${socket.id}`);
+
+    socket.on("join_offline_track", async (token) => {
+      try {
+        const trackingToken = String(token || "").trim();
+        if (trackingToken.length < 16) {
+          socket.emit("error", "Invalid tracking token");
+          return;
+        }
+        const OfflineOrder = require("../models/OfflineOrder.js");
+        const order = await OfflineOrder.findOne({
+          trackingToken,
+          source: "offline",
+        }).select("_id trackingToken");
+
+        if (!order) {
+          socket.emit("error", "Order not found");
+          return;
+        }
+
+        socket.join(`offline_track_${trackingToken}`);
+        console.log(`📋 Socket ${socket.id} joined offline_track_${trackingToken.slice(0, 8)}…`);
+      } catch (err) {
+        console.error("join_offline_track error:", err);
+        socket.emit("error", "Failed to join tracking room");
+      }
+    });
+  });
+
   return io;
 };
 

@@ -79,6 +79,7 @@ const {
 
 const {
   getOfflineCustomers,
+  lookupOfflineCustomerByPhone,
   getOfflineCustomerById,
   createOfflineCustomer,
   updateOfflineCustomer,
@@ -88,8 +89,16 @@ const {
   createOfflineOrder,
   updateOfflineOrder,
   updateOfflineOrderStatus,
+  markOfflineOrderOutForDelivery,
+  completeOfflineOrder,
   getOfflineOrderStats,
+  getOfflineOrderMeta,
 } = require("../controllers/offline.controller.js");
+
+const {
+  getOfflineReportsSummary,
+  getOfflineCustomerReport,
+} = require("../controllers/offlineReports.controller.js");
 
 const router = express.Router();
 const crmRoutes = require("./crm.routes.js");
@@ -141,6 +150,7 @@ router.get("/orders/:id", getOrderById);
 router.put("/orders/:id/status", updateOrderStatus);
 
 // Offline Customers (walk-in / admin-only — separate from User/Customer)
+router.get("/offline-customers/lookup", lookupOfflineCustomerByPhone);
 router.get("/offline-customers", getOfflineCustomers);
 router.post("/offline-customers", createOfflineCustomer);
 router.get("/offline-customers/:id", getOfflineCustomerById);
@@ -149,11 +159,18 @@ router.delete("/offline-customers/:id", deleteOfflineCustomer);
 
 // Offline Orders (walk-in — separate from Order collection & online revenue)
 router.get("/offline-orders/stats", getOfflineOrderStats);
+router.get("/offline-orders/meta", getOfflineOrderMeta);
 router.get("/offline-orders", getOfflineOrders);
 router.post("/offline-orders", createOfflineOrder);
 router.get("/offline-orders/:id", getOfflineOrderById);
 router.put("/offline-orders/:id", updateOfflineOrder);
 router.patch("/offline-orders/:id/status", updateOfflineOrderStatus);
+router.patch("/offline-orders/:id/out-for-delivery", markOfflineOrderOutForDelivery);
+router.post("/offline-orders/:id/complete", completeOfflineOrder);
+
+// Offline reports (separate from online Finance / System Reports)
+router.get("/offline-reports/summary", getOfflineReportsSummary);
+router.get("/offline-reports/customer/:id", getOfflineCustomerReport);
 
 // CMS & Marketing
 router.post("/cms/banners", createBanner);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileText, Download, Calendar, Filter, TrendingUp, Users, Package, ShoppingBag, Loader2 } from 'lucide-react';
 import api from '../../../utils/api';
@@ -77,7 +78,12 @@ const AdminReports = () => {
         <div className="h-full flex flex-col space-y-6 relative">
             <div>
                 <h1 className="text-2xl font-black text-gray-900 tracking-tight">System Reports</h1>
-                <p className="text-xs text-gray-500 font-medium mt-1">Generate and export analytical data across all platform modules</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">
+                    Generate and export analytical data across online platform modules.{' '}
+                    <Link to="/admin/offline-reports" className="text-primary font-bold hover:underline">
+                        Offline shop reports →
+                    </Link>
+                </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">

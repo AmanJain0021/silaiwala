@@ -82,6 +82,7 @@ const AdminLayout = () => {
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
         { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders' },
         { icon: <ClipboardList size={20} />, label: 'Offline Orders', path: '/admin/offline-orders' },
+        { icon: <BarChart3 size={20} />, label: 'Offline Reports', path: '/admin/offline-reports' },
         { icon: <Package size={20} />, label: 'Bulk Orders', path: '/admin/bulk-orders' },
         { icon: <Scissors size={20} />, label: 'Tailors', path: '/admin/tailors' },
         { icon: <Ruler size={20} />, label: 'Measurement Execs', path: '/admin/measurement-executives' },

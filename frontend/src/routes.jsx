@@ -38,6 +38,7 @@ import TailorAuthLayout from './modules/tailor/layouts/TailorAuthLayout';
 import { TAILOR_STATUS } from './modules/tailor/context/AuthContext';
 const TailorOverview = React.lazy(() => import('./modules/tailor/pages/Overview'));
 const TailorOrders = React.lazy(() => import('./modules/tailor/pages/Orders'));
+const TailorShopOrders = React.lazy(() => import('./modules/tailor/pages/TailorShopOrders'));
 const TailorProducts = React.lazy(() => import('./modules/tailor/pages/Products'));
 const DeliveryDetails = React.lazy(() => import('./modules/tailor/pages/DeliveryDetails'));
 const VerificationStatus = React.lazy(() => import('./modules/tailor/pages/VerificationStatus'));
@@ -118,6 +119,8 @@ const AdminDelivery = React.lazy(() => import('./modules/admin/pages/Delivery'))
 const AdminCustomers = React.lazy(() => import('./modules/admin/pages/Customers'));
 const AdminOfflineCustomers = React.lazy(() => import('./modules/admin/pages/OfflineCustomers'));
 const AdminOfflineOrders = React.lazy(() => import('./modules/admin/pages/OfflineOrders'));
+const AdminOfflineReports = React.lazy(() => import('./modules/admin/pages/OfflineReports'));
+const OfflineOrderTrack = React.lazy(() => import('./modules/admin/pages/OfflineOrderTrack'));
 const AdminServices = React.lazy(() => import('./modules/admin/pages/Services'));
 const AdminStore = React.lazy(() => import('./modules/admin/pages/Store'));
 const AdminFinance = React.lazy(() => import('./modules/admin/pages/Finance'));
@@ -185,6 +188,7 @@ const AppRoutes = () => {
             <Route path="/" element={<SewZellaLanding />} />
             <Route path="/page/support" element={<LandingSupportPage />} />
             <Route path="/page/:slug" element={<LandingCMSPage />} />
+            <Route path="/track/offline/:token" element={<OfflineOrderTrack />} />
 
             {/* Customer Public Routes */}
             <Route path="/welcome" element={<CustomerOnboarding />} />
@@ -274,6 +278,7 @@ const AppRoutes = () => {
                     <Route element={<TailorLayout />}>
                         <Route path="/partner" element={<TailorOverview />} />
                         <Route path="/partner/orders" element={<TailorOrders />} />
+                        <Route path="/partner/shop-orders" element={<TailorShopOrders />} />
                         <Route path="/partner/portfolio" element={<TailorProducts />} />
                         <Route path="/partner/earnings" element={<TailorEarnings />} />
                         <Route path="/partner/wallet" element={<TailorEarnings />} />
@@ -336,6 +341,7 @@ const AppRoutes = () => {
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/orders" element={<AdminOrders />} />
                     <Route path="/admin/offline-orders" element={<AdminOfflineOrders />} />
+                    <Route path="/admin/offline-reports" element={<AdminOfflineReports />} />
                     <Route path="/admin/tailors" element={<AdminTailors />} />
                     <Route path="/admin/delivery" element={<AdminDelivery />} />
                     <Route path="/admin/customers" element={<AdminCustomers />} />

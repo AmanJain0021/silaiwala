@@ -60,6 +60,11 @@ router.get("/work-samples", protect, authorize("tailor"), getMyWorkSamples);
 router.get("/products", protect, authorize("tailor"), getMyProducts);
 router.get("/services", protect, authorize("tailor"), getMyServices);
 router.get("/delivery-details", protect, authorize("tailor"), getDeliveryDetails);
+const {
+  getTailorOfflineOrders,
+  updateTailorOfflineOrderStatus,
+} = require("../controllers/tailorOfflineOrder.controller.js");
+router.get("/offline-orders", protect, authorize("tailor"), getTailorOfflineOrders);
 
 // ─── PUBLIC DETAILS ROUTE (DYNAMIC PATH) ────────────────────────────────────
 // MUST come after static routes but BEFORE the global protect middleware below
@@ -84,6 +89,7 @@ router.get("/cod-deposit/history", getTailorDepositHistory);
 router.patch("/profile", updateProfile);
 router.patch("/documents", updateDocuments);
 router.patch("/orders/:id/status", updateOrderStatus);
+router.patch("/offline-orders/:id/status", updateTailorOfflineOrderStatus);
 router.get("/orders/:id/measurement-report", getMeasurementReport);
 router.put("/orders/:id/measurement-report", updateMeasurementReport);
 router.post("/orders/:id/send-measurement-confirmation", sendMeasurementForConfirmation);

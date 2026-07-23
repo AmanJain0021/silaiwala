@@ -214,8 +214,11 @@ const AdminDashboard = () => {
     });
 
     const offlineStatusEntries = [
-        { key: 'pending', label: 'Pending' },
-        { key: 'in_progress', label: 'In Progress' },
+        { key: 'accepted', label: 'Accepted' },
+        { key: 'cutting', label: 'Cutting' },
+        { key: 'stitching', label: 'Stitching' },
+        { key: 'fitting', label: 'Fitting' },
+        { key: 'finishing', label: 'Finishing' },
         { key: 'ready', label: 'Ready' },
         { key: 'delivered', label: 'Delivered' },
         { key: 'cancelled', label: 'Cancelled' },
@@ -299,6 +302,12 @@ const AdminDashboard = () => {
                         >
                             <ClipboardList size={14} /> Orders
                         </button>
+                        <button
+                            onClick={() => navigate('/admin/offline-reports')}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-wider rounded-xl hover:border-primary hover:text-primary transition-all"
+                        >
+                            Reports
+                        </button>
                     </div>
                 </div>
 
@@ -332,7 +341,7 @@ const AdminDashboard = () => {
                         >
                             <span className="text-gray-400 uppercase tracking-wider">{s.label}</span>
                             <span className="text-primary font-black">
-                                {offlineStats.statusCounts?.[s.key] || 0}
+                                {offlineStats.pipelineCounts?.[s.key] ?? offlineStats.statusCounts?.[s.key] || 0}
                             </span>
                         </span>
                     ))}

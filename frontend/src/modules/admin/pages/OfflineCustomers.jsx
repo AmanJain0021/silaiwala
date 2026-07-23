@@ -3,31 +3,35 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, X, Plus, Edit2, User, MapPin, Phone, ShoppingBag,
-    CheckCircle2, Ban, FileText, StickyNote, IndianRupee
+    CheckCircle2, Ban, FileText, StickyNote, IndianRupee, Ruler, ScanSearch
 } from 'lucide-react';
 import api from '../../../utils/api';
+import { getOfflineStatusLabel, offlineStatusStyle } from '../constants/offlineOrderStatus';
 import { toast } from 'react-hot-toast';
 
 const emptyForm = { name: '', phone: '', address: '', notes: '' };
+const emptyMeasurementForm = {
+    label: '',
+    garmentType: '',
+    unit: 'inches',
+    notes: '',
+    measurements: {
+        chest: '',
+        waist: '',
+        hips: '',
+        shoulder: '',
+        length: '',
+        neck: '',
+        sleeve: '',
+        inseam: '',
+    },
+};
 
 const STATUS_TABS = [
     { key: 'all', label: 'All' },
     { key: 'active', label: 'Active' },
     { key: 'inactive', label: 'Inactive' },
 ];
-
-const orderStatusStyle = (status) => {
-    switch (status) {
-        case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
-        case 'ready': return 'bg-blue-100 text-blue-700 border-blue-200';
-        case 'in_progress': return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
-        default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-};
-
-const formatStatus = (status) =>
-    (status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 const AdminOfflineCustomers = () => {
     const navigate = useNavigate();
@@ -44,6 +48,11 @@ const AdminOfflineCustomers = () => {
     const [formData, setFormData] = useState(emptyForm);
     const [isSaving, setIsSaving] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [lookupPhone, setLookupPhone] = useState('');
+    const [isLookingUp, setIsLookingUp] = useState(false);
+    const [lookupResult, setLookupResult] = useState(null);
+    const [measurementForm, setMeasurementForm] = useState(emptyMeasurementForm);
+    const [savedMeasurements, setSavedMeasurements] = useState([]);
 
     const fetchCustomers = useCallback(async () => {
         setIsLoading(true);
@@ -90,6 +99,8 @@ const AdminOfflineCustomers = () => {
     const openAddModal = () => {
         setEditingCustomer(null);
         setFormData(emptyForm);
+        setSavedMeasurements([]);
+        setMeasurementForm(emptyMeasurementForm);
         setIsModalOpen(true);
     };
 
@@ -102,7 +113,71 @@ const AdminOfflineCustomers = () => {
             address: customer.address || '',
             notes: customer.notes || '',
         });
+        setSavedMeasurements(customer.savedMeasurements || []);
+        setMeasurementForm(emptyMeasurementForm);
         setIsModalOpen(true);
+    };
+
+    const handleLookup = async () => {
+        if (!lookupPhone.trim()) {
+            toast.error('Enter a phone number to search');
+            return;
+        }
+
+        setIsLookingUp(true);
+        try {
+            const res = await api.get('/admin/offline-customers/lookup', {
+                params: { phone: lookupPhone.trim() },
+            });
+            setLookupResult(res.data);
+            if (res.data?.found && res.data?.data?.customer) {
+                toast.success('Offline customer found');
+                await openDetail(res.data.data.customer);
+            } else {
+                toast('No offline customer found. You can create one below.', { icon: 'ℹ️' });
+                setEditingCustomer(null);
+                setFormData((prev) => ({ ...prev, phone: lookupPhone.trim() }));
+                setSavedMeasurements([]);
+                setMeasurementForm(emptyMeasurementForm);
+                setIsModalOpen(true);
+            }
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            toast.error(error.response?.data?.message || 'Lookup failed');
+        } finally {
+            setIsLookingUp(false);
+        }
+    };
+
+    const addMeasurementProfile = () => {
+        if (!measurementForm.garmentType.trim()) {
+            toast.error('Garment type is required for measurement profile');
+            return;
+        }
+
+        const normalizedMeasurements = Object.fromEntries(
+            Object.entries(measurementForm.measurements)
+                .filter(([, value]) => value !== '')
+                .map(([key, value]) => [key, Number(value)])
+                .filter(([, value]) => !Number.isNaN(value))
+        );
+
+        setSavedMeasurements((prev) => ([
+            ...prev,
+            {
+                label: measurementForm.label.trim(),
+                garmentType: measurementForm.garmentType.trim(),
+                unit: measurementForm.unit,
+                notes: measurementForm.notes.trim(),
+                measurements: normalizedMeasurements,
+                createdAt: new Date().toISOString(),
+            },
+        ]));
+        setMeasurementForm(emptyMeasurementForm);
+    };
+
+    const removeMeasurementProfile = (index) => {
+        setSavedMeasurements((prev) => prev.filter((_, idx) => idx !== index));
     };
 
     const handleSave = async (e) => {
@@ -119,6 +194,7 @@ const AdminOfflineCustomers = () => {
                 phone: formData.phone.trim(),
                 address: formData.address.trim(),
                 notes: formData.notes.trim(),
+                savedMeasurements,
             };
 
             if (editingCustomer) {
@@ -187,6 +263,40 @@ const AdminOfflineCustomers = () => {
                 >
                     <Plus size={16} /> Add Offline Customer
                 </button>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+                    <div className="flex-1">
+                        <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">
+                            Quick Phone Lookup
+                        </label>
+                        <div className="relative">
+                            <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="tel"
+                                value={lookupPhone}
+                                onChange={(e) => setLookupPhone(e.target.value)}
+                                placeholder="Search walk-in customer by phone..."
+                                className="w-full pl-9 pr-4 py-3 text-sm font-medium bg-gray-50 border border-transparent focus:border-gray-200 rounded-xl outline-none transition-all"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleLookup}
+                        disabled={isLookingUp}
+                        className="px-4 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark transition-all uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                        <ScanSearch size={16} /> {isLookingUp ? 'Searching...' : 'Find Customer'}
+                    </button>
+                </div>
+                {lookupResult && (
+                    <p className="mt-3 text-xs font-medium text-gray-500">
+                        {lookupResult.found
+                            ? `Found existing customer and opened profile drawer.`
+                            : `No offline customer found for ${lookupPhone}.`}
+                    </p>
+                )}
             </div>
 
             {/* Controls */}
@@ -432,8 +542,8 @@ const AdminOfflineCustomers = () => {
                                                                             : ''}
                                                                     </p>
                                                                 </div>
-                                                                <span className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider ${orderStatusStyle(order.status)}`}>
-                                                                    {formatStatus(order.status)}
+                                                                <span className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider ${offlineStatusStyle(order.status)}`}>
+                                                                    {getOfflineStatusLabel(order.status)}
                                                                 </span>
                                                             </div>
                                                             <div className="flex justify-between items-center mt-2">
@@ -447,6 +557,47 @@ const AdminOfflineCustomers = () => {
                                                                         : ''}
                                                                 </span>
                                                             </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
+                                                <Ruler size={12} /> Saved Measurements
+                                            </h3>
+                                            {(selectedCustomer.savedMeasurements || []).length === 0 ? (
+                                                <div className="bg-gray-50 border border-dashed border-gray-200 p-4 rounded-xl text-[10px] font-bold text-gray-400 text-center uppercase tracking-widest">
+                                                    No saved measurements yet
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {selectedCustomer.savedMeasurements.map((profile, index) => (
+                                                        <div key={`${profile.garmentType}-${index}`} className="bg-gray-50 border border-gray-100 p-3 rounded-xl">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <div>
+                                                                    <p className="text-xs font-black text-gray-900">
+                                                                        {profile.label || profile.garmentType}
+                                                                    </p>
+                                                                    <p className="text-[10px] text-gray-400 font-medium">
+                                                                        {profile.garmentType} · {profile.unit || 'inches'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                                {Object.entries(profile.measurements || {}).map(([key, value]) => (
+                                                                    <span
+                                                                        key={key}
+                                                                        className="px-2 py-1 rounded-lg bg-white border border-gray-200 text-[10px] font-bold text-gray-600"
+                                                                    >
+                                                                        {key}: {value}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                            {profile.notes ? (
+                                                                <p className="mt-2 text-[10px] text-gray-500 font-medium">{profile.notes}</p>
+                                                            ) : null}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -581,6 +732,98 @@ const AdminOfflineCustomers = () => {
                                         placeholder="Preferences, fabric notes, etc."
                                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm resize-none"
                                     />
+                                </div>
+
+                                <div className="border border-gray-100 rounded-2xl p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
+                                            <Ruler size={12} /> Saved Measurements
+                                        </h3>
+                                        <span className="text-[10px] font-bold text-primary">
+                                            {savedMeasurements.length} profile{savedMeasurements.length === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+
+                                    {savedMeasurements.length > 0 && (
+                                        <div className="space-y-2">
+                                            {savedMeasurements.map((profile, index) => (
+                                                <div key={`${profile.garmentType}-${index}`} className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <p className="text-xs font-bold text-gray-900">
+                                                                {profile.label || profile.garmentType}
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-400 font-medium">
+                                                                {profile.garmentType} · {profile.unit}
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeMeasurementProfile(index)}
+                                                            className="text-[10px] font-bold text-red-500 hover:text-red-600"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <input
+                                            type="text"
+                                            value={measurementForm.label}
+                                            onChange={(e) => setMeasurementForm({ ...measurementForm, label: e.target.value })}
+                                            placeholder="Profile label (e.g. Suit Set)"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={measurementForm.garmentType}
+                                            onChange={(e) => setMeasurementForm({ ...measurementForm, garmentType: e.target.value })}
+                                            placeholder="Garment type *"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        {Object.keys(measurementForm.measurements).map((key) => (
+                                            <input
+                                                key={key}
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                value={measurementForm.measurements[key]}
+                                                onChange={(e) => setMeasurementForm({
+                                                    ...measurementForm,
+                                                    measurements: {
+                                                        ...measurementForm.measurements,
+                                                        [key]: e.target.value,
+                                                    },
+                                                })}
+                                                placeholder={key}
+                                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
+                                        <textarea
+                                            rows={2}
+                                            value={measurementForm.notes}
+                                            onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
+                                            placeholder="Measurement notes (optional)"
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm resize-none"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={addMeasurementProfile}
+                                            className="px-4 py-3 bg-primary/10 text-primary text-xs font-black rounded-xl hover:bg-primary/15 transition-all uppercase tracking-widest"
+                                        >
+                                            Add Profile
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="pt-2 flex gap-3">

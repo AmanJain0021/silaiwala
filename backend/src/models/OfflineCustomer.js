@@ -17,6 +17,11 @@ const offlineCustomerSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    phoneNormalized: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     address: {
       type: String,
       trim: true,
@@ -27,6 +32,40 @@ const offlineCustomerSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    // TODO: This is separate from marketplace Measurement/User because walk-ins do not have app accounts.
+    savedMeasurements: [
+      {
+        label: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        garmentType: {
+          type: String,
+          trim: true,
+          required: true,
+        },
+        measurements: {
+          type: Map,
+          of: Number,
+          default: {},
+        },
+        unit: {
+          type: String,
+          enum: ["inches", "cm"],
+          default: "inches",
+        },
+        notes: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     /** Admin/tailor who created this record */
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -56,5 +95,6 @@ const offlineCustomerSchema = new mongoose.Schema(
 
 offlineCustomerSchema.index({ name: "text", phone: "text" });
 offlineCustomerSchema.index({ phone: 1, name: 1 });
+offlineCustomerSchema.index({ phoneNormalized: 1 });
 
 module.exports = mongoose.model("OfflineCustomer", offlineCustomerSchema);

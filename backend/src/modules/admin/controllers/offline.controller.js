@@ -1,6 +1,20 @@
 const mongoose = require("mongoose");
 const OfflineCustomer = require("../../../models/OfflineCustomer.js");
 const OfflineOrder = require("../../../models/OfflineOrder.js");
+const {
+  DEFAULT_OFFLINE_PACKAGES,
+  DEFAULT_GARMENT_TYPES,
+} = require("../../../utils/offlinePackages.js");
+const { ensureTrackingToken } = require("../../../utils/offlineTracking.js");
+const {
+  OFFLINE_PIPELINE_STEPS,
+  isAllowedOfflineStatus,
+  statusFilterValues,
+  buildPipelineCounts,
+  getOfflineStatusLabel,
+} = require("../../../utils/offlineOrderStatus.js");
+const { emitOfflineOrderStatusUpdate } = require("../../../utils/offlineOrderEvents.js");
+const { applyOfflineOrderStatusChange } = require("../../../services/offlineOrderStatus.service.js");
 
 const derivePaymentStatus = (totalAmount, advancePaid) => {
   const total = Number(totalAmount) || 0;
@@ -8,6 +22,89 @@ const derivePaymentStatus = (totalAmount, advancePaid) => {
   if (paid <= 0) return "pending";
   if (paid >= total) return "paid";
   return "partial";
+};
+
+const normalizePhone = (phone = "") => String(phone).replace(/[^\d]/g, "").slice(-10);
+
+const computeOfflinePricing = ({
+  stitchingCharges = 0,
+  addOnsTotal = 0,
+  deliveryFee = 0,
+  discountType = "amount",
+  discountValue = 0,
+  totalAmount,
+}) => {
+  const base = Math.max(0, Number(stitchingCharges) || 0);
+  const addons = Math.max(0, Number(addOnsTotal) || 0);
+  const delivery = Math.max(0, Number(deliveryFee) || 0);
+  const subtotal = base + addons + delivery;
+  let discountAmount = 0;
+  const rawDiscount = Math.max(0, Number(discountValue) || 0);
+
+  if (discountType === "percent") {
+    discountAmount = Math.round((subtotal * Math.min(rawDiscount, 100)) / 100);
+  } else {
+    discountAmount = Math.min(rawDiscount, subtotal);
+  }
+
+  const computedTotal = Math.max(0, subtotal - discountAmount);
+  // Allow explicit total override from client only if provided and valid
+  const finalTotal =
+    totalAmount !== undefined && totalAmount !== null && !Number.isNaN(Number(totalAmount))
+      ? Math.max(0, Number(totalAmount))
+      : computedTotal;
+
+  return {
+    stitchingCharges: base,
+    addOnsTotal: addons,
+    deliveryFee: delivery,
+    discountType: discountType === "percent" ? "percent" : "amount",
+    discountValue: rawDiscount,
+    discountAmount,
+    totalAmount: finalTotal,
+  };
+};
+
+const resolveFulfillmentFields = ({
+  fulfillmentMethod,
+  deliveryAddress,
+  deliveryFee,
+  deliveryNotes,
+  customerAddress = "",
+}) => {
+  const method = fulfillmentMethod === "home_delivery" ? "home_delivery" : "pickup";
+  const address =
+    method === "home_delivery"
+      ? String(deliveryAddress || customerAddress || "").trim()
+      : "";
+  return {
+    fulfillmentMethod: method,
+    deliveryAddress: address,
+    deliveryFee: method === "home_delivery" ? Math.max(0, Number(deliveryFee) || 0) : 0,
+    deliveryNotes: String(deliveryNotes || "").trim(),
+    fulfillmentStatus: "pending",
+  };
+};
+
+/**
+ * @desc    Offline order form meta (packages + garment types)
+ * @route   GET /api/v1/admin/offline-orders/meta
+ */
+exports.getOfflineOrderMeta = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: {
+        packages: DEFAULT_OFFLINE_PACKAGES,
+        garmentTypes: DEFAULT_GARMENT_TYPES,
+        pipelineStatuses: OFFLINE_PIPELINE_STEPS,
+        terminalStatuses: ["delivered", "cancelled"],
+      },
+    });
+  } catch (error) {
+    console.error("Error in getOfflineOrderMeta:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // ─── Offline Customers ───────────────────────────────────────────────
@@ -26,9 +123,11 @@ exports.getOfflineCustomers = async (req, res) => {
 
     if (search) {
       const term = search.trim();
+      const phoneTerm = normalizePhone(term);
       query.$or = [
         { name: { $regex: term, $options: "i" } },
         { phone: { $regex: term, $options: "i" } },
+        ...(phoneTerm ? [{ phoneNormalized: { $regex: phoneTerm, $options: "i" } }] : []),
       ];
     }
 
@@ -87,6 +186,68 @@ exports.getOfflineCustomers = async (req, res) => {
 };
 
 /**
+ * @desc    Lookup offline customer by phone
+ * @route   GET /api/v1/admin/offline-customers/lookup
+ */
+exports.lookupOfflineCustomerByPhone = async (req, res) => {
+  try {
+    const { phone } = req.query;
+    const normalized = normalizePhone(phone);
+
+    if (!normalized) {
+      return res.status(400).json({
+        success: false,
+        message: "phone query is required",
+      });
+    }
+
+    const customer = await OfflineCustomer.findOne({
+      $or: [
+        { phoneNormalized: normalized },
+        { phone: { $regex: normalized, $options: "i" } },
+      ],
+    })
+      .populate("createdBy", "name")
+      .populate("shopTailor", "name phoneNumber")
+      .sort("-createdAt");
+
+    if (!customer) {
+      return res.status(200).json({
+        success: true,
+        found: false,
+        data: null,
+      });
+    }
+
+    const orders = await OfflineOrder.find({ offlineCustomer: customer._id })
+      .sort("-createdAt")
+      .lean();
+
+    const totalSpent = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+    const pendingBalance = orders.reduce(
+      (acc, o) => acc + Math.max(0, (o.totalAmount || 0) - (o.advancePaid || 0)),
+      0
+    );
+
+    return res.status(200).json({
+      success: true,
+      found: true,
+      data: {
+        customer,
+        stats: {
+          orderCount: orders.length,
+          totalSpent,
+          pendingBalance,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error in lookupOfflineCustomerByPhone:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
  * @desc    Get offline customer + order history
  * @route   GET /api/v1/admin/offline-customers/:id
  */
@@ -116,6 +277,7 @@ exports.getOfflineCustomerById = async (req, res) => {
       data: {
         customer,
         orders,
+        savedMeasurements: customer.savedMeasurements || [],
         stats: {
           orderCount: orders.length,
           totalSpent,
@@ -135,7 +297,7 @@ exports.getOfflineCustomerById = async (req, res) => {
  */
 exports.createOfflineCustomer = async (req, res) => {
   try {
-    const { name, phone, address, notes, shopTailor } = req.body;
+    const { name, phone, address, notes, shopTailor, savedMeasurements } = req.body;
 
     if (!name || !phone) {
       return res.status(400).json({
@@ -144,11 +306,21 @@ exports.createOfflineCustomer = async (req, res) => {
       });
     }
 
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone || normalizedPhone.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid 10-digit phone number",
+      });
+    }
+
     const customer = await OfflineCustomer.create({
       name: name.trim(),
       phone: String(phone).trim(),
+      phoneNormalized: normalizedPhone,
       address: address?.trim() || "",
       notes: notes?.trim() || "",
+      savedMeasurements: Array.isArray(savedMeasurements) ? savedMeasurements : [],
       shopTailor: shopTailor || undefined,
       createdBy: req.user._id,
       source: "offline",
@@ -167,10 +339,29 @@ exports.createOfflineCustomer = async (req, res) => {
  */
 exports.updateOfflineCustomer = async (req, res) => {
   try {
-    const allowed = ["name", "phone", "address", "notes", "shopTailor", "isActive"];
+    const allowed = [
+      "name",
+      "phone",
+      "address",
+      "notes",
+      "shopTailor",
+      "isActive",
+      "savedMeasurements",
+    ];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    if (updates.phone !== undefined) {
+      const normalizedPhone = normalizePhone(updates.phone);
+      if (!normalizedPhone || normalizedPhone.length !== 10) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid 10-digit phone number",
+        });
+      }
+      updates.phoneNormalized = normalizedPhone;
     }
 
     const customer = await OfflineCustomer.findByIdAndUpdate(req.params.id, updates, {
@@ -231,14 +422,32 @@ exports.getOfflineOrders = async (req, res) => {
       paymentStatus,
       offlineCustomer,
       search,
+      fulfillmentMethod,
+      pendingFulfillment,
       limit = 50,
       page = 1,
     } = req.query;
 
     const query = { source: "offline" };
-    if (status) query.status = status;
+    if (status) {
+      const filterValues = statusFilterValues(status);
+      if (filterValues?.$nin) {
+        query.status = filterValues;
+      } else if (filterValues?.length === 1) {
+        query.status = filterValues[0];
+      } else if (filterValues?.length > 1) {
+        query.status = { $in: filterValues };
+      }
+    }
     if (paymentStatus) query.paymentStatus = paymentStatus;
     if (offlineCustomer) query.offlineCustomer = offlineCustomer;
+    if (fulfillmentMethod === "pickup" || fulfillmentMethod === "home_delivery") {
+      query.fulfillmentMethod = fulfillmentMethod;
+    }
+    if (pendingFulfillment === "true") {
+      query.status = "ready";
+      query.fulfillmentStatus = { $in: ["awaiting_pickup", "out_for_delivery", "pending"] };
+    }
 
     if (search) {
       const term = search.trim();
@@ -287,15 +496,24 @@ exports.getOfflineOrders = async (req, res) => {
  */
 exports.getOfflineOrderById = async (req, res) => {
   try {
-    const order = await OfflineOrder.findById(req.params.id)
-      .populate("offlineCustomer", "name phone address notes")
+    let order = await OfflineOrder.findById(req.params.id)
+      .populate("offlineCustomer", "name phone address notes savedMeasurements")
       .populate("createdBy", "name")
       .populate("shopTailor", "name phoneNumber")
-      .populate("history.updatedBy", "name");
+      .populate("history.updatedBy", "name")
+      .populate("styleAddons.addon", "name category price image");
 
     if (!order) {
       return res.status(404).json({ success: false, message: "Offline order not found" });
     }
+
+    await ensureTrackingToken(order);
+    order = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address notes savedMeasurements")
+      .populate("createdBy", "name")
+      .populate("shopTailor", "name phoneNumber")
+      .populate("history.updatedBy", "name")
+      .populate("styleAddons.addon", "name category price image");
 
     res.status(200).json({ success: true, data: order });
   } catch (error) {
@@ -313,19 +531,34 @@ exports.createOfflineOrder = async (req, res) => {
     const {
       offlineCustomer,
       garmentType,
+      stitchingPackage = "basic",
+      stitchingCharges,
+      fabricSource = "customer",
       measurements,
       measurementUnit,
+      measurementPhotos,
+      savedMeasurementLabel,
+      styleAddons,
+      customizations,
+      addOnsTotal,
+      discountType,
+      discountValue,
       totalAmount,
       advancePaid = 0,
       status,
+      priority = "normal",
       notes,
       shopTailor,
+      fulfillmentMethod = "pickup",
+      deliveryAddress,
+      deliveryFee,
+      deliveryNotes,
     } = req.body;
 
-    if (!offlineCustomer || !garmentType || totalAmount === undefined) {
+    if (!offlineCustomer || !garmentType) {
       return res.status(400).json({
         success: false,
-        message: "offlineCustomer, garmentType, and totalAmount are required",
+        message: "offlineCustomer and garmentType are required",
       });
     }
 
@@ -344,12 +577,38 @@ exports.createOfflineOrder = async (req, res) => {
       });
     }
 
-    const amount = Number(totalAmount);
-    const advance = Number(advancePaid) || 0;
-    if (Number.isNaN(amount) || amount < 0) {
-      return res.status(400).json({ success: false, message: "Invalid totalAmount" });
+    const fulfillment = resolveFulfillmentFields({
+      fulfillmentMethod,
+      deliveryAddress,
+      deliveryFee,
+      deliveryNotes,
+      customerAddress: customer.address,
+    });
+
+    if (fulfillment.fulfillmentMethod === "home_delivery" && !fulfillment.deliveryAddress) {
+      return res.status(400).json({
+        success: false,
+        message: "deliveryAddress is required for home delivery",
+      });
     }
-    if (advance < 0 || advance > amount) {
+
+    const pkg = DEFAULT_OFFLINE_PACKAGES.find((p) => p.id === stitchingPackage);
+    const resolvedStitching =
+      stitchingCharges !== undefined && stitchingCharges !== null && stitchingCharges !== ""
+        ? Number(stitchingCharges)
+        : pkg?.defaultPrice || 0;
+
+    const pricing = computeOfflinePricing({
+      stitchingCharges: resolvedStitching,
+      addOnsTotal,
+      deliveryFee: fulfillment.deliveryFee,
+      discountType,
+      discountValue,
+      totalAmount,
+    });
+
+    const advance = Number(advancePaid) || 0;
+    if (advance < 0 || advance > pricing.totalAmount) {
       return res.status(400).json({
         success: false,
         message: "advancePaid must be between 0 and totalAmount",
@@ -359,29 +618,52 @@ exports.createOfflineOrder = async (req, res) => {
     const order = await OfflineOrder.create({
       offlineCustomer: customer._id,
       garmentType: garmentType.trim(),
+      stitchingPackage: pkg?.id || "basic",
+      stitchingCharges: pricing.stitchingCharges,
+      fabricSource: fabricSource === "sewzella" ? "sewzella" : "customer",
       measurements: measurements || {},
       measurementUnit: measurementUnit || "inches",
-      totalAmount: amount,
+      measurementPhotos: Array.isArray(measurementPhotos) ? measurementPhotos : [],
+      savedMeasurementLabel: savedMeasurementLabel?.trim() || "",
+      styleAddons: Array.isArray(styleAddons) ? styleAddons : [],
+      customizations: customizations || {},
+      addOnsTotal: pricing.addOnsTotal,
+      discountType: pricing.discountType,
+      discountValue: pricing.discountValue,
+      discountAmount: pricing.discountAmount,
+      totalAmount: pricing.totalAmount,
       advancePaid: advance,
-      paymentStatus: derivePaymentStatus(amount, advance),
-      status: status || "pending",
+      paymentStatus: derivePaymentStatus(pricing.totalAmount, advance),
+      status: status && isAllowedOfflineStatus(status) ? status : "accepted",
+      priority: priority === "urgent" ? "urgent" : "normal",
+      fulfillmentMethod: fulfillment.fulfillmentMethod,
+      deliveryAddress: fulfillment.deliveryAddress,
+      deliveryFee: pricing.deliveryFee,
+      deliveryNotes: fulfillment.deliveryNotes,
+      fulfillmentStatus: fulfillment.fulfillmentStatus,
       notes: notes?.trim() || "",
       shopTailor: shopTailor || customer.shopTailor || undefined,
       createdBy: req.user._id,
       source: "offline",
+      isOffline: true,
       history: [
         {
-          status: status || "pending",
-          message: "Offline order created",
+          status: status && isAllowedOfflineStatus(status) ? status : "accepted",
+          message: `Offline order created · ${
+            fulfillment.fulfillmentMethod === "home_delivery" ? "Home delivery" : "Customer pickup"
+          }`,
           updatedBy: req.user._id,
         },
       ],
     });
 
+    emitOfflineOrderStatusUpdate(order);
+
     const populated = await OfflineOrder.findById(order._id)
       .populate("offlineCustomer", "name phone address")
       .populate("createdBy", "name")
-      .populate("shopTailor", "name phoneNumber");
+      .populate("shopTailor", "name phoneNumber")
+      .populate("styleAddons.addon", "name category price image");
 
     res.status(201).json({ success: true, data: populated });
   } catch (error) {
@@ -403,26 +685,112 @@ exports.updateOfflineOrder = async (req, res) => {
 
     const {
       garmentType,
+      stitchingPackage,
+      stitchingCharges,
+      fabricSource,
       measurements,
       measurementUnit,
+      measurementPhotos,
+      savedMeasurementLabel,
+      styleAddons,
+      customizations,
+      addOnsTotal,
+      discountType,
+      discountValue,
       totalAmount,
       advancePaid,
       status,
+      priority,
       notes,
       shopTailor,
       message,
+      fulfillmentMethod,
+      deliveryAddress,
+      deliveryFee,
+      deliveryNotes,
     } = req.body;
 
     const prevStatus = order.status;
 
     if (garmentType !== undefined) order.garmentType = garmentType.trim();
+    if (stitchingPackage !== undefined) order.stitchingPackage = stitchingPackage;
+    if (fabricSource !== undefined) {
+      order.fabricSource = fabricSource === "sewzella" ? "sewzella" : "customer";
+    }
     if (measurements !== undefined) order.measurements = measurements;
     if (measurementUnit !== undefined) order.measurementUnit = measurementUnit;
-    if (totalAmount !== undefined) order.totalAmount = Number(totalAmount);
-    if (advancePaid !== undefined) order.advancePaid = Number(advancePaid);
+    if (measurementPhotos !== undefined) order.measurementPhotos = measurementPhotos;
+    if (savedMeasurementLabel !== undefined) {
+      order.savedMeasurementLabel = savedMeasurementLabel.trim();
+    }
+    if (styleAddons !== undefined) order.styleAddons = styleAddons;
+    if (customizations !== undefined) order.customizations = customizations;
+    if (priority !== undefined) {
+      order.priority = priority === "urgent" ? "urgent" : "normal";
+    }
     if (notes !== undefined) order.notes = notes.trim();
     if (shopTailor !== undefined) order.shopTailor = shopTailor || undefined;
-    if (status !== undefined) order.status = status;
+    if (status !== undefined) {
+      if (!isAllowedOfflineStatus(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid offline order status",
+        });
+      }
+      order.status = status;
+    }
+
+    if (fulfillmentMethod !== undefined) {
+      order.fulfillmentMethod =
+        fulfillmentMethod === "home_delivery" ? "home_delivery" : "pickup";
+      if (order.fulfillmentMethod === "pickup") {
+        order.deliveryAddress = "";
+        order.deliveryFee = 0;
+        if (order.fulfillmentStatus === "out_for_delivery") {
+          order.fulfillmentStatus = order.status === "ready" ? "awaiting_pickup" : "pending";
+        }
+      }
+    }
+    if (deliveryAddress !== undefined) order.deliveryAddress = String(deliveryAddress).trim();
+    if (deliveryNotes !== undefined) order.deliveryNotes = String(deliveryNotes).trim();
+    if (deliveryFee !== undefined) order.deliveryFee = Math.max(0, Number(deliveryFee) || 0);
+
+    if (order.fulfillmentMethod === "home_delivery" && !order.deliveryAddress) {
+      return res.status(400).json({
+        success: false,
+        message: "deliveryAddress is required for home delivery",
+      });
+    }
+
+    const pricingTouched =
+      stitchingCharges !== undefined ||
+      addOnsTotal !== undefined ||
+      deliveryFee !== undefined ||
+      fulfillmentMethod !== undefined ||
+      discountType !== undefined ||
+      discountValue !== undefined ||
+      totalAmount !== undefined;
+
+    if (pricingTouched) {
+      const pricing = computeOfflinePricing({
+        stitchingCharges:
+          stitchingCharges !== undefined ? stitchingCharges : order.stitchingCharges,
+        addOnsTotal: addOnsTotal !== undefined ? addOnsTotal : order.addOnsTotal,
+        deliveryFee: order.fulfillmentMethod === "home_delivery" ? order.deliveryFee : 0,
+        discountType: discountType !== undefined ? discountType : order.discountType,
+        discountValue: discountValue !== undefined ? discountValue : order.discountValue,
+        totalAmount,
+      });
+      order.stitchingCharges = pricing.stitchingCharges;
+      order.addOnsTotal = pricing.addOnsTotal;
+      order.deliveryFee = pricing.deliveryFee;
+      order.discountType = pricing.discountType;
+      order.discountValue = pricing.discountValue;
+      order.discountAmount = pricing.discountAmount;
+      order.totalAmount = pricing.totalAmount;
+    }
+
+    if (advancePaid !== undefined) order.advancePaid = Number(advancePaid);
 
     if ((order.advancePaid || 0) > (order.totalAmount || 0)) {
       return res.status(400).json({
@@ -436,7 +804,9 @@ exports.updateOfflineOrder = async (req, res) => {
     if (
       status !== undefined ||
       advancePaid !== undefined ||
-      totalAmount !== undefined ||
+      pricingTouched ||
+      fulfillmentMethod !== undefined ||
+      deliveryAddress !== undefined ||
       message
     ) {
       order.history.push({
@@ -444,7 +814,7 @@ exports.updateOfflineOrder = async (req, res) => {
         message:
           message ||
           (status && status !== prevStatus
-            ? `Status updated to ${order.status}`
+            ? `Status updated to ${getOfflineStatusLabel(order.status)}`
             : "Order details updated"),
         updatedBy: req.user._id,
       });
@@ -452,11 +822,16 @@ exports.updateOfflineOrder = async (req, res) => {
 
     await order.save();
 
+    if (status !== undefined && status !== prevStatus) {
+      emitOfflineOrderStatusUpdate(order);
+    }
+
     const populated = await OfflineOrder.findById(order._id)
       .populate("offlineCustomer", "name phone address")
       .populate("createdBy", "name")
       .populate("shopTailor", "name phoneNumber")
-      .populate("history.updatedBy", "name");
+      .populate("history.updatedBy", "name")
+      .populate("styleAddons.addon", "name category price image");
 
     res.status(200).json({ success: true, data: populated });
   } catch (error) {
@@ -476,35 +851,226 @@ exports.updateOfflineOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "status is required" });
     }
 
-    const allowed = ["pending", "in_progress", "ready", "delivered", "cancelled"];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `status must be one of: ${allowed.join(", ")}`,
-      });
-    }
-
     const order = await OfflineOrder.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ success: false, message: "Offline order not found" });
     }
 
-    order.status = status;
-    order.history.push({
-      status,
-      message: message || `Status updated to ${status}`,
-      updatedBy: req.user._id,
-    });
-    await order.save();
+    try {
+      await applyOfflineOrderStatusChange(order, {
+        status,
+        message,
+        updatedBy: req.user._id,
+      });
+    } catch (err) {
+      if (err.statusCode === 400) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+      throw err;
+    }
 
     const populated = await OfflineOrder.findById(order._id)
       .populate("offlineCustomer", "name phone address")
       .populate("createdBy", "name")
-      .populate("shopTailor", "name phoneNumber");
+      .populate("shopTailor", "name phoneNumber")
+      .populate("history.updatedBy", "name");
 
     res.status(200).json({ success: true, data: populated });
   } catch (error) {
     console.error("Error in updateOfflineOrderStatus:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Mark home-delivery order as out for delivery (shop staff / future partner bridge)
+ * @route   PATCH /api/v1/admin/offline-orders/:id/out-for-delivery
+ */
+exports.markOfflineOrderOutForDelivery = async (req, res) => {
+  try {
+    const order = await OfflineOrder.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Offline order not found" });
+    }
+    if (order.fulfillmentMethod !== "home_delivery") {
+      return res.status(400).json({
+        success: false,
+        message: "Only home delivery orders can be marked out for delivery",
+      });
+    }
+    if (order.status === "delivered" || order.status === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot update fulfillment on a closed order",
+      });
+    }
+    if (order.status !== "ready") {
+      return res.status(400).json({
+        success: false,
+        message: "Order must be Ready before going out for delivery",
+      });
+    }
+
+    order.fulfillmentStatus = "out_for_delivery";
+    order.outForDeliveryAt = new Date();
+    order.history.push({
+      status: order.status,
+      message: req.body.message || "Out for home delivery",
+      updatedBy: req.user._id,
+    });
+    await order.save();
+    emitOfflineOrderStatusUpdate(order);
+
+    const populated = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address")
+      .populate("shopTailor", "name phoneNumber");
+
+    res.status(200).json({ success: true, data: populated });
+  } catch (error) {
+    console.error("Error in markOfflineOrderOutForDelivery:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Complete offline order — collect balance, handoff, optional rating + save measurements
+ * @route   POST /api/v1/admin/offline-orders/:id/complete
+ */
+exports.completeOfflineOrder = async (req, res) => {
+  try {
+    const {
+      amountReceived,
+      collectFullBalance = true,
+      customerRating,
+      customerReview,
+      saveMeasurements = true,
+      savedMeasurementLabel,
+      message,
+    } = req.body;
+
+    const order = await OfflineOrder.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Offline order not found" });
+    }
+    if (order.status === "cancelled") {
+      return res.status(400).json({ success: false, message: "Cannot complete a cancelled order" });
+    }
+    if (order.status === "delivered") {
+      return res.status(400).json({ success: false, message: "Order already completed" });
+    }
+
+    if (order.fulfillmentMethod === "home_delivery") {
+      if (order.status !== "ready" && order.fulfillmentStatus !== "out_for_delivery") {
+        return res.status(400).json({
+          success: false,
+          message: "Home delivery order must be Ready (or out for delivery) before completion",
+        });
+      }
+    } else if (order.status !== "ready") {
+      return res.status(400).json({
+        success: false,
+        message: "Order must be Ready for pickup before completion",
+      });
+    }
+
+    const balanceDue = Math.max(0, (order.totalAmount || 0) - (order.advancePaid || 0));
+    let paidNow = 0;
+    if (amountReceived !== undefined && amountReceived !== null && amountReceived !== "") {
+      paidNow = Math.max(0, Number(amountReceived) || 0);
+    } else if (collectFullBalance) {
+      paidNow = balanceDue;
+    }
+
+    if (paidNow > balanceDue + 0.01) {
+      return res.status(400).json({
+        success: false,
+        message: "amountReceived cannot exceed balance due",
+      });
+    }
+
+    order.advancePaid = Math.min(
+      order.totalAmount || 0,
+      (order.advancePaid || 0) + paidNow
+    );
+    order.syncPaymentStatus();
+
+    if (customerRating !== undefined && customerRating !== null && customerRating !== "") {
+      const rating = Number(customerRating);
+      if (rating < 1 || rating > 5 || Number.isNaN(rating)) {
+        return res.status(400).json({
+          success: false,
+          message: "customerRating must be between 1 and 5",
+        });
+      }
+      order.customerRating = rating;
+    }
+    if (customerReview !== undefined) {
+      order.customerReview = String(customerReview).trim();
+    }
+
+    const handoffLabel =
+      order.fulfillmentMethod === "home_delivery" ? "Delivered to customer" : "Customer picked up";
+
+    order.status = "delivered";
+    order.fulfillmentStatus = "completed";
+    order.deliveredAt = new Date();
+    if (order.fulfillmentMethod === "pickup") {
+      order.pickedUpAt = order.deliveredAt;
+    }
+
+    order.history.push({
+      status: "delivered",
+      message:
+        message ||
+        `${handoffLabel}${paidNow > 0 ? ` · ₹${paidNow} collected` : ""}`,
+      updatedBy: req.user._id,
+    });
+
+    // Persist measurements on OfflineCustomer for future walk-ins
+    let measurementsSaved = false;
+    if (saveMeasurements) {
+      const measurementsObj =
+        order.measurements instanceof Map
+          ? Object.fromEntries(order.measurements)
+          : order.measurements || {};
+      const hasMeasurements = Object.keys(measurementsObj).length > 0;
+      if (hasMeasurements) {
+        const customer = await OfflineCustomer.findById(order.offlineCustomer);
+        if (customer) {
+          const label =
+            (savedMeasurementLabel || order.savedMeasurementLabel || order.garmentType || "Saved").trim();
+          customer.savedMeasurements = customer.savedMeasurements || [];
+          customer.savedMeasurements.push({
+            label,
+            garmentType: order.garmentType,
+            measurements: measurementsObj,
+            unit: order.measurementUnit || "inches",
+            notes: "",
+            createdAt: new Date(),
+          });
+          await customer.save();
+          order.measurementsSavedOnComplete = true;
+          measurementsSaved = true;
+        }
+      }
+    }
+
+    await order.save();
+    emitOfflineOrderStatusUpdate(order);
+
+    const populated = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address savedMeasurements")
+      .populate("createdBy", "name")
+      .populate("shopTailor", "name phoneNumber")
+      .populate("history.updatedBy", "name");
+
+    res.status(200).json({
+      success: true,
+      data: populated,
+      meta: { amountCollected: paidNow, measurementsSaved },
+    });
+  } catch (error) {
+    console.error("Error in completeOfflineOrder:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -553,21 +1119,31 @@ exports.getOfflineOrderStats = async (req, res) => {
       },
     ]);
 
-    const statusCounts = {
-      pending: 0,
-      in_progress: 0,
-      ready: 0,
-      delivered: 0,
-      cancelled: 0,
-    };
+    const statusCounts = {};
     byStatus.forEach((row) => {
       statusCounts[row._id] = row.count;
     });
+    const pipelineCounts = buildPipelineCounts(byStatus);
 
     const paymentCounts = { pending: 0, partial: 0, paid: 0 };
     byPayment.forEach((row) => {
       paymentCounts[row._id] = row.count;
     });
+
+    const [pendingPickup, pendingHomeDelivery] = await Promise.all([
+      OfflineOrder.countDocuments({
+        source: "offline",
+        status: "ready",
+        fulfillmentMethod: "pickup",
+        fulfillmentStatus: { $ne: "completed" },
+      }),
+      OfflineOrder.countDocuments({
+        source: "offline",
+        status: "ready",
+        fulfillmentMethod: "home_delivery",
+        fulfillmentStatus: { $in: ["pending", "awaiting_pickup", "out_for_delivery"] },
+      }),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -579,7 +1155,11 @@ exports.getOfflineOrderStats = async (req, res) => {
         deliveredRevenue: deliveredRevenue[0]?.revenue || 0,
         deliveredCount: deliveredRevenue[0]?.count || 0,
         statusCounts,
+        pipelineCounts,
         paymentCounts,
+        pendingPickup,
+        pendingHomeDelivery,
+        pendingFulfillment: pendingPickup + pendingHomeDelivery,
         customerCount: await OfflineCustomer.countDocuments({ isActive: true }),
       },
     });
