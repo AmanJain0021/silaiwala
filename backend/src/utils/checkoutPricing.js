@@ -176,10 +176,17 @@ async function enrichOrderItemsForPricing(items) {
     if (!serviceId) continue;
 
     const svc = await Service.findById(serviceId).lean();
-    const tailorUserId = svc?.tailor || item.serviceDetails?.tailorId || item.serviceDetails?.tailor;
-    const tailorProfile = tailorUserId
-      ? await Tailor.findOne({ user: tailorUserId }).lean()
-      : null;
+    // Service.tailor is a ref to the Tailor profile model _id (not User._id)
+    const tailorProfileId = svc?.tailor || item.serviceDetails?.tailorId || item.serviceDetails?.tailor;
+    let tailorProfile = null;
+    if (tailorProfileId) {
+      // First try as Tailor profile _id
+      tailorProfile = await Tailor.findById(tailorProfileId).lean();
+      // Fallback: maybe it's a User._id
+      if (!tailorProfile) {
+        tailorProfile = await Tailor.findOne({ user: tailorProfileId }).lean();
+      }
+    }
 
     const selectedFabric = item.selectedFabric || item.configuration?.selectedFabric;
     let fabricPrice = 0;
