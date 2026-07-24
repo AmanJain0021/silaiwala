@@ -125,6 +125,9 @@ function App() {
                 activeUser = JSON.parse(deliveryStr);
             }
             role = 'delivery';
+        } else if (path.startsWith('/partner') && tailorStr && tailorStr !== 'undefined') {
+            activeUser = JSON.parse(tailorStr);
+            role = 'tailor';
         } else if (userStr && userStr !== 'undefined') {
             activeUser = JSON.parse(userStr);
             role = activeUser.role || 'customer';

@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = (userData, userToken) => {
-        saveToken(userToken);
+        saveToken(userToken, 'tailor');
         
         // Determine status immediately from login payload
         let currentStatus = TAILOR_STATUS.NOT_REGISTERED;
@@ -85,6 +85,7 @@ export const AuthProvider = ({ children }) => {
 
         localStorage.setItem('tailor_user', JSON.stringify(enrichedUser));
         localStorage.setItem('tailor_status', currentStatus);
+        localStorage.setItem('user', JSON.stringify(enrichedUser));
         
         setToken(userToken);
         setUser(enrichedUser);
@@ -96,6 +97,7 @@ export const AuthProvider = ({ children }) => {
         removeToken();
         localStorage.removeItem('tailor_user');
         localStorage.removeItem('tailor_status');
+        localStorage.removeItem('user');
         setToken(null);
         setUser(null);
         setStatus(TAILOR_STATUS.NOT_REGISTERED);

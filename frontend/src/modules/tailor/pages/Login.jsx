@@ -72,10 +72,17 @@ const TailorLogin = () => {
 
                 if (userData.role !== 'tailor') {
                     localStorage.removeItem('token');
+                    localStorage.removeItem('tailor_token');
                     localStorage.removeItem('user');
+                    localStorage.removeItem('tailor_user');
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }
+
+                // Clear old tailor session data before establishing new session
+                localStorage.removeItem('tailor_token');
+                localStorage.removeItem('tailor_user');
+                localStorage.removeItem('tailor_status');
 
                 setLoggedInUser(userData);
                 setLoggedInToken(token);

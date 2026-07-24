@@ -187,7 +187,7 @@ export const useDeliveryAuthStore = create(
       sendRegistrationOtp: async (phone, email) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/delivery/auth/send-registration-otp', { phone, email });
+          const res = await api.post('/auth/send-otp', { phoneNumber: phone, email });
           set({ isLoading: false });
           return res.data || res;
         } catch (e) { set({ isLoading: false }); throw e; }
@@ -195,7 +195,7 @@ export const useDeliveryAuthStore = create(
       verifyRegistrationOtp: async (phone, otp) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/delivery/auth/verify-registration-otp', { phone, otp });
+          const res = await api.post('/auth/verify-otp', { phoneNumber: phone, otp });
           set({ isLoading: false });
           return res.data || res;
         } catch (e) { set({ isLoading: false }); throw e; }
@@ -203,15 +203,7 @@ export const useDeliveryAuthStore = create(
       register: async (data) => {
         set({ isLoading: true });
         try {
-          const formData = new FormData();
-          Object.keys(data).forEach(key => {
-            if (data[key] !== null && data[key] !== undefined) {
-              formData.append(key, data[key]);
-            }
-          });
-          const res = await api.post('/delivery/auth/register', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
+          const res = await api.post('/auth/register', data);
           set({ isLoading: false });
           return res.data || res;
         } catch (e) { set({ isLoading: false }); throw e; }

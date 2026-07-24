@@ -70,6 +70,11 @@ const DeliveryLogin = () => {
                     setError('This portal is only for registered delivery partners.');
                     return;
                 }
+                if (user && user.isActive === false) {
+                    logout();
+                    setError('⏳ Your application is pending admin approval. You will get dashboard access once approved by admin.');
+                    return;
+                }
                 navigate('/delivery/dashboard');
             } catch (err) {
                 setError(err.message || 'Invalid credentials. Please try again.');
@@ -90,6 +95,11 @@ const DeliveryLogin = () => {
                 setError('This portal is only for registered delivery partners.');
                 return;
             }
+            if (user && user.isActive === false) {
+                logout();
+                setError('⏳ Your application is pending admin approval. You will get dashboard access once approved by admin.');
+                return;
+            }
 
             navigate('/delivery/dashboard');
         } catch (err) {
@@ -105,6 +115,11 @@ const DeliveryLogin = () => {
             if (user?.role !== 'delivery') {
                 logout();
                 setError('This portal is only for registered delivery partners.');
+                return;
+            }
+            if (user && user.isActive === false) {
+                logout();
+                setError('⏳ Your application is pending admin approval. You will get dashboard access once approved by admin.');
                 return;
             }
 

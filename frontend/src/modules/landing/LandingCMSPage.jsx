@@ -79,7 +79,9 @@ const LandingCMSPage = () => {
         )}
       </main>
 
-      <LandingFooter />
+      {!['privacy-policy', 'terms-of-service', 'terms-and-conditions'].includes(slug) && (
+        <LandingFooter />
+      )}
 
       <style dangerouslySetInnerHTML={{
         __html: `

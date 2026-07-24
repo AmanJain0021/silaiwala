@@ -88,7 +88,7 @@ const DeliveryTasks = React.lazy(() => import('./modules/delivery/pages/Tasks/Ta
 const DeliveryHistory = React.lazy(() => import('./modules/delivery/pages/History/DeliveryHistory'));
 const DeliveryProfile = React.lazy(() => import('./modules/delivery/pages/Profile/DeliveryProfile'));
 const DeliveryLogin = React.lazy(() => import('./modules/delivery/pages/Login'));
-const DeliverySignup = React.lazy(() => import('./modules/delivery/pages/Signup'));
+const DeliverySignup = React.lazy(() => import('./modules/delivery/pages/Register'));
 const DeliveryForgotPassword = React.lazy(() => import('./modules/delivery/pages/ForgotPassword'));
 const DeliveryResetPassword = React.lazy(() => import('./modules/delivery/pages/ResetPassword'));
 import DeliveryLayout from './modules/delivery/layouts/DeliveryLayout';

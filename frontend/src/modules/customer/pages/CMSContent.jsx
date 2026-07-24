@@ -105,20 +105,24 @@ const CMSContentPage = () => {
                         dangerouslySetInnerHTML={{ __html: content.content }}
                     />
 
-                    <div className="mt-12 pt-6 border-t border-gray-100 flex flex-col items-center text-center">
-                        <button onClick={() => navigate('/user/profile')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center mb-3 transition-colors hover:bg-gray-100">
-                            <ArrowLeft size={16} className="text-gray-400" />
-                        </button>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-loose">
-                            Last Updated: {new Date(content.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                            <br />
-                            © Silaiwala Partner Network
-                        </p>
-                    </div>
+                    {!['privacy-policy', 'terms-of-service', 'terms-and-conditions'].includes(slug) && (
+                        <div className="mt-12 pt-6 border-t border-gray-100 flex flex-col items-center text-center">
+                            <button onClick={() => navigate('/user/profile')} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center mb-3 transition-colors hover:bg-gray-100">
+                                <ArrowLeft size={16} className="text-gray-400" />
+                            </button>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-loose">
+                                Last Updated: {new Date(content.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                <br />
+                                © Silaiwala Partner Network
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <BottomNav />
+            {!['privacy-policy', 'terms-of-service', 'terms-and-conditions'].includes(slug) && (
+                <BottomNav />
+            )}
 
             <style dangerouslySetInnerHTML={{
                 __html: `

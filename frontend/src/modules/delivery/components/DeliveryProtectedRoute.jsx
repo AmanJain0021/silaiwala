@@ -18,7 +18,7 @@ const DeliveryProtectedRoute = () => {
         return <Navigate to="/delivery/login" replace />;
     }
 
-    if (user && !user.isActive) {
+    if (user && (user.isActive === false || user.isActive === undefined)) {
         return <PendingApproval />;
     }
 
