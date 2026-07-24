@@ -26,7 +26,7 @@ const DeliveryRegister = () => {
     aadharNumber: '',
     email: '',
     address: '',
-    vehicleType: 'Bike',
+    vehicleType: 'bike',
     vehicleNumber: '',
     // password: '', // Removed
     // confirmPassword: '', // Removed
@@ -35,6 +35,16 @@ const DeliveryRegister = () => {
     aadharCard: null,
     aadharCardBack: null,
     profileImage: null,
+  });
+  
+  const [fieldErrors, setFieldErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    emergencyContact: '',
+    aadharNumber: '',
+    vehicleNumber: '',
+    address: ''
   });
   
   const [phoneOtp, setPhoneOtp] = useState('');
@@ -46,8 +56,36 @@ const DeliveryRegister = () => {
 
   const [previews, setPreviews] = useState({});
 
+  const checkUserExistsInBackend = async (emailVal, phoneVal) => {
+    try {
+      const payload = {};
+      if (emailVal && emailVal.trim()) payload.email = emailVal.trim();
+      if (phoneVal && phoneVal.trim()) payload.phoneNumber = phoneVal.trim();
+      
+      if (!payload.email && !payload.phoneNumber) return false;
+
+      const res = await api.post('/auth/check-user', payload);
+      if (res.data && res.data.exists) {
+        const conflictField = res.data.field === 'email' ? 'email' : 'phone';
+        const msg = res.data.message || (conflictField === 'email' ? 'A user with this email address already exists' : 'A user with this mobile number already exists');
+        setFieldErrors(prev => ({
+          ...prev,
+          [conflictField]: msg
+        }));
+        toast.error(msg);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('Check user API error:', err);
+      return false;
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
+    setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+
     if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack', 'profileImage'].includes(name)) {
       const file = files?.[0] || null;
       setFormData((prev) => ({ ...prev, [name]: file }));
@@ -80,16 +118,29 @@ const DeliveryRegister = () => {
   };
 
   const handleSendOtp = async () => {
+    setFieldErrors((prev) => ({ ...prev, phone: '', email: '' }));
+
     if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
-      toast.error('Enter a valid 10-digit mobile number starting with 6-9');
+      const msg = 'Enter a valid 10-digit mobile number starting with 6-9';
+      setFieldErrors((prev) => ({ ...prev, phone: msg }));
+      toast.error(msg);
       return;
     }
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      toast.error('Enter a valid email address first');
+      const msg = 'Enter a valid email address first';
+      setFieldErrors((prev) => ({ ...prev, email: msg }));
+      toast.error(msg);
       return;
     }
+
     setIsSendingOtp(true);
     try {
+      const userExists = await checkUserExistsInBackend(formData.email, formData.phone);
+      if (userExists) {
+        setIsSendingOtp(false);
+        return;
+      }
+
       await sendRegistrationOtp(formData.phone, formData.email);
       setShowOtpField(true);
       toast.success('OTP sent successfully!');
@@ -119,21 +170,60 @@ const DeliveryRegister = () => {
   };
 
   const validateStep = (step) => {
+    const errs = { name: '', email: '', phone: '', emergencyContact: '', aadharNumber: '', vehicleNumber: '', address: '' };
+    let isValid = true;
+
     switch (step) {
       case 1:
-        if (!formData.profileImage) { toast.error('Profile photo is required'); return false; }
-        if (!formData.name.trim() || formData.name.trim().length < 3) { toast.error('Full name (min 3 chars) is required'); return false; }
-        if (!formData.email.trim()) { toast.error('Email address is required'); return false; }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email.trim())) { toast.error('Enter a valid email address'); return false; }
-        if (!formData.phone.trim()) { toast.error('Mobile number is required'); return false; }
-        if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit mobile number starting with 6-9'); return false; }
-        if (!isPhoneVerified) { toast.error('Please verify your mobile number first'); return false; }
-        if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact.replace(/\D/g, ''))) { toast.error('Enter a valid 10-digit emergency contact number'); return false; }
-        if (formData.emergencyContact && formData.emergencyContact === formData.phone) { toast.error('Emergency contact cannot be the same as your mobile number'); return false; }
-        if (!formData.aadharNumber.trim()) { toast.error('Aadhaar number is required'); return false; }
-        if (formData.aadharNumber.replace(/\s/g, '').length !== 12 || !/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) { toast.error('Aadhaar number must be exactly 12 digits'); return false; }
-        return true;
+        if (!formData.profileImage) { toast.error('Profile photo is required'); isValid = false; }
+        if (!formData.name.trim() || formData.name.trim().length < 3) {
+          errs.name = 'Full name (min 3 chars) is required';
+          toast.error(errs.name);
+          isValid = false;
+        }
+        if (!formData.email.trim()) {
+          errs.email = 'Email address is required';
+          toast.error(errs.email);
+          isValid = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+          errs.email = 'Enter a valid email address';
+          toast.error(errs.email);
+          isValid = false;
+        }
+        if (!formData.phone.trim()) {
+          errs.phone = 'Mobile number is required';
+          toast.error(errs.phone);
+          isValid = false;
+        } else if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
+          errs.phone = 'Enter a valid 10-digit mobile number starting with 6-9';
+          toast.error(errs.phone);
+          isValid = false;
+        } else if (!isPhoneVerified) {
+          errs.phone = 'Please verify your mobile number first';
+          toast.error(errs.phone);
+          isValid = false;
+        }
+        if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact.replace(/\D/g, ''))) {
+          errs.emergencyContact = 'Enter a valid 10-digit emergency contact number';
+          toast.error(errs.emergencyContact);
+          isValid = false;
+        }
+        if (formData.emergencyContact && formData.emergencyContact === formData.phone) {
+          errs.emergencyContact = 'Emergency contact cannot be the same as your mobile number';
+          toast.error(errs.emergencyContact);
+          isValid = false;
+        }
+        if (!formData.aadharNumber.trim()) {
+          errs.aadharNumber = 'Aadhaar number is required';
+          toast.error(errs.aadharNumber);
+          isValid = false;
+        } else if (formData.aadharNumber.replace(/\s/g, '').length !== 12 || !/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) {
+          errs.aadharNumber = 'Aadhaar number must be exactly 12 digits';
+          toast.error(errs.aadharNumber);
+          isValid = false;
+        }
+        setFieldErrors((prev) => ({ ...prev, ...errs }));
+        return isValid;
       case 2:
         if (!formData.drivingLicense) { toast.error('Driving License (Front) is required'); return false; }
         if (!formData.drivingLicenseBack) { toast.error('Driving License (Back) is required'); return false; }
@@ -141,17 +231,36 @@ const DeliveryRegister = () => {
         if (!formData.aadharCardBack) { toast.error('Aadhaar Card (Back) is required'); return false; }
         return true;
       case 3:
-        if (!formData.vehicleNumber.trim()) { toast.error('Vehicle number is required'); return false; }
-        if (!/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) { toast.error('Enter a valid vehicle number (e.g. MH 12 AB 1234)'); return false; }
-        if (!formData.address.trim() || formData.address.trim().length < 10) { toast.error('Please provide a complete residential address'); return false; }
-        return true;
+        if (!formData.vehicleNumber.trim()) {
+          errs.vehicleNumber = 'Vehicle number is required';
+          toast.error(errs.vehicleNumber);
+          isValid = false;
+        } else if (!/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) {
+          errs.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
+          toast.error(errs.vehicleNumber);
+          isValid = false;
+        }
+        if (!formData.address.trim() || formData.address.trim().length < 10) {
+          errs.address = 'Please provide a complete residential address (min 10 chars)';
+          toast.error(errs.address);
+          isValid = false;
+        }
+        setFieldErrors((prev) => ({ ...prev, ...errs }));
+        return isValid;
       default:
         return true;
     }
   };
 
-  const nextStep = () => {
-    if (validateStep(currentStep)) setCurrentStep((s) => Math.min(s + 1, 3));
+  const nextStep = async () => {
+    if (!validateStep(currentStep)) return;
+
+    if (currentStep === 1) {
+      const userExists = await checkUserExistsInBackend(formData.email, formData.phone);
+      if (userExists) return; // Remain on Step 1 if user already exists
+    }
+
+    setCurrentStep((s) => Math.min(s + 1, 3));
   };
 
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
@@ -224,7 +333,7 @@ const DeliveryRegister = () => {
         emergencyContact: formData.emergencyContact.trim(),
         aadharNumber: formData.aadharNumber.replace(/\s/g, ''),
         address: formData.address.trim(),
-        vehicleType: formData.vehicleType,
+        vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
         vehicleNumber: formData.vehicleNumber.trim(),
         documents,
       };
@@ -237,7 +346,26 @@ const DeliveryRegister = () => {
       toast.success(result.message || 'Registration submitted');
       navigate('/delivery/login', { replace: true });
     } catch (error) {
-      toast.error(error.message || 'Registration failed');
+      const errorMsg = error.response?.data?.message || error.message || 'Registration failed';
+      toast.error(errorMsg);
+
+      const lowerMsg = errorMsg.toLowerCase();
+      if (lowerMsg.includes('email')) {
+        setFieldErrors((prev) => ({ ...prev, email: errorMsg }));
+        setCurrentStep(1);
+      } else if (lowerMsg.includes('phone') || lowerMsg.includes('mobile')) {
+        setFieldErrors((prev) => ({ ...prev, phone: errorMsg }));
+        setCurrentStep(1);
+      } else if (lowerMsg.includes('aadhaar') || lowerMsg.includes('aadhar')) {
+        setFieldErrors((prev) => ({ ...prev, aadharNumber: errorMsg }));
+        setCurrentStep(1);
+      } else if (lowerMsg.includes('vehicle')) {
+        setFieldErrors((prev) => ({ ...prev, vehicleNumber: errorMsg }));
+        setCurrentStep(3);
+      } else if (lowerMsg.includes('address')) {
+        setFieldErrors((prev) => ({ ...prev, address: errorMsg }));
+        setCurrentStep(3);
+      }
     }
   };
 
@@ -405,32 +533,68 @@ const DeliveryRegister = () => {
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Full Name *</label>
                     <div className="relative">
-                      <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter your full name" required className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900" />
+                      <FiUser className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.name ? 'text-rose-500' : 'text-gray-400'}`} />
+                      <input 
+                        type="text" 
+                        name="name" 
+                        value={formData.name} 
+                        onChange={handleChange} 
+                        placeholder="Enter your full name" 
+                        required 
+                        className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.name ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                      />
                     </div>
+                    {fieldErrors.name && (
+                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                        <span>⚠️</span> {fieldErrors.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Email Address *</label>
                     <div className="relative">
-                      <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="partner@email.com" required className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900" />
+                      <FiMail className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.email ? 'text-rose-500' : 'text-gray-400'}`} />
+                      <input 
+                        type="email" 
+                        name="email" 
+                        value={formData.email} 
+                        onChange={handleChange} 
+                        onBlur={() => {
+                          if (formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+                            checkUserExistsInBackend(formData.email, null);
+                          }
+                        }}
+                        placeholder="partner@email.com" 
+                        required 
+                        className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.email ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                      />
                     </div>
+                    {fieldErrors.email && (
+                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                        <span>⚠️</span> {fieldErrors.email}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Mobile Number *</label>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <div className="relative flex-1 group w-full">
-                        <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                        <FiPhone className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.phone ? 'text-rose-500' : 'text-gray-400 group-focus-within:text-indigo-500'} transition-colors`} size={16} />
                         <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base">+91</span>
                         <input 
                           type="tel" 
                           name="phone" 
                           value={formData.phone} 
                           onChange={handleChange} 
+                          onBlur={() => {
+                            if (formData.phone && formData.phone.length === 10) {
+                              checkUserExistsInBackend(null, formData.phone);
+                            }
+                          }}
                           placeholder="Mobile number" 
                           required 
                           maxLength={10} 
-                          className={`w-full pl-20 ${isPhoneVerified ? 'pr-12' : 'pr-4'} py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/30 focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} 
+                          className={`w-full pl-20 ${isPhoneVerified ? 'pr-12' : 'pr-4'} py-3.5 bg-gray-50 border ${fieldErrors.phone ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/30'} rounded-2xl focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} 
                           disabled={isPhoneVerified}
                         />
                         {isPhoneVerified && (
@@ -451,6 +615,11 @@ const DeliveryRegister = () => {
                         </button>
                       )}
                     </div>
+                    {fieldErrors.phone && (
+                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                        <span>⚠️</span> {fieldErrors.phone}
+                      </p>
+                    )}
                   </div>
                   
                   {showOtpField && !isPhoneVerified && (
@@ -484,17 +653,27 @@ const DeliveryRegister = () => {
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Emergency Contact</label>
                     <div className="relative">
-                      <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <FiShield className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.emergencyContact ? 'text-rose-500' : 'text-gray-400'}`} />
                       <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base">+91</span>
-                      <input type="tel" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="Emergency contact number" maxLength={10} className="w-full pl-20 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900 font-bold text-sm sm:text-base" />
+                      <input type="tel" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="Emergency contact number" maxLength={10} className={`w-full pl-20 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.emergencyContact ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} />
                     </div>
+                    {fieldErrors.emergencyContact && (
+                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                        <span>⚠️</span> {fieldErrors.emergencyContact}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Aadhaar Number</label>
                     <div className="relative">
-                      <FiFileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="1234 5678 9012" maxLength={14} className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-gray-900 font-bold tracking-widest" />
+                      <FiFileText className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.aadharNumber ? 'text-rose-500' : 'text-gray-400'}`} />
+                      <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="1234 5678 9012" maxLength={14} className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.aadharNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-bold tracking-widest transition-all`} />
                     </div>
+                    {fieldErrors.aadharNumber && (
+                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                        <span>⚠️</span> {fieldErrors.aadharNumber}
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -546,19 +725,31 @@ const DeliveryRegister = () => {
                     <div>
                       <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Type</label>
                       <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:outline-none text-gray-900 font-medium">
-                        <option value="Bike">Bike</option>
-                        <option value="Scooter">Scooter</option>
-                        <option value="Car">Car</option>
+                        <option value="bike">Bike</option>
+                        <option value="scooter">Scooter</option>
+                        <option value="car">Car</option>
+                        <option value="cycle">Bicycle</option>
+                        <option value="other">Other</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Number</label>
-                      <input type="text" name="vehicleNumber" value={formData.vehicleNumber} onChange={handleChange} placeholder="MH-12-AB-1234" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:outline-none text-gray-900" />
+                      <input type="text" name="vehicleNumber" value={formData.vehicleNumber} onChange={handleChange} placeholder="MH-12-AB-1234" className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.vehicleNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} />
+                      {fieldErrors.vehicleNumber && (
+                        <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                          <span>⚠️</span> {fieldErrors.vehicleNumber}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Address</label>
-                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Your full address" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:outline-none text-gray-900" />
+                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Your full address" className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.address ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} />
+                    {fieldErrors.address && (
+                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                        <span>⚠️</span> {fieldErrors.address}
+                      </p>
+                    )}
                   </div>
 
                   <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4">

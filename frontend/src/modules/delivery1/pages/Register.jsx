@@ -156,7 +156,7 @@ const DeliveryRegister = () => {
         emergencyContact: formData.emergencyContact.trim(),
         aadharNumber: formData.aadharNumber.trim(),
         address: formData.address.trim(),
-        vehicleType: formData.vehicleType,
+        vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
         vehicleNumber: formData.vehicleNumber.trim(),
         // password: formData.password,
         drivingLicense: formData.drivingLicense,

@@ -176,9 +176,13 @@ exports.register = asyncHandler(async (req, res, next) => {
         });
         break;
       case "delivery":
+        const rawVehicle = (req.body.vehicleType || "bike").toString().toLowerCase();
+        const validVehicles = ["bike", "scooter", "car", "cycle", "other"];
+        const normalizedVehicleType = validVehicles.includes(rawVehicle) ? rawVehicle : "bike";
+
         profile = await Delivery.create({ 
           user: user._id,
-          vehicleType: req.body.vehicleType || "bike",
+          vehicleType: normalizedVehicleType,
           vehicleNumber: req.body.vehicleNumber,
           emergencyContact: req.body.emergencyContact,
           aadharNumber: req.body.aadharNumber,
