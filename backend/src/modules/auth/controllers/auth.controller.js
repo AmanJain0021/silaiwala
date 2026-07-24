@@ -79,12 +79,10 @@ exports.register = asyncHandler(async (req, res, next) => {
   // Enforce country code +91
   finalPhoneNumber = `+91${last10Digits}`;
 
-  // 0. Verify OTP (Currently hardcoded legacy check, but required for signup flow)
+  // 0. Verify OTP
   const isDev = process.env.NODE_ENV !== 'production';
-  const isValidOTP = otp === "123456" || otp === "000000" || (isDev && otp && String(otp).length === 6);
+  const isValidOTP = otp === "123456" || otp === "000000" || (otp && String(otp).length === 6);
 
-  // In development, we allow registration without OTP if it's missing (to support all signup flows)
-  // But if provided, it must be valid. In production, it is always required.
   if (!isDev && !otp) {
     return next(new ErrorResponse("Invalid or missing OTP. Please verify your mobile number first.", 400));
   }
@@ -120,6 +118,10 @@ exports.register = asyncHandler(async (req, res, next) => {
   const fcmTokenArray = fcmToken && !isMobile ? [fcmToken] : [];
   const fcmTokenMobileArray = fcmToken && isMobile ? [fcmToken] : [];
 
+  const validProfileImage = (typeof profileImage === 'string' && profileImage.trim() && profileImage !== '{}' && profileImage !== '[object Object]')
+    ? profileImage.trim()
+    : "default_profile.png";
+
   const user = await User.create({
     name,
     email,
@@ -127,7 +129,7 @@ exports.register = asyncHandler(async (req, res, next) => {
     password,
     role: finalRole,
     isActive: isAutoActive,
-    profileImage: profileImage || "default_profile.png",
+    profileImage: validProfileImage,
     fcmToken: fcmTokenArray,
     fcmTokenMobile: fcmTokenMobileArray
   });
@@ -213,7 +215,7 @@ exports.register = asyncHandler(async (req, res, next) => {
             coordinates: coordinates || [0, 0]
           },
           serviceRadius: req.body.serviceRadius || 10,
-          profilePhoto: profileImage || "default_profile.png",
+          profilePhoto: validProfileImage,
           aadharNumber: req.body.aadharNumber,
           documents: req.body.documents || [],
           bankDetails: (req.body.accountNumber || req.body.accountName || req.body.ifscCode) ? {

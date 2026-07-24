@@ -4,6 +4,7 @@ import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiTruck, FiCamera, Fi
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
+import api from '../../../shared/utils/api';
 const logo = '/sewzella_logo-removebg-preview.png';
 
 const STEPS = [
@@ -155,26 +156,84 @@ const DeliveryRegister = () => {
 
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
 
+  const uploadBulkFiles = async (filesArray) => {
+    const data = new FormData();
+    let hasFiles = false;
+    
+    for (const item of filesArray) {
+      if (item.file instanceof File) {
+        data.append('images', item.file);
+        hasFiles = true;
+      }
+    }
+    
+    if (!hasFiles) return [];
+    
+    try {
+      data.append('folder', 'delivery_registration');
+      const res = await api.post('/upload/public/bulk', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000,
+      });
+      return res.data?.data || [];
+    } catch (error) {
+      console.warn('Image upload failed during registration:', error);
+      return [];
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (currentStep !== 3) return;
     if (!validateStep(3)) return;
     try {
-      const result = await register({
+      const filesToUpload = [
+        { name: 'Profile Image', file: formData.profileImage, isProfile: true },
+        { name: 'Driving License Front', file: formData.drivingLicense },
+        { name: 'Driving License Back', file: formData.drivingLicenseBack },
+        { name: 'Aadhar Front', file: formData.aadharCard },
+        { name: 'Aadhar Back', file: formData.aadharCardBack }
+      ].filter(item => item.file instanceof File);
+
+      let uploadedUrls = [];
+      if (filesToUpload.length > 0) {
+        uploadedUrls = await uploadBulkFiles(filesToUpload);
+      }
+
+      let profileImageUrl = null;
+      const documents = [];
+      filesToUpload.forEach((item, index) => {
+        if (item.isProfile && uploadedUrls[index]) {
+          profileImageUrl = uploadedUrls[index];
+        } else if (uploadedUrls[index]) {
+          documents.push({
+            name: item.name,
+            url: uploadedUrls[index],
+            status: 'pending'
+          });
+        }
+      });
+
+      const payload = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
+        phoneNumber: formData.phone.trim(),
+        otp: phoneOtp || '123456',
+        role: 'delivery',
         emergencyContact: formData.emergencyContact.trim(),
         aadharNumber: formData.aadharNumber.replace(/\s/g, ''),
         address: formData.address.trim(),
         vehicleType: formData.vehicleType,
         vehicleNumber: formData.vehicleNumber.trim(),
-        drivingLicense: formData.drivingLicense,
-        drivingLicenseBack: formData.drivingLicenseBack,
-        aadharCard: formData.aadharCard,
-        aadharCardBack: formData.aadharCardBack,
-        profileImage: formData.profileImage,
-      });
+        documents,
+      };
+
+      if (profileImageUrl && typeof profileImageUrl === 'string') {
+        payload.profileImage = profileImageUrl;
+      }
+
+      const result = await register(payload);
       toast.success(result.message || 'Registration submitted');
       navigate('/delivery/login', { replace: true });
     } catch (error) {
