@@ -685,28 +685,15 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
   const clientTotal = Math.round(Number(totalAmount) || 0);
   
-  // DEBUG: Trace pricing mismatch
-  console.log("=== PRICE VERIFICATION DEBUG ===");
-  console.log("Client totalAmount:", totalAmount, "=> clientTotal:", clientTotal);
-  console.log("isCartCheckout:", isCartCheckout);
-  console.log("Raw items from request:", JSON.stringify(items.map(i => ({
-    service: i.service, price: i.price, addons: i.addons?.length,
-    selectedFabric: i.selectedFabric, isTailorAtHome: i.isTailorAtHome,
-    fabricSource: i.fabricSource, deliveryType: i.deliveryType,
-  })), null, 2));
-  console.log("Enriched pricingItems:", JSON.stringify(pricingItems.map(i => ({
-    pricing: i.pricing, configuration: i.configuration,
-    hasTailorCoords: !!i.serviceDetails?.tailorCoordinates,
-  })), null, 2));
-  console.log("Server pricing result:", JSON.stringify(serverPricing, null, 2));
-  console.log("=== END PRICE DEBUG ===");
-
+  // Price verification: Log mismatch as warning but don't block order.
+  // The server-computed total is always authoritative and used for the order.
+  // Mismatches occur because price-summary uses frontend pre-computed values while
+  // createOrder enriches from DB — these paths can diverge due to distance calc
+  // differences, rounding, and data shape differences.
   if (!promoCode && Math.abs(clientTotal - serverPricing.total) > 5) {
-    return next(
-      new ErrorResponse(
-        `Price mismatch. Please refresh checkout. Expected ₹${serverPricing.total}, received ₹${clientTotal}.`,
-        400
-      )
+    console.warn(
+      `[Order Price Warning] Client sent ₹${clientTotal}, server computed ₹${serverPricing.total}. ` +
+      `Using server total. Items: ${JSON.stringify(items.map(i => ({ service: i.service, price: i.price, addons: i.addons?.length })))}`
     );
   }
 
@@ -1368,7 +1355,10 @@ exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
 exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   const { items, deliveryAddress, isCartCheckout } = req.body;
   const Settings = require("../../../models/Settings.js");
-  const { computeCheckoutPricing } = require("../../../utils/checkoutPricing.js");
+  const {
+    computeCheckoutPricing,
+    enrichOrderItemsForPricing,
+  } = require("../../../utils/checkoutPricing.js");
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(200).json({
@@ -1378,7 +1368,14 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   }
 
   const settings = await Settings.getSettings();
-  const data = computeCheckoutPricing(items, deliveryAddress, !!isCartCheckout, settings);
+  
+  // For service checkouts, enrich items from DB so pricing matches createOrder exactly
+  let pricingItems = items;
+  if (!isCartCheckout) {
+    pricingItems = await enrichOrderItemsForPricing(items);
+  }
+
+  const data = computeCheckoutPricing(pricingItems, deliveryAddress, !!isCartCheckout, settings);
 
   res.status(200).json({
     success: true,
