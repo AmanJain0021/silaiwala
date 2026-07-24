@@ -593,8 +593,10 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
               const perKmRate = settings?.deliveryRates?.perKmRate || 10;
               
               const consultationFee = baseFee + (Math.ceil(distance) * perKmRate);
-              totalAmount = consultationFee;
-              if (items && items.length > 0) {
+              if (!totalAmount || Number(totalAmount) === 0) {
+                  totalAmount = consultationFee;
+              }
+              if (items && items.length > 0 && (!items[0].price || Number(items[0].price) === 0)) {
                   items[0].price = consultationFee;
               }
           }
@@ -682,7 +684,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   }
 
   const clientTotal = Math.round(Number(totalAmount) || 0);
-  if (!promoCode && Math.abs(clientTotal - serverPricing.total) > 2) {
+  if (!promoCode && Math.abs(clientTotal - serverPricing.total) > 5) {
     return next(
       new ErrorResponse(
         `Price mismatch. Please refresh checkout. Expected ₹${serverPricing.total}, received ₹${clientTotal}.`,

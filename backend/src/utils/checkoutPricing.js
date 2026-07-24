@@ -164,6 +164,7 @@ async function enrichOrderItemsForPricing(items) {
   const Service = require("../models/Service.js");
   const Product = require("../models/Product.js");
   const Tailor = require("../models/Tailor.js");
+  const StyleAddon = require("../models/StyleAddon.js");
 
   const enriched = [];
   for (const item of items) {
@@ -181,13 +182,33 @@ async function enrichOrderItemsForPricing(items) {
 
     let fabricPrice = 0;
     if (item.selectedFabric) {
-      const fabric = await Product.findById(item.selectedFabric).lean();
-      fabricPrice = Number(fabric?.price) || 0;
+      const fabricId =
+        typeof item.selectedFabric === "object"
+          ? item.selectedFabric._id || item.selectedFabric.id
+          : item.selectedFabric;
+      if (fabricId) {
+        const fabric = await Product.findById(fabricId).lean();
+        fabricPrice = Number(fabric?.price) || Number(item.selectedFabric?.price) || 0;
+      } else if (typeof item.selectedFabric === "object" && Number(item.selectedFabric.price) > 0) {
+        fabricPrice = Number(item.selectedFabric.price);
+      }
     }
 
     let addonsTotal = 0;
-    if (Array.isArray(item.addons)) {
-      addonsTotal = item.addons.reduce((s, a) => s + (Number(a.price) || 0), 0);
+    if (Array.isArray(item.addons) && item.addons.length > 0) {
+      for (const a of item.addons) {
+        if (typeof a === "object" && a !== null && Number(a.price) > 0) {
+          addonsTotal += Number(a.price);
+        } else {
+          const addonId = typeof a === "string" ? a : a?._id || a?.id || a?.addon;
+          if (addonId) {
+            const addonDoc = await StyleAddon.findById(addonId).lean();
+            if (addonDoc && Number(addonDoc.price) > 0) {
+              addonsTotal += Number(addonDoc.price);
+            }
+          }
+        }
+      }
     }
 
     enriched.push({
