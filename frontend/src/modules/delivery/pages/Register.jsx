@@ -4,7 +4,7 @@ import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiTruck, FiCamera, Fi
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
-import logo from '../../../assets/animations/lottie/logo-removebg.png';
+const logo = '/sewzella_logo-removebg-preview.png';
 
 const STEPS = [
   { id: 1, title: 'Personal Info', icon: FiUser },
