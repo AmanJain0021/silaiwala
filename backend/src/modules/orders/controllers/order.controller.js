@@ -1351,7 +1351,10 @@ exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
 exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   const { items, deliveryAddress, isCartCheckout } = req.body;
   const Settings = require("../../../models/Settings.js");
-  const { computeCheckoutPricing } = require("../../../utils/checkoutPricing.js");
+  const {
+    computeCheckoutPricing,
+    enrichOrderItemsForPricing,
+  } = require("../../../utils/checkoutPricing.js");
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(200).json({
@@ -1361,7 +1364,12 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
   }
 
   const settings = await Settings.getSettings();
-  const data = computeCheckoutPricing(items, deliveryAddress, !!isCartCheckout, settings);
+  let pricingItems = items;
+  if (!isCartCheckout) {
+    pricingItems = await enrichOrderItemsForPricing(items);
+  }
+
+  const data = computeCheckoutPricing(pricingItems, deliveryAddress, !!isCartCheckout, settings);
 
   res.status(200).json({
     success: true,

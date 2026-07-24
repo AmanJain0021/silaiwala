@@ -172,31 +172,34 @@ async function enrichOrderItemsForPricing(items) {
       enriched.push(item);
       continue;
     }
-    if (!item.service) continue;
+    const serviceId = item.service || item.serviceDetails?.id || item.serviceDetails?._id;
+    if (!serviceId) continue;
 
-    const svc = await Service.findById(item.service).lean();
-    const tailorUserId = svc?.tailor;
+    const svc = await Service.findById(serviceId).lean();
+    const tailorUserId = svc?.tailor || item.serviceDetails?.tailorId || item.serviceDetails?.tailor;
     const tailorProfile = tailorUserId
       ? await Tailor.findOne({ user: tailorUserId }).lean()
       : null;
 
+    const selectedFabric = item.selectedFabric || item.configuration?.selectedFabric;
     let fabricPrice = 0;
-    if (item.selectedFabric) {
+    if (selectedFabric) {
       const fabricId =
-        typeof item.selectedFabric === "object"
-          ? item.selectedFabric._id || item.selectedFabric.id
-          : item.selectedFabric;
+        typeof selectedFabric === "object"
+          ? selectedFabric._id || selectedFabric.id
+          : selectedFabric;
       if (fabricId) {
         const fabric = await Product.findById(fabricId).lean();
-        fabricPrice = Number(fabric?.price) || Number(item.selectedFabric?.price) || 0;
-      } else if (typeof item.selectedFabric === "object" && Number(item.selectedFabric.price) > 0) {
-        fabricPrice = Number(item.selectedFabric.price);
+        fabricPrice = Number(fabric?.price) || Number(selectedFabric?.price) || 0;
+      } else if (typeof selectedFabric === "object" && Number(selectedFabric.price) > 0) {
+        fabricPrice = Number(selectedFabric.price);
       }
     }
 
+    const addons = item.addons || item.configuration?.addons;
     let addonsTotal = 0;
-    if (Array.isArray(item.addons) && item.addons.length > 0) {
-      for (const a of item.addons) {
+    if (Array.isArray(addons) && addons.length > 0) {
+      for (const a of addons) {
         if (typeof a === "object" && a !== null && Number(a.price) > 0) {
           addonsTotal += Number(a.price);
         } else {
@@ -209,22 +212,44 @@ async function enrichOrderItemsForPricing(items) {
           }
         }
       }
+    } else if (Number(item.pricing?.addons) > 0) {
+      addonsTotal = Number(item.pricing.addons);
     }
+
+    const basePrice =
+      Number(item.price) ||
+      Number(item.pricing?.base) ||
+      Number(svc?.basePrice) ||
+      0;
+
+    const isTailorAtHome =
+      item.isTailorAtHome ||
+      item.configuration?.isTailorAtHome ||
+      item.measurements?.type === "home";
+
+    const fabricSource =
+      item.fabricSource || item.configuration?.fabricSource || "customer";
+
+    const deliveryType =
+      item.deliveryType || item.configuration?.deliveryType || "standard";
+
+    const tailorCoordinates =
+      tailorProfile?.location?.coordinates || item.serviceDetails?.tailorCoordinates;
 
     enriched.push({
       pricing: {
-        base: Number(item.price) || Number(svc?.basePrice) || 0,
+        base: basePrice,
         addons: addonsTotal,
         fabric: fabricPrice,
-        tailorAtHome: 0,
+        tailorAtHome: Number(item.pricing?.tailorAtHome) || 0,
       },
       configuration: {
-        isTailorAtHome: item.measurements?.type === "home" || item.isTailorAtHome,
-        fabricSource: item.fabricSource || "customer",
-        deliveryType: item.deliveryType || "standard",
+        isTailorAtHome,
+        fabricSource,
+        deliveryType,
       },
       serviceDetails: {
-        tailorCoordinates: tailorProfile?.location?.coordinates,
+        tailorCoordinates,
       },
     });
   }
