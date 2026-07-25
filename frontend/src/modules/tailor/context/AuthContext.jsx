@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { getToken, setToken as saveToken, removeToken } from '../../../utils/auth';
 
@@ -10,6 +10,16 @@ export const TAILOR_STATUS = {
     APPROVED: 'APPROVED',
     REJECTED: 'REJECTED',
     SUSPENDED: 'SUSPENDED',
+};
+
+const clearTailorSessionStorage = () => {
+    localStorage.removeItem('tailor_token');
+    localStorage.removeItem('tailor_user');
+    localStorage.removeItem('tailor_status');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('tailorSignupData');
+    localStorage.removeItem('tailorSignupStep');
 };
 
 export const AuthProvider = ({ children }) => {
@@ -26,6 +36,8 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     // Counter to force checkAuth re-run even if token string is the same
     const [authVersion, setAuthVersion] = useState(0);
+    // Invalidate in-flight /tailors/me so logout→login as another tailor cannot restore the old profile
+    const authCheckSeq = useRef(0);
     const isAuthenticated = !!token && !!user;
 
     const determineStatus = (tailorData) => {
@@ -42,52 +54,75 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        const seq = ++authCheckSeq.current;
+        const controller = new AbortController();
+
         const checkAuth = async () => {
             const currentToken = getToken();
-            if (currentToken) {
-                try {
-                    setLoading(true);
-                    const res = await api.get('/tailors/me');
-                    if (res.data.success) {
-                        const tailorData = res.data.data;
-                        const currentStatus = determineStatus(tailorData);
-
-                        const combinedUser = {
-                            ...tailorData.user,
-                            shopName: tailorData.shopName,
-                            documents: tailorData.documents,
-                            profile: tailorData, // Keep full profile for reference
-                            status: currentStatus
-                        };
-                        
-                        setUser(combinedUser);
-                        setStatus(currentStatus);
-                        localStorage.setItem('tailor_status', currentStatus);
-                        localStorage.setItem('tailor_user', JSON.stringify(combinedUser));
-                    }
-                } catch (error) {
-                    console.error("Auth check failed:", error);
-                    if (error.response?.status === 401) {
-                        logout();
-                    }
-                } finally {
+            if (!currentToken) {
+                if (seq === authCheckSeq.current) {
+                    setUser(null);
+                    setStatus(TAILOR_STATUS.NOT_REGISTERED);
                     setLoading(false);
                 }
-            } else {
-                setUser(null);
-                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const res = await api.get('/tailors/me', { signal: controller.signal });
+                if (seq !== authCheckSeq.current) return;
+
+                if (res.data.success) {
+                    const tailorData = res.data.data;
+                    const currentStatus = determineStatus(tailorData);
+
+                    const combinedUser = {
+                        ...tailorData.user,
+                        shopName: tailorData.shopName,
+                        documents: tailorData.documents,
+                        profile: tailorData, // Keep full profile for reference
+                        status: currentStatus
+                    };
+                    
+                    setUser(combinedUser);
+                    setStatus(currentStatus);
+                    localStorage.setItem('tailor_status', currentStatus);
+                    localStorage.setItem('tailor_user', JSON.stringify(combinedUser));
+                }
+            } catch (error) {
+                if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+                if (seq !== authCheckSeq.current) return;
+
+                console.error("Auth check failed:", error);
+                if (error.response?.status === 401) {
+                    authCheckSeq.current += 1;
+                    removeToken();
+                    clearTailorSessionStorage();
+                    setToken(null);
+                    setUser(null);
+                    setStatus(TAILOR_STATUS.NOT_REGISTERED);
+                }
+            } finally {
+                if (seq === authCheckSeq.current) {
+                    setLoading(false);
+                }
             }
         };
+
         checkAuth();
+        return () => {
+            controller.abort();
+        };
     }, [token, authVersion]);
 
     const login = useCallback((userData, userToken) => {
+        // Invalidate any in-flight profile fetch from the previous tailor
+        authCheckSeq.current += 1;
+
         // 1. Clear ALL old session data first
-        localStorage.removeItem('tailor_token');
-        localStorage.removeItem('tailor_user');
-        localStorage.removeItem('tailor_status');
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        removeToken();
+        clearTailorSessionStorage();
 
         // 2. Save new token
         saveToken(userToken, 'tailor');
@@ -101,6 +136,8 @@ export const AuthProvider = ({ children }) => {
 
         const enrichedUser = {
             ...userData,
+            _id: userData.id || userData._id,
+            id: userData.id || userData._id,
             status: currentStatus
         };
 
@@ -118,14 +155,21 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const logout = useCallback(() => {
+        // Invalidate in-flight /tailors/me so it cannot revive this session
+        authCheckSeq.current += 1;
         removeToken();
-        localStorage.removeItem('tailor_token');
-        localStorage.removeItem('tailor_user');
-        localStorage.removeItem('tailor_status');
-        localStorage.removeItem('user');
+        clearTailorSessionStorage();
         setToken(null);
         setUser(null);
         setStatus(TAILOR_STATUS.NOT_REGISTERED);
+        setLoading(false);
+
+        // Drop shared socket so the next tailor does not inherit this session's rooms/JWT
+        try {
+            import('../../../store/socketStore').then((mod) => {
+                mod.default.getState().disconnect();
+            }).catch(() => {});
+        } catch (_) { /* ignore */ }
     }, []);
 
     const updateStatus = (newStatus) => {

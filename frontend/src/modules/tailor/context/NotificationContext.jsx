@@ -33,35 +33,39 @@ export const NotificationProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        if (token) {
-            fetchNotifications();
-            
-            const socket = io(SOCKET_URL, {
-                auth: {
-                    token: getToken()
-                }
-            });
-            
-            const userId = user?._id || user?.id;
-            if (userId) {
-                socket.emit('join_user_room', userId);
-            }
-
-            socket.on('new_notification', (notification) => {
-                setNotifications(prev => [notification, ...prev]);
-                setUnreadCount(prev => prev + 1);
-                
-                try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
-                
-                // Native Browser Notification (Optional)
-                if (Notification.permission === "granted") {
-                    new Notification(notification.title, { body: notification.message });
-                }
-            });
-
-            return () => socket.disconnect();
+        if (!token) {
+            setNotifications([]);
+            setUnreadCount(0);
+            return;
         }
-    }, [token, user?._id]);
+
+        fetchNotifications();
+        
+        const socket = io(SOCKET_URL, {
+            auth: {
+                token: getToken()
+            }
+        });
+        
+        const userId = user?._id || user?.id;
+        if (userId) {
+            socket.emit('join_user_room', userId);
+        }
+
+        socket.on('new_notification', (notification) => {
+            setNotifications(prev => [notification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            
+            try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
+            
+            // Native Browser Notification (Optional)
+            if (Notification.permission === "granted") {
+                new Notification(notification.title, { body: notification.message });
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [token, user?._id, user?.id]);
 
     const markAllRead = async () => {
         try {

@@ -9,15 +9,8 @@ import LocationSplashScreen from '../../../components/Common/LocationSplashScree
 import { GoogleLogin } from '@react-oauth/google';
 
 const TailorLogin = () => {
-    const { login, logout, isAuthenticated, user } = useTailorAuth();
+    const { login, isAuthenticated, user } = useTailorAuth();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        if (isAuthenticated && user?.role === 'tailor') {
-            navigate('/partner', { replace: true });
-        }
-    }, [isAuthenticated, user, navigate]);
-
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
     const [loginMethod, setLoginMethod] = useState('password'); // 'password' | 'otp'
@@ -30,6 +23,13 @@ const TailorLogin = () => {
     const [loggedInToken, setLoggedInToken] = useState(null);
     const { register, handleSubmit, watch, formState: { errors }, setError: setFormError, clearErrors } = useForm();
     const mobileNumber = watch('mobileNumber');
+
+    useEffect(() => {
+        // Don't bounce away while the location splash is still running for this login
+        if (isAuthenticated && user?.role === 'tailor' && !isLocating) {
+            navigate('/partner', { replace: true });
+        }
+    }, [isAuthenticated, user, navigate, isLocating]);
 
     const handleSendOTP = async () => {
         if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
@@ -77,14 +77,13 @@ const TailorLogin = () => {
                 const { token, data: userData } = response.data;
 
                 if (userData.role !== 'tailor') {
-                    logout();
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }
 
-                // Clear any previous tailor session completely before new login
-                logout();
-
+                // Establish Tailor B session immediately (clears Tailor A). Do NOT call
+                // logout() here — that used to wipe the new token and race with a stale /me.
+                login(userData, token);
                 setLoggedInUser(userData);
                 setLoggedInToken(token);
                 setIsLocating(true);
@@ -111,12 +110,10 @@ const TailorLogin = () => {
             if (response.data.success) {
                 const { token, data: userData } = response.data;
                 if (userData.role !== 'tailor') {
-                    logout();
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }
-                // Clear any previous tailor session completely before new login
-                logout();
+                login(userData, token);
                 setLoggedInUser(userData);
                 setLoggedInToken(token);
                 setIsLocating(true);
@@ -134,7 +131,7 @@ const TailorLogin = () => {
 
     const handleLocationComplete = () => {
         setIsLocating(false);
-        login(loggedInUser, loggedInToken);
+        // Session already established in onSubmit / Google login
         navigate('/partner', { replace: true });
     };
 

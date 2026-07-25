@@ -38,7 +38,19 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && error.response.status === 401) {
             removeToken();
-            window.location.href = '/partner/login';
+            // Clear the cached tailor identity too, otherwise the stale user keeps
+            // driving sockets/push and can resurface after another tailor logs in.
+            try {
+                localStorage.removeItem('tailor_token');
+                localStorage.removeItem('tailor_user');
+                localStorage.removeItem('tailor_status');
+                localStorage.removeItem('user');
+            } catch (e) {
+                console.error('Failed clearing tailor session:', e);
+            }
+            if (!window.location.pathname.startsWith('/partner/login')) {
+                window.location.href = '/partner/login';
+            }
         }
         return Promise.reject(error);
     }

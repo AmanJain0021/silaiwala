@@ -8,13 +8,12 @@ const useSocketStore = create((set, get) => ({
     isConnected: false,
 
     connect: (userId, role) => {
-        // Prevent multiple connections
-        if (get().socket) {
-            console.log('Socket currently active. Updating rooms...');
-            get().socket.emit('join_user_room', userId);
-            if (role === 'delivery') get().socket.emit('join', 'delivery_partners');
-            if (role === 'admin') get().socket.emit('join_admin_room');
-            return;
+        const existing = get().socket;
+        // Always rebuild the socket when connecting a (possibly different) user so the
+        // previous tailor's JWT / rooms cannot leak into the next session on the same device.
+        if (existing) {
+            existing.disconnect();
+            set({ socket: null, isConnected: false });
         }
 
         console.log('Initializing Socket.IO connection...');
