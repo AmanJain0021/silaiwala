@@ -33,7 +33,9 @@ const OrdersPage = () => {
 
         if (user?.id || user?._id) {
             const userId = user.id || user._id;
-            socket.emit('join', `user_${userId}`);
+            const joinOwnRoom = () => socket.emit('join_user_room', String(userId));
+            socket.on('connect', joinOwnRoom);
+            joinOwnRoom();
         }
 
         socket.on('new_notification', (data) => {

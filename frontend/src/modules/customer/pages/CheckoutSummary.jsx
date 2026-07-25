@@ -222,8 +222,14 @@ const CheckoutSummary = () => {
                 let payload;
                 if (isServiceCheckout) {
                     const firstItemTailor = currentCheckoutItems[0]?.serviceDetails?.tailorId || currentCheckoutItems[0]?.serviceDetails?.tailor;
+                    const resolvedTailorId =
+                        (typeof firstItemTailor === 'object' ? (firstItemTailor?._id || firstItemTailor?.id) : firstItemTailor) ||
+                        null;
+                    if (!resolvedTailorId) {
+                        throw new Error('No tailor is linked to this service. Please reselect the tailor and try again.');
+                    }
                     payload = {
-                        tailorId: firstItemTailor,
+                        tailorId: resolvedTailorId,
                         items: currentCheckoutItems.map(item => ({
                             service: item.serviceDetails.id || item.serviceDetails._id,
                             fabricSource: item.configuration.fabricSource,
@@ -249,8 +255,16 @@ const CheckoutSummary = () => {
                     };
                 } else {
                     const firstItemTailor = cartItems[0]?.tailor;
+                    const resolvedTailorId =
+                        (typeof firstItemTailor === 'object' ? (firstItemTailor?._id || firstItemTailor?.id) : firstItemTailor) ||
+                        null;
+                    // Product ownership is also resolved on the backend, but fail loudly if neither
+                    // cart nor product carries a tailor so the customer sees a clear error.
+                    if (!resolvedTailorId && !cartItems[0]?._id) {
+                        throw new Error('Unable to determine the tailor for this order. Please refresh and try again.');
+                    }
                     payload = {
-                        tailorId: firstItemTailor,
+                        tailorId: resolvedTailorId,
                         items: cartItems.map(item => ({
                             product: item._id,
                             quantity: item.quantity,

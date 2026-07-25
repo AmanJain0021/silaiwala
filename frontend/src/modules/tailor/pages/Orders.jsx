@@ -211,38 +211,30 @@ const Orders = () => {
         socket.on('new_order', handleNewOrder);
         
         // Refresh orders when delivery partner accepts/rejects (real-time update)
-        socket.on('order_status_updated', (data) => {
-            // 1. Merge OTP + status into open modal immediately (don't wait for refetch)
-            setSelectedOrder(prev => {
-                if (prev && (String(prev._id) === String(data._id) || prev.orderId === data.orderId)) {
-                    return {
-                        ...prev,
-                        ...data,
-                        // Keep newest OTP if payload includes it
-                        dropoffDeliveryOtp: data.dropoffDeliveryOtp ?? prev.dropoffDeliveryOtp,
-                        pickupDeliveryOtp: data.pickupDeliveryOtp ?? prev.pickupDeliveryOtp,
-                    };
-                }
-                return prev;
-            });
+        socket.on('order_status_updated', (data = {}) => {
+            // Ignore notification-type payloads that are not real workflow statuses
+            const REAL_STATUS = typeof data.status === 'string' && !/^[A-Z0-9_]+$/.test(data.status);
+            const patch = {};
+            if (REAL_STATUS) patch.status = data.status;
+            if (data.acceptedAt !== undefined) patch.acceptedAt = data.acceptedAt;
+            if (data.pickupDeliveryStatus !== undefined) patch.pickupDeliveryStatus = data.pickupDeliveryStatus;
+            if (data.dropoffDeliveryStatus !== undefined) patch.dropoffDeliveryStatus = data.dropoffDeliveryStatus;
+            if (data.deliveryStatus !== undefined) patch.deliveryStatus = data.deliveryStatus;
+            if (data.dropoffDeliveryOtp !== undefined) patch.dropoffDeliveryOtp = data.dropoffDeliveryOtp;
+            if (data.pickupDeliveryOtp !== undefined) patch.pickupDeliveryOtp = data.pickupDeliveryOtp;
+            if (data.dropoffOtpVerified !== undefined) patch.dropoffOtpVerified = data.dropoffOtpVerified;
+            if (data.pickupOtpVerified !== undefined) patch.pickupOtpVerified = data.pickupOtpVerified;
 
-            // 2. Optimistically merge the status change into the orders list immediately
-            //    so the UI updates without waiting for the full re-fetch
-            if (data._id || data.orderId) {
-                setOrders(prev => prev.map(o => {
-                    if ((data._id && String(o._id) === String(data._id)) || (data.orderId && o.orderId === data.orderId)) {
-                        return {
-                            ...o,
-                            ...data,
-                            dropoffDeliveryOtp: data.dropoffDeliveryOtp ?? o.dropoffDeliveryOtp,
-                            pickupDeliveryOtp: data.pickupDeliveryOtp ?? o.pickupDeliveryOtp,
-                        };
-                    }
-                    return o;
-                }));
+            const matches = (o) =>
+                (data._id && String(o._id) === String(data._id)) ||
+                (data.orderId && o.orderId === data.orderId);
+
+            if (Object.keys(patch).length > 0) {
+                setSelectedOrder(prev => (prev && matches(prev) ? { ...prev, ...patch } : prev));
+                setOrders(prev => prev.map(o => (matches(o) ? { ...o, ...patch } : o)));
             }
 
-            // 3. Background re-fetch from server for full consistency
+            // Always re-fetch for full consistency (OTP select+, populated partners, etc.)
             fetchOrders();
         });
 

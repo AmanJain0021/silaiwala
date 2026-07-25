@@ -202,9 +202,13 @@ function App() {
 
     // Listen for status updates (Customer/Tailor)
     const handleStatusUpdate = (data) => {
+      // Notification utility used to emit SCREAMING_SNAKE types on this channel.
+      // Only toast real workflow statuses (kebab-case / lowercase).
+      if (!data?.status || /^[A-Z0-9_]+$/.test(String(data.status))) return;
+
       import('react-hot-toast').then((module) => {
         const { toast } = module.default || module;
-        toast(`📦 Order ${data.orderId} status changed to: ${data.status}`, {
+        toast(`📦 Order ${data.orderId} status changed to: ${String(data.status).replace(/-/g, ' ')}`, {
           duration: 5000,
           position: 'top-right',
           icon: '🔄',

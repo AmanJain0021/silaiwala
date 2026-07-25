@@ -116,12 +116,19 @@ const OrderTracking = () => {
                 }
             });
             setSocketInstance(socket);
-            socket.emit('join_order_room', id);
 
-            socket.on('order_status_updated', (data) => {
-                console.log('Real-time tracking update received:', data);
+            const joinRooms = () => {
+                socket.emit('join_order_room', id);
+            };
+            socket.on('connect', joinRooms);
+            joinRooms();
+
+            const refreshOrder = () => {
                 fetchOrderDetails();
-            });
+            };
+
+            socket.on('order_status_updated', refreshOrder);
+            socket.on('order_notification', refreshOrder);
 
             socket.on('measurement_otp_sent', (data) => {
                 console.log('Measurement OTP received:', data);
@@ -154,6 +161,9 @@ const OrderTracking = () => {
             fetchSettings();
 
             return () => {
+                socket.off('connect', joinRooms);
+                socket.off('order_status_updated', refreshOrder);
+                socket.off('order_notification', refreshOrder);
                 socket.disconnect();
                 setSocketInstance(null);
             };

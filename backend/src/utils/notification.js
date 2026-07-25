@@ -93,12 +93,16 @@ const sendNotification = async (options) => {
         }
       }
 
-      // Real-time tracking for a specific order
+      // Real-time tracking for a specific order. Never reuse order_status_updated
+      // with a notification type — clients treat that field as a real workflow status.
       if (data?.orderId) {
-          io.to(`order_${data.orderId}`).emit("order_status_updated", {
-              status: type, // Using type or status from data
-              message: message,
-              orderId: data.orderId
+          io.to(`order_${data.orderId}`).emit("order_notification", {
+              type,
+              message,
+              orderId: data.orderId,
+              _id: data.orderId,
+              title,
+              data,
           });
       }
     }
