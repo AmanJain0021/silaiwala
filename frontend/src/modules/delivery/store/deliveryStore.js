@@ -307,7 +307,7 @@ export const useDeliveryAuthStore = create(
         } catch (e) { set({ isLoadingOrders: false }); throw e; }
       },
       fetchOrders: async (opt = {}) => {
-        set({ orders: [], isLoadingOrders: true });
+        set({ isLoadingOrders: true });
         try {
           const res = await api.get('/deliveries/orders', { params: opt });
           const p = res.data || res;

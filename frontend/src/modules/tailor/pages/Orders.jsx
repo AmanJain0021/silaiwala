@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw, Navigation } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
@@ -37,10 +37,15 @@ const Orders = () => {
     const [updatingOrders, setUpdatingOrders] = useState({});
     const [dispatchingMethod, setDispatchingMethod] = useState(null);
 
-    const fetchOrders = async () => {
+    // Ref to always have the latest activeTab in socket/timer callbacks without re-subscribing
+    const activeTabRef = useRef(activeTab);
+    useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+
+    const fetchOrders = useCallback(async (tabOverride) => {
+        const tab = tabOverride || activeTabRef.current;
         setIsLoading(true);
         try {
-            const response = await api.get(`/tailors/orders?status=${activeTab}`);
+            const response = await api.get(`/tailors/orders?status=${tab}`);
             if (response.data.success) {
                 const list = response.data.data || [];
                 setOrders(list);
@@ -56,7 +61,7 @@ const Orders = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (selectedOrder) {
@@ -76,7 +81,9 @@ const Orders = () => {
             const response = await api.patch(`/tailors/orders/${orderId}/status`, { status, ...extraPayload });
             if (response.data.success) {
                 if (status === 'accepted') {
+                    // Switch to active tab AND fetch with the correct tab immediately
                     setActiveTab('active');
+                    fetchOrders('active');
                 } else {
                     fetchOrders();
                 }
@@ -169,7 +176,7 @@ const Orders = () => {
         
         // Refresh orders when delivery partner accepts/rejects (real-time update)
         socket.on('order_status_updated', (data) => {
-            // Merge OTP into open modal immediately (don't wait for refetch)
+            // 1. Merge OTP + status into open modal immediately (don't wait for refetch)
             setSelectedOrder(prev => {
                 if (prev && (String(prev._id) === String(data._id) || prev.orderId === data.orderId)) {
                     return {
@@ -182,6 +189,24 @@ const Orders = () => {
                 }
                 return prev;
             });
+
+            // 2. Optimistically merge the status change into the orders list immediately
+            //    so the UI updates without waiting for the full re-fetch
+            if (data._id || data.orderId) {
+                setOrders(prev => prev.map(o => {
+                    if ((data._id && String(o._id) === String(data._id)) || (data.orderId && o.orderId === data.orderId)) {
+                        return {
+                            ...o,
+                            ...data,
+                            dropoffDeliveryOtp: data.dropoffDeliveryOtp ?? o.dropoffDeliveryOtp,
+                            pickupDeliveryOtp: data.pickupDeliveryOtp ?? o.pickupDeliveryOtp,
+                        };
+                    }
+                    return o;
+                }));
+            }
+
+            // 3. Background re-fetch from server for full consistency
             fetchOrders();
         });
 
@@ -193,7 +218,9 @@ const Orders = () => {
         });
 
         return () => socket.disconnect();
-    }, [activeTab, user?._id]);
+        // Socket should NOT depend on activeTab — fetchOrders uses activeTabRef
+        // to always fetch with the current tab without needing to disconnect/reconnect
+    }, [user?._id, fetchOrders]);
 
     useEffect(() => {
         fetchOrders();

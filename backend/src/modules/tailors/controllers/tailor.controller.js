@@ -461,10 +461,10 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
       query.status = { $in: ['pending', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'] };
     }
     else if (statusLower === 'active') {
-      query.status = { $in: ['accepted', 'fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered', 'in-progress', 'cutting', 'stitching', 'completed', 'ready-for-pickup', 'out-for-delivery'] };
+      query.status = { $in: ['accepted', 'waiting-for-customer-dropoff', 'fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered', 'fabric-received', 'order-received', 'fabric-selected', 'measurement-verification', 'pattern-making', 'in-progress', 'cutting', 'stitching', 'finishing', 'quality-check', 'completed', 'ready', 'ready-for-pickup', 'ready-for-delivery', 'out-for-delivery'] };
     }
     else if (statusLower === 'history') {
-      query.status = { $in: ['delivered', 'cancelled'] };
+      query.status = { $in: ['delivered', 'product-delivered', 'order-completed', 'failed-delivery', 'cancelled'] };
     }
     else if (statusLower !== 'all') {
       query.status = status;
