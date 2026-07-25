@@ -554,19 +554,69 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   // Determine correct customer ID
   const finalCustomerId = (req.user.role === 'admin' && customerId) ? customerId : req.user.id;
 
-  // 1. Validation: Ensure tailor exists and is active (Check both User and Tailor Profile IDs)
-  let tailor = await User.findOne({ _id: tailorId, role: { $in: ["tailor", "admin"] } });
-  
-  if (!tailor) {
-    // If not found in User, check if it's a Tailor Profile ID
-    const tailorProfile = await Tailor.findById(tailorId).populate("user");
-    if (tailorProfile && tailorProfile.user) {
-      tailor = tailorProfile.user;
+  // Resolve the assigned tailor from the ordered service/product itself. The
+  // client may hold either a Tailor profile ID or User ID (and stale cart data
+  // used to route orders to the wrong account), so item ownership is authoritative.
+  const Service = require("../../../models/Service.js");
+  const Product = require("../../../models/Product.js");
+  const serviceIds = (items || []).filter((item) => item.service).map((item) => item.service);
+  const productIds = (items || []).filter((item) => item.product).map((item) => item.product);
+
+  const [ownedServices, ownedProducts] = await Promise.all([
+    serviceIds.length
+      ? Service.find({ _id: { $in: serviceIds } }).select("tailor isActive status").lean()
+      : [],
+    productIds.length
+      ? Product.find({ _id: { $in: productIds } }).select("tailor isActive").lean()
+      : [],
+  ]);
+
+  if (ownedServices.length !== new Set(serviceIds.map(String)).size ||
+      ownedProducts.length !== new Set(productIds.map(String)).size) {
+    return next(new ErrorResponse("One or more selected services/products are unavailable", 400));
+  }
+
+  const ownerProfileIds = [
+    ...ownedServices.map((service) => String(service.tailor)),
+    ...ownedProducts.map((product) => String(product.tailor)),
+  ];
+  const uniqueOwnerProfileIds = [...new Set(ownerProfileIds)];
+
+  if (uniqueOwnerProfileIds.length > 1) {
+    return next(new ErrorResponse("All items in one order must belong to the same tailor", 400));
+  }
+
+  let requestedTailorProfile = null;
+  if (tailorId && mongoose.Types.ObjectId.isValid(tailorId)) {
+    requestedTailorProfile = await Tailor.findById(tailorId).populate("user");
+    if (!requestedTailorProfile) {
+      requestedTailorProfile = await Tailor.findOne({ user: tailorId }).populate("user");
     }
   }
 
-  if (!tailor) {
+  let targetTailorProfile = requestedTailorProfile;
+  if (uniqueOwnerProfileIds.length === 1) {
+    targetTailorProfile = await Tailor.findById(uniqueOwnerProfileIds[0]).populate("user");
+    if (
+      requestedTailorProfile &&
+      String(requestedTailorProfile._id) !== String(targetTailorProfile?._id)
+    ) {
+      console.warn(
+        `[Order Assignment] Corrected stale tailor ${requestedTailorProfile._id} ` +
+        `to item owner ${targetTailorProfile?._id}`
+      );
+    }
+  }
+
+  const tailor = targetTailorProfile?.user;
+  if (!targetTailorProfile || !tailor || tailor.role !== "tailor") {
     return next(new ErrorResponse("Tailor account not found or invalid", 404));
+  }
+  if (!targetTailorProfile.isAvailable) {
+    return next(new ErrorResponse("This tailor is currently unavailable", 409));
+  }
+  if (!tailor.isActive && targetTailorProfile.registrationStatus !== "verified") {
+    return next(new ErrorResponse("This tailor is not approved to receive orders", 403));
   }
 
   const targetTailorUserId = tailor._id;

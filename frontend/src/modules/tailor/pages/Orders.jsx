@@ -36,6 +36,8 @@ const Orders = () => {
     const [isDispatching, setIsDispatching] = useState(false);
     const [updatingOrders, setUpdatingOrders] = useState({});
     const [dispatchingMethod, setDispatchingMethod] = useState(null);
+    const lastNewOrderEventRef = useRef({ key: null, at: 0 });
+    const fetchSequenceRef = useRef(0);
 
     // Ref to always have the latest activeTab in socket/timer callbacks without re-subscribing
     const activeTabRef = useRef(activeTab);
@@ -43,10 +45,13 @@ const Orders = () => {
 
     const fetchOrders = useCallback(async (tabOverride) => {
         const tab = tabOverride || activeTabRef.current;
+        const sequence = ++fetchSequenceRef.current;
         setIsLoading(true);
         try {
             const response = await api.get(`/tailors/orders?status=${tab}`);
-            if (response.data.success) {
+            // A request for the previous tab may finish after Accept switched us
+            // to Active. Never let that stale response overwrite the current tab.
+            if (sequence === fetchSequenceRef.current && response.data.success) {
                 const list = response.data.data || [];
                 setOrders(list);
                 // Keep open modal OTP/status in sync with server (select+ includes OTPs)
@@ -57,9 +62,13 @@ const Orders = () => {
                 });
             }
         } catch (error) {
-            console.error('Error fetching orders:', error);
+            if (sequence === fetchSequenceRef.current) {
+                console.error('Error fetching orders:', error);
+            }
         } finally {
-            setIsLoading(false);
+            if (sequence === fetchSequenceRef.current) {
+                setIsLoading(false);
+            }
         }
     }, []);
 
@@ -176,8 +185,30 @@ const Orders = () => {
         });
         setSocketInstance(socket);
         const userId = user?._id || user?.id;
-        if (userId) socket.emit('join', `user_${userId}`);
-        socket.on('receive_new_order', () => { fetchOrders(); });
+        const joinOwnRoom = () => {
+            if (userId) socket.emit('join_user_room', String(userId));
+        };
+        socket.on('connect', joinOwnRoom);
+        joinOwnRoom();
+
+        const handleNewOrder = (data = {}) => {
+            const eventKey = String(data._id || data.orderId || '');
+            const now = Date.now();
+            if (
+                eventKey &&
+                lastNewOrderEventRef.current.key === eventKey &&
+                now - lastNewOrderEventRef.current.at < 3000
+            ) {
+                return;
+            }
+            lastNewOrderEventRef.current = { key: eventKey, at: now };
+            toast.success('New order received');
+            fetchOrders();
+        };
+        // createOrder emits receive_new_order directly and notification utility
+        // emits new_order; listen to both so neither delivery path is missed.
+        socket.on('receive_new_order', handleNewOrder);
+        socket.on('new_order', handleNewOrder);
         
         // Refresh orders when delivery partner accepts/rejects (real-time update)
         socket.on('order_status_updated', (data) => {
@@ -222,7 +253,12 @@ const Orders = () => {
             }
         });
 
-        return () => socket.disconnect();
+        return () => {
+            socket.off('connect', joinOwnRoom);
+            socket.off('receive_new_order', handleNewOrder);
+            socket.off('new_order', handleNewOrder);
+            socket.disconnect();
+        };
         // Socket should NOT depend on activeTab — fetchOrders uses activeTabRef
         // to always fetch with the current tab without needing to disconnect/reconnect
     }, [user?._id, fetchOrders]);
@@ -230,6 +266,15 @@ const Orders = () => {
     useEffect(() => {
         fetchOrders();
     }, [activeTab]);
+
+    // Socket delivery can be interrupted by device sleep/network changes. Keep a
+    // small polling fallback so newly assigned orders and status changes recover.
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            if (document.visibilityState === 'visible') fetchOrders();
+        }, 20000);
+        return () => window.clearInterval(interval);
+    }, [fetchOrders]);
 
     useEffect(() => {
         if (location.state) {

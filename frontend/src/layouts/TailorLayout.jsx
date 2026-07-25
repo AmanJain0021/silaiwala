@@ -54,15 +54,22 @@ const TailorLayout = () => {
         });
 
         socket.on('connect', () => {
-            socket.emit('join_tailor_room', userId);
+            socket.emit('join_user_room', String(userId));
         });
 
-        socket.on('new_order', () => {
-            // Optional: You can either fetch the count again or increment
+        const refreshPendingCount = () => {
             fetchDashboardData();
-        });
+        };
+
+        socket.on('new_order', refreshPendingCount);
+        socket.on('receive_new_order', refreshPendingCount);
+        // Accept/cancel must immediately update the New-order badge too.
+        socket.on('order_status_updated', refreshPendingCount);
 
         return () => {
+            socket.off('new_order', refreshPendingCount);
+            socket.off('receive_new_order', refreshPendingCount);
+            socket.off('order_status_updated', refreshPendingCount);
             socket.disconnect();
         };
     }, [user?._id, user?.id]);

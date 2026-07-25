@@ -228,8 +228,35 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
             $group: {
               _id: null,
               totalOrders: { $sum: 1 },
+              pendingOrders: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ["$status", "pending"] },
+                        { $eq: [{ $type: "$acceptedAt" }, "missing"] }
+                      ]
+                    },
+                    1,
+                    0
+                  ]
+                }
+              },
               activeOrders: { 
-                $sum: { $cond: [{ $in: ["$status", ["pending", "accepted", "in-progress"]] }, 1, 0] } 
+                $sum: {
+                  $cond: [
+                    {
+                      $not: [{
+                        $in: [
+                          "$status",
+                          ["pending", "delivered", "product-delivered", "order-completed", "failed-delivery", "cancelled"]
+                        ]
+                      }]
+                    },
+                    1,
+                    0
+                  ]
+                }
               },
               completedOrders: {
                 $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] }
@@ -344,7 +371,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     ]);
   }
 
-  const stats = dashboardData[0].stats[0] || { totalOrders: 0, activeOrders: 0, completedOrders: 0, totalEarnings: 0 };
+  const stats = dashboardData[0].stats[0] || { totalOrders: 0, pendingOrders: 0, activeOrders: 0, completedOrders: 0, totalEarnings: 0 };
   const weekly = dashboardData[0].weeklyProgress[0]?.completedThisWeek || 0;
   const avgMs = dashboardData[0].deliveryAnalysis[0]?.avgTimeMs || 0;
   
@@ -364,7 +391,8 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       summary: {
         totalEarnings: stats.totalEarnings,
         totalOrders: stats.totalOrders,
-        pendingOrders: stats.activeOrders,
+        pendingOrders: stats.pendingOrders,
+        activeOrders: stats.activeOrders,
         completedThisWeek: weekly,
         avgDeliveryTime: parseFloat(avgHours),
         walletBalance: tailorProfile?.walletBalance || 0,
@@ -616,6 +644,17 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
+  // Accept is a one-way action from New → Active. Reject accidental attempts
+  // to "accept" an order that has already moved further through the workflow.
+  if (status === "accepted" && !["pending", "accepted"].includes(order.status)) {
+    return next(
+      new ErrorResponse(
+        `Order is already in '${order.status}' state and cannot be accepted again`,
+        409
+      )
+    );
+  }
+
   // Check Subscription Limits when accepting an order
   if (status === "accepted" && order.status !== "accepted") {
     const Tailor = require("../../../models/Tailor.js");
@@ -706,6 +745,24 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   transitionOrder(order, status, message || `Order status updated to ${status}`);
 
   await order.save();
+
+  // Emit the persisted status independently of notifications/assignment work.
+  // A notification provider failure must never prevent Tailor/Customer UI sync.
+  try {
+    const statusIo = getIO();
+    const statusPayload = {
+      orderId: order.orderId,
+      _id: order._id,
+      status: order.status,
+      acceptedAt: order.acceptedAt,
+      dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+      pickupDeliveryStatus: order.pickupDeliveryStatus,
+    };
+    statusIo.to(`user_${order.customer}`).emit("order_status_updated", statusPayload);
+    statusIo.to(`user_${req.user.id}`).emit("order_status_updated", statusPayload);
+  } catch (socketError) {
+    console.error("⚠️ Persisted status socket emission failed:", socketError.message);
+  }
 
   // --- All post-save notifications (non-critical, should not block response) ---
   try {
@@ -836,18 +893,11 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
         await order.save();
     }
 
-    // --- Socket Emission for Customer & Delivery ---
+    // --- Delivery broadcast ---
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
         const finalStatus = order.status;
-        io.to(`user_${order.customer}`).emit('order_status_updated', {
-            orderId: order.orderId,
-            _id: order._id,
-            status: finalStatus,
-            dropoffDeliveryStatus: order.dropoffDeliveryStatus,
-            pickupDeliveryStatus: order.pickupDeliveryStatus,
-        });
 
         const skipFleetBroadcast = ["manual", "shiprocket", "self", "tailor"].includes(order.deliveryMethod);
         const isDispatchStatus =
@@ -868,6 +918,25 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   } catch (notifError) {
     console.error("⚠️ Post-save notification/socket error (non-critical):", notifError.message);
   }
+
+  // Some dispatch branches above can change the status after the first save.
+  // Re-emit the final durable state (safe/idempotent for ordinary acceptance).
+  try {
+    const finalIo = getIO();
+    const finalPayload = {
+      orderId: order.orderId,
+      _id: order._id,
+      status: order.status,
+      acceptedAt: order.acceptedAt,
+      dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+      pickupDeliveryStatus: order.pickupDeliveryStatus,
+    };
+    finalIo.to(`user_${order.customer}`).emit("order_status_updated", finalPayload);
+    finalIo.to(`user_${req.user.id}`).emit("order_status_updated", finalPayload);
+  } catch (socketError) {
+    console.error("⚠️ Final status socket emission failed:", socketError.message);
+  }
+
   const updatedOrder = await Order.findById(order._id)
     .populate('customer', 'name profileImage phoneNumber')
     .populate('deliveryPartner', 'name phoneNumber profileImage')
