@@ -309,7 +309,7 @@ const Orders = () => {
     const OrderDetailModal = ({ order, isOpen, onClose }) => {
         if (!order || !isOpen) return null;
 
-        const isPending = order.status === 'pending';
+        const isPending = !order.acceptedAt && ['pending', 'order-received', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'].includes(order.status);
         const canRequestApproval = ['pending', 'measurements-uploaded', 'accepted', 'measurement-verification', 'measurement-revision-required'].includes(order.status);
 
         return (
@@ -1214,7 +1214,7 @@ const Orders = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-3 md:px-0">
                         {filteredOrders.map((order) => {
-                            const isNew = order.status === 'pending';
+                            const isNew = !order.acceptedAt && ['pending', 'order-received', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'].includes(order.status);
                             return (
                                 <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#843D9B]/10 transition-all flex flex-col group">
                                     <div className="flex justify-between items-start mb-3 md:mb-4">
