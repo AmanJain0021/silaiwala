@@ -164,6 +164,9 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            nextStatus = 'accepted';
        }
        
+       // Payment can advance the workflow without going through the tailor status
+       // endpoint, so persist acceptance for refresh-safe UI and reporting.
+       if (!order.acceptedAt) order.acceptedAt = new Date();
        order.status = nextStatus;
        order.trackingHistory.push({
          status: order.status,
@@ -299,6 +302,7 @@ ledgerId,
        } else {
            order.status = 'in-progress';
        }
+       if (!order.acceptedAt) order.acceptedAt = new Date();
        order.trackingHistory.push({
          status: order.status,
          timestamp: new Date(),
@@ -357,6 +361,7 @@ user: tailorProfile.user,
        } else {
            order.status = 'in-progress';
        }
+       if (!order.acceptedAt) order.acceptedAt = new Date();
        
        // Calculate and store fees for full payment
        const settings = await Settings.getSettings();

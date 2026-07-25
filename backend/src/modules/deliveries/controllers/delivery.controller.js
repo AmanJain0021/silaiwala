@@ -867,7 +867,11 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
           message: `Your OTP for fabric pickup is ${otp}. Share this only when the partner arrives.`,
           data: { orderId: order._id, otp }
         });
-      } else if (order.status === "fabric-picked-up" && order.tailor) {
+      } else if (
+        order.tailor &&
+        (["fabric-picked-up", "fabric-ready-for-pickup"].includes(order.status) ||
+          order.pickupDeliveryStatus === "reached-dropoff")
+      ) {
         await sendNotification({
           recipient: order.tailor,
           type: "OTP_GENERATED",
@@ -1105,7 +1109,10 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
   await order.save({ session });
 
-  // --- Socket Emissions ---
+  // Commit first so live OTP/status never outlives a rolled-back write
+  await session.commitTransaction();
+
+  // --- Socket Emissions (after durable commit) ---
   try {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
@@ -1116,11 +1123,14 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
             _id: order._id,
             orderId: order.orderId,
             status: order.status,
+            acceptedAt: order.acceptedAt,
             pickupDeliveryStatus: order.pickupDeliveryStatus,
             dropoffDeliveryStatus: order.dropoffDeliveryStatus,
             deliveryStatus: order.deliveryStatus,
             pickupDeliveryOtp: order.pickupDeliveryOtp,
-            dropoffDeliveryOtp: order.dropoffDeliveryOtp
+            dropoffDeliveryOtp: order.dropoffDeliveryOtp,
+            pickupOtpVerified: order.pickupOtpVerified,
+            dropoffOtpVerified: order.dropoffOtpVerified,
         };
 
         if (customerId) {
@@ -1135,8 +1145,6 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   }
   // ------------------------
 
-  await session.commitTransaction();
-
   try {
     const { syncIssueFromReworkOrder } = require("../../../utils/issueReworkSync.js");
     await syncIssueFromReworkOrder(order);
@@ -1147,7 +1155,10 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   let otpSentTo = null;
   if (status === "reached-pickup") otpSentTo = "customer";
   if (status === "reached-dropoff") {
-    otpSentTo = order.status === "fabric-picked-up" ? "tailor" : "customer";
+    const isFabricDropoff =
+      ["fabric-picked-up", "fabric-ready-for-pickup"].includes(order.status) ||
+      order.pickupDeliveryStatus === "reached-dropoff";
+    otpSentTo = isFabricDropoff ? "tailor" : "customer";
   }
 
   res.status(200).json({

@@ -630,8 +630,8 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   // LOGIC: Status just becomes the new status. 
   // We don't auto-change to fabric-ready-for-pickup on "accepted" because we wait for payment.
-  
-  if (status === "accepted") {
+  // Only initialize payment split on first accept from pending — never rewind paid mid-flow orders.
+  if (status === "accepted" && order.status === "pending") {
     // 1. Fetch Admin Settings for Wallet Config
     const Settings = require("../../../models/Settings.js");
     const adminSettings = await Settings.findOne() || await Settings.create({});

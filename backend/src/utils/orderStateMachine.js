@@ -13,31 +13,31 @@ const ALLOWED_TRANSITIONS = {
   "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
 
   // Customer sets fabric delivery preference
-  "fabric-ready-for-pickup": ["accepted", "fabric-picked-up", "waiting-for-customer-dropoff", "fabric-received", "cancelled"],
-  "waiting-for-customer-dropoff": ["accepted", "fabric-received", "cancelled"],
+  "fabric-ready-for-pickup": ["fabric-picked-up", "waiting-for-customer-dropoff", "fabric-received", "cancelled"],
+  "waiting-for-customer-dropoff": ["fabric-received", "cancelled"],
 
   // Measurement Executive Flow
-  "measurement-requested": ["accepted", "measurement-assigned", "cancelled"],
-  "measurement-assigned": ["accepted", "measurement-accepted", "cancelled"],
-  "measurement-accepted": ["accepted", "measurement-otp-verified", "cancelled"],
-  "measurement-otp-verified": ["accepted", "measurements-uploaded", "cancelled"],
-  "measurements-uploaded": ["accepted", "measurements-approved", "measurement-revision-required", "cancelled"],
-  "measurement-revision-required": ["accepted", "measurements-uploaded", "cancelled"],
+  "measurement-requested": ["measurement-assigned", "cancelled"],
+  "measurement-assigned": ["measurement-accepted", "cancelled"],
+  "measurement-accepted": ["measurement-otp-verified", "cancelled"],
+  "measurement-otp-verified": ["measurements-uploaded", "cancelled"],
+  "measurements-uploaded": ["measurements-approved", "measurement-revision-required", "cancelled"],
+  "measurement-revision-required": ["measurements-uploaded", "cancelled"],
   
   // After measurements approved, goes back to tailoring logic or fabric logic
-  "measurements-approved": ["accepted", "in-progress", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "cancelled"],
+  "measurements-approved": ["in-progress", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "cancelled"],
 
   // Fabric Delivery Flow (by Delivery Partner)
-  "fabric-picked-up": ["accepted", "fabric-delivered", "fabric-received", "cancelled"],
-  "fabric-delivered": ["accepted", "fabric-received", "in-progress", "cutting", "stitching", "cancelled"],
+  "fabric-picked-up": ["fabric-delivered", "fabric-received", "cancelled"],
+  "fabric-delivered": ["fabric-received", "in-progress", "cutting", "stitching", "cancelled"],
   
   // Tailor receives fabric, starts working
-  "fabric-received": ["accepted", "in-progress", "order-received", "fabric-selected", "cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
+  "fabric-received": ["in-progress", "order-received", "fabric-selected", "cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
 
   // Tailoring Phases (Tailor can step through or skip some, so we allow forward jumps)
-  "order-received": ["accepted", "in-progress", "waiting-for-customer-dropoff", "fabric-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
-  "fabric-selected": ["accepted", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
-  "measurement-verification": ["accepted", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "order-received": ["in-progress", "waiting-for-customer-dropoff", "fabric-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "fabric-selected": ["measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "measurement-verification": ["cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "in-progress": ["order-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "cutting": ["stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "stitching": ["finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],

@@ -263,7 +263,7 @@ const Orders = () => {
     // Sync selectedOrder with the latest data from the orders list
     useEffect(() => {
         if (selectedOrder && orders.length > 0) {
-            const updatedOrder = orders.find(o => o._id === selectedOrder._id);
+            const updatedOrder = orders.find(o => String(o._id) === String(selectedOrder._id));
             if (updatedOrder) {
                 // Ensure the modal updates if the order was modified (like tracking history or status)
                 // We use JSON.stringify to do a deep comparison avoiding unnecessary re-renders
@@ -309,7 +309,9 @@ const Orders = () => {
     const OrderDetailModal = ({ order, isOpen, onClose }) => {
         if (!order || !isOpen) return null;
 
-        const isPending = !order.acceptedAt && ['pending', 'order-received', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'].includes(order.status);
+        // Status is the workflow source of truth. Missing legacy acceptedAt must not
+        // rewind an in-progress order back to the Accept Order screen.
+        const isPending = order.status === 'pending';
         const canRequestApproval = ['pending', 'measurements-uploaded', 'accepted', 'measurement-verification', 'measurement-revision-required'].includes(order.status);
 
         return (
@@ -1013,7 +1015,7 @@ const Orders = () => {
                     )}
 
                     {/* OTP Display for Tailor */}
-                    {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['ready-for-pickup', 'ready-for-delivery'].includes(order.status) && (
+                    {order.pickupDeliveryOtp && order.pickupOtpVerified !== true && ['ready-for-pickup', 'ready-for-delivery', 'out-for-delivery'].includes(order.status) && (
                         <div className="mb-4 p-4 bg-indigo-50 rounded-3xl border border-indigo-100 flex items-center justify-between">
                             <div>
                                 <p className="text-[11px] font-black uppercase text-[#843D9B] tracking-wider">Pickup OTP</p>
@@ -1024,7 +1026,10 @@ const Orders = () => {
                             </div>
                         </div>
                     )}
-                    {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['fabric-picked-up'].includes(order.status) && (
+                    {order.dropoffDeliveryOtp && order.dropoffOtpVerified !== true && (
+                        ['fabric-picked-up', 'fabric-ready-for-pickup', 'waiting-for-customer-dropoff', 'fabric-delivered'].includes(order.status) ||
+                        order.pickupDeliveryStatus === 'reached-dropoff'
+                    ) && (
                         <div className="mb-4 p-4 bg-green-50 rounded-3xl border border-green-100 flex items-center justify-between">
                             <div>
                                 <p className="text-[11px] font-black uppercase text-green-700 tracking-wider">Fabric Receive OTP</p>
@@ -1214,7 +1219,7 @@ const Orders = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-3 md:px-0">
                         {filteredOrders.map((order) => {
-                            const isNew = !order.acceptedAt && ['pending', 'order-received', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'].includes(order.status);
+                            const isNew = order.status === 'pending';
                             return (
                                 <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#843D9B]/10 transition-all flex flex-col group">
                                     <div className="flex justify-between items-start mb-3 md:mb-4">
