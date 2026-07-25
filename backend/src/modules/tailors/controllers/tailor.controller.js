@@ -823,11 +823,20 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   } catch (notifError) {
     console.error("⚠️ Post-save notification/socket error (non-critical):", notifError.message);
   }
-  // ----------------------------------------------
+  const updatedOrder = await Order.findById(order._id)
+    .populate('customer', 'name profileImage phoneNumber')
+    .populate('deliveryPartner', 'name phoneNumber profileImage')
+    .populate('pickupPartner', 'name phoneNumber profileImage')
+    .populate('dropoffPartner', 'name phoneNumber profileImage')
+    .populate({ path: 'items.service', select: 'title image' })
+    .populate({ path: 'items.product', select: 'name image images' })
+    .populate({ path: 'items.selectedFabric', select: 'title image' })
+    .select('+pickupDeliveryOtp +dropoffDeliveryOtp')
+    .lean();
 
   res.status(200).json({
     success: true,
-    data: order,
+    data: updatedOrder || order,
   });
 });
 

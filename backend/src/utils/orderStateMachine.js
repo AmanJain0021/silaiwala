@@ -10,10 +10,10 @@ const ALLOWED_TRANSITIONS = {
   "pending": ["accepted", "cancelled"],
   
   // After tailor accepts, payment dictates the next move
-  "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "order-received", "cancelled"],
+  "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
 
   // Customer sets fabric delivery preference
-  "fabric-ready-for-pickup": ["fabric-picked-up", "waiting-for-customer-dropoff", "cancelled"],
+  "fabric-ready-for-pickup": ["fabric-picked-up", "waiting-for-customer-dropoff", "fabric-received", "cancelled"],
   "waiting-for-customer-dropoff": ["fabric-received", "cancelled"],
 
   // Measurement Executive Flow
@@ -25,31 +25,31 @@ const ALLOWED_TRANSITIONS = {
   "measurement-revision-required": ["measurements-uploaded", "cancelled"],
   
   // After measurements approved, goes back to tailoring logic or fabric logic
-  "measurements-approved": ["in-progress", "fabric-ready-for-pickup", "cancelled"],
+  "measurements-approved": ["in-progress", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "cancelled"],
 
   // Fabric Delivery Flow (by Delivery Partner)
-  "fabric-picked-up": ["fabric-delivered", "cancelled"],
-  "fabric-delivered": ["fabric-received", "cancelled"],
+  "fabric-picked-up": ["fabric-delivered", "fabric-received", "cancelled"],
+  "fabric-delivered": ["fabric-received", "in-progress", "cutting", "stitching", "cancelled"],
   
   // Tailor receives fabric, starts working
-  "fabric-received": ["in-progress", "order-received", "fabric-selected", "cutting", "cancelled"],
+  "fabric-received": ["in-progress", "order-received", "fabric-selected", "cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
 
   // Tailoring Phases (Tailor can step through or skip some, so we allow forward jumps)
-  "order-received": ["in-progress", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
-  "fabric-selected": ["measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
-  "measurement-verification": ["cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
+  "order-received": ["in-progress", "waiting-for-customer-dropoff", "fabric-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "fabric-selected": ["measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "measurement-verification": ["cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "in-progress": ["order-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
-  "cutting": ["stitching", "finishing", "quality-check", "ready", "cancelled"],
-  "stitching": ["finishing", "quality-check", "ready", "cancelled"],
-  "finishing": ["quality-check", "ready", "cancelled"],
-  "quality-check": ["ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "cutting": ["stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "stitching": ["finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "finishing": ["quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "quality-check": ["ready", "ready-for-delivery", "ready-for-pickup", "delivered", "cancelled"],
 
   // Ready for Customer/Delivery
-  "ready": ["ready-for-delivery", "ready-for-pickup", "cancelled"],
-  "ready-for-pickup": ["delivered", "product-delivered", "order-completed", "cancelled"],
+  "ready": ["ready-for-delivery", "ready-for-pickup", "out-for-delivery", "delivered", "cancelled"],
+  "ready-for-pickup": ["out-for-delivery", "delivered", "product-delivered", "order-completed", "cancelled"],
   
   // Product Delivery Flow (by Delivery Partner)
-  "ready-for-delivery": ["out-for-delivery", "cancelled"],
+  "ready-for-delivery": ["out-for-delivery", "delivered", "cancelled"],
   "out-for-delivery": ["delivered", "failed-delivery", "cancelled"],
   "failed-delivery": ["ready-for-delivery", "cancelled"],
   

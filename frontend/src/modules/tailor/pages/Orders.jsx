@@ -80,21 +80,25 @@ const Orders = () => {
         try {
             const response = await api.patch(`/tailors/orders/${orderId}/status`, { status, ...extraPayload });
             if (response.data.success) {
+                toast.success(`Status updated to ${status.replace(/-/g, ' ')}`);
+                const updatedObj = response.data.data;
+                if (updatedObj) {
+                    setOrders(prev => prev.map(o => (String(o._id) === String(orderId) ? { ...o, ...updatedObj } : o)));
+                    if (selectedOrder && String(selectedOrder._id) === String(orderId)) {
+                        setSelectedOrder(updatedObj);
+                    }
+                }
                 if (status === 'accepted') {
-                    // Switch to active tab AND fetch with the correct tab immediately
                     setActiveTab('active');
                     fetchOrders('active');
                 } else {
                     fetchOrders();
                 }
-                
-                if (selectedOrder && selectedOrder._id === orderId) {
-                    setSelectedOrder(response.data.data);
-                }
                 return response.data;
             }
         } catch (error) {
             console.error('Error updating status:', error);
+            toast.error(error.response?.data?.message || 'Failed to update status');
         } finally {
             setUpdatingOrders(prev => ({ ...prev, [orderId]: false }));
         }
@@ -1215,9 +1219,19 @@ const Orders = () => {
                                 <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#843D9B]/10 transition-all flex flex-col group">
                                     <div className="flex justify-between items-start mb-3 md:mb-4">
                                         <div className="flex flex-col gap-0.5 md:gap-1">
-                                            <span className="text-[9px] md:text-[10px] font-black uppercase bg-[#FDE5D2] text-[#843D9B] px-2 md:px-3 py-1 rounded-md md:rounded-lg border border-[#843D9B]/10 w-fit">
-                                                #{order.orderId || 'ALT123456'}
-                                            </span>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="text-[9px] md:text-[10px] font-black uppercase bg-[#FDE5D2] text-[#843D9B] px-2 md:px-3 py-1 rounded-md md:rounded-lg border border-[#843D9B]/10 w-fit">
+                                                    #{order.orderId || 'ALT123456'}
+                                                </span>
+                                                <span className={cn(
+                                                    "text-[8px] md:text-[9px] font-black uppercase px-2 py-0.5 rounded-md border",
+                                                    ['delivered', 'product-delivered', 'order-completed'].includes(order.status) ? "bg-green-50 text-green-700 border-green-200" :
+                                                    order.status === 'cancelled' ? "bg-red-50 text-red-700 border-red-200" :
+                                                    "bg-purple-50 text-[#843D9B] border-purple-100"
+                                                )}>
+                                                    {order.status?.replace(/-/g, ' ')}
+                                                </span>
+                                            </div>
                                             <p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-tighter">Received {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
                                         <div className="flex gap-2">
@@ -1274,24 +1288,57 @@ const Orders = () => {
                                             </button>
                                         ) : (
                                             (() => {
+                                                if (['delivered', 'product-delivered', 'order-completed'].includes(order.status)) {
+                                                    return (
+                                                        <button 
+                                                            onClick={() => handleAction('View Detail', order)}
+                                                            className="flex-[1.5] py-2.5 md:py-3 bg-green-50 border border-green-200 rounded-xl text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center justify-center gap-1.5"
+                                                        >
+                                                            <CheckCircle2 size={14} className="text-green-600" /> Completed
+                                                        </button>
+                                                    );
+                                                }
+
+                                                if (order.status === 'cancelled') {
+                                                    return (
+                                                        <button 
+                                                            onClick={() => handleAction('View Detail', order)}
+                                                            className="flex-[1.5] py-2.5 md:py-3 bg-red-50 border border-red-200 rounded-xl text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center justify-center gap-1.5"
+                                                        >
+                                                            <X size={14} className="text-red-600" /> Cancelled
+                                                        </button>
+                                                    );
+                                                }
+
                                                 const flow = order.fabricPickupRequired 
                                                     ? [
                                                         { current: 'measurements-approved', next: 'fabric-received', label: 'Receive Fabric' },
+                                                        { current: 'accepted', next: 'fabric-received', label: 'Receive Fabric' },
+                                                        { current: 'order-received', next: 'fabric-received', label: 'Receive Fabric' },
                                                         { current: 'fabric-delivered', next: 'fabric-received', label: 'Receive Fabric' },
+                                                        { current: 'waiting-for-customer-dropoff', next: 'fabric-received', label: 'Receive Fabric' },
                                                         { current: 'fabric-received', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'in-progress', next: 'cutting', label: 'Start Cutting' },
                                                         { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
                                                         { current: 'stitching', next: 'quality-check', label: 'Mark Completed' },
                                                         { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
+                                                        { current: 'ready', next: 'ready-for-delivery', label: 'Mark Ready' },
+                                                        { current: 'ready-for-pickup', next: 'out-for-delivery', label: 'Dispatch' },
                                                         { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' },
                                                         { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ]
                                                     : [
                                                         { current: 'measurements-approved', next: 'fabric-received', label: 'Receive Fabric/Order' },
-                                                        { current: 'accepted', next: 'fabric-received', label: 'Receive Fabric/Order' },
+                                                        { current: 'accepted', next: 'order-received', label: 'Receive Order' },
+                                                        { current: 'order-received', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'waiting-for-customer-dropoff', next: 'fabric-received', label: 'Receive Fabric' },
                                                         { current: 'fabric-received', next: 'cutting', label: 'Start Cutting' },
+                                                        { current: 'in-progress', next: 'cutting', label: 'Start Cutting' },
                                                         { current: 'cutting', next: 'stitching', label: 'Start Stitching' },
                                                         { current: 'stitching', next: 'quality-check', label: 'Mark Completed' },
                                                         { current: 'quality-check', next: 'ready-for-delivery', label: 'Mark Ready' },
+                                                        { current: 'ready', next: 'ready-for-delivery', label: 'Mark Ready' },
+                                                        { current: 'ready-for-pickup', next: 'out-for-delivery', label: 'Dispatch' },
                                                         { current: 'ready-for-delivery', next: 'out-for-delivery', label: 'Dispatch' },
                                                         { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ];
@@ -1302,7 +1349,7 @@ const Orders = () => {
                                                     // While delivery driver is bringing fabric, next tailor action awaits delivery
                                                     currentStatusForFlow = 'fabric-delivered'; 
                                                 }
- 
+
                                                 const nextStep = flow.find(f => f.current === currentStatusForFlow);
                                                 
                                                 if (order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor') {
@@ -1313,24 +1360,31 @@ const Orders = () => {
                                                     );
                                                 }
 
+                                                if (!nextStep) {
+                                                    return (
+                                                        <button 
+                                                            onClick={() => handleAction('View Detail', order)}
+                                                            className="flex-[1.5] py-2.5 md:py-3 bg-gray-100 text-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                                        >
+                                                            View Detail
+                                                        </button>
+                                                    );
+                                                }
+
                                                 return (
                                                     <button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            if (nextStep) {
-                                                                if (nextStep.current === 'quality-check' || (order.status === 'ready-for-pickup' && order.deliveryMethod !== 'self') || (order.status === 'ready-for-delivery' && order.deliveryMethod !== 'self')) {
-                                                                    setDispatchOrder({ order, targetStatus: nextStep.next });
-                                                                } else {
-                                                                    handleStatusUpdate(order._id, nextStep.next);
-                                                                }
+                                                            if (nextStep.current === 'quality-check' || (order.status === 'ready-for-pickup' && order.deliveryMethod !== 'self') || (order.status === 'ready-for-delivery' && order.deliveryMethod !== 'self')) {
+                                                                setDispatchOrder({ order, targetStatus: nextStep.next });
                                                             } else {
-                                                                handleAction('View Detail', order);
+                                                                handleStatusUpdate(order._id, nextStep.next);
                                                             }
                                                         }}
                                                         disabled={updatingOrders[order._id]}
                                                         className="flex-[1.5] py-2.5 md:py-3 bg-gray-900 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-gray-900/10 hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                                     >
-                                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : (nextStep ? nextStep.label : 'Update Status')}
+                                                        {updatingOrders[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : nextStep.label}
                                                     </button>
                                                 );
                                             })()
