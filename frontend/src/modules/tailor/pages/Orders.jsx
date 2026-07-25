@@ -679,6 +679,25 @@ const Orders = () => {
                                                                 });
                                                                 return;
                                                             }
+
+                                                            // Block manual "Fabric Received" until customer fabric has actually arrived
+                                                            if (step.key === 'fabric-received') {
+                                                                const needsCustomerFabric =
+                                                                    order.fabricPickupRequired ||
+                                                                    order.items?.some((item) => item.fabricSource === 'customer');
+                                                                const fabricArrived =
+                                                                    order.status === 'fabric-delivered' ||
+                                                                    order.status === 'waiting-for-customer-dropoff' ||
+                                                                    order.pickupDeliveryStatus === 'delivered';
+
+                                                                if (needsCustomerFabric && !fabricArrived) {
+                                                                    toast.error("Fabric has not reached you yet. Wait for delivery partner / customer drop-off and confirm with OTP.", {
+                                                                        icon: '⏳',
+                                                                        style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                                                    });
+                                                                    return;
+                                                                }
+                                                            }
                                                             
                                                             if (step.key === 'ready-for-delivery' || step.key === 'ready-for-pickup') {
                                                                 setDispatchOrder({ order, targetStatus: step.key });
@@ -1317,9 +1336,7 @@ const Orders = () => {
 
                                                 const flow = order.fabricPickupRequired 
                                                     ? [
-                                                        { current: 'measurements-approved', next: 'fabric-received', label: 'Receive Fabric' },
-                                                        { current: 'accepted', next: 'fabric-received', label: 'Receive Fabric' },
-                                                        { current: 'order-received', next: 'fabric-received', label: 'Receive Fabric' },
+                                                        // Only after fabric has actually arrived (partner drop-off or customer self-dropoff)
                                                         { current: 'fabric-delivered', next: 'fabric-received', label: 'Receive Fabric' },
                                                         { current: 'waiting-for-customer-dropoff', next: 'fabric-received', label: 'Receive Fabric' },
                                                         { current: 'fabric-received', next: 'cutting', label: 'Start Cutting' },
@@ -1333,7 +1350,7 @@ const Orders = () => {
                                                         { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ]
                                                     : [
-                                                        { current: 'measurements-approved', next: 'fabric-received', label: 'Receive Fabric/Order' },
+                                                        { current: 'measurements-approved', next: 'order-received', label: 'Receive Order' },
                                                         { current: 'accepted', next: 'order-received', label: 'Receive Order' },
                                                         { current: 'order-received', next: 'cutting', label: 'Start Cutting' },
                                                         { current: 'waiting-for-customer-dropoff', next: 'fabric-received', label: 'Receive Fabric' },
@@ -1348,13 +1365,28 @@ const Orders = () => {
                                                         { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ];
                                                 
-                                                // Handle intermediate statuses for flow
-                                                let currentStatusForFlow = order.status;
-                                                if (['fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status)) {
-                                                    // While delivery driver is bringing fabric, next tailor action awaits delivery
-                                                    currentStatusForFlow = 'fabric-delivered'; 
+                                                // Customer→tailor fabric must physically arrive before tailor can mark received
+                                                const awaitingCustomerFabric =
+                                                    order.fabricPickupRequired &&
+                                                    ['accepted', 'measurements-approved', 'order-received', 'fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
+
+                                                if (awaitingCustomerFabric) {
+                                                    const awaitingLabel =
+                                                        order.status === 'fabric-picked-up'
+                                                            ? 'Fabric in transit — share OTP on arrival'
+                                                            : order.status === 'fabric-ready-for-pickup'
+                                                                ? 'Awaiting fabric pickup'
+                                                                : order.fabricDeliveryPreference === 'self'
+                                                                    ? 'Awaiting customer fabric drop-off'
+                                                                    : 'Awaiting fabric delivery';
+                                                    return (
+                                                        <div className="flex-1 text-center py-3 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                                                            <Clock size={12} /> {awaitingLabel}
+                                                        </div>
+                                                    );
                                                 }
 
+                                                const currentStatusForFlow = order.status;
                                                 const nextStep = flow.find(f => f.current === currentStatusForFlow);
                                                 
                                                 if (order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor') {

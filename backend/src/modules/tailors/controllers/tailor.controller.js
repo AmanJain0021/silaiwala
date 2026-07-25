@@ -657,6 +657,30 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Hard block: tailor cannot mark fabric received until it has actually arrived
+  // (partner OTP drop-off → fabric-delivered, or customer self drop-off).
+  if (status === "fabric-received") {
+    const needsCustomerFabric =
+      order.fabricPickupRequired ||
+      (Array.isArray(order.items) && order.items.some((item) => item.fabricSource === "customer"));
+
+    if (needsCustomerFabric) {
+      const fabricArrived =
+        order.status === "fabric-delivered" ||
+        order.status === "waiting-for-customer-dropoff" ||
+        order.pickupDeliveryStatus === "delivered";
+
+      if (!fabricArrived) {
+        return next(
+          new ErrorResponse(
+            "Fabric has not reached you yet. Wait for the delivery partner (or customer drop-off) and confirm with OTP before marking fabric received.",
+            400
+          )
+        );
+      }
+    }
+  }
+
   const { transitionOrder } = require("../../../utils/orderStateMachine.js");
   transitionOrder(order, status, message || `Order status updated to ${status}`);
 

@@ -9,11 +9,14 @@ const ALLOWED_TRANSITIONS = {
   // Initial
   "pending": ["accepted", "cancelled"],
   
-  // After tailor accepts, payment dictates the next move
-  "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  // After tailor accepts, payment dictates the next move.
+  // Do NOT allow jumping to fabric-received — customer fabric must arrive first.
+  "accepted": ["in-progress", "measurement-requested", "fabric-ready-for-pickup", "order-received", "waiting-for-customer-dropoff", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
 
-  // Customer sets fabric delivery preference
-  "fabric-ready-for-pickup": ["fabric-picked-up", "waiting-for-customer-dropoff", "fabric-received", "cancelled"],
+  // Customer sets fabric delivery preference.
+  // fabric-received is intentionally NOT allowed here: while a partner is bringing
+  // the fabric, receipt is confirmed only by the partner's OTP-verified drop-off.
+  "fabric-ready-for-pickup": ["fabric-picked-up", "waiting-for-customer-dropoff", "cancelled"],
   "waiting-for-customer-dropoff": ["fabric-received", "cancelled"],
 
   // Measurement Executive Flow
@@ -24,18 +27,20 @@ const ALLOWED_TRANSITIONS = {
   "measurements-uploaded": ["measurements-approved", "measurement-revision-required", "cancelled"],
   "measurement-revision-required": ["measurements-uploaded", "cancelled"],
   
-  // After measurements approved, goes back to tailoring logic or fabric logic
-  "measurements-approved": ["in-progress", "fabric-ready-for-pickup", "order-received", "fabric-received", "cutting", "stitching", "finishing", "quality-check", "cancelled"],
+  // After measurements approved — no skip to fabric-received without delivery/dropoff
+  "measurements-approved": ["in-progress", "fabric-ready-for-pickup", "order-received", "waiting-for-customer-dropoff", "cutting", "stitching", "finishing", "quality-check", "cancelled"],
 
-  // Fabric Delivery Flow (by Delivery Partner)
-  "fabric-picked-up": ["fabric-delivered", "fabric-received", "cancelled"],
+  // Fabric Delivery Flow (by Delivery Partner). The partner controller writes
+  // fabric-received directly after OTP verification, so the tailor cannot jump
+  // there manually while the fabric is still in transit.
+  "fabric-picked-up": ["fabric-delivered", "cancelled"],
   "fabric-delivered": ["fabric-received", "in-progress", "cutting", "stitching", "cancelled"],
   
   // Tailor receives fabric, starts working
   "fabric-received": ["in-progress", "order-received", "fabric-selected", "cutting", "stitching", "finishing", "quality-check", "ready", "cancelled"],
 
   // Tailoring Phases (Tailor can step through or skip some, so we allow forward jumps)
-  "order-received": ["in-progress", "waiting-for-customer-dropoff", "fabric-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
+  "order-received": ["in-progress", "waiting-for-customer-dropoff", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "fabric-selected": ["measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "measurement-verification": ["cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
   "in-progress": ["order-received", "fabric-selected", "measurement-verification", "cutting", "stitching", "finishing", "quality-check", "ready", "ready-for-delivery", "ready-for-pickup", "cancelled"],
