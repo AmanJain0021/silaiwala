@@ -694,14 +694,18 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     // Auto-Assignment Logic for Deliveries (Second Cycle)
     // For Bridal Consultations, we bypass delivery partner assignment as the tailor handles it manually.
     // Broadcast/autoAssign must stay on ready-for-delivery until a partner accepts — do NOT jump to out-for-delivery.
+    const isExplicitNonFleet = ["manual", "shiprocket", "self", "tailor"].includes(deliveryMethod);
     const shouldAutoAssign =
-      !!autoAssign &&
       !order.isBridalConsultation &&
-      (status === "ready" ||
-        status === "ready-for-delivery" ||
-        status === "out-for-delivery" ||
+      !isExplicitNonFleet &&
+      (
+        !!autoAssign ||
         deliveryMethod === "broadcast" ||
-        deliveryMethod === "auto");
+        deliveryMethod === "auto" ||
+        status === "ready" ||
+        status === "ready-for-delivery" ||
+        status === "out-for-delivery"
+      );
 
     if (shouldAutoAssign) {
       order.deliveryMethod = deliveryMethod === "broadcast" ? "broadcast" : "auto";

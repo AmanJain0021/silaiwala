@@ -167,10 +167,48 @@ function resolvePickupStartCoords(order, customerDoc) {
   return null;
 }
 
+/**
+ * Resolve the start point for a final delivery (dropoff) job from tailor shop to customer.
+ * Validates tailor coordinates against city (e.g. rejects Mumbai coords on an Indore shop).
+ */
+function resolveDropoffStartCoords(tailorProfile, order) {
+  const tailorCity =
+    normalizeCity(tailorProfile?.address?.city || tailorProfile?.city) ||
+    inferCityFromText(tailorProfile?.address, tailorProfile?.shopAddress, typeof tailorProfile?.address === "string" ? tailorProfile?.address : tailorProfile?.address?.street) ||
+    normalizeCity(order?.deliveryAddress?.city) ||
+    inferCityFromText(order?.deliveryAddress?.street, order?.deliveryAddress?.state);
+
+  let fromTailor = coordsFromLocation(tailorProfile?.location);
+  if (fromTailor && tailorCity && !coordsMatchCity(fromTailor, tailorCity)) {
+    console.warn(
+      `⚠️ [resolveDeliveryCoords] Tailor ${tailorProfile?.shopName || tailorProfile?._id} coords [${fromTailor[1]}, ${fromTailor[0]}] don't match city "${tailorCity}". Ignoring wrong tailor coords.`
+    );
+    fromTailor = null;
+  }
+
+  if (fromTailor) return fromTailor;
+
+  // Fallback to customer delivery address coords
+  let fromOrder = coordsFromLocation(order?.deliveryAddress?.location);
+  if (fromOrder && tailorCity && !coordsMatchCity(fromOrder, tailorCity)) {
+    fromOrder = null;
+  }
+  if (fromOrder) return fromOrder;
+
+  // Fallback to city center
+  if (tailorCity && CITY_CENTERS[tailorCity]) {
+    console.warn(`⚠️ [resolveDeliveryCoords] Falling back to ${tailorCity} city center for tailor dropoff.`);
+    return CITY_CENTERS[tailorCity];
+  }
+
+  return null;
+}
+
 module.exports = {
   isValidIndiaCoords,
   coordsFromLocation,
   resolvePickupStartCoords,
+  resolveDropoffStartCoords,
   inferCityFromText,
   normalizeCity,
 };

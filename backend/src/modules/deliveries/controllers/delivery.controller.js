@@ -1236,8 +1236,8 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
 
     const candidates = order.pendingPartnerCandidates || [];
     const isCandidate = candidates.some((id) => id.toString() === userId);
-    // If a targeted broadcast exists, only those candidates may see it
-    if (candidates.length > 0 && !isCandidate) {
+    // If targeted broadcast exists for manual assignment, restrict to candidate; for broadcast/auto, open to pool
+    if (candidates.length > 0 && !isCandidate && order.deliveryMethod === "manual") {
       return null;
     }
 

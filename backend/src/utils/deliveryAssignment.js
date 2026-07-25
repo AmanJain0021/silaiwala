@@ -5,7 +5,7 @@ const Customer = require("../models/Customer.js");
 const { sendNotification } = require("./notification.js");
 const { tryGetIO } = require("../config/socket.js");
 const { getDistanceFromLatLonInKm } = require("./haversine.js");
-const { coordsFromLocation, resolvePickupStartCoords } = require("./resolveDeliveryCoords.js");
+const { coordsFromLocation, resolvePickupStartCoords, resolveDropoffStartCoords } = require("./resolveDeliveryCoords.js");
 
 const DEFAULT_SEARCH_RADIUS_M = 15000; // 15km
 
@@ -95,7 +95,7 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
       const tailorProfile = await Tailor.findOne({
         user: order.tailor._id || order.tailor,
       }).lean();
-      startCoords = coordsFromLocation(tailorProfile?.location);
+      startCoords = resolveDropoffStartCoords(tailorProfile, order);
     }
 
     let candidateRiders = [];
@@ -117,13 +117,22 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
       }
     }
 
-    // Fallback: haversine filter within the same radius (handles missing 2dsphere index / bad geo docs)
-    if (candidateRiders.length === 0) {
-      console.warn(
-        `⚠️ [deliveryAssignment] No geo candidates in ${searchRadius / 1000}km. Falling back to haversine filter...`
-      );
+    // Find all available/online delivery partners
+    const allRiders = await Delivery.find(query).populate("user");
 
-      const allRiders = await Delivery.find(query).populate("user");
+    if (startCoords && candidateRiders.length > 0) {
+      // Also include available riders who don't have location set yet so no online partner misses the broadcast
+      const noLocRiders = allRiders.filter((r) => !r.currentLocation?.coordinates || r.currentLocation.coordinates.length < 2);
+      const existingIds = new Set(candidateRiders.map((r) => r._id.toString()));
+      for (const r of noLocRiders) {
+        if (!existingIds.has(r._id.toString())) {
+          candidateRiders.push(r);
+        }
+      }
+    } else if (candidateRiders.length === 0) {
+      console.warn(
+        `⚠️ [deliveryAssignment] No geo candidates in ${searchRadius / 1000}km. Broadcasting to all ${allRiders.length} available partners...`
+      );
 
       if (startCoords) {
         const destLat = startCoords[1];
@@ -137,17 +146,17 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
             if (c?.length >= 2) {
               distance = getDistanceFromLatLonInKm(c[1], c[0], destLat, destLng);
             }
-            return { rider: r, distance };
+            return { rider: r, distance, hasNoLoc: !c || c.length < 2 };
           })
-          .filter((item) => item.distance <= maxKm)
+          .filter((item) => item.hasNoLoc || item.distance <= maxKm)
           .sort((a, b) => a.distance - b.distance)
           .map((item) => item.rider);
       }
 
-      // Last resort: if we still have no start coords, notify all available partners
-      if (candidateRiders.length === 0 && !startCoords && allRiders.length > 0) {
+      // Last resort: notify all available partners if no specific rider matched within radius
+      if (candidateRiders.length === 0 && allRiders.length > 0) {
         console.warn(
-          `⚠️ [deliveryAssignment] No start coords for order ${order.orderId}. Broadcasting to all available partners.`
+          `⚠️ [deliveryAssignment] Broadcasting to all ${allRiders.length} available partners.`
         );
         candidateRiders = allRiders;
       }
@@ -267,13 +276,25 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
       }
 
       if (io) {
-        // Also ping the shared room so any partner polling refreshes
-        io.to("delivery_partners").emit("receive_new_order", {
-          orderId: order.orderId,
+        const sharedBroadcastPayload = {
+          ...order.toObject(),
+          id: order._id,
           _id: order._id,
+          orderId: order.orderId,
           status: order.status,
           taskType: cycle === "pickup" ? "fabric-pickup" : "order-delivery",
-        });
+          vendorName: order.tailor?.shopName || order.tailor?.name || "Tailor Workshop",
+          vendorAddress: order.tailor?.address,
+          address: defaultAddress,
+          customer: order.customer?.name,
+          requiresAcceptance: true,
+          deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 20,
+          deliveryDistance: order.deliveryDistance || 0,
+        };
+
+        // Broadcast rich payload to all online delivery partners
+        io.to("delivery_partners").emit("receive_new_order", sharedBroadcastPayload);
+        io.to("delivery_partners").emit("new_task", sharedBroadcastPayload);
 
         io.to(`user_${order.tailor?._id || order.tailor}`).emit("order_status_updated", {
           orderId: order.orderId,
