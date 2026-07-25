@@ -85,10 +85,11 @@ const Orders = () => {
                 if (updatedObj) {
                     setOrders(prev => prev.map(o => (String(o._id) === String(orderId) ? { ...o, ...updatedObj } : o)));
                     if (selectedOrder && String(selectedOrder._id) === String(orderId)) {
-                        setSelectedOrder(updatedObj);
+                        setSelectedOrder(prev => (prev ? { ...prev, ...updatedObj } : updatedObj));
                     }
                 }
                 if (status === 'accepted') {
+                    // Accepted orders belong to the Active tab now
                     setActiveTab('active');
                     fetchOrders('active');
                 } else {
@@ -1371,14 +1372,18 @@ const Orders = () => {
                                                     ['accepted', 'measurements-approved', 'order-received', 'fabric-ready-for-pickup', 'fabric-picked-up'].includes(order.status);
 
                                                 if (awaitingCustomerFabric) {
-                                                    const awaitingLabel =
-                                                        order.status === 'fabric-picked-up'
-                                                            ? 'Fabric in transit — share OTP on arrival'
-                                                            : order.status === 'fabric-ready-for-pickup'
-                                                                ? 'Awaiting fabric pickup'
-                                                                : order.fabricDeliveryPreference === 'self'
-                                                                    ? 'Awaiting customer fabric drop-off'
-                                                                    : 'Awaiting fabric delivery';
+                                                    let awaitingLabel = 'Awaiting fabric delivery';
+                                                    if (order.status === 'fabric-picked-up') {
+                                                        awaitingLabel = 'Fabric in transit — share OTP';
+                                                    } else if (order.status === 'fabric-ready-for-pickup') {
+                                                        awaitingLabel = 'Awaiting fabric pickup';
+                                                    } else if (order.advancePaymentStatus !== 'paid' && order.paymentStatus !== 'paid') {
+                                                        awaitingLabel = 'Awaiting customer payment';
+                                                    } else if (order.fabricDeliveryPreference === 'self') {
+                                                        awaitingLabel = 'Awaiting customer fabric drop-off';
+                                                    } else if (!order.fabricDeliveryPreference || order.fabricDeliveryPreference === 'pending') {
+                                                        awaitingLabel = 'Awaiting fabric option from customer';
+                                                    }
                                                     return (
                                                         <div className="flex-1 text-center py-3 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center justify-center gap-1.5">
                                                             <Clock size={12} /> {awaitingLabel}

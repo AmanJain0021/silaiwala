@@ -448,7 +448,21 @@ exports.getEarningsData = asyncHandler(async (req, res, next) => {
  * @desc    Get orders assigned to the tailor
  * @route   GET /api/v1/tailors/orders
  * @access  Private (Tailor)
+ *
+ * Tab grouping for the tailor Orders screen:
+ * new     → still waiting for the tailor to accept
+ * history → terminal states
+ * active  → everything in between (accepted, measurement, fabric, production, dispatch)
  */
+const TAILOR_NEW_STATUSES = ["pending"];
+const TAILOR_HISTORY_STATUSES = [
+  "delivered",
+  "product-delivered",
+  "order-completed",
+  "failed-delivery",
+  "cancelled",
+];
+
 exports.getOrders = asyncHandler(async (req, res, next) => {
   const { status, page = 1, limit = 10 } = req.query;
   const skip = (page - 1) * limit;
@@ -458,13 +472,20 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
   if (status) {
     const statusLower = status.toLowerCase();
     if (statusLower === 'new') {
-      query.status = { $in: ['pending', 'measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurements-approved', 'measurement-revision-required'] };
+      // Only orders the tailor has not acted on yet
+      query.status = { $in: TAILOR_NEW_STATUSES };
+      query.acceptedAt = { $exists: false };
     }
     else if (statusLower === 'active') {
-      query.status = { $in: ['accepted', 'waiting-for-customer-dropoff', 'fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered', 'fabric-received', 'order-received', 'fabric-selected', 'measurement-verification', 'pattern-making', 'in-progress', 'cutting', 'stitching', 'finishing', 'quality-check', 'completed', 'ready', 'ready-for-pickup', 'ready-for-delivery', 'out-for-delivery'] };
+      // Anything already accepted and not finished — derived by exclusion so new
+      // workflow statuses never silently disappear from the tailor's Active tab.
+      query.$or = [
+        { status: { $nin: [...TAILOR_NEW_STATUSES, ...TAILOR_HISTORY_STATUSES] } },
+        { status: { $in: TAILOR_NEW_STATUSES }, acceptedAt: { $exists: true } },
+      ];
     }
     else if (statusLower === 'history') {
-      query.status = { $in: ['delivered', 'product-delivered', 'order-completed', 'failed-delivery', 'cancelled'] };
+      query.status = { $in: TAILOR_HISTORY_STATUSES };
     }
     else if (statusLower !== 'all') {
       query.status = status;
