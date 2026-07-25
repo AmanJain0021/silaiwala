@@ -75,7 +75,7 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
                                     value={reason}
                                     onChange={(e) => { setReason(e.target.value); setError(''); }}
                                     placeholder="Type details for cancellation..."
-                                    className={`w-full h-24 bg-slate-50 border ${error ? 'border-rose-300' : 'border-slate-100'} rounded-2xl p-4 text-xs font-medium text-slate-800 outline-none focus:border-rose-400 focus:bg-white transition-all resize-none shadow-inner`}
+                                    className={`w-full h-24 bg-slate-50 border ${error ? 'border-rose-400' : 'border-slate-100'} rounded-2xl p-4 text-xs font-medium text-slate-800 outline-none focus:border-rose-400 focus:bg-white transition-all resize-none shadow-inner`}
                                 />
                                 {error && <p className="text-[9px] font-bold text-rose-500 mt-2 ml-1 uppercase">{error}</p>}
                             </div>
