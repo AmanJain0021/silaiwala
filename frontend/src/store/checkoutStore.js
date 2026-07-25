@@ -52,10 +52,21 @@ const useCheckoutStore = create(
                         }
                     };
                 }
+
+                // Keep draft + every basket item in sync so the selected tailor
+                // is what CheckoutSummary actually posts to /orders.
                 return {
                     serviceDetails: state.serviceDetails
                         ? { ...state.serviceDetails, tailorId: id, tailorName: name }
-                        : { tailorId: id, tailorName: name }
+                        : { tailorId: id, tailorName: name },
+                    serviceItems: state.serviceItems.map((item) => ({
+                        ...item,
+                        serviceDetails: {
+                            ...item.serviceDetails,
+                            tailorId: id,
+                            tailorName: name
+                        }
+                    }))
                 };
             }),
 

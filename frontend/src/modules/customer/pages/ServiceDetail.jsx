@@ -365,7 +365,13 @@ const ServiceDetail = () => {
         return {
             serviceDetails: {
                 ...serviceData,
-                tailorId: preSelectedTailor?._id || serviceData?.tailor?._id || null,
+                tailorId:
+                    preSelectedTailor?._id ||
+                    preSelectedTailor?.id ||
+                    (typeof serviceData?.tailor === 'object'
+                        ? (serviceData.tailor?._id || serviceData.tailor?.id || serviceData.tailor?.user?._id)
+                        : serviceData?.tailor) ||
+                    null,
                 tailorName: preSelectedTailor?.shopName || preSelectedTailor?.user?.name || serviceData?.tailor?.shopName || serviceData?.tailor?.user?.name || null,
                 tailorCoordinates: preSelectedTailor?.location?.coordinates || serviceData?.tailor?.location?.coordinates || null
             },

@@ -554,9 +554,12 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   // Determine correct customer ID
   const finalCustomerId = (req.user.role === 'admin' && customerId) ? customerId : req.user.id;
 
-  // Resolve the assigned tailor from the ordered service/product itself. The
-  // client may hold either a Tailor profile ID or User ID (and stale cart data
-  // used to route orders to the wrong account), so item ownership is authoritative.
+  // Resolve assigned tailor.
+  // Preference order:
+  // 1) Explicit customer-selected tailorId (User ID or Tailor profile ID)
+  // 2) Fallback to the service/product owner's Tailor profile
+  // Never override a deliberate tailor selection with the catalog service owner —
+  // TailorSelection lets customers pick any available expert for a service.
   const Service = require("../../../models/Service.js");
   const Product = require("../../../models/Product.js");
   const serviceIds = (items || []).filter((item) => item.service).map((item) => item.service);
@@ -571,55 +574,54 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       : [],
   ]);
 
-  if (ownedServices.length !== new Set(serviceIds.map(String)).size ||
-      ownedProducts.length !== new Set(productIds.map(String)).size) {
+  if (
+    (serviceIds.length > 0 && ownedServices.length !== new Set(serviceIds.map(String)).size) ||
+    (productIds.length > 0 && ownedProducts.length !== new Set(productIds.map(String)).size)
+  ) {
     return next(new ErrorResponse("One or more selected services/products are unavailable", 400));
   }
 
   const ownerProfileIds = [
     ...ownedServices.map((service) => String(service.tailor)),
     ...ownedProducts.map((product) => String(product.tailor)),
-  ];
+  ].filter(Boolean);
   const uniqueOwnerProfileIds = [...new Set(ownerProfileIds)];
 
   if (uniqueOwnerProfileIds.length > 1) {
     return next(new ErrorResponse("All items in one order must belong to the same tailor", 400));
   }
 
-  let requestedTailorProfile = null;
+  let targetTailorProfile = null;
+
   if (tailorId && mongoose.Types.ObjectId.isValid(tailorId)) {
-    requestedTailorProfile = await Tailor.findById(tailorId).populate("user");
-    if (!requestedTailorProfile) {
-      requestedTailorProfile = await Tailor.findOne({ user: tailorId }).populate("user");
+    // Accept either Tailor profile ID or User ID from the client
+    targetTailorProfile = await Tailor.findById(tailorId).populate("user");
+    if (!targetTailorProfile) {
+      targetTailorProfile = await Tailor.findOne({ user: tailorId }).populate("user");
     }
   }
 
-  let targetTailorProfile = requestedTailorProfile;
-  if (uniqueOwnerProfileIds.length === 1) {
+  // Fallback only when checkout did not send a selectable tailor
+  if (!targetTailorProfile && uniqueOwnerProfileIds.length === 1) {
     targetTailorProfile = await Tailor.findById(uniqueOwnerProfileIds[0]).populate("user");
-    if (
-      requestedTailorProfile &&
-      String(requestedTailorProfile._id) !== String(targetTailorProfile?._id)
-    ) {
-      console.warn(
-        `[Order Assignment] Corrected stale tailor ${requestedTailorProfile._id} ` +
-        `to item owner ${targetTailorProfile?._id}`
-      );
-    }
   }
 
   const tailor = targetTailorProfile?.user;
-  if (!targetTailorProfile || !tailor || tailor.role !== "tailor") {
+  if (!targetTailorProfile || !tailor || !["tailor", "admin"].includes(tailor.role)) {
     return next(new ErrorResponse("Tailor account not found or invalid", 404));
   }
-  if (!targetTailorProfile.isAvailable) {
+  if (targetTailorProfile.isAvailable === false) {
     return next(new ErrorResponse("This tailor is currently unavailable", 409));
   }
-  if (!tailor.isActive && targetTailorProfile.registrationStatus !== "verified") {
+  // Allow verified partners even if the User.isActive flag was never flipped
+  const isApproved =
+    tailor.isActive === true ||
+    targetTailorProfile.registrationStatus === "verified";
+  if (!isApproved) {
     return next(new ErrorResponse("This tailor is not approved to receive orders", 403));
   }
 
-  const targetTailorUserId = tailor._id;
+  const targetTailorUserId = tailor._id || tailor.id;
 
   // Bridal Consultation Distance & Fee Calculation
   if (isBridalConsultation) {
@@ -794,11 +796,12 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   try {
     const io = getIO();
     if (io) {
-        io.to(`user_${targetTailorUserId}`).emit('receive_new_order', {
+        io.to(`user_${String(targetTailorUserId)}`).emit('receive_new_order', {
             orderId: order.orderId,
             _id: order._id,
             totalAmount: order.totalAmount,
-            status: order.status
+            status: order.status,
+            tailor: String(targetTailorUserId),
         });
         console.log(`📡 Socket: Notified Tailor ${targetTailorUserId} of new order creation`);
     }
@@ -813,7 +816,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         type: "ORDER_CREATED",
         title: notificationTitle,
         message: notificationMessage,
-        data: { orderId: order._id, targetUrl: "/orders" }
+        data: { orderId: order._id, targetUrl: "/partner/orders" }
     });
   } catch (err) {
     console.error("Socket/Notification emission failed in createOrder:", err.message);
@@ -827,6 +830,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   res.status(201).json({
     success: true,
     data: order,
+    assignedTailor: String(targetTailorUserId),
   });
 });
 
