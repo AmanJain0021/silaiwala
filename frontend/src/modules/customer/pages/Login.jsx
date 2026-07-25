@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
@@ -11,7 +11,13 @@ import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { otpLogin, sendOTP, isLoading, logout } = useAuthStore();
+    const { otpLogin, sendOTP, isLoading, logout, isAuthenticated, user } = useAuthStore();
+
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'customer') {
+            navigate('/user', { replace: true });
+        }
+    }, [isAuthenticated, user, navigate]);
 
     const [mobileNumber, setMobileNumber] = useState('');
     const [password, setPassword] = useState('');
@@ -110,7 +116,7 @@ const Login = () => {
 
     const handleLocationComplete = () => {
         setIsLocating(false);
-        navigate('/user');
+        navigate('/user', { replace: true });
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {

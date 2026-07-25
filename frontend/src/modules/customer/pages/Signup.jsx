@@ -9,9 +9,13 @@ import { Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
     const navigate = useNavigate();
-    const signup = useAuthStore((state) => state.signup);
-    const sendOTP = useAuthStore((state) => state.sendOTP);
-    const isLoading = useAuthStore((state) => state.isLoading);
+    const { signup, sendOTP, isLoading, isAuthenticated, user } = useAuthStore();
+
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'customer') {
+            navigate('/user', { replace: true });
+        }
+    }, [isAuthenticated, user, navigate]);
 
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [step, setStep] = useState('info'); // 'info' or 'otp'
@@ -115,7 +119,7 @@ const Signup = () => {
         try {
             await signup({ ...formData, role: 'customer', otp: fullOtp });
             localStorage.removeItem('customerSignupData');
-            navigate('/user');
+            navigate('/user', { replace: true });
         } catch (err) {
             setError(err.message || 'Signup failed. Please try again.');
         }

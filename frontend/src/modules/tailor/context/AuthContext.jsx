@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { getToken, setToken as saveToken, removeToken } from '../../../utils/auth';
 
@@ -13,10 +13,20 @@ export const TAILOR_STATUS = {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(JSON.parse(localStorage.getItem('tailor_user')));
+    const [user, setUser] = useState(() => {
+        try {
+            const stored = localStorage.getItem('tailor_user');
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    });
     const [token, setToken] = useState(getToken());
     const [status, setStatus] = useState(localStorage.getItem('tailor_status') || TAILOR_STATUS.NOT_REGISTERED);
     const [loading, setLoading] = useState(true);
+    // Counter to force checkAuth re-run even if token string is the same
+    const [authVersion, setAuthVersion] = useState(0);
+    const isAuthenticated = !!token && !!user;
 
     const determineStatus = (tailorData) => {
         // Check Admin managed isActive flag first
@@ -33,8 +43,10 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (token) {
+            const currentToken = getToken();
+            if (currentToken) {
                 try {
+                    setLoading(true);
                     const res = await api.get('/tailors/me');
                     if (res.data.success) {
                         const tailorData = res.data.data;
@@ -62,16 +74,25 @@ export const AuthProvider = ({ children }) => {
                     setLoading(false);
                 }
             } else {
+                setUser(null);
                 setLoading(false);
             }
         };
         checkAuth();
-    }, [token]);
+    }, [token, authVersion]);
 
-    const login = (userData, userToken) => {
+    const login = useCallback((userData, userToken) => {
+        // 1. Clear ALL old session data first
+        localStorage.removeItem('tailor_token');
+        localStorage.removeItem('tailor_user');
+        localStorage.removeItem('tailor_status');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+
+        // 2. Save new token
         saveToken(userToken, 'tailor');
         
-        // Determine status immediately from login payload
+        // 3. Determine status immediately from login payload
         let currentStatus = TAILOR_STATUS.NOT_REGISTERED;
         if (userData.role === 'tailor') {
             // Pass whole userData so determineStatus can see the isActive flag
@@ -83,25 +104,29 @@ export const AuthProvider = ({ children }) => {
             status: currentStatus
         };
 
+        // 4. Save new session data
         localStorage.setItem('tailor_user', JSON.stringify(enrichedUser));
         localStorage.setItem('tailor_status', currentStatus);
         localStorage.setItem('user', JSON.stringify(enrichedUser));
         
+        // 5. Update React state — bump authVersion to force checkAuth to re-fetch
         setToken(userToken);
         setUser(enrichedUser);
         setStatus(currentStatus);
+        setAuthVersion(v => v + 1);
         setLoading(false); // Stop loading immediately on explicit login
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         removeToken();
+        localStorage.removeItem('tailor_token');
         localStorage.removeItem('tailor_user');
         localStorage.removeItem('tailor_status');
         localStorage.removeItem('user');
         setToken(null);
         setUser(null);
         setStatus(TAILOR_STATUS.NOT_REGISTERED);
-    };
+    }, []);
 
     const updateStatus = (newStatus) => {
         setStatus(newStatus);
@@ -114,7 +139,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, status, loading, login, logout, updateStatus }}>
+        <AuthContext.Provider value={{ user, token, status, loading, isAuthenticated, login, logout, updateStatus }}>
             {children}
         </AuthContext.Provider>
     );

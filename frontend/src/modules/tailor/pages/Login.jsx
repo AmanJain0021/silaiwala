@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,8 +9,14 @@ import LocationSplashScreen from '../../../components/Common/LocationSplashScree
 import { GoogleLogin } from '@react-oauth/google';
 
 const TailorLogin = () => {
-    const { login } = useTailorAuth();
+    const { login, logout, isAuthenticated, user } = useTailorAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'tailor') {
+            navigate('/partner', { replace: true });
+        }
+    }, [isAuthenticated, user, navigate]);
 
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
@@ -71,18 +77,13 @@ const TailorLogin = () => {
                 const { token, data: userData } = response.data;
 
                 if (userData.role !== 'tailor') {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('tailor_token');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('tailor_user');
+                    logout();
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }
 
-                // Clear old tailor session data before establishing new session
-                localStorage.removeItem('tailor_token');
-                localStorage.removeItem('tailor_user');
-                localStorage.removeItem('tailor_status');
+                // Clear any previous tailor session completely before new login
+                logout();
 
                 setLoggedInUser(userData);
                 setLoggedInToken(token);
@@ -110,11 +111,12 @@ const TailorLogin = () => {
             if (response.data.success) {
                 const { token, data: userData } = response.data;
                 if (userData.role !== 'tailor') {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
+                    logout();
                     setFormError('root', { type: 'manual', message: 'This portal is only for registered tailors.' });
                     return;
                 }
+                // Clear any previous tailor session completely before new login
+                logout();
                 setLoggedInUser(userData);
                 setLoggedInToken(token);
                 setIsLocating(true);
@@ -133,7 +135,7 @@ const TailorLogin = () => {
     const handleLocationComplete = () => {
         setIsLocating(false);
         login(loggedInUser, loggedInToken);
-        navigate('/partner');
+        navigate('/partner', { replace: true });
     };
 
     if (isLocating && loggedInUser) {
@@ -340,13 +342,16 @@ const TailorLogin = () => {
                 </AnimatePresence>
                 
                 <div className="mt-8 pt-6 border-t border-gray-100">
-                    <div className={`flex justify-center transition-opacity duration-300 ${!agreedToTerms ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className="flex flex-col items-center justify-center gap-2">
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={() => setFormError('root', { type: 'manual', message: 'Google Login Failed' })}
                             useOneTap={false}
                             shape="pill"
                         />
+                        <p className="text-[10px] text-gray-400 text-center font-medium mt-1">
+                            By signing in with Google, you agree to our <button type="button" onClick={() => window.open('/partner/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] hover:underline">Terms & Conditions</button> and <button type="button" onClick={() => window.open('/partner/legal/privacy-policy', '_blank')} className="text-[#843D9B] hover:underline">Privacy Policy</button>
+                        </p>
                     </div>
                 </div>
             </form>

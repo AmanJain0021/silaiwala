@@ -374,7 +374,10 @@ exports.login = asyncHandler(async (req, res, next) => {
   }
 
   if (!verified) {
-    return next(new ErrorResponse("Invalid credentials or incorrect OTP", 401));
+    if (password && !user.password) {
+      return next(new ErrorResponse("No password is set for this account. Please log in using OTP or Google.", 401));
+    }
+    return next(new ErrorResponse("Invalid mobile number or password", 401));
   }
 
   if (fcmToken) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Lock, Eye, ArrowRight, EyeOff, ShieldCheck } from 'lucide-react';
@@ -9,7 +9,13 @@ import { GoogleLogin } from '@react-oauth/google';
 
 const DeliveryLogin = () => {
     const navigate = useNavigate();
-    const { sendOTP, otpLogin, logout, isLoading } = useAuthStore();
+    const { sendOTP, otpLogin, logout, isLoading, isAuthenticated, user } = useAuthStore();
+
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'delivery') {
+            navigate('/delivery/dashboard', { replace: true });
+        }
+    }, [isAuthenticated, user, navigate]);
 
     const [mobileNumber, setMobileNumber] = useState('');
     const [password, setPassword] = useState('');
@@ -75,7 +81,7 @@ const DeliveryLogin = () => {
                     setError('⏳ Your application is pending admin approval. You will get dashboard access once approved by admin.');
                     return;
                 }
-                navigate('/delivery/dashboard');
+                navigate('/delivery/dashboard', { replace: true });
             } catch (err) {
                 setError(err.message || 'Invalid credentials. Please try again.');
             }
@@ -101,7 +107,7 @@ const DeliveryLogin = () => {
                 return;
             }
 
-            navigate('/delivery/dashboard');
+            navigate('/delivery/dashboard', { replace: true });
         } catch (err) {
             setError(err.message || 'Invalid OTP. Please try again.');
         }
@@ -123,7 +129,7 @@ const DeliveryLogin = () => {
                 return;
             }
 
-            navigate('/delivery/dashboard');
+            navigate('/delivery/dashboard', { replace: true });
         } catch (err) {
             if (err.message.includes('create an account first')) {
                 setError('Account not found. Please create an account first.');
@@ -324,13 +330,16 @@ const DeliveryLogin = () => {
             </form>
             
             <div className="mt-8 pt-6 border-t border-gray-100">
-                <div className={`flex justify-center transition-opacity duration-300 ${!agreedToTerms ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="flex flex-col items-center justify-center gap-2">
                     <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={() => setError('Google Login Failed')}
                         useOneTap={false}
                         shape="pill"
                     />
+                    <p className="text-[10px] text-gray-400 text-center font-medium mt-1">
+                        By signing in with Google, you agree to our <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline">Privacy Policy</Link>
+                    </p>
                 </div>
             </div>
         </motion.div>
