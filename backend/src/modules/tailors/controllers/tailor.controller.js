@@ -104,6 +104,9 @@ exports.getTailorDetails = asyncHandler(async (req, res, next) => {
  * @access  Private (Tailor)
  */
 exports.getMyProfile = asyncHandler(async (req, res, next) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   const tailor = await Tailor.findOne({ user: req.user.id }).populate("user", "name email phoneNumber profileImage isActive");
 
   if (!tailor) {
@@ -492,6 +495,9 @@ const TAILOR_HISTORY_STATUSES = [
 ];
 
 exports.getOrders = asyncHandler(async (req, res, next) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   const { status, page = 1, limit = 10 } = req.query;
   const skip = (page - 1) * limit;
 

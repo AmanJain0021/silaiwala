@@ -25,6 +25,19 @@ api.interceptors.request.use(
         if (token && !hasAuth) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        // Prevent Mobile WebView / HTTP caching for GET requests
+        if (config.method?.toLowerCase() === 'get') {
+            if (config.headers.set) {
+                config.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+                config.headers.set('Pragma', 'no-cache');
+                config.headers.set('Expires', '0');
+            } else {
+                config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+                config.headers['Pragma'] = 'no-cache';
+                config.headers['Expires'] = '0';
+            }
+            config.params = { ...config.params, _t: Date.now() };
+        }
         return config;
     },
     (error) => {
