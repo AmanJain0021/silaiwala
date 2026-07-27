@@ -270,17 +270,27 @@ const Orders = () => {
 
     useEffect(() => {
         if (location.state) {
-            if (location.state.highlightOrderTitle) setSearchQuery(location.state.highlightOrderTitle);
+            let stateHandled = false;
+            if (location.state.highlightOrderTitle) {
+                setSearchQuery(location.state.highlightOrderTitle);
+                stateHandled = true;
+            }
             if (location.state.orderStatus) {
                 const status = location.state.orderStatus;
                 if (status === 'Pending' || status === 'Active') setActiveTab('active');
                 if (status === 'Done') setActiveTab('history');
+                stateHandled = true;
             }
             if (location.state.status) {
                 const s = location.state.status;
                 if (s === 'pending') setActiveTab('new');
                 if (s === 'in-progress') setActiveTab('active');
                 if (s === 'completed') setActiveTab('history');
+                stateHandled = true;
+            }
+            if (stateHandled) {
+                // Clear state from browser/app history so refresh doesn't re-trigger initial tab override
+                window.history.replaceState({}, document.title);
             }
         }
     }, [location]);
@@ -1216,12 +1226,19 @@ const Orders = () => {
             {/* ── HEADER ── */}
             <div className="md:hidden bg-white pt-3 pb-2 border-b border-gray-100 text-left px-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-[18px] font-black text-gray-900 tracking-tight">New Orders</h2>
+                    <h2 className="text-[18px] font-black text-gray-900 tracking-tight">
+                        {activeTab === 'all' ? 'All Orders' : activeTab === 'new' ? 'New Orders' : activeTab === 'active' ? 'Active Orders' : 'Order History'}
+                    </h2>
                     <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {filteredOrders.length} Pending
+                        {filteredOrders.length} {activeTab === 'new' ? 'Pending' : 'Orders'}
                     </span>
                 </div>
-                <p className="text-[10px] text-gray-400 font-medium mt-0.5">Review and accept incoming tailoring tasks</p>
+                <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                    {activeTab === 'new' ? 'Review and accept incoming tailoring tasks' :
+                     activeTab === 'active' ? 'Manage and track live active orders' :
+                     activeTab === 'history' ? 'View completed and past orders' :
+                     'Manage and track all tailoring tasks'}
+                </p>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-2 md:px-0">
