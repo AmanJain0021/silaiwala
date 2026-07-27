@@ -20,6 +20,13 @@ const clearTailorSessionStorage = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('tailorSignupData');
     localStorage.removeItem('tailorSignupStep');
+    localStorage.removeItem('delivery_token');
+    localStorage.removeItem('delivery_user');
+    localStorage.removeItem('executive_token');
+    localStorage.removeItem('executive_user');
+    try {
+        sessionStorage.clear();
+    } catch (_) {}
 };
 
 export const AuthProvider = ({ children }) => {
@@ -159,6 +166,16 @@ export const AuthProvider = ({ children }) => {
         authCheckSeq.current += 1;
         removeToken();
         clearTailorSessionStorage();
+
+        // Reset global Zustand authStore if active
+        try {
+            import('../../../store/authStore').then((mod) => {
+                if (mod.default?.getState()?.logout) {
+                    mod.default.getState().logout();
+                }
+            }).catch(() => {});
+        } catch (_) {}
+
         setToken(null);
         setUser(null);
         setStatus(TAILOR_STATUS.NOT_REGISTERED);

@@ -145,12 +145,20 @@ const useAuthStore = create((set) => ({
 
     logout: () => {
         removeToken();
-        const path = window.location.pathname;
+        const path = typeof window !== 'undefined' ? window.location.pathname : '';
         let storageKey = 'user';
         if (path.startsWith('/delivery')) storageKey = 'delivery_user';
         else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
         
         localStorage.removeItem(storageKey);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('tailor_token');
+        localStorage.removeItem('tailor_user');
+        localStorage.removeItem('tailor_status');
+        try {
+            if (typeof window !== 'undefined') sessionStorage.clear();
+        } catch (_) {}
         
         set({ user: null, isAuthenticated: false, role: null, error: null });
     },

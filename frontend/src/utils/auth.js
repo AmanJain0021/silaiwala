@@ -53,6 +53,9 @@ export const removeToken = () => {
             localStorage.removeItem("delivery_token");
             localStorage.removeItem("tailor_token");
             localStorage.removeItem("executive_token");
+            localStorage.removeItem("delivery-token");
+            localStorage.removeItem("delivery-refresh-token");
+            localStorage.removeItem("delivery-auth-storage");
         }
         localStorage.removeItem(TOKEN_KEY);
     } catch (e) {
