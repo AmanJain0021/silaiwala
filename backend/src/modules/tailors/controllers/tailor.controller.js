@@ -650,15 +650,14 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
-  // Accept is a one-way action from New → Active. Reject accidental attempts
-  // to "accept" an order that has already moved further through the workflow.
+  // Accept is a one-way action from New → Active. If an order has already moved
+  // further through the workflow (e.g. fabric-picked-up), gracefully return the current order.
   if (status === "accepted" && !["pending", "accepted"].includes(order.status)) {
-    return next(
-      new ErrorResponse(
-        `Order is already in '${order.status}' state and cannot be accepted again`,
-        409
-      )
-    );
+    return res.status(200).json({
+      success: true,
+      message: `Order is already in ${order.status} status`,
+      data: order,
+    });
   }
 
   // Check Subscription Limits when accepting an order

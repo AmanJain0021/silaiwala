@@ -210,12 +210,11 @@ const Orders = () => {
         socket.on('receive_new_order', handleNewOrder);
         socket.on('new_order', handleNewOrder);
         
-        // Refresh orders when delivery partner accepts/rejects (real-time update)
+        // Refresh orders when delivery partner updates status, picks up fabric, generates OTP, etc.
         socket.on('order_status_updated', (data = {}) => {
-            // Ignore notification-type payloads that are not real workflow statuses
-            const REAL_STATUS = typeof data.status === 'string' && !/^[A-Z0-9_]+$/.test(data.status);
+            const rawStatus = typeof data.status === 'string' ? data.status.toLowerCase().replace(/_/g, '-') : null;
             const patch = {};
-            if (REAL_STATUS) patch.status = data.status;
+            if (rawStatus) patch.status = rawStatus;
             if (data.acceptedAt !== undefined) patch.acceptedAt = data.acceptedAt;
             if (data.pickupDeliveryStatus !== undefined) patch.pickupDeliveryStatus = data.pickupDeliveryStatus;
             if (data.dropoffDeliveryStatus !== undefined) patch.dropoffDeliveryStatus = data.dropoffDeliveryStatus;
@@ -238,9 +237,15 @@ const Orders = () => {
             fetchOrders();
         });
 
-        socket.on('new_notification', (data) => {
-            // Refresh if a delivery partner accepted or rejected our task
-            if (['PARTNER_ACCEPTED', 'PARTNER_ASSIGNED'].includes(data.type)) {
+        socket.on('new_notification', (data = {}) => {
+            // Re-fetch orders for any delivery or order status update notification
+            const notifType = data.type || '';
+            const isOrderNotif = [
+                'PARTNER_ACCEPTED', 'PARTNER_ASSIGNED', 'FABRIC_PICKED_UP', 
+                'OTP_GENERATED', 'REACHED_DROPOFF', 'FABRIC_DELIVERED', 'STATUS_UPDATE', 'ORDER_CREATED'
+            ].includes(notifType) || data?.data?.orderId || data?.orderId;
+
+            if (isOrderNotif) {
                 fetchOrders();
             }
         });
@@ -249,6 +254,8 @@ const Orders = () => {
             socket.off('connect', joinOwnRoom);
             socket.off('receive_new_order', handleNewOrder);
             socket.off('new_order', handleNewOrder);
+            socket.off('order_status_updated');
+            socket.off('new_notification');
             socket.disconnect();
         };
         // Socket should NOT depend on activeTab — fetchOrders uses activeTabRef
