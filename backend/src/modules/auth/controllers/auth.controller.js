@@ -339,9 +339,10 @@ exports.login = asyncHandler(async (req, res, next) => {
   if (!email) return next(new ErrorResponse("Identifier is required", 400));
   
   let phoneIdentifier = email;
+  let last10Digits = null;
   if (/^[\d+]+$/.test(email)) {
     const digitsOnly = String(email).replace(/[^\d]/g, '');
-    const last10Digits = digitsOnly.slice(-10);
+    last10Digits = digitsOnly.slice(-10);
     
     if (!/^[6-9]\d{9}$/.test(last10Digits)) {
       return next(new ErrorResponse("Please provide a valid 10-digit mobile number starting with 6-9", 400));
@@ -350,9 +351,33 @@ exports.login = asyncHandler(async (req, res, next) => {
     phoneIdentifier = `+91${last10Digits}`;
   }
 
-  const user = await User.findOne({ 
-    $or: [{ email: email.toLowerCase() }, { phoneNumber: phoneIdentifier }] 
-  }).select("+password");
+  const phoneConditions = last10Digits ? [
+    { phoneNumber: phoneIdentifier },
+    { phoneNumber: last10Digits },
+    { phoneNumber: `0${last10Digits}` },
+    { phoneNumber: new RegExp(`${last10Digits}$`) }
+  ] : [];
+
+  const searchOr = [
+    { email: email.toLowerCase() },
+    ...phoneConditions
+  ];
+
+  // If expectedRole is provided by client, attempt to match user with that specific role first
+  let user = null;
+  if (expectedRole) {
+    user = await User.findOne({
+      role: expectedRole,
+      $or: searchOr
+    }).select("+password");
+  }
+
+  // Fallback to searching without role restriction
+  if (!user) {
+    user = await User.findOne({
+      $or: searchOr
+    }).select("+password");
+  }
 
   if (!user) {
     return next(new ErrorResponse("No account found with this information", 404));
