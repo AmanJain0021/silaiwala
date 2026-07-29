@@ -1113,7 +1113,9 @@ const AdminOfflineOrders = () => {
                                                 : 'Customer pickup'}
                                             {selectedOrder.deliveryAddress && (
                                                 <span className="block text-[10px] font-medium text-gray-500 mt-0.5">
-                                                    {selectedOrder.deliveryAddress}
+                                                    {typeof selectedOrder.deliveryAddress === 'object'
+                                                        ? [selectedOrder.deliveryAddress.street || selectedOrder.deliveryAddress.addressLine1 || selectedOrder.deliveryAddress.flat, selectedOrder.deliveryAddress.landmark, selectedOrder.deliveryAddress.city, selectedOrder.deliveryAddress.state, selectedOrder.deliveryAddress.pincode || selectedOrder.deliveryAddress.zipCode].filter(Boolean).join(', ') || 'Home delivery address'
+                                                        : String(selectedOrder.deliveryAddress)}
                                                 </span>
                                             )}
                                         </span>

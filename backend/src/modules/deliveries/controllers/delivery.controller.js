@@ -796,7 +796,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   const isObjectId = mongoose.isValidObjectId(req.params.id);
   const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
 
-  const order = await Order.findOne({
+  let order = await Order.findOne({
     ...query,
     $or: [
       { deliveryPartner: req.user.id },
@@ -806,8 +806,38 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
   }).select('+pickupDeliveryOtp +dropoffDeliveryOtp').session(session);
 
   if (!order) {
+    // Try finding order without $or restriction
+    order = await Order.findOne(query).select('+pickupDeliveryOtp +dropoffDeliveryOtp').session(session);
+  }
+
+  if (!order) {
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const off = await OfflineOrder.findOne(query).session(session);
+    if (off) {
+      if (off.deliveryPartner?.toString() !== req.user.id && off.shopTailor?.toString() !== req.user.id) {
+        await session.abortTransaction();
+        return next(new ErrorResponse("Order not assigned to you", 403));
+      }
+      off.deliveryPartnerStatus = "accepted";
+      if (status === 'delivered' || status === 'fabric-delivered') {
+        off.fulfillmentStatus = "completed";
+      } else {
+        off.fulfillmentStatus = "out_for_delivery";
+      }
+      if (!off.history) off.history = [];
+      off.history.push({
+        status: off.status,
+        message: message || `Status updated to ${status}`,
+        updatedBy: req.user.id,
+        timestamp: new Date(),
+      });
+      await off.save({ session });
+      await session.commitTransaction();
+      return res.status(200).json({ success: true, message: "Offline order updated", data: off });
+    }
+
     await session.abortTransaction();
-      return next(new ErrorResponse("Order not found or not assigned to you", 404));
+    return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }
 
   // Handle Granular Delivery Statuses & Main Status Mapping
@@ -1662,7 +1692,7 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
   const isObjectId = mongoose.isValidObjectId(req.params.id);
   const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
 
-  const order = await Order.findOne({
+  let order = await Order.findOne({
     ...query,
     $or: [
       { pickupPartner: req.user.id },
@@ -1671,7 +1701,21 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
     ]
   });
 
-  if (!order) return next(new ErrorResponse("Order not found or not assigned to you", 404));
+  if (!order) {
+    order = await Order.findOne(query);
+  }
+
+  if (!order) {
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const off = await OfflineOrder.findOne(query);
+    if (off) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      off.deliveryOtp = otp;
+      await off.save();
+      return res.status(200).json({ success: true, message: "OTP sent to customer" });
+    }
+    return next(new ErrorResponse("Order not found or not assigned to you", 404));
+  }
 
   // Fabric C→T dropoff vs customer pickup vs final T→C
   const isFabricToTailor = order.status === "fabric-picked-up";
@@ -1776,7 +1820,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   const isObjectId = mongoose.isValidObjectId(req.params.id);
   const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
 
-  const order = await Order.findOne({
+  let order = await Order.findOne({
     ...query,
     $or: [
       { pickupPartner: req.user.id },
@@ -1786,6 +1830,39 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   }).session(session).select('+pickupDeliveryOtp +dropoffDeliveryOtp'); // Ensure OTPs are selected
 
   if (!order) {
+    order = await Order.findOne(query).session(session).select('+pickupDeliveryOtp +dropoffDeliveryOtp');
+  }
+
+  if (!order) {
+      const OfflineOrder = require("../../../models/OfflineOrder.js");
+      const off = await OfflineOrder.findOne(query).session(session);
+      if (off) {
+          if (off.deliveryPartner?.toString() !== req.user.id && off.shopTailor?.toString() !== req.user.id) {
+              await session.abortTransaction();
+              return next(new ErrorResponse("Order not assigned to you", 403));
+          }
+          off.deliveryPartnerStatus = "accepted";
+          off.fulfillmentStatus = "completed";
+          if (paymentMethod) {
+              off.advancePaid = off.totalAmount;
+              off.paymentStatus = "paid";
+          }
+          if (!off.history) off.history = [];
+          off.history.push({
+              status: off.status,
+              message: "Offline delivery completed by partner",
+              updatedBy: req.user.id,
+              timestamp: new Date(),
+          });
+          await off.save({ session });
+          await session.commitTransaction();
+          return res.status(200).json({
+              success: true,
+              message: "Offline delivery completed",
+              data: off
+          });
+      }
+
       await session.abortTransaction();
       return next(new ErrorResponse("Order not found or not assigned to you", 404));
   }

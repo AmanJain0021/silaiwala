@@ -128,7 +128,9 @@ const OfflineOrderTrackPage = () => {
                             {data.fulfillmentMethod === 'home_delivery' && data.deliveryAddress && (
                                 <p className="mt-3 text-xs text-gray-600 bg-gray-50 rounded-xl p-3">
                                     <span className="font-bold text-gray-800">Deliver to: </span>
-                                    {data.deliveryAddress}
+                                    {typeof data.deliveryAddress === 'object'
+                                        ? [data.deliveryAddress.street || data.deliveryAddress.addressLine1 || data.deliveryAddress.flat, data.deliveryAddress.landmark, data.deliveryAddress.city, data.deliveryAddress.state, data.deliveryAddress.pincode || data.deliveryAddress.zipCode].filter(Boolean).join(', ') || 'Home delivery address'
+                                        : String(data.deliveryAddress)}
                                 </p>
                             )}
                             {data.fulfillmentMethod !== 'home_delivery' && data.status === 'ready' && (

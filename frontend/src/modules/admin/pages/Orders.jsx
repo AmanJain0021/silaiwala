@@ -410,7 +410,7 @@ const AdminOrders = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-gray-900">{order.customer}</span>
+                                            <span className="text-xs font-bold text-gray-900">{typeof order.customer === 'object' ? (order.customer?.name || order.customer?.email || 'Customer') : String(order.customer || '')}</span>
                                             <span className="text-[10px] text-gray-400 font-medium">{order.phone}</span>
                                         </div>
                                     </td>
@@ -421,12 +421,12 @@ const AdminOrders = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 flex items-center gap-2">
-                                        {order.tailor !== 'N/A' && (
+                                        {order.tailor && order.tailor !== 'N/A' && (
                                             <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 shrink-0">
-                                                {order.tailor.charAt(0)}
+                                                {(typeof order.tailor === 'object' ? (order.tailor?.name || 'T') : String(order.tailor || 'T')).charAt(0)}
                                             </div>
                                         )}
-                                        <span className="text-xs font-bold text-gray-700">{order.tailor}</span>
+                                        <span className="text-xs font-bold text-gray-700">{typeof order.tailor === 'object' ? (order.tailor?.name || 'Tailor') : String(order.tailor || '')}</span>
                                     </td>
                                     <td className="px-6 py-4 text-xs font-black text-gray-900">{order.amount}</td>
                                     <td className="px-6 py-4">

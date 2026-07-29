@@ -461,15 +461,19 @@ const AdminDashboard = () => {
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] lg:text-xs font-black text-primary uppercase">{order.id}</span>
                                                     <span className="text-xs lg:text-sm font-bold text-gray-900 mt-0.5">{order.service}</span>
-                                                    <span className="text-[9px] lg:text-[10px] text-gray-400 font-medium">Customer: {order.customer}</span>
+                                                    <span className="text-[9px] lg:text-[10px] text-gray-400 font-medium">
+                                                        Customer: {typeof order.customer === 'object' ? (order.customer?.name || order.customer?.email || 'Customer') : String(order.customer || '')}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="px-5 lg:px-8 py-4 lg:py-5">
                                                 <div className="flex items-center gap-2">
                                                     <div className="h-6 w-6 lg:h-7 lg:w-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                                        {order.tailor.charAt(0)}
+                                                        {(typeof order.tailor === 'object' ? (order.tailor?.name || 'T') : String(order.tailor || 'T')).charAt(0)}
                                                     </div>
-                                                    <span className="text-[10px] lg:text-xs font-bold text-gray-700">{order.tailor}</span>
+                                                    <span className="text-[10px] lg:text-xs font-bold text-gray-700">
+                                                        {typeof order.tailor === 'object' ? (order.tailor?.name || 'Tailor') : String(order.tailor || '')}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="px-5 lg:px-8 py-4 lg:py-5 text-xs lg:text-sm font-black text-gray-900">{order.amount}</td>

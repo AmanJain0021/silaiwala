@@ -130,7 +130,11 @@ const OfflineOrderReceiptModal = ({ order, onClose }) => {
                                         : 'Customer pickup at shop'}
                                 </p>
                                 {order.fulfillmentMethod === 'home_delivery' && order.deliveryAddress && (
-                                    <p className="text-xs text-gray-600 mt-1">{order.deliveryAddress}</p>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        {typeof order.deliveryAddress === 'object'
+                                            ? [order.deliveryAddress.street || order.deliveryAddress.addressLine1 || order.deliveryAddress.flat, order.deliveryAddress.landmark, order.deliveryAddress.city, order.deliveryAddress.state, order.deliveryAddress.pincode || order.deliveryAddress.zipCode].filter(Boolean).join(', ') || 'Home delivery address'
+                                            : String(order.deliveryAddress)}
+                                    </p>
                                 )}
                                 {(order.deliveryFee || 0) > 0 && (
                                     <p className="text-xs text-gray-500 mt-1">
