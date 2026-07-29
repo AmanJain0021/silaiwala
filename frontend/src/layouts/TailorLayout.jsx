@@ -253,6 +253,44 @@ const TailorLayout = () => {
 
             {/* ── MAIN CONTENT AREA ── */}
             <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
+                {/* ── MOBILE TOP HEADER ── */}
+                <header className="md:hidden bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-sm">
+                    <Link to="/partner" className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-[#0A0A0A] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 shrink-0">
+                            <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <h1 className="text-base font-black text-gray-900 leading-none tracking-tight">
+                                SewZ<span className="text-[#843D9B]">ella</span>
+                            </h1>
+                            <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Partner Portal</p>
+                        </div>
+                    </Link>
+
+                    <div className="flex items-center gap-2.5">
+                        {status && (
+                            <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100">
+                                <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-[#843D9B]' : 'bg-orange-400'} animate-pulse`}></span>
+                                <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest">{status}</span>
+                            </div>
+                        )}
+                        <Link 
+                            to="/partner/notifications" 
+                            className="p-2 text-gray-600 hover:text-[#843D9B] hover:bg-gray-50 rounded-xl transition-all relative border border-gray-100 flex items-center justify-center"
+                        >
+                            <Bell size={18} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black text-white shadow-sm z-10">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
+                        </Link>
+                        <Link to="/partner/settings" className="w-8 h-8 rounded-xl bg-[#843D9B] text-white flex items-center justify-center font-black text-xs shadow-md shadow-[#843D9B]/20 border border-white shrink-0">
+                            {user?.name?.charAt(0)?.toUpperCase() || 'T'}
+                        </Link>
+                    </div>
+                </header>
+
                 {/* Pull to Refresh Mobile Indicator Banner */}
                 {(pullDistance > 0 || isRefreshing) && (
                     <div 

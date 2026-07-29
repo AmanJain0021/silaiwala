@@ -576,6 +576,7 @@ const Tasks = () => {
                                     
                                     let address = 'Address not specified';
                                     let contactName = 'Unknown';
+                                    let contactPhone = '';
 
                                     // Robust contact and phone resolution:
                                     const custName = typeof activeTask.customer === 'string' 
