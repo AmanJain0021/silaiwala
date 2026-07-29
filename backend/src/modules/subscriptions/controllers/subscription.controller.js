@@ -311,3 +311,23 @@ exports.togglePlanStatus = asyncHandler(async (req, res, next) => {
     message: `Plan successfully ${plan.isActive ? 'enabled' : 'disabled'}`,
   });
 });
+
+/**
+ * @desc    Get all subscribed tailors (Admin)
+ * @route   GET /api/v1/subscriptions/admin/subscribers
+ * @access  Private (Admin only)
+ */
+exports.getSubscribedTailorsAdmin = asyncHandler(async (req, res, next) => {
+  const Tailor = require("../../../models/Tailor.js");
+  const tailors = await Tailor.find({ activePlan: { $ne: null } })
+    .populate("user", "name email phoneNumber profileImage")
+    .populate("activePlan", "name price billingCycle durationDays commissionPercentage theme maxOrdersPerMonth features")
+    .sort("-updatedAt")
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    count: tailors.length,
+    data: tailors,
+  });
+});

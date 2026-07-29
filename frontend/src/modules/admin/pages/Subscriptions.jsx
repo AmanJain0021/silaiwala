@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { CreditCard, Plus, Edit2, Trash2, CheckCircle, XCircle, AlertCircle, X, Zap, Star } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { CreditCard, Plus, Edit2, Trash2, CheckCircle, XCircle, AlertCircle, X, Zap, Star, Users, Calendar, Clock, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../tailor/services/api'; // Using existing API service
 
 const AdminSubscriptions = () => {
+    const [activeTab, setActiveTab] = useState('plans'); // 'plans' | 'subscribers'
     const [plans, setPlans] = useState([]);
+    const [subscribers, setSubscribers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +33,7 @@ const AdminSubscriptions = () => {
 
     useEffect(() => {
         fetchPlans();
+        fetchSubscribers();
     }, []);
 
     const fetchPlans = async () => {
@@ -47,6 +51,21 @@ const AdminSubscriptions = () => {
             setIsLoading(false);
         }
     };
+
+    const fetchSubscribers = useCallback(async () => {
+        setIsLoadingSubscribers(true);
+        try {
+            const res = await api.get('/subscriptions/admin/subscribers');
+            if (res.data.success) {
+                setSubscribers(res.data.data || []);
+            }
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Error fetching subscribers:', error);
+        } finally {
+            setIsLoadingSubscribers(false);
+        }
+    }, []);
 
     const handleOpenModal = (plan = null) => {
         if (plan) {
@@ -174,122 +193,266 @@ const AdminSubscriptions = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            {/* Header & Tabs */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Subscription Plans</h1>
-                    <p className="text-sm text-gray-500 mt-1">Manage tailor subscription tiers, pricing, and features.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Subscription & Memberships</h1>
+                    <p className="text-sm text-gray-500 mt-1">Manage tailor subscription tiers, pricing, and active subscriptions.</p>
                 </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={fetchSubscribers}
+                        className="p-2 text-gray-500 hover:text-primary hover:bg-gray-50 rounded-xl transition-all border border-gray-200"
+                        title="Refresh"
+                    >
+                        <RefreshCw size={18} className={isLoadingSubscribers ? 'animate-spin' : ''} />
+                    </button>
+                    {activeTab === 'plans' && (
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm text-sm font-bold"
+                        >
+                            <Plus size={18} />
+                            <span>Create Plan</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Sub-Navigation Tabs */}
+            <div className="flex border-b border-gray-200 space-x-8">
                 <button
-                    onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+                    onClick={() => setActiveTab('plans')}
+                    className={`py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors ${
+                        activeTab === 'plans'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
                 >
-                    <Plus size={18} />
-                    <span>Create Plan</span>
+                    <CreditCard size={18} />
+                    <span>Subscription Plans ({plans.length})</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('subscribers')}
+                    className={`py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors ${
+                        activeTab === 'subscribers'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    <Users size={18} />
+                    <span>Active Subscribers ({subscribers.length})</span>
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {plans.map((plan) => (
-                    <div key={plan._id} className={`bg-white rounded-2xl shadow-sm border relative overflow-hidden flex flex-col ${!plan.isActive ? 'border-gray-200 opacity-75' : plan.theme === 'elite' ? 'border-amber-200' : plan.theme === 'premium' ? 'border-indigo-200' : 'border-gray-200'}`}>
-                        
-                        {/* Status Ribbon */}
-                        {!plan.isActive && (
-                            <div className="absolute top-4 right-4 z-10">
-                                <span className="bg-gray-100 text-gray-500 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 border border-gray-200">
-                                    <XCircle size={14} /> Inactive
-                                </span>
-                            </div>
-                        )}
-                        {plan.isActive && plan.isPopular && (
-                            <div className="absolute top-4 right-4 z-10">
-                                <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 border border-amber-200">
-                                    <Star size={14} /> Popular
-                                </span>
-                            </div>
-                        )}
-
-                        <div className={`p-6 border-b ${plan.theme === 'elite' ? 'bg-amber-50/50' : plan.theme === 'premium' ? 'bg-indigo-50/50' : 'bg-gray-50/50'}`}>
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className={`p-2 rounded-xl ${plan.theme === 'elite' ? 'bg-amber-100 text-amber-600' : plan.theme === 'premium' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-600'}`}>
-                                    {plan.theme === 'elite' ? <Star size={20} /> : plan.theme === 'premium' ? <Zap size={20} /> : <CreditCard size={20} />}
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                                    <p className="text-xs font-medium text-gray-500 capitalize">{plan.theme} Theme</p>
-                                </div>
-                            </div>
+            {/* TAB 1: SUBSCRIPTION PLANS GRID */}
+            {activeTab === 'plans' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {plans.map((plan) => (
+                        <div key={plan._id} className={`bg-white rounded-2xl shadow-sm border relative overflow-hidden flex flex-col ${!plan.isActive ? 'border-gray-200 opacity-75' : plan.theme === 'elite' ? 'border-amber-200' : plan.theme === 'premium' ? 'border-indigo-200' : 'border-gray-200'}`}>
                             
-                            <div className="mt-4 flex items-end gap-1">
-                                {plan.audience === 'customer' ? (
-                                    <>
-                                        <span className="text-3xl font-black text-gray-900">{plan.pointsPrice || 0}</span>
-                                        <span className="text-sm font-medium text-gray-500 mb-1">pts / {plan.durationDays || 30} days</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="text-3xl font-black text-gray-900">{plan.price === 0 ? 'Free' : `₹${plan.price}`}</span>
-                                        <span className="text-sm font-medium text-gray-500 mb-1">/{plan.billingCycle.toLowerCase()}</span>
-                                    </>
+                            {/* Status Ribbon */}
+                            {!plan.isActive && (
+                                <div className="absolute top-4 right-4 z-10">
+                                    <span className="bg-gray-100 text-gray-500 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 border border-gray-200">
+                                        <XCircle size={14} /> Inactive
+                                    </span>
+                                </div>
+                            )}
+                            {plan.isActive && plan.isPopular && (
+                                <div className="absolute top-4 right-4 z-10">
+                                    <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 border border-amber-200">
+                                        <Star size={14} /> Popular
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className={`p-6 border-b ${plan.theme === 'elite' ? 'bg-amber-50/50' : plan.theme === 'premium' ? 'bg-indigo-50/50' : 'bg-gray-50/50'}`}>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className={`p-2 rounded-xl ${plan.theme === 'elite' ? 'bg-amber-100 text-amber-600' : plan.theme === 'premium' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-600'}`}>
+                                        {plan.theme === 'elite' ? <Star size={20} /> : plan.theme === 'premium' ? <Zap size={20} /> : <CreditCard size={20} />}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                                        <p className="text-xs font-medium text-gray-500 capitalize">{plan.theme} Theme</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-4 flex items-end gap-1">
+                                    {plan.audience === 'customer' ? (
+                                        <>
+                                            <span className="text-3xl font-black text-gray-900">{plan.pointsPrice || 0}</span>
+                                            <span className="text-sm font-medium text-gray-500 mb-1">pts / {plan.durationDays || 30} days</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-3xl font-black text-gray-900">{plan.price === 0 ? 'Free' : `₹${plan.price}`}</span>
+                                            <span className="text-sm font-medium text-gray-500 mb-1">/{plan.billingCycle.toLowerCase()}</span>
+                                        </>
+                                    )}
+                                </div>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-2">
+                                    {plan.audience === 'customer' ? 'Customer · points' : 'Tailor · Razorpay'}
+                                </p>
+                                {plan.description && (
+                                    <p className="text-sm text-gray-600 mt-3">{plan.description}</p>
                                 )}
                             </div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-2">
-                                {plan.audience === 'customer' ? 'Customer · points' : 'Tailor · Razorpay'}
+
+                            <div className="p-6 flex-1 flex flex-col">
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Commission</p>
+                                        <p className="font-semibold text-gray-900 text-sm">{plan.commissionRange}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Order Limit</p>
+                                        <p className="font-semibold text-gray-900 text-sm">{plan.maxOrdersPerMonth === -1 ? 'Unlimited' : `${plan.maxOrdersPerMonth}/mo`}</p>
+                                    </div>
+                                </div>
+
+                                <div className="mb-6 flex-1">
+                                    <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Key Features</p>
+                                    <ul className="space-y-2">
+                                        {plan.features.map((feature, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                                                <CheckCircle size={16} className="text-green-500 shrink-0 mt-0.5" />
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-100">
+                                    <button
+                                        onClick={() => handleToggleStatus(plan._id)}
+                                        className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${plan.isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                                    >
+                                        {plan.isActive ? 'Disable' : 'Enable'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleOpenModal(plan)}
+                                        className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-primary rounded-xl transition-colors border border-gray-200"
+                                        title="Edit Plan"
+                                    >
+                                        <Edit2 size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(plan._id)}
+                                        className="p-2 bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors border border-gray-200"
+                                        title="Delete Plan"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* TAB 2: ACTIVE SUBSCRIBERS (TAILORS) */}
+            {activeTab === 'subscribers' && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    {isLoadingSubscribers ? (
+                        <div className="p-12 text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                            <p className="text-sm font-bold text-gray-400">Loading subscribed tailors...</p>
+                        </div>
+                    ) : subscribers.length === 0 ? (
+                        <div className="p-12 text-center space-y-3">
+                            <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+                                <Users size={24} />
+                            </div>
+                            <h3 className="text-base font-bold text-gray-800">No Tailor Subscriptions Purchased Yet</h3>
+                            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                                When tailors purchase or upgrade to a subscription plan (Starter, Pro, Elite), their active plan, payment history, and expiry date will show up here.
                             </p>
-                            {plan.description && (
-                                <p className="text-sm text-gray-600 mt-3">{plan.description}</p>
-                            )}
                         </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-100 font-bold">
+                                    <tr>
+                                        <th className="px-6 py-4">Tailor / Shop</th>
+                                        <th className="px-6 py-4">Active Plan</th>
+                                        <th className="px-6 py-4">Price & Cycle</th>
+                                        <th className="px-6 py-4">Order Limit</th>
+                                        <th className="px-6 py-4">Plan Expiry</th>
+                                        <th className="px-6 py-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {subscribers.map((tailor) => {
+                                        const plan = tailor.activePlan || {};
+                                        const expiry = tailor.planExpiryDate ? new Date(tailor.planExpiryDate) : null;
+                                        const now = new Date();
+                                        const isExpired = expiry && expiry < now;
+                                        const daysLeft = expiry ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : null;
 
-                        <div className="p-6 flex-1 flex flex-col">
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Commission</p>
-                                    <p className="font-semibold text-gray-900 text-sm">{plan.commissionRange}</p>
-                                </div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Order Limit</p>
-                                    <p className="font-semibold text-gray-900 text-sm">{plan.maxOrdersPerMonth === -1 ? 'Unlimited' : `${plan.maxOrdersPerMonth}/mo`}</p>
-                                </div>
-                            </div>
-
-                            <div className="mb-6 flex-1">
-                                <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Key Features</p>
-                                <ul className="space-y-2">
-                                    {plan.features.map((feature, idx) => (
-                                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                                            <CheckCircle size={16} className="text-green-500 shrink-0 mt-0.5" />
-                                            <span>{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-100">
-                                <button
-                                    onClick={() => handleToggleStatus(plan._id)}
-                                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${plan.isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
-                                >
-                                    {plan.isActive ? 'Disable' : 'Enable'}
-                                </button>
-                                <button
-                                    onClick={() => handleOpenModal(plan)}
-                                    className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-primary rounded-xl transition-colors border border-gray-200"
-                                    title="Edit Plan"
-                                >
-                                    <Edit2 size={18} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(plan._id)}
-                                    className="p-2 bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors border border-gray-200"
-                                    title="Delete Plan"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
+                                        return (
+                                            <tr key={tailor._id} className="hover:bg-gray-50/50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-10 w-10 rounded-xl bg-[#843D9B] text-white flex items-center justify-center font-black text-sm shrink-0">
+                                                            {tailor.user?.name?.charAt(0)?.toUpperCase() || tailor.name?.charAt(0) || 'T'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900 leading-none">{tailor.shopName || tailor.name || tailor.user?.name || 'Tailor Partner'}</p>
+                                                            <p className="text-xs text-gray-500 mt-1">{tailor.phone || tailor.user?.phoneNumber || tailor.user?.email || ''}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                        <Star size={12} className="text-amber-500 fill-amber-500" />
+                                                        <span>{plan.name || 'Active Plan'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-black text-gray-900">{plan.price === 0 ? 'Free' : `₹${plan.price}`}</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{plan.billingCycle || 'Monthly'}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-bold text-gray-700">
+                                                        {plan.maxOrdersPerMonth === -1 || !plan.maxOrdersPerMonth ? 'Unlimited' : `${plan.maxOrdersPerMonth} / month`}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {expiry ? (
+                                                        <div>
+                                                            <p className="font-bold text-xs text-gray-900 flex items-center gap-1">
+                                                                <Calendar size={12} className="text-gray-400" />
+                                                                {expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </p>
+                                                            <p className={`text-[10px] font-black mt-0.5 ${isExpired ? 'text-rose-600' : daysLeft <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                                {isExpired ? 'Expired' : `${daysLeft} days remaining`}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">No Expiry</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {isExpired ? (
+                                                        <span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-100 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                                                            Expired
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                                                            Active
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    )}
+                </div>
+            )}
 
             {/* Modal */}
             {isModalOpen && (

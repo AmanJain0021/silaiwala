@@ -95,6 +95,5 @@ const offlineCustomerSchema = new mongoose.Schema(
 
 offlineCustomerSchema.index({ name: "text", phone: "text" });
 offlineCustomerSchema.index({ phone: 1, name: 1 });
-offlineCustomerSchema.index({ phoneNormalized: 1 });
 
 module.exports = mongoose.model("OfflineCustomer", offlineCustomerSchema);

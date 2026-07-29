@@ -1,5 +1,5 @@
 const express = require("express");
-const { getPlans, subscribe, createSubscriptionOrder, redeemWithPoints, getAllPlansAdmin, createPlan, updatePlan, deletePlan, togglePlanStatus } = require("../controllers/subscription.controller.js");
+const { getPlans, subscribe, createSubscriptionOrder, redeemWithPoints, getAllPlansAdmin, getSubscribedTailorsAdmin, createPlan, updatePlan, deletePlan, togglePlanStatus } = require("../controllers/subscription.controller.js");
 const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
 const router = express.Router();
@@ -12,6 +12,7 @@ router.post("/redeem-with-points", protect, authorize("customer"), redeemWithPoi
 
 // Admin routes
 router.get("/admin", protect, authorize("admin"), getAllPlansAdmin);
+router.get("/admin/subscribers", protect, authorize("admin"), getSubscribedTailorsAdmin);
 router.post("/admin", protect, authorize("admin"), createPlan);
 router.put("/admin/:id", protect, authorize("admin"), updatePlan);
 router.delete("/admin/:id", protect, authorize("admin"), deletePlan);
