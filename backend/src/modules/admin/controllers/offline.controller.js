@@ -550,6 +550,7 @@ exports.createOfflineOrder = async (req, res) => {
       status,
       priority = "normal",
       notes,
+      expectedCompletionDate,
       shopTailor,
       fulfillmentMethod = "pickup",
       deliveryAddress,
@@ -644,6 +645,7 @@ exports.createOfflineOrder = async (req, res) => {
       deliveryNotes: fulfillment.deliveryNotes,
       fulfillmentStatus: fulfillment.fulfillmentStatus,
       notes: notes?.trim() || "",
+      expectedCompletionDate: expectedCompletionDate ? new Date(expectedCompletionDate) : undefined,
       shopTailor: shopTailor || customer.shopTailor || undefined,
       createdBy: req.user._id,
       source: "offline",
@@ -704,6 +706,7 @@ exports.updateOfflineOrder = async (req, res) => {
       status,
       priority,
       notes,
+      expectedCompletionDate,
       shopTailor,
       message,
       fulfillmentMethod,
@@ -731,6 +734,9 @@ exports.updateOfflineOrder = async (req, res) => {
       order.priority = priority === "urgent" ? "urgent" : "normal";
     }
     if (notes !== undefined) order.notes = notes.trim();
+    if (expectedCompletionDate !== undefined) {
+      order.expectedCompletionDate = expectedCompletionDate ? new Date(expectedCompletionDate) : null;
+    }
     if (shopTailor !== undefined) order.shopTailor = shopTailor || undefined;
     if (status !== undefined) {
       if (!isAllowedOfflineStatus(status)) {

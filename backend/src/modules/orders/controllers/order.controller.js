@@ -407,35 +407,69 @@ ledgerId,
        }
     }
 
+    // --- Helper for creating & auto-assigning MeasurementRequest ---
+    const ensureMeasurementRequest = async (orderDoc, session = null) => {
+        if (!orderDoc || !orderDoc.isMeasurementHome) return null;
+        const MeasurementRequest = require("../../../models/MeasurementRequest.js");
+        const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
+
+        let existing = session 
+            ? await MeasurementRequest.findOne({ order: orderDoc._id }).session(session)
+            : await MeasurementRequest.findOne({ order: orderDoc._id });
+
+        if (!existing) {
+            console.log(`📐 [ensureMeasurementRequest] Creating MeasurementRequest for Order #${orderDoc.orderId}`);
+            const createObj = {
+                requestId: `MR${Date.now()}`,
+                order: orderDoc._id,
+                customer: orderDoc.customer,
+                tailor: orderDoc.tailor,
+                status: "pending",
+                customerAddress: orderDoc.deliveryAddress ? {
+                    street: orderDoc.deliveryAddress.street,
+                    city: orderDoc.deliveryAddress.city,
+                    state: orderDoc.deliveryAddress.state,
+                    zipCode: orderDoc.deliveryAddress.zipCode
+                } : undefined,
+                customerLocation: orderDoc.deliveryAddress?.location?.coordinates?.length === 2 ? orderDoc.deliveryAddress.location : undefined
+            };
+
+            let mRequest;
+            if (session) {
+                const created = await MeasurementRequest.create([createObj], { session });
+                mRequest = created[0];
+            } else {
+                mRequest = await MeasurementRequest.create(createObj);
+            }
+
+            orderDoc.measurementRequest = mRequest._id;
+            if (session) {
+                await orderDoc.save({ session });
+            } else {
+                await orderDoc.save();
+            }
+            existing = mRequest;
+        }
+
+        // Trigger auto-assignment if not assigned yet
+        if (existing && (!existing.executive || existing.status === "pending")) {
+            try {
+                await autoAssignMeasurementExecutive(orderDoc);
+            } catch (assignErr) {
+                console.error("⚠️ Failed auto-assigning measurement executive:", assignErr.message);
+            }
+        }
+
+        return existing;
+    };
+
     // --- Create Measurement Request if applicable ---
     if (order.isMeasurementHome && (paymentType === 'advance' || paymentType === 'full' || !['advance', 'remaining', 'full'].includes(paymentType))) {
         try {
-            console.log(`[verifyPayment] Attempting to create MeasurementRequest for order: ${order.orderId}, paymentType: ${paymentType}`);
-            const MeasurementRequest = require("../../../models/MeasurementRequest.js");
-            const existing = await MeasurementRequest.findOne({ order: order._id }).session(session);
-            if (!existing) {
-                const mRequest = await MeasurementRequest.create([{
-                    requestId: `MR${Date.now()}`,
-                    order: order._id,
-                    customer: order.customer,
-                    tailor: order.tailor,
-                    status: "pending",
-                    customerAddress: order.deliveryAddress ? {
-                        street: order.deliveryAddress.street,
-                        city: order.deliveryAddress.city,
-                        state: order.deliveryAddress.state,
-                        zipCode: order.deliveryAddress.zipCode
-                    } : undefined,
-                    customerLocation: order.deliveryAddress?.location?.coordinates?.length === 2 ? order.deliveryAddress.location : undefined
-                }], { session });
-                order.measurementRequest = mRequest[0]._id;
-                console.log(`[verifyPayment] Successfully created MeasurementRequest: ${mRequest[0]._id}`);
-            } else {
-                console.log(`[verifyPayment] MeasurementRequest already exists for order: ${order.orderId}`);
-            }
+            await ensureMeasurementRequest(order, session);
         } catch (mErr) {
             console.error(`[verifyPayment] ERROR creating MeasurementRequest:`, mErr);
-            throw mErr; // Throw to abort transaction
+            throw mErr;
         }
     }
 
@@ -447,6 +481,14 @@ ledgerId,
         title: "Order Placed Successfully!",
         message: `Your payment for order ${order.orderId} was successful. Our tailor will start working on it soon.`,
         data: { orderId: order._id, targetUrl: "/profile/orders" }
+    });
+
+    await sendNotification({
+        recipient: "admins",
+        type: "NEW_ORDER",
+        title: "New Paid Order Received! 🛍️",
+        message: `Payment verified for Order #${order.orderId} (₹${order.totalAmount}).`,
+        data: { orderId: order._id, targetUrl: "/admin/orders" }
     });
 
     // Note: Auto-assignment is no longer triggered here. 
@@ -779,7 +821,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     deliveryAddress,
     status: initialStatus,
     fabricPickupRequired,
-    isMeasurementHome: isMeasurementHome || formattedItems.some(item => item.measurements?.type === 'home'),
+    isMeasurementHome: isMeasurementHome || formattedItems.some(item => item.measurements?.type === 'home' || item.isTailorAtHome),
     isBridalConsultation: isBridalConsultation || false,
     bridalNotes,
     bridalDate,
@@ -790,7 +832,36 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }],
   });
 
-  // Auto-assignment is now deferred until after payment in verifyPayment.
+  // Create MeasurementRequest and trigger auto-assignment if Measurement at Home flow
+  if (order.isMeasurementHome) {
+      try {
+          const MeasurementRequest = require("../../../models/MeasurementRequest.js");
+          const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
+          
+          let existing = await MeasurementRequest.findOne({ order: order._id });
+          if (!existing) {
+              const mRequest = await MeasurementRequest.create({
+                  requestId: `MR${Date.now()}`,
+                  order: order._id,
+                  customer: order.customer,
+                  tailor: order.tailor,
+                  status: "pending",
+                  customerAddress: order.deliveryAddress ? {
+                      street: order.deliveryAddress.street,
+                      city: order.deliveryAddress.city,
+                      state: order.deliveryAddress.state,
+                      zipCode: order.deliveryAddress.zipCode
+                  } : undefined,
+                  customerLocation: order.deliveryAddress?.location?.coordinates?.length === 2 ? order.deliveryAddress.location : undefined
+              });
+              order.measurementRequest = mRequest._id;
+              await order.save();
+          }
+          await autoAssignMeasurementExecutive(order);
+      } catch (mErr) {
+          console.error("Failed creating/assigning MeasurementRequest in createOrder:", mErr);
+      }
+  }
 
   // 7. Socket Emission and Notification for Tailor
   try {
@@ -817,6 +888,14 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         title: notificationTitle,
         message: notificationMessage,
         data: { orderId: order._id, targetUrl: "/partner/orders" }
+    });
+
+    await sendNotification({
+        recipient: "admins",
+        type: "NEW_ORDER",
+        title: "New Order Placed! 🛍️",
+        message: `New Order #${order.orderId} of ₹${order.totalAmount} placed.`,
+        data: { orderId: order._id, targetUrl: "/admin/orders" }
     });
   } catch (err) {
     console.error("Socket/Notification emission failed in createOrder:", err.message);
@@ -864,9 +943,14 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
     
     if (order.tailor?._id) {
       const tailorDoc = await Tailor.findOne({ user: order.tailor._id }).lean();
-      if (tailorDoc?.location?.coordinates?.length >= 2) {
-        vendorLongitude = tailorDoc.location.coordinates[0];
-        vendorLatitude = tailorDoc.location.coordinates[1];
+      if (tailorDoc) {
+        if (typeof order.tailor === 'object') {
+          order.tailor.shopName = tailorDoc.shopName || order.tailor.shopName || order.tailor.name;
+        }
+        if (tailorDoc.location?.coordinates?.length >= 2) {
+          vendorLongitude = tailorDoc.location.coordinates[0];
+          vendorLatitude = tailorDoc.location.coordinates[1];
+        }
       }
     }
 
@@ -934,9 +1018,14 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   
   if (order.tailor?._id) {
     const tailorDoc = await Tailor.findOne({ user: order.tailor._id }).lean();
-    if (tailorDoc?.location?.coordinates?.length >= 2) {
-      vendorLongitude = tailorDoc.location.coordinates[0];
-      vendorLatitude = tailorDoc.location.coordinates[1];
+    if (tailorDoc) {
+      if (typeof order.tailor === 'object') {
+        order.tailor.shopName = tailorDoc.shopName || order.tailor.shopName || order.tailor.name;
+      }
+      if (tailorDoc.location?.coordinates?.length >= 2) {
+        vendorLongitude = tailorDoc.location.coordinates[0];
+        vendorLatitude = tailorDoc.location.coordinates[1];
+      }
     }
   }
 

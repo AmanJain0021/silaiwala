@@ -1321,6 +1321,9 @@ exports.getAllCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
   try {
+    if (req.body.basePrice !== undefined && req.body.basePrice !== null && Number(req.body.basePrice) < 0) {
+      return res.status(400).json({ success: false, message: "Base price cannot be negative" });
+    }
     const category = await Category.create(req.body);
     await invalidateCache("cache:categories:*");
     res.status(201).json({ success: true, data: category });
@@ -1333,7 +1336,10 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const category = await Category.findByIdAndUpdate(id, req.body, { new: true });
+    if (req.body.basePrice !== undefined && req.body.basePrice !== null && Number(req.body.basePrice) < 0) {
+      return res.status(400).json({ success: false, message: "Base price cannot be negative" });
+    }
+    const category = await Category.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
     if (!category) return res.status(404).json({ success: false, message: "Category not found" });
     await invalidateCache("cache:categories:*");
     res.status(200).json({ success: true, data: category });
@@ -1744,9 +1750,10 @@ exports.updateSettings = async (req, res) => {
     if (updateData.appConfig) settings.appConfig = updateData.appConfig;
     if (updateData.visitFee) settings.visitFee = updateData.visitFee;
     if (updateData.pricing) settings.pricing = updateData.pricing;
-    if (updateData.walletConfig) settings.walletConfig = updateData.walletConfig;
+    if (updateData.commissions) settings.commissions = { ...settings.commissions, ...updateData.commissions };
+    if (updateData.walletConfig) settings.walletConfig = { ...settings.walletConfig, ...updateData.walletConfig };
     if (updateData.codWalletConfig) settings.codWalletConfig = updateData.codWalletConfig;
-    if (updateData.deliveryRates) settings.deliveryRates = updateData.deliveryRates;
+    if (updateData.deliveryRates) settings.deliveryRates = { ...settings.deliveryRates, ...updateData.deliveryRates };
     if (updateData.executiveRates) settings.executiveRates = updateData.executiveRates;
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
     if (updateData.referralConfig) settings.referralConfig = updateData.referralConfig;

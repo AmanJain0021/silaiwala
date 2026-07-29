@@ -503,29 +503,25 @@ const DeliveryLayout = () => {
             </main>
 
             {/* Bottom Mobile Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 h-[80px] bg-white backdrop-blur-xl rounded-t-[1.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] flex items-center justify-around px-2 z-50 border-t border-white/5 md:max-w-md md:mx-auto pb-safe">
+            <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.08)] flex items-center justify-around px-1 z-50 border-t border-slate-100 md:max-w-md md:mx-auto pb-safe">
                 {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                    const isActive = location.pathname === item.path || (item.path !== '/delivery/dashboard' && location.pathname.startsWith(item.path));
+                    const Icon = item.icon;
                     return (
                         <NavLink
                             key={item.path}
                             to={item.path}
-                            className="relative group flex flex-col items-center justify-center w-16 h-full"
+                            className="flex flex-col items-center justify-center flex-1 h-full py-1 min-w-[50px] relative group"
                         >
-                            <div className={`p-3 rounded-[1.2rem] transition-all duration-300 ${isActive
-                                ? 'bg-primary text-white shadow-xl shadow-primary/20 mb-3'
-                                : 'text-slate-400 hover:text-slate-200'
+                            <div className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center ${isActive
+                                ? 'bg-primary text-white shadow-md shadow-primary/30 scale-105'
+                                : 'text-slate-400 group-hover:text-slate-600 active:scale-95'
                                 }`}>
-                                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                             </div>
-                            {isActive && (
-                                <motion.span
-                                    layoutId="navLabel"
-                                    className="absolute bottom-2.5 text-[9px] font-black text-primary uppercase tracking-widest"
-                                >
-                                    {item.name}
-                                </motion.span>
-                            )}
+                            <span className={`text-[10px] tracking-tight mt-0.5 transition-colors whitespace-nowrap ${isActive ? 'text-primary font-bold' : 'text-slate-400 font-medium'}`}>
+                                {item.name}
+                            </span>
                         </NavLink>
                     );
                 })}

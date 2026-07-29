@@ -34,11 +34,27 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
 import { getToken } from '../utils/auth';
 import { toast } from 'react-hot-toast';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { playNotificationSound } from '../utils/audio';
+
 const AdminLayout = () => {
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [hasUnread, setHasUnread] = useState(false);
+
+    // Read Admin user for FCM registration
+    const adminUser = React.useMemo(() => {
+        try {
+            const userStr = localStorage.getItem('admin_user') || localStorage.getItem('user');
+            return userStr ? JSON.parse(userStr) : { role: 'admin' };
+        } catch {
+            return { role: 'admin' };
+        }
+    }, []);
+
+    // Register FCM Push Token for Admin Web Browser
+    usePushNotifications(adminUser);
 
     React.useEffect(() => {
         const socket = io(SOCKET_URL, {
@@ -49,21 +65,34 @@ const AdminLayout = () => {
 
         socket.on('connect', () => {
             socket.emit('join_admin_room');
-            const userStr = localStorage.getItem('admin_user');
-            if (userStr && userStr !== 'undefined') {
-                const activeUser = JSON.parse(userStr);
-                const userId = activeUser._id || activeUser.id;
-                if (userId) {
-                    socket.emit('join_user_room', userId);
-                }
+            const userId = adminUser._id || adminUser.id;
+            if (userId) {
+                socket.emit('join_user_room', userId);
             }
         });
 
-        socket.on('new_order', (data) => {
+        socket.on('new_notification', (data = {}) => {
             setHasUnread(true);
-            toast.success(`New Order Received: ${data.orderId || 'Check dashboard'}`, {
+            try { playNotificationSound('admin'); } catch (e) {}
+
+            let icon = '🔔';
+            if (data.type === 'NEW_REGISTRATION') icon = '📋';
+            if (data.type === 'NEW_ORDER' || data.type === 'ORDER_CREATED') icon = '🛍️';
+
+            toast(data.title ? `${data.title}: ${data.message}` : (data.message || 'New notification received'), {
+                icon,
+                position: 'top-right',
+                duration: 6000
+            });
+        });
+
+        socket.on('new_order', (data = {}) => {
+            setHasUnread(true);
+            try { playNotificationSound('admin'); } catch (e) {}
+            toast.success(data.message || `New Order Received: ${data.orderId || 'Check dashboard'}`, {
                 icon: '🛍️',
-                position: 'top-right'
+                position: 'top-right',
+                duration: 6000
             });
         });
 
@@ -76,7 +105,7 @@ const AdminLayout = () => {
         });
 
         return () => socket.disconnect();
-    }, []);
+    }, [adminUser]);
 
     const menuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },

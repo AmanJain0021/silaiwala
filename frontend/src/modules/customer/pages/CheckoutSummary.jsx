@@ -230,6 +230,7 @@ const CheckoutSummary = () => {
                     }
                     payload = {
                         tailorId: resolvedTailorId,
+                        isMeasurementHome: currentCheckoutItems.some(item => item.configuration?.isTailorAtHome || item.configuration?.measurements?.type === 'home'),
                         items: currentCheckoutItems.map(item => ({
                             service: item.serviceDetails.id || item.serviceDetails._id,
                             fabricSource: item.configuration.fabricSource,

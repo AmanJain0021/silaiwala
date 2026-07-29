@@ -57,6 +57,10 @@ const TailorRegistration = () => {
     const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);
 
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [step]);
+
     const handleNext = async () => {
         if (isValidating) return;
         setIsValidating(true);
@@ -88,6 +92,13 @@ const TailorRegistration = () => {
         }
 
         if (step === 1) {
+            // Profile image is REQUIRED
+            if (!watch('profileImage')) {
+                toast.error("Profile picture is required to proceed.");
+                setIsValidating(false);
+                return;
+            }
+
             setIsLoading(true);
             try {
                 const otpResponse = await api.post('/auth/verify-otp', {
@@ -133,6 +144,23 @@ const TailorRegistration = () => {
         }
 
         if (step === 3) {
+            // Document uploads MUST BE REQUIRED
+            if (!watch('aadharFront')) {
+                toast.error("Aadhaar Card (Front) photo is required.");
+                setIsValidating(false);
+                return;
+            }
+            if (!watch('aadharBack')) {
+                toast.error("Aadhaar Card (Back) photo is required.");
+                setIsValidating(false);
+                return;
+            }
+            if (!watch('panImage')) {
+                toast.error("PAN Card photo is required.");
+                setIsValidating(false);
+                return;
+            }
+
             // Process Document uploads for Step 3
             const uploadsSuccess = await processStepUploads(['aadharFront', 'aadharBack', 'panImage', 'licenseImage']);
             if (!uploadsSuccess) {

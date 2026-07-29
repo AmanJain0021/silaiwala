@@ -50,6 +50,10 @@ const settingsSchema = new mongoose.Schema(
       /** Order subtotal (₹) above which customer delivery fee is waived */
       freeDeliveryMinOrder: { type: Number, default: 999 },
     },
+    commissions: {
+      stitchingPercentage: { type: Number, default: 15 },
+      readymadePercentage: { type: Number, default: 10 },
+    },
     deliveryRates: {
       baseFee: { type: Number, default: 20 },
       perKmRate: { type: Number, default: 10 },

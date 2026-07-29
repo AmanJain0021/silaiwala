@@ -186,6 +186,7 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
       query = {
         $or: [
           { executive: req.user.id, status: "assigned" },
+          { executive: req.user.id, status: "pending" },
           { executive: null, status: "pending" }
         ]
       };
@@ -193,7 +194,13 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
       query = { executive: req.user.id, status: status };
     }
   } else {
-    query = { executive: req.user.id };
+    // Default query: show requests assigned to this executive OR unassigned pending requests
+    query = {
+      $or: [
+        { executive: req.user.id },
+        { executive: null, status: "pending" }
+      ]
+    };
   }
 
   const requests = await MeasurementRequest.find(query)

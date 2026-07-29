@@ -8,11 +8,13 @@ import { validatePassword } from '../../../utils/validation';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import { compressImage } from '../../../utils/imageCompression';
+import DeliveryLegalModal from '../components/DeliveryLegalModal';
 
 const libraries = ['places'];
 
 const DeliverySignup = () => {
     const navigate = useNavigate();
+    const [legalModal, setLegalModal] = useState({ isOpen: false, type: 'terms' });
     const signup = useAuthStore((state) => state.signup);
     const isLoading = useAuthStore((state) => state.isLoading);
 
@@ -672,7 +674,7 @@ const DeliverySignup = () => {
                                     className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
                                 />
                                 <span className="text-[10px] text-gray-500 font-medium">
-                                    I agree to the <button type="button" onClick={() => window.open('/delivery/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] hover:underline mx-1">Terms</button> & <button type="button" onClick={() => window.open('/delivery/legal/privacy-policy', '_blank')} className="text-[#843D9B] hover:underline mx-1">Privacy</button>
+                                    I agree to the <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'terms' })} className="text-[#843D9B] hover:underline mx-1 cursor-pointer">Terms & Conditions</button> & <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })} className="text-[#843D9B] hover:underline mx-1 cursor-pointer">Privacy Policy</button>
                                 </span>
                             </label>
                         </motion.div>
@@ -711,6 +713,11 @@ const DeliverySignup = () => {
                 </div>
             </form>
 
+            <DeliveryLegalModal 
+                isOpen={legalModal.isOpen} 
+                type={legalModal.type} 
+                onClose={() => setLegalModal({ isOpen: false, type: 'terms' })} 
+            />
         </motion.div>
     );
 };

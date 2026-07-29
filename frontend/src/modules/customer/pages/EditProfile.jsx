@@ -5,33 +5,47 @@ import useAuthStore from '../../../store/authStore';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import { validateName, validateEmail, validatePhone } from '../../../utils/validation';
 
+import useUserStore from '../../../store/userStore';
+import toast from 'react-hot-toast';
+
 const EditProfile = () => {
     const navigate = useNavigate();
-    const { user, setUser } = useAuthStore(state => state);
+    const { user: authUser } = useAuthStore(state => state);
+    const { updateProfile, profile } = useUserStore();
+
+    const storedUser = React.useMemo(() => {
+        try {
+            const stored = localStorage.getItem('user');
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const activeUser = profile || authUser || storedUser || {};
 
     const [formData, setFormData] = useState({
-        name: user?.name || 'Guest User',
-        email: user?.email || 'guest@example.com',
-        phone: user?.phone || '+91 9876543210',
-        location: user?.location || 'Srinagar, Kashmir',
-        profileImage: user?.profileImage || null
+        name: activeUser.name || '',
+        email: activeUser.email || '',
+        phone: activeUser.phone || activeUser.phoneNumber || '',
+        location: activeUser.location || '',
+        profileImage: activeUser.profileImage || null
     });
     
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const newErrors = {};
 
         const nameErr = validateName(formData.name);
         if (nameErr) newErrors.name = nameErr;
 
-        const emailErr = validateEmail(formData.email);
-        if (emailErr) newErrors.email = emailErr;
-
-        const phoneErr = validatePhone(formData.phone);
-        if (phoneErr) newErrors.phone = phoneErr;
+        if (formData.email) {
+            const emailErr = validateEmail(formData.email);
+            if (emailErr) newErrors.email = emailErr;
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -41,14 +55,20 @@ const EditProfile = () => {
         setErrors({});
         setIsLoading(true);
 
-        // Mock API Call
-        setTimeout(() => {
-            // Update store
-            // useAuthStore doesn't have a setUser by default in many patterns, checking common ones
-            // For now, mock success and navigate back
-            setIsLoading(false);
+        try {
+            await updateProfile({
+                name: formData.name,
+                email: formData.email,
+                phoneNumber: formData.phone,
+                profileImage: formData.profileImage
+            });
+            toast.success('Profile updated successfully!');
             navigate('/user/profile');
-        }, 1000);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update profile');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -115,17 +135,27 @@ const EditProfile = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.phone ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#843D9B] focus-within:bg-white transition-all`}>
+                        <div className="flex justify-between items-center ml-1">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number</label>
+                            <span className="text-[9px] font-bold text-gray-400">{formData.phone?.length || 0}/10 digits</span>
+                        </div>
+                        <div className={`flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border ${errors.phone || (formData.phone && formData.phone.length > 0 && formData.phone.length < 10) ? 'border-red-300' : 'border-gray-100'} focus-within:border-[#843D9B] focus-within:bg-white transition-all`}>
                             <Phone size={18} className="text-gray-400" />
                             <input
                                 type="tel"
+                                maxLength={10}
                                 value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    setFormData({ ...formData, phone: val });
+                                }}
                                 className="bg-transparent text-sm font-bold w-full focus:outline-none"
-                                placeholder="Enter phone"
+                                placeholder="Enter 10-digit phone number"
                             />
                         </div>
+                        {formData.phone && formData.phone.length > 0 && formData.phone.length < 10 && (
+                            <p className="text-[10px] text-red-500 font-bold ml-2">Must be exactly 10 digits</p>
+                        )}
                         {errors.phone && <p className="text-[10px] text-red-500 font-bold ml-2">{errors.phone}</p>}
                     </div>
 

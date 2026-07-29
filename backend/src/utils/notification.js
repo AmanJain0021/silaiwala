@@ -18,7 +18,7 @@ const sendNotification = async (options) => {
     let notificationsToCreate = [];
     if (recipient === "admins") {
       const User = require("../models/User.js");
-      const admins = await User.find({ role: 'admin' });
+      const admins = await User.find({ role: { $in: ['admin', 'super_admin'] } });
       for (const admin of admins) {
         notificationsToCreate.push({
           recipient: admin._id,
@@ -46,12 +46,20 @@ const sendNotification = async (options) => {
     if (io) {
       if (recipient === "admins") {
         const User = require("../models/User.js");
-        const admins = await User.find({ role: 'admin' });
+        const admins = await User.find({ role: { $in: ['admin', 'super_admin'] } });
         admins.forEach(admin => {
           io.to(`user_${admin._id.toString()}`).emit("new_notification", {
              title, message, type, data, createdAt: new Date()
           });
         });
+        io.to("admin_room").emit("new_notification", {
+           title, message, type, data, createdAt: new Date()
+        });
+        if (type === "NEW_ORDER" || type === "ORDER_CREATED") {
+           io.to("admin_room").emit("new_order", {
+              title, message, type, data, createdAt: new Date()
+           });
+        }
       } else if (recipient === "delivery_partners") {
           io.to("delivery_partners").emit("new_notification", {
               title,
@@ -118,7 +126,7 @@ const sendNotification = async (options) => {
       
       if (recipient === "admins") {
         const admins = await User.find({ 
-          role: 'admin',
+          role: { $in: ['admin', 'super_admin'] },
           $or: [
             { fcmToken: { $exists: true, $not: {$size: 0} } },
             { fcmTokenMobile: { $exists: true, $not: {$size: 0} } }

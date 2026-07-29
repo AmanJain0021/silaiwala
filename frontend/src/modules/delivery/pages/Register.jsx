@@ -1,24 +1,74 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiTruck, FiCamera, FiChevronRight, FiChevronLeft, FiCheck, FiFileText, FiShield } from 'react-icons/fi';
+import { 
+  FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiTruck, FiCamera, 
+  FiChevronRight, FiChevronLeft, FiCheck, FiFileText, FiShield, FiCreditCard, FiTrash2 
+} from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import api from '../../../shared/utils/api';
+import DeliveryLegalModal from '../components/DeliveryLegalModal';
 const logo = '/sewzella_logo-removebg-preview.png';
 
 const STEPS = [
   { id: 1, title: 'Personal Info', icon: FiUser },
   { id: 2, title: 'Documents', icon: FiFileText },
-  { id: 3, title: 'Vehicle & Account', icon: FiTruck },
+  { id: 3, title: 'Vehicle & Bank', icon: FiTruck },
 ];
+
+const DRAFT_KEY = 'delivery_signup_draft_v2';
+
+const dataURLtoFile = (dataurl, filename) => {
+  if (!dataurl || typeof dataurl !== 'string' || !dataurl.startsWith('data:')) return null;
+  try {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  } catch (e) {
+    console.error('Error converting base64 to file:', e);
+    return null;
+  }
+};
 
 const DeliveryRegister = () => {
   const navigate = useNavigate();
+  const [legalModal, setLegalModal] = useState({ isOpen: false, type: 'terms' });
   const { register, sendRegistrationOtp, verifyRegistrationOtp, isLoading } = useDeliveryAuthStore();
-  const [currentStep, setCurrentStep] = useState(1);
   const fileInputRefs = useRef({});
 
+  // Restore draft state from localStorage on page refresh
+  const getInitialState = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          currentStep: parsed.currentStep || 1,
+          formData: parsed.formData || {},
+          previews: parsed.previews || {},
+          isPhoneVerified: parsed.isPhoneVerified || false
+        };
+      }
+    } catch (e) {
+      console.error("Error reading draft:", e);
+    }
+    return {
+      currentStep: 1,
+      formData: {},
+      previews: {},
+      isPhoneVerified: false
+    };
+  };
+
+  const initialState = getInitialState();
+  const [currentStep, setCurrentStep] = useState(initialState.currentStep);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -28,33 +78,49 @@ const DeliveryRegister = () => {
     address: '',
     vehicleType: 'bike',
     vehicleNumber: '',
-    // password: '', // Removed
-    // confirmPassword: '', // Removed
-    drivingLicense: null,
-    drivingLicenseBack: null,
-    aadharCard: null,
-    aadharCardBack: null,
-    profileImage: null,
+    accountName: '',
+    accountNumber: '',
+    bankName: '',
+    ifscCode: '',
+    ...initialState.formData
   });
-  
-  const [fieldErrors, setFieldErrors] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    emergencyContact: '',
-    aadharNumber: '',
-    vehicleNumber: '',
-    address: ''
-  });
-  
+  const [previews, setPreviews] = useState(initialState.previews || {});
+  const [isPhoneVerified, setIsPhoneVerified] = useState(initialState.isPhoneVerified || false);
+
+  const [fieldErrors, setFieldErrors] = useState({});
   const [phoneOtp, setPhoneOtp] = useState('');
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [showOtpField, setShowOtpField] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const [previews, setPreviews] = useState({});
+  // Save draft to localStorage to survive refreshes and network loss
+  useEffect(() => {
+    try {
+      const draftPayload = {
+        currentStep,
+        formData: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          emergencyContact: formData.emergencyContact,
+          aadharNumber: formData.aadharNumber,
+          address: formData.address,
+          vehicleType: formData.vehicleType,
+          vehicleNumber: formData.vehicleNumber,
+          accountName: formData.accountName,
+          accountNumber: formData.accountNumber,
+          bankName: formData.bankName,
+          ifscCode: formData.ifscCode,
+        },
+        previews,
+        isPhoneVerified
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
+    } catch (e) {
+      console.warn("Draft save failed:", e);
+    }
+  }, [formData, previews, currentStep, isPhoneVerified]);
 
   const checkUserExistsInBackend = async (emailVal, phoneVal) => {
     try {
@@ -86,31 +152,62 @@ const DeliveryRegister = () => {
     const { name, value, files } = e.target;
     setFieldErrors((prev) => ({ ...prev, [name]: '' }));
 
+    // File inputs with DataURL preview for network-loss persistence
     if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack', 'profileImage'].includes(name)) {
       const file = files?.[0] || null;
-      setFormData((prev) => ({ ...prev, [name]: file }));
       if (file) {
-        const url = URL.createObjectURL(file);
-        setPreviews((prev) => ({ ...prev, [name]: url }));
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Url = reader.result;
+          setPreviews((prev) => ({ ...prev, [name]: base64Url }));
+          setFormData((prev) => ({ ...prev, [name]: file }));
+        };
+        reader.readAsDataURL(file);
       }
       return;
     }
+
+    // 1. Full Name & Account Holder Name: ONLY letters and spaces
+    if (name === 'name' || name === 'accountName') {
+      const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
+      setFormData((prev) => ({ ...prev, [name]: lettersOnly }));
+      return;
+    }
+
+    // 2. Bank Account Number: ONLY numbers (digits)
+    if (name === 'accountNumber') {
+      const numericValue = value.replace(/\D/g, '');
+      setFormData((prev) => ({ ...prev, [name]: numericValue }));
+      return;
+    }
+
+    // 3. Aadhaar, Phone, Emergency Contact
     if (['aadharNumber', 'phone', 'emergencyContact'].includes(name)) {
       const numericValue = value.replace(/\D/g, '');
-      
       if (name === 'aadharNumber') {
         const formatted = numericValue.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
         setFormData((prev) => ({ ...prev, [name]: formatted }));
         return;
       }
-
       setFormData((prev) => ({ ...prev, [name]: numericValue }));
-      
-      // If phone number changes, reset verification
       if (name === 'phone') {
         setIsPhoneVerified(false);
         setShowOtpField(false);
       }
+      return;
+    }
+
+    // 4. IFSC Code: Uppercase Alphanumeric max 11 chars
+    if (name === 'ifscCode') {
+      const formatted = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+      setFormData((prev) => ({ ...prev, [name]: formatted }));
+      return;
+    }
+
+    // 5. Vehicle Number: Uppercase Alphanumeric & spaces
+    if (name === 'vehicleNumber') {
+      const formatted = value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
+      setFormData((prev) => ({ ...prev, [name]: formatted }));
       return;
     }
 
@@ -120,7 +217,7 @@ const DeliveryRegister = () => {
   const handleSendOtp = async () => {
     setFieldErrors((prev) => ({ ...prev, phone: '', email: '' }));
 
-    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
+    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
       const msg = 'Enter a valid 10-digit mobile number starting with 6-9';
       setFieldErrors((prev) => ({ ...prev, phone: msg }));
       toast.error(msg);
@@ -170,14 +267,17 @@ const DeliveryRegister = () => {
   };
 
   const validateStep = (step) => {
-    const errs = { name: '', email: '', phone: '', emergencyContact: '', aadharNumber: '', vehicleNumber: '', address: '' };
+    const errs = {};
     let isValid = true;
 
     switch (step) {
       case 1:
-        if (!formData.profileImage) { toast.error('Profile photo is required'); isValid = false; }
-        if (!formData.name.trim() || formData.name.trim().length < 3) {
-          errs.name = 'Full name (min 3 chars) is required';
+        if (!previews.profileImage && !formData.profileImage) {
+          toast.error('Profile photo is required');
+          isValid = false;
+        }
+        if (!formData.name.trim() || formData.name.trim().length < 3 || !/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+          errs.name = 'Full name must contain only letters (min 3 chars)';
           toast.error(errs.name);
           isValid = false;
         }
@@ -194,59 +294,84 @@ const DeliveryRegister = () => {
           errs.phone = 'Mobile number is required';
           toast.error(errs.phone);
           isValid = false;
-        } else if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
+        } else if (!/^[6-9]\d{9}$/.test(formData.phone)) {
           errs.phone = 'Enter a valid 10-digit mobile number starting with 6-9';
           toast.error(errs.phone);
           isValid = false;
         } else if (!isPhoneVerified) {
-          errs.phone = 'Please verify your mobile number first';
+          errs.phone = 'Please verify your mobile number with OTP first';
           toast.error(errs.phone);
           isValid = false;
         }
-        if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact.replace(/\D/g, ''))) {
+        if (!formData.emergencyContact || !/^[6-9]\d{9}$/.test(formData.emergencyContact)) {
           errs.emergencyContact = 'Enter a valid 10-digit emergency contact number';
           toast.error(errs.emergencyContact);
           isValid = false;
-        }
-        if (formData.emergencyContact && formData.emergencyContact === formData.phone) {
+        } else if (formData.emergencyContact === formData.phone) {
           errs.emergencyContact = 'Emergency contact cannot be the same as your mobile number';
           toast.error(errs.emergencyContact);
           isValid = false;
         }
-        if (!formData.aadharNumber.trim()) {
-          errs.aadharNumber = 'Aadhaar number is required';
-          toast.error(errs.aadharNumber);
-          isValid = false;
-        } else if (formData.aadharNumber.replace(/\s/g, '').length !== 12 || !/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) {
+        if (!formData.aadharNumber.trim() || formData.aadharNumber.replace(/\s/g, '').length !== 12) {
           errs.aadharNumber = 'Aadhaar number must be exactly 12 digits';
           toast.error(errs.aadharNumber);
           isValid = false;
         }
         setFieldErrors((prev) => ({ ...prev, ...errs }));
         return isValid;
+
       case 2:
-        if (!formData.drivingLicense) { toast.error('Driving License (Front) is required'); return false; }
-        if (!formData.drivingLicenseBack) { toast.error('Driving License (Back) is required'); return false; }
-        if (!formData.aadharCard) { toast.error('Aadhaar Card (Front) is required'); return false; }
-        if (!formData.aadharCardBack) { toast.error('Aadhaar Card (Back) is required'); return false; }
+        if (!previews.aadharCard && !formData.aadharCard) { toast.error('Aadhaar Card (Front) photo is required'); return false; }
+        if (!previews.aadharCardBack && !formData.aadharCardBack) { toast.error('Aadhaar Card (Back) photo is required'); return false; }
+        
+        // Driving License is required only if vehicle is NOT bicycle
+        if (formData.vehicleType !== 'cycle') {
+          if (!previews.drivingLicense && !formData.drivingLicense) { toast.error('Driving License (Front) photo is required for motorized vehicles'); return false; }
+          if (!previews.drivingLicenseBack && !formData.drivingLicenseBack) { toast.error('Driving License (Back) photo is required for motorized vehicles'); return false; }
+        }
         return true;
+
       case 3:
-        if (!formData.vehicleNumber.trim()) {
-          errs.vehicleNumber = 'Vehicle number is required';
-          toast.error(errs.vehicleNumber);
-          isValid = false;
-        } else if (!/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) {
-          errs.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
-          toast.error(errs.vehicleNumber);
-          isValid = false;
+        if (formData.vehicleType !== 'cycle') {
+          if (!formData.vehicleNumber.trim()) {
+            errs.vehicleNumber = 'Vehicle registration number is required';
+            toast.error(errs.vehicleNumber);
+            isValid = false;
+          } else if (!/^[A-Z]{2}\s?[0-9]{1,2}\s?[A-Z]{0,3}\s?[0-9]{4}$/.test(formData.vehicleNumber.replace(/-/g, ' ').trim())) {
+            errs.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
+            toast.error(errs.vehicleNumber);
+            isValid = false;
+          }
         }
         if (!formData.address.trim() || formData.address.trim().length < 10) {
           errs.address = 'Please provide a complete residential address (min 10 chars)';
           toast.error(errs.address);
           isValid = false;
         }
+        // Bank Details Validation
+        if (!formData.accountName || formData.accountName.trim().length < 3 || !/^[a-zA-Z\s]+$/.test(formData.accountName.trim())) {
+          errs.accountName = 'Account holder name must contain only letters (min 3 chars)';
+          toast.error(errs.accountName);
+          isValid = false;
+        }
+        if (!formData.accountNumber || !/^\d{9,18}$/.test(formData.accountNumber)) {
+          errs.accountNumber = 'Bank account number must be between 9 and 18 digits';
+          toast.error(errs.accountNumber);
+          isValid = false;
+        }
+        if (!formData.bankName || formData.bankName.trim().length < 2) {
+          errs.bankName = 'Bank name is required';
+          toast.error(errs.bankName);
+          isValid = false;
+        }
+        if (!formData.ifscCode || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.trim())) {
+          errs.ifscCode = 'Enter a valid 11-character IFSC code (e.g. SBIN0001234)';
+          toast.error(errs.ifscCode);
+          isValid = false;
+        }
         setFieldErrors((prev) => ({ ...prev, ...errs }));
         return isValid;
+
       default:
         return true;
     }
@@ -257,7 +382,7 @@ const DeliveryRegister = () => {
 
     if (currentStep === 1) {
       const userExists = await checkUserExistsInBackend(formData.email, formData.phone);
-      if (userExists) return; // Remain on Step 1 if user already exists
+      if (userExists) return;
     }
 
     setCurrentStep((s) => Math.min(s + 1, 3));
@@ -296,12 +421,20 @@ const DeliveryRegister = () => {
     if (currentStep !== 3) return;
     if (!validateStep(3)) return;
     try {
+      const getFileObj = (key, filename) => {
+        if (formData[key] instanceof File) return formData[key];
+        if (previews[key] && typeof previews[key] === 'string') {
+          return dataURLtoFile(previews[key], filename);
+        }
+        return null;
+      };
+
       const filesToUpload = [
-        { name: 'Profile Image', file: formData.profileImage, isProfile: true },
-        { name: 'Driving License Front', file: formData.drivingLicense },
-        { name: 'Driving License Back', file: formData.drivingLicenseBack },
-        { name: 'Aadhar Front', file: formData.aadharCard },
-        { name: 'Aadhar Back', file: formData.aadharCardBack }
+        { name: 'Profile Image', file: getFileObj('profileImage', 'profile.jpg'), isProfile: true },
+        { name: 'Driving License Front', file: getFileObj('drivingLicense', 'dl_front.jpg') },
+        { name: 'Driving License Back', file: getFileObj('drivingLicenseBack', 'dl_back.jpg') },
+        { name: 'Aadhar Front', file: getFileObj('aadharCard', 'aadhar_front.jpg') },
+        { name: 'Aadhar Back', file: getFileObj('aadharCardBack', 'aadhar_back.jpg') }
       ].filter(item => item.file instanceof File);
 
       let uploadedUrls = [];
@@ -334,7 +467,11 @@ const DeliveryRegister = () => {
         aadharNumber: formData.aadharNumber.replace(/\s/g, ''),
         address: formData.address.trim(),
         vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
-        vehicleNumber: formData.vehicleNumber.trim(),
+        vehicleNumber: formData.vehicleType === 'cycle' ? 'BICYCLE' : formData.vehicleNumber.trim(),
+        accountName: formData.accountName.trim(),
+        accountNumber: formData.accountNumber.trim(),
+        bankName: formData.bankName.trim(),
+        ifscCode: formData.ifscCode.trim().toUpperCase(),
         documents,
       };
 
@@ -343,7 +480,8 @@ const DeliveryRegister = () => {
       }
 
       const result = await register(payload);
-      toast.success(result.message || 'Registration submitted');
+      localStorage.removeItem(DRAFT_KEY); // Clear draft after successful submission
+      toast.success(result.message || 'Registration submitted successfully!');
       navigate('/delivery/login', { replace: true });
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.message || 'Registration failed';
@@ -531,7 +669,7 @@ const DeliveryRegister = () => {
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-3">Profile Photo *</p>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Full Name *</label>
+                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Full Name (Letters Only) *</label>
                     <div className="relative">
                       <FiUser className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.name ? 'text-rose-500' : 'text-gray-400'}`} />
                       <input 
@@ -539,7 +677,7 @@ const DeliveryRegister = () => {
                         name="name" 
                         value={formData.name} 
                         onChange={handleChange} 
-                        placeholder="Enter your full name" 
+                        placeholder="Enter your full name (Characters only)" 
                         required 
                         className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.name ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
                       />
@@ -580,7 +718,7 @@ const DeliveryRegister = () => {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <div className="relative flex-1 group w-full">
                         <FiPhone className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.phone ? 'text-rose-500' : 'text-gray-400 group-focus-within:text-indigo-500'} transition-colors`} size={16} />
-                        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base">+91</span>
+                        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base select-none pointer-events-none">+91</span>
                         <input 
                           type="tel" 
                           name="phone" 
@@ -651,10 +789,10 @@ const DeliveryRegister = () => {
                   )}
 
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Emergency Contact</label>
+                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Emergency Contact *</label>
                     <div className="relative">
                       <FiShield className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.emergencyContact ? 'text-rose-500' : 'text-gray-400'}`} />
-                      <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base">+91</span>
+                      <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base select-none pointer-events-none">+91</span>
                       <input type="tel" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="Emergency contact number" maxLength={10} className={`w-full pl-20 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.emergencyContact ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} />
                     </div>
                     {fieldErrors.emergencyContact && (
@@ -664,7 +802,7 @@ const DeliveryRegister = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Aadhaar Number</label>
+                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Aadhaar Number *</label>
                     <div className="relative">
                       <FiFileText className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.aadharNumber ? 'text-rose-500' : 'text-gray-400'}`} />
                       <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="1234 5678 9012" maxLength={14} className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.aadharNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-bold tracking-widest transition-all`} />
@@ -688,15 +826,25 @@ const DeliveryRegister = () => {
                   transition={{ duration: 0.25 }}
                   className="space-y-6"
                 >
-                  <div>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2 mb-4">Driving License</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <DocUploadCard name="drivingLicense" label="License Front" />
-                      <DocUploadCard name="drivingLicenseBack" label="License Back" />
+                  {formData.vehicleType !== 'cycle' ? (
+                    <div>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2 mb-4">Driving License (Required) *</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DocUploadCard name="drivingLicense" label="License Front" />
+                        <DocUploadCard name="drivingLicenseBack" label="License Back" />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">🚲</div>
+                      <p className="text-xs font-bold text-emerald-900">
+                        Bicycle Selected: Driving License is not required for bicycles.
+                      </p>
+                    </div>
+                  )}
+
                   <div>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2 mb-4">Aadhaar Card</h3>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2 mb-4">Aadhaar Card (Required) *</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <DocUploadCard name="aadharCard" label="Aadhaar Front" />
                       <DocUploadCard name="aadharCardBack" label="Aadhaar Back" />
@@ -705,13 +853,13 @@ const DeliveryRegister = () => {
                   <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
                     <p className="text-xs font-medium text-amber-800">
                       <span className="font-black uppercase text-[9px] bg-amber-500 text-white px-2 py-0.5 rounded-full mr-2">Note</span>
-                      Upload clear photos. Blurry images will be rejected.
+                      Upload clear photos. Blurry images will be rejected during verification.
                     </p>
                   </div>
                 </motion.div>
               )}
 
-              {/* STEP 3: Vehicle & Account */}
+              {/* STEP 3: Vehicle & Bank Details */}
               {currentStep === 3 && (
                 <motion.div
                   key="step3"
@@ -723,28 +871,46 @@ const DeliveryRegister = () => {
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Type</label>
-                      <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:outline-none text-gray-900 font-medium">
-                        <option value="bike">Bike</option>
-                        <option value="scooter">Scooter</option>
-                        <option value="car">Car</option>
-                        <option value="cycle">Bicycle</option>
-                        <option value="other">Other</option>
+                      <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Type *</label>
+                      <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:outline-none text-gray-900 font-bold">
+                        <option value="bike">Bike (Motorcycle)</option>
+                        <option value="scooter">Scooter / Moped</option>
+                        <option value="car">Car / Van</option>
+                        <option value="cycle">Bicycle (Cycle)</option>
+                        <option value="other">Other Vehicle</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Number</label>
-                      <input type="text" name="vehicleNumber" value={formData.vehicleNumber} onChange={handleChange} placeholder="MH-12-AB-1234" className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.vehicleNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} />
-                      {fieldErrors.vehicleNumber && (
-                        <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                          <span>⚠️</span> {fieldErrors.vehicleNumber}
+
+                    {formData.vehicleType === 'cycle' ? (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-base">🚲</div>
+                        <p className="text-xs font-bold text-emerald-900 leading-tight">
+                          Vehicle Number not required for Cycle.
                         </p>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Registration Number *</label>
+                        <input 
+                          type="text" 
+                          name="vehicleNumber" 
+                          value={formData.vehicleNumber} 
+                          onChange={handleChange} 
+                          placeholder="e.g. MH 12 AB 1234" 
+                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.vehicleNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-bold uppercase transition-all`} 
+                        />
+                        {fieldErrors.vehicleNumber && (
+                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                            <span>⚠️</span> {fieldErrors.vehicleNumber}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Address</label>
-                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Your full address" className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.address ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} />
+                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Residential Address *</label>
+                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Your complete residential address" className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.address ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} />
                     {fieldErrors.address && (
                       <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
                         <span>⚠️</span> {fieldErrors.address}
@@ -752,10 +918,96 @@ const DeliveryRegister = () => {
                     )}
                   </div>
 
+                  {/* Bank Details Section */}
+                  <div className="pt-4 border-t border-gray-100 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FiCreditCard className="text-indigo-600" size={18} />
+                      <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.15em]">Bank Account Details (For Payouts)</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Account Holder Name (Letters Only) *</label>
+                        <input 
+                          type="text" 
+                          name="accountName" 
+                          value={formData.accountName} 
+                          onChange={handleChange} 
+                          placeholder="Name as per bank account" 
+                          required 
+                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.accountName ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                        />
+                        {fieldErrors.accountName && (
+                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                            <span>⚠️</span> {fieldErrors.accountName}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Account Number (Numbers Only) *</label>
+                        <input 
+                          type="text" 
+                          name="accountNumber" 
+                          value={formData.accountNumber} 
+                          onChange={handleChange} 
+                          placeholder="9 - 18 digit account number" 
+                          maxLength={18}
+                          required 
+                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.accountNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-bold tracking-wider transition-all`} 
+                        />
+                        {fieldErrors.accountNumber && (
+                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                            <span>⚠️</span> {fieldErrors.accountNumber}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Bank Name *</label>
+                        <input 
+                          type="text" 
+                          name="bankName" 
+                          value={formData.bankName} 
+                          onChange={handleChange} 
+                          placeholder="e.g. State Bank of India, HDFC" 
+                          required 
+                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.bankName ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                        />
+                        {fieldErrors.bankName && (
+                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                            <span>⚠️</span> {fieldErrors.bankName}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">IFSC Code *</label>
+                        <input 
+                          type="text" 
+                          name="ifscCode" 
+                          value={formData.ifscCode} 
+                          onChange={handleChange} 
+                          placeholder="e.g. SBIN0001234" 
+                          maxLength={11}
+                          required 
+                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.ifscCode ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-bold uppercase tracking-widest transition-all`} 
+                        />
+                        {fieldErrors.ifscCode && (
+                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
+                            <span>⚠️</span> {fieldErrors.ifscCode}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4">
                     <p className="text-xs font-medium text-indigo-900">
                       <span className="font-black uppercase text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded-full mr-2">Info</span>
-                      Approval takes 24-48 hours. You will receive an email notification.
+                      Partner approval takes 24-48 hours. You will be notified via SMS & Email.
                     </p>
                   </div>
 
@@ -768,7 +1020,7 @@ const DeliveryRegister = () => {
                         className="w-4 h-4 rounded border-gray-300 text-[#0f172a] focus:ring-[#0f172a]"
                       />
                       <span className="text-xs text-gray-500 font-medium">
-                        I agree to the <button type="button" onClick={() => window.open('/user/legal/terms-and-conditions', '_blank')} className="text-[#0f172a] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => window.open('/user/legal/privacy-policy', '_blank')} className="text-[#0f172a] hover:underline mx-1">Privacy Policy</button>
+                        I agree to the <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'terms' })} className="text-[#0f172a] hover:underline mx-1 font-bold cursor-pointer">Terms & Conditions</button> and <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })} className="text-[#0f172a] hover:underline mx-1 font-bold cursor-pointer">Privacy Policy</button>
                       </span>
                     </label>
                   </div>
@@ -792,7 +1044,7 @@ const DeliveryRegister = () => {
                 </button>
               ) : (
                 <button type="submit" disabled={isLoading || !agreedToTerms} className={`flex items-center gap-2 px-6 sm:px-8 py-3.5 bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-xl ${isLoading || !agreedToTerms ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-700 active:scale-95'}`}>
-                  {isLoading ? 'Submitting...' : 'Submit Now'}
+                  {isLoading ? 'Submitting...' : 'Submit Enrollment'}
                 </button>
               )}
             </div>
@@ -806,6 +1058,12 @@ const DeliveryRegister = () => {
           </form>
         </motion.div>
       </div>
+
+      <DeliveryLegalModal 
+        isOpen={legalModal.isOpen} 
+        type={legalModal.type} 
+        onClose={() => setLegalModal({ isOpen: false, type: 'terms' })} 
+      />
     </div>
   );
 };

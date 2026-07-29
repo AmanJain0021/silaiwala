@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Image as ImageIcon, Camera } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { compressImage } from '../../../utils/imageCompression';
 
 const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,12 +31,12 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
     useEffect(() => {
         if (initialData) {
             setFormData({
-                name: initialData.name || initialData.title || '',
+                name: initialData.name || '',
                 description: initialData.description || '',
                 price: initialData.price || '',
                 discountPrice: initialData.discountPrice || '',
                 category: initialData.category?._id || initialData.category || '',
-                subCategory: initialData.subCategory || '',
+                subCategory: initialData.subCategory?._id || initialData.subCategory || '',
                 brand: initialData.brand || '',
                 fabric: initialData.fabric || '',
                 gender: initialData.gender || 'Unisex',
@@ -43,33 +44,64 @@ const GarmentForm = ({ initialData, categories, onClose, onSubmitSuccess }) => {
                 fitType: initialData.fitType || '',
                 pattern: initialData.pattern || '',
                 washCare: initialData.washCare || '',
-                images: initialData.images?.length > 0 ? initialData.images : (initialData.image ? [initialData.image] : []),
+                images: initialData.images || (initialData.image ? [initialData.image] : []),
                 variants: initialData.variants || []
             });
         }
     }, [initialData]);
 
     const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files?.[0];
         if (!file) return;
-
-        const uploadData = new FormData();
-        uploadData.append('image', file);
 
         setIsImageUploading(true);
         try {
-            const res = await api.post('/upload', uploadData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            setFormData(prev => ({
-                ...prev,
-                images: [...prev.images, res.data.data]
-            }));
+            const compressedFile = await compressImage(file, 1200, 0.8);
+
+            const uploadData = new FormData();
+            uploadData.append('image', compressedFile);
+
+            let imageUrl = '';
+            try {
+                const res = await api.post('/upload', uploadData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                const rawData = res.data?.data;
+                imageUrl = rawData?.url || (Array.isArray(rawData) ? rawData[0] : rawData) || res.data?.url;
+            } catch (err) {
+                console.warn('Backend /upload failed, trying /upload/public:', err);
+                try {
+                    const resPub = await api.post('/upload/public', uploadData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    const rawData = resPub.data?.data;
+                    imageUrl = rawData?.url || (Array.isArray(rawData) ? rawData[0] : rawData) || resPub.data?.url;
+                } catch (pubErr) {
+                    console.warn('Public upload failed, using compressed Base64 fallback:', pubErr);
+                    imageUrl = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result || '');
+                        reader.onerror = () => resolve('');
+                        reader.readAsDataURL(compressedFile);
+                    });
+                }
+            }
+
+            if (imageUrl) {
+                setFormData(prev => ({
+                    ...prev,
+                    images: [...prev.images, imageUrl]
+                }));
+                toast.success('Image uploaded successfully');
+            } else {
+                toast.error('Failed to upload image');
+            }
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Image upload failed');
+            toast.error('Image upload failed');
         } finally {
             setIsImageUploading(false);
+            if (e.target) e.target.value = '';
         }
     };
 

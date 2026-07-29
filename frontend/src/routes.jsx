@@ -101,6 +101,7 @@ const LiveTracking = React.lazy(() => import('./modules/delivery/pages/LiveTrack
 // Measurement Executive Module
 const MELogin = React.lazy(() => import('./modules/measurement-executive/pages/Login'));
 const MESignup = React.lazy(() => import('./modules/measurement-executive/pages/Signup'));
+const MEPendingApproval = React.lazy(() => import('./modules/measurement-executive/pages/PendingApproval'));
 const MEDashboard = React.lazy(() => import('./modules/measurement-executive/pages/Dashboard'));
 const MERequests = React.lazy(() => import('./modules/measurement-executive/pages/Requests'));
 const MERequestDetail = React.lazy(() => import('./modules/measurement-executive/pages/RequestDetail'));
@@ -178,6 +179,7 @@ const AppRoutes = () => {
             <Route element={<DeliveryAuthLayout />}>
                 <Route path="/delivery/login" element={<DeliveryLogin />} />
                 <Route path="/delivery/signup" element={<DeliverySignup />} />
+                <Route path="/delivery/register" element={<DeliverySignup />} />
                 <Route path="/delivery/forgot-password" element={<DeliveryForgotPassword />} />
                 <Route path="/delivery/reset-password" element={<DeliveryResetPassword />} />
             </Route>
@@ -318,6 +320,7 @@ const AppRoutes = () => {
                 <Route element={<MEAuthLayout />}>
                     <Route path="/executive/login" element={<MELogin />} />
                     <Route path="/executive/signup" element={<MESignup />} />
+                    <Route path="/executive/pending-approval" element={<MEPendingApproval />} />
                 </Route>
                 
                 <Route path="/executive/legal/:type" element={<SharedLegalPage category="executive" />} />

@@ -182,8 +182,16 @@ const AdminOfflineCustomers = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        if (!formData.name.trim() || !formData.phone.trim()) {
+        const cleanName = formData.name.trim();
+        const cleanPhone = formData.phone.trim();
+
+        if (!cleanName || !cleanPhone) {
             toast.error('Name and phone are required');
+            return;
+        }
+
+        if (cleanPhone.length !== 10) {
+            toast.error('Phone number must be exactly 10 digits');
             return;
         }
 
@@ -275,8 +283,9 @@ const AdminOfflineCustomers = () => {
                             <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="tel"
+                                maxLength={10}
                                 value={lookupPhone}
-                                onChange={(e) => setLookupPhone(e.target.value)}
+                                onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                 placeholder="Search walk-in customer by phone..."
                                 className="w-full pl-9 pr-4 py-3 text-sm font-medium bg-gray-50 border border-transparent focus:border-gray-200 rounded-xl outline-none transition-all"
                             />
@@ -687,7 +696,7 @@ const AdminOfflineCustomers = () => {
                                     <input
                                         type="text"
                                         value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                                         placeholder="Customer full name"
                                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
                                         required
@@ -700,8 +709,9 @@ const AdminOfflineCustomers = () => {
                                     </label>
                                     <input
                                         type="tel"
+                                        maxLength={10}
                                         value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                                         placeholder="10-digit mobile number"
                                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
                                         required

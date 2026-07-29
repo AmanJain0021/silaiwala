@@ -1,20 +1,45 @@
 import React from 'react';
+import { OfflineScreen, checkRealConnectivity } from './components/Common/OfflineDetector';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null, isReloading: false };
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorInfo: null, 
+      isReloading: false, 
+      isOffline: !navigator.onLine,
+      isChecking: false 
+    };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true, error, isOffline: !navigator.onLine };
   }
 
   componentDidMount() {
+    this.handleOnline = () => {
+      if (this.state.isOffline || this.state.hasError) {
+        this.setState({ isOffline: false, hasError: false, error: null });
+      }
+    };
+    this.handleOffline = () => {
+      this.setState({ isOffline: true });
+    };
+
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
+
     // Clear the auto-reload flag shortly after successful load
     setTimeout(() => {
         sessionStorage.removeItem('chunk_failed_reload');
     }, 2000);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
   }
 
   checkChunkError(error) {
@@ -30,6 +55,11 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught an error", error, errorInfo);
     
+    if (!navigator.onLine) {
+      this.setState({ isOffline: true, errorInfo });
+      return;
+    }
+
     const isChunkError = this.checkChunkError(error);
                          
     if (isChunkError) {
@@ -45,11 +75,29 @@ class ErrorBoundary extends React.Component {
     this.setState({ errorInfo });
   }
 
-  handleReload = () => {
-    window.location.reload(true);
+  handleReload = async () => {
+    this.setState({ isChecking: true });
+    const isConnected = await checkRealConnectivity();
+    this.setState({ isChecking: false });
+
+    if (isConnected) {
+      this.setState({ hasError: false, isOffline: false, error: null });
+      window.location.reload();
+    } else {
+      this.setState({ isOffline: true });
+    }
   }
 
   render() {
+    if (this.state.isOffline || !navigator.onLine) {
+      return (
+        <OfflineScreen 
+          onRetry={this.handleReload} 
+          isChecking={this.state.isChecking} 
+        />
+      );
+    }
+
     if (this.state.isReloading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f9fafb' }}>

@@ -7,6 +7,8 @@ import { toast } from 'react-hot-toast';
 const AdminServices = () => {
     const [selectedTab, setSelectedTab] = useState('Stitching Categories');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
     const [categoriesData, setCategoriesData] = useState([]);
     const [tailorServices, setTailorServices] = useState([]);
     const [pendingServices, setPendingServices] = useState([]);
@@ -18,6 +20,13 @@ const AdminServices = () => {
     const [isImageUploading, setIsImageUploading] = useState(false);
 
     const tabs = ['Stitching Categories', 'Tailor Services', 'Pending Approvals', 'Pricing & Commissions'];
+
+    const [platformSettings, setPlatformSettings] = useState({
+        stitchingCommission: 15,
+        readymadeCommission: 10,
+        basePickupFee: 40,
+        perKmCharge: 8
+    });
 
     const fetchCategories = async () => {
         setIsLoading(true);
@@ -65,6 +74,24 @@ const AdminServices = () => {
         }
     };
 
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/admin/settings');
+            if (res.data?.data) {
+                const s = res.data.data;
+                setPlatformSettings({
+                    stitchingCommission: s.walletConfig?.platformFeePercentage ?? s.commissions?.stitchingPercentage ?? 15,
+                    readymadeCommission: s.commissions?.readymadePercentage ?? 10,
+                    basePickupFee: s.deliveryRates?.baseFee ?? 40,
+                    perKmCharge: s.deliveryRates?.perKmRate ?? 8
+                });
+            }
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to fetch settings:', error);
+        }
+    };
+
     useEffect(() => {
         if (selectedTab === 'Stitching Categories') {
             fetchCategories();
@@ -72,6 +99,8 @@ const AdminServices = () => {
             fetchTailorServices();
         } else if (selectedTab === 'Pending Approvals') {
             fetchPendingServices();
+        } else if (selectedTab === 'Pricing & Commissions') {
+            fetchSettings();
         }
     }, [selectedTab]);
 
@@ -96,13 +125,86 @@ const AdminServices = () => {
         }
     };
 
+    const handleEditImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !editingCategory) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        setIsImageUploading(true);
+        try {
+            const res = await api.post('/upload', formData);
+            setEditingCategory({ ...editingCategory, image: res.data.data });
+            toast.success('Image uploaded successfully');
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Upload failed:', error);
+            toast.error('Image upload failed');
+        } finally {
+            setIsImageUploading(false);
+        }
+    };
+
+    const handleEditSetting = async (key, currentVal, title) => {
+        const inputVal = window.prompt(`Enter new value for ${title}:`, currentVal);
+        if (inputVal === null || inputVal.trim() === '') return;
+        const numVal = Number(inputVal);
+        if (isNaN(numVal) || numVal < 0) {
+            return toast.error('Value must be a valid non-negative number');
+        }
+
+        try {
+            let payload = {};
+            if (key === 'stitchingCommission') {
+                payload = { walletConfig: { platformFeePercentage: numVal }, commissions: { stitchingPercentage: numVal } };
+            } else if (key === 'readymadeCommission') {
+                payload = { commissions: { readymadePercentage: numVal } };
+            } else if (key === 'basePickupFee') {
+                payload = { deliveryRates: { baseFee: numVal } };
+            } else if (key === 'perKmCharge') {
+                payload = { deliveryRates: { perKmRate: numVal } };
+            }
+            await api.put('/admin/settings', payload);
+            toast.success(`${title} updated successfully`);
+            fetchSettings();
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to update setting:', error);
+            toast.error('Failed to update setting');
+        }
+    };
+
+    const handleEditTailorService = async (service) => {
+        const inputVal = window.prompt(`Edit Base Price for "${service.title}":`, service.basePrice || service.price || 0);
+        if (inputVal === null || inputVal.trim() === '') return;
+        const numVal = Number(inputVal);
+        if (isNaN(numVal) || numVal < 0) {
+            return toast.error('Base price cannot be negative');
+        }
+        try {
+            await api.put(`/services/${service._id}`, { basePrice: numVal, status: 'approved', isActive: true });
+            toast.success('Service updated successfully');
+            fetchTailorServices();
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to update service:', error);
+            toast.error('Failed to update service');
+        }
+    };
+
     const handleAddService = async () => {
-        if (!newService.title || !newService.price) return toast.error('Please fill all required fields');
+        if (!newService.title || newService.price === '' || newService.price === null || newService.price === undefined) {
+            return toast.error('Please fill all required fields');
+        }
+        if (Number(newService.price) < 0) {
+            return toast.error('Base price cannot be negative');
+        }
         setIsSubmitting(true);
         try {
             const payload = {
                 name: newService.title,
-                basePrice: newService.price,
+                basePrice: Number(newService.price),
                 deliveryTime: newService.deliveryTime,
                 description: newService.description,
                 image: newService.image,
@@ -116,7 +218,37 @@ const AdminServices = () => {
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to add service:', error);
-            toast.error('Failed to add category');
+            toast.error(error.response?.data?.message || 'Failed to add category');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleEditService = async () => {
+        if (!editingCategory || !editingCategory.name || editingCategory.basePrice === '' || editingCategory.basePrice === null || editingCategory.basePrice === undefined) {
+            return toast.error('Please fill all required fields');
+        }
+        if (Number(editingCategory.basePrice) < 0) {
+            return toast.error('Base price cannot be negative');
+        }
+        setIsSubmitting(true);
+        try {
+            const payload = {
+                name: editingCategory.name,
+                basePrice: Number(editingCategory.basePrice),
+                deliveryTime: editingCategory.deliveryTime,
+                description: editingCategory.description,
+                image: editingCategory.image,
+            };
+            await api.put(`/admin/categories/${editingCategory._id}`, payload);
+            toast.success('Category updated successfully');
+            setIsEditModalOpen(false);
+            setEditingCategory(null);
+            fetchCategories();
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to edit category:', error);
+            toast.error(error.response?.data?.message || 'Failed to update category');
         } finally {
             setIsSubmitting(false);
         }
@@ -292,7 +424,21 @@ const AdminServices = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
-                                                <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all border border-transparent">
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingCategory({
+                                                            _id: service._id,
+                                                            name: service.name || service.title || '',
+                                                            basePrice: service.basePrice ?? service.price ?? '',
+                                                            deliveryTime: service.deliveryTime || '',
+                                                            description: service.description || '',
+                                                            image: service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
+                                                        });
+                                                        setIsEditModalOpen(true);
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-all border border-transparent"
+                                                    title="Edit Category"
+                                                >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button 
@@ -344,7 +490,16 @@ const AdminServices = () => {
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex justify-between items-start">
                                                                 <h4 className="text-sm font-black text-gray-900 truncate pr-2">{service.title}</h4>
-                                                                <span className="text-xs font-black text-primary">₹{service.basePrice}</span>
+                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                    <span className="text-xs font-black text-primary">₹{service.basePrice || service.price}</span>
+                                                                    <button 
+                                                                        onClick={() => handleEditTailorService(service)}
+                                                                        className="p-1 text-gray-400 hover:text-primary rounded-lg transition-colors cursor-pointer"
+                                                                        title="Edit Base Price"
+                                                                    >
+                                                                        <Edit2 size={12} />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                             <div className="flex items-center gap-1.5 mt-1">
                                                                 <div className="h-4 w-4 rounded-full bg-gray-100 flex items-center justify-center text-[8px] font-bold text-gray-500">
@@ -497,8 +652,13 @@ const AdminServices = () => {
                                             <p className="text-[10px] text-gray-500 mt-0.5">Applied to tailor orders</p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-lg font-black text-primary">15%</span>
-                                            <button className="text-[10px] font-bold text-primary hover:underline">Edit</button>
+                                            <span className="text-lg font-black text-primary">{platformSettings.stitchingCommission}%</span>
+                                            <button 
+                                                onClick={() => handleEditSetting('stitchingCommission', platformSettings.stitchingCommission, 'Stitching Services Commission (%)')}
+                                                className="text-[10px] font-bold text-primary hover:underline cursor-pointer"
+                                            >
+                                                Edit
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -507,8 +667,13 @@ const AdminServices = () => {
                                             <p className="text-[10px] text-gray-500 mt-0.5">Applied to marketplace vendors</p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-lg font-black text-primary">10%</span>
-                                            <button className="text-[10px] font-bold text-primary hover:underline">Edit</button>
+                                            <span className="text-lg font-black text-primary">{platformSettings.readymadeCommission}%</span>
+                                            <button 
+                                                onClick={() => handleEditSetting('readymadeCommission', platformSettings.readymadeCommission, 'Readymade Store Commission (%)')}
+                                                className="text-[10px] font-bold text-primary hover:underline cursor-pointer"
+                                            >
+                                                Edit
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -527,8 +692,13 @@ const AdminServices = () => {
                                             <p className="text-[10px] text-gray-500 mt-0.5">For first 5km</p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-lg font-black text-gray-900">₹40</span>
-                                            <button className="text-[10px] font-bold text-primary hover:underline">Edit</button>
+                                            <span className="text-lg font-black text-gray-900">₹{platformSettings.basePickupFee}</span>
+                                            <button 
+                                                onClick={() => handleEditSetting('basePickupFee', platformSettings.basePickupFee, 'Base Pickup Fee (₹)')}
+                                                className="text-[10px] font-bold text-primary hover:underline cursor-pointer"
+                                            >
+                                                Edit
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -537,8 +707,13 @@ const AdminServices = () => {
                                             <p className="text-[10px] text-gray-500 mt-0.5">Beyond base distance</p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-lg font-black text-gray-900">₹8</span>
-                                            <button className="text-[10px] font-bold text-primary hover:underline">Edit</button>
+                                            <span className="text-lg font-black text-gray-900">₹{platformSettings.perKmCharge}</span>
+                                            <button 
+                                                onClick={() => handleEditSetting('perKmCharge', platformSettings.perKmCharge, 'Per KM Charge (₹)')}
+                                                className="text-[10px] font-bold text-primary hover:underline cursor-pointer"
+                                            >
+                                                Edit
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -589,8 +764,17 @@ const AdminServices = () => {
                                             <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Base Price (₹)</label>
                                             <input 
                                                 type="number" 
+                                                min="0"
+                                                onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
                                                 value={newService.price}
-                                                onChange={e => setNewService({...newService, price: e.target.value})}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    if (val !== '' && Number(val) < 0) {
+                                                        toast.error('Base price cannot be negative');
+                                                        return;
+                                                    }
+                                                    setNewService({...newService, price: val});
+                                                }}
                                                 placeholder="400" 
                                                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                             />
@@ -667,6 +851,135 @@ const AdminServices = () => {
                             </motion.div>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Category Modal */}
+            <AnimatePresence>
+                {isEditModalOpen && editingCategory && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => { setIsEditModalOpen(false); setEditingCategory(null); }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h2 className="text-lg font-black tracking-tight text-gray-900">Edit Category</h2>
+                                <button onClick={() => { setIsEditModalOpen(false); setEditingCategory(null); }} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 flex-1 overflow-y-auto space-y-5 custom-scrollbar">
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Category Title</label>
+                                    <input 
+                                        type="text" 
+                                        value={editingCategory.name}
+                                        onChange={e => setEditingCategory({...editingCategory, name: e.target.value})}
+                                        placeholder="e.g. Designer Saree" 
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Base Price (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
+                                            value={editingCategory.basePrice}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                if (val !== '' && Number(val) < 0) {
+                                                    toast.error('Base price cannot be negative');
+                                                    return;
+                                                }
+                                                setEditingCategory({...editingCategory, basePrice: val});
+                                            }}
+                                            placeholder="400" 
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Est. Delivery Time</label>
+                                        <input 
+                                            type="text" 
+                                            value={editingCategory.deliveryTime}
+                                            onChange={e => setEditingCategory({...editingCategory, deliveryTime: e.target.value})}
+                                            placeholder="3-5 days" 
+                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Description</label>
+                                    <textarea 
+                                        rows={3} 
+                                        value={editingCategory.description}
+                                        onChange={e => setEditingCategory({...editingCategory, description: e.target.value})}
+                                        placeholder="Describe the service..." 
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm resize-none"
+                                    ></textarea>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Category Image</label>
+                                    <div className="flex gap-4 items-center">
+                                        <div className="h-16 w-16 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                                            <img src={editingCategory.image} alt="Preview" className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="relative">
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*"
+                                                    onChange={handleEditImageUpload}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                                    disabled={isImageUploading}
+                                                />
+                                                <div className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-500 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+                                                    {isImageUploading ? (
+                                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                                                    ) : (
+                                                        <Plus size={14} />
+                                                    )}
+                                                    {isImageUploading ? 'Uploading...' : 'Upload Image File'}
+                                                </div>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                value={editingCategory.image}
+                                                onChange={e => setEditingCategory({...editingCategory, image: e.target.value})}
+                                                placeholder="Or paste IMAGE URL here..." 
+                                                className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg text-[10px] font-medium text-gray-500 outline-none focus:bg-white focus:border-gray-200 transition-all" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+                                <button onClick={() => { setIsEditModalOpen(false); setEditingCategory(null); }} className="px-6 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-xl hover:bg-gray-50 transition-colors uppercase tracking-widest">
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleEditService}
+                                    disabled={isSubmitting}
+                                    className="px-6 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Updating...' : 'Update Category'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

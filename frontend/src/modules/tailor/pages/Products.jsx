@@ -5,6 +5,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import SafeImage from '../../../components/Common/SafeImage';
 import GarmentForm from '../components/GarmentForm';
+import { compressImage } from '../../../utils/imageCompression';
 
 const Products = () => {
     const [activeTab, setActiveTab] = useState('samples'); // 'samples' | 'fabrics'
@@ -77,23 +78,54 @@ const Products = () => {
     }, [showModal]);
 
     const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files?.[0];
         if (!file) return;
-
-        const formData = new FormData();
-        formData.append('image', file);
 
         setIsImageUploading(true);
         try {
-            const res = await api.post('/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            setNewItem({ ...newItem, image: res.data.data });
+            const compressedFile = await compressImage(file, 1200, 0.8);
+
+            const formData = new FormData();
+            formData.append('image', compressedFile);
+
+            let imageUrl = '';
+            try {
+                const res = await api.post('/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                const rawData = res.data?.data;
+                imageUrl = rawData?.url || (Array.isArray(rawData) ? rawData[0] : rawData) || res.data?.url;
+            } catch (err) {
+                console.warn('Backend /upload failed, attempting public endpoint:', err);
+                try {
+                    const resPub = await api.post('/upload/public', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    const rawData = resPub.data?.data;
+                    imageUrl = rawData?.url || (Array.isArray(rawData) ? rawData[0] : rawData) || resPub.data?.url;
+                } catch (pubErr) {
+                    console.warn('Public upload failed, using compressed Base64 fallback:', pubErr);
+                    imageUrl = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result || '');
+                        reader.onerror = () => resolve('');
+                        reader.readAsDataURL(compressedFile);
+                    });
+                }
+            }
+
+            if (imageUrl) {
+                setNewItem(prev => ({ ...prev, image: imageUrl }));
+                toast.success('Product photo uploaded successfully');
+            } else {
+                toast.error('Could not process photo upload. Please try another image.');
+            }
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Image upload failed');
+            toast.error('Image upload failed');
         } finally {
             setIsImageUploading(false);
+            if (e.target) e.target.value = '';
         }
     };
 
@@ -368,6 +400,11 @@ const Products = () => {
                                             {item.status === 'pending' && (
                                                 <div className="bg-amber-500/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
                                                     Pending approval
+                                                </div>
+                                            )}
+                                            {item.status === 'approved' && (
+                                                <div className="bg-emerald-500/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
+                                                    Approved
                                                 </div>
                                             )}
                                             {item.status === 'rejected' && (

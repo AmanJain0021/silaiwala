@@ -168,12 +168,11 @@ const TailorLogin = () => {
                     {/* Mobile Number Field */}
                     <div className="group">
                         <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${errors.mobileNumber ? 'border-red-100' : 'border-transparent focus-within:border-[#843D9B] focus-within:bg-white'}`}>
-                            <Phone className={`w-5 h-5 mr-2 transition-colors ${errors.mobileNumber ? 'text-red-400' : 'text-gray-400 focus-within:text-[#843D9B]'}`} />
-                            <span className="text-gray-800 font-bold text-sm mr-2">+91</span>
-                            <div className="w-px h-5 bg-slate-200 mr-2" />
+                            <Phone className={`w-5 h-5 mr-3 transition-colors ${errors.mobileNumber ? 'text-red-400' : 'text-gray-400 focus-within:text-[#843D9B]'}`} />
+                            <span className="text-gray-800 font-medium text-sm mr-2 select-none pointer-events-none">+91</span>
                             <input
                                 type="tel"
-                                placeholder="00000 00000"
+                                placeholder="Mobile number"
                                 maxLength={10}
                                 {...register('mobileNumber', {
                                     required: 'Mobile number is required',
@@ -194,7 +193,31 @@ const TailorLogin = () => {
 
                     {!otpSent && (
                         <div className="pt-2 flex flex-col gap-4">
-                            <label className="flex items-center justify-center gap-2 cursor-pointer mt-2">
+                            {loginMethod === 'password' && (
+                                <div className="group">
+                                    <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${errors.password ? 'border-red-100' : 'border-transparent focus-within:border-[#843D9B] focus-within:bg-white'}`}>
+                                        <Lock className={`w-5 h-5 mr-3 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400 focus-within:text-[#843D9B]'}`} />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Password"
+                                            {...register('password', {
+                                                required: loginMethod === 'password' ? 'Password is required' : false,
+                                            })}
+                                            className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full"
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="text-gray-400 hover:text-[#843D9B] shrink-0"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                    {errors.password && <p className="text-[10px] text-red-500 font-bold mt-1 pl-2">{errors.password.message}</p>}
+                                </div>
+                            )}
+
+                            <label className="flex items-center justify-center gap-2 cursor-pointer mt-1">
                                 <input
                                     type="checkbox"
                                     checked={agreedToTerms}
@@ -208,28 +231,6 @@ const TailorLogin = () => {
 
                             {loginMethod === 'password' && (
                                 <>
-                                    <div className="group">
-                                        <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-4 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${errors.password ? 'border-red-100' : 'border-transparent focus-within:border-[#843D9B] focus-within:bg-white'}`}>
-                                            <Lock className={`w-5 h-5 mr-3 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400 focus-within:text-[#843D9B]'}`} />
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="Password"
-                                                {...register('password', {
-                                                    required: loginMethod === 'password' ? 'Password is required' : false,
-                                                })}
-                                                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-medium text-sm placeholder:text-gray-400 outline-none w-full"
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="text-gray-400 hover:text-[#843D9B] shrink-0"
-                                            >
-                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
-                                        {errors.password && <p className="text-[10px] text-red-500 font-bold mt-1 pl-2">{errors.password.message}</p>}
-                                    </div>
-
                                     <button
                                         type="submit"
                                         disabled={isLoading || !agreedToTerms}

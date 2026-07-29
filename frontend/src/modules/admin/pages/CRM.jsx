@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { 
   Users, UserCheck, UserPlus, RotateCcw, Crown, Target, DollarSign,
-  MoveUpRight, MoveDownRight, Star, Link2, LifeBuoy, Target as TargetIcon
+  MoveUpRight, MoveDownRight, Star, Link2, LifeBuoy, Target as TargetIcon,
+  X, Settings, CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
@@ -34,6 +36,8 @@ const StatCard = ({ icon: Icon, title, value, trend, isPositive, subtitle, iconC
 const CRM = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
+  const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -364,7 +368,7 @@ const CRM = () => {
                 </div>
             </div>
             <div className="mt-auto text-center border-t border-gray-50 pt-2">
-                <button className="text-[11px] font-bold text-indigo-600 hover:underline">View Details</button>
+                <button onClick={() => setIsReferralModalOpen(true)} className="text-[11px] font-bold text-indigo-600 hover:underline cursor-pointer">View Details</button>
             </div>
         </div>
 
@@ -391,7 +395,7 @@ const CRM = () => {
                 </div>
             </div>
             <div className="mt-auto text-center border-t border-gray-50 pt-2">
-                <button className="text-[11px] font-bold text-indigo-600 hover:underline">View Tickets</button>
+                <button onClick={() => navigate('/admin/support')} className="text-[11px] font-bold text-indigo-600 hover:underline cursor-pointer">View Tickets</button>
             </div>
         </div>
 
@@ -418,7 +422,7 @@ const CRM = () => {
                 </div>
             </div>
             <div className="mt-auto text-center border-t border-gray-50 pt-2">
-                <button className="text-[11px] font-bold text-indigo-600 hover:underline">View Reviews</button>
+                <button onClick={() => setIsReviewsModalOpen(true)} className="text-[11px] font-bold text-indigo-600 hover:underline cursor-pointer">View Reviews</button>
             </div>
         </div>
 
@@ -431,7 +435,7 @@ const CRM = () => {
                     </div>
                     <h4 className="font-bold text-gray-900 text-[12px]">AI Customer Insights</h4>
                 </div>
-                <button className="text-[10px] font-bold text-indigo-600 hover:underline">View All</button>
+                <button onClick={() => navigate('/admin/customers')} className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer">View All</button>
             </div>
             <div className="flex flex-col gap-2 mb-2">
                 <div className="flex justify-between items-center">
@@ -455,6 +459,209 @@ const CRM = () => {
             </div>
         </div>
       </div>
+
+      {/* Referral Overview Details Modal */}
+      <AnimatePresence>
+        {isReferralModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            onClick={() => setIsReferralModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <Link2 size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-gray-900">Referral Program Details</h2>
+                    <p className="text-xs text-gray-500 font-medium">Customer referral tracking and rewards summary</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsReferralModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-900 bg-white border border-gray-200 rounded-full shadow-sm"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-100 text-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Referrals</span>
+                    <p className="text-xl font-black text-gray-900 mt-1">{referrals.total.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-green-50/50 p-3.5 rounded-2xl border border-green-100 text-center">
+                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Successful</span>
+                    <p className="text-xl font-black text-green-700 mt-1">{referrals.successful.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-100 text-center">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Points Awarded</span>
+                    <p className="text-xl font-black text-indigo-700 mt-1">₹{referrals.earnings.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                  <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider">Default Reward Rules</h4>
+                  <div className="flex justify-between items-center text-xs py-2 border-b border-gray-200/60">
+                    <span className="font-medium text-gray-600">Referrer Bonus (Existing User)</span>
+                    <span className="font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">50 Points</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs py-2">
+                    <span className="font-medium text-gray-600">Referee Bonus (New Signup)</span>
+                    <span className="font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-lg">25 Points</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider">How Referral Program Works</h4>
+                  <ul className="text-xs text-gray-600 space-y-2 font-medium">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
+                      <span>Customers share their unique referral code during friend invitations.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
+                      <span>When a new user signs up with a valid code, rewards are queued.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
+                      <span>Reward points are credited automatically upon completion of first order advance.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center gap-3">
+                <button
+                  onClick={() => setIsReferralModalOpen(false)}
+                  className="px-4 py-2.5 border border-gray-200 text-gray-600 text-xs font-black rounded-xl hover:bg-white transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setIsReferralModalOpen(false);
+                    navigate('/admin/settings');
+                  }}
+                  className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-black rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2"
+                >
+                  <Settings size={14} /> Configure Reward Settings
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Feedback & Reviews Details Modal */}
+      <AnimatePresence>
+        {isReviewsModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            onClick={() => setIsReviewsModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                    <Star size={20} fill="#f59e0b" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-gray-900">Customer Feedback & Reviews</h2>
+                    <p className="text-xs text-gray-500 font-medium">Ratings breakdown and feedback analytics</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsReviewsModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-900 bg-white border border-gray-200 rounded-full shadow-sm"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 text-center">
+                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Average Rating</span>
+                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                      <span className="text-2xl font-black text-gray-900">{feedback.avgRating}</span>
+                      <Star size={18} className="text-amber-500 fill-amber-500" />
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Reviews</span>
+                    <p className="text-2xl font-black text-gray-900 mt-1">{feedback.totalReviews.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100 text-center">
+                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Negative (&lt; 3★)</span>
+                    <p className="text-2xl font-black text-rose-700 mt-1">{feedback.negativeReviews}</p>
+                  </div>
+                </div>
+
+                {/* Rating distribution bar */}
+                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2">
+                  <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3">Rating Breakdown</h4>
+                  {[
+                    { stars: 5, pct: 75 },
+                    { stars: 4, pct: 18 },
+                    { stars: 3, pct: 4 },
+                    { stars: 2, pct: 2 },
+                    { stars: 1, pct: 1 },
+                  ].map(({ stars, pct }) => (
+                    <div key={stars} className="flex items-center gap-3 text-xs">
+                      <span className="font-bold text-gray-700 w-12 flex items-center gap-1">{stars} <Star size={12} className="text-amber-500 fill-amber-500" /></span>
+                      <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
+                        <div className="bg-amber-500 h-full rounded-full" style={{ width: `${pct}%` }}></div>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 w-10 text-right">{pct}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Highlights */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider">Customer Sentiment Summary</h4>
+                  <div className="p-3 bg-green-50 border border-green-100 rounded-xl text-xs text-green-800 font-medium">
+                    👍 93% positive satisfaction score on tailoring precision & stitching finish.
+                  </div>
+                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-800 font-medium">
+                    🚚 Delivery punctuality rated 4.8/5 across online and offline customer fulfillments.
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+                <button
+                  onClick={() => setIsReviewsModalOpen(false)}
+                  className="px-6 py-2.5 bg-gray-900 text-white text-xs font-black rounded-xl hover:bg-gray-800 transition-all uppercase tracking-wider"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

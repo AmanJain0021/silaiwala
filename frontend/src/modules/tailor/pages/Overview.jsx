@@ -67,43 +67,8 @@ const Overview = () => {
 
     return (
         <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white">
-            {/* ── HEADER (MOBILE ONLY) ── */}
-            <div className="md:hidden bg-[#843D9B] px-4 pt-3 pb-2 flex items-center justify-between shadow-lg shadow-indigo-900/10 shrink-0 border-b border-indigo-400/20">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-indigo-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0 p-0.5">
-                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover rounded-lg" />
-                    </button>
-                    <h1 className="text-[16px] font-black text-white tracking-tight mb-0.5">SEWZELLA</h1>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => navigate('/partner/notifications')}
-                        className="relative text-white/80 hover:text-white transition-colors flex items-center justify-center p-1"
-                    >
-                        <Bell size={22} />
-                        {unreadCount > 0 && (
-                            <span className="absolute top-0 right-0 h-4 w-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
-                                {unreadCount > 99 ? '99+' : unreadCount}
-                            </span>
-                        )}
-                    </button>
-                    <button
-                        onClick={() => navigate('/partner/settings')}
-                        className="relative"
-                    >
-                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#843D9B] font-black text-xs overflow-hidden shadow-sm">
-                            {user?.profile?.profileImage || user?.profileImage ? (
-                                <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                user?.name?.charAt(0)?.toUpperCase() || 'T'
-                            )}
-                        </div>
-                    </button>
-                </div>
-            </div>
-
             {/* ── CONTENT AREA ── */}
-            <div className="flex-1 p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
+            <div className="flex-1 p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6 pb-24 md:pb-12">
                 
                 {/* ── WELCOME SECTION (DESKTOP & MOBILE) ── */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-2">

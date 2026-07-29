@@ -13,7 +13,6 @@ const useUserStore = create(
             error: null,
 
     fetchProfile: async () => {
-        if (get().isLoading) return;
         set({ isLoading: true });
         try {
             const response = await api.get('/customers/profile');

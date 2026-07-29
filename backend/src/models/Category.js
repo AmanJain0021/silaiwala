@@ -26,6 +26,7 @@ const categorySchema = new mongoose.Schema(
     },
     basePrice: {
       type: Number,
+      min: [0, "Base price cannot be negative"],
     },
     deliveryTime: {
       type: String,

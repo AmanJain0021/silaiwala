@@ -128,6 +128,25 @@ const ProfileSettings = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        
+        // Strict Owner Name validation (Letters and spaces only, no numbers or special chars)
+        const cleanName = (formData.name || '').replace(/[^a-zA-Z\s]/g, '').trim();
+        if (!cleanName) {
+            toast.error('Owner name should contain only letters and spaces');
+            return;
+        }
+
+        // Strict 10-digit Contact Number validation
+        const cleanPhone = (formData.phoneNumber || '').replace(/\D/g, '');
+        if (!cleanPhone) {
+            toast.error('Contact number is required');
+            return;
+        }
+        if (cleanPhone.length !== 10) {
+            toast.error('Contact number must be exactly 10 digits');
+            return;
+        }
+
         setIsSaving(true);
         try {
             let uploadedImageUrl = formData.profileImage;
@@ -148,11 +167,15 @@ const ProfileSettings = () => {
                 }
             }
 
-            const payload = { ...formData, profileImage: uploadedImageUrl };
+            const payload = { 
+                ...formData, 
+                phoneNumber: cleanPhone,
+                profileImage: uploadedImageUrl 
+            };
             const res = await api.patch('/tailors/profile', payload);
             if (res.data.success) {
                 setProfile(res.data.data);
-                setFormData({...formData, profileImage: uploadedImageUrl});
+                setFormData({ ...formData, phoneNumber: cleanPhone, profileImage: uploadedImageUrl });
                 setIsEditing(false);
                 toast.success("Profile details saved successfully!");
             }
@@ -434,8 +457,12 @@ const ProfileSettings = () => {
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Owner Name</label>
                                             <input 
                                                 className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                placeholder="Enter owner name (Letters only)"
                                                 value={formData.name} 
-                                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                                onChange={(e) => {
+                                                    const cleanVal = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                    setFormData({...formData, name: cleanVal});
+                                                }}
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -448,13 +475,24 @@ const ProfileSettings = () => {
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Contact Number</label>
+                                            <div className="flex justify-between items-center ml-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Number</label>
+                                                <span className="text-[9px] font-bold text-gray-400">{formData.phoneNumber?.length || 0}/10 digits</span>
+                                            </div>
                                             <input 
-                                                className="w-full px-5 py-3.5 bg-gray-50 border border-transparent focus:border-[#843D9B]/20 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900"
+                                                className={`w-full px-5 py-3.5 bg-gray-50 border ${formData.phoneNumber && formData.phoneNumber.length > 0 && formData.phoneNumber.length < 10 ? 'border-rose-400 focus:border-rose-500' : 'border-transparent focus:border-[#843D9B]/20'} rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-black text-gray-900`}
                                                 type="tel" 
+                                                maxLength={10}
+                                                placeholder="Enter 10-digit mobile number"
                                                 value={formData.phoneNumber} 
-                                                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                    setFormData({...formData, phoneNumber: val});
+                                                }}
                                             />
+                                            {formData.phoneNumber && formData.phoneNumber.length > 0 && formData.phoneNumber.length < 10 && (
+                                                <p className="text-[10px] text-rose-500 font-bold ml-2">Must be exactly 10 digits</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-1">

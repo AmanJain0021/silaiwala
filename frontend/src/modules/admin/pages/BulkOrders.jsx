@@ -221,22 +221,32 @@ const AdminBulkOrders = () => {
                                     <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
                                         <Building2 size={12} /> Contact Information
                                     </h3>
-                                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-[8px] text-gray-400 font-bold uppercase mb-1">Company</p>
-                                            <p className="text-xs font-black text-gray-900">{selectedOrder.organizationName || 'N/A'}</p>
+                                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-3">
+                                        <div className="grid grid-cols-2 gap-4 pb-3 border-b border-gray-200/50">
+                                            <div>
+                                                <p className="text-[8px] text-gray-400 font-bold uppercase mb-1">Company</p>
+                                                <p className="text-xs font-black text-gray-900">{selectedOrder.organizationName || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-gray-400 font-bold uppercase mb-1">Point of Contact</p>
+                                                <p className="text-xs font-black text-gray-900">{selectedOrder.contactPerson}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[8px] text-gray-400 font-bold uppercase mb-1">Point of Contact</p>
-                                            <p className="text-xs font-black text-gray-900">{selectedOrder.contactPerson}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Phone size={12} className="text-gray-300" />
-                                            <p className="text-xs font-bold text-gray-600">{selectedOrder.phoneNumber}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Mail size={12} className="text-gray-300" />
-                                            <p className="text-xs font-bold text-gray-600 truncate">{selectedOrder.email}</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                            <div className="flex items-center gap-2">
+                                                <Phone size={14} className="text-primary shrink-0" />
+                                                <div>
+                                                    <p className="text-[8px] text-gray-400 font-bold uppercase">Phone</p>
+                                                    <p className="text-xs font-bold text-gray-900">{selectedOrder.phoneNumber}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <Mail size={14} className="text-primary shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[8px] text-gray-400 font-bold uppercase">Email</p>
+                                                    <p className="text-xs font-bold text-gray-900 break-all select-all">{selectedOrder.email}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

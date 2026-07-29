@@ -108,6 +108,20 @@ const OfflineOrderReceiptModal = ({ order, onClose }) => {
                                 </div>
                             </div>
 
+                            {order.expectedCompletionDate && (
+                                <div className="text-sm bg-primary/5 border border-primary/10 rounded-2xl p-3">
+                                    <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Expected Completion Date</p>
+                                    <p className="font-bold text-gray-900 mt-0.5">
+                                        {new Date(order.expectedCompletionDate).toLocaleDateString('en-IN', {
+                                            weekday: 'short',
+                                            day: 'numeric',
+                                            month: 'short',
+                                            year: 'numeric'
+                                        })}
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="text-sm bg-gray-50 rounded-2xl p-3">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Handoff</p>
                                 <p className="font-bold mt-0.5">

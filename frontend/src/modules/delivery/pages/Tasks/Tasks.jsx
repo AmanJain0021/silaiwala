@@ -576,29 +576,42 @@ const Tasks = () => {
                                     
                                     let address = 'Address not specified';
                                     let contactName = 'Unknown';
-                                    let contactPhone = 'N/A';
+
+                                    // Robust contact and phone resolution:
+                                    const custName = typeof activeTask.customer === 'string' 
+                                        ? activeTask.customer 
+                                        : (activeTask.customer?.name || activeTask.customerName || activeTask.deliveryAddress?.name || activeTask.shippingAddress?.name || 'Customer');
+
+                                    const custPhone = activeTask.phone || activeTask.customerPhone || 
+                                        (typeof activeTask.customer === 'object' ? (activeTask.customer?.phoneNumber || activeTask.customer?.phone) : '') || 
+                                        activeTask.deliveryAddress?.phone || activeTask.deliveryAddress?.mobile || activeTask.shippingAddress?.phone || activeTask.shippingAddress?.mobile || '';
+
+                                    const tailorName = activeTask.vendorName || activeTask.tailor?.shopName || activeTask.tailor?.name || 
+                                        (typeof activeTask.tailor === 'string' ? activeTask.tailor : 'Tailor Workshop');
+
+                                    const tailorPhone = activeTask.vendorPhone || activeTask.tailorPhone || activeTask.tailor?.phoneNumber || activeTask.tailor?.phone || '';
 
                                     if (isFabricPickup) {
                                         // Fabric Pickup Flow: Customer -> Tailor
                                         if (isPickupStage) {
-                                            address = activeTask.deliveryAddress;
-                                            contactName = activeTask.customer?.name;
-                                            contactPhone = activeTask.customer?.phoneNumber;
+                                            address = activeTask.deliveryAddress || activeTask.address || activeTask.shippingAddress;
+                                            contactName = custName;
+                                            contactPhone = custPhone;
                                         } else {
-                                            address = activeTask.tailor?.location?.address || activeTask.tailor?.address;
-                                            contactName = activeTask.tailor?.shopName;
-                                            contactPhone = activeTask.tailor?.phone;
+                                            address = activeTask.vendorAddress || activeTask.tailor?.location?.address || activeTask.tailor?.address;
+                                            contactName = tailorName;
+                                            contactPhone = tailorPhone;
                                         }
                                     } else {
                                         // Final Delivery Flow: Tailor -> Customer
                                         if (isPickupStage) {
-                                            address = activeTask.tailor?.location?.address || activeTask.tailor?.address;
-                                            contactName = activeTask.tailor?.shopName;
-                                            contactPhone = activeTask.tailor?.phone;
+                                            address = activeTask.vendorAddress || activeTask.tailor?.location?.address || activeTask.tailor?.address;
+                                            contactName = tailorName;
+                                            contactPhone = tailorPhone;
                                         } else {
-                                            address = activeTask.deliveryAddress;
-                                            contactName = activeTask.customer?.name;
-                                            contactPhone = activeTask.customer?.phoneNumber;
+                                            address = activeTask.deliveryAddress || activeTask.address || activeTask.shippingAddress;
+                                            contactName = custName;
+                                            contactPhone = custPhone;
                                         }
                                     }
 

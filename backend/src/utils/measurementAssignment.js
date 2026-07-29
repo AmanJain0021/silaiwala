@@ -27,7 +27,7 @@ exports.autoAssignMeasurementExecutive = async (order) => {
     // 2. Find nearest available, verified executive not in rejectedBy
     const query = {
       availabilityStatus: "online",
-      verificationStatus: "verified",
+      verificationStatus: { $in: ["verified", "approved"] },
       user: { $nin: request.rejectedBy || [] },
     };
 
@@ -43,7 +43,7 @@ exports.autoAssignMeasurementExecutive = async (order) => {
                 type: "Point",
                 coordinates: customerCoords,
               },
-              $maxDistance: 15000, // 15km search radius
+              $maxDistance: 25000, // 25km search radius
             },
           },
         })
@@ -54,9 +54,19 @@ exports.autoAssignMeasurementExecutive = async (order) => {
       }
     }
 
-    // Fallback: get any available executive
+    // Fallback 1: get any available online executive
     if (!candidates.length) {
       candidates = await MeasurementExecutive.find(query)
+        .populate("user", "name phoneNumber profileImage")
+        .limit(5);
+    }
+
+    // Fallback 2: get any verified executive (so request is not stranded)
+    if (!candidates.length) {
+      candidates = await MeasurementExecutive.find({
+        verificationStatus: { $in: ["verified", "approved"] },
+        user: { $nin: request.rejectedBy || [] }
+      })
         .populate("user", "name phoneNumber profileImage")
         .limit(5);
     }

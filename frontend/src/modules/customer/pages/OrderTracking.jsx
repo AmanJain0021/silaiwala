@@ -1120,15 +1120,15 @@ const OrderTracking = () => {
                     </div>
                 </div>
 
-                {/* 5. Artisan Profile Card */}
+                {/* 5. Artisan / Shop Profile Card */}
                 {order.tailor && (
                     <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assigned Artisan</h4>
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assigned Shop</h4>
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-primary border border-gray-100 font-black text-xs overflow-hidden">
                                 {order.tailor.profileImage ? (
-                                    <img src={order.tailor.profileImage} alt={order.tailor.name} className="w-full h-full object-cover" />
-                                ) : order.tailor.name?.charAt(0)}
+                                    <img src={order.tailor.profileImage} alt={order.tailor.shopName || order.tailor.name} className="w-full h-full object-cover" />
+                                ) : (order.tailor.shopName || order.tailor.name)?.charAt(0)}
                             </div>
                             <div className="flex-1">
                                 <p className="text-sm font-black text-gray-900 leading-none mb-1">{order.tailor.shopName || order.tailor.name}</p>

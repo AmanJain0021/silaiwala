@@ -40,12 +40,12 @@ const emptyMeasurements = () =>
     Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, '']));
 
 const emptyCustomizations = () => ({
-    neck: { name: '', price: 0, refImage: '', enabled: false },
-    sleeve: { name: '', price: 0, refImage: '', enabled: false },
-    bottom: { name: '', price: 0, refImage: '', enabled: false },
-    lining: { name: 'Lining', price: 0, refImage: '', enabled: false },
-    embroidery: { name: '', price: 0, refImage: '', enabled: false },
-    lacePiping: { name: '', price: 0, refImage: '', enabled: false },
+    neck: { name: '', price: 0, refImage: '', enabled: false, estimatedTime: '' },
+    sleeve: { name: '', price: 0, refImage: '', enabled: false, estimatedTime: '' },
+    bottom: { name: '', price: 0, refImage: '', enabled: false, estimatedTime: '' },
+    lining: { name: 'Lining', price: 0, refImage: '', enabled: false, estimatedTime: '' },
+    embroidery: { name: '', price: 0, refImage: '', enabled: false, estimatedTime: '' },
+    lacePiping: { name: '', price: 0, refImage: '', enabled: false, estimatedTime: '' },
 });
 
 const emptyForm = {
@@ -54,6 +54,7 @@ const emptyForm = {
     stitchingPackage: 'basic',
     stitchingCharges: 800,
     fabricSource: 'customer',
+    expectedCompletionDate: '',
     status: 'accepted',
     priority: 'normal',
     notes: '',
@@ -268,6 +269,15 @@ const AdminOfflineOrders = () => {
         return () => clearTimeout(t);
     }, [isModalOpen, customerSearch]);
 
+    const extraAddons = useMemo(() => {
+        return styleAddonsCatalog.filter(
+            (a) =>
+                !CUSTOMIZATION_SLOTS.some(
+                    (s) => s.categoryMatch && (a.category || '').toLowerCase().includes(s.categoryMatch.toLowerCase())
+                )
+        );
+    }, [styleAddonsCatalog]);
+
     const addOnsTotal = useMemo(() => {
         const styleList = Array.isArray(formData.styleAddons) ? formData.styleAddons : [];
         const fromStyle = styleList.reduce((sum, a) => sum + (Number(a?.price) || 0), 0);
@@ -278,9 +288,8 @@ const AdminOfflineOrders = () => {
 
         const fromCustom = Object.entries(custObj).reduce((sum, [key, c]) => {
             if (!c || typeof c !== 'object') return sum;
-            if (!c.enabled && !c.name) return sum;
-            if (['lining', 'embroidery', 'lacePiping'].includes(key) && !c.enabled) return sum;
-            if (['neck', 'sleeve', 'bottom'].includes(key) && !c.name) return sum;
+            const isIncluded = c.enabled || !!c.name || Number(c.price) > 0;
+            if (!isIncluded) return sum;
             return sum + (Number(c.price) || 0);
         }, 0);
         return fromStyle + fromCustom;
@@ -525,6 +534,7 @@ const AdminOfflineOrders = () => {
                 status: formData.status,
                 priority: formData.priority,
                 notes: formData.notes.trim(),
+                expectedCompletionDate: formData.expectedCompletionDate || null,
                 shopTailor: formData.shopTailor || undefined,
                 fulfillmentMethod: formData.fulfillmentMethod,
                 deliveryAddress:
@@ -760,13 +770,6 @@ const AdminOfflineOrders = () => {
             ? Object.fromEntries(selectedOrder.measurements)
             : selectedOrder?.measurements || {};
 
-    const extraAddons = styleAddonsCatalog.filter(
-        (a) =>
-            !CUSTOMIZATION_SLOTS.some(
-                (s) => s.categoryMatch && (a.category || '').toLowerCase().includes(s.categoryMatch.toLowerCase())
-            )
-    );
-
     return (
         <div className="h-full flex flex-col space-y-6 relative">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -919,10 +922,15 @@ const AdminOfflineOrders = () => {
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 font-medium">
                                                     {order.priority === 'urgent' ? '⚡ Urgent · ' : ''}
-                                                    {order.createdAt
+                                                    Created: {order.createdAt
                                                         ? new Date(order.createdAt).toLocaleDateString()
                                                         : ''}
                                                 </span>
+                                                {order.expectedCompletionDate && (
+                                                    <span className="text-[10px] text-primary font-bold">
+                                                        Due: {new Date(order.expectedCompletionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -1021,6 +1029,12 @@ const AdminOfflineOrders = () => {
                                             {selectedOrder.paymentStatus}
                                         </span>
                                     </div>
+                                    {selectedOrder.expectedCompletionDate && (
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg mt-2">
+                                            <Clock size={12} className="text-indigo-600 shrink-0" />
+                                            <span>Expected Completion: {new Date(selectedOrder.expectedCompletionDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={() => setSelectedOrder(null)}
@@ -1242,6 +1256,35 @@ const AdminOfflineOrders = () => {
                                                 <img src={url} alt="Measurement" className="h-full w-full object-cover" />
                                             </a>
                                         ))}
+                                    </div>
+                                )}
+
+                                {selectedOrder.customizations && typeof selectedOrder.customizations === 'object' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
+                                            <Scissors size={12} /> Customizations
+                                        </h3>
+                                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-3.5 space-y-2">
+                                            {Object.entries(selectedOrder.customizations).map(([key, c]) => {
+                                                if (!c || (!c.name && !c.enabled && !(Number(c.price) > 0))) return null;
+                                                return (
+                                                    <div key={key} className="flex items-center justify-between text-xs py-1 border-b border-gray-200/50 last:border-0">
+                                                        <div>
+                                                            <span className="font-bold text-gray-800 capitalize">{key}: </span>
+                                                            <span className="text-gray-700 font-medium">{c.name || 'Selected'}</span>
+                                                            {c.estimatedTime && (
+                                                                <span className="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded ml-1.5 font-bold">
+                                                                    ⏱ {c.estimatedTime}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {Number(c.price) > 0 && (
+                                                            <span className="font-black text-gray-900">+₹{c.price}</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
 
@@ -1661,82 +1704,123 @@ const AdminOfflineOrders = () => {
                                         <div className="p-4 space-y-4">
                                             {CUSTOMIZATION_SLOTS.map((slot) => {
                                                 const options = addonsForSlot(slot);
-                                                const current = formData.customizations[slot.key];
-                                                if (slot.checkboxOnly) {
-                                                    return (
-                                                        <label key={slot.key} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100">
-                                                            <span className="text-xs font-bold text-gray-800">{slot.label}</span>
+                                                const current = formData.customizations[slot.key] || { name: '', price: 0, estimatedTime: '', enabled: false };
+
+                                                return (
+                                                    <div key={slot.key} className="bg-gray-50/70 border border-gray-200/80 rounded-2xl p-3.5 space-y-2.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                                                                {slot.label}
+                                                            </label>
                                                             <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] text-gray-400 font-semibold uppercase">Enable</span>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!current.enabled || !!current.name || Number(current.price) > 0}
+                                                                    onChange={(e) => {
+                                                                        const isChecked = e.target.checked;
+                                                                        setCustomization(slot.key, {
+                                                                            enabled: isChecked,
+                                                                            ...(isChecked ? {} : { name: '', price: 0, estimatedTime: '' })
+                                                                        });
+                                                                    }}
+                                                                    className="h-4 w-4 accent-primary rounded cursor-pointer"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                                            {options.length > 0 && (
+                                                                <div className="sm:col-span-4">
+                                                                    <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">
+                                                                        Select Option
+                                                                    </label>
+                                                                    <select
+                                                                        value={options.some((o) => o.name === current.name) ? current.name : ''}
+                                                                        onChange={(e) => {
+                                                                            const selectedName = e.target.value;
+                                                                            const opt = options.find((o) => o.name === selectedName);
+                                                                            if (opt) {
+                                                                                setCustomization(slot.key, {
+                                                                                    name: opt.name,
+                                                                                    price: opt.price || 0,
+                                                                                    refImage: opt.image || '',
+                                                                                    addon: opt._id,
+                                                                                    enabled: true,
+                                                                                });
+                                                                            } else {
+                                                                                setCustomization(slot.key, {
+                                                                                    addon: null,
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-primary"
+                                                                    >
+                                                                        <option value="">-- Select Catalog Option --</option>
+                                                                        {options.map((o) => (
+                                                                            <option key={o._id} value={o.name}>
+                                                                                {o.name} (₹{o.price})
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            )}
+
+                                                            <div className={options.length > 0 ? "sm:col-span-4" : "sm:col-span-5"}>
+                                                                <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">
+                                                                    Type Custom Name
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={current.name || ''}
+                                                                    onChange={(e) =>
+                                                                        setCustomization(slot.key, {
+                                                                            name: e.target.value,
+                                                                            enabled: !!e.target.value || current.enabled,
+                                                                        })
+                                                                    }
+                                                                    placeholder={`Type ${slot.label}...`}
+                                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-primary"
+                                                                />
+                                                            </div>
+
+                                                            <div className="sm:col-span-2">
+                                                                <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">
+                                                                    Price (₹)
+                                                                </label>
                                                                 <input
                                                                     type="number"
                                                                     min="0"
-                                                                    placeholder="Price"
-                                                                    value={current.price || ''}
+                                                                    placeholder="0"
+                                                                    value={current.price !== undefined && current.price !== null ? current.price : ''}
                                                                     onChange={(e) =>
                                                                         setCustomization(slot.key, {
+                                                                            price: e.target.value === '' ? 0 : Number(e.target.value),
                                                                             enabled: true,
-                                                                            name: slot.label,
-                                                                            price: Number(e.target.value) || 0,
                                                                         })
                                                                     }
-                                                                    className="w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-primary"
-                                                                />
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={!!current.enabled}
-                                                                    onChange={(e) =>
-                                                                        setCustomization(slot.key, {
-                                                                            enabled: e.target.checked,
-                                                                            name: slot.label,
-                                                                        })
-                                                                    }
-                                                                    className="h-4 w-4 accent-primary"
+                                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-primary"
                                                                 />
                                                             </div>
-                                                        </label>
-                                                    );
-                                                }
-                                                return (
-                                                    <div key={slot.key}>
-                                                        <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">
-                                                            {slot.label}
-                                                        </label>
-                                                        {options.length > 0 ? (
-                                                            <select
-                                                                value={current.name || ''}
-                                                                onChange={(e) => {
-                                                                    const opt = options.find((o) => o.name === e.target.value);
-                                                                    setCustomization(slot.key, {
-                                                                        name: opt?.name || '',
-                                                                        price: opt?.price || 0,
-                                                                        refImage: opt?.image || '',
-                                                                        addon: opt?._id,
-                                                                        enabled: !!opt,
-                                                                    });
-                                                                }}
-                                                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary"
-                                                            >
-                                                                <option value="">None</option>
-                                                                {options.map((o) => (
-                                                                    <option key={o._id} value={o.name}>
-                                                                        {o.name} — ₹{o.price}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        ) : (
-                                                            <input
-                                                                type="text"
-                                                                value={current.name || ''}
-                                                                onChange={(e) =>
-                                                                    setCustomization(slot.key, {
-                                                                        name: e.target.value,
-                                                                        enabled: !!e.target.value,
-                                                                    })
-                                                                }
-                                                                placeholder={`${slot.label} (manual)`}
-                                                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary"
-                                                            />
-                                                        )}
+
+                                                            <div className={options.length > 0 ? "sm:col-span-2" : "sm:col-span-5"}>
+                                                                <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">
+                                                                    Time / Duration
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="e.g. 2 days"
+                                                                    value={current.estimatedTime || ''}
+                                                                    onChange={(e) =>
+                                                                        setCustomization(slot.key, {
+                                                                            estimatedTime: e.target.value,
+                                                                            enabled: true,
+                                                                        })
+                                                                    }
+                                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-primary"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -2008,6 +2092,18 @@ const AdminOfflineOrders = () => {
                                             ))}
                                         </div>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        <Clock size={12} className="text-primary" /> Expected Date to Complete
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.expectedCompletionDate || ''}
+                                        onChange={(e) => setFormData({ ...formData, expectedCompletionDate: e.target.value })}
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary text-gray-800"
+                                    />
                                 </div>
 
                                 <div>

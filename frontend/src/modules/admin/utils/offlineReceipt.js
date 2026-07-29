@@ -31,6 +31,9 @@ export const buildOfflineReceiptWhatsAppMessage = (order, trackUrl) => {
     `Balance: ₹${Math.max(0, (order.totalAmount || 0) - (order.advancePaid || 0)).toLocaleString()}`,
     `Status: ${(order.status || '').replace(/_/g, ' ')}`,
   ];
+  if (order.expectedCompletionDate) {
+    lines.push(`Expected Date: ${new Date(order.expectedCompletionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`);
+  }
   if (trackUrl) {
     lines.push('', `Track your order: ${trackUrl}`);
   }

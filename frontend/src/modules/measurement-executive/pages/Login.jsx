@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import toast from 'react-hot-toast';
@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import api from '../../../shared/utils/api';
 import { GoogleLogin } from '@react-oauth/google';
-import { setToken, removeToken } from '../../../utils/auth';
+import { setToken, removeToken, getToken } from '../../../utils/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -14,6 +14,19 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login, loading } = useMeasurementStore();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = getToken();
+        const storedUserStr = localStorage.getItem('user');
+        if (token && storedUserStr) {
+            try {
+                const storedUser = JSON.parse(storedUserStr);
+                if (storedUser.role === 'measurement_executive' && storedUser.isActive === false) {
+                    navigate('/executive/pending-approval', { replace: true });
+                }
+            } catch (e) {}
+        }
+    }, [navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,6 +44,13 @@ const Login = () => {
 
             setToken(res.token);
             localStorage.setItem('user', JSON.stringify(res.data));
+
+            if (res.data?.isActive === false) {
+                toast('Your account is pending for approval from Admin.', { icon: '⏳', duration: 5000 });
+                navigate('/executive/pending-approval');
+                return;
+            }
+
             toast.success('Login successful!');
             navigate('/executive/dashboard');
         } catch (error) {
@@ -52,6 +72,13 @@ const Login = () => {
 
             setToken(responseData.token);
             localStorage.setItem('user', JSON.stringify(responseData.data));
+
+            if (responseData.data?.isActive === false) {
+                toast('Your account is pending for approval from Admin.', { icon: '⏳', duration: 5000 });
+                navigate('/executive/pending-approval');
+                return;
+            }
+
             toast.success('Login successful!');
             navigate('/executive/dashboard');
         } catch (error) {

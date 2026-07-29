@@ -25,8 +25,11 @@ const ProfileHeader = ({ user, stats }) => {
                     </Link>
                 </div>
 
-                {/* Name & Phone */}
-                <h2 className="text-xl font-black text-gray-900 mb-0.5 tracking-tight italic">{user?.name || 'Guest User'}</h2>
+                {/* Name, Email & Phone */}
+                <h2 className="text-xl font-black text-gray-900 mb-0.5 tracking-tight italic">{user?.name || user?.email || 'Customer'}</h2>
+                {user?.email && user?.name && (
+                    <p className="text-xs font-bold text-gray-500 mb-0.5">{user.email}</p>
+                )}
                 {(user?.phone || user?.phoneNumber) && (
                     <p className="text-[11px] font-bold text-gray-400 mb-2 tracking-widest">
                         {(() => {

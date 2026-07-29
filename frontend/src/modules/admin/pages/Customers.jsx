@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, ShoppingBag, Mail, Phone, Clock, Ban } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, ShoppingBag, Mail, Phone, Clock, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
@@ -11,6 +11,8 @@ const AdminCustomers = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTab, setSelectedTab] = useState('All Customers');
     const [isUpdating, setIsUpdating] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const fetchCustomers = async () => {
         setIsLoading(true);
@@ -38,6 +40,10 @@ const AdminCustomers = () => {
     useEffect(() => {
         fetchCustomers();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedTab]);
 
     const handleToggleStatus = async (customerId, currentStatus) => {
         setIsUpdating(true);
@@ -73,6 +79,10 @@ const AdminCustomers = () => {
         
         return matchesSearch;
     });
+
+    const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage) || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -128,7 +138,7 @@ const AdminCustomers = () => {
                          <div className="h-full bg-primary animate-pulse w-1/3"></div>
                      </div>
                 )}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto flex-1">
                     <table className="w-full text-left whitespace-nowrap">
                         <thead>
                             <tr className="bg-gray-50/50 text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em] border-b border-gray-100">
@@ -140,45 +150,109 @@ const AdminCustomers = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {filteredCustomers.map((customer) => (
-                                <tr
-                                    key={customer.id}
-                                    onClick={() => setSelectedCustomer(customer)}
-                                    className="hover:bg-primary/5 transition-colors cursor-pointer group"
-                                >
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-sm">
-                                                {customer.name.charAt(0)}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{customer.name}</span>
-                                                <span className="text-[10px] text-gray-400 font-medium">Joined {customer.joined}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-gray-700">{customer.phone}</span>
-                                            <span className="text-[10px] text-gray-500 font-medium">{customer.email}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-xs font-bold text-gray-900">{customer.orders}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm font-black text-primary">{customer.totalSpent}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${getStatusStyle(customer.status)}`}>
-                                            {customer.status}
-                                        </span>
+                            {paginatedCustomers.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-12 text-center text-xs font-bold text-gray-400">
+                                        No customers found
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                paginatedCustomers.map((customer) => (
+                                    <tr
+                                        key={customer.id}
+                                        onClick={() => setSelectedCustomer(customer)}
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer group"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-sm">
+                                                    {(customer.name || 'C').charAt(0)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{customer.name}</span>
+                                                    <span className="text-[10px] text-gray-400 font-medium">Joined {customer.joined}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-gray-700">{customer.phone}</span>
+                                                <span className="text-[10px] text-gray-500 font-medium">{customer.email}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-xs font-bold text-gray-900">{customer.orders}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-sm font-black text-primary">{customer.totalSpent}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${getStatusStyle(customer.status)}`}>
+                                                {customer.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredCustomers.length > 0 && (
+                    <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-3 text-xs font-semibold text-gray-500">
+                            <span>
+                                Showing <strong className="text-gray-900">{startIndex + 1}</strong> to{' '}
+                                <strong className="text-gray-900">
+                                    {Math.min(startIndex + itemsPerPage, filteredCustomers.length)}
+                                </strong>{' '}
+                                of <strong className="text-gray-900">{filteredCustomers.length}</strong> customers
+                            </span>
+                            <div className="flex items-center gap-1.5 ml-2">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">Per page:</span>
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => {
+                                        setItemsPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="bg-white border border-gray-200 rounded-lg text-xs font-bold px-2 py-1 outline-none text-gray-700 focus:border-primary"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                disabled={currentPage <= 1}
+                                className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1 text-xs font-bold text-gray-700"
+                            >
+                                <ChevronLeft size={16} />
+                                <span className="hidden sm:inline">Previous</span>
+                            </button>
+
+                            <div className="flex items-center gap-1 px-2">
+                                <span className="text-xs font-black text-primary bg-primary/10 px-3 py-1.5 rounded-xl">
+                                    {currentPage} / {totalPages}
+                                </span>
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage >= totalPages}
+                                className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1 text-xs font-bold text-gray-700"
+                            >
+                                <span className="hidden sm:inline">Next</span>
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Slide-out Customer Drawer */}

@@ -133,6 +133,12 @@ exports.createService = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin)
  */
 exports.updateService = asyncHandler(async (req, res, next) => {
+  if (!req.body.status) {
+    req.body.status = "approved";
+    req.body.isActive = true;
+    req.body.rejectionReason = null;
+  }
+
   const service = await Service.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,

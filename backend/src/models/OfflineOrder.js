@@ -12,6 +12,7 @@ const customizationOptionSchema = new mongoose.Schema(
     refImage: { type: String, default: "" },
     addon: { type: mongoose.Schema.Types.ObjectId, ref: "StyleAddon" },
     enabled: { type: Boolean, default: false },
+    estimatedTime: { type: String, trim: true, default: "" },
   },
   { _id: false }
 );
@@ -188,6 +189,9 @@ const offlineOrderSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+    expectedCompletionDate: {
+      type: Date,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

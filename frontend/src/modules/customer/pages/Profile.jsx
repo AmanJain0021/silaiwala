@@ -57,7 +57,7 @@ const LegalLinks = () => {
 
 const ProfilePage = () => {
     const navigate = useNavigate();
-    const { logout } = useAuthStore(state => state);
+    const { logout, user: authUser } = useAuthStore(state => state);
     const { fetchProfile, profile, isLoading } = useUserStore();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -90,15 +90,28 @@ const ProfilePage = () => {
         }
     };
 
-    if (isLoading && !profile) {
-        return <div className="flex items-center justify-center min-h-screen">Loading profile...</div>;
-    }
+    const storedUser = React.useMemo(() => {
+        try {
+            const stored = localStorage.getItem('user');
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    }, []);
 
-    const displayUser = profile || {
-        name: 'Guest User',
-        email: 'guest@example.com',
-        phone: '+91 9876543210'
-    };
+    const displayUser = React.useMemo(() => {
+        const merged = {
+            ...(storedUser || {}),
+            ...(authUser || {}),
+            ...(profile || {})
+        };
+        return {
+            ...merged,
+            name: merged.name || merged.user?.name || 'Customer',
+            email: merged.email || merged.user?.email || '',
+            phone: merged.phone || merged.phoneNumber || merged.user?.phoneNumber || ''
+        };
+    }, [profile, authUser, storedUser]);
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans text-gray-900">

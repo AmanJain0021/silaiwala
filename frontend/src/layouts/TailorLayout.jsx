@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     ClipboardList,
@@ -11,11 +11,14 @@ import {
     Wallet,
     Ruler,
     Wand2,
-    AlertTriangle
+    AlertTriangle,
+    Bell,
+    RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 import { useTailorAuth } from '../modules/tailor/context/AuthContext';
+import { useNotifications } from '../modules/tailor/context/NotificationContext';
 import api from '../modules/tailor/services/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
@@ -23,9 +26,107 @@ import { getToken } from '../utils/auth';
 
 const TailorLayout = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { user, status } = useTailorAuth();
-    const isOverview = location.pathname === '/partner';
+    const notificationContext = useNotifications();
+    const unreadCount = notificationContext?.unreadCount || 0;
+    const isOverview = location.pathname === '/partner' || location.pathname === '/partner/';
     const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+    // ── PULL-TO-REFRESH STATE FOR ALL TAILOR PAGES ──
+    const mainRef = useRef(null);
+    const [pullDistance, setPullDistance] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const touchStartRef = useRef({ y: 0, active: false });
+
+    // ── VIRTUAL KEYBOARD DETECTION FOR MOBILE FOOTER ──
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.visualViewport) {
+                const isShort = window.visualViewport.height < window.innerHeight - 140;
+                setIsKeyboardOpen(isShort);
+            }
+        };
+
+        const handleFocusIn = (e) => {
+            const tag = e.target?.tagName?.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) {
+                setIsKeyboardOpen(true);
+            }
+        };
+
+        const handleFocusOut = () => {
+            setTimeout(() => {
+                const activeTag = document.activeElement?.tagName?.toLowerCase();
+                if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select' && !document.activeElement?.isContentEditable) {
+                    setIsKeyboardOpen(false);
+                }
+            }, 100);
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+        }
+        window.addEventListener('focusin', handleFocusIn);
+        window.addEventListener('focusout', handleFocusOut);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+            window.removeEventListener('focusin', handleFocusIn);
+            window.removeEventListener('focusout', handleFocusOut);
+        };
+    }, []);
+
+    const handleTouchStart = (e) => {
+        if (!mainRef.current) return;
+        if (mainRef.current.scrollTop <= 2) {
+            touchStartRef.current = {
+                y: e.touches[0].clientY,
+                active: true
+            };
+        } else {
+            touchStartRef.current.active = false;
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (!touchStartRef.current.active || !mainRef.current || isRefreshing) return;
+        if (mainRef.current.scrollTop > 2) {
+            touchStartRef.current.active = false;
+            setPullDistance(0);
+            return;
+        }
+
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - touchStartRef.current.y;
+
+        if (diff > 0) {
+            const distance = Math.min(diff * 0.45, 90);
+            setPullDistance(distance);
+        } else {
+            setPullDistance(0);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStartRef.current.active) return;
+        touchStartRef.current.active = false;
+
+        if (pullDistance >= 60 && !isRefreshing) {
+            setIsRefreshing(true);
+            setPullDistance(60);
+            setTimeout(() => {
+                // Hard reload at exact current URL location to stay on the same page
+                window.location.reload();
+            }, 300);
+        } else {
+            setPullDistance(0);
+        }
+    };
 
     useEffect(() => {
         const userId = user?._id || user?.id;
@@ -86,9 +187,9 @@ const TailorLayout = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F5F5F5] flex font-sans selection:bg-[#843D9B] selection:text-white">
+        <div className="h-screen w-full bg-[#F5F5F5] flex font-sans selection:bg-[#843D9B] selection:text-white overflow-hidden">
             {/* ── SIDEBAR (DESKTOP ONLY) ── */}
-            <aside className="hidden md:flex flex-col w-72 bg-[#0A0A0A] border-r border-[#1C1C1C] sticky top-0 h-screen z-50">
+            <aside className="hidden md:flex flex-col w-72 bg-[#0A0A0A] border-r border-[#1C1C1C] h-screen shrink-0 z-50">
                 <div className="p-8">
                     <Link to="/partner" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5 overflow-hidden border border-gray-800 rotate-3 group-hover:rotate-0 transition-transform">
@@ -103,7 +204,7 @@ const TailorLayout = () => {
                     </Link>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 mt-4">
+                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
@@ -151,36 +252,35 @@ const TailorLayout = () => {
             </aside>
 
             {/* ── MAIN CONTENT AREA ── */}
-            <div className="flex-1 flex flex-col min-w-0 relative">
-                {/* Mobile Header */}
-                {(!isOverview && location.pathname !== '/partner/settings' && location.pathname !== '/partner/wallet' && location.pathname !== '/partner/earnings') && (
-                    <header className="md:hidden sticky top-0 z-40 bg-[#843D9B] text-white backdrop-blur-2xl border-b border-indigo-400/20 pt-5 pb-4 px-5 flex items-center justify-between shadow-lg shadow-indigo-900/10 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white border border-indigo-100 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden shrink-0 p-1">
-                                <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover rounded-xl" />
-                            </div>
-                            <div>
-                                <h2 className="text-[17px] font-black text-white tracking-tight leading-none capitalize">
-                                    {menuItems.find(i => i.path === location.pathname)?.label || 'SewZella'}
-                                </h2>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'APPROVED' ? 'bg-green-400' : 'bg-orange-400'}`}></span>
-                                    <span className="text-[9px] font-bold uppercase text-indigo-100 tracking-widest leading-none">{status}</span>
-                                </div>
-                            </div>
+            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
+                {/* Pull to Refresh Mobile Indicator Banner */}
+                {(pullDistance > 0 || isRefreshing) && (
+                    <div 
+                        className="md:hidden fixed top-16 left-0 right-0 z-50 flex items-center justify-center pointer-events-none transition-transform duration-75"
+                        style={{ transform: `translateY(${Math.min(pullDistance * 0.7, 45)}px)` }}
+                    >
+                        <div className="bg-[#843D9B] text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 border border-white/20 backdrop-blur-md animate-fadeIn">
+                            <RefreshCw size={15} className={`${isRefreshing || pullDistance >= 60 ? 'animate-spin' : ''}`} />
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                                {isRefreshing ? 'Refreshing Page...' : pullDistance >= 60 ? 'Release to Refresh' : 'Pull Down to Refresh'}
+                            </span>
                         </div>
-                        <div className="h-9 w-9 rounded-2xl bg-white flex items-center justify-center text-[#843D9B] font-black text-xs shadow-lg shadow-[#843D9B]/20">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'T'}
-                        </div>
-                    </header>
+                    </div>
                 )}
 
-                <main className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-500 flex flex-col ${
+
+
+                <main 
+                    ref={mainRef}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-500 flex flex-col min-h-0 ${
                     (isOverview || location.pathname === '/partner/settings' || location.pathname === '/partner/wallet' || location.pathname === '/partner/earnings') 
                         ? 'p-0' 
                         : 'p-0 md:p-8 lg:p-10'
                 }`}>
-                    <div className="max-w-7xl mx-auto h-full w-full flex flex-col relative">
+                    <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col relative min-h-0">
                         {/* ── SUB-NAVIGATION FOR ORDERS SECTION ── */}
                         {['/partner/orders', '/partner/shop-orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname) && (
                             <div className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 pt-3 pb-3 flex gap-3 overflow-x-auto scrollbar-hide shrink-0 sticky top-0 z-30 shadow-sm">
@@ -206,53 +306,55 @@ const TailorLayout = () => {
                             </div>
                         )}
                         
-                        <div className={`flex-1 overflow-y-auto custom-scrollbar ${['/partner/orders', '/partner/shop-orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname) ? 'p-4 pb-24' : ''}`}>
+                        <div className={`flex-1 pb-24 md:pb-12 ${['/partner/orders', '/partner/shop-orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname) ? 'p-4' : ''}`}>
                             <Outlet />
                         </div>
                     </div>
                 </main>
 
                 {/* ── BOTTOM NAVIGATION (MOBILE ONLY) ── */}
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
-                    {menuItems.filter(item => !['/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(item.path)).map((item) => {
-                        const isOrderSection = ['/partner/orders', '/partner/shop-orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname);
-                        const isActive = location.pathname === item.path || (item.path === '/partner/orders' && isOrderSection);
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className="flex flex-col items-center gap-1 relative min-w-[56px] py-1"
-                            >
-                                {isActive && (
-                                    <motion.span 
-                                        layoutId="bottomNavActive"
-                                        className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#843D9B] rounded-full" 
-                                    />
-                                )}
-                                <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
-                                    isActive
-                                        ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/30 scale-110'
-                                        : 'text-gray-400 active:scale-90'
-                                }`}>
-                                    {item.badge > 0 && (
-                                        <span className="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-1 bg-rose-500 rounded-full border-[1.5px] border-white flex items-center justify-center text-[7px] font-black text-white shadow-sm z-10">
-                                            {item.badge > 99 ? '99+' : item.badge}
-                                        </span>
+                {!isKeyboardOpen && (
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] animate-fadeIn">
+                        {menuItems.filter(item => !['/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(item.path)).map((item) => {
+                            const isOrderSection = ['/partner/orders', '/partner/shop-orders', '/partner/alterations', '/partner/custom-designs', '/partner/issues'].includes(location.pathname);
+                            const isActive = location.pathname === item.path || (item.path === '/partner/orders' && isOrderSection);
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className="flex flex-col items-center gap-1 relative min-w-[56px] py-1"
+                                >
+                                    {isActive && (
+                                        <motion.span 
+                                            layoutId="bottomNavActive"
+                                            className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#843D9B] rounded-full" 
+                                        />
                                     )}
-                                    {React.cloneElement(item.icon, {
-                                        size: 20,
-                                        strokeWidth: isActive ? 2.5 : 2
-                                    })}
-                                </div>
-                                <span className={`text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                    isActive ? 'text-[#843D9B]' : 'text-gray-400'
-                                }`}>
-                                    {item.mobileLabel || item.label}
-                                </span>
-                            </Link>
-                        );
-                    })}
-                </nav>
+                                    <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
+                                        isActive
+                                            ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/30 scale-110'
+                                            : 'text-gray-400 active:scale-90'
+                                    }`}>
+                                        {item.badge > 0 && (
+                                            <span className="absolute -top-1 -right-1.5 h-[14px] min-w-[14px] px-1 bg-rose-500 rounded-full border-[1.5px] border-white flex items-center justify-center text-[7px] font-black text-white shadow-sm z-10">
+                                                {item.badge > 99 ? '99+' : item.badge}
+                                            </span>
+                                        )}
+                                        {React.cloneElement(item.icon, {
+                                            size: 20,
+                                            strokeWidth: isActive ? 2.5 : 2
+                                        })}
+                                    </div>
+                                    <span className={`text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                        isActive ? 'text-[#843D9B]' : 'text-gray-400'
+                                    }`}>
+                                        {item.mobileLabel || item.label}
+                                    </span>
+                                </Link>
+                            );
+                        })}
+                    </nav>
+                )}
             </div>
         </div>
     );

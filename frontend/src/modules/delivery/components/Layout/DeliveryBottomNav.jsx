@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,6 +10,46 @@ const DeliveryBottomNav = () => {
   const location = useLocation();
   const { unreadCount } = useDeliveryNotificationStore();
   const { deliveryBoy } = useDeliveryAuthStore();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isShort = window.visualViewport.height < window.innerHeight - 140;
+        setIsKeyboardOpen(isShort);
+      }
+    };
+
+    const handleFocusIn = (e) => {
+      const tag = e.target?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) {
+        setIsKeyboardOpen(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      setTimeout(() => {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select' && !document.activeElement?.isContentEditable) {
+          setIsKeyboardOpen(false);
+        }
+      }, 100);
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    }
+    window.addEventListener('focusin', handleFocusIn);
+    window.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+      window.removeEventListener('focusin', handleFocusIn);
+      window.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
 
   const navItems = [
     { path: "/delivery/dashboard", icon: FiHome, label: "Dashboard" },
@@ -25,9 +66,11 @@ const DeliveryBottomNav = () => {
     return location.pathname.startsWith(path);
   };
 
+  if (isKeyboardOpen) return null;
+
   const navContent = (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
-      <div className="flex justify-between w-full max-w-md mx-auto relative">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-2 py-1.5 flex items-center justify-between gap-1 z-[9999] shadow-[0_-8px_30px_rgba(0,0,0,0.05)] pb-safe animate-fadeIn">
+      <div className="flex justify-between items-center w-full max-w-md mx-auto relative">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -36,26 +79,26 @@ const DeliveryBottomNav = () => {
             <Link
               key={item.path}
               to={item.path}
-              className="flex flex-col items-center gap-1 relative min-w-[56px] py-1"
+              className="flex flex-col items-center justify-center flex-1 min-w-[48px] py-0.5 relative group"
             >
               {active && (
                   <motion.span 
                       layoutId="deliveryBottomNavActive"
-                      className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#843D9B] rounded-full" 
+                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-[#843D9B] rounded-full" 
                   />
               )}
-              <div className={`p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center relative ${
+              <div className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center relative ${
                   active
-                      ? 'bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/30 scale-110'
-                      : 'text-gray-400 active:scale-90'
+                      ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/30'
+                      : 'text-gray-400 active:scale-95'
               }`}>
                 {item.path === "/delivery/profile" && deliveryBoy?.avatar ? (
-                  <div className={`w-5 h-5 rounded-full overflow-hidden border-2 transition-colors ${active ? 'border-white' : 'border-transparent'}`}>
+                  <div className={`w-4 h-4 rounded-full overflow-hidden border-2 transition-colors ${active ? 'border-white' : 'border-transparent'}`}>
                     <img src={deliveryBoy.avatar} className="w-full h-full object-cover" alt="P" />
                   </div>
                 ) : (
                   <Icon
-                    className="text-lg"
+                    className="text-base"
                     style={{
                       strokeWidth: active ? 2.5 : 2,
                     }}
@@ -67,8 +110,8 @@ const DeliveryBottomNav = () => {
                   </span>
                 )}
               </div>
-              <span className={`text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  active ? 'text-[#843D9B]' : 'text-gray-400'
+              <span className={`text-[10px] tracking-tight mt-0.5 transition-all whitespace-nowrap ${
+                  active ? 'text-[#843D9B] font-bold' : 'text-gray-400 font-medium'
               }`}>
                 {item.label}
               </span>

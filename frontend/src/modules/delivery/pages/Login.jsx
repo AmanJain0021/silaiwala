@@ -6,9 +6,11 @@ import useAuthStore from '../../../store/authStore';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 import api from '../../../utils/api';
 import { GoogleLogin } from '@react-oauth/google';
+import DeliveryLegalModal from '../components/DeliveryLegalModal';
 
 const DeliveryLogin = () => {
     const navigate = useNavigate();
+    const [legalModal, setLegalModal] = useState({ isOpen: false, type: 'terms' });
     const { sendOTP, otpLogin, logout, isLoading, isAuthenticated, user } = useAuthStore();
 
     useEffect(() => {
@@ -183,7 +185,30 @@ const DeliveryLogin = () => {
 
                     {!otpSent && (
                         <div className="pt-2 flex flex-col gap-4">
-                            <label className="flex items-center justify-center gap-2 cursor-pointer mt-2">
+                            {loginMethod === 'password' && (
+                                <div className="group">
+                                    <div className={`flex items-center px-4 py-3 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${error && !otpSent ? 'border-red-100' : 'border-transparent focus-within:border-[#843D9B] focus-within:bg-white'}`}>
+                                        <Lock className={`w-5 h-5 mr-3 transition-colors ${error && !otpSent ? 'text-red-400' : 'text-[#843D9B]'}`} />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            disabled={isLoading}
+                                            className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 outline-none w-full disabled:opacity-60"
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="text-gray-400 hover:text-[#843D9B]"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <label className="flex items-center justify-center gap-2 cursor-pointer mt-1">
                                 <input
                                     type="checkbox"
                                     checked={agreedToTerms}
@@ -191,45 +216,27 @@ const DeliveryLogin = () => {
                                     className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
                                 />
                                 <span className="text-[10px] text-gray-500 font-medium">
-                                    I agree to the <Link to="/delivery/legal/terms-and-conditions" className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</Link> and <Link to="/delivery/legal/privacy-policy" className="text-[#843D9B] hover:underline mx-1">Privacy Policy</Link>
+                                    I agree to the <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'terms' })} className="text-[#843D9B] hover:underline mx-1 cursor-pointer">Terms & Conditions</button> and <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })} className="text-[#843D9B] hover:underline mx-1 cursor-pointer">Privacy Policy</button>
                                 </span>
                             </label>
 
                             {loginMethod === 'password' && (
                                 <>
-                                    <div className="group">
-                                        <div className={`flex items-center px-4 py-3 rounded-2xl bg-[#F8F9FD] border-2 transition-all duration-300 ${error && !otpSent ? 'border-red-100' : 'border-transparent focus-within:border-[#843D9B] focus-within:bg-white'}`}>
-                                            <Lock className={`w-5 h-5 mr-3 transition-colors ${error && !otpSent ? 'text-red-400' : 'text-[#843D9B]'}`} />
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="Password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                disabled={isLoading}
-                                                className="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 font-bold placeholder:text-gray-400 outline-none w-full disabled:opacity-60"
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="text-gray-400 hover:text-[#843D9B]"
-                                            >
-                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
-                                        </div>
-                                    </div>
-
                                     <button
                                         type="submit"
                                         disabled={!mobileNumber || mobileNumber.length < 10 || !password || isLoading || !agreedToTerms}
-                                        className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
+                                        className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
                                             !mobileNumber || mobileNumber.length < 10 || !password || isLoading || !agreedToTerms
-                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                                : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
+                                                ? 'bg-[#843D9B]/50 cursor-not-allowed shadow-none'
+                                                : 'bg-[#843D9B] hover:bg-[#6e3082] active:scale-95 shadow-[#843D9B]/30'
                                         }`}
                                     >
-                                        {isLoading ? 'Logging in...' : (
+                                        {isLoading ? (
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
                                             <>
-                                                Login <ArrowRight className="w-5 h-5" />
+                                                <span>Login to Partner Portal</span>
+                                                <ArrowRight size={16} />
                                             </>
                                         )}
                                     </button>
@@ -245,23 +252,47 @@ const DeliveryLogin = () => {
                             )}
 
                             {loginMethod === 'otp' && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={handleSendOTP}
-                                        disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms}
-                                        className={`w-full h-12 rounded-full font-black text-white flex items-center justify-center gap-2 transition-all duration-300 ${
-                                            !mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms
-                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                                : 'bg-[#843D9B] hover:bg-[#E04D79] shadow-lg shadow-[#843D9B]/20'
-                                        }`}
-                                    >
-                                        {sendingOtp ? 'Sending...' : (
-                                            <>
-                                                Send OTP <ArrowRight className="w-5 h-5" />
-                                            </>
-                                        )}
-                                    </button>
+                                <div className="space-y-4">
+                                    {!otpSent ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleSendOTP}
+                                            disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms}
+                                            className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                                !mobileNumber || mobileNumber.length < 10 || sendingOtp || !agreedToTerms
+                                                    ? 'bg-[#843D9B]/50 cursor-not-allowed shadow-none'
+                                                    : 'bg-[#843D9B] hover:bg-[#6e3082] active:scale-95 shadow-[#843D9B]/30'
+                                            }`}
+                                        >
+                                            {sendingOtp ? (
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <span>Send OTP</span>
+                                                    <ArrowRight size={16} />
+                                                </>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="submit"
+                                            disabled={!otp || otp.length < 4 || isLoading}
+                                            className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                                !otp || otp.length < 4 || isLoading
+                                                    ? 'bg-[#843D9B]/50 cursor-not-allowed shadow-none'
+                                                    : 'bg-[#843D9B] hover:bg-[#6e3082] active:scale-95 shadow-[#843D9B]/30'
+                                            }`}
+                                        >
+                                            {isLoading ? (
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <span>Verify & Login</span>
+                                                    <ArrowRight size={16} />
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => { setLoginMethod('password'); setError(''); }}
@@ -269,7 +300,7 @@ const DeliveryLogin = () => {
                                     >
                                         Login with Password instead
                                     </button>
-                                </>
+                                </div>
                             )}
                         </div>
                     )}
