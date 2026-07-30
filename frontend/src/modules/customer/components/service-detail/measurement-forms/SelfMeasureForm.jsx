@@ -51,7 +51,7 @@ const categoryFields = {
     ]
 };
 
-const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
+const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide }) => {
     const [selectedCategory, setSelectedCategory] = useState('Kurta/Kurti');
     const [values, setValues] = useState({
         chest: '', waist: '', hips: '', shoulder: '', length: '',
@@ -145,14 +145,25 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel }) => {
             </div>
 
             {/* Helper Banner */}
-            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-4 flex gap-3">
-                <Info size={18} className="text-primary shrink-0 mt-0.5" />
-                <div>
-                    <h4 className="text-xs font-bold text-gray-800">Standard Size Guide ({selectedCategory})</h4>
-                    <p className="text-[10px] text-primary mt-0.5 leading-relaxed">
-                        Measure comfortably. Don't pull the tape too tight. All units are in inches.
-                    </p>
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-4 flex items-start justify-between gap-3">
+                <div className="flex gap-3">
+                    <Info size={18} className="text-primary shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="text-xs font-bold text-gray-800">Standard Size Guide ({selectedCategory})</h4>
+                        <p className="text-[10px] text-primary mt-0.5 leading-relaxed">
+                            Measure comfortably. Don't pull the tape too tight. All units are in inches.
+                        </p>
+                    </div>
                 </div>
+                {onOpenGuide && (
+                    <button
+                        type="button"
+                        onClick={onOpenGuide}
+                        className="shrink-0 text-[10px] font-black text-purple-700 bg-purple-100 hover:bg-purple-200 border border-purple-200 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                    >
+                        📐 Guide
+                    </button>
+                )}
             </div>
 
             {/* Input Grid */}

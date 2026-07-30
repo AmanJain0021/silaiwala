@@ -127,7 +127,7 @@ const Requests = () => {
                                             </div>
                                             <div className="pt-0.5 min-w-0">
                                                 <p className="text-[8px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest mb-0 sm:mb-1">Tailor</p>
-                                                <p className="text-[9px] sm:text-sm font-medium text-gray-900 leading-tight truncate">{req.tailor.name}</p>
+                                                <p className="text-[9px] sm:text-sm font-medium text-gray-900 leading-tight truncate">{req.tailor.shopName || req.tailor.name}</p>
                                             </div>
                                         </div>
                                     )}

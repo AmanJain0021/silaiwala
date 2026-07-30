@@ -168,7 +168,7 @@ const CustomDesignCard = ({ design, onPaymentSuccess }) => {
             <div className="flex justify-between items-end mt-1">
                 <div>
                     <p className="text-[10px] text-gray-500">Tailor</p>
-                    <p className="text-xs font-bold text-gray-900">{design.tailor?.name || 'Assigned Tailor'}</p>
+                    <p className="text-xs font-bold text-gray-900">{design.tailor?.shopName || design.tailor?.name || 'Assigned Tailor'}</p>
                 </div>
                 {design.quotationStatus === 'quoted' && (
                     <div className="text-right">

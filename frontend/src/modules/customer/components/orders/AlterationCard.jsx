@@ -161,7 +161,7 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
             <div className="flex justify-between items-end mt-1">
                 <div>
                     <p className="text-[10px] text-gray-500">Tailor</p>
-                    <p className="text-xs font-bold text-gray-900">{alteration.tailor?.name || 'Assigned Tailor'}</p>
+                    <p className="text-xs font-bold text-gray-900">{alteration.tailor?.shopName || alteration.tailor?.name || 'Assigned Tailor'}</p>
                 </div>
                 {alteration.quotationStatus === 'quoted' && (
                     <div className="text-right">

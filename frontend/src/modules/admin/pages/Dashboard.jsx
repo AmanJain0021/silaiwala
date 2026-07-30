@@ -79,7 +79,7 @@ const AdminDashboard = () => {
                         id: o.orderId || o._id.substring(0, 8),
                         service: o.items?.[0]?.service?.title || o.items?.[0]?.product?.name || 'Custom Job',
                         customer: o.customer?.name || 'Customer',
-                        tailor: o.tailor?.name || 'Unassigned',
+                        tailor: o.tailor?.shopName || o.tailor?.name || 'Unassigned',
                         amount: `₹${(o.totalAmount || 0).toLocaleString()}`,
                         status: o.status
                     }));
@@ -469,10 +469,10 @@ const AdminDashboard = () => {
                                             <td className="px-5 lg:px-8 py-4 lg:py-5">
                                                 <div className="flex items-center gap-2">
                                                     <div className="h-6 w-6 lg:h-7 lg:w-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                                        {(typeof order.tailor === 'object' ? (order.tailor?.name || 'T') : String(order.tailor || 'T')).charAt(0)}
+                                                        {(typeof order.tailor === 'object' ? (order.tailor?.shopName || order.tailor?.name || 'T') : String(order.tailor || 'T')).charAt(0)}
                                                     </div>
                                                     <span className="text-[10px] lg:text-xs font-bold text-gray-700">
-                                                        {typeof order.tailor === 'object' ? (order.tailor?.name || 'Tailor') : String(order.tailor || '')}
+                                                        {typeof order.tailor === 'object' ? (order.tailor?.shopName || order.tailor?.name || 'Tailor') : String(order.tailor || '')}
                                                     </span>
                                                 </div>
                                             </td>

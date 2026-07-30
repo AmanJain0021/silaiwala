@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Ruler, Upload, User, ChevronDown, ChevronUp, CheckCircle2, Home, Shirt } from 'lucide-react';
+import { Ruler, Upload, User, ChevronDown, ChevronUp, CheckCircle2, Home, Shirt, BookOpen } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
 import SelfMeasureForm from './measurement-forms/SelfMeasureForm';
 import UploadSlip from './measurement-forms/UploadSlip';
+import MeasurementGuideModal from './MeasurementGuideModal';
 import useMeasurementStore from '../../../../store/measurementStore';
 
 const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased }) => {
     const { measurements, fetchMeasurements, isLoading } = useMeasurementStore();
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
     
     // Local state to track if a valid measurement has been provided for each type
     const [completedMeasurements, setCompletedMeasurements] = useState({
@@ -39,9 +41,42 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
 
     return (
         <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Measurement Options</h3>
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-gray-900">Measurement Options</h3>
+                <button
+                    type="button"
+                    onClick={() => setIsGuideOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white shadow-md shadow-purple-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                    <BookOpen size={14} className="text-white" />
+                    <span>Measurement Guide</span>
+                </button>
+            </div>
 
             <div className="space-y-3">
+
+                {/* Quick Visual Measurement Guide Option Card */}
+                <div
+                    onClick={() => setIsGuideOpen(true)}
+                    className="group p-3 rounded-xl border border-purple-100 bg-gradient-to-r from-purple-50/80 via-indigo-50/50 to-purple-50/80 cursor-pointer transition-all flex items-center justify-between hover:border-purple-300 shadow-2xs mb-3"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                            <BookOpen size={16} />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                                Need Help Taking Measurements?
+                            </h4>
+                            <p className="text-[10px] text-gray-500 font-medium">
+                                View step-by-step diagram, photo & video guide
+                            </p>
+                        </div>
+                    </div>
+                    <span className="px-2.5 py-1 text-[10px] font-black text-purple-700 bg-white rounded-full border border-purple-200 shadow-2xs group-hover:bg-purple-600 group-hover:text-white transition-all shrink-0">
+                        Open Guide
+                    </span>
+                </div>
 
                 {/* 1. Saved Measurement Profiles */}
                 {measurements.length > 0 && (
@@ -104,6 +139,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                         <SelfMeasureForm
                             onSave={handleSelfMeasureSave}
                             onCancel={() => onSelectType(null)}
+                            onOpenGuide={() => setIsGuideOpen(true)}
                         />
                     )}
                 </div>
@@ -219,6 +255,14 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 </div>
 
             </div>
+
+            {/* Measurement Guide Modal */}
+            <MeasurementGuideModal 
+                isOpen={isGuideOpen}
+                onClose={() => setIsGuideOpen(false)}
+                onSelectAddMeasurements={() => onSelectType('new')}
+                onBookHomeVisit={() => onSelectType('home')}
+            />
         </div>
     );
 };

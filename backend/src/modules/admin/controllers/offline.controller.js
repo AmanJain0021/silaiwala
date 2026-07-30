@@ -383,24 +383,23 @@ exports.updateOfflineCustomer = async (req, res) => {
 };
 
 /**
- * @desc    Soft-deactivate offline customer (keeps order history)
+ * @desc    Delete offline customer (permanently removes customer and associated offline orders)
  * @route   DELETE /api/v1/admin/offline-customers/:id
  */
 exports.deleteOfflineCustomer = async (req, res) => {
   try {
-    const customer = await OfflineCustomer.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const customer = await OfflineCustomer.findByIdAndDelete(req.params.id);
 
     if (!customer) {
       return res.status(404).json({ success: false, message: "Offline customer not found" });
     }
 
+    // Delete all offline orders associated with this customer
+    await OfflineOrder.deleteMany({ offlineCustomer: req.params.id });
+
     res.status(200).json({
       success: true,
-      message: "Offline customer deactivated",
+      message: "Offline customer and associated orders deleted successfully",
       data: customer,
     });
   } catch (error) {
@@ -408,6 +407,30 @@ exports.deleteOfflineCustomer = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * @desc    Delete offline order
+ * @route   DELETE /api/v1/admin/offline-orders/:id
+ */
+exports.deleteOfflineOrder = async (req, res) => {
+  try {
+    const order = await OfflineOrder.findByIdAndDelete(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Offline order not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Offline order deleted successfully",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error in deleteOfflineOrder:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 // ─── Offline Orders ──────────────────────────────────────────────────
 

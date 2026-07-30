@@ -88,6 +88,7 @@ const {
   getOfflineOrderById,
   createOfflineOrder,
   updateOfflineOrder,
+  deleteOfflineOrder,
   updateOfflineOrderStatus,
   markOfflineOrderOutForDelivery,
   completeOfflineOrder,
@@ -166,6 +167,7 @@ router.get("/offline-orders", getOfflineOrders);
 router.post("/offline-orders", createOfflineOrder);
 router.get("/offline-orders/:id", getOfflineOrderById);
 router.put("/offline-orders/:id", updateOfflineOrder);
+router.delete("/offline-orders/:id", deleteOfflineOrder);
 router.patch("/offline-orders/:id/status", updateOfflineOrderStatus);
 router.patch("/offline-orders/:id/out-for-delivery", markOfflineOrderOutForDelivery);
 router.patch("/offline-orders/:id/assign-delivery", assignDeliveryPartner);

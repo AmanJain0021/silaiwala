@@ -105,7 +105,7 @@ const OrderFinancialDetailModal = ({ orderId, onClose }) => {
                                     <div className="flex justify-between items-center p-3 bg-white rounded-xl border border-gray-100">
                                         <div>
                                             <p className="text-xs font-black text-gray-900">Tailor Share</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase">{data.tailor?.name || 'N/A'}</p>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase">{data.tailor?.shopName || data.tailor?.name || 'N/A'}</p>
                                         </div>
                                         <span className="text-sm font-black text-green-600">₹{data.distribution.tailorShare}</span>
                                     </div>

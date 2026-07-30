@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, X, Plus, Edit2, User, MapPin, Phone, ShoppingBag,
-    CheckCircle2, Ban, FileText, StickyNote, IndianRupee, Ruler, ScanSearch
+    CheckCircle2, Ban, FileText, StickyNote, IndianRupee, Ruler, ScanSearch, Trash2, Loader2
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { getOfflineStatusLabel, offlineStatusStyle } from '../constants/offlineOrderStatus';
@@ -53,6 +53,26 @@ const AdminOfflineCustomers = () => {
     const [lookupResult, setLookupResult] = useState(null);
     const [measurementForm, setMeasurementForm] = useState(emptyMeasurementForm);
     const [savedMeasurements, setSavedMeasurements] = useState([]);
+    const [customerToDelete, setCustomerToDelete] = useState(null);
+    const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+
+    const handleDeleteCustomer = async () => {
+        if (!customerToDelete) return;
+        setIsDeletingCustomer(true);
+        try {
+            await api.delete(`/admin/offline-customers/${customerToDelete._id}`);
+            toast.success(`Offline customer ${customerToDelete.name} deleted successfully`);
+            if (selectedCustomer && selectedCustomer._id === customerToDelete._id) {
+                setSelectedCustomer(null);
+            }
+            setCustomerToDelete(null);
+            fetchCustomers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to delete offline customer');
+        } finally {
+            setIsDeletingCustomer(false);
+        }
+    };
 
     const fetchCustomers = useCallback(async () => {
         setIsLoading(true);
@@ -403,13 +423,23 @@ const AdminOfflineCustomers = () => {
                                                 {customer.isActive ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
                                             <button
                                                 onClick={(e) => openEditModal(customer, e)}
                                                 className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                                 title="Edit"
                                             >
                                                 <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setCustomerToDelete(customer);
+                                                }}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete Customer"
+                                            >
+                                                <Trash2 size={16} />
                                             </button>
                                         </td>
                                     </tr>
@@ -653,6 +683,13 @@ const AdminOfflineCustomers = () => {
                                         )}
                                     </button>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCustomerToDelete(selectedCustomer)}
+                                    className="w-full py-2.5 bg-red-50 text-red-600 border border-red-200 text-xs font-black rounded-xl hover:bg-red-100 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    <Trash2 size={14} /> Delete Customer Permanently
+                                </button>
                             </div>
                         </motion.div>
                     </>
@@ -853,6 +890,61 @@ const AdminOfflineCustomers = () => {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+                {customerToDelete && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+                        onClick={() => !isDeletingCustomer && setCustomerToDelete(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 space-y-5 border border-gray-100"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                                    <Trash2 size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-gray-900 tracking-tight">Delete Offline Customer</h3>
+                                    <p className="text-xs text-gray-500 font-medium">This action cannot be undone.</p>
+                                </div>
+                            </div>
+
+                            <p className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-xl p-3 font-medium">
+                                Are you sure you want to delete customer <span className="font-bold text-gray-900">{customerToDelete.name}</span> ({customerToDelete.phone})? All associated offline orders will also be permanently deleted.
+                            </p>
+
+                            <div className="flex items-center gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCustomerToDelete(null)}
+                                    disabled={isDeletingCustomer}
+                                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all uppercase tracking-wider"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteCustomer}
+                                    disabled={isDeletingCustomer}
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-lg shadow-red-600/20 transition-all uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    {isDeletingCustomer ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                    {isDeletingCustomer ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

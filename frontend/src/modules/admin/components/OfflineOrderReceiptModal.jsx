@@ -178,9 +178,9 @@ const OfflineOrderReceiptModal = ({ order, onClose }) => {
                                 </div>
                             </div>
 
-                            {order.shopTailor?.name && (
+                            {(order.shopTailor?.shopName || order.shopTailor?.name) && (
                                 <p className="text-xs text-gray-600">
-                                    <span className="font-bold">Assigned tailor:</span> {order.shopTailor.name}
+                                    <span className="font-bold">Assigned tailor:</span> {order.shopTailor.shopName || order.shopTailor.name}
                                 </p>
                             )}
 

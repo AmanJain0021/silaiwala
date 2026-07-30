@@ -79,8 +79,8 @@ const AdminDelivery = () => {
                 id: o.orderId || o._id.substring(0, 8),
                 fullId: o._id,
                 type: o.status.includes('fabric') ? 'Pickup' : 'Delivery',
-                from: o.status.includes('fabric') ? (o.customer?.name || 'Customer') : (o.tailor?.name || o.tailor?.shopName || 'Tailor'),
-                to: o.status.includes('fabric') ? (o.tailor?.name || o.tailor?.shopName || 'Tailor') : (o.customer?.name || 'Customer'),
+                from: o.status.includes('fabric') ? (o.customer?.name || 'Customer') : (o.tailor?.shopName || o.tailor?.name || 'Tailor'),
+                to: o.status.includes('fabric') ? (o.tailor?.shopName || o.tailor?.name || 'Tailor') : (o.customer?.name || 'Customer'),
                 timeSlot: 'ASAP',
                 status: o.status
             }));

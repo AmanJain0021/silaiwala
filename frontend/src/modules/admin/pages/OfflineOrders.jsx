@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, X, Plus, Package, User, Phone, Ruler, ChevronDown, ChevronUp,
-    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send
+    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send, Trash2
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -137,6 +137,27 @@ const AdminOfflineOrders = () => {
     const [assignPickupCoords, setAssignPickupCoords] = useState(null);
     const [isFetchingGPS, setIsFetchingGPS] = useState(false);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const [orderToDelete, setOrderToDelete] = useState(null);
+    const [isDeletingOrder, setIsDeletingOrder] = useState(false);
+
+    const handleDeleteOrder = async () => {
+        if (!orderToDelete) return;
+        setIsDeletingOrder(true);
+        try {
+            await api.delete(`/admin/offline-orders/${orderToDelete._id}`);
+            toast.success(`Offline Order ${orderToDelete.orderId} deleted successfully`);
+            if (selectedOrder && selectedOrder._id === orderToDelete._id) {
+                setSelectedOrder(null);
+            }
+            setOrderToDelete(null);
+            fetchOrders();
+            fetchStats();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to delete offline order');
+        } finally {
+            setIsDeletingOrder(false);
+        }
+    };
 
     const allGarmentTypes = useMemo(() => {
         const defaultList = ['Shirt', 'Pant', 'Suit', 'Kurta', 'Blouse', 'Skirt', 'Lehenga', 'Sherwani', 'Anarkali', 'Jacket/Blazer', 'Alteration', 'Pheran', 'Kurti'];
@@ -906,6 +927,7 @@ const AdminOfflineOrders = () => {
                                     <th className="px-6 py-4">Payment</th>
                                     <th className="px-6 py-4">Handoff</th>
                                     <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -980,6 +1002,19 @@ const AdminOfflineOrders = () => {
                                             <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider ${offlineStatusStyle(order.status)}`}>
                                                 {getOfflineStatusLabel(order.status)}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOrderToDelete(order);
+                                                }}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete Order"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -1099,10 +1134,10 @@ const AdminOfflineOrders = () => {
                                         <span className="text-gray-500">Fabric</span>
                                         <span className="font-bold capitalize">{selectedOrder.fabricSource || 'customer'}</span>
                                     </div>
-                                    {selectedOrder.shopTailor?.name && (
+                                    {(selectedOrder.shopTailor?.shopName || selectedOrder.shopTailor?.name) && (
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">Tailor</span>
-                                            <span className="font-bold">{selectedOrder.shopTailor.name}</span>
+                                            <span className="font-bold">{selectedOrder.shopTailor.shopName || selectedOrder.shopTailor.name}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between items-start gap-2">
@@ -1377,6 +1412,13 @@ const AdminOfflineOrders = () => {
                                     className="w-full py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all uppercase tracking-widest disabled:opacity-60"
                                 >
                                     Update Payment Received
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setOrderToDelete(selectedOrder)}
+                                    className="w-full py-2.5 bg-red-50 text-red-600 border border-red-200 text-xs font-black rounded-xl hover:bg-red-100 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    <Trash2 size={14} /> Delete Offline Order
                                 </button>
                             </div>
                         </motion.div>
@@ -2265,6 +2307,61 @@ const AdminOfflineOrders = () => {
                                     {isCompleting ? 'Saving...' : 'Confirm completion'}
                                 </button>
                             </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+                {orderToDelete && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+                        onClick={() => !isDeletingOrder && setOrderToDelete(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 space-y-5 border border-gray-100"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                                    <Trash2 size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-gray-900 tracking-tight">Delete Offline Order</h3>
+                                    <p className="text-xs text-gray-500 font-medium">This action cannot be undone.</p>
+                                </div>
+                            </div>
+
+                            <p className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-xl p-3 font-medium">
+                                Are you sure you want to delete order <span className="font-bold text-gray-900">{orderToDelete.orderId}</span> for customer <span className="font-bold text-gray-900">{orderToDelete.offlineCustomer?.name || 'Walk-in Customer'}</span>?
+                            </p>
+
+                            <div className="flex items-center gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setOrderToDelete(null)}
+                                    disabled={isDeletingOrder}
+                                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all uppercase tracking-wider"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteOrder}
+                                    disabled={isDeletingOrder}
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-lg shadow-red-600/20 transition-all uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    {isDeletingOrder ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                    {isDeletingOrder ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

@@ -275,7 +275,7 @@ const RequestDetail = () => {
                                 </div>
                             )}
                             <div>
-                                <p className="text-sm font-black text-gray-900">{request.tailor?.name}</p>
+                                <p className="text-sm font-black text-gray-900">{request.tailor?.shopName || request.tailor?.name || 'Tailor Partner'}</p>
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Tailor Partner</p>
                             </div>
                         </div>
