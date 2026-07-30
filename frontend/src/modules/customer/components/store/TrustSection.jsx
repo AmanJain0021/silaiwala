@@ -10,17 +10,17 @@ const TrustSection = () => {
     ];
 
     return (
-        <div className="bg-white py-8 border-y border-gray-100">
-            <div className="container mx-auto px-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div className="py-3 px-4 md:px-6 lg:px-8">
+            <div className="bg-white border border-slate-100 rounded-2xl shadow-2xs py-3.5 px-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {items.map((item, index) => (
-                        <div key={index} className="flex flex-col items-center gap-2 group cursor-default">
-                            <div className="p-3 bg-gray-50 rounded-full text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                                <item.icon className="h-6 w-6" />
+                        <div key={index} className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-purple-50 text-[#7a3299] flex items-center justify-center shrink-0 shadow-2xs">
+                                <item.icon className="h-4.5 w-4.5" />
                             </div>
-                            <div>
-                                <h4 className="font-bold text-gray-800 text-sm">{item.title}</h4>
-                                <p className="text-xs text-gray-500">{item.desc}</p>
+                            <div className="min-w-0">
+                                <h4 className="font-extrabold text-slate-900 text-xs tracking-tight leading-tight truncate">{item.title}</h4>
+                                <p className="text-[10px] text-slate-400 font-semibold tracking-tight leading-tight mt-0.5 truncate">{item.desc}</p>
                             </div>
                         </div>
                     ))}

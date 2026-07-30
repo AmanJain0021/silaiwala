@@ -7,14 +7,18 @@ const { getCached } = require("../../../utils/cache.js");
 const { PUBLIC_PRODUCT_FILTER } = require("../../../utils/catalogVisibility.js");
 
 exports.getProducts = asyncHandler(async (req, res, next) => {
-  const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10, productType = 'store_item' } = req.query;
+  const { category, search, minPrice, maxPrice, sort, lat, lng, radius = 20000, page = 1, limit = 10, productType = 'store_item', storeSection } = req.query;
 
   // Build param-inclusive cache key
-  const paramKey = [category, search, minPrice, maxPrice, sort, lat, lng, radius, page, limit, productType].join(':');
+  const paramKey = [category, search, minPrice, maxPrice, sort, lat, lng, radius, page, limit, productType, storeSection].join(':');
   const cacheKey = `cache:products:list:${paramKey}`;
 
   const result = await getCached(cacheKey, 120, async () => {
   let query = { productType, ...PUBLIC_PRODUCT_FILTER };
+  
+  if (storeSection) {
+    query.storeSection = storeSection;
+  }
 
   // 1. Geo-Spatial Search
   if (lat && lng) {

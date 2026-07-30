@@ -4,7 +4,7 @@ const cmsSchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["legal", "faq"],
+      enum: ["legal", "faq", "video", "guide"],
       required: true,
     },
     slug: {

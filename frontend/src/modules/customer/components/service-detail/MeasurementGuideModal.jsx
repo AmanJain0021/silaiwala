@@ -18,11 +18,58 @@ import {
     Info,
     Check
 } from 'lucide-react';
+import api from '../../../../utils/api';
 
 const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBookHomeVisit }) => {
     const [activeTab, setActiveTab] = useState('diagram'); // 'diagram' | 'photo' | 'tips'
     const [viewMode, setViewMode] = useState('front'); // 'front' | 'back'
     const [isVideoOpen, setIsVideoOpen] = useState(false);
+    const [videoData, setVideoData] = useState(null);
+    const [hasVideoError, setHasVideoError] = useState(false);
+
+    React.useEffect(() => {
+        if (!isOpen) return;
+        setHasVideoError(false);
+        const fetchGuideVideo = async () => {
+            try {
+                const res = await api.get('/cms/content/measurement-guide-video').catch(() => null);
+                if (res?.data?.data) {
+                    setVideoData(res.data.data);
+                } else {
+                    const listRes = await api.get('/cms/content?type=video').catch(() => null);
+                    if (listRes?.data?.data?.length > 0) {
+                        setVideoData(listRes.data.data[0]);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch guide video:", err);
+            }
+        };
+        fetchGuideVideo();
+    }, [isOpen]);
+
+    const formatVideoEmbedUrl = (rawUrl) => {
+        if (!rawUrl || typeof rawUrl !== 'string') return null;
+        const url = rawUrl.trim();
+        const lowerUrl = url.toLowerCase();
+
+        if (lowerUrl.includes('youtube.com/watch')) {
+            try {
+                const videoId = new URL(url).searchParams.get('v');
+                if (videoId) return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+            } catch {
+                /* fallback */
+            }
+        }
+        if (lowerUrl.includes('youtu.be/')) {
+            const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+            if (videoId) return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+        }
+        if (lowerUrl.includes('youtube.com/embed/')) {
+            return url.includes('autoplay=1') ? url : `${url}${url.includes('?') ? '&' : '?'}autoplay=1`;
+        }
+        return null;
+    };
 
     if (!isOpen) return null;
 
@@ -30,42 +77,47 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
         {
             id: 1,
             title: 'Bust',
-            description: 'Measure around the fullest part of your bust.',
+            description: 'Measure horizontally around the fullest part of your bust.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: 'center 33%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'horizontal'
         },
         {
             id: 2,
             title: 'Waist',
-            description: 'Measure around the natural waist (the narrowest part).',
+            description: 'Measure horizontally around the natural waist (the narrowest part).',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: 'center 44%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'horizontal'
         },
         {
             id: 3,
             title: 'Hip',
-            description: 'Measure around the fullest part of your hips.',
+            description: 'Measure horizontally around the fullest part of your hips.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: 'center 55%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'horizontal'
         },
         {
             id: 4,
             title: 'Shoulder Width',
-            description: 'Measure from the edge of one shoulder to the other.',
+            description: 'Measure horizontally across the top from left shoulder joint to right shoulder joint.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: 'center 23%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'shoulder'
         },
         {
             id: 5,
             title: 'Sleeve Length',
-            description: 'Measure from the shoulder point to the wrist.',
+            description: 'Measure vertically along the arm from the shoulder seam down to the wrist.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: '78% 38%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'sleeve'
         },
         {
             id: 6,
@@ -73,7 +125,8 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
             description: 'Measure around the fullest part of your upper arm.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: '22% 33%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'horizontal'
         },
         {
             id: 7,
@@ -81,24 +134,27 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
             description: 'Measure around the wrist or desired sleeve opening.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: '18% 50%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'horizontal'
         },
         {
             id: 9,
             title: 'Kameez / Shirt Length',
-            description: 'Measure from top shoulder down to desired bottom hem.',
+            description: 'Measure vertically from top shoulder down to desired bottom hem.',
             bgImage: '/images/measurement_model_front.png',
             bgPosition: 'center 50%',
             bgSize: '160%',
+            lineType: 'vertical',
             isVertical: true
         },
         {
             id: 10,
             title: 'Back Shoulder',
-            description: 'Measure across the upper back from shoulder to shoulder.',
+            description: 'Measure horizontally across the upper back from shoulder tip to shoulder tip.',
             bgImage: '/images/measurement_model_back.png',
             bgPosition: 'center 28%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'shoulder'
         },
         {
             id: 11,
@@ -106,23 +162,27 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
             description: 'Measure around the armhole curve for comfortable movement.',
             bgImage: '/images/measurement_model_back.png',
             bgPosition: '75% 36%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'armhole'
         },
         {
             id: 12,
             title: 'Back Waist',
-            description: 'Measure across the back at waist level.',
+            description: 'Measure horizontally across the back at waist level.',
             bgImage: '/images/measurement_model_back.png',
             bgPosition: 'center 46%',
-            bgSize: '280%'
+            bgSize: '280%',
+            lineType: 'horizontal'
         },
         {
             id: 13,
-            title: 'Salwar / Bottom Hem',
-            description: 'Measure around the ankle opening for pants/salwar.',
+            title: 'Salwar / Bottom Length',
+            description: 'Measure vertically from waist down to ankle hem.',
             bgImage: '/images/measurement_model_back.png',
             bgPosition: 'center 80%',
-            bgSize: '240%'
+            bgSize: '240%',
+            lineType: 'vertical',
+            isVertical: true
         }
     ];
 
@@ -266,32 +326,46 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                 
                                                 {/* Overlayed Measurement Lines & Badges Front */}
                                                 <div className="absolute inset-0 pointer-events-none">
-                                                    {/* Line 1 Bust */}
-                                                    <div className="absolute top-[33%] inset-x-3 border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[33%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">1</div>
+                                                    {/* Line 1 Bust (Horizontal) */}
+                                                    <div className="absolute top-[33%] left-[16%] right-[16%] border-t-2 border-dashed border-[#7C3AED]" />
+                                                    <div className="absolute top-[33%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">1</div>
 
-                                                    {/* Line 2 Waist */}
-                                                    <div className="absolute top-[44%] inset-x-5 border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">2</div>
+                                                    {/* Line 2 Waist (Horizontal) */}
+                                                    <div className="absolute top-[44%] left-[20%] right-[20%] border-t-2 border-dashed border-[#7C3AED]" />
+                                                    <div className="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">2</div>
 
-                                                    {/* Line 3 Hip */}
-                                                    <div className="absolute top-[55%] inset-x-4 border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">3</div>
+                                                    {/* Line 3 Hip (Horizontal) */}
+                                                    <div className="absolute top-[55%] left-[18%] right-[18%] border-t-2 border-dashed border-[#7C3AED]" />
+                                                    <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">3</div>
 
-                                                    {/* Badge 4 Shoulder */}
-                                                    <div className="absolute top-[23%] right-2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">4</div>
+                                                    {/* Line 4 Shoulder Width (Horizontal across top shoulders with end ticks) */}
+                                                    <div className="absolute top-[22%] left-[20%] right-[20%] border-t-2 border-dashed border-amber-500">
+                                                        <div className="absolute -top-1 left-0 w-0.5 h-2.5 bg-amber-500" />
+                                                        <div className="absolute -top-1 right-0 w-0.5 h-2.5 bg-amber-500" />
+                                                    </div>
+                                                    <div className="absolute top-[22%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">4</div>
 
-                                                    {/* Badge 5 Sleeve */}
-                                                    <div className="absolute top-[35%] right-1 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">5</div>
+                                                    {/* Line 5 Sleeve Length (Vertical along sleeve from shoulder to wrist) */}
+                                                    <div className="absolute top-[22%] bottom-[50%] right-[16%] border-r-2 border-dashed border-purple-600">
+                                                        <div className="absolute top-0 -right-1 w-2.5 h-0.5 bg-purple-600" />
+                                                        <div className="absolute bottom-0 -right-1 w-2.5 h-0.5 bg-purple-600" />
+                                                    </div>
+                                                    <div className="absolute top-[36%] right-[8%] -translate-y-1/2 w-5 h-5 rounded-full bg-purple-700 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">5</div>
 
-                                                    {/* Badge 6 Arm */}
-                                                    <div className="absolute top-[33%] left-1 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">6</div>
+                                                    {/* Line 6 Bicep / Upper Arm (Short horizontal line across bicep) */}
+                                                    <div className="absolute top-[33%] left-[10%] w-[18%] border-t-2 border-dashed border-[#7C3AED]" />
+                                                    <div className="absolute top-[33%] left-[2%] -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">6</div>
 
-                                                    {/* Badge 7 Wrist */}
-                                                    <div className="absolute top-[50%] left-0 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">7</div>
+                                                    {/* Line 7 Wrist (Short horizontal line across wrist) */}
+                                                    <div className="absolute top-[50%] left-[8%] w-[16%] border-t-2 border-dashed border-[#7C3AED]" />
+                                                    <div className="absolute top-[50%] left-[1%] -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">7</div>
 
-                                                    {/* Badge 9 Hem */}
-                                                    <div className="absolute top-[74%] left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">9</div>
+                                                    {/* Line 9 Kameez / Shirt Length (VERTICAL line from shoulder down to hem) */}
+                                                    <div className="absolute top-[22%] bottom-[26%] left-[36%] border-l-2 border-dashed border-emerald-600">
+                                                        <div className="absolute top-0 -left-1 w-2.5 h-0.5 bg-emerald-600" />
+                                                        <div className="absolute bottom-0 -left-1 w-2.5 h-0.5 bg-emerald-600" />
+                                                    </div>
+                                                    <div className="absolute top-[74%] left-[36%] -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">9</div>
                                                 </div>
                                             </div>
                                             <span className="text-[11px] font-bold text-purple-900 mt-2">Front View</span>
@@ -308,19 +382,30 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                 
                                                 {/* Overlayed Measurement Lines & Badges Back */}
                                                 <div className="absolute inset-0 pointer-events-none">
-                                                    {/* Line 10 Back Shoulder */}
-                                                    <div className="absolute top-[28%] inset-x-4 border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[28%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">10</div>
+                                                    {/* Line 10 Back Shoulder (Horizontal across upper back shoulder with end ticks) */}
+                                                    <div className="absolute top-[28%] left-[20%] right-[20%] border-t-2 border-dashed border-amber-500">
+                                                        <div className="absolute -top-1 left-0 w-0.5 h-2.5 bg-amber-500" />
+                                                        <div className="absolute -top-1 right-0 w-0.5 h-2.5 bg-amber-500" />
+                                                    </div>
+                                                    <div className="absolute top-[28%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">10</div>
 
-                                                    {/* Badge 11 Armhole */}
-                                                    <div className="absolute top-[36%] right-2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">11</div>
+                                                    {/* Line 11 Armhole Depth (Vertical/curved line around armhole) */}
+                                                    <div className="absolute top-[28%] bottom-[63%] right-[20%] border-r-2 border-dashed border-purple-600 rounded-r-md">
+                                                        <div className="absolute top-0 -right-1 w-2 h-0.5 bg-purple-600" />
+                                                        <div className="absolute bottom-0 -right-1 w-2 h-0.5 bg-purple-600" />
+                                                    </div>
+                                                    <div className="absolute top-[35%] right-[10%] -translate-y-1/2 w-5 h-5 rounded-full bg-purple-700 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">11</div>
 
-                                                    {/* Line 12 Back Waist */}
-                                                    <div className="absolute top-[46%] inset-x-5 border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">12</div>
+                                                    {/* Line 12 Back Waist (Horizontal) */}
+                                                    <div className="absolute top-[46%] left-[18%] right-[18%] border-t-2 border-dashed border-[#7C3AED]" />
+                                                    <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">12</div>
 
-                                                    {/* Badge 13 Leg opening */}
-                                                    <div className="absolute top-[80%] right-2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md">13</div>
+                                                    {/* Line 13 Salwar / Bottom Length (VERTICAL line along leg) */}
+                                                    <div className="absolute top-[52%] bottom-[16%] right-[28%] border-r-2 border-dashed border-emerald-600">
+                                                        <div className="absolute top-0 -right-1 w-2.5 h-0.5 bg-emerald-600" />
+                                                        <div className="absolute bottom-0 -right-1 w-2.5 h-0.5 bg-emerald-600" />
+                                                    </div>
+                                                    <div className="absolute top-[80%] right-[18%] -translate-y-1/2 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">13</div>
                                                 </div>
                                             </div>
                                             <span className="text-[11px] font-bold text-purple-900 mt-2">Back View</span>
@@ -357,11 +442,31 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                     backgroundRepeat: 'no-repeat'
                                                 }}
                                             >
-                                                {/* Dashed Line & Badge Overlay */}
+                                                {/* Dashed Line & Badge Overlay tailored to lineType */}
                                                 <div className="absolute inset-0 bg-purple-950/10 pointer-events-none flex items-center justify-center">
-                                                    {item.isVertical ? (
-                                                        <div className="h-full border-r-2 border-dashed border-[#7C3AED] relative flex items-center justify-center">
-                                                            <div className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                    {item.lineType === 'vertical' ? (
+                                                        <div className="h-full border-l-2 border-dashed border-emerald-500 relative flex items-center justify-center">
+                                                            <div className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                                {item.id}
+                                                            </div>
+                                                        </div>
+                                                    ) : item.lineType === 'shoulder' ? (
+                                                        <div className="w-[85%] border-t-2 border-dashed border-amber-500 relative flex items-center justify-center my-auto">
+                                                            <div className="absolute -top-1 left-0 w-0.5 h-2 bg-amber-500" />
+                                                            <div className="absolute -top-1 right-0 w-0.5 h-2 bg-amber-500" />
+                                                            <div className="w-4 h-4 rounded-full bg-amber-600 text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                                {item.id}
+                                                            </div>
+                                                        </div>
+                                                    ) : item.lineType === 'sleeve' ? (
+                                                        <div className="h-full border-r-2 border-dashed border-purple-500 relative flex items-center justify-center mr-2">
+                                                            <div className="w-4 h-4 rounded-full bg-purple-700 text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                                {item.id}
+                                                            </div>
+                                                        </div>
+                                                    ) : item.lineType === 'armhole' ? (
+                                                        <div className="h-[80%] border-r-2 border-dashed border-purple-500 rounded-r-md relative flex items-center justify-center mr-2">
+                                                            <div className="w-4 h-4 rounded-full bg-purple-700 text-white text-[9px] font-black flex items-center justify-center shadow-md">
                                                                 {item.id}
                                                             </div>
                                                         </div>
@@ -558,25 +663,64 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
 
             {/* Video Modal Overlay if Video Guide Clicked */}
             {isVideoOpen && (
-                <div className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative p-4 text-center">
+                <div className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl relative p-4 text-center">
                         <button 
-                            onClick={() => setIsVideoOpen(false)}
-                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 cursor-pointer"
+                            onClick={() => {
+                                setIsVideoOpen(false);
+                                setHasVideoError(false);
+                            }}
+                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 cursor-pointer z-10"
                         >
                             <X size={18} />
                         </button>
                         <h3 className="text-base font-bold text-slate-900 mb-3 pt-2">
-                            How to Measure Body Guide
+                            {videoData?.title || "How to Measure Body Guide"}
                         </h3>
-                        <div className="aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center relative">
-                            <iframe 
-                                className="w-full h-full"
-                                src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1" 
-                                title="Measurement Guide Video"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowFullScreen
-                            />
+                        <div className="aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center relative shadow-inner">
+                            {(() => {
+                                const videoUrl = videoData?.content?.trim();
+                                const youtubeEmbed = formatVideoEmbedUrl(videoUrl);
+
+                                // Fallback iframe if video fails to load or no video content set
+                                const renderFallback = () => (
+                                    <iframe 
+                                        className="w-full h-full"
+                                        src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1" 
+                                        title="Measurement Guide Video"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowFullScreen
+                                    />
+                                );
+
+                                if (hasVideoError || !videoUrl) {
+                                    return renderFallback();
+                                }
+
+                                if (youtubeEmbed) {
+                                    return (
+                                        <iframe 
+                                            className="w-full h-full"
+                                            src={youtubeEmbed} 
+                                            title={videoData?.title || "Measurement Guide Video"}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowFullScreen
+                                        />
+                                    );
+                                }
+
+                                return (
+                                    <video 
+                                        src={videoUrl} 
+                                        controls 
+                                        autoPlay 
+                                        onError={() => setHasVideoError(true)}
+                                        className="w-full h-full object-contain"
+                                    >
+                                        Your browser does not support playing this video.
+                                    </video>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

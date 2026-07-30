@@ -61,7 +61,7 @@ const AdminCMS = () => {
         }
     }, [isLogsModalOpen]);
 
-    const tabs = ['Banners', 'Notifications', 'Pages', 'FAQs'];
+    const tabs = ['Banners', 'Notifications', 'Pages', 'FAQs', 'Measurement Video'];
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -74,6 +74,9 @@ const AdminCMS = () => {
                 setCmsContent(res.data.data);
             } else if (selectedTab === 'FAQs') {
                 const res = await api.get('/admin/cms/content?type=faq');
+                setCmsContent(res.data.data);
+            } else if (selectedTab === 'Measurement Video') {
+                const res = await api.get('/admin/cms/content?type=video');
                 setCmsContent(res.data.data);
             }
         } catch (error) {
@@ -157,14 +160,21 @@ const AdminCMS = () => {
     };
 
     const handleCreateContent = async () => {
-        if (!newContent.title || !newContent.content) return;
+        if (!newContent.title || !newContent.content) return toast.error('Please provide Title and Video/Content link');
         setIsSubmitting(true);
         try {
-            const payload = { ...newContent, type: selectedTab === 'Pages' ? 'legal' : 'faq' };
+            const targetType = selectedTab === 'Measurement Video' ? 'video' : (selectedTab === 'Pages' ? 'legal' : (newContent.type || 'faq'));
+            const payload = { ...newContent, type: targetType };
             if (!payload.slug) payload.slug = payload.title.toLowerCase().replace(/ /g, '-');
 
-            if (isEditing) {
-                await api.put(`/admin/cms/content/${editId}`, payload);
+            let targetEditId = editId;
+            if (!targetEditId && (selectedTab === 'Measurement Video' || payload.type === 'video') && cmsContent?.length > 0) {
+                const existing = cmsContent.find(item => item.slug === payload.slug || item.type === 'video');
+                if (existing) targetEditId = existing._id;
+            }
+
+            if (targetEditId) {
+                await api.put(`/admin/cms/content/${targetEditId}`, payload);
                 toast.success('Content updated successfully');
             } else {
                 await api.post('/admin/cms/content', payload);
@@ -237,6 +247,31 @@ const AdminCMS = () => {
         }
     };
 
+    const [isVideoUploading, setIsVideoUploading] = useState(false);
+
+    const handleVideoFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        setIsVideoUploading(true);
+        try {
+            const res = await api.post('/upload/public', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const uploadedUrl = res.data.data;
+            setNewContent(prev => ({ ...prev, content: uploadedUrl }));
+            toast.success('Video file uploaded successfully!');
+        } catch (error) {
+            console.error('Video upload failed:', error);
+            toast.error(error.response?.data?.message || 'Video upload failed');
+        } finally {
+            setIsVideoUploading(false);
+        }
+    };
+
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Active': return 'bg-green-100 text-green-700 border-green-200';
@@ -283,6 +318,38 @@ const AdminCMS = () => {
                         className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest"
                     >
                         <Plus size={16} /> Add {selectedTab === 'Pages' ? 'Document' : 'FAQ'}
+                    </button>
+                )}
+                {selectedTab === 'Measurement Video' && (
+                    <button
+                        onClick={() => {
+                            if (cmsContent && cmsContent.length > 0) {
+                                const existing = cmsContent[0];
+                                setNewContent({
+                                    title: existing.title || 'How to Measure Body Guide',
+                                    content: existing.content || '',
+                                    type: 'video',
+                                    slug: existing.slug || 'measurement-guide-video',
+                                    category: existing.category || 'customer'
+                                });
+                                setEditId(existing._id);
+                                setIsEditing(true);
+                            } else {
+                                setIsEditing(false);
+                                setEditId(null);
+                                setNewContent({
+                                    title: 'How to Measure Body Guide',
+                                    content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    type: 'video',
+                                    slug: 'measurement-guide-video',
+                                    category: 'customer'
+                                });
+                            }
+                            setIsAddContentModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-purple-700 text-white text-xs font-black rounded-xl hover:bg-purple-800 shadow-lg shadow-purple-900/20 transition-all uppercase tracking-widest cursor-pointer"
+                    >
+                        <Plus size={16} /> {cmsContent && cmsContent.length > 0 ? 'Edit Guide Video' : 'Add Guide Video'}
                     </button>
                 )}
             </div>
@@ -519,6 +586,87 @@ const AdminCMS = () => {
                         </table>
                     </div>
                 )}
+
+                {selectedTab === 'Measurement Video' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {cmsContent.map((vid) => (
+                            <div key={vid._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                                <div className="p-4 bg-purple-50/50 border-b border-gray-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                                            🎥
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-sm font-extrabold text-gray-900 truncate">{vid.title}</h4>
+                                            <span className="text-[10px] text-gray-400 font-mono">/{vid.slug}</span>
+                                        </div>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider shrink-0 ${vid.isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                        {vid.isActive ? 'Published' : 'Hidden'}
+                                    </span>
+                                </div>
+
+                                <div className="p-4 flex-1 space-y-3">
+                                    <div className="aspect-video w-full bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center relative">
+                                        {vid.content?.includes('youtube') || vid.content?.includes('youtu.be') ? (
+                                            <iframe 
+                                                className="w-full h-full"
+                                                src={vid.content.includes('embed') ? vid.content : `https://www.youtube-nocookie.com/embed/${vid.content.includes('watch?v=') ? vid.content.split('watch?v=')[1]?.split('&')[0] : vid.content.split('youtu.be/')[1]?.split('?')[0]}`} 
+                                                title={vid.title}
+                                                allowFullScreen
+                                            />
+                                        ) : (
+                                            <video src={vid.content} controls className="w-full h-full object-contain" />
+                                        )}
+                                    </div>
+                                    <div className="text-[11px] text-gray-600 truncate font-mono bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex items-center justify-between">
+                                        <span className="truncate"><span className="font-bold text-gray-400">URL:</span> {vid.content}</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-3.5 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-2">
+                                    <button
+                                        onClick={() => handleEditContent(vid)}
+                                        className="px-4 py-2 bg-white text-purple-700 text-[10px] font-black rounded-lg hover:bg-purple-50 uppercase tracking-widest border border-purple-200 shadow-2xs cursor-pointer"
+                                    >
+                                        Edit Video
+                                    </button>
+                                    <button onClick={() => handleDeleteContent(vid._id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {cmsContent.length === 0 && (
+                            <div className="col-span-full bg-white rounded-2xl p-12 border border-gray-100 text-center space-y-3">
+                                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-2xl">
+                                    🎥
+                                </div>
+                                <h3 className="text-sm font-extrabold text-gray-800">No Measurement Guide Video Added Yet</h3>
+                                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                                    Add a YouTube video link or upload an MP4 video to show in the Measurement Guide modal for customers.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setEditId(null);
+                                        setNewContent({
+                                            title: 'How to Measure Body Guide',
+                                            content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                            type: 'video',
+                                            slug: 'measurement-guide-video',
+                                            category: 'customer'
+                                        });
+                                        setIsAddContentModalOpen(true);
+                                    }}
+                                    className="px-5 py-2.5 bg-purple-700 text-white text-xs font-black rounded-xl hover:bg-purple-800 shadow-md cursor-pointer inline-flex items-center gap-1.5"
+                                >
+                                    <Plus size={15} /> Add Guide Video Now
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Add Banner Modal */}
@@ -564,9 +712,9 @@ const AdminCMS = () => {
                                         <div>
                                             <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Placement Location</label>
                                             <select value={newBanner.targetLocation} onChange={e => setNewBanner({ ...newBanner, targetLocation: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors appearance-none">
-                                                <option>Home Page - Top Carousel</option>
-                                                <option>Store Tab - Header Banner</option>
-                                                <option>Promotional Popup</option>
+                                                <option value="Store Tab - Header Banner">Store Page - Top Banner (/user/store)</option>
+                                                <option value="Home Page - Top Carousel">Home Page - Top Carousel</option>
+                                                <option value="Promotional Popup">Promotional Popup</option>
                                             </select>
                                         </div>
                                         <div>
@@ -656,7 +804,7 @@ const AdminCMS = () => {
                             >
                                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <h2 className="text-lg font-black tracking-tight text-gray-900">
-                                        {isEditing ? 'Edit' : 'Add'} {selectedTab === 'Pages' ? 'Page Document' : 'FAQ'}
+                                        {isEditing ? 'Edit' : 'Add'} {(selectedTab === 'Measurement Video' || newContent.type === 'video') ? 'Measurement Guide Video' : (selectedTab === 'Pages' ? 'Page Document' : 'FAQ')}
                                     </h2>
                                     <button onClick={() => setIsAddContentModalOpen(false)} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
                                         <X size={20} />
@@ -664,35 +812,112 @@ const AdminCMS = () => {
                                 </div>
                                 <div className="p-6 space-y-5 flex-1 bg-white overflow-y-auto max-h-[70vh]">
                                     <div>
-                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Pages' ? 'Document Title' : 'Question'}</label>
-                                        <input type="text" value={newContent.title} onChange={e => setNewContent({ ...newContent, title: e.target.value })} placeholder={selectedTab === 'Pages' ? "e.g. Privacy Policy" : "e.g. How to track my order?"} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" />
+                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                                            {(selectedTab === 'Measurement Video' || newContent.type === 'video') ? 'Video Title' : (selectedTab === 'Pages' ? 'Document Title' : 'Question')}
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            value={newContent.title} 
+                                            onChange={e => setNewContent({ ...newContent, title: e.target.value })} 
+                                            placeholder={(selectedTab === 'Measurement Video' || newContent.type === 'video') ? "e.g. How to Measure Body Guide" : (selectedTab === 'Pages' ? "e.g. Privacy Policy" : "e.g. How to track my order?")} 
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" 
+                                        />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">URL Slug (Optional)</label>
-                                            <input type="text" value={newContent.slug} onChange={e => setNewContent({ ...newContent, slug: e.target.value })} placeholder="e.g. privacy-policy" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" />
+                                            <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">URL Slug</label>
+                                            <input 
+                                                type="text" 
+                                                value={newContent.slug} 
+                                                onChange={e => setNewContent({ ...newContent, slug: e.target.value })} 
+                                                placeholder="e.g. measurement-guide-video" 
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" 
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Category</label>
                                             <select value={newContent.category} onChange={e => setNewContent({ ...newContent, category: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors appearance-none">
-                                                <option value="general">General</option>
                                                 <option value="customer">Customer</option>
+                                                <option value="general">General</option>
                                                 <option value="tailor">Tailor</option>
-                                                <option value="delivery">Delivery</option>
                                                 <option value="executive">Measurement Executive</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Pages' ? 'Full Content (Markdown/HTML supported)' : 'Answer Content'}</label>
-                                        <ReactQuill theme="snow" value={newContent.content} onChange={content => setNewContent({ ...newContent, content })} className="bg-white rounded-xl mb-4" />
-                                    </div>
+
+                                    {(selectedTab === 'Measurement Video' || newContent.type === 'video') ? (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                                                        Video URL or Upload Video File
+                                                    </label>
+                                                    <label className="cursor-pointer text-xs font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 border border-purple-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs">
+                                                        {isVideoUploading ? (
+                                                            <span className="flex items-center gap-1.5">
+                                                                <span className="w-3 h-3 border-2 border-purple-700 border-t-transparent animate-spin rounded-full"></span>
+                                                                Uploading Video...
+                                                            </span>
+                                                        ) : (
+                                                            <>
+                                                                <span>📁 Upload Video File</span>
+                                                                <input 
+                                                                    type="file" 
+                                                                    accept="video/mp4,video/webm,video/quicktime,video/*" 
+                                                                    onChange={handleVideoFileUpload} 
+                                                                    className="hidden" 
+                                                                    disabled={isVideoUploading}
+                                                                />
+                                                            </>
+                                                        )}
+                                                    </label>
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    value={newContent.content} 
+                                                    onChange={e => setNewContent({ ...newContent, content: e.target.value })} 
+                                                    placeholder="https://www.youtube.com/watch?v=... or click Upload Video File" 
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-purple-600 transition-colors" 
+                                                />
+                                                <p className="text-[10px] text-gray-400 mt-1.5 font-medium leading-relaxed">
+                                                    💡 <b>Option 1:</b> Click <b>Upload Video File</b> to pick a downloaded MP4/WEBM/MOV video from your PC.<br />
+                                                    💡 <b>Option 2:</b> Or paste a YouTube video link (e.g. https://www.youtube.com/watch?v=...) directly into the field above.
+                                                </p>
+                                            </div>
+
+                                            {/* Video Live Preview */}
+                                            {newContent.content && (
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase text-purple-700 tracking-widest mb-1.5">
+                                                        Video Live Preview
+                                                    </label>
+                                                    <div className="aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center relative border border-purple-200">
+                                                        {newContent.content.includes('youtube') || newContent.content.includes('youtu.be') ? (
+                                                            <iframe 
+                                                                className="w-full h-full"
+                                                                src={newContent.content.includes('embed') ? newContent.content : `https://www.youtube-nocookie.com/embed/${newContent.content.includes('watch?v=') ? newContent.content.split('watch?v=')[1]?.split('&')[0] : newContent.content.split('youtu.be/')[1]?.split('?')[0]}`} 
+                                                                title="Video Preview"
+                                                                allowFullScreen
+                                                            />
+                                                        ) : (
+                                                            <video src={newContent.content} controls className="w-full h-full object-contain" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">{selectedTab === 'Pages' ? 'Full Content (Markdown/HTML supported)' : 'Answer Content'}</label>
+                                            <ReactQuill theme="snow" value={newContent.content} onChange={content => setNewContent({ ...newContent, content })} className="bg-white rounded-xl mb-4" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 rounded-b-3xl">
-                                    <button onClick={() => setIsAddContentModalOpen(false)} className="px-6 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-xl hover:bg-gray-50 transition-colors uppercase tracking-widest">
+                                    <button onClick={() => setIsAddContentModalOpen(false)} className="px-6 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-xl hover:bg-gray-50 transition-colors uppercase tracking-widest cursor-pointer">
                                         Cancel
                                     </button>
-                                    <button disabled={isSubmitting} onClick={handleCreateContent} className="px-6 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest disabled:opacity-50">
+                                    <button disabled={isSubmitting} onClick={handleCreateContent} className="px-6 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest disabled:opacity-50 cursor-pointer">
                                         {isSubmitting ? 'Saving...' : (isEditing ? 'Update Content' : 'Publish Content')}
                                     </button>
                                 </div>

@@ -134,6 +134,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 10, // Default height in cm
     },
+    storeSection: {
+      type: String,
+      enum: ["Normal", "Trending", "Best Sellers", "Recommended"],
+      default: "Normal",
+    },
   },
   {
     timestamps: true,

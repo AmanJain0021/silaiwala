@@ -59,7 +59,7 @@ const processUpload = async (req, res, isMultiple) => {
         const uploadPromises = files.map(file => {
           return new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
-              { folder: folderName },
+              { folder: folderName, resource_type: "auto" },
               (error, result) => {
                 if (error) return reject(error);
                 resolve(result);

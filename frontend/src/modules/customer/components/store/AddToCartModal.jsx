@@ -7,6 +7,7 @@ import useCartStore from '../../../../store/cartStore';
 import useWishlistStore from '../../../../store/wishlistStore';
 import { SOCKET_URL } from '../../../../config/constants';
 import { cn } from '../../../../utils/cn';
+import SafeImage from '../../../../components/Common/SafeImage';
 
 const AddToCartModal = ({ isOpen, onClose, product }) => {
     const [isAdding, setIsAdding] = useState(false);
@@ -146,16 +147,21 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
                             {/* Images Carousel */}
                             <div className="relative w-full h-full">
                                 <AnimatePresence initial={false} mode="wait">
-                                    <motion.img
+                                    <motion.div
                                         key={currentImageIndex}
-                                        src={getImageUrl(displayImages[currentImageIndex])}
-                                        alt={product.name}
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.2 }}
-                                        className="absolute inset-0 object-cover w-full h-full"
-                                    />
+                                        className="absolute inset-0 w-full h-full"
+                                    >
+                                        <SafeImage
+                                            src={getImageUrl(displayImages[currentImageIndex])}
+                                            alt={product.name}
+                                            className="w-full h-full object-cover"
+                                            fallback="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&auto=format&fit=crop&q=80"
+                                        />
+                                    </motion.div>
                                 </AnimatePresence>
 
                                 {/* Navigation Arrows */}

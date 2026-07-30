@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { Search, Bell, ShoppingBag, X, Heart, SlidersHorizontal } from 'lucide-react';
+import React from 'react';
+import { Search, ShoppingBag, Heart, SlidersHorizontal, Camera, Mic } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../../store/cartStore';
 import useWishlistStore from '../../../../store/wishlistStore';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const silaiwalaLogo = '/sewzella_logo.jpeg';
 
@@ -12,64 +11,77 @@ const StoreHeader = ({ searchQuery, setSearchQuery, onOpenFilter }) => {
     const wishlistCount = useWishlistStore(state => state.items.length);
 
     return (
-        <div className="sticky top-0 md:top-20 z-[105] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 transition-all duration-300">
-            <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-2 pt-safe">
-                {/* Branding Row - Mobile Only */}
-                <div className="flex justify-between items-center mb-2 md:hidden">
-                    <div className="flex items-center gap-2">
-                        <Link to="/user" className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3 active:scale-95 transition-transform">
-                            <img src={silaiwalaLogo} alt="Silaiwala" className="w-full h-full object-cover" />
+        <div className="bg-white border-b border-slate-100 transition-all duration-300 shadow-2xs">
+            <div className="max-w-[1400px] mx-auto px-6 md:px-8 lg:px-12 py-3">
+                {/* Branding Row */}
+                <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2.5">
+                        <Link to="/user" className="w-10 h-10 bg-[#3b154c] rounded-xl flex items-center justify-center shadow-sm overflow-hidden active:scale-95 transition-transform">
+                            <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
                         </Link>
                         <div>
-                            <h1 className="text-lg font-black text-gray-900 leading-none tracking-tight">SewZ<span className="text-[#843D9B]">ella</span></h1>
+                            <h1 className="text-xl sm:text-2xl font-black text-[#4b1b68] leading-none tracking-tight">SewZella</h1>
+                            <span className="text-[10px] font-semibold text-slate-500 block mt-0.5 tracking-tight">The Future of Tailoring</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                        {/* Wishlist Icon */}
                         <Link
                             to="/user/wishlist"
-                            className="p-2 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
+                            className="w-10 h-10 rounded-full border border-slate-200/80 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all relative active:scale-90 shadow-2xs"
                         >
-                            <Heart size={18} className={wishlistCount > 0 ? "fill-[#843D9B] text-[#843D9B]" : ""} />
+                            <Heart size={18} className={wishlistCount > 0 ? "fill-rose-500 text-rose-500" : ""} />
                             {wishlistCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#FFBC00] text-[#843D9B] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                                     {wishlistCount}
                                 </span>
                             )}
                         </Link>
 
+                        {/* Cart Icon */}
                         <Link
                             to="/user/cart"
-                            className="p-2 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
+                            className="w-10 h-10 rounded-full border border-slate-200/80 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all relative active:scale-90 shadow-2xs"
                         >
                             <ShoppingBag size={18} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#843D9B] text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 bg-[#4b1b68] text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
 
-                        <button onClick={onOpenFilter} className="p-0.5 border border-gray-100 rounded-xl overflow-hidden active:scale-90 transition-transform">
-                            <div className="w-9 h-9 bg-gray-100 rounded-[0.75rem] flex items-center justify-center text-gray-400">
-                                <SlidersHorizontal size={18} />
-                            </div>
+                        {/* Filter Button */}
+                        <button 
+                            onClick={onOpenFilter} 
+                            className="w-10 h-10 rounded-xl border border-slate-200/80 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50 active:scale-90 transition-all shadow-2xs cursor-pointer"
+                        >
+                            <SlidersHorizontal size={18} />
                         </button>
                     </div>
                 </div>
 
-                {/* Search Bar */}
+                {/* Search Bar with Camera & Mic Icons */}
                 <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-[#843D9B] transition-colors" />
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-slate-400 group-focus-within:text-[#4b1b68] transition-colors" />
                     </div>
                     <input
                         type="text"
-                        placeholder="Search fabrics, designs..."
+                        placeholder="Search fabrics, suits, designs..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-gray-100 border border-transparent rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#843D9B]/5 focus:border-[#843D9B]/20 transition-all placeholder:text-gray-400 shadow-inner"
+                        className="w-full bg-slate-50/80 border border-slate-200/80 rounded-full py-2.5 pl-10 pr-20 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b1b68]/20 focus:border-[#4b1b68] transition-all placeholder:text-slate-400 shadow-inner"
                     />
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center gap-2.5">
+                        <button type="button" className="text-slate-400 hover:text-[#4b1b68] transition-colors cursor-pointer">
+                            <Camera size={18} />
+                        </button>
+                        <button type="button" className="text-slate-400 hover:text-[#4b1b68] transition-colors cursor-pointer">
+                            <Mic size={18} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

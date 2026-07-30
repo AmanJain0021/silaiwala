@@ -1263,13 +1263,27 @@ exports.getAllCMSContent = async (req, res) => {
 
 exports.createCMSContent = async (req, res) => {
   try {
+    if (req.body.slug) {
+      const existing = await CMSContent.findOne({ slug: req.body.slug });
+      if (existing) {
+        const updated = await CMSContent.findByIdAndUpdate(existing._id, req.body, { new: true, runValidators: true });
+        await invalidateCache("cache:public:cms-content:*");
+        return res.status(200).json({ success: true, data: updated, message: "Content updated successfully" });
+      }
+    }
     const content = await CMSContent.create(req.body);
     await invalidateCache("cache:public:cms-content:*");
     res.status(201).json({ success: true, data: content });
   } catch (error) {
     console.error("Error in createCMSContent:", error);
-    if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: "A content page with this title/slug already exists." });
+    if (error.code === 11000 && req.body.slug) {
+      try {
+        const updated = await CMSContent.findOneAndUpdate({ slug: req.body.slug }, req.body, { new: true });
+        await invalidateCache("cache:public:cms-content:*");
+        return res.status(200).json({ success: true, data: updated });
+      } catch (err2) {
+        return res.status(400).json({ success: false, message: "A content page with this title/slug already exists." });
+      }
     }
     res.status(500).json({ success: false, message: error.message });
   }

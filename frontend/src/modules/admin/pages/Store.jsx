@@ -26,7 +26,7 @@ const AdminStore = () => {
     });
 
     const [newCategory, setNewCategory] = useState({
-        name: '', description: '', type: 'product', isActive: true
+        name: '', description: '', type: 'product', isActive: true, image: ''
     });
 
     const [newCoupon, setNewCoupon] = useState({
@@ -36,13 +36,33 @@ const AdminStore = () => {
 
     const tabs = ['Products', 'Categories', 'Inventory', 'Coupons'];
 
+    const [isImageUploading, setIsImageUploading] = useState(false);
+
+    const handleImageUpload = async (e, setter, state) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('image', file);
+        setIsImageUploading(true);
+        try {
+            const res = await api.post('/upload', formData);
+            setter({ ...state, image: res.data.data || res.data.fileUrl });
+            toast.success('Image uploaded successfully');
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error('Image upload failed');
+        } finally {
+            setIsImageUploading(false);
+        }
+    };
+
     const fetchData = async () => {
         setIsLoading(true);
         try {
             let endpoint = '';
             switch (selectedTab) {
                 case 'Products': endpoint = '/admin/store/products'; break;
-                case 'Categories': endpoint = '/admin/categories?type=product'; break;
+                case 'Categories': endpoint = '/admin/categories'; break;
                 case 'Inventory': endpoint = '/admin/store/products'; break;
                 case 'Coupons': endpoint = '/admin/store/coupons'; break;
                 default: endpoint = '/admin/store/products';
@@ -52,7 +72,7 @@ const AdminStore = () => {
 
             // If products/inventory, fetch categories for dropdown
             if (selectedTab === 'Products' || selectedTab === 'Inventory') {
-                const catRes = await api.get('/admin/categories?type=product');
+                const catRes = await api.get('/admin/categories');
                 setCategories(catRes.data.data || []);
             }
         } catch (error) {
@@ -73,7 +93,7 @@ const AdminStore = () => {
         setIsEditing(false);
         setEditId(null);
         setNewProduct({ name: '', description: '', price: '', originalPrice: '', stock: '', category: '', image: '', isActive: true, productType: 'store_item' });
-        setNewCategory({ name: '', description: '', type: 'product', isActive: true });
+        setNewCategory({ name: '', description: '', type: 'product', isActive: true, image: '' });
         setNewCoupon({ code: '', description: '', discountType: 'percentage', discountValue: '', minOrderAmount: 0, isActive: true });
     };
 
@@ -103,11 +123,12 @@ const AdminStore = () => {
             let isCoupon = selectedTab === 'Coupons';
             let isProduct = selectedTab === 'Products' || selectedTab === 'Inventory';
 
-            if (isProduct) {
-                if (!newProduct.name || !newProduct.price || !newProduct.category) return toast.error('Check required fields');
+            if (selectedTab === 'Products') {
+                if (!newProduct.name || !newProduct.price || !newProduct.category) {
+                    return toast.error('Please fill required fields (Name, Category, Price)');
+                }
                 endpoint = isEditing ? `/admin/store/products/${editId}` : '/admin/store/products';
-                payload = newProduct;
-                // Tailor ID is now handled by the backend if missing
+                payload = { ...newProduct, status: 'approved', isActive: true };
             } else if (isCategory) {
                 if (!newCategory.name) return toast.error('Name is required');
                 endpoint = isEditing ? `/admin/categories/${editId}` : '/admin/categories';
@@ -466,8 +487,28 @@ const AdminStore = () => {
                                                     <input type="number" value={newProduct.originalPrice} onChange={(e) => setNewProduct({...newProduct, originalPrice: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
                                                 </div>
                                                 <div className="col-span-2">
+                                                    <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Store Section</label>
+                                                    <select value={newProduct.storeSection || 'Normal'} onChange={(e) => setNewProduct({...newProduct, storeSection: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all appearance-none">
+                                                        <option value="Normal">Normal</option>
+                                                        <option value="Trending">Trending Fabrics</option>
+                                                        <option value="Best Sellers">Best Sellers / New</option>
+                                                        <option value="Recommended">Recommended For You</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-2">
                                                     <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Image URL</label>
-                                                    <input type="text" value={newProduct.image} onChange={(e) => setNewProduct({...newProduct, image: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                                    <div className="flex gap-3 h-[46px]">
+                                                        <input type="text" value={newProduct.image} onChange={(e) => setNewProduct({...newProduct, image: e.target.value})} className="flex-1 w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" placeholder="Enter image URL" />
+                                                        <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-200 px-3 flex items-center justify-center rounded-xl transition-all text-gray-500 font-bold text-xs uppercase tracking-widest">
+                                                            {isImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'UPLOAD'}
+                                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setNewProduct, newProduct)} />
+                                                        </label>
+                                                        {newProduct.image && (
+                                                            <div className="w-[46px] h-[46px] shrink-0 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm flex items-center justify-center">
+                                                                <img src={newProduct.image} alt="preview" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </>
@@ -475,12 +516,34 @@ const AdminStore = () => {
 
                                     {/* --- CATEGORY FORM --- */}
                                     {selectedTab === 'Categories' && (
-                                        <div className="space-y-4">
-                                            <div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2">
                                                 <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Category Name</label>
                                                 <input type="text" value={newCategory.name} onChange={(e) => setNewCategory({...newCategory, name: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
                                             </div>
                                             <div>
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Category Type</label>
+                                                <select value={newCategory.type} onChange={(e) => setNewCategory({...newCategory, type: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all appearance-none">
+                                                    <option value="product">Fabric (Product)</option>
+                                                    <option value="garment">Garment</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Image URL</label>
+                                                <div className="flex gap-3 h-[46px]">
+                                                    <input type="text" value={newCategory.image || ''} onChange={(e) => setNewCategory({...newCategory, image: e.target.value})} className="flex-1 w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" placeholder="Enter image URL" />
+                                                    <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-200 px-3 flex items-center justify-center rounded-xl transition-all text-gray-500 font-bold text-xs uppercase tracking-widest">
+                                                        {isImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'UPLOAD'}
+                                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setNewCategory, newCategory)} />
+                                                    </label>
+                                                    {newCategory.image && (
+                                                        <div className="w-[46px] h-[46px] shrink-0 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm flex items-center justify-center">
+                                                            <img src={newCategory.image} alt="preview" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2">
                                                 <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Description</label>
                                                 <textarea rows={3} value={newCategory.description} onChange={(e) => setNewCategory({...newCategory, description: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
                                             </div>

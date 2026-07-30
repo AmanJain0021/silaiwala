@@ -10,32 +10,32 @@ const fileFilter = (req, file, cb) => {
     "image/jpeg", "image/png", "image/webp", "image/jpg", 
     "application/pdf", 
     "application/msword", 
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-msvideo"
   ];
   
-  // 2. Strict Extension check (prevent null byte or double extension attacks)
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.doc', '.docx'];
+  // 2. Strict Extension check
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.doc', '.docx', '.mp4', '.webm', '.ogg', '.mov', '.avi'];
   const ext = path.extname(file.originalname || "").toLowerCase();
-  const isAllowedMime = allowedMimetypes.includes(file.mimetype);
+  const isAllowedMime = allowedMimetypes.includes(file.mimetype) || file.mimetype?.startsWith('video/');
   const isAllowedExt = allowedExtensions.includes(ext);
-  const isImageMime =
+  const isMediaMime =
     file.mimetype &&
-    ["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(file.mimetype);
+    (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/"));
 
-  // Mobile camera captures often have no file extension in the name
-  if (isAllowedMime && (isAllowedExt || (isImageMime && !ext))) {
+  if (isAllowedMime && (isAllowedExt || (isMediaMime && !ext))) {
     cb(null, true);
-  } else if (isImageMime && !isAllowedExt) {
+  } else if (isMediaMime && !isAllowedExt) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file format. Only JPG, PNG, WEBP, PDF, and DOC files are allowed."), false);
+    cb(new Error("Invalid file format. Only images, documents, and videos (MP4, WEBM, MOV) are allowed."), false);
   }
 };
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
 });
 
 module.exports = upload;
