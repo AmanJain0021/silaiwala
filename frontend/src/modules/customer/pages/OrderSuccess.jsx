@@ -243,13 +243,14 @@ const OrderSuccess = () => {
                     {/* Track Order Status Button (Pill shape) */}
                     <Link
                         to={`/user/orders/${orderId}/track`}
-                        className="w-full py-4 px-6 bg-[#7C3AED] hover:bg-[#6D28D9] active:bg-[#5B21B6] text-white font-bold rounded-full shadow-lg shadow-purple-600/25 flex items-center justify-between text-base transition-all active:scale-[0.98] cursor-pointer"
+                        style={{ backgroundColor: '#7C3AED', color: '#ffffff' }}
+                        className="w-full py-4 px-6 bg-[#7C3AED] hover:bg-[#6D28D9] active:bg-[#5B21B6] text-white font-bold rounded-full shadow-lg shadow-purple-600/30 flex items-center justify-between text-base transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <div className="flex items-center gap-2.5">
                             <PackageCheck size={20} className="text-white shrink-0" />
-                            <span>Track Order Status</span>
+                            <span className="text-white font-bold">Track Order Status</span>
                         </div>
-                        <ChevronRight size={20} className="text-white/90 shrink-0" />
+                        <ChevronRight size={20} className="text-white shrink-0" />
                     </Link>
 
                     {/* Back to Home Button (Pill shape) */}
