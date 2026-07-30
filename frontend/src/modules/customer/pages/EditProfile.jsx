@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Save, User, Mail, Phone, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Save, User, Mail, Phone, MapPin, Navigation, Map, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../store/authStore';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import { validateName, validateEmail, validatePhone } from '../../../utils/validation';
 
 import useUserStore from '../../../store/userStore';
+import useLocationStore from '../../../store/locationStore';
+import LocationModal from '../components/LocationModal';
 import toast from 'react-hot-toast';
+import api from '../../../utils/api';
 
 const EditProfile = () => {
     const navigate = useNavigate();
     const { user: authUser } = useAuthStore(state => state);
     const { updateProfile, profile } = useUserStore();
+    const storeAddress = useLocationStore((state) => state.address);
 
     const storedUser = React.useMemo(() => {
         try {
@@ -22,7 +26,18 @@ const EditProfile = () => {
         }
     }, []);
 
-    const activeUser = profile || authUser || storedUser || {};
+    const activeUser = React.useMemo(() => {
+        const merged = {
+            ...(storedUser || {}),
+            ...(authUser || {}),
+            ...(profile || {})
+        };
+        const rawImg = merged.profileImage || merged.user?.profileImage || merged.profile?.profileImage || authUser?.profileImage || authUser?.user?.profileImage || storedUser?.profileImage || null;
+        return {
+            ...merged,
+            profileImage: typeof rawImg === 'string' ? rawImg : null
+        };
+    }, [profile, authUser, storedUser]);
 
     const [formData, setFormData] = useState({
         name: activeUser.name || '',
@@ -34,6 +49,95 @@ const EditProfile = () => {
     
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+    const [showLocationModal, setShowLocationModal] = useState(false);
+
+    // Sync selected address from LocationModal / LocationStore
+    useEffect(() => {
+        if (storeAddress) {
+            const formatted = typeof storeAddress === 'string' 
+                ? storeAddress 
+                : (storeAddress.area || storeAddress.city || storeAddress.formatted_address || '');
+            if (formatted) {
+                setFormData(prev => ({ ...prev, location: formatted }));
+            }
+        }
+    }, [storeAddress]);
+
+    const handleDetectLocation = async () => {
+        if (!navigator.geolocation) {
+            toast.error('Geolocation is not supported by your browser');
+            return;
+        }
+
+        setIsLocating(true);
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    let detectedAddress = '';
+
+                    // 1. Google Maps Geocoder if available
+                    if (window.google && window.google.maps && window.google.maps.Geocoder) {
+                        try {
+                            const geocoder = new window.google.maps.Geocoder();
+                            const res = await geocoder.geocode({ location: { lat: latitude, lng: longitude } });
+                            if (res.results?.[0]) {
+                                detectedAddress = res.results[0].formatted_address;
+                            }
+                        } catch (e) {
+                            console.warn('Google Geocoder failed:', e);
+                        }
+                    }
+
+                    // 2. BigDataCloud reverse geocode fallback
+                    if (!detectedAddress) {
+                        try {
+                            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+                            const data = await res.json();
+                            if (data) {
+                                const parts = [data.locality || data.city, data.principalSubdivision, data.countryName].filter(Boolean);
+                                if (parts.length > 0) detectedAddress = parts.join(', ');
+                            }
+                        } catch (e) {
+                            console.warn('BigDataCloud reverse geocode failed:', e);
+                        }
+                    }
+
+                    // 3. Nominatim OpenStreetMap fallback
+                    if (!detectedAddress) {
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                            const data = await res.json();
+                            if (data?.display_name) {
+                                detectedAddress = data.display_name;
+                            }
+                        } catch (e) {
+                            console.warn('Nominatim reverse geocode failed:', e);
+                        }
+                    }
+
+                    const finalLocation = detectedAddress || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                    setFormData(prev => ({ ...prev, location: finalLocation }));
+                    toast.success('Current location fetched!');
+                } catch (err) {
+                    toast.error('Failed to fetch location address');
+                } finally {
+                    setIsLocating(false);
+                }
+            },
+            (error) => {
+                setIsLocating(false);
+                if (error.code === 1) {
+                    toast.error('Location access denied by browser');
+                } else {
+                    toast.error('Could not retrieve current GPS position');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -56,16 +160,42 @@ const EditProfile = () => {
         setIsLoading(true);
 
         try {
+            let uploadedImageUrl = typeof formData.profileImage === 'string' ? formData.profileImage : undefined;
+
+            if (formData.profileImage instanceof File || (formData.profileImage && typeof formData.profileImage === 'object' && formData.profileImage.name)) {
+                const uploadData = new FormData();
+                uploadData.append('file', formData.profileImage);
+                const uploadRes = await api.post('/upload', uploadData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (uploadRes.data?.success) {
+                    uploadedImageUrl = uploadRes.data.data;
+                }
+            }
+
             await updateProfile({
                 name: formData.name,
                 email: formData.email,
                 phoneNumber: formData.phone,
-                profileImage: formData.profileImage
+                location: formData.location,
+                profileImage: uploadedImageUrl
             });
+
+            const updateUser = useAuthStore.getState().updateUser;
+            if (updateUser) {
+                updateUser({
+                    name: formData.name,
+                    email: formData.email,
+                    phoneNumber: formData.phone,
+                    location: formData.location,
+                    ...(uploadedImageUrl && { profileImage: uploadedImageUrl })
+                });
+            }
+
             toast.success('Profile updated successfully!');
             navigate('/user/profile');
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to update profile');
+            toast.error(err.response?.data?.message || err.message || 'Failed to update profile');
         } finally {
             setIsLoading(false);
         }
@@ -94,12 +224,11 @@ const EditProfile = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-8 max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* 2. Profile Photo */}
                 <div className="flex flex-col items-center">
-                    <div className="w-32">
-                        <ImageUploader 
-                            value={formData.profileImage}
-                            onChange={(file) => setFormData({ ...formData, profileImage: file })}
-                        />
-                    </div>
+                    <ImageUploader 
+                        compact
+                        value={formData.profileImage}
+                        onChange={(file) => setFormData({ ...formData, profileImage: file })}
+                    />
                 </div>
 
                 {/* 3. Form Fields */}
@@ -160,16 +289,43 @@ const EditProfile = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">City / Location</label>
-                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:bg-white transition-all">
-                            <MapPin size={18} className="text-gray-400" />
+                        <div className="flex justify-between items-center ml-1">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">City / Location</label>
+                            <button
+                                type="button"
+                                onClick={() => setShowLocationModal(true)}
+                                className="text-[10px] font-extrabold text-[#843D9B] hover:underline flex items-center gap-1 uppercase tracking-wider"
+                            >
+                                <Map size={11} /> Select on Map
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:bg-white transition-all relative">
+                            <MapPin size={18} className="text-gray-400 shrink-0" />
                             <input
                                 type="text"
                                 value={formData.location}
                                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                className="bg-transparent text-sm font-bold w-full focus:outline-none"
-                                placeholder="Enter location"
+                                className="bg-transparent text-sm font-bold w-full focus:outline-none pr-28"
+                                placeholder="Enter location or use GPS"
                             />
+                            <button
+                                type="button"
+                                onClick={handleDetectLocation}
+                                disabled={isLocating}
+                                className="absolute right-2 px-3 py-1.5 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#1E1F4D] transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                {isLocating ? (
+                                    <>
+                                        <Loader2 size={12} className="animate-spin" />
+                                        GPS...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Navigation size={12} />
+                                        Current
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -188,6 +344,13 @@ const EditProfile = () => {
                     </button>
                 </div>
             </form>
+
+            {showLocationModal && (
+                <LocationModal
+                    isOpen={showLocationModal}
+                    onClose={() => setShowLocationModal(false)}
+                />
+            )}
         </div>
     );
 };

@@ -1,8 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SOCKET_URL } from '../../../../config/constants';
 
 const ProfileHeader = ({ user, stats }) => {
+    const [imgError, setImgError] = useState(false);
+
+    const getProfileImageSrc = (raw) => {
+        if (!raw || typeof raw !== 'string' || raw === 'default_profile.png') return null;
+        if (raw.startsWith('http') || raw.startsWith('data:')) return raw;
+        const base = SOCKET_URL || 'http://localhost:5000';
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    };
+
+    const imgSrc = getProfileImageSrc(user?.profileImage);
+
     return (
         <div className="relative mb-4">
             {/* Background Pattern */}
@@ -14,10 +26,15 @@ const ProfileHeader = ({ user, stats }) => {
                 {/* Avatar with Edit Badge */}
                 <div className="relative mb-3 group">
                     <div className="w-20 h-20 rounded-[2rem] border-4 border-white shadow-2xl overflow-hidden bg-gray-50 flex items-center justify-center transform group-hover:rotate-3 transition-transform duration-300">
-                        {user?.profileImage && user.profileImage !== 'default_profile.png' ? (
-                            <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                        {imgSrc && !imgError ? (
+                            <img 
+                                src={imgSrc} 
+                                alt={user?.name || 'User'} 
+                                className="w-full h-full object-cover" 
+                                onError={() => setImgError(true)}
+                            />
                         ) : (
-                            <span className="text-2xl font-black text-[#843D9B] italic">{user?.name?.charAt(0) || 'U'}</span>
+                            <span className="text-2xl font-black text-[#843D9B] italic">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
                         )}
                     </div>
                     <Link to="/user/profile/edit" className="absolute -bottom-0.5 -right-0.5 bg-gray-900 text-white p-1.5 rounded-xl shadow-lg hover:bg-[#843D9B] transition-all transform hover:scale-110">

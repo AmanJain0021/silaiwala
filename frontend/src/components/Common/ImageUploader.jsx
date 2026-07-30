@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, UploadCloud, Image as ImageIcon, Camera } from 'lucide-react';
 import { validateFile } from '../../utils/validation';
 import toast from 'react-hot-toast';
+import { SOCKET_URL } from '../../config/constants';
+
+const resolveImageUrl = (val) => {
+    if (!val || typeof val !== 'string' || val === 'default_profile.png' || val === 'null' || val === 'undefined') return null;
+    if (val.startsWith('http') || val.startsWith('data:') || val.startsWith('blob:')) return val;
+    const base = SOCKET_URL || 'http://localhost:5000';
+    return `${base.replace(/\/$/, '')}/${val.replace(/^\//, '')}`;
+};
 
 const ImageUploader = ({ 
     label, 
@@ -21,13 +29,14 @@ const ImageUploader = ({
 
     // Sync external value to local preview
     useEffect(() => {
-        if (value instanceof File) {
+        if (value instanceof File || value instanceof Blob) {
             const objectUrl = URL.createObjectURL(value);
             setPreview(objectUrl);
             return () => URL.revokeObjectURL(objectUrl);
         } else if (typeof value === 'string' && value) {
-            setPreview(value);
-        } else if (!value) {
+            const resolved = resolveImageUrl(value);
+            setPreview(resolved);
+        } else {
             setPreview(null);
         }
     }, [value]);
@@ -81,7 +90,7 @@ const ImageUploader = ({
                 >
                     {preview ? (
                         <>
-                            <img src={preview} alt="Profile" className="w-full h-full object-cover" />
+                            <img src={preview} alt="Profile" className="w-full h-full object-cover" onError={() => setPreview(null)} />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2">
                                 <button type="button" onClick={(e) => { e.stopPropagation(); triggerUpload(); }} className="bg-white text-[#843D9B] p-1.5 rounded-full shadow-md active:scale-95">
                                     <Camera size={12} />
@@ -168,6 +177,7 @@ const ImageUploader = ({
                             src={preview} 
                             alt="Preview" 
                             className="max-h-full max-w-full object-contain rounded-xl"
+                            onError={() => setPreview(null)}
                         />
                         {/* Overlay on hover for replacement info */}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center rounded-xl">

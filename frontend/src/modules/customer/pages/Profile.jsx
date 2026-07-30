@@ -105,11 +105,13 @@ const ProfilePage = () => {
             ...(authUser || {}),
             ...(profile || {})
         };
+        const rawImg = merged.profileImage || merged.user?.profileImage || merged.profile?.profileImage || authUser?.profileImage || authUser?.user?.profileImage || storedUser?.profileImage || null;
         return {
             ...merged,
             name: merged.name || merged.user?.name || 'Customer',
             email: merged.email || merged.user?.email || '',
-            phone: merged.phone || merged.phoneNumber || merged.user?.phoneNumber || ''
+            phone: merged.phone || merged.phoneNumber || merged.user?.phoneNumber || '',
+            profileImage: typeof rawImg === 'string' ? rawImg : null
         };
     }, [profile, authUser, storedUser]);
 

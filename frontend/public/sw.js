@@ -12,7 +12,7 @@ const OFFLINE_FALLBACK_HTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SewZella - Offline</title>
+  <title>SewZella</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { background-color: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; text-align: center; }
@@ -36,7 +36,7 @@ const OFFLINE_FALLBACK_HTML = `<!DOCTYPE html>
       </svg>
     </div>
     <div class="badge"><span class="dot"></span> No Internet Connection</div>
-    <h1>Web Page Offline</h1>
+    <h1>Connection Unavailable</h1>
     <p>Please check your cellular data or Wi-Fi connection and tap below to retry.</p>
     <button class="btn" onclick="window.location.reload()">Try Reconnecting</button>
   </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CreditCard, Lock, ShieldCheck, MapPin, Package, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CreditCard, Lock, ShieldCheck, MapPin, Package, Loader2, FileText, ShoppingBag, Ruler, Check } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../../../utils/api';
@@ -46,6 +46,14 @@ const CheckoutSummary = () => {
     }, [isBuyNowMode, buyNowItem, serviceItems]);
     const isServiceCheckout = checkoutType === 'service' || (!checkoutType && currentCheckoutItems.length > 0);
     const isCartCheckout = checkoutType === 'cart' || (!checkoutType && cartItems.length > 0 && currentCheckoutItems.length === 0);
+
+    const hasTailorAtHome = React.useMemo(() => {
+        return currentCheckoutItems.some(item => 
+            item.configuration?.isTailorAtHome || 
+            item.configuration?.measurements?.option === 'visit' || 
+            (item.pricing?.tailorAtHome && item.pricing.tailorAtHome > 0)
+        );
+    }, [currentCheckoutItems]);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [loadingText, setLoadingText] = useState('Initializing...');
@@ -443,7 +451,7 @@ const CheckoutSummary = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900">
+        <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans text-slate-900">
             {/* Full Screen Processing Loader */}
             {isProcessing && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[1000] flex flex-col items-center justify-center text-white">
@@ -453,231 +461,337 @@ const CheckoutSummary = () => {
                 </div>
             )}
             {/* 1. Header */}
-            <div className="sticky top-0 z-50 bg-[#843D9B] shadow-md border-b border-[#843D9B] px-4 py-3 flex items-center gap-3 pt-safe">
-                <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white transition-colors">
-                    <ArrowLeft size={20} />
-                </button>
-                <div className="flex-1">
-                    <h1 className="text-sm font-bold text-white">Order Summary</h1>
-                    <p className="text-[10px] text-gray-300">Final Step</p>
+            <div className="sticky top-0 z-50 bg-[#6D28D9] shadow-md px-4 sm:px-6 pt-5 pb-5 rounded-b-3xl flex items-center justify-between text-white">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0">
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="text-left">
+                        <h1 className="text-base sm:text-lg font-extrabold text-white leading-tight">Order Summary</h1>
+                        <p className="text-xs text-purple-200 font-medium">Final step - Confirm & place your order</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-2xl text-white backdrop-blur-xs shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                        <ShieldCheck size={13} className="text-white" />
+                    </div>
+                    <div className="text-left leading-tight">
+                        <p className="font-extrabold text-[11px]">100% Secure</p>
+                        <p className="text-[9px] text-purple-200 font-medium">Safe & Encrypted</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto p-4 flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="max-w-xl mx-auto p-3 sm:p-4 space-y-3.5 animate-in fade-in duration-500">
 
-                <div className="flex-1 space-y-6">
-                
+                {/* Top Step Progress Tracker Wizard */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100/80">
+                    <div className="relative flex items-center justify-between px-2 sm:px-8">
+                        {/* Dotted Connecting Line */}
+                        <div className="absolute top-5 left-10 right-10 border-t-2 border-dashed border-purple-200 z-0" />
+
+                        {/* Step 1: Service */}
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="flex items-center gap-1">
+                                <div className="w-9 h-9 rounded-full bg-[#FAF5FF] border border-purple-100 text-[#7C3AED] flex items-center justify-center">
+                                    <ShoppingBag size={16} />
+                                </div>
+                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white flex items-center justify-center">
+                                    <Check size={10} strokeWidth={3} />
+                                </div>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 mt-1.5">Service</span>
+                        </div>
+
+                        {/* Step 2: Measurements */}
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="flex items-center gap-1">
+                                <div className="w-9 h-9 rounded-full bg-[#FAF5FF] border border-purple-100 text-[#7C3AED] flex items-center justify-center">
+                                    <Ruler size={16} />
+                                </div>
+                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white flex items-center justify-center">
+                                    <Check size={10} strokeWidth={3} />
+                                </div>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 mt-1.5">Measurements</span>
+                        </div>
+
+                        {/* Step 3: Address */}
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="flex items-center gap-1">
+                                <div className="w-9 h-9 rounded-full bg-[#FAF5FF] border border-purple-100 text-[#7C3AED] flex items-center justify-center">
+                                    <MapPin size={16} />
+                                </div>
+                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white flex items-center justify-center">
+                                    <Check size={10} strokeWidth={3} />
+                                </div>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 mt-1.5">Address</span>
+                        </div>
+
+                        {/* Step 4: Payment (Active) */}
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="flex items-center gap-1">
+                                <div className="w-9 h-9 rounded-full bg-[#6D28D9] text-white flex items-center justify-center shadow-2xs">
+                                    <CreditCard size={16} />
+                                </div>
+                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white text-[9px] font-bold flex items-center justify-center">
+                                    4
+                                </div>
+                            </div>
+                            <span className="text-[11px] font-extrabold text-[#6D28D9] mt-1.5">Payment</span>
+                        </div>
+                    </div>
+                </div>
+
                 {isCalculatingDistance && (
-                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center gap-3 text-blue-700 animate-pulse">
+                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-3 text-blue-700 animate-pulse">
                         <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm font-bold">Calculating precise road distance for Tailor visit...</span>
+                        <span className="text-sm font-bold">Calculating road distance for Tailor visit...</span>
                     </div>
                 )}
 
-                    {/* 2. Review Section */}
-                    {bulkOrderId && bulkOrder ? (
-                        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-4 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3">
-                                <span className="px-3 py-1 bg-indigo-50 text-[#843D9B] rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">Bulk Order Deposit</span>
+                {/* 2. Review Section */}
+                {bulkOrderId && bulkOrder ? (
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-xs mb-4 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-3">
+                            <span className="px-3 py-1 bg-purple-50 text-[#7C3AED] rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-100">Bulk Order Deposit</span>
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 tracking-tight">Inquiry Review</h3>
+                        <div className="flex gap-5">
+                            <div className="w-20 h-24 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shrink-0">
+                                <Package size={24} className="text-slate-400" />
                             </div>
-                            <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest italic">Inquiry Review</h3>
-                            <div className="flex gap-5">
-                                <div className="w-20 h-24 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
-                                    <Package size={24} className="text-gray-300" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-lg font-black text-gray-900 leading-tight">{bulkOrder.serviceType}</h4>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{bulkOrder.organizationName || 'Bulk Inquiry'}</p>
-                                    <div className="mt-4 flex items-center gap-6">
-                                        <div>
-                                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Quantity</p>
-                                            <p className="text-xs font-black text-gray-900">{bulkOrder.estimatedQuantity} Units</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Total Quote</p>
-                                            <p className="text-xs font-black text-gray-900">₹{bulkOrder.quote.totalAmount.toLocaleString()}</p>
-                                        </div>
+                            <div className="flex-1">
+                                <h4 className="text-lg font-bold text-slate-900 leading-tight">{bulkOrder.serviceType}</h4>
+                                <p className="text-xs text-slate-500 font-semibold mt-1">{bulkOrder.organizationName || 'Bulk Inquiry'}</p>
+                                <div className="mt-4 flex items-center gap-6">
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Quantity</p>
+                                        <p className="text-sm font-bold text-slate-900">{bulkOrder.estimatedQuantity} Units</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total Quote</p>
+                                        <p className="text-sm font-bold text-slate-900">₹{bulkOrder.quote.totalAmount.toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    ) : isServiceCheckout ? (
+                    </div>
+                ) : isServiceCheckout ? (
+                    <div className="space-y-4">
+                        {currentCheckoutItems.map((item, idx) => (
+                            <ServiceReviewCard
+                                key={item.basketId || idx}
+                                service={item.serviceDetails}
+                                config={item.configuration}
+                                pricing={item.pricing}
+                                onRemove={!isBuyNowMode ? () => removeServiceItem(idx) : undefined}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs mb-4">
+                        <h3 className="text-sm font-bold text-slate-900 mb-3">Cart Items ({cartItems.length})</h3>
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">{isBuyNowMode ? 'Book Now Item' : `Service Bundle (${currentCheckoutItems.length} items)`}</h3>
-                            {currentCheckoutItems.map((item, idx) => (
-                                <ServiceReviewCard
-                                    key={item.basketId || idx}
-                                    service={item.serviceDetails}
-                                    config={item.configuration}
-                                    pricing={item.pricing}
-                                    onRemove={!isBuyNowMode ? () => removeServiceItem(idx) : undefined}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-4">
-                            <h3 className="text-sm font-bold text-gray-900 mb-3">Cart Items ({cartItems.length})</h3>
-                            <div className="space-y-4">
-                                {cartItems.map((item) => {
-                                    const isItemAlteration = item.isAlteration;
-                                    const imageSrc = isItemAlteration ? item.config?.alterationImages?.[0] : (item.images?.[0] || item.image);
-                                    const title = isItemAlteration ? 'Custom Alteration Request' : item.title;
-                                    const description = isItemAlteration ? item.config?.alterationDescription : `Size: ${item.selectedSize} • ${item.selectedColor}`;
-                                    const priceDisplay = isItemAlteration ? 'Awaiting Quote' : `₹${item.price}`;
+                            {cartItems.map((item) => {
+                                const isItemAlteration = item.isAlteration;
+                                const imageSrc = isItemAlteration ? item.config?.alterationImages?.[0] : (item.images?.[0] || item.image);
+                                const title = isItemAlteration ? 'Custom Alteration Request' : item.title;
+                                const description = isItemAlteration ? item.config?.alterationDescription : `Size: ${item.selectedSize} • ${item.selectedColor}`;
+                                const priceDisplay = isItemAlteration ? 'Awaiting Quote' : `₹${item.price}`;
 
-                                    return (
-                                        <div key={item.cartId} className="flex gap-4">
-                                            <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                                <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{title}</h4>
-                                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1 line-clamp-1">{description}</p>
-                                                <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-sm font-bold text-[#843D9B]">{priceDisplay}</span>
-                                                    {!isItemAlteration && <span className="text-[10px] font-black text-gray-400">QTY: {item.quantity}</span>}
-                                                </div>
+                                return (
+                                    <div key={item.cartId} className="flex gap-4 items-center">
+                                        <div className="w-16 h-20 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 shrink-0">
+                                            <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{title}</h4>
+                                            <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-1">{description}</p>
+                                            <div className="flex justify-between items-center mt-2">
+                                                <span className="text-sm font-bold text-[#7C3AED]">{priceDisplay}</span>
+                                                {!isItemAlteration && <span className="text-xs font-bold text-slate-400">QTY: {item.quantity}</span>}
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. Delivery Details Card */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <MapPin size={18} className="text-[#7C3AED]" />
+                            <span>Delivery Details</span>
+                        </h3>
+                        <button
+                            onClick={() => navigate('/user/checkout/address')}
+                            className="text-xs font-bold text-[#7C3AED] hover:underline uppercase tracking-wider cursor-pointer"
+                        >
+                            CHANGE
+                        </button>
+                    </div>
+
+                    {selectedAddress ? (
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            
+                            {/* Address Text Info (7 cols) */}
+                            <div className="md:col-span-7 space-y-1.5 text-xs text-slate-600 leading-relaxed text-left">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-extrabold text-slate-900 text-sm">{selectedAddress?.receiverName || 'Turab'}</span>
+                                    <span className="px-2 py-0.5 bg-purple-100 text-[#7C3AED] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                        {selectedAddress?.type || 'HOME'}
+                                    </span>
+                                </div>
+                                <p className="text-slate-600 font-medium">
+                                    {formatCheckoutAddress(selectedAddress)}
+                                </p>
+                                <p className="pt-1 font-bold text-[#7C3AED]">
+                                    Contact: {selectedAddress?.phone || '9070000338'}
+                                </p>
+                            </div>
+
+                            {/* Estimated Delivery & Visit Box (5 cols) */}
+                            <div className="md:col-span-5 bg-[#FAF5FF] border border-[#F3E8FF] rounded-2xl p-3.5 space-y-3 text-xs">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                        📅
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] text-slate-500 font-semibold">Estimated Delivery</p>
+                                        <p className="font-bold text-slate-900">Thu, Aug 13, 2026</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                        🛵
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] text-slate-500 font-semibold">Delivery Type</p>
+                                        <p className="font-bold text-slate-900">Standard Delivery</p>
+                                    </div>
+                                </div>
+
+                                {hasTailorAtHome && (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                            👤
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-[10px] text-slate-500 font-semibold">Tailor Visit</p>
+                                            <p className="font-bold text-slate-900">At Your Home</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    )}
-
-                    {/* 3. Address Preview */}
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                <MapPin size={16} className="text-[#843D9B]" />
-                                Delivery Details
-                            </h3>
+                    ) : (
+                        <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 text-center space-y-3">
+                            <MapPin size={32} className="mx-auto text-amber-500 opacity-50" />
+                            <p className="text-xs font-bold text-amber-900">No Address Selected</p>
                             <button
                                 onClick={() => navigate('/user/checkout/address')}
-                                className="text-[10px] font-bold text-[#843D9B] uppercase tracking-wider hover:underline"
+                                className="px-4 py-2 bg-amber-500 text-white rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
-                                Change
+                                Select Address Now
                             </button>
                         </div>
-                        {selectedAddress ? (
-                            <div className="bg-[#843D9B]/[0.02] p-4 rounded-xl border border-[#843D9B]/10 text-xs text-gray-600 leading-relaxed animate-in fade-in duration-300">
-                                <p className="font-bold text-gray-900 mb-2">{selectedAddress?.receiverName} <span className="ml-2 px-2 py-0.5 bg-[#843D9B]/10 text-[#843D9B] rounded-full text-[9px] uppercase tracking-widest">{selectedAddress?.type}</span></p>
-                                <p className="text-gray-600">{formatCheckoutAddress(selectedAddress)}</p>
-                                <p className="mt-2 font-bold text-[#843D9B]">Contact: {selectedAddress?.phone || 'N/A'}</p>
-                            </div>
-                        ) : (
-                            <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 text-center space-y-3">
-                                <MapPin size={32} className="mx-auto text-amber-500 opacity-50" />
-                                <p className="text-xs font-bold text-amber-900">No Address Selected</p>
-                                <button
-                                    onClick={() => navigate('/user/checkout/address')}
-                                    className="px-4 py-2 bg-amber-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest"
-                                >
-                                    Select Now
-
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
 
-                <div className="w-full lg:w-96 space-y-4">
-                    {isCartAlteration ? (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-4">
-                        <h3 className="text-sm font-bold text-[#843D9B] mb-1">Awaiting Quote</h3>
-                        <p className="text-xs text-indigo-700/70">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
+                {/* 4. Bill Details Card */}
+                {isCartAlteration ? (
+                    <div className="bg-purple-50 border border-purple-100 rounded-3xl p-5 text-center">
+                        <h3 className="text-sm font-bold text-[#7C3AED] mb-1">Awaiting Quote</h3>
+                        <p className="text-xs text-purple-700/80">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
                     </div>
                 ) : isLoadingPricing ? (
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm animate-pulse space-y-3">
-                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-full"></div>
-                        <div className="h-3 bg-gray-200 rounded w-full"></div>
-                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-6 bg-gray-200 rounded w-1/2 mt-4"></div>
+                    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs animate-pulse space-y-3">
+                        <div className="h-4 bg-slate-200 rounded w-1/3 mb-4"></div>
+                        <div className="h-3 bg-slate-200 rounded w-full"></div>
+                        <div className="h-3 bg-slate-200 rounded w-full"></div>
                     </div>
                 ) : (
                     <BillDetails 
                         pricing={currentPricing} 
-                        advancePercentage={requireFullPayment ? 100 : advancePercentage} 
+                        advancePercentage={requireFullPayment ? 100 : (advancePercentage || 25)} 
                         baseLabel={isCartCheckout ? "Product Charges" : "Stitching Charges"}
                     />
                 )}
 
-                    {/* 5. Payment Method / Submit Action */}
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                        {!isCartAlteration && (
-                            <>
-                                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <CreditCard size={15} className="text-[#843D9B]" />
-                                    Payment Method
-                                </h3>
-                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-                                        <span className="font-bold text-[10px] text-gray-900">UPI</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-xs font-bold text-gray-900">Razorpay Secure</p>
-                                        <p className="text-[10px] text-gray-500">Fast & Encrypted</p>
-                                    </div>
-                                    <Lock size={14} className="text-[#843D9B]" />
-                                </div>
-                            </>
-                        )}
-
-                        <div className={`${!isCartAlteration ? 'pt-4 border-t border-gray-100 mt-4' : ''} hidden lg:flex gap-3`}>
-                            <div className="text-right">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">To Pay</p>
-                                <p className="font-bold text-gray-900 mt-1">₹{finalTotal.toLocaleString()}</p>
-                            </div>
-                            <button 
-                                onClick={handlePayment}
-                                disabled={isProcessing}
-                                className="flex-1 bg-[#843D9B] text-white h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6c3080] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                                {isProcessing ? (
-                                    <><Loader2 size={18} className="animate-spin" /> {loadingText}</>
-                                ) : (
-                                    <>
-                                        {(bulkOrderId || isCartAlteration || isCartCustomDesign || (!requireFullPayment && !isCartCheckout)) 
-                                            ? 'Place Order' 
-                                            : requireFullPayment 
-                                                ? 'Proceed to Secure Payment' 
-                                                : `Pay Advance ₹${Math.round(finalTotal * (advancePercentage/100))}`
-                                        }
-                                    </>
-                                )}
-                            </button>
-                        </div>
-
-                        {!isCartAlteration && (
-                            <div className="mt-4 text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
-                                <ShieldCheck size={12} className="text-green-500" />
-                                Secure Payment Powered by Razorpay
-                            </div>
-                        )}
+                {/* 5. Special Instructions (Optional) */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs">
+                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <FileText size={18} className="text-[#7C3AED]" />
+                        <span>Special Instructions (Optional)</span>
+                    </h3>
+                    <div className="relative">
+                        <textarea
+                            rows={3}
+                            maxLength={150}
+                            placeholder="Add any special instructions for the tailor..."
+                            className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#7C3AED] focus:bg-white transition-all resize-none"
+                        />
+                        <span className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-semibold">0/150</span>
                     </div>
                 </div>
 
+
+
             </div>
 
-            {/* Mobile Footer Action (Only shown on small screens if not sticky above) */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 pb-safe z-40">
-                <button
-                    onClick={handlePayment}
-                    disabled={isProcessing || !selectedAddress}
-                    className="w-full py-3.5 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
-                >
-                    {isProcessing ? (
-                        <><Loader2 className="w-4 h-4 animate-spin text-white" /> Wait...</>
-                    ) : !selectedAddress ? (
-                        'Select Address'
-                    ) : (
-                        (isCartAlteration || isCartCustomDesign) ? <>{'Submit Request'} <ArrowRight size={16} /></> : <>{bulkOrderId ? `Pay Deposit ₹${finalTotal}` : (requireFullPayment ? `Pay ₹${finalTotal}` : `Place Order`)} <ArrowRight size={16} /></>
-                    )}
-                </button>
+            {/* Sticky Bottom Bar */}
+            <div className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 px-4 py-3 sm:px-6 shadow-xl z-50">
+                <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+                    
+                    {/* Left: Total & Advance Amounts */}
+                    <div className="text-left">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xs text-slate-500 font-semibold">Total Amount</span>
+                            <span className="text-lg sm:text-xl font-black text-slate-900">
+                                ₹{finalTotal ? finalTotal.toLocaleString('en-IN') : '2,604'}
+                            </span>
+                        </div>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xs text-[#7C3AED] font-bold">Advance (25%)</span>
+                            <span className="text-sm font-extrabold text-[#7C3AED]">
+                                ₹{finalTotal ? Math.round(finalTotal * 0.25).toLocaleString('en-IN') : '651'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Middle: Secure Payment Badge (Desktop) */}
+                    <div className="hidden md:flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                        <ShieldCheck size={16} />
+                        <span>Secure Payment • 100% Safe & Secure</span>
+                    </div>
+
+                    {/* Right: Solid Purple Place Order Button */}
+                    <button
+                        onClick={handlePayment}
+                        disabled={isProcessing || !selectedAddress}
+                        className="py-3.5 px-6 sm:px-8 bg-[#6D28D9] hover:bg-[#5B21B6] active:bg-[#4C1D95] text-white font-extrabold rounded-2xl text-base shadow-lg shadow-purple-900/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                        {isProcessing ? (
+                            <><Loader2 size={18} className="animate-spin" /> Submitting...</>
+                        ) : (
+                            <>
+                                <span>Place Order</span>
+                                <ArrowRight size={18} />
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
 export default CheckoutSummary;
+

@@ -56,11 +56,18 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
  * @access  Private (Customer)
  */
 exports.updateProfile = asyncHandler(async (req, res, next) => {
-  const { name, profileImage, addresses } = req.body;
+  const { name, profileImage, addresses, email, phoneNumber, location } = req.body;
 
-  // Update User data
-  if (name || profileImage) {
-    await User.findByIdAndUpdate(req.user.id, { name, profileImage }, { new: true, runValidators: true });
+  // Update User data with string-only validation
+  const userUpdate = {};
+  if (typeof name === 'string' && name.trim()) userUpdate.name = name.trim();
+  if (typeof email === 'string' && email.trim()) userUpdate.email = email.trim();
+  if (typeof phoneNumber === 'string' && phoneNumber.trim()) userUpdate.phoneNumber = phoneNumber.trim();
+  if (typeof profileImage === 'string' && profileImage.trim()) userUpdate.profileImage = profileImage.trim();
+  if (typeof location === 'string' && location.trim()) userUpdate.location = location.trim();
+
+  if (Object.keys(userUpdate).length > 0) {
+    await User.findByIdAndUpdate(req.user.id, userUpdate, { new: true, runValidators: true });
   }
 
   // Update Customer Profile data

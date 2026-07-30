@@ -33,7 +33,11 @@ const useUserStore = create(
     updateProfile: async (updateData) => {
         set({ isLoading: true });
         try {
-            const response = await api.patch('/customers/profile', updateData);
+            const payload = { ...updateData };
+            if (payload.profileImage && typeof payload.profileImage !== 'string') {
+                delete payload.profileImage;
+            }
+            const response = await api.patch('/customers/profile', payload);
             const data = response.data.data;
             set({ 
                 profile: data, 

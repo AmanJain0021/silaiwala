@@ -151,9 +151,11 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
   // Also update user-level fields if provided
   if (req.body.name || req.body.profileImage) {
     const userUpdate = {};
-    if (req.body.name) userUpdate.name = req.body.name;
-    if (req.body.profileImage) userUpdate.profileImage = req.body.profileImage;
-    await User.findByIdAndUpdate(req.user.id, userUpdate);
+    if (req.body.name && typeof req.body.name === 'string') userUpdate.name = req.body.name;
+    if (req.body.profileImage && typeof req.body.profileImage === 'string') userUpdate.profileImage = req.body.profileImage;
+    if (Object.keys(userUpdate).length > 0) {
+      await User.findByIdAndUpdate(req.user.id, userUpdate);
+    }
   }
 
   res.status(200).json({

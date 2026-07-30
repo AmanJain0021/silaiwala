@@ -89,15 +89,6 @@ class ErrorBoundary extends React.Component {
   }
 
   render() {
-    if (this.state.isOffline || !navigator.onLine) {
-      return (
-        <OfflineScreen 
-          onRetry={this.handleReload} 
-          isChecking={this.state.isChecking} 
-        />
-      );
-    }
-
     if (this.state.isReloading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f9fafb' }}>

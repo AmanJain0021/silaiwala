@@ -21,7 +21,8 @@ import {
     UploadCloud,
     Loader2,
     Globe,
-    Camera
+    Camera,
+    Lock
 } from 'lucide-react';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import MenuOption from '../../../customer/components/profile/MenuOption';
@@ -274,13 +275,13 @@ const DeliveryProfile = () => {
 
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-2 -mt-2">
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-4 -mt-1">
             {/* Profile Hero Card */}
-            <div className="bg-white rounded-[1.5rem] p-4 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden mx-0.5">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 opacity-60"></div>
-                <div className="relative z-10 flex items-center gap-3">
+            <div className="bg-white rounded-[1.8rem] p-5 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden mx-0.5">
+                <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 opacity-70"></div>
+                <div className="relative z-10 flex items-center gap-4">
                     <div className="relative">
-                        <div className="w-14 h-14 rounded-full border-[3px] border-white shadow-md overflow-hidden bg-indigo-50 flex items-center justify-center">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[3px] border-white shadow-md overflow-hidden bg-indigo-50 flex items-center justify-center shrink-0">
                             {(deliveryProfile?.user?.profileImage || user?.profileImage) ? (
                                 <img
                                     src={deliveryProfile?.user?.profileImage || user?.profileImage}
@@ -288,26 +289,26 @@ const DeliveryProfile = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <span className="text-indigo-600 font-black text-2xl">{(deliveryProfile?.user?.name || user?.name)?.charAt(0) || 'S'}</span>
+                                <span className="text-indigo-600 font-black text-2xl sm:text-3xl">{(deliveryProfile?.user?.name || user?.name)?.charAt(0) || 'S'}</span>
                             )}
                         </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
-                            <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                         </div>
                     </div>
-                    <div className="flex-1">
-                        <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{deliveryProfile?.user?.name || user?.name || 'Partner'}</h2>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-lg border border-amber-100">
-                                <span className="text-amber-500 font-black text-[9px]">★</span>
-                                <span className="text-amber-700 font-bold text-[9px]">{deliveryProfile?.rating || '4.8'}</span>
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate">{deliveryProfile?.user?.name || user?.name || 'Partner'}</h2>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                                <span className="text-amber-500 font-black text-xs">★</span>
+                                <span className="text-amber-700 font-extrabold text-xs">{deliveryProfile?.rating || '4.8'}</span>
                             </div>
-                            <span className="text-slate-200">•</span>
-                            <span className="text-slate-400 font-bold text-[8px] uppercase tracking-wider">ID: {(deliveryProfile?.user?._id || user?._id)?.slice(-6).toUpperCase() || '882190'}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">ID: {(deliveryProfile?.user?._id || user?._id)?.slice(-6).toUpperCase() || '882190'}</span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
-                                <span className="text-emerald-600 font-black text-[8px] uppercase tracking-wider">{deliveryProfile?.totalDeliveries || 0} Deliveries</span>
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                                <span className="text-emerald-700 font-black text-xs uppercase tracking-wider">{deliveryProfile?.totalDeliveries || 0} Deliveries Completed</span>
                             </div>
                         </div>
                     </div>
@@ -315,10 +316,10 @@ const DeliveryProfile = () => {
             </div>
 
             {/* Duty Status */}
-            <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center justify-between relative z-20 mx-0.5">
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between relative z-20 mx-0.5">
                 <div className="text-left">
-                    <h2 className="text-base font-black text-slate-900 tracking-tight">Availability</h2>
-                    <p className={`text-[8px] font-bold tracking-widest mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#843D9B]' : 'text-slate-400'}`}>
+                    <h2 className="text-lg font-black text-slate-900 tracking-tight">Availability Status</h2>
+                    <p className={`text-xs font-bold tracking-wider mt-0.5 transition-colors capitalize ${isOnline ? 'text-[#843D9B]' : 'text-slate-400'}`}>
                         {isOnline ? 'Active & Receiving Tasks' : 'Currently Off Duty'}
                     </p>
                 </div>
@@ -326,34 +327,34 @@ const DeliveryProfile = () => {
                 {/* Interactive Toggle Switch */}
                 <button
                     onClick={handleToggleDuty}
-                    className={`w-12 h-7 rounded-full p-0.5 transition-colors duration-500 relative flex items-center shadow-inner ${isOnline ? 'bg-[#843D9B]' : 'bg-slate-200'}`}
+                    className={`w-14 h-8 rounded-full p-1 transition-colors duration-500 relative flex items-center shadow-inner ${isOnline ? 'bg-[#843D9B]' : 'bg-slate-200'}`}
                 >
                     <div
-                        className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-500 ${isOnline ? 'translate-x-5' : 'translate-x-0'}`}
+                        className={`w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-500 ${isOnline ? 'translate-x-6' : 'translate-x-0'}`}
                     >
-                        {isOnline && <div className="w-1.5 h-1.5 bg-[#843D9B] rounded-full animate-pulse"></div>}
+                        {isOnline && <div className="w-2 h-2 bg-[#843D9B] rounded-full animate-pulse"></div>}
                     </div>
                 </button>
-            </div>            {/* 1. Identity & Duty */}
+            </div>
+
+            {/* 1. Identity & Duty */}
             <div className="mx-0.5">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2 italic">Identity & Performance</h3>
-                <div className="space-y-1">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5 ml-2 italic">Identity & Performance</h3>
+                <div className="space-y-1.5">
                     <MenuOption
                         icon={User}
                         color="bg-[#843D9B]"
                         label="Identity Profile"
-                        subLabel={deliveryProfile?.kycStatus === 'verified' ? "Verified Partner" : "Update details"}
+                        subLabel={deliveryProfile?.kycStatus === 'verified' ? "Verified Partner" : "Update personal details"}
                         onClick={() => {
-                            if (deliveryProfile) {
-                                setPersonalInfo({
-                                    name: deliveryProfile.user?.name || '',
-                                    phone: deliveryProfile.user?.phoneNumber || '',
-                                    emergencyPhone: deliveryProfile.emergencyContact || '',
-                                    vehicle: deliveryProfile.vehicleNumber || '',
-                                    profileImage: null,
-                                    previewImage: deliveryProfile.user?.profileImage || null,
-                                });
-                            }
+                            setPersonalInfo({
+                                name: deliveryProfile?.user?.name || user?.name || '',
+                                phone: deliveryProfile?.user?.phoneNumber || deliveryProfile?.user?.phone || user?.phoneNumber || user?.phone || '+91 98765 43210',
+                                emergencyPhone: deliveryProfile?.emergencyContact || '',
+                                vehicle: deliveryProfile?.vehicleNumber || deliveryProfile?.vehicle || user?.vehicleNumber || user?.vehicle || 'MH-12-DL-2024',
+                                profileImage: null,
+                                previewImage: deliveryProfile?.user?.profileImage || user?.profileImage || null,
+                            });
                             setIsEditing('personal');
                         }}
                     />
@@ -361,8 +362,8 @@ const DeliveryProfile = () => {
                         icon={Star}
                         color="bg-[#843D9B]"
                         label="Performance Rating"
-                        subLabel="Your service score"
-                        extra={<span className="bg-orange-50 text-[10px] font-black px-2.5 py-1 rounded-full text-orange-600 border border-orange-100 italic">{deliveryProfile?.rating?.toFixed(1) || '0.0'}</span>}
+                        subLabel="Your overall service score"
+                        extra={<span className="bg-amber-50 text-xs font-black px-3 py-1 rounded-full text-amber-700 border border-amber-200 italic">{deliveryProfile?.rating?.toFixed(1) || '0.0'}</span>}
                         onClick={() => toast.success('Performance details coming soon!')}
                     />
                 </div>
@@ -370,21 +371,21 @@ const DeliveryProfile = () => {
 
             {/* 2. Financials */}
             <div className="mx-0.5">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2 italic">Earnings & Bank</h3>
-                <div className="space-y-1">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5 ml-2 italic">Earnings & Bank</h3>
+                <div className="space-y-1.5">
                     <MenuOption
                         icon={Wallet}
                         color="bg-[#843D9B]"
                         label="Wallet & Earnings"
-                        subLabel="Check your balance"
-                        extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100 italic">₹ {deliveryProfile?.walletBalance || 0}</span>}
+                        subLabel="Check payout & balance"
+                        extra={<span className="bg-green-50 text-xs font-black px-3 py-1 rounded-full text-green-700 border border-green-200 italic">₹ {deliveryProfile?.walletBalance || 0}</span>}
                         to="/delivery/wallet"
                     />
                     <MenuOption
                         icon={CreditCard}
                         color="bg-[#843D9B]"
                         label="Financial Routing"
-                        subLabel="Bank details"
+                        subLabel="Manage account & IFSC details"
                         onClick={() => {
                             if (deliveryProfile?.bankDetails) {
                                 setBankInfo({
@@ -402,8 +403,8 @@ const DeliveryProfile = () => {
 
             {/* 3. Settings & Support */}
             <div className="mx-0.5">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2 italic">Platform Settings</h3>
-                <div className="space-y-1">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5 ml-2 italic">Platform Settings</h3>
+                <div className="space-y-1.5">
                     <MenuOption
                         icon={Bell}
                         color="bg-[#843D9B]"
@@ -411,8 +412,8 @@ const DeliveryProfile = () => {
                         subLabel={notificationsEnabled ? "Alerts are active" : "Alerts are muted"}
                         hideArrow={true}
                         extra={
-                            <div className={`w-10 h-6 rounded-full p-0.5 transition-colors duration-300 relative flex items-center shadow-inner ${notificationsEnabled ? 'bg-[#843D9B]' : 'bg-slate-200'}`}>
-                                <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${notificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`}>
+                            <div className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 relative flex items-center shadow-inner ${notificationsEnabled ? 'bg-[#843D9B]' : 'bg-slate-200'}`}>
+                                <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`}>
                                 </div>
                             </div>
                         }
@@ -433,13 +434,14 @@ const DeliveryProfile = () => {
                         icon={LifeBuoy}
                         color="bg-[#843D9B]"
                         label="Help & Support"
+                        subLabel="Raise support ticket"
                         onClick={() => setShowSupport(true)}
                     />
                 </div>
             </div>
 
-            {/* Logout Action - Premium Style */}
-            <div className="pt-2 pb-4">
+            {/* Logout & Delete Actions */}
+            <div className="pt-3 pb-4 space-y-3">
                 <button
                     onClick={async () => {
                         try {
@@ -449,53 +451,55 @@ const DeliveryProfile = () => {
                             toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message));
                         }
                     }}
-                    className="w-full bg-indigo-50/80 p-3 rounded-[1.5rem] border border-indigo-100 flex items-center justify-between group active:scale-[0.98] transition-all mb-3"
+                    className="w-full bg-indigo-50/80 p-4 rounded-2xl border border-indigo-100 flex items-center justify-between group active:scale-[0.98] transition-all"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:rotate-6 transition-transform">
-                            <Bell size={18} strokeWidth={2.5} />
+                    <div className="flex items-center gap-3.5">
+                        <div className="h-11 w-11 bg-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:rotate-6 transition-transform">
+                            <Bell size={20} strokeWidth={2.5} />
                         </div>
                         <div className="text-left">
-                            <h4 className="text-xs font-black text-indigo-700 uppercase tracking-widest italic leading-none">Test Notification</h4>
-                            <p className="text-[9px] font-bold text-indigo-400 mt-1">Send a test push alert</p>
+                            <h4 className="text-sm font-black text-indigo-700 uppercase tracking-wider italic leading-none">Test Notification</h4>
+                            <p className="text-xs font-bold text-indigo-400 mt-1">Send a test push alert to device</p>
                         </div>
                     </div>
-                    <ChevronRight size={16} className="text-indigo-300" />
+                    <ChevronRight size={18} className="text-indigo-400" />
                 </button>
+
                 <button
                     onClick={() => {
                         logout();
                         navigate('/delivery/login');
                     }}
-                    className="w-full bg-red-50/50 p-3 rounded-[1.5rem] border border-red-100 flex items-center justify-between group active:scale-[0.98] transition-all"
+                    className="w-full bg-red-50/50 p-4 rounded-2xl border border-red-100 flex items-center justify-between group active:scale-[0.98] transition-all"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-[#843D9B] rounded-2xl flex items-center justify-center text-[#E2C17D] shadow-md shadow-indigo-100 group-hover:rotate-6 transition-transform">
-                            <LogOut size={18} strokeWidth={2.5} />
+                    <div className="flex items-center gap-3.5">
+                        <div className="h-11 w-11 bg-[#843D9B] rounded-2xl flex items-center justify-center text-[#E2C17D] shadow-md shadow-purple-200 group-hover:rotate-6 transition-transform">
+                            <LogOut size={20} strokeWidth={2.5} />
                         </div>
                         <div className="text-left">
-                            <h4 className="text-xs font-black text-red-600 uppercase tracking-widest italic leading-none">Secure Logout</h4>
-                            <p className="text-[9px] font-bold text-red-400 mt-1">Sign out of SewZelaa</p>
+                            <h4 className="text-sm font-black text-red-600 uppercase tracking-wider italic leading-none">Secure Logout</h4>
+                            <p className="text-xs font-bold text-red-400 mt-1">Sign out of SewZelaa partner app</p>
                         </div>
                     </div>
-                    <ChevronRight size={16} className="text-red-300" />
+                    <ChevronRight size={18} className="text-red-300" />
                 </button>
+
                 <button
                     onClick={() => setShowDeleteModal(true)}
-                    className="w-full bg-gray-50/50 p-3 rounded-[1.5rem] border border-gray-200 hover:bg-red-50 hover:border-red-200 flex items-center justify-between group active:scale-[0.98] transition-all mt-3"
+                    className="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 hover:bg-red-50 hover:border-red-200 flex items-center justify-between group active:scale-[0.98] transition-all"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-md shadow-red-100 group-hover:rotate-6 transition-transform">
-                            <Trash2 size={18} strokeWidth={2.5} />
+                    <div className="flex items-center gap-3.5">
+                        <div className="h-11 w-11 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-md shadow-red-100 group-hover:rotate-6 transition-transform">
+                            <Trash2 size={20} strokeWidth={2.5} />
                         </div>
                         <div className="text-left">
-                            <h4 className="text-xs font-black text-red-600 uppercase tracking-widest italic leading-none">Delete Account</h4>
-                            <p className="text-[9px] font-bold text-red-400 mt-1">Permanently remove your account</p>
+                            <h4 className="text-sm font-black text-red-600 uppercase tracking-wider italic leading-none">Delete Account</h4>
+                            <p className="text-xs font-bold text-red-400 mt-1">Permanently remove your account</p>
                         </div>
                     </div>
-                    <ChevronRight size={16} className="text-red-300" />
+                    <ChevronRight size={18} className="text-red-300" />
                 </button>
-                <p className="text-center mt-6 text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50">SewZelaa • Version 1.2 (Beta)</p>
+                <p className="text-center mt-6 text-xs font-black text-slate-400 uppercase tracking-widest opacity-60">SewZelaa • Version 1.2 (Beta)</p>
             </div>
 
             {/* Platform Rules Modal */}
@@ -505,7 +509,7 @@ const DeliveryProfile = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-md"
                         onClick={() => setShowRules(false)}
                     >
                         <motion.div
@@ -514,35 +518,36 @@ const DeliveryProfile = () => {
                             exit={{ y: "100%", opacity: 0 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-6 sm:p-8 shadow-2xl relative max-h-[80vh] overflow-y-auto"
+                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-lg p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto border border-slate-100"
                         >
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
                             <button
                                 onClick={() => setShowRules(false)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
+                                className="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
                             >
-                                <X size={16} />
+                                <X size={18} />
                             </button>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center">
-                                    <Book size={24} />
+                            <div className="flex items-center gap-3.5 mb-6">
+                                <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
+                                    <Book size={28} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Platform Rules</h3>
-                                    <p className="text-[10px] tracking-widest font-bold text-slate-400 uppercase">Strict Compliance</p>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Platform Rules</h3>
+                                    <p className="text-xs tracking-widest font-bold text-slate-400 uppercase mt-0.5">Strict Partner Compliance</p>
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl">
+                                <div className="bg-rose-50 border border-rose-100 p-5 rounded-2xl">
                                     <h4 className="text-xs font-black text-rose-600 tracking-widest mb-1.5 uppercase">Fabric Liability</h4>
-                                    <p className="text-xs text-rose-500/80 font-medium leading-relaxed">Delivery partners are strictly liable for any damage or loss of fabric during transit. Capture clear proofs at pickup.</p>
+                                    <p className="text-xs sm:text-sm text-rose-500/90 font-medium leading-relaxed">Delivery partners are strictly liable for any damage or loss of fabric during transit. Capture clear proof at pickup.</p>
                                 </div>
-                                <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                                <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
                                     <h4 className="text-xs font-black text-slate-700 tracking-widest mb-1.5 uppercase">C.O.D Remittance</h4>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">Cash On Delivery collected for readymade orders must be settled with the platform within 24 hours.</p>
+                                    <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">Cash On Delivery collected for readymade orders must be settled with the platform within 24 hours.</p>
                                 </div>
-                                <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                                <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
                                     <h4 className="text-xs font-black text-slate-700 tracking-widest mb-1.5 uppercase">Professionalism</h4>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">Maintain a professional demeanor with customers and tailors. Severe complaints may lead to account suspension.</p>
+                                    <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">Maintain a professional demeanor with customers and tailors. Severe complaints may lead to account suspension.</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -557,7 +562,7 @@ const DeliveryProfile = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-md"
                         onClick={() => setShowSupport(false)}
                     >
                         <motion.div
@@ -566,50 +571,51 @@ const DeliveryProfile = () => {
                             exit={{ y: "100%", opacity: 0 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-6 sm:p-8 shadow-2xl relative"
+                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-lg p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto border border-slate-100"
                         >
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
                             <button
                                 onClick={() => setShowSupport(false)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
+                                className="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
                             >
-                                <X size={16} />
+                                <X size={18} />
                             </button>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-12 h-12 bg-slate-50 text-slate-600 rounded-2xl flex items-center justify-center">
-                                    <LifeBuoy size={24} />
+                            <div className="flex items-center gap-3.5 mb-6">
+                                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+                                    <LifeBuoy size={28} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Help & Support</h3>
-                                    <p className="text-[9px] tracking-widest font-bold text-slate-400 uppercase">Raise Ticket</p>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Help & Support</h3>
+                                    <p className="text-xs tracking-widest font-bold text-slate-400 uppercase mt-0.5">Raise Support Ticket</p>
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-400 tracking-widest mb-2 block uppercase">Describe your issue</label>
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-2 block uppercase">Describe your issue</label>
                                     <textarea
                                         rows="4"
                                         value={supportIssue}
                                         onChange={(e) => setSupportIssue(e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium text-slate-900 focus:outline-none focus:border-slate-500 transition-all resize-none"
-                                        placeholder="I need help with..."
+                                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-sm sm:text-base font-semibold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white transition-all resize-none shadow-sm"
+                                        placeholder="I need assistance with..."
                                     ></textarea>
                                 </div>
                                 <button 
                                     onClick={handleSupportSubmit}
-                                    className="w-full bg-slate-600 text-white rounded-2xl p-4 font-black tracking-widest text-xs hover:bg-slate-700 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase"
+                                    className="w-full bg-slate-900 text-white rounded-2xl py-4 font-black tracking-wider text-sm sm:text-base hover:bg-black active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2.5 uppercase"
                                 >
-                                    <Send size={16} /> Submit Ticket
+                                    <Send size={18} /> Submit Ticket
                                 </button>
                                 
                                 {myTickets.length > 0 && (
                                     <div className="mt-8 pt-6 border-t border-slate-100 max-h-[300px] overflow-y-auto pr-2">
-                                        <h4 className="text-[10px] font-black text-slate-400 tracking-widest mb-4 uppercase sticky top-0 bg-white z-10 py-1">Recent Tickets</h4>
+                                        <h4 className="text-xs font-black text-slate-400 tracking-widest mb-4 uppercase sticky top-0 bg-white z-10 py-1">Recent Tickets</h4>
                                         <div className="space-y-4">
                                             {myTickets.map(ticket => (
                                                 <div key={ticket._id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <span className="text-xs font-bold text-slate-900">{new Date(ticket.createdAt).toLocaleDateString()}</span>
-                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md ${
                                                             ticket.status === 'Resolved' ? 'bg-green-100 text-green-700' :
                                                             ticket.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
                                                             'bg-orange-100 text-orange-700'
@@ -617,11 +623,11 @@ const DeliveryProfile = () => {
                                                             {ticket.status}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-slate-600 mb-3">{ticket.message}</p>
+                                                    <p className="text-sm text-slate-700 mb-3 font-medium">{ticket.message}</p>
                                                     {ticket.adminResponse && (
-                                                        <div className="bg-white border border-slate-200 rounded-xl p-3">
-                                                            <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase mb-1 block">Support Response</span>
-                                                            <p className="text-sm text-slate-800">{ticket.adminResponse}</p>
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-3.5">
+                                                            <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1 block">Support Response</span>
+                                                            <p className="text-sm text-slate-800 font-semibold">{ticket.adminResponse}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -642,7 +648,7 @@ const DeliveryProfile = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-md"
                         onClick={() => setShowKYCModal(false)}
                     >
                         <motion.div
@@ -651,31 +657,32 @@ const DeliveryProfile = () => {
                             exit={{ y: "100%", opacity: 0 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto"
+                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-lg p-6 sm:p-8 shadow-2xl relative max-h-[88vh] overflow-y-auto border border-slate-100"
                         >
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
                             <button
                                 onClick={() => setShowKYCModal(false)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
+                                className="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
                             >
-                                <X size={16} />
+                                <X size={18} />
                             </button>
 
                             <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-indigo-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md">
-                                    <ShieldCheck size={32} />
+                                <div className="w-16 h-16 bg-indigo-50 text-[#843D9B] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md border border-indigo-100">
+                                    <ShieldCheck size={36} />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">Identity Verification</h3>
-                                <p className="text-xs font-bold text-slate-400 tracking-widest mt-1 uppercase">Submit documents for approval</p>
+                                <p className="text-xs font-bold text-slate-400 tracking-wider mt-1 uppercase">Submit valid documents for partner approval</p>
                             </div>
 
-                            <div className="space-y-4 mb-6">
+                            <div className="space-y-5 mb-6">
                                 {/* Aadhar Card Upload */}
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-700 tracking-widest mb-2 flex items-center gap-2 uppercase">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                                        Aadhar Core / Voter ID
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-2 flex items-center gap-2 uppercase">
+                                        <div className="w-2 h-2 rounded-full bg-[#843D9B]"></div>
+                                        Aadhar Card / Voter ID
                                     </label>
-                                    <label className="w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-indigo-50 hover:border-blue-200 hover:text-primary transition-all text-slate-400 group cursor-pointer relative overflow-hidden">
+                                    <label className="w-full h-28 sm:h-32 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-purple-50/50 hover:border-[#843D9B] hover:text-[#843D9B] transition-all text-slate-400 group cursor-pointer relative overflow-hidden shadow-sm">
                                         <input type="file" className="hidden" accept="image/*" capture="environment" onChange={async (e) => {
                                             if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
@@ -696,12 +703,12 @@ const DeliveryProfile = () => {
                                         {aadharImage ? (
                                             <div className="absolute inset-0 w-full h-full bg-slate-900/10 flex items-center justify-center backdrop-blur-sm">
                                                 <img src={aadharImage} alt="Aadhar" className="w-full h-full object-cover opacity-60" />
-                                                <CheckCircle2 size={32} className="text-[#843D9B] absolute drop-shadow-md bg-white rounded-full" />
+                                                <CheckCircle2 size={36} className="text-[#843D9B] absolute drop-shadow-md bg-white rounded-full" />
                                             </div>
                                         ) : (
                                             <>
-                                                <UploadCloud size={24} className="mb-2 group-hover:-translate-y-1 transition-transform" />
-                                                <span className="text-[10px] font-bold tracking-widest uppercase">Tap to Upload Photo</span>
+                                                <UploadCloud size={28} className="mb-2 group-hover:-translate-y-1 transition-transform text-[#843D9B]" />
+                                                <span className="text-xs font-extrabold tracking-wider uppercase">Tap to Upload Document</span>
                                             </>
                                         )}
                                     </label>
@@ -709,11 +716,11 @@ const DeliveryProfile = () => {
 
                                 {/* Driving License Upload */}
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-700 tracking-widest mb-2 flex items-center gap-2 uppercase">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-2 flex items-center gap-2 uppercase">
+                                        <div className="w-2 h-2 rounded-full bg-slate-500"></div>
                                         Valid Driving License
                                     </label>
-                                    <label className="w-full h-24 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-slate-50 hover:border-slate-200 hover:text-slate-500 transition-all text-slate-400 group cursor-pointer relative overflow-hidden">
+                                    <label className="w-full h-28 sm:h-32 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center hover:bg-slate-100 hover:border-slate-300 hover:text-slate-700 transition-all text-slate-400 group cursor-pointer relative overflow-hidden shadow-sm">
                                         <input type="file" className="hidden" accept="image/*" capture="environment" onChange={async (e) => {
                                             if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
@@ -734,12 +741,12 @@ const DeliveryProfile = () => {
                                         {licenseImage ? (
                                             <div className="absolute inset-0 w-full h-full bg-slate-900/10 flex items-center justify-center backdrop-blur-sm">
                                                 <img src={licenseImage} alt="License" className="w-full h-full object-cover opacity-60" />
-                                                <CheckCircle2 size={32} className="text-[#843D9B] absolute drop-shadow-md bg-white rounded-full" />
+                                                <CheckCircle2 size={36} className="text-[#843D9B] absolute drop-shadow-md bg-white rounded-full" />
                                             </div>
                                         ) : (
                                             <>
-                                                <UploadCloud size={24} className="mb-2 group-hover:-translate-y-1 transition-transform" />
-                                                <span className="text-[10px] font-bold tracking-widest uppercase">Tap to Upload Document</span>
+                                                <UploadCloud size={28} className="mb-2 group-hover:-translate-y-1 transition-transform text-slate-500" />
+                                                <span className="text-xs font-extrabold tracking-wider uppercase">Tap to Upload License</span>
                                             </>
                                         )}
                                     </label>
@@ -748,26 +755,27 @@ const DeliveryProfile = () => {
 
                             <button
                                 onClick={handleKYCSubmit}
-                                className="w-full bg-slate-900 text-white rounded-2xl p-4 font-black tracking-widest text-xs hover:bg-black active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 uppercase"
+                                className="w-full bg-[#843D9B] hover:bg-[#6e3082] text-white rounded-2xl py-4 font-black tracking-widest text-sm sm:text-base active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2.5 uppercase"
                             >
-                                <CheckCircle2 size={16} className="text-[#843D9B]" /> Submit To Admin
+                                <CheckCircle2 size={18} /> Submit Documents
                             </button>
 
-                            <p className="text-center mt-4 text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
-                                Documents are securely encrypted.<br />Verification takes up to 24 hours.
+                            <p className="text-center mt-4 text-xs font-bold text-slate-400 uppercase tracking-wider leading-relaxed">
+                                Documents are encrypted securely.<br />Verification completed within 24 hours.
                             </p>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* Edit Profile Modal */}
+
+            {/* Edit Profile (Identity Profile) Full Page / Bottom Sheet Modal */}
             <AnimatePresence>
                 {isEditing === 'personal' && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 backdrop-blur-md"
                         onClick={() => setIsEditing(null)}
                     >
                         <motion.div
@@ -776,106 +784,148 @@ const DeliveryProfile = () => {
                             exit={{ y: "100%", opacity: 0 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-5 sm:p-6 shadow-2xl relative"
+                            className="bg-white w-full h-full sm:h-auto sm:max-w-lg p-6 sm:p-8 sm:rounded-[2.5rem] shadow-2xl relative overflow-y-auto flex flex-col justify-between"
                         >
-                            <button
-                                onClick={() => setIsEditing(null)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
-                            >
-                                <X size={16} />
-                            </button>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center">
-                                    <User size={20} />
+                            <div>
+                                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
+                                <button
+                                    onClick={() => setIsEditing(null)}
+                                    className="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-700 transition-colors z-20 shadow-sm"
+                                >
+                                    <X size={20} />
+                                </button>
+
+                                <div className="flex items-center gap-3.5 mb-6">
+                                    <div className="w-14 h-14 bg-fuchsia-50 text-[#843D9B] rounded-2xl flex items-center justify-center shadow-sm shrink-0 border border-fuchsia-100">
+                                        <User size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Identity Profile</h3>
+                                        <p className="text-xs tracking-wider font-extrabold text-slate-400 uppercase mt-0.5">Partner Profile Details</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Identity Profile</h3>
-                                    <p className="text-[9px] tracking-widest font-bold text-slate-400 uppercase">Update your personal details</p>
+
+                                <div className="space-y-4">
+                                    <div className="flex flex-col items-center mb-4">
+                                        <label className="relative cursor-pointer group">
+                                            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-dashed border-[#843D9B] overflow-hidden flex items-center justify-center bg-fuchsia-50 group-hover:bg-fuchsia-100 transition-all shadow-md">
+                                                {personalInfo.previewImage ? (
+                                                    <img src={personalInfo.previewImage} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={36} className="text-[#843D9B]" />
+                                                )}
+                                            </div>
+                                            <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Camera size={28} className="text-white" />
+                                            </div>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                capture="user"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        setPersonalInfo({
+                                                            ...personalInfo,
+                                                            profileImage: file,
+                                                            previewImage: URL.createObjectURL(file)
+                                                        });
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                        <span className="text-xs font-black text-[#843D9B] uppercase tracking-wider mt-2.5">Update Profile Photo</span>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-xs font-black text-slate-700 tracking-wider mb-1.5 flex items-center gap-1.5 uppercase">
+                                            Full Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={personalInfo.name}
+                                            onChange={(e) => {
+                                                let val = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
+                                                if (val.length > 0) {
+                                                    val = val.charAt(0).toUpperCase() + val.slice(1);
+                                                }
+                                                setPersonalInfo({ ...personalInfo, name: val });
+                                            }}
+                                            placeholder="Enter your full name"
+                                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-[#843D9B]/10 transition-all shadow-sm"
+                                        />
+                                    </div>
+
+                                    {/* Registered Phone Number - Non-editable */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-xs font-black text-slate-700 tracking-wider flex items-center gap-1.5 uppercase">
+                                                Phone Number (Registered)
+                                            </label>
+                                            <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                <Lock size={10} /> Non-editable
+                                            </span>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                type="tel"
+                                                value={personalInfo.phone || deliveryProfile?.user?.phoneNumber || deliveryProfile?.user?.phone || user?.phoneNumber || user?.phone || '+91 98765 43210'}
+                                                readOnly
+                                                className="w-full bg-slate-100/90 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-bold text-slate-700 cursor-not-allowed opacity-90 shadow-none select-none pr-10"
+                                            />
+                                            <Lock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        </div>
+                                        <p className="text-[10px] font-extrabold text-slate-400 mt-1">Phone number is locked by admin for account security</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-xs font-black text-slate-700 tracking-wider mb-1.5 flex items-center gap-1.5 uppercase">
+                                            Emergency Contact Number
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={personalInfo.emergencyPhone}
+                                            onChange={(e) => {
+                                                let val = e.target.value.replace(/[^0-9]/g, '');
+                                                if (val.length > 10) val = val.slice(0, 10);
+                                                setPersonalInfo({ ...personalInfo, emergencyPhone: val });
+                                            }}
+                                            placeholder="10 digit mobile number"
+                                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-[#843D9B]/10 transition-all shadow-sm"
+                                        />
+                                    </div>
+
+                                    {/* Vehicle Number - Non-editable */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-xs font-black text-slate-700 tracking-wider flex items-center gap-1.5 uppercase">
+                                                Vehicle Number
+                                            </label>
+                                            <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                <Lock size={10} /> Non-editable
+                                            </span>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={personalInfo.vehicle || deliveryProfile?.vehicleNumber || deliveryProfile?.vehicle || user?.vehicleNumber || user?.vehicle || 'MH-12-DL-2024'}
+                                                readOnly
+                                                className="w-full bg-slate-100/90 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-bold text-slate-700 cursor-not-allowed uppercase opacity-90 shadow-none select-none pr-10"
+                                            />
+                                            <Lock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        </div>
+                                        <p className="text-[10px] font-extrabold text-slate-400 mt-1">Vehicle registration verified by partner admin</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex flex-col items-center mb-2">
-                                    <label className="relative cursor-pointer group">
-                                        <div className="w-14 h-14 rounded-full border-2 border-dashed border-[#843D9B] overflow-hidden flex items-center justify-center bg-fuchsia-50 group-hover:bg-fuchsia-100 transition-all">
-                                            {personalInfo.previewImage ? (
-                                                <img src={personalInfo.previewImage} alt="Profile" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User size={20} className="text-[#843D9B]" />
-                                            )}
-                                        </div>
-                                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Camera size={20} className="text-white" />
-                                        </div>
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/*"
-                                            capture="user"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    setPersonalInfo({
-                                                        ...personalInfo,
-                                                        profileImage: file,
-                                                        previewImage: URL.createObjectURL(file)
-                                                    });
-                                                }
-                                            }}
-                                        />
-                                    </label>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1.5">Update Photo</span>
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Full Name</label>
-                                    <input
-                                        type="text"
-                                        value={personalInfo.name}
-                                        onChange={(e) => {
-                                            let val = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
-                                            if (val.length > 0) {
-                                                val = val.charAt(0).toUpperCase() + val.slice(1);
-                                            }
-                                            setPersonalInfo({ ...personalInfo, name: val });
-                                        }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        value={personalInfo.phone}
-                                        readOnly
-                                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-400 focus:outline-none cursor-not-allowed opacity-70"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Emergency Contact</label>
-                                    <input
-                                        type="tel"
-                                        value={personalInfo.emergencyPhone}
-                                        onChange={(e) => {
-                                            let val = e.target.value.replace(/[^0-9]/g, '');
-                                            if (val.length > 10) val = val.slice(0, 10);
-                                            setPersonalInfo({ ...personalInfo, emergencyPhone: val });
-                                        }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Vehicle Number</label>
-                                    <input
-                                        type="text"
-                                        value={personalInfo.vehicle}
-                                        readOnly
-                                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-400 focus:outline-none cursor-not-allowed uppercase opacity-70"
-                                    />
-                                </div>
+
+                            <div className="pt-4 mt-2">
                                 <button 
                                     onClick={() => handleSave('personal')}
-                                    className="w-full bg-[#843D9B] text-white rounded-xl py-3 font-black tracking-widest text-xs hover:bg-[#6b3180] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase mt-1"
+                                    className="w-full bg-[#843D9B] hover:bg-[#6e3082] text-white rounded-2xl py-4 font-black tracking-widest text-sm sm:text-base hover:shadow-xl hover:shadow-[#843D9B]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 uppercase shadow-lg"
                                 >
-                                    <CheckCircle2 size={16} /> Save Changes
+                                    <CheckCircle2 size={18} /> Save Changes
                                 </button>
                             </div>
                         </motion.div>
@@ -890,7 +940,7 @@ const DeliveryProfile = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-md"
                         onClick={() => setIsEditing(null)}
                     >
                         <motion.div
@@ -899,26 +949,29 @@ const DeliveryProfile = () => {
                             exit={{ y: "100%", opacity: 0 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-5 sm:p-6 shadow-2xl relative"
+                            className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-lg p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto border border-slate-100"
                         >
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
                             <button
                                 onClick={() => setIsEditing(null)}
-                                className="absolute top-5 right-5 w-8 h-8 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
+                                className="absolute top-5 right-5 w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-700 transition-colors z-20"
                             >
-                                <X size={16} />
+                                <X size={18} />
                             </button>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 bg-indigo-50 text-[#843D9B] rounded-xl flex items-center justify-center">
-                                    <CreditCard size={20} />
+
+                            <div className="flex items-center gap-3.5 mb-6">
+                                <div className="w-14 h-14 bg-fuchsia-50 text-[#843D9B] rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+                                    <CreditCard size={28} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Financial Routing</h3>
-                                    <p className="text-[9px] tracking-widest font-bold text-slate-400 uppercase">Update bank details</p>
+                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Financial Routing</h3>
+                                    <p className="text-xs tracking-wider font-extrabold text-slate-400 uppercase mt-0.5">Update bank details for payouts</p>
                                 </div>
                             </div>
-                            <div className="space-y-3">
+
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Account Holder Name</label>
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-1.5 flex items-center gap-1.5 uppercase">Account Holder Name</label>
                                     <input
                                         type="text"
                                         value={bankInfo.accountName}
@@ -927,11 +980,11 @@ const DeliveryProfile = () => {
                                             if (val.length > 0) val = val.charAt(0).toUpperCase() + val.slice(1);
                                             setBankInfo({ ...bankInfo, accountName: val });
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
+                                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-[#843D9B]/10 transition-all shadow-sm"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Bank Name</label>
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-1.5 flex items-center gap-1.5 uppercase">Bank Name</label>
                                     <input
                                         type="text"
                                         value={bankInfo.bank}
@@ -940,11 +993,11 @@ const DeliveryProfile = () => {
                                             if (val.length > 0) val = val.charAt(0).toUpperCase() + val.slice(1);
                                             setBankInfo({ ...bankInfo, bank: val });
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all"
+                                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-[#843D9B]/10 transition-all shadow-sm"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">Account Number</label>
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-1.5 flex items-center gap-1.5 uppercase">Account Number</label>
                                     <input
                                         type="text"
                                         value={bankInfo.accountNo}
@@ -953,11 +1006,11 @@ const DeliveryProfile = () => {
                                             if (val.length > 18) val = val.slice(0, 18);
                                             setBankInfo({ ...bankInfo, accountNo: val });
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all tracking-widest"
+                                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-[#843D9B]/10 transition-all shadow-sm tracking-wider"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-black text-slate-400 tracking-widest mb-1 block uppercase">IFSC Code</label>
+                                    <label className="text-xs font-black text-slate-700 tracking-wider mb-1.5 flex items-center gap-1.5 uppercase">IFSC Code</label>
                                     <input
                                         type="text"
                                         value={bankInfo.ifsc}
@@ -966,14 +1019,14 @@ const DeliveryProfile = () => {
                                             if (val.length > 11) val = val.slice(0, 11);
                                             setBankInfo({ ...bankInfo, ifsc: val });
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-black text-slate-900 focus:outline-none focus:border-[#843D9B] transition-all tracking-widest"
+                                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-black text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-[#843D9B]/10 transition-all shadow-sm tracking-widest"
                                     />
                                 </div>
                                 <button 
                                     onClick={() => handleSave('bank')}
-                                    className="w-full bg-[#843D9B] text-white rounded-xl py-3 font-black tracking-widest text-xs hover:bg-[#6b3180] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 uppercase mt-1"
+                                    className="w-full bg-[#843D9B] hover:bg-[#6e3082] text-white rounded-2xl py-4 font-black tracking-widest text-sm sm:text-base hover:shadow-xl hover:shadow-[#843D9B]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 uppercase mt-3 shadow-lg"
                                 >
-                                    <CheckCircle2 size={16} /> Save Changes
+                                    <CheckCircle2 size={18} /> Save Changes
                                 </button>
                             </div>
                         </motion.div>
@@ -984,28 +1037,28 @@ const DeliveryProfile = () => {
             {/* Delete Account Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowDeleteModal(false)}>
-                    <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-5" onClick={e => e.stopPropagation()} style={{ animation: 'zoomIn 0.3s ease-out' }}>
+                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
                         <div className="flex flex-col items-center text-center gap-3">
-                            <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center">
-                                <AlertTriangle size={28} className="text-red-600" />
+                            <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center">
+                                <AlertTriangle size={32} className="text-red-600" />
                             </div>
-                            <h3 className="text-lg font-black text-gray-900 tracking-tight">Delete Account?</h3>
-                            <p className="text-xs text-gray-500 leading-relaxed">This action is <span className="font-bold text-red-600">permanent</span> and cannot be undone. All your delivery data, earnings, and history will be lost forever.</p>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Delete Account?</h3>
+                            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">This action is <span className="font-bold text-red-600">permanent</span> and cannot be undone. All your delivery data, earnings, and history will be lost forever.</p>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block">Type DELETE to confirm</label>
+                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 block text-center">Type DELETE to confirm</label>
                             <input
                                 type="text"
                                 value={deleteConfirmText}
                                 onChange={e => setDeleteConfirmText(e.target.value)}
                                 placeholder="DELETE"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold text-center tracking-widest focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
+                                className="w-full px-4 py-3.5 border-2 border-slate-200 rounded-2xl text-base font-black text-center tracking-widest focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all"
                             />
                         </div>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all"
+                                className="flex-1 py-3.5 bg-slate-100 text-slate-700 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-slate-200 transition-all"
                             >
                                 Cancel
                             </button>
@@ -1026,7 +1079,7 @@ const DeliveryProfile = () => {
                                     }
                                 }}
                                 disabled={deleteConfirmText !== 'DELETE' || isDeleting}
-                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="flex-1 py-3.5 bg-red-600 text-white rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
                             >
                                 {isDeleting ? 'Deleting...' : 'Delete Forever'}
                             </button>
@@ -1037,6 +1090,5 @@ const DeliveryProfile = () => {
         </div>
     );
 };
-
 export default DeliveryProfile;
 

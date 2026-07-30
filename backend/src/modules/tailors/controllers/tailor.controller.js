@@ -82,7 +82,9 @@ exports.getTailorDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Invalid Tailor ID format", 400));
   }
 
-  const tailor = await Tailor.findById(req.params.id)
+  const tailor = await Tailor.findOne({
+    $or: [{ _id: req.params.id }, { user: req.params.id }]
+  })
     .populate({
       path: "user",
       select: "name profileImage email phoneNumber",
@@ -164,10 +166,10 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
     const user = await User.findById(req.user.id);
     if (!user) return next(new ErrorResponse("User not found", 404));
     
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (profileImage) user.profileImage = profileImage;
+    if (name && typeof name === 'string') user.name = name;
+    if (email && typeof email === 'string') user.email = email;
+    if (phoneNumber && typeof phoneNumber === 'string') user.phoneNumber = phoneNumber;
+    if (profileImage && typeof profileImage === 'string') user.profileImage = profileImage;
     await user.save();
   }
 
