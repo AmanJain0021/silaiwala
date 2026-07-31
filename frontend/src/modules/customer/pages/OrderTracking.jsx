@@ -672,38 +672,6 @@ const OrderTracking = () => {
                     </div>
                     
                     {/* OTP Display for Customer */}
-                    {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['pending', 'assigned', 'fabric-ready-for-pickup', 'processing'].includes(order.status) && (
-                        <div className="mb-4 p-3 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-white border border-indigo-100 flex items-center justify-center">
-                                    <ShieldCheck size={20} className="text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Pickup OTP</p>
-                                    <p className="text-xs text-gray-600 font-medium">Share with delivery partner for fabric pickup</p>
-                                </div>
-                            </div>
-                            <div className="text-xl font-black text-primary tracking-widest bg-white px-4 py-2 rounded-xl border border-indigo-100">
-                                {order.pickupDeliveryOtp}
-                            </div>
-                        </div>
-                    )}
-                    {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['out-for-delivery'].includes(order.status) && (
-                        <div className="mb-4 p-3 bg-green-50 rounded-2xl border border-green-100 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-white border border-green-100 flex items-center justify-center">
-                                    <ShieldCheck size={20} className="text-green-600" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Delivery OTP</p>
-                                    <p className="text-xs text-gray-600 font-medium">Share with delivery partner to receive order</p>
-                                </div>
-                            </div>
-                            <div className="text-xl font-black text-green-700 tracking-widest bg-white px-4 py-2 rounded-xl border border-green-100">
-                                {order.dropoffDeliveryOtp}
-                            </div>
-                        </div>
-                    )}
 
                     <TrackingTimeline 
                         states={timelineStates} 

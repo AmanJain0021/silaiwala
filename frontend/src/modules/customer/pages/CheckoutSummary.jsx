@@ -451,24 +451,24 @@ const CheckoutSummary = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans text-slate-900">
+        <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans text-gray-900">
             {/* Full Screen Processing Loader */}
             {isProcessing && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[1000] flex flex-col items-center justify-center text-white">
+                <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-[1000] flex flex-col items-center justify-center text-white">
                     <div className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
                     <h2 className="text-xl font-black uppercase tracking-widest">{loadingText}</h2>
-                    <p className="text-xs font-bold text-slate-300 mt-2 opacity-80">Please do not close this window</p>
+                    <p className="text-xs font-bold text-gray-300 mt-2 opacity-80">Please do not close this window</p>
                 </div>
             )}
             {/* 1. Header */}
-            <div className="sticky top-0 z-50 bg-[#6D28D9] shadow-md px-4 sm:px-6 pt-5 pb-5 rounded-b-3xl flex items-center justify-between text-white">
+            <div className="sticky top-0 z-50 bg-primary shadow-md px-4 sm:px-6 pt-5 pb-5 rounded-b-3xl flex items-center justify-between text-white">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0">
                         <ArrowLeft size={18} />
                     </button>
                     <div className="text-left">
                         <h1 className="text-base sm:text-lg font-extrabold text-white leading-tight">Order Summary</h1>
-                        <p className="text-xs text-purple-200 font-medium">Final step - Confirm & place your order</p>
+                        <p className="text-xs text-white/80 font-medium">Final step - Confirm & place your order</p>
                     </div>
                 </div>
 
@@ -478,7 +478,7 @@ const CheckoutSummary = () => {
                     </div>
                     <div className="text-left leading-tight">
                         <p className="font-extrabold text-[11px]">100% Secure</p>
-                        <p className="text-[9px] text-purple-200 font-medium">Safe & Encrypted</p>
+                        <p className="text-[9px] text-white/80 font-medium">Safe & Encrypted</p>
                     </div>
                 </div>
             </div>
@@ -486,61 +486,61 @@ const CheckoutSummary = () => {
             <div className="max-w-xl mx-auto p-3 sm:p-4 space-y-3.5 animate-in fade-in duration-500">
 
                 {/* Top Step Progress Tracker Wizard */}
-                <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100/80">
+                <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100/80">
                     <div className="relative flex items-center justify-between px-2 sm:px-8">
                         {/* Dotted Connecting Line */}
-                        <div className="absolute top-5 left-10 right-10 border-t-2 border-dashed border-purple-200 z-0" />
+                        <div className="absolute top-5 left-10 right-10 border-t-2 border-dashed border-primary/20 z-0" />
 
                         {/* Step 1: Service */}
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <div className="flex items-center gap-1">
-                                <div className="w-9 h-9 rounded-full bg-[#FAF5FF] border border-purple-100 text-[#7C3AED] flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 text-primary flex items-center justify-center">
                                     <ShoppingBag size={16} />
                                 </div>
-                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white flex items-center justify-center">
+                                <div className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
                                     <Check size={10} strokeWidth={3} />
                                 </div>
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 mt-1.5">Service</span>
+                            <span className="text-[11px] font-bold text-gray-700 mt-1.5">Service</span>
                         </div>
 
                         {/* Step 2: Measurements */}
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <div className="flex items-center gap-1">
-                                <div className="w-9 h-9 rounded-full bg-[#FAF5FF] border border-purple-100 text-[#7C3AED] flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 text-primary flex items-center justify-center">
                                     <Ruler size={16} />
                                 </div>
-                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white flex items-center justify-center">
+                                <div className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
                                     <Check size={10} strokeWidth={3} />
                                 </div>
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 mt-1.5">Measurements</span>
+                            <span className="text-[11px] font-bold text-gray-700 mt-1.5">Measurements</span>
                         </div>
 
                         {/* Step 3: Address */}
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <div className="flex items-center gap-1">
-                                <div className="w-9 h-9 rounded-full bg-[#FAF5FF] border border-purple-100 text-[#7C3AED] flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 text-primary flex items-center justify-center">
                                     <MapPin size={16} />
                                 </div>
-                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white flex items-center justify-center">
+                                <div className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
                                     <Check size={10} strokeWidth={3} />
                                 </div>
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 mt-1.5">Address</span>
+                            <span className="text-[11px] font-bold text-gray-700 mt-1.5">Address</span>
                         </div>
 
                         {/* Step 4: Payment (Active) */}
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <div className="flex items-center gap-1">
-                                <div className="w-9 h-9 rounded-full bg-[#6D28D9] text-white flex items-center justify-center shadow-2xs">
+                                <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center shadow-2xs">
                                     <CreditCard size={16} />
                                 </div>
-                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white text-[9px] font-bold flex items-center justify-center">
+                                <div className="w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">
                                     4
                                 </div>
                             </div>
-                            <span className="text-[11px] font-extrabold text-[#6D28D9] mt-1.5">Payment</span>
+                            <span className="text-[11px] font-extrabold text-primary mt-1.5">Payment</span>
                         </div>
                     </div>
                 </div>
@@ -554,26 +554,26 @@ const CheckoutSummary = () => {
 
                 {/* 2. Review Section */}
                 {bulkOrderId && bulkOrder ? (
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-xs mb-4 relative overflow-hidden">
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs mb-4 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-3">
-                            <span className="px-3 py-1 bg-purple-50 text-[#7C3AED] rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-100">Bulk Order Deposit</span>
+                            <span className="px-3 py-1 bg-primary/5 text-primary rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/10">Bulk Order Deposit</span>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-900 mb-4 tracking-tight">Inquiry Review</h3>
+                        <h3 className="text-sm font-bold text-gray-900 mb-4 tracking-tight">Inquiry Review</h3>
                         <div className="flex gap-5">
-                            <div className="w-20 h-24 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shrink-0">
-                                <Package size={24} className="text-slate-400" />
+                            <div className="w-20 h-24 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
+                                <Package size={24} className="text-gray-400" />
                             </div>
                             <div className="flex-1">
-                                <h4 className="text-lg font-bold text-slate-900 leading-tight">{bulkOrder.serviceType}</h4>
-                                <p className="text-xs text-slate-500 font-semibold mt-1">{bulkOrder.organizationName || 'Bulk Inquiry'}</p>
+                                <h4 className="text-lg font-bold text-gray-900 leading-tight">{bulkOrder.serviceType}</h4>
+                                <p className="text-xs text-gray-500 font-semibold mt-1">{bulkOrder.organizationName || 'Bulk Inquiry'}</p>
                                 <div className="mt-4 flex items-center gap-6">
                                     <div>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Quantity</p>
-                                        <p className="text-sm font-bold text-slate-900">{bulkOrder.estimatedQuantity} Units</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Quantity</p>
+                                        <p className="text-sm font-bold text-gray-900">{bulkOrder.estimatedQuantity} Units</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total Quote</p>
-                                        <p className="text-sm font-bold text-slate-900">₹{bulkOrder.quote.totalAmount.toLocaleString()}</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Total Quote</p>
+                                        <p className="text-sm font-bold text-gray-900">₹{bulkOrder.quote.totalAmount.toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
@@ -592,8 +592,8 @@ const CheckoutSummary = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs mb-4">
-                        <h3 className="text-sm font-bold text-slate-900 mb-3">Cart Items ({cartItems.length})</h3>
+                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-xs mb-4">
+                        <h3 className="text-sm font-bold text-gray-900 mb-3">Cart Items ({cartItems.length})</h3>
                         <div className="space-y-4">
                             {cartItems.map((item) => {
                                 const isItemAlteration = item.isAlteration;
@@ -604,15 +604,15 @@ const CheckoutSummary = () => {
 
                                 return (
                                     <div key={item.cartId} className="flex gap-4 items-center">
-                                        <div className="w-16 h-20 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 shrink-0">
+                                        <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
                                             <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{title}</h4>
-                                            <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-1">{description}</p>
+                                            <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{title}</h4>
+                                            <p className="text-xs text-gray-500 font-medium mt-1 line-clamp-1">{description}</p>
                                             <div className="flex justify-between items-center mt-2">
-                                                <span className="text-sm font-bold text-[#7C3AED]">{priceDisplay}</span>
-                                                {!isItemAlteration && <span className="text-xs font-bold text-slate-400">QTY: {item.quantity}</span>}
+                                                <span className="text-sm font-bold text-primary">{priceDisplay}</span>
+                                                {!isItemAlteration && <span className="text-xs font-bold text-gray-400">QTY: {item.quantity}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -623,15 +623,15 @@ const CheckoutSummary = () => {
                 )}
 
                 {/* 3. Delivery Details Card */}
-                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs">
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-xs">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <MapPin size={18} className="text-[#7C3AED]" />
+                        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <MapPin size={18} className="text-primary" />
                             <span>Delivery Details</span>
                         </h3>
                         <button
                             onClick={() => navigate('/user/checkout/address')}
-                            className="text-xs font-bold text-[#7C3AED] hover:underline uppercase tracking-wider cursor-pointer"
+                            className="text-xs font-bold text-primary hover:underline uppercase tracking-wider cursor-pointer"
                         >
                             CHANGE
                         </button>
@@ -641,51 +641,51 @@ const CheckoutSummary = () => {
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                             
                             {/* Address Text Info (7 cols) */}
-                            <div className="md:col-span-7 space-y-1.5 text-xs text-slate-600 leading-relaxed text-left">
+                            <div className="md:col-span-7 space-y-1.5 text-xs text-gray-600 leading-relaxed text-left">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-extrabold text-slate-900 text-sm">{selectedAddress?.receiverName || 'Turab'}</span>
-                                    <span className="px-2 py-0.5 bg-purple-100 text-[#7C3AED] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                    <span className="font-extrabold text-gray-900 text-sm">{selectedAddress?.receiverName || 'Turab'}</span>
+                                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase tracking-wide">
                                         {selectedAddress?.type || 'HOME'}
                                     </span>
                                 </div>
-                                <p className="text-slate-600 font-medium">
+                                <p className="text-gray-600 font-medium">
                                     {formatCheckoutAddress(selectedAddress)}
                                 </p>
-                                <p className="pt-1 font-bold text-[#7C3AED]">
+                                <p className="pt-1 font-bold text-primary">
                                     Contact: {selectedAddress?.phone || '9070000338'}
                                 </p>
                             </div>
 
                             {/* Estimated Delivery & Visit Box (5 cols) */}
-                            <div className="md:col-span-5 bg-[#FAF5FF] border border-[#F3E8FF] rounded-2xl p-3.5 space-y-3 text-xs">
+                            <div className="md:col-span-5 bg-primary/5 border border-primary/10 rounded-2xl p-3.5 space-y-3 text-xs">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
                                         📅
                                     </div>
                                     <div className="text-left">
-                                        <p className="text-[10px] text-slate-500 font-semibold">Estimated Delivery</p>
-                                        <p className="font-bold text-slate-900">Thu, Aug 13, 2026</p>
+                                        <p className="text-[10px] text-gray-500 font-semibold">Estimated Delivery</p>
+                                        <p className="font-bold text-gray-900">Thu, Aug 13, 2026</p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
                                         🛵
                                     </div>
                                     <div className="text-left">
-                                        <p className="text-[10px] text-slate-500 font-semibold">Delivery Type</p>
-                                        <p className="font-bold text-slate-900">Standard Delivery</p>
+                                        <p className="text-[10px] text-gray-500 font-semibold">Delivery Type</p>
+                                        <p className="font-bold text-gray-900">Standard Delivery</p>
                                     </div>
                                 </div>
 
                                 {hasTailorAtHome && (
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
                                             👤
                                         </div>
                                         <div className="text-left">
-                                            <p className="text-[10px] text-slate-500 font-semibold">Tailor Visit</p>
-                                            <p className="font-bold text-slate-900">At Your Home</p>
+                                            <p className="text-[10px] text-gray-500 font-semibold">Tailor Visit</p>
+                                            <p className="font-bold text-gray-900">At Your Home</p>
                                         </div>
                                     </div>
                                 )}
@@ -707,15 +707,15 @@ const CheckoutSummary = () => {
 
                 {/* 4. Bill Details Card */}
                 {isCartAlteration ? (
-                    <div className="bg-purple-50 border border-purple-100 rounded-3xl p-5 text-center">
-                        <h3 className="text-sm font-bold text-[#7C3AED] mb-1">Awaiting Quote</h3>
-                        <p className="text-xs text-purple-700/80">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
+                    <div className="bg-primary/5 border border-primary/10 rounded-3xl p-5 text-center">
+                        <h3 className="text-sm font-bold text-primary mb-1">Awaiting Quote</h3>
+                        <p className="text-xs text-primary/80">The tailor will review your request and send you a custom price quote. You do not need to pay anything right now.</p>
                     </div>
                 ) : isLoadingPricing ? (
-                    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs animate-pulse space-y-3">
-                        <div className="h-4 bg-slate-200 rounded w-1/3 mb-4"></div>
-                        <div className="h-3 bg-slate-200 rounded w-full"></div>
-                        <div className="h-3 bg-slate-200 rounded w-full"></div>
+                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-xs animate-pulse space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
                     </div>
                 ) : (
                     <BillDetails 
@@ -726,9 +726,9 @@ const CheckoutSummary = () => {
                 )}
 
                 {/* 5. Special Instructions (Optional) */}
-                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                        <FileText size={18} className="text-[#7C3AED]" />
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-xs">
+                    <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <FileText size={18} className="text-primary" />
                         <span>Special Instructions (Optional)</span>
                     </h3>
                     <div className="relative">
@@ -736,9 +736,9 @@ const CheckoutSummary = () => {
                             rows={3}
                             maxLength={150}
                             placeholder="Add any special instructions for the tailor..."
-                            className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#7C3AED] focus:bg-white transition-all resize-none"
+                            className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-medium text-gray-800 focus:outline-none focus:border-primary focus:bg-white transition-all resize-none"
                         />
-                        <span className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-semibold">0/150</span>
+                        <span className="absolute bottom-3 right-3 text-[10px] text-gray-400 font-semibold">0/150</span>
                     </div>
                 </div>
 
@@ -747,20 +747,20 @@ const CheckoutSummary = () => {
             </div>
 
             {/* Sticky Bottom Bar */}
-            <div className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 px-4 py-3 sm:px-6 shadow-xl z-50">
+            <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 px-4 py-3 sm:px-6 shadow-xl z-50">
                 <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
                     
                     {/* Left: Total & Advance Amounts */}
                     <div className="text-left">
                         <div className="flex items-baseline gap-2">
-                            <span className="text-xs text-slate-500 font-semibold">Total Amount</span>
-                            <span className="text-lg sm:text-xl font-black text-slate-900">
+                            <span className="text-xs text-gray-500 font-semibold">Total Amount</span>
+                            <span className="text-lg sm:text-xl font-black text-gray-900">
                                 ₹{finalTotal ? finalTotal.toLocaleString('en-IN') : '2,604'}
                             </span>
                         </div>
                         <div className="flex items-baseline gap-1.5">
-                            <span className="text-xs text-[#7C3AED] font-bold">Advance (25%)</span>
-                            <span className="text-sm font-extrabold text-[#7C3AED]">
+                            <span className="text-xs text-primary font-bold">Advance (25%)</span>
+                            <span className="text-sm font-extrabold text-primary">
                                 ₹{finalTotal ? Math.round(finalTotal * 0.25).toLocaleString('en-IN') : '651'}
                             </span>
                         </div>
@@ -776,7 +776,7 @@ const CheckoutSummary = () => {
                     <button
                         onClick={handlePayment}
                         disabled={isProcessing || !selectedAddress}
-                        className="py-3.5 px-6 sm:px-8 bg-[#6D28D9] hover:bg-[#5B21B6] active:bg-[#4C1D95] text-white font-extrabold rounded-2xl text-base shadow-lg shadow-purple-900/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                        className="py-3.5 px-6 sm:px-8 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-extrabold rounded-2xl text-base shadow-lg shadow-primary/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {isProcessing ? (
                             <><Loader2 size={18} className="animate-spin" /> Submitting...</>

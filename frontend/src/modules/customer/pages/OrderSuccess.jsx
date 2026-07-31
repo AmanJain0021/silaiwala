@@ -104,7 +104,7 @@ const OrderSuccess = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#FAF9FF] flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-in fade-in duration-500">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-in fade-in duration-500 font-sans text-gray-900">
             <div className="w-full max-w-md space-y-4 py-4">
 
                 {/* Confetti & Top Checkmark Section */}
@@ -123,51 +123,51 @@ const OrderSuccess = () => {
                     </div>
 
                     {/* Green Glow Checkmark Icon */}
-                    <div className="relative z-10 w-20 h-20 bg-emerald-100/90 rounded-full flex items-center justify-center mb-3">
-                        <div className="w-14 h-14 bg-[#10B981] rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 transform transition-transform hover:scale-105">
+                    <div className="relative z-10 w-20 h-20 bg-green-100/90 rounded-full flex items-center justify-center mb-3">
+                        <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/20 transform transition-transform hover:scale-105">
                             <Check size={32} className="text-white stroke-[3]" />
                         </div>
                     </div>
 
                     {/* Main Title */}
-                    <h1 className="text-2xl sm:text-[26px] font-extrabold text-[#1E1B4B] tracking-tight mb-2">
+                    <h1 className="text-2xl sm:text-[26px] font-extrabold text-gray-900 tracking-tight mb-2">
                         Order Requested Successfully!
                     </h1>
 
                     {/* Order ID Badge */}
                     <button
                         onClick={handleCopyOrderId}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F3E8FF] border border-[#E9D5FF] text-[#7C3AED] hover:bg-[#E9D5FF]/60 transition-all font-mono font-bold text-xs sm:text-sm tracking-wide shadow-2xs cursor-pointer active:scale-95"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all font-mono font-bold text-xs sm:text-sm tracking-wide shadow-2xs cursor-pointer active:scale-95"
                         title="Click to copy Order ID"
                     >
-                        <FileText size={16} className="text-[#7C3AED]" />
+                        <FileText size={16} className="text-primary" />
                         <span>{displayOrderNumber}</span>
                     </button>
 
                     {/* Subtitle */}
-                    <p className="text-xs sm:text-sm text-slate-600 max-w-xs text-center mt-3 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-gray-600 max-w-xs text-center mt-3 leading-relaxed font-medium">
                         Your request has been sent to the tailor.<br />
                         You’ll be notified once the tailor accepts your order.
                     </p>
                 </div>
 
                 {/* Green Notice Box */}
-                <div className="w-full bg-[#ECFDF5] border border-[#A7F3D0] rounded-3xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-2xs text-left">
+                <div className="w-full bg-green-50 border border-green-200 rounded-3xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm text-left">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#059669] shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
                             <Clock size={20} />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug">
+                            <h4 className="font-bold text-gray-900 text-xs sm:text-sm leading-snug">
                                 Tailor will respond within 30–60 minutes
                             </h4>
-                            <p className="text-[11px] sm:text-xs text-slate-600 font-medium mt-0.5">
+                            <p className="text-[11px] sm:text-xs text-gray-600 font-medium mt-0.5">
                                 We’ll notify you as soon as your order is accepted.
                             </p>
                         </div>
                     </div>
-                    <div className="w-11 h-11 rounded-2xl bg-[#F3E8FF] border border-purple-100 flex items-center justify-center relative shrink-0">
-                        <Bell size={20} className="text-[#7C3AED]" />
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center relative shrink-0">
+                        <Bell size={20} className="text-primary" />
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold border-2 border-white">
                             ✓
                         </div>
@@ -175,23 +175,22 @@ const OrderSuccess = () => {
                 </div>
 
                 {/* What Happens Next Card */}
-                <div className="w-full bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-sm sm:text-base text-left mb-5">
+                <div className="w-full bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-900 text-sm sm:text-base text-left mb-5">
                         What happens next?
                     </h3>
                     <div className="relative flex items-start justify-between px-1">
-                        {/* Connected dashed line */}
-                        <div className="absolute top-5 left-8 right-8 border-t-2 border-dashed border-purple-200 z-0" />
+                        <div className="absolute top-5 left-8 right-8 border-t-2 border-dashed border-primary/20 z-0" />
 
                         {steps.map((step, idx) => (
                             <div key={idx} className="relative z-10 flex flex-col items-center text-center w-1/5">
-                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center text-[#7C3AED] shadow-2xs bg-white">
+                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-primary/10 flex items-center justify-center text-primary shadow-2xs">
                                     {step.icon}
                                 </div>
-                                <div className="w-4 h-4 rounded-full bg-[#6D28D9] text-white text-[9px] font-bold flex items-center justify-center -mt-1.5 shadow-2xs">
+                                <div className="w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center -mt-1.5 shadow-2xs">
                                     {idx + 1}
                                 </div>
-                                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 leading-tight mt-1.5 max-w-[65px]">
+                                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-700 leading-tight mt-1.5 max-w-[65px]">
                                     {step.label}
                                 </span>
                             </div>
@@ -201,27 +200,26 @@ const OrderSuccess = () => {
 
                 {/* Your Tailor Card */}
                 <div className="w-full text-left">
-                    <h3 className="font-bold text-slate-900 text-xs sm:text-sm mb-2 pl-1">
+                    <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-2 pl-1">
                         Your Tailor
                     </h3>
-                    <div className="w-full bg-white rounded-3xl p-3.5 sm:p-4 shadow-xs border border-slate-100 flex items-center justify-between gap-3">
+                    <div className="w-full bg-white rounded-3xl p-3.5 sm:p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                             <img
                                 src={profileImage}
-                                alt={shopName}
-                                className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-purple-100 shadow-2xs shrink-0"
+                                className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-primary/10 shadow-2xs shrink-0"
                                 onError={(e) => {
                                     e.target.src = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=256&auto=format&fit=crop';
                                 }}
                             />
                             <div className="min-w-0">
                                 <div className="flex items-center gap-1.5">
-                                    <h4 className="font-bold text-slate-900 text-sm sm:text-base truncate">
+                                    <h4 className="font-bold text-gray-900 text-sm sm:text-base truncate">
                                         {shopName}
                                     </h4>
-                                    <BadgeCheck size={18} className="text-[#7C3AED] fill-[#7C3AED] shrink-0 stroke-white" />
+                                    <BadgeCheck size={18} className="text-primary fill-primary shrink-0 stroke-white" />
                                 </div>
-                                <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                                <p className="text-xs text-gray-500 font-medium truncate mt-0.5">
                                     <span className="text-amber-500 font-bold">★ {rating}</span> ({totalReviews}) • {experience}+ Years Exp.
                                 </p>
                             </div>
@@ -231,7 +229,7 @@ const OrderSuccess = () => {
                                 if (tailorProfileId) navigate(`/user/tailor/${tailorProfileId}`);
                                 else navigate('/user/tailors');
                             }}
-                            className="px-4 py-2 text-xs font-bold text-[#7C3AED] border border-[#7C3AED] rounded-full hover:bg-purple-50 transition-all active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+                            className="px-4 py-2 text-xs font-bold text-primary border border-primary rounded-full hover:bg-primary/5 transition-all active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
                         >
                             View Profile
                         </button>
@@ -243,8 +241,7 @@ const OrderSuccess = () => {
                     {/* Track Order Status Button (Pill shape) */}
                     <Link
                         to={`/user/orders/${orderId}/track`}
-                        style={{ backgroundColor: '#7C3AED', color: '#ffffff' }}
-                        className="w-full py-4 px-6 bg-[#7C3AED] hover:bg-[#6D28D9] active:bg-[#5B21B6] text-white font-bold rounded-full shadow-lg shadow-purple-600/30 flex items-center justify-between text-base transition-all active:scale-[0.98] cursor-pointer"
+                        className="w-full py-4 px-6 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-full shadow-lg shadow-primary/30 flex items-center justify-between text-base transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <div className="flex items-center gap-2.5">
                             <PackageCheck size={20} className="text-white shrink-0" />
@@ -256,9 +253,9 @@ const OrderSuccess = () => {
                     {/* Back to Home Button (Pill shape) */}
                     <Link
                         to="/user"
-                        className="w-full py-3.5 px-6 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 text-slate-800 font-bold rounded-full flex items-center justify-center gap-2 text-sm transition-all active:scale-[0.98] shadow-2xs"
+                        className="w-full py-3.5 px-6 bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-800 font-bold rounded-full flex items-center justify-center gap-2 text-sm transition-all active:scale-[0.98] shadow-sm"
                     >
-                        <ShoppingBag size={18} className="text-slate-700 shrink-0" />
+                        <ShoppingBag size={18} className="text-gray-700 shrink-0" />
                         <span>Back to Home</span>
                     </Link>
 
@@ -266,7 +263,7 @@ const OrderSuccess = () => {
                     <div className="flex items-center gap-3 pt-1">
                         <button
                             onClick={handleShare}
-                            className="w-1/2 py-3 px-4 bg-white border border-slate-200 hover:bg-purple-50/60 active:bg-purple-100/50 text-[#7C3AED] font-bold rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                            className="w-1/2 py-3 px-4 bg-white border border-gray-200 hover:bg-primary/5 active:bg-primary/10 text-primary font-bold rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-sm"
                         >
                             <Share2 size={16} />
                             <span>Share Order</span>
@@ -274,7 +271,7 @@ const OrderSuccess = () => {
 
                         <Link
                             to="/user/support"
-                            className="w-1/2 py-3 px-4 bg-white border border-slate-200 hover:bg-purple-50/60 active:bg-purple-100/50 text-[#7C3AED] font-bold rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
+                            className="w-1/2 py-3 px-4 bg-white border border-gray-200 hover:bg-primary/5 active:bg-primary/10 text-primary font-bold rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
                         >
                             <MessageSquare size={16} />
                             <span>Chat with Support</span>
@@ -283,9 +280,9 @@ const OrderSuccess = () => {
                 </div>
 
                 {/* Footer Trust Badges */}
-                <div className="pt-3 pb-1 text-xs text-slate-500 font-medium flex items-center justify-center gap-2 flex-wrap opacity-85">
+                <div className="pt-3 pb-1 text-xs text-gray-500 font-medium flex items-center justify-center gap-2 flex-wrap opacity-85">
                     <span className="flex items-center gap-1">
-                        <ShieldCheck size={14} className="text-purple-600" />
+                        <ShieldCheck size={14} className="text-primary" />
                         100% Secure
                     </span>
                     <span>•</span>
