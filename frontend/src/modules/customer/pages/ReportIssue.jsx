@@ -4,6 +4,8 @@ import { ChevronLeft, Camera, X, Loader2, Send } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 
+import { compressImage } from '../../../utils/imageCompression';
+
 const ReportIssue = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
@@ -23,12 +25,14 @@ const ReportIssue = () => {
         const newImageUrls = [];
         
         for (const file of files) {
+            const compressedFile = await compressImage(file, 800, 0.7);
+            
             const safeName =
-                file.name && /\.(jpe?g|png|webp)$/i.test(file.name)
-                    ? file.name
+                compressedFile.name && /\.(jpe?g|png|webp)$/i.test(compressedFile.name)
+                    ? compressedFile.name
                     : `issue-photo-${Date.now()}.jpg`;
-            const uploadFile = new File([file], safeName, {
-                type: file.type || 'image/jpeg',
+            const uploadFile = new File([compressedFile], safeName, {
+                type: compressedFile.type || 'image/jpeg',
             });
 
             const formData = new FormData();
@@ -152,7 +156,6 @@ const ReportIssue = () => {
                             ref={fileInputRef}
                             onChange={handleImageUpload}
                             accept="image/*"
-                            capture="environment"
                             multiple
                             className="hidden"
                         />
