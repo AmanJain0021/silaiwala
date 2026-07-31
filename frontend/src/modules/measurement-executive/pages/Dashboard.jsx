@@ -133,8 +133,14 @@ const Dashboard = () => {
             <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                        <div className="w-11 h-11 bg-indigo-50 text-[#843D9B] font-black text-xl rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100 shrink-0">
-                            {executiveName.charAt(0).toUpperCase()}
+                        <div className="w-11 h-11 bg-indigo-50 text-[#843D9B] font-black text-xl rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100 shrink-0 overflow-hidden">
+                            {(profile?.profilePhoto && profile.profilePhoto !== 'default_profile.png') ? (
+                                <img src={profile.profilePhoto.startsWith('http') ? profile.profilePhoto : `${import.meta.env.VITE_API_URL}${profile.profilePhoto}`} alt={executiveName} className="w-full h-full object-cover" />
+                            ) : (profile?.user?.profileImage && profile.user.profileImage !== 'default_profile.png') ? (
+                                <img src={profile.user.profileImage.startsWith('http') ? profile.user.profileImage : `${import.meta.env.VITE_API_URL}${profile.user.profileImage}`} alt={executiveName} className="w-full h-full object-cover" />
+                            ) : (
+                                executiveName.charAt(0).toUpperCase()
+                            )}
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                             <h2 className="text-[15px] font-black text-gray-900 leading-tight tracking-tight truncate">

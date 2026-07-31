@@ -20,21 +20,45 @@ const TrackingMap = ({
   const [directions, setDirections] = useState(null);
 
   useEffect(() => {
-    if (riderLocation?.lat && isLoaded && window.google) {
+    if (isLoaded && window.google) {
       const isDeliveryPhase = ['picked_up', 'picked-up', 'out_for_delivery', 'out-for-delivery'].includes(status);
-      const destination = isDeliveryPhase ? customerLocation : (vendorLocation || customerLocation);
+      
+      let origin = null;
+      let destination = null;
 
-      if (destination?.lat) {
+      if (riderLocation?.lat) {
+        origin = riderLocation;
+        destination = isDeliveryPhase ? customerLocation : (vendorLocation || customerLocation);
+      } else if (vendorLocation?.lat && customerLocation?.lat) {
+        origin = vendorLocation;
+        destination = customerLocation;
+      }
+
+      if (origin?.lat && destination?.lat) {
         const directionsService = new window.google.maps.DirectionsService();
         directionsService.route(
           {
-            origin: { lat: Number(riderLocation.lat), lng: Number(riderLocation.lng) },
+            origin: { lat: Number(origin.lat), lng: Number(origin.lng) },
             destination: { lat: Number(destination.lat), lng: Number(destination.lng) },
             travelMode: window.google.maps.TravelMode.DRIVING,
           },
           (result, reqStatus) => {
             if (reqStatus === window.google.maps.DirectionsStatus.OK) {
               setDirections(result);
+            } else {
+              // Fallback to TWO_WHEELER if DRIVING fails
+              directionsService.route(
+                {
+                  origin: { lat: Number(origin.lat), lng: Number(origin.lng) },
+                  destination: { lat: Number(destination.lat), lng: Number(destination.lng) },
+                  travelMode: window.google.maps.TravelMode.TWO_WHEELER || 'TWO_WHEELER',
+                },
+                (res2, status2) => {
+                  if (status2 === window.google.maps.DirectionsStatus.OK) {
+                    setDirections(res2);
+                  }
+                }
+              );
             }
           }
         );

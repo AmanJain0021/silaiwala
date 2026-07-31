@@ -364,15 +364,21 @@ const orderSchema = new mongoose.Schema(
       ref: "MeasurementReport",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 // Indexes for optimization
 orderSchema.index({ customer: 1, status: 1 });
 orderSchema.index({ tailor: 1, status: 1 });
 orderSchema.index({ deliveryPartner: 1, status: 1 });
+
+// Virtual for Issue when this is an originalOrder
+orderSchema.virtual('reportedIssue', {
+  ref: 'Issue',
+  localField: '_id',
+  foreignField: 'originalOrder',
+  justOne: true
+});
 
 orderSchema.post('save', async function(doc) {
   if (doc.status === 'delivered' || doc.status === 'order-completed' || doc.status === 'cancelled') {

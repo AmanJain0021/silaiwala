@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw, Navigation } from 'lucide-react';
+import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw, Navigation, XCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -202,6 +202,10 @@ const Orders = () => {
                 return;
             }
             lastNewOrderEventRef.current = { key: eventKey, at: now };
+            
+            // Play loud buzzer (dispatch alert)
+            try { playNotificationSound('tailor'); } catch(e) {}
+            
             toast.success('New order received');
             fetchOrders();
         };
@@ -278,6 +282,7 @@ const Orders = () => {
     useEffect(() => {
         if (location.state) {
             let stateHandled = false;
+            
             if (location.state.highlightOrderTitle) {
                 setSearchQuery(location.state.highlightOrderTitle);
                 stateHandled = true;
@@ -295,25 +300,28 @@ const Orders = () => {
                 if (s === 'completed') setActiveTab('history');
                 stateHandled = true;
             }
-            if (stateHandled) {
-                // Clear state from browser/app history so refresh doesn't re-trigger initial tab override
-                window.history.replaceState({}, document.title);
-            }
-        }
-    }, [location]);
 
-    // Handle auto-opening order detail modal from notifications
-    useEffect(() => {
-        if (location.state?.highlightOrderId && orders.length > 0) {
-            const targetOrder = orders.find(o => o._id === location.state.highlightOrderId);
-            if (targetOrder) {
-                setSelectedOrder(targetOrder);
-                setIsModalOpen(true);
-                // Clear the state so it doesn't re-open on refresh
-                window.history.replaceState({}, document.title);
+            let highlightHandled = false;
+            if (location.state.highlightOrderId) {
+                if (orders.length > 0) {
+                    const targetOrder = orders.find(o => o._id === location.state.highlightOrderId);
+                    if (targetOrder) {
+                        setSelectedOrder(targetOrder);
+                        setIsModalOpen(true);
+                    }
+                    highlightHandled = true;
+                } else {
+                    // Orders not loaded yet, wait for next render before clearing state
+                    return;
+                }
+            }
+
+            if (stateHandled || highlightHandled) {
+                // Clear state from React Router so refresh or state changes don't re-trigger initial tab override
+                navigate(location.pathname, { replace: true, state: {} });
             }
         }
-    }, [location.state, orders]);
+    }, [location.state, navigate, location.pathname, orders]);
 
     // Sync selectedOrder with the latest data from the orders list
     useEffect(() => {
@@ -384,6 +392,51 @@ const Orders = () => {
 
                 <div className="flex-1 p-5 space-y-4 max-w-md mx-auto w-full">
                     
+                    {/* Active Issue Warning & OTPs */}
+                    {order.reportedIssue && !['resolved', 'rejected', 'closed'].includes(order.reportedIssue.status) && (
+                        <div className="bg-red-50 rounded-3xl p-5 border border-red-100 mb-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-[11px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2">
+                                    <XCircle size={14} /> Active Issue Reported
+                                </p>
+                                <span className="text-[9px] font-black uppercase bg-red-100 text-red-700 px-2 py-1 rounded-md">
+                                    {order.reportedIssue.status.replace(/_/g, ' ')}
+                                </span>
+                            </div>
+                            <p className="text-sm font-medium text-red-900 mb-4 bg-white/50 p-3 rounded-xl border border-red-100/50">
+                                {order.reportedIssue.description}
+                            </p>
+                            
+                            {/* Rework OTPs */}
+                            {order.reportedIssue.reworkOrder && (
+                                <div className="space-y-2 mt-2">
+                                    {order.reportedIssue.reworkOrder.dropoffDeliveryOtp && ['pending', 'accepted', 'pickup_completed'].includes(order.reportedIssue.status) && (
+                                        <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-red-100">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Dropoff to Tailor OTP</p>
+                                                <p className="text-[11px] font-medium text-gray-600 mt-0.5">Give to rider when receiving garment</p>
+                                            </div>
+                                            <p className="text-xl font-black text-gray-900 tracking-widest bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+                                                {order.reportedIssue.reworkOrder.dropoffDeliveryOtp}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {order.reportedIssue.reworkOrder.pickupDeliveryOtp && ['ready_for_delivery'].includes(order.reportedIssue.status) && (
+                                        <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-red-100">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Pickup from Tailor OTP</p>
+                                                <p className="text-[11px] font-medium text-gray-600 mt-0.5">Give to rider when returning fixed garment</p>
+                                            </div>
+                                            <p className="text-xl font-black text-gray-900 tracking-widest bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+                                                {order.reportedIssue.reworkOrder.pickupDeliveryOtp}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Order ID & Meta */}
                     <div className="bg-white rounded-3xl p-5 border border-gray-100 flex justify-between items-center">
                         <div>
@@ -1234,21 +1287,51 @@ const Orders = () => {
             <div className="md:hidden bg-white pt-3 pb-2 border-b border-gray-100 text-left px-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-[18px] font-black text-gray-900 tracking-tight">
-                        {activeTab === 'all' ? 'All Orders' : activeTab === 'new' ? 'New Orders' : activeTab === 'active' ? 'Active Orders' : 'Order History'}
+                        {activeTab === 'all' ? 'All Orders' : activeTab === 'new' ? 'New Orders' : activeTab === 'active' ? 'Active Orders' : activeTab === 'issues' ? 'Active Issues' : 'Order History'}
                     </h2>
                     <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {filteredOrders.length} {activeTab === 'new' ? 'Pending' : 'Orders'}
+                        {filteredOrders.length} {activeTab === 'new' ? 'Pending' : activeTab === 'issues' ? 'Issues' : 'Orders'}
                     </span>
                 </div>
                 <p className="text-[10px] text-gray-400 font-medium mt-0.5">
                     {activeTab === 'new' ? 'Review and accept incoming tailoring tasks' :
                      activeTab === 'active' ? 'Manage and track live active orders' :
                      activeTab === 'history' ? 'View completed and past orders' :
+                     activeTab === 'issues' ? 'Orders with active customer issues needing rework' :
                      'Manage and track all tailoring tasks'}
                 </p>
+
+                {/* Search & Filter Header */}
+                <div className="mt-5 space-y-3">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search Order ID or Customer..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:border-[#843D9B] text-[12px] text-gray-900 shadow-sm"
+                        />
+                    </div>
+
+                    <div className="flex bg-gray-200/50 rounded-2xl p-1 gap-1 overflow-x-auto">
+                        {['all', 'new', 'active', 'issues', 'history'].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={cn(
+                                    "px-4 md:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                                    activeTab === tab ? "bg-white text-[#843D9B] shadow-md shadow-black/5" : "text-gray-500 hover:bg-gray-100"
+                                )}
+                            >
+                                {tab === 'all' ? 'All' : tab === 'new' ? 'New' : tab === 'active' ? 'Active' : tab === 'issues' ? 'Issues' : 'History'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-2 md:px-0">
+            <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-2 md:px-0">
                 <div className="hidden md:block">
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">Orders Management</h2>
                     <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Manage and track production status</p>
@@ -1267,7 +1350,7 @@ const Orders = () => {
                     </div>
 
                     <div className="flex bg-gray-200/50 rounded-2xl p-1 gap-1 overflow-x-auto">
-                        {['all', 'new', 'active', 'history'].map((tab) => (
+                        {['all', 'new', 'active', 'issues', 'history'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -1276,7 +1359,7 @@ const Orders = () => {
                                     activeTab === tab ? "bg-white text-[#843D9B] shadow-md shadow-black/5" : "text-gray-500 hover:bg-gray-100"
                                 )}
                             >
-                                {tab === 'all' ? 'All' : tab === 'new' ? 'New' : tab === 'active' ? 'Active' : 'History'}
+                                {tab === 'all' ? 'All' : tab === 'new' ? 'New' : tab === 'active' ? 'Active' : tab === 'issues' ? 'Issues' : 'History'}
                             </button>
                         ))}
                     </div>
@@ -1374,6 +1457,17 @@ const Orders = () => {
                                             </button>
                                         ) : (
                                             (() => {
+                                                if (order.reportedIssue && !['resolved', 'rejected', 'closed'].includes(order.reportedIssue.status)) {
+                                                    return (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); navigate(`/partner/issues/${order.reportedIssue._id}`); }}
+                                                            className="flex-[1.5] py-2.5 md:py-3 bg-red-600 rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-red-600/20 hover:bg-red-700 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                                        >
+                                                            Manage Issue
+                                                        </button>
+                                                    );
+                                                }
+
                                                 if (['delivered', 'product-delivered', 'order-completed'].includes(order.status)) {
                                                     return (
                                                         <button 

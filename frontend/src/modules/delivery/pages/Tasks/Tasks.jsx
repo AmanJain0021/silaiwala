@@ -30,6 +30,7 @@ import { pickPhotoFromInput, ensurePhotoDataUrl } from '../../utils/pickDelivery
 import { isPendingAcceptanceTask, isAcceptedActiveTask, getPartnerActionStage } from '../../utils/taskStatus';
 
 const Tasks = () => {
+    const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
     const { socket } = useSocketStore();
     const { isOnline } = useOutletContext() || { isOnline: true };
@@ -55,25 +56,9 @@ const Tasks = () => {
 
             if (assignedRes.success) {
                 setTasks(assignedRes.data);
-                // Only treat as "Active Dispatch" if this partner has already accepted
-                const inProgress = assignedRes.data.find((t) => {
-                    if (!isAcceptedActiveTask(t, user)) return false;
-                    const stage = getPartnerActionStage(t, user);
-                    return ['reached-pickup', 'picked-up', 'out-for-delivery', 'reached-dropoff', 'fabric-picked-up'].includes(stage)
-                        || ['out-for-delivery', 'fabric-picked-up'].includes(t.status);
-                });
-                if (inProgress) {
-                    setActiveTaskId(inProgress._id);
-                } else {
-                    // Clear stale active view if nothing is truly in progress
-                    setActiveTaskId((prev) => {
-                        if (!prev) return null;
-                        const stillActive = assignedRes.data.find(
-                            (t) => t._id === prev && isAcceptedActiveTask(t, user)
-                        );
-                        return stillActive ? prev : null;
-                    });
-                }
+                // We no longer use the inline active dispatch view to avoid process duplication.
+                // The user is expected to click "View Dispatch Details" to manage the dispatch.
+                setActiveTaskId(null);
             }
             if (availableRes.success) {
                 setAvailableTasks(availableRes.data);
@@ -775,10 +760,10 @@ const Tasks = () => {
                                             </div>
 
                                             <button
-                                                onClick={() => handleStartTask(task._id)}
+                                                onClick={() => navigate(`/delivery/orders/${task._id}`)}
                                                 className="w-full bg-slate-900 text-white rounded-lg py-3 font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary-dark active:scale-95 transition-all shadow-md"
                                             >
-                                                Start Dispatch <Navigation size={12} />
+                                                View Dispatch Details <Navigation size={12} />
                                             </button>
                                         </div>
                                     ))}

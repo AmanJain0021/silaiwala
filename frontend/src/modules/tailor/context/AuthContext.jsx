@@ -2,7 +2,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import api from '../services/api';
 import { getToken, setToken as saveToken, removeToken } from '../../../utils/auth';
 
-const AuthContext = createContext();
+const AuthContext = createContext({
+    user: null,
+    token: null,
+    status: 'NOT_REGISTERED',
+    loading: false,
+    isAuthenticated: false,
+    login: () => {},
+    logout: () => {},
+    updateStatus: () => {}
+});
 
 export const TAILOR_STATUS = {
     NOT_REGISTERED: 'NOT_REGISTERED',

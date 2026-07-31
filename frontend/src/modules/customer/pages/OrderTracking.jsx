@@ -540,7 +540,7 @@ const OrderTracking = () => {
         <div className="min-h-screen bg-gray-50 pb-12 font-sans text-gray-900">
             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe pt-8 flex flex-col gap-2">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
+                    <button onClick={() => navigate('/user/orders')} className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
                         <ArrowLeft size={20} />
                     </button>
                     <div className="flex-1">
@@ -1098,27 +1098,29 @@ const OrderTracking = () => {
                     </a>
                 </div>
 
-                <div
-                    onClick={() => {
-                        const subject = encodeURIComponent(`Issue with Order ${order.orderId}`);
-                        const body = encodeURIComponent(`Hello Support,\n\nI am facing an issue with my order ${order.orderId} for the service ${serviceTitle}.\n\nPlease help.`);
-                        window.location.href = `mailto:support@silaiwala.com?subject=${subject}&body=${body}`;
-                    }}
-                    className="p-4 bg-primary rounded-[2rem] text-white shadow-xl flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-all"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
-                            <AlertCircle size={22} className="text-red-300" />
+                {!order.reportedIssue && (
+                    <div
+                        onClick={() => {
+                            const subject = encodeURIComponent(`Issue with Order ${order.orderId}`);
+                            const body = encodeURIComponent(`Hello Support,\n\nI am facing an issue with my order ${order.orderId} for the service ${serviceTitle}.\n\nPlease help.`);
+                            window.location.href = `mailto:support@silaiwala.com?subject=${subject}&body=${body}`;
+                        }}
+                        className="p-4 bg-primary rounded-[2rem] text-white shadow-xl flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-all"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
+                                <AlertCircle size={22} className="text-red-300" />
+                            </div>
+                            <div>
+                                <p className="text-[13px] font-black uppercase tracking-widest leading-none mb-1">Have an issue?</p>
+                                <p className="text-[10px] text-white/60 font-medium">Auto-generate support ticket</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[13px] font-black uppercase tracking-widest leading-none mb-1">Have an issue?</p>
-                            <p className="text-[10px] text-white/60 font-medium">Auto-generate support ticket</p>
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-primary transition-all">
+                            <ChevronRight size={16} />
                         </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-primary transition-all">
-                        <ChevronRight size={16} />
-                    </div>
-                </div>
+                )}
 
                 {/* 5. Artisan / Shop Profile Card */}
                 {order.tailor && (
@@ -1238,32 +1240,76 @@ const OrderTracking = () => {
                 {order.status === 'delivered' && (
                     <div className="mb-6 space-y-4">
                         {order.reportedIssue ? (
-                            <div className="bg-red-50 rounded-[2rem] p-6 border border-red-100 relative overflow-hidden">
+                            <div className={`rounded-[2rem] p-6 border relative overflow-hidden ${
+                                order.reportedIssue.status === 'resolved' ? 'bg-green-50 border-green-100' :
+                                order.reportedIssue.status === 'rejected' ? 'bg-red-50 border-red-200' :
+                                'bg-red-50 border-red-100'
+                            }`}>
                                 <div className="flex justify-between items-start mb-3 relative z-10">
                                     <div>
-                                        <h3 className="text-lg font-black text-red-900 tracking-tighter mb-1">
-                                            {order.reportedIssue.issueId ? `${order.reportedIssue.issueId} - ` : ''}Issue Reported
+                                        <h3 className={`text-lg font-black tracking-tighter mb-1 ${
+                                            order.reportedIssue.status === 'resolved' ? 'text-green-900' :
+                                            order.reportedIssue.status === 'rejected' ? 'text-red-900' :
+                                            'text-red-900'
+                                        }`}>
+                                            {order.reportedIssue.issueId ? `${order.reportedIssue.issueId} - ` : ''}
+                                            {order.reportedIssue.status === 'resolved' ? 'Issue Resolved' : 
+                                             order.reportedIssue.status === 'rejected' ? 'Issue Rejected' : 
+                                             'Issue Reported'}
                                         </h3>
                                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
                                             order.reportedIssue.status === 'pending' ? 'bg-orange-100 text-orange-700 border-orange-200' :
                                             order.reportedIssue.status === 'resolved' ? 'bg-green-100 text-green-700 border-green-200' :
+                                            order.reportedIssue.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
                                             'bg-indigo-100 text-[#843D9B] border-indigo-200'
                                         }`}>
                                             {order.reportedIssue.status.replace(/_/g, ' ')}
                                         </span>
                                     </div>
-                                    <button 
-                                        onClick={() => navigate(`/user/issues/${order.reportedIssue._id}`)}
-                                        className="px-4 py-2 bg-red-600 text-white rounded-full font-black text-[10px] uppercase shadow-md shadow-red-200 hover:bg-red-700 active:scale-95 transition-all outline-none"
-                                    >
-                                        Open Chat
-                                    </button>
+                                    {!['resolved', 'rejected', 'closed'].includes(order.reportedIssue.status) && (
+                                        <button 
+                                            onClick={() => navigate(`/user/issues/${order.reportedIssue._id}`)}
+                                            className="px-4 py-2 bg-red-600 text-white rounded-full font-black text-[10px] uppercase shadow-md shadow-red-200 hover:bg-red-700 active:scale-95 transition-all outline-none"
+                                        >
+                                            Open Chat
+                                        </button>
+                                    )}
                                 </div>
-                                <div className="bg-white/60 p-3 rounded-xl border border-red-100/50 relative z-10">
-                                    <p className="text-xs text-red-800 font-medium line-clamp-2">
+                                <div className={`p-3 rounded-xl border relative z-10 ${
+                                    order.reportedIssue.status === 'resolved' ? 'bg-white/80 border-green-100/50' :
+                                    'bg-white/60 border-red-100/50'
+                                }`}>
+                                    <p className={`text-xs font-medium line-clamp-2 ${
+                                        order.reportedIssue.status === 'resolved' ? 'text-green-800' :
+                                        'text-red-800'
+                                    }`}>
                                         "{order.reportedIssue.description}"
                                     </p>
                                 </div>
+
+                                {order.reportedIssue?.reworkOrder?.pickupDeliveryOtp && order.reportedIssue.reworkOrder.pickupOtpVerified === false && (
+                                    <div className="mt-4 bg-white rounded-2xl p-4 border border-red-100 text-center relative z-10 shadow-sm">
+                                        <div className="flex flex-col items-center justify-center gap-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-red-700">Pickup OTP</span>
+                                            <span className="text-xl font-black tracking-widest text-red-700">{order.reportedIssue.reworkOrder.pickupDeliveryOtp}</span>
+                                        </div>
+                                        <p className="text-[9px] text-red-500 font-medium mt-1 leading-relaxed">
+                                            Share this OTP with the delivery partner when they arrive to pick up the garment.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {order.reportedIssue?.reworkOrder?.dropoffDeliveryOtp && order.reportedIssue.reworkOrder.dropoffOtpVerified === false && order.reportedIssue.reworkOrder.dropoffDeliveryStatus !== 'pending' && (
+                                    <div className="mt-4 bg-white rounded-2xl p-4 border border-red-100 text-center relative z-10 shadow-sm">
+                                        <div className="flex flex-col items-center justify-center gap-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-red-700">Delivery OTP</span>
+                                            <span className="text-xl font-black tracking-widest text-red-700">{order.reportedIssue.reworkOrder.dropoffDeliveryOtp}</span>
+                                        </div>
+                                        <p className="text-[9px] text-red-500 font-medium mt-1 leading-relaxed">
+                                            Share this OTP with the delivery partner when they arrive to deliver the fixed garment.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="bg-red-50 rounded-[2rem] p-6 text-center border border-red-100 relative overflow-hidden">

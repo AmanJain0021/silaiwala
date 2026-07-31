@@ -48,6 +48,13 @@ export const MeasurementAuthProvider = ({ children }) => {
 
         socket.on('new_measurement_request', (data) => {
             playNotificationSound('delivery');
+            
+            // Play Buzzer Sound
+            try {
+                const audio = new Audio('/sounds/buzzer.mp3');
+                audio.play().catch(() => {});
+            } catch (err) {}
+
             toast.success('New Measurement Request Assigned! 📐', { duration: 6000 });
             // The request list page will automatically refresh if it's open, 
             // but we could also force a fetch here

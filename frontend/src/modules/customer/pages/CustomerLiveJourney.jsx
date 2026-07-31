@@ -135,11 +135,29 @@ const CustomerLiveJourney = () => {
                         console.error("Failed to broadcast location", err);
                     }
                 } else {
-                    console.error("Directions API failed:", status);
-                    // Fallback to a straight direct line if Directions API is unavailable/restricted
-                    setDirectLine([currentLoc, destination]);
-                    setDistance('Direct Route');
-                    setEta('Calculating...');
+                    // Fallback to TWO_WHEELER if DRIVING fails
+                    directionsService.route(
+                        {
+                            origin: currentLoc,
+                            destination: destination,
+                            travelMode: window.google.maps.TravelMode.TWO_WHEELER || 'TWO_WHEELER',
+                        },
+                        async (result2, status2) => {
+                            if (status2 === window.google.maps.DirectionsStatus.OK) {
+                                setDirections(result2);
+                                setDirectLine(null);
+                                const leg = result2.routes[0].legs[0];
+                                setDistance(leg.distance.text);
+                                setEta(leg.duration.text);
+                            } else {
+                                console.error("Directions API failed:", status2);
+                                // Fallback to a straight direct line if Directions API is unavailable/restricted
+                                setDirectLine([currentLoc, destination]);
+                                setDistance('Direct Route');
+                                setEta('Calculating...');
+                            }
+                        }
+                    );
                 }
             }
         );
@@ -182,14 +200,14 @@ const CustomerLiveJourney = () => {
             <XCircle className="w-12 h-12 text-red-500 mb-4" />
             <h3 className="text-lg font-bold text-gray-900 mb-2">Location Error</h3>
             <p className="text-gray-500 mb-6">{error}</p>
-            <button onClick={() => navigate(-1)} className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold">Go Back</button>
+            <button onClick={() => navigate('/user/orders')} className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold">Go Back</button>
         </div>
     );
 
     return (
         <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col font-sans">
             <div className="bg-white px-4 py-4 pt-safe pt-8 shadow-sm z-10 flex items-center justify-between sticky top-0 border-b border-gray-100">
-                <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50">
+                <button onClick={() => navigate('/user/orders')} className="p-2 -ml-2 rounded-full hover:bg-gray-50">
                     <ChevronLeft size={24} className="text-gray-800" />
                 </button>
                 <div className="text-center">

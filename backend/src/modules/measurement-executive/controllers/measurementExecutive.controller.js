@@ -1034,9 +1034,9 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [profile, totalPending, totalAccepted, completedToday, totalCompleted] =
-    await Promise.all([
-      MeasurementExecutive.findOne({ user: req.user.id }),
+    const [profile, totalPending, totalAccepted, completedToday, totalCompleted] =
+      await Promise.all([
+        MeasurementExecutive.findOne({ user: req.user.id }).populate("user", "name email phoneNumber profileImage"),
       MeasurementRequest.countDocuments({
         $or: [
           { executive: req.user.id, status: "assigned" },

@@ -24,15 +24,11 @@ export const playNotificationSound = (role = 'customer') => {
 
         const now = ctx.currentTime;
         
-        if (role === 'delivery') {
+        if (role === 'delivery' || role === 'tailor') {
             // Energetic, attention-grabbing triple beep (like a dispatch alert)
             playTone(880.00, now, 0.1, 'square');       // A5
             playTone(1046.50, now + 0.15, 0.1, 'square'); // C6
             playTone(1318.51, now + 0.3, 0.25, 'square'); // E6
-        } else if (role === 'tailor') {
-            // Professional, crisp double chime
-            playTone(523.25, now, 0.15, 'sine');       // C5
-            playTone(659.25, now + 0.2, 0.3, 'sine');  // E5
         } else {
             // Customer: Soft, gentle pleasant chime
             playTone(880, now, 0.15, 'sine');       // A5

@@ -523,6 +523,14 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
     else if (statusLower === 'history') {
       query.status = { $in: TAILOR_HISTORY_STATUSES };
     }
+    else if (statusLower === 'issues') {
+      const Issue = require('../../../models/Issue');
+      const activeIssues = await Issue.find({
+        tailor: req.user.id,
+        status: { $nin: ['resolved', 'rejected', 'closed'] }
+      });
+      query._id = { $in: activeIssues.map(i => i.originalOrder) };
+    }
     else if (statusLower !== 'all') {
       query.status = status;
     }
@@ -548,16 +556,30 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
     .select('+pickupDeliveryOtp +dropoffDeliveryOtp')
     .sort('-createdAt')
     .skip(skip)
-    .limit(Number(limit))
-    .lean();
+    .limit(Number(limit));
+
+  const Issue = require('../../../models/Issue');
+  const orderIds = orders.map(o => o._id);
+  const issues = await Issue.find({ originalOrder: { $in: orderIds } }).populate('reworkOrder', '+pickupDeliveryOtp +dropoffDeliveryOtp');
+  
+  const issueMap = {};
+  issues.forEach(issue => {
+    issueMap[issue.originalOrder.toString()] = issue;
+  });
+
+  const modifiedOrders = orders.map(order => {
+    const o = order.toObject ? order.toObject({ virtuals: true }) : order;
+    o.reportedIssue = issueMap[o._id.toString()] || null;
+    return o;
+  });
 
   const total = await Order.countDocuments(query);
 
   res.status(200).json({
     success: true,
     total,
-    count: orders.length,
-    data: orders,
+    count: modifiedOrders.length,
+    data: modifiedOrders,
   });
 });
 

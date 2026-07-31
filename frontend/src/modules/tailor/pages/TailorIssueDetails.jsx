@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Send, Loader2, CheckCircle2, XCircle, Truck, User, Radio, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Send, Loader2, CheckCircle2, XCircle, Truck, User, Radio, X, Scissors } from 'lucide-react';
 import api from '../../../modules/tailor/services/api';
 import { toast } from 'react-hot-toast';
 import { useTailorAuth } from '../context/AuthContext';
@@ -168,7 +168,7 @@ const TailorIssueDetails = () => {
 
     const showPickupDispatch = issue?.status === 'accepted' && !issue?.reworkOrder;
 
-    const showReturnDispatch = issue?.status === 'ready_for_delivery';
+    const showReturnDispatch = issue?.status === 'ready_for_delivery' && !issue?.reworkOrder?.reworkReturnDeliveryPaid;
 
     const handleMarkReworkComplete = async () => {
         try {
@@ -244,6 +244,76 @@ const TailorIssueDetails = () => {
                             >
                                 <Truck size={16} /> Assign Partner — Return to Customer
                             </button>
+                        </div>
+                    )}
+
+                    {/* Rework OTPs */}
+                    {issue.reworkOrder && (
+                        <div className="mb-6 space-y-3">
+                            {issue.reworkOrder.dropoffDeliveryOtp && ['pending', 'accepted', 'pickup_completed'].includes(issue.status) && (
+                                <>
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Delivery OTPs</h3>
+                                    <div className="flex justify-between items-center bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Dropoff to Tailor OTP</p>
+                                            <p className="text-xs font-medium text-blue-900 mt-0.5">Give to rider when receiving garment</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-blue-700 tracking-widest bg-white px-4 py-1.5 rounded-xl border border-blue-100 shadow-sm">
+                                            {issue.reworkOrder.dropoffDeliveryOtp}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                            {issue.reworkOrder.pickupDeliveryOtp && ['ready_for_delivery'].includes(issue.status) && (
+                                <>
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Delivery OTPs</h3>
+                                    <div className="flex justify-between items-center bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Pickup from Tailor OTP</p>
+                                            <p className="text-xs font-medium text-emerald-900 mt-0.5">Give to rider when returning fixed garment</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-emerald-700 tracking-widest bg-white px-4 py-1.5 rounded-xl border border-emerald-100 shadow-sm">
+                                            {issue.reworkOrder.pickupDeliveryOtp}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Original Order Items */}
+                    {issue.originalOrder?.items && issue.originalOrder.items.length > 0 && (
+                        <div className="mb-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Original Order Items</h3>
+                                <button 
+                                    onClick={() => navigate('/partner/orders', { state: { highlightOrderId: issue.originalOrder._id, status: 'all' } })} 
+                                    className="text-[10px] font-black uppercase text-primary active:scale-95 transition-transform flex items-center gap-1 hover:underline"
+                                >
+                                    View Order Details <ChevronRight size={14} />
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                {issue.originalOrder.items.map((item, idx) => (
+                                    <div key={idx} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                                            {item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0] || item.alterationRef?.images?.[0] || item.customDesignRef?.images?.[0] || item.customDesignRef?.referenceImages?.[0] ? (
+                                                <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0] || item.alterationRef?.images?.[0] || item.customDesignRef?.images?.[0] || item.customDesignRef?.referenceImages?.[0]} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Scissors size={20} className="text-gray-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-[13px] font-black text-gray-900 leading-snug">{item.service?.title || item.product?.name || item.alterationRef?.title || item.customDesignRef?.title || 'Custom Garment'}</h4>
+                                            <div className="flex gap-2 mt-1.5">
+                                                <span className="text-[9px] font-black uppercase bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
+                                                    Size: {item.measurements?.type === 'slip' ? 'Slip' : 'Custom'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 

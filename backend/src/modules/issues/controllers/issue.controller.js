@@ -115,8 +115,20 @@ exports.getCustomerIssues = asyncHandler(async (req, res, next) => {
  */
 exports.getIssueDetails = asyncHandler(async (req, res, next) => {
   const issue = await Issue.findById(req.params.id)
-    .populate("originalOrder")
-    .populate("reworkOrder")
+    .populate({
+      path: "originalOrder",
+      populate: [
+        { path: "items.service", select: "title image" },
+        { path: "items.product", select: "name image images" },
+        { path: "items.selectedFabric", select: "name image images" },
+        { path: "items.alterationRef", select: "title images" },
+        { path: "items.customDesignRef", select: "title images referenceImages" }
+      ]
+    })
+    .populate({
+      path: "reworkOrder",
+      select: "+pickupDeliveryOtp +dropoffDeliveryOtp"
+    })
     .populate("customer", "name phoneNumber profileImage")
     .populate("tailor", "name shopName profileImage");
 
@@ -164,7 +176,16 @@ exports.getTailorIssues = asyncHandler(async (req, res, next) => {
  */
 exports.updateIssueStatus = asyncHandler(async (req, res, next) => {
   const { status, rejectionReason } = req.body;
-  const issue = await Issue.findById(req.params.id).populate("originalOrder");
+  const issue = await Issue.findById(req.params.id).populate({
+    path: "originalOrder",
+    populate: [
+      { path: "items.service", select: "title image" },
+      { path: "items.product", select: "name image images" },
+      { path: "items.selectedFabric", select: "name image images" },
+      { path: "items.alterationRef", select: "title images" },
+      { path: "items.customDesignRef", select: "title images referenceImages" }
+    ]
+  });
 
   if (!issue) {
     return next(new ErrorResponse("Issue not found", 404));
@@ -180,11 +201,10 @@ exports.updateIssueStatus = asyncHandler(async (req, res, next) => {
     if (issue.reworkOrder) {
       const reworkOrder = await Order.findById(issue.reworkOrder);
       if (reworkOrder) {
-        reworkOrder.status = "ready-for-delivery";
         reworkOrder.trackingHistory = reworkOrder.trackingHistory || [];
         reworkOrder.trackingHistory.push({
-          status: "ready-for-delivery",
-          message: "Tailor completed rework — ready for return delivery.",
+          status: reworkOrder.status,
+          message: "Tailor completed rework stitching.",
           timestamp: new Date(),
         });
         await reworkOrder.save();
@@ -310,7 +330,16 @@ exports.dispatchReworkDelivery = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("deliveryMethod must be broadcast or manual", 400));
   }
 
-  const issue = await Issue.findById(req.params.id).populate("originalOrder");
+  const issue = await Issue.findById(req.params.id).populate({
+    path: "originalOrder",
+    populate: [
+      { path: "items.service", select: "title image" },
+      { path: "items.product", select: "name image images" },
+      { path: "items.selectedFabric", select: "name image images" },
+      { path: "items.alterationRef", select: "title images" },
+      { path: "items.customDesignRef", select: "title images referenceImages" }
+    ]
+  });
   if (!issue) return next(new ErrorResponse("Issue not found", 404));
   if (issue.tailor.toString() !== req.user.id) {
     return next(new ErrorResponse("Not authorized", 403));
@@ -443,7 +472,16 @@ exports.dispatchReworkDelivery = asyncHandler(async (req, res, next) => {
  * @deprecated Use dispatch-delivery with deliveryMethod
  */
 exports.arrangePickup = asyncHandler(async (req, res, next) => {
-  const issue = await Issue.findById(req.params.id).populate("originalOrder");
+  const issue = await Issue.findById(req.params.id).populate({
+    path: "originalOrder",
+    populate: [
+      { path: "items.service", select: "title image" },
+      { path: "items.product", select: "name image images" },
+      { path: "items.selectedFabric", select: "name image images" },
+      { path: "items.alterationRef", select: "title images" },
+      { path: "items.customDesignRef", select: "title images referenceImages" }
+    ]
+  });
 
   if (!issue) {
     return next(new ErrorResponse("Issue not found", 404));

@@ -115,7 +115,12 @@ exports.createRazorpayOrder = asyncHandler(async (req, res, next) => {
       data: razorpayOrder,
     });
   } catch (error) {
-    return next(new ErrorResponse("Razorpay order creation failed", 500));
+    console.error("Razorpay Error Object:", error);
+    return res.status(500).json({
+      success: false, 
+      message: "Razorpay error", 
+      error: error.message || error.description || JSON.stringify(error)
+    });
   }
 });
 
@@ -1070,7 +1075,12 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
   let reportedIssue = null;
   try {
       const Issue = require("../../../models/Issue.js");
-      reportedIssue = await Issue.findOne({ originalOrder: order._id }).lean();
+      reportedIssue = await Issue.findOne({ originalOrder: order._id })
+          .populate({
+              path: 'reworkOrder',
+              select: '+pickupDeliveryOtp +dropoffDeliveryOtp status pickupDeliveryStatus dropoffDeliveryStatus pickupOtpVerified dropoffOtpVerified'
+          })
+          .lean();
   } catch (err) {
       console.error("Error checking for existing issue:", err);
   }
