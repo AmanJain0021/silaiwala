@@ -39,6 +39,7 @@ import { TAILOR_STATUS } from './modules/tailor/context/AuthContext';
 const TailorOverview = React.lazy(() => import('./modules/tailor/pages/Overview'));
 const TailorOrders = React.lazy(() => import('./modules/tailor/pages/Orders'));
 const TailorShopOrders = React.lazy(() => import('./modules/tailor/pages/TailorShopOrders'));
+const TailorOrderChat = React.lazy(() => import('./modules/tailor/pages/TailorOrderChat'));
 const TailorProducts = React.lazy(() => import('./modules/tailor/pages/Products'));
 const DeliveryDetails = React.lazy(() => import('./modules/tailor/pages/DeliveryDetails'));
 const VerificationStatus = React.lazy(() => import('./modules/tailor/pages/VerificationStatus'));
@@ -162,6 +163,7 @@ const IssueDetails = React.lazy(() => import('./modules/customer/pages/IssueDeta
 const SharedLegalPage = React.lazy(() => import('./shared/components/LegalPage')); // NEW
 const LoyaltyPoints = React.lazy(() => import('./modules/customer/pages/LoyaltyPoints')); // NEW
 const CustomerMembership = React.lazy(() => import('./modules/customer/pages/CustomerMembership'));
+const OrderChat = React.lazy(() => import('./modules/customer/pages/OrderChat')); // NEW
 
 const AppRoutes = () => {
     return (
@@ -234,6 +236,7 @@ const AppRoutes = () => {
                         <Route path="checkout/summary" element={<CheckoutSummary />} />
                         <Route path="checkout/success" element={<OrderSuccess />} />
                         <Route path="orders/:id/track" element={<OrderTracking />} />
+                        <Route path="orders/:id/chat" element={<OrderChat />} />
                         <Route path="orders/:id/journey" element={<CustomerLiveJourney />} />
                         <Route path="support" element={<Support />} />
                         <Route path="legal/:slug" element={<CMSContent />} />
@@ -277,6 +280,7 @@ const AppRoutes = () => {
 
                 {/* Tailor/Partner Protected Routes (Approved Only) */}
                 <Route element={<TailorProtectedRoute requiredStatus={[TAILOR_STATUS.APPROVED]} />}>
+                    <Route path="/partner/orders/:id/chat" element={<TailorOrderChat />} />
                     <Route element={<TailorLayout />}>
                         <Route path="/partner" element={<TailorOverview />} />
                         <Route path="/partner/orders" element={<TailorOrders />} />

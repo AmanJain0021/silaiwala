@@ -32,6 +32,7 @@ const OrderTracking = () => {
     const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
     const [measurementOtp, setMeasurementOtp] = useState(null);
     const [settings, setSettings] = useState(null);
+    const [unreadChatCount, setUnreadChatCount] = useState(0);
 
     const [socketInstance, setSocketInstance] = useState(null);
 
@@ -60,6 +61,16 @@ const OrderTracking = () => {
                 }
                 setError(null); // Clear any previous errors if successful
                 
+                // Fetch unread chats for this order
+                try {
+                    const unreadRes = await api.get('/orders/chats/unread');
+                    if (unreadRes.data?.success) {
+                        setUnreadChatCount(unreadRes.data.data[id] || 0);
+                    }
+                } catch (uErr) {
+                    console.error('Failed to fetch unread chats:', uErr);
+                }
+
                 // Fetch measurement report if needed
                 if (fetchedOrder.isMeasurementHome) {
                     try {
@@ -129,6 +140,12 @@ const OrderTracking = () => {
 
             socket.on('order_status_updated', refreshOrder);
             socket.on('order_notification', refreshOrder);
+            
+            socket.on('new_chat_message', (msg) => {
+                if (msg.order === id && msg.senderModel !== 'Customer') {
+                    setUnreadChatCount(prev => prev + 1);
+                }
+            });
 
             socket.on('measurement_otp_sent', (data) => {
                 console.log('Measurement OTP received:', data);
@@ -1042,29 +1059,32 @@ const OrderTracking = () => {
                 </div>
 
                 {/* 4. Support & Actions */}
-                <div className="grid grid-cols-2 gap-3">
-                    <a
-                        href={`tel:${order.tailor?.phoneNumber || '+919876543210'}`}
-                        className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center no-underline hover:bg-gray-50"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center">
-                            <Phone size={18} />
-                        </div>
-                        <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Call Artisan</span>
-                    </a>
+                {order.status !== 'delivered' && order.status !== 'completed' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount || order.paymentStatus === 'paid') && (
+                    <div className="grid grid-cols-2 gap-3">
+                        <a
+                            href={`tel:${order.tailor?.phoneNumber || '+919876543210'}`}
+                            className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center no-underline hover:bg-gray-50"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center">
+                                <Phone size={18} />
+                            </div>
+                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Call Artisan</span>
+                        </a>
 
-                    <a
-                        href={`https://wa.me/${order.tailor?.phoneNumber || '919876543210'}?text=I need help with my order ${order.orderId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center no-underline hover:bg-gray-50"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
-                            <MessageSquare size={18} />
-                        </div>
-                        <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Chat with Help</span>
-                    </a>
-                </div>
+                        <button
+                            onClick={() => navigate(`/user/orders/${order._id}/chat`)}
+                            className="w-full bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center hover:bg-gray-50 outline-none relative"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center relative">
+                                <MessageSquare size={18} />
+                                {unreadChatCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span>
+                                )}
+                            </div>
+                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Chat with Artisan</span>
+                        </button>
+                    </div>
+                )}
 
                 {!order.reportedIssue && (
                     <div

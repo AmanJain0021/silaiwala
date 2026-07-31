@@ -18,11 +18,17 @@ router.post("/", authorize("customer", "admin", "delivery", "tailor"), createOrd
 router.get("/my-orders", authorize("customer", "delivery", "tailor", "admin"), getMyOrders);
 router.patch("/:id/change-tailor", authorize("customer"), changeTailorRequest);
 router.patch("/:id/status", authorize("customer"), updateOrderStatus);
+const { getOrderChat, sendChatMessage, getUnreadChatCounts } = require("../controllers/chat.controller.js");
+router.get("/chats/unread", authorize("customer", "tailor"), getUnreadChatCounts);
 router.get("/:id", getOrderDetails);
 router.get("/:id/measurements", authorize("customer", "admin"), require("../controllers/order.controller.js").getMeasurementReportForCustomer);
 
 // Exchange Routes
 router.post("/:id/exchange", authorize("customer"), requestExchange);
 router.patch("/:id/exchange/status", authorize("tailor", "admin"), updateExchangeStatus);
+
+// Chat Routes
+router.get("/:id/chat", authorize("customer", "tailor"), getOrderChat);
+router.post("/:id/chat", authorize("customer", "tailor"), sendChatMessage);
 
 module.exports = router;

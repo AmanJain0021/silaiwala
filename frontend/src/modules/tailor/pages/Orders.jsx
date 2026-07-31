@@ -26,6 +26,7 @@ const Orders = () => {
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [shiprocketValidation, setShiprocketValidation] = useState(null);
+    const [unreadChats, setUnreadChats] = useState({});
 
     // Production Notes State for Active Orders
     const [productionNotes, setProductionNotes] = useState({});
@@ -48,7 +49,15 @@ const Orders = () => {
         const sequence = ++fetchSequenceRef.current;
         setIsLoading(true);
         try {
-            const response = await api.get(`/tailors/orders?status=${tab}`);
+            const [response, unreadRes] = await Promise.all([
+                api.get(`/tailors/orders?status=${tab}`),
+                api.get(`/orders/chats/unread`).catch(() => ({ data: { success: false } }))
+            ]);
+            
+            if (unreadRes.data?.success) {
+                setUnreadChats(unreadRes.data.data || {});
+            }
+
             // A request for the previous tab may finish after Accept switched us
             // to Active. Never let that stale response overwrite the current tab.
             if (sequence === fetchSequenceRef.current && response.data.success) {
@@ -56,8 +65,13 @@ const Orders = () => {
                 setOrders(list);
                 // Keep open modal OTP/status in sync with server (select+ includes OTPs)
                 setSelectedOrder((prev) => {
-                    if (!prev) return prev;
-                    const fresh = list.find((o) => String(o._id) === String(prev._id));
+                    let targetId = prev ? prev._id : sessionStorage.getItem('tailorSelectedOrderId');
+                    if (!targetId) return prev;
+                    
+                    const fresh = list.find((o) => String(o._id) === String(targetId));
+                    if (fresh && !prev) {
+                        setIsModalOpen(true);
+                    }
                     return fresh || prev;
                 });
             }
@@ -141,6 +155,34 @@ const Orders = () => {
             setDispatchingMethod(null);
         }
     };
+
+    // Socket listener for new chat messages
+    useEffect(() => {
+        let socket;
+        if (user && getToken()) {
+            socket = io(SOCKET_URL, {
+                auth: { token: getToken() }
+            });
+            
+            socket.on('new_chat_message', (msg) => {
+                if (msg.senderModel !== 'Tailor') {
+                    setUnreadChats(prev => ({
+                        ...prev,
+                        [msg.order]: (prev[msg.order] || 0) + 1
+                    }));
+                }
+            });
+            
+            // Join user room for tailor
+            socket.on('connect', () => {
+                socket.emit('join_user_room', user._id || user.id);
+            });
+        }
+        
+        return () => {
+            if (socket) socket.disconnect();
+        };
+    }, [user]);
 
     const handleShiprocketAction = async (action, orderId) => {
         try {
@@ -350,6 +392,7 @@ const Orders = () => {
     const handleAction = (action, order) => {
         if (action === 'View Detail') {
             setSelectedOrder(order);
+            sessionStorage.setItem('tailorSelectedOrderId', order._id);
             setIsModalOpen(true);
         } else if (action === 'Accept Order') {
             handleStatusUpdate(order._id, 'accepted');
@@ -467,9 +510,17 @@ const Orders = () => {
                                             <p className="text-[12px] text-gray-400 font-medium mt-0.5">{order.customer?.phoneNumber}</p>
                                         </div>
                                     </div>
-                                    <button className="w-10 h-10 bg-[#FDE5D2] border border-[#843D9B]/20 text-[#843D9B] rounded-2xl flex items-center justify-center">
-                                        <MessageSquare size={18} />
-                                    </button>
+                                    {order.status !== 'delivered' && order.status !== 'completed' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount || order.paymentStatus === 'paid') && (
+                                        <button 
+                                            onClick={() => navigate(`/partner/orders/${order._id}/chat`)}
+                                            className="w-10 h-10 bg-[#FDE5D2] border border-[#843D9B]/20 text-[#843D9B] rounded-2xl flex items-center justify-center relative"
+                                        >
+                                            <MessageSquare size={18} />
+                                            {unreadChats[order._id] > 0 && (
+                                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="pt-3 border-t border-gray-50 flex items-start gap-2">
                                     <MapPin size={16} className="text-[#843D9B] mt-0.5 shrink-0" />
@@ -497,14 +548,27 @@ const Orders = () => {
                         /* ── VIEW 2: IN PROGRESS WITH STEPPER ── */
                         <>
                             {/* Customer Profile Row */}
-                            <div className="bg-white rounded-3xl p-4 border border-gray-100 flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-700 font-black text-sm">
-                                    {order.customer?.name?.charAt(0)}
+                            <div className="bg-white rounded-3xl p-4 border border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-700 font-black text-sm">
+                                        {order.customer?.name?.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer</p>
+                                        <p className="text-sm font-black text-gray-900">{order.customer?.name}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer</p>
-                                    <p className="text-sm font-black text-gray-900">{order.customer?.name}</p>
-                                </div>
+                                {order.status !== 'delivered' && order.status !== 'completed' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount || order.paymentStatus === 'paid') && (
+                                    <button 
+                                        onClick={() => navigate(`/partner/orders/${order._id}/chat`)}
+                                        className="w-10 h-10 bg-[#FDE5D2] border border-[#843D9B]/20 text-[#843D9B] rounded-2xl flex items-center justify-center relative"
+                                    >
+                                        <MessageSquare size={18} />
+                                        {unreadChats[order._id] > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span>
+                                        )}
+                                    </button>
+                                )}
                             </div>
 
                             {/* Shiprocket — tailor store garment orders only */}
@@ -1599,13 +1663,21 @@ const Orders = () => {
                 <div className="fixed inset-0 z-[100] flex justify-end">
                     <div 
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
-                        onClick={() => { setIsModalOpen(false); setSelectedOrder(null); }}
+                        onClick={() => {
+                            setIsModalOpen(false);
+                            setSelectedOrder(null);
+                            sessionStorage.removeItem('tailorSelectedOrderId');
+                        }}
                     />
                     <div className="relative w-full max-w-xl bg-[#F5F5F5] h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-hidden flex flex-col">
                         <OrderDetailModal 
                             order={selectedOrder} 
                             isOpen={isModalOpen} 
-                            onClose={() => { setIsModalOpen(false); setSelectedOrder(null); }} 
+                            onClose={() => {
+                                setIsModalOpen(false);
+                                setSelectedOrder(null);
+                                sessionStorage.removeItem('tailorSelectedOrderId');
+                            }} 
                         />
                     </div>
                 </div>
