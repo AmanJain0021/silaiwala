@@ -73,11 +73,11 @@ const ReportIssue = () => {
                 images: imageUrls
             });
             toast.success("Issue reported successfully!");
-            navigate(`/user/issues/${res.data.data._id}`);
+            navigate(`/user/issues/${res.data.data._id}`, { replace: true });
         } catch (err) {
             if (err.response?.data?.issueId) {
                 toast.success("Issue already reported. Redirecting...");
-                navigate(`/user/issues/${err.response.data.issueId}`);
+                navigate(`/user/issues/${err.response.data.issueId}`, { replace: true });
             } else {
                 toast.error(err.response?.data?.error || err.response?.data?.message || "Failed to report issue");
             }
