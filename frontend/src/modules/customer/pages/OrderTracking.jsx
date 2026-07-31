@@ -573,7 +573,7 @@ const OrderTracking = () => {
 
                 {/* Delivery OTP Banners (For Customer) */}
                 {/* 1. Fabric Pickup from Customer */}
-                {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['pending', 'accepted', 'pickup-assigned'].includes(order.status) && (
+                {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['pending', 'accepted', 'pickup-assigned', 'fabric-ready-for-pickup'].includes(order.status) && (
                     <motion.div 
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -590,7 +590,7 @@ const OrderTracking = () => {
                 )}
 
                 {/* 2. Final Dropoff to Customer */}
-                {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['out-for-delivery', 'shipped', 'delivery-assigned'].includes(order.status) && (
+                {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['out-for-delivery', 'shipped', 'delivery-assigned', 'ready-for-delivery', 'ready-for-pickup'].includes(order.status) && (
                     <motion.div 
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
