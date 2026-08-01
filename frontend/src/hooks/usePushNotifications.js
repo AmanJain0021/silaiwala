@@ -13,6 +13,9 @@ export const usePushNotifications = (user) => {
     const requestPermissionAndGetToken = async () => {
       try {
         console.log('Requesting notification permission...');
+        // Only alert on mobile to help debug
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
@@ -35,24 +38,28 @@ export const usePushNotifications = (user) => {
             console.log('FCM Token:', currentToken);
             
             // Send token to backend
-            // Send token to backend
             // Detect if the user is on a mobile browser or desktop browser
             try {
-              const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-              const platformType = isMobileDevice ? 'mobile' : 'web';
+              const platformType = isMobile ? 'mobile' : 'web';
               const response = await api.post('/notifications/fcm-token', { token: currentToken, platform: platformType });
               console.log('FCM Token successfully saved to backend:', response.data);
+              if (isMobile) alert("Push Notifications Enabled Successfully on Mobile!");
             } catch (apiErr) {
               console.error('Failed to save FCM Token to backend:', apiErr.response?.data || apiErr.message);
+              if (isMobile) alert("API Error saving token: " + (apiErr.response?.data?.message || apiErr.message));
             }
           } else {
             console.log('No registration token available. Request permission to generate one.');
+            if (isMobile) alert("FCM failed: No registration token returned by Firebase.");
           }
         } else {
           console.log('Notification permission denied or dismissed.');
+          if (isMobile) alert("Permission Error: Notification permission was " + permission + ". Please allow notifications in site settings.");
         }
       } catch (err) {
         console.error('An error occurred while retrieving token. ', err);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) alert("Error in getting push token: " + err.message);
       }
     };
 
