@@ -77,21 +77,38 @@ export const usePushNotifications = (user) => {
       
       // Force an OS-level native notification even when the app is open!
       if (Notification.permission === 'granted') {
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then((registration) => {
-            registration.showNotification(payload.notification?.title || 'SewZella', {
-              body: payload.notification?.body || 'New Notification',
-              icon: '/vite.svg',
-              data: payload.data
+        const title = payload.notification?.title || payload.data?.title || 'SewZella';
+        const body = payload.notification?.body || payload.data?.message || 'New Notification';
+        // Mobile Chrome often fails silently if icon is a relative path or SVG. Using full origin path.
+        const iconUrl = window.location.origin + '/vite.svg';
+        
+        const showForegroundPush = async () => {
+          try {
+            if ('serviceWorker' in navigator) {
+              const registration = await navigator.serviceWorker.ready;
+              await registration.showNotification(title, {
+                body: body,
+                icon: iconUrl,
+                data: payload.data,
+                vibrate: [200, 100, 200]
+              });
+            } else {
+              new Notification(title, {
+                body: body,
+                icon: iconUrl,
+                data: payload.data
+              });
+            }
+          } catch (err) {
+            console.error("Foreground notification error:", err);
+            // Fallback for mobile if OS blocks foreground system push
+            import('react-hot-toast').then((module) => {
+              const { toast } = module.default || module;
+              toast.success(`🔔 ${title}: ${body}`, { position: 'top-center', duration: 5000 });
             });
-          });
-        } else {
-          new Notification(payload.notification?.title || 'SewZella', {
-            body: payload.notification?.body || 'New Notification',
-            icon: '/vite.svg',
-            data: payload.data
-          });
-        }
+          }
+        };
+        showForegroundPush();
       }
     });
 
