@@ -144,29 +144,71 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Send a test push notification to logged in user
+ * @desc    Send a test push notification to the REQUESTING device
  * @route   POST /api/v1/notifications/test-push
  * @access  Private
+ * 
+ * The frontend sends the current device's FCM token in req.body.deviceToken.
+ * This ensures the push notification goes to ONLY the device that clicked
+ * the test button, not all devices logged into the same account.
  */
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
-  const { sendNotification } = require("../../../utils/notification.js");
-  
-  // Send test notification to ALL devices (both web and mobile tokens)
-  // Do NOT filter by platform — the whole point is to test that ALL devices receive it
-  await sendNotification({
-    recipient: req.user._id,
-    title: "Test Push Notification",
-    message: "This is a test push notification to verify the setup is working correctly.",
-    type: "TEST",
-    // targetPlatform intentionally omitted — sends to all devices
-    data: {
-      testUrl: "/dashboard",
-      timestamp: new Date().toISOString()
-    }
-  });
+  const { deviceToken } = req.body;
 
-  res.status(200).json({
-    success: true,
-    message: "Test push notification sent to all registered devices",
-  });
+  if (!deviceToken) {
+    return next(new ErrorResponse("No device token provided. Please allow notifications and reload.", 400));
+  }
+
+  // Send FCM push directly to this specific device token
+  try {
+    require("../../../config/firebase.js");
+    const { getMessaging } = require('firebase-admin/messaging');
+
+    const payload = {
+      notification: {
+        title: "Test Push Notification",
+        body: "This is a test push notification to verify the setup is working correctly.",
+      },
+      data: {
+        type: "TEST",
+        testUrl: "/dashboard",
+        timestamp: new Date().toISOString()
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          sound: 'default',
+          channelId: 'default'
+        }
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            contentAvailable: true
+          }
+        }
+      },
+      token: deviceToken  // Single token — this specific device only
+    };
+
+    const response = await getMessaging().send(payload);
+    console.log(`[TEST-PUSH] FCM sent successfully to device token ${deviceToken.substring(0, 20)}..., response: ${response}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Test push notification sent to this device",
+    });
+  } catch (fcmError) {
+    console.error("[TEST-PUSH] FCM Error:", fcmError.message);
+    
+    // If the token is invalid/expired, let the user know
+    if (fcmError.code === 'messaging/registration-token-not-registered' ||
+        fcmError.code === 'messaging/invalid-registration-token') {
+      return next(new ErrorResponse("Your device token is expired or invalid. Please reload the page and try again.", 400));
+    }
+    
+    return next(new ErrorResponse("Failed to send test notification: " + fcmError.message, 500));
+  }
 });
+

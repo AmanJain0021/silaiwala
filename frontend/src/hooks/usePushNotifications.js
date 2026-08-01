@@ -3,6 +3,32 @@ import { messaging, getToken, onMessage } from '../config/firebase';
 import api from '../utils/api';
 import { playNotificationSound } from '../utils/audio';
 
+// Global variable to store the current device's FCM token
+// This allows any component to access it without prop drilling
+let _currentDeviceToken = null;
+
+/**
+ * Get the current device's FCM token.
+ * Use this in test push buttons to send the token to the backend.
+ */
+export const getCurrentDeviceFcmToken = () => _currentDeviceToken;
+
+/**
+ * Send a test push notification to THIS device only.
+ * Sends the current device's FCM token to the backend so the
+ * push is targeted to this specific device, not all devices.
+ */
+export const testPushToThisDevice = async () => {
+  const deviceToken = getCurrentDeviceFcmToken();
+  if (!deviceToken) {
+    throw new Error('No FCM token registered for this device. Please allow notifications and reload.');
+  }
+  const response = await api.post('/notifications/test-push', { 
+    deviceToken 
+  });
+  return response.data;
+};
+
 export const usePushNotifications = (user) => {
   const [fcmToken, setFcmToken] = useState(null);
 
@@ -12,15 +38,12 @@ export const usePushNotifications = (user) => {
 
     const requestPermissionAndGetToken = async () => {
       try {
-        console.log('Requesting notification permission...');
-        // Only alert on mobile to help debug
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('[FCM] Requesting notification permission...');
         
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-          console.log('Notification permission granted.');
-          // Use VAPID key for web push
+          console.log('[FCM] Notification permission granted.');
           const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
           
           let registration;
@@ -35,30 +58,28 @@ export const usePushNotifications = (user) => {
           
           if (currentToken) {
             setFcmToken(currentToken);
-            console.log('FCM Token:', currentToken);
+            _currentDeviceToken = currentToken; // Store globally for test push
+            console.log('[FCM] Device token obtained:', currentToken.substring(0, 20) + '...');
             
-            // IMPORTANT: Browser-based FCM tokens (even on mobile browsers) are WEB push tokens.
-            // Only native apps (React Native) generate true mobile FCM tokens.
-            // So browser tokens must ALWAYS be saved as 'web' regardless of device.
+            // ALL browser tokens (desktop, mobile browser) are WEB push tokens.
+            // Only native apps (React Native) should use 'mobile'.
             try {
-              const platformType = 'web';
-              const response = await api.post('/notifications/fcm-token', { token: currentToken, platform: platformType });
-              console.log('FCM Token successfully saved to backend as WEB token:', response.data);
+              await api.post('/notifications/fcm-token', { 
+                token: currentToken, 
+                platform: 'web' 
+              });
+              console.log('[FCM] Token saved to backend as WEB token');
             } catch (apiErr) {
-              console.error('Failed to save FCM Token to backend:', apiErr.response?.data || apiErr.message);
+              console.error('[FCM] Failed to save token:', apiErr.response?.data || apiErr.message);
             }
           } else {
-            console.log('No registration token available. Request permission to generate one.');
-            if (isMobile) alert("FCM failed: No registration token returned by Firebase.");
+            console.warn('[FCM] No registration token returned by Firebase.');
           }
         } else {
-          console.log('Notification permission denied or dismissed.');
-          if (isMobile) alert("Permission Error: Notification permission was " + permission + ". Please allow notifications in site settings.");
+          console.warn('[FCM] Notification permission:', permission);
         }
       } catch (err) {
-        console.error('An error occurred while retrieving token. ', err);
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) alert("Error in getting push token: " + err.message);
+        console.error('[FCM] Error getting push token:', err);
       }
     };
 
@@ -66,7 +87,7 @@ export const usePushNotifications = (user) => {
 
     // Listen for foreground messages
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log('Foreground Message received:', payload);
+      console.log('[FCM] Foreground message received:', payload);
       
       // Dispatch a global event so any component can listen to FCM messages
       window.dispatchEvent(new CustomEvent('fcm_message', { detail: payload }));
@@ -78,7 +99,6 @@ export const usePushNotifications = (user) => {
       if (Notification.permission === 'granted') {
         const title = payload.notification?.title || payload.data?.title || 'SewZella';
         const body = payload.notification?.body || payload.data?.message || 'New Notification';
-        // Mobile Chrome often fails silently if icon is a relative path or SVG. Using full origin path.
         const iconUrl = window.location.origin + '/vite.svg';
         
         const showForegroundPush = async () => {
@@ -99,7 +119,7 @@ export const usePushNotifications = (user) => {
               });
             }
           } catch (err) {
-            console.error("Foreground notification error:", err);
+            console.error("[FCM] Foreground notification error:", err);
             // Fallback for mobile if OS blocks foreground system push
             import('react-hot-toast').then((module) => {
               const { toast } = module.default || module;
@@ -118,3 +138,4 @@ export const usePushNotifications = (user) => {
 
   return { fcmToken };
 };
+

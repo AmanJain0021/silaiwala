@@ -236,8 +236,9 @@ const ProfilePage = () => {
                     <button
                         onClick={async () => {
                             try {
-                                await api.post('/notifications/test-push');
-                                alert('Test push sent successfully!');
+                                const { testPushToThisDevice } = await import('../../../hooks/usePushNotifications');
+                                await testPushToThisDevice();
+                                alert('Test push sent to this device!');
                             } catch (err) {
                                 alert('Failed to send test push: ' + (err.response?.data?.message || err.message));
                             }

@@ -274,8 +274,9 @@ const Profile = () => {
                             <button
                                 onClick={async () => {
                                     try {
-                                        await api.post('/notifications/test-push');
-                                        toast.success('Test push sent successfully!');
+                                        const { testPushToThisDevice } = await import('../../../hooks/usePushNotifications');
+                                        await testPushToThisDevice();
+                                        toast.success('Test push sent to this device!');
                                     } catch (err) {
                                         toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message));
                                     }

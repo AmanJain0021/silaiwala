@@ -166,9 +166,9 @@ const DeliveryDashboard = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={async () => {
                   try {
-                    const api = (await import('../../../utils/api')).default;
-                    await api.post('/notifications/test-push');
-                    toast.success('Test push sent!');
+                    const { testPushToThisDevice } = await import('../../../hooks/usePushNotifications');
+                    await testPushToThisDevice();
+                    toast.success('Test push sent to this device!');
                   } catch (err) {
                     toast.error('Failed to send test push');
                   }
