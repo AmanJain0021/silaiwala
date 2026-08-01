@@ -102,14 +102,20 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 
   // Add token based on platform
   if (platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native') {
+    console.log(`[FCM-TOKEN] Saving token to MOBILE list (fcmTokenMobile) for user ${user._id}`);
     if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
     if (!user.fcmTokenMobile.includes(token)) {
       user.fcmTokenMobile.push(token);
+    } else {
+      console.log(`[FCM-TOKEN] Token already exists in MOBILE list`);
     }
   } else {
+    console.log(`[FCM-TOKEN] Saving token to WEB list (fcmToken) for user ${user._id}`);
     if (!user.fcmToken) user.fcmToken = [];
     if (!user.fcmToken.includes(token)) {
       user.fcmToken.push(token);
+    } else {
+      console.log(`[FCM-TOKEN] Token already exists in WEB list`);
     }
   }
 

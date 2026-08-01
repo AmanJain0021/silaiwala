@@ -118,6 +118,10 @@ exports.register = asyncHandler(async (req, res, next) => {
   const fcmTokenArray = fcmToken && !isMobile ? [fcmToken] : [];
   const fcmTokenMobileArray = fcmToken && isMobile ? [fcmToken] : [];
 
+  if (fcmToken) {
+    console.log(`[FCM-TOKEN] Registering new user with token on platform: ${platform || 'web'}. Saving to ${isMobile ? 'MOBILE' : 'WEB'} list.`);
+  }
+
   const validProfileImage = (typeof profileImage === 'string' && profileImage.trim() && profileImage !== '{}' && profileImage !== '[object Object]')
     ? profileImage.trim()
     : "default_profile.png";
@@ -410,16 +414,22 @@ exports.login = asyncHandler(async (req, res, next) => {
     const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
     
     if (isMobile) {
+      console.log(`[FCM-TOKEN] Login: Saving token to MOBILE list (fcmTokenMobile) for user ${user._id}`);
       if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
       if (!user.fcmTokenMobile.includes(fcmToken)) {
         user.fcmTokenMobile.push(fcmToken);
         isTokenUpdated = true;
+      } else {
+        console.log(`[FCM-TOKEN] Login: Token already exists in MOBILE list`);
       }
     } else {
+      console.log(`[FCM-TOKEN] Login: Saving token to WEB list (fcmToken) for user ${user._id}`);
       if (!user.fcmToken) user.fcmToken = [];
       if (!user.fcmToken.includes(fcmToken)) {
         user.fcmToken.push(fcmToken);
         isTokenUpdated = true;
+      } else {
+        console.log(`[FCM-TOKEN] Login: Token already exists in WEB list`);
       }
     }
 
