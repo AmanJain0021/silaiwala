@@ -136,11 +136,16 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
   const { sendNotification } = require("../../../utils/notification.js");
   
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const targetPlatform = isMobile ? 'mobile' : 'web';
+
   await sendNotification({
     recipient: req.user._id,
     title: "Test Push Notification",
     message: "This is a test push notification to verify the setup is working correctly.",
     type: "TEST",
+    targetPlatform,
     data: {
       testUrl: "/dashboard",
       timestamp: new Date().toISOString()

@@ -12,7 +12,7 @@ const { tryGetIO } = require("../config/socket.js");
  */
 const sendNotification = async (options) => {
   try {
-    const { recipient, type, title, message, data } = options;
+    const { recipient, type, title, message, data, targetPlatform } = options;
 
     // 1. Save to Database
     let notificationsToCreate = [];
@@ -156,9 +156,15 @@ const sendNotification = async (options) => {
         // Send to specific user
         const targetUser = await User.findById(recipient);
         if (targetUser) {
-          fcmTokens = targetUser.fcmToken ? [...targetUser.fcmToken] : [];
-          if (targetUser.fcmTokenMobile) {
-            fcmTokens.push(...targetUser.fcmTokenMobile);
+          if (targetPlatform === 'mobile') {
+            fcmTokens = targetUser.fcmTokenMobile ? [...targetUser.fcmTokenMobile] : [];
+          } else if (targetPlatform === 'web') {
+            fcmTokens = targetUser.fcmToken ? [...targetUser.fcmToken] : [];
+          } else {
+            fcmTokens = targetUser.fcmToken ? [...targetUser.fcmToken] : [];
+            if (targetUser.fcmTokenMobile) {
+              fcmTokens.push(...targetUser.fcmTokenMobile);
+            }
           }
         }
       }
