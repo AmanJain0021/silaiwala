@@ -300,8 +300,22 @@ offlineOrderSchema.methods.syncPaymentStatus = function () {
 
 offlineOrderSchema.pre("validate", async function () {
   if (!this.orderId) {
-    const count = await mongoose.model("OfflineOrder").countDocuments();
-    this.orderId = `OFF-${1000 + count + 1}`;
+    const lastOrder = await mongoose.model("OfflineOrder")
+      .findOne({ orderId: { $regex: /^OFF-\d+$/ } })
+      .sort({ createdAt: -1 });
+
+    let nextIdNum = 1001;
+    if (lastOrder && lastOrder.orderId) {
+      const match = lastOrder.orderId.match(/^OFF-(\d+)$/);
+      if (match) {
+        nextIdNum = parseInt(match[1], 10) + 1;
+      }
+    } else {
+      const count = await mongoose.model("OfflineOrder").countDocuments();
+      nextIdNum = 1000 + count + 1;
+    }
+    
+    this.orderId = `OFF-${nextIdNum}`;
   }
   if (!this.trackingToken) {
     this.trackingToken = crypto.randomBytes(16).toString("hex");
