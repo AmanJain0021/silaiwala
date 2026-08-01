@@ -36,7 +36,12 @@ export const usePushNotifications = (user) => {
             
             // Send token to backend
             // Since this is the React web app, it always saves as a web token
-            await api.post('/notifications/fcm-token', { token: currentToken, platform: 'web' });
+            try {
+              const response = await api.post('/notifications/fcm-token', { token: currentToken, platform: 'web' });
+              console.log('FCM Token successfully saved to backend:', response.data);
+            } catch (apiErr) {
+              console.error('Failed to save FCM Token to backend:', apiErr.response?.data || apiErr.message);
+            }
           } else {
             console.log('No registration token available. Request permission to generate one.');
           }

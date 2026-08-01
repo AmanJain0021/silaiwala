@@ -410,11 +410,13 @@ exports.login = asyncHandler(async (req, res, next) => {
     const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
     
     if (isMobile) {
+      if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
       if (!user.fcmTokenMobile.includes(fcmToken)) {
         user.fcmTokenMobile.push(fcmToken);
         isTokenUpdated = true;
       }
     } else {
+      if (!user.fcmToken) user.fcmToken = [];
       if (!user.fcmToken.includes(fcmToken)) {
         user.fcmToken.push(fcmToken);
         isTokenUpdated = true;
@@ -522,11 +524,13 @@ exports.googleLogin = asyncHandler(async (req, res, next) => {
       const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
       
       if (isMobile) {
+        if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
         if (!user.fcmTokenMobile.includes(fcmToken)) {
           user.fcmTokenMobile.push(fcmToken);
           isTokenUpdated = true;
         }
       } else {
+        if (!user.fcmToken) user.fcmToken = [];
         if (!user.fcmToken.includes(fcmToken)) {
           user.fcmToken.push(fcmToken);
           isTokenUpdated = true;

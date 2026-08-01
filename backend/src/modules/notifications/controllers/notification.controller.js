@@ -98,19 +98,23 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
   }
 
   const user = req.user;
+  console.log(`[FCM-TOKEN] Received request for user ${user._id} (${user.role}) - token: ${token}, platform: ${platform}`);
 
   // Add token based on platform
-  if (platform === 'mobile' || platform === 'android' || platform === 'ios') {
+  if (platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native') {
+    if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
     if (!user.fcmTokenMobile.includes(token)) {
       user.fcmTokenMobile.push(token);
     }
   } else {
+    if (!user.fcmToken) user.fcmToken = [];
     if (!user.fcmToken.includes(token)) {
       user.fcmToken.push(token);
     }
   }
 
   await user.save();
+  console.log(`[FCM-TOKEN] Successfully saved token for user ${user._id}`);
 
   res.status(200).json({
     success: true,
