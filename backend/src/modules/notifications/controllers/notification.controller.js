@@ -153,7 +153,7 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
  * the test button, not all devices logged into the same account.
  */
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
-  const { deviceToken } = req.body;
+  const { deviceToken } = req.body || {};
 
   try {
     require("../../../config/firebase.js");
@@ -239,7 +239,7 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.removeFcmToken = asyncHandler(async (req, res, next) => {
-  const { token } = req.body;
+  const { token } = req.body || {};
 
   if (!token) {
     return res.status(200).json({ success: true, message: "No token to remove" });
