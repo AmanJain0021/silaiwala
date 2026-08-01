@@ -202,13 +202,22 @@ const sendNotification = async (options) => {
           android: {
             priority: 'high',
             notification: {
+              title: title,
+              body: message,
               sound: 'default',
-              channelId: 'default'
+              channelId: 'default',
+              priority: 'high',
+              defaultSound: true,
+              defaultVibrateTimings: true
             }
           },
           apns: {
             payload: {
               aps: {
+                alert: {
+                  title: title,
+                  body: message
+                },
                 sound: 'default',
                 contentAvailable: true
               }
@@ -219,7 +228,35 @@ const sendNotification = async (options) => {
         
         // Send to multiple devices using the modular getMessaging()
         const response = await getMessaging().sendEachForMulticast(payload);
-        console.log(`FCM Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
+        console.log(`[FCM] Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed out of ${fcmTokens.length} tokens.`);
+
+        // Auto-clean stale/invalid tokens from DB if any failed
+        if (response.failureCount > 0 && recipient && recipient !== 'admins' && recipient !== 'delivery_partners') {
+          try {
+            const tokensToRemove = [];
+            response.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                const errCode = resp.error?.code;
+                if (errCode === 'messaging/registration-token-not-registered' || 
+                    errCode === 'messaging/invalid-registration-token') {
+                  tokensToRemove.push(fcmTokens[idx]);
+                }
+              }
+            });
+
+            if (tokensToRemove.length > 0) {
+              console.log(`[FCM] Purging ${tokensToRemove.length} expired FCM tokens for user ${recipient}`);
+              await User.findByIdAndUpdate(recipient, {
+                $pull: {
+                  fcmToken: { $in: tokensToRemove },
+                  fcmTokenMobile: { $in: tokensToRemove }
+                }
+              });
+            }
+          } catch (cleanupErr) {
+            console.error("[FCM] Stale token cleanup error:", cleanupErr.message);
+          }
+        }
       }
     } catch (fcmError) {
       console.error("❌ FCM Push Error:", fcmError.message);

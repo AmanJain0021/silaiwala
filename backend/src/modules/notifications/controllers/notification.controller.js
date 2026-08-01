@@ -154,10 +154,29 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
  */
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
   const { deviceToken } = req.body || {};
+  const User = require("../../../models/User.js");
 
   try {
     require("../../../config/firebase.js");
     const { getMessaging } = require('firebase-admin/messaging');
+
+    // Fetch fresh user from DB to get all stored web & mobile tokens
+    const freshUser = await User.findById(req.user._id);
+    if (!freshUser) {
+      return next(new ErrorResponse("User not found", 44));
+    }
+
+    const webTokens = freshUser.fcmToken || [];
+    const mobileTokens = freshUser.fcmTokenMobile || [];
+    
+    // Combine all tokens from DB + deviceToken from body, filtered and deduplicated
+    const allTokens = [...new Set([...webTokens, ...mobileTokens, deviceToken].filter(Boolean))];
+
+    if (allTokens.length === 0) {
+      return next(new ErrorResponse("No FCM tokens found in database. Please allow notifications and reload.", 400));
+    }
+
+    console.log(`[TEST-PUSH] User ${req.user._id} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s). Sending to ${allTokens.length} total token(s)...`);
 
     const basePayload = {
       notification: {
@@ -172,63 +191,82 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
       android: {
         priority: 'high',
         notification: {
+          title: "Test Push Notification",
+          body: "This is a test push notification to verify the setup is working correctly.",
           sound: 'default',
-          channelId: 'default'
+          channelId: 'default',
+          priority: 'high',
+          defaultSound: true,
+          defaultVibrateTimings: true
         }
       },
       apns: {
         payload: {
           aps: {
+            alert: {
+              title: "Test Push Notification",
+              body: "This is a test push notification to verify the setup is working correctly."
+            },
             sound: 'default',
             contentAvailable: true
           }
         }
       },
+      tokens: allTokens
     };
 
-    if (deviceToken) {
-      // CASE 1: Device token provided — send to this specific device only
-      const response = await getMessaging().send({ ...basePayload, token: deviceToken });
-      console.log(`[TEST-PUSH] FCM sent to specific device token ${deviceToken.substring(0, 20)}..., response: ${response}`);
+    const results = await getMessaging().sendEachForMulticast(basePayload);
+    console.log(`[TEST-PUSH] Multicast result for user ${req.user._id}: ${results.successCount} succeeded, ${results.failureCount} failed out of ${allTokens.length} tokens.`);
 
-      return res.status(200).json({
-        success: true,
-        message: "Test push notification sent to this device",
+    // Auto-purge dead/invalid tokens from DB
+    if (results.failureCount > 0) {
+      try {
+        const tokensToRemove = [];
+        results.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            const errCode = resp.error?.code;
+            console.log(`[TEST-PUSH] Token ${allTokens[idx].substring(0, 15)}... failed with error:`, errCode || resp.error?.message);
+            if (errCode === 'messaging/registration-token-not-registered' || 
+                errCode === 'messaging/invalid-registration-token') {
+              tokensToRemove.push(allTokens[idx]);
+            }
+          }
+        });
+
+        if (tokensToRemove.length > 0) {
+          console.log(`[TEST-PUSH] Purging ${tokensToRemove.length} stale FCM tokens from DB for user ${req.user._id}`);
+          await User.findByIdAndUpdate(req.user._id, {
+            $pull: {
+              fcmToken: { $in: tokensToRemove },
+              fcmTokenMobile: { $in: tokensToRemove }
+            }
+          });
+        }
+      } catch (cleanupErr) {
+        console.error("[TEST-PUSH] Token cleanup error:", cleanupErr.message);
+      }
+    }
+
+    // Trigger Socket.io & DB Notification so active app sessions get real-time toast
+    try {
+      const { sendNotification } = require("../../../utils/notification.js");
+      await sendNotification({
+        recipient: req.user._id,
+        title: "Test Push Notification",
+        message: "This is a test push notification to verify the setup is working correctly.",
+        type: "TEST",
+        data: { testUrl: "/dashboard", timestamp: new Date().toISOString() }
       });
+    } catch (socketErr) {
+      console.error("[TEST-PUSH] Socket notification error:", socketErr.message);
     }
-
-    // CASE 2: No device token — send to ALL stored tokens for this user
-    const user = req.user;
-    const allTokens = [
-      ...(user.fcmToken || []),
-      ...(user.fcmTokenMobile || [])
-    ].filter(Boolean);
-
-    if (allTokens.length === 0) {
-      return next(new ErrorResponse("No FCM tokens found. Please allow notifications and reload.", 400));
-    }
-
-    console.log(`[TEST-PUSH] No device token provided, sending to all ${allTokens.length} stored tokens for user ${user._id}`);
-    
-    const results = await getMessaging().sendEachForMulticast({
-      ...basePayload,
-      tokens: allTokens
-    });
-
-    console.log(`[TEST-PUSH] Multicast result: ${results.successCount} success, ${results.failureCount} failures`);
 
     res.status(200).json({
       success: true,
-      message: `Test push sent to ${results.successCount} of ${allTokens.length} devices`,
+      message: `Test push sent to ${results.successCount} of ${allTokens.length} registered device(s)`,
     });
   } catch (fcmError) {
     console.error("[TEST-PUSH] FCM Error:", fcmError.message);
-    
-    if (fcmError.code === 'messaging/registration-token-not-registered' ||
-        fcmError.code === 'messaging/invalid-registration-token') {
-      return next(new ErrorResponse("Your device token is expired or invalid. Please reload the page and try again.", 400));
-    }
-    
     return next(new ErrorResponse("Failed to send test notification: " + fcmError.message, 500));
   }
 });
