@@ -62,11 +62,21 @@ export const usePushNotifications = (user) => {
       
       // Force an OS-level native notification even when the app is open!
       if (Notification.permission === 'granted') {
-        new Notification(payload.notification?.title || 'SewZella', {
-          body: payload.notification?.body || 'New Notification',
-          icon: '/vite.svg',
-          data: payload.data
-        });
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.showNotification(payload.notification?.title || 'SewZella', {
+              body: payload.notification?.body || 'New Notification',
+              icon: '/vite.svg',
+              data: payload.data
+            });
+          });
+        } else {
+          new Notification(payload.notification?.title || 'SewZella', {
+            body: payload.notification?.body || 'New Notification',
+            icon: '/vite.svg',
+            data: payload.data
+          });
+        }
       }
     });
 
