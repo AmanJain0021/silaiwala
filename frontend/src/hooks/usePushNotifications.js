@@ -15,16 +15,47 @@ export const getCurrentDeviceFcmToken = () => _currentDeviceToken;
 
 /**
  * Send a test push notification to THIS device only.
- * Sends the current device's FCM token to the backend so the
- * push is targeted to this specific device, not all devices.
+ * If the device token was obtained at startup, sends it directly.
+ * If not (common on mobile PWAs), tries to obtain it on-the-fly.
+ * As a last resort, falls back to sending to all user devices.
  */
 export const testPushToThisDevice = async () => {
-  const deviceToken = getCurrentDeviceFcmToken();
+  let deviceToken = getCurrentDeviceFcmToken();
+  
+  // If token wasn't captured at startup, try to get it now
   if (!deviceToken) {
-    throw new Error('No FCM token registered for this device. Please allow notifications and reload.');
+    try {
+      const { messaging, getToken: fbGetToken } = await import('../config/firebase');
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      
+      let registration;
+      if ('serviceWorker' in navigator) {
+        registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        if (!registration) {
+          registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        }
+      }
+
+      deviceToken = await fbGetToken(messaging, { 
+        vapidKey, 
+        serviceWorkerRegistration: registration 
+      });
+      
+      if (deviceToken) {
+        _currentDeviceToken = deviceToken;
+        // Also save to backend
+        try {
+          await api.post('/notifications/fcm-token', { token: deviceToken, platform: 'web' });
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.warn('[FCM] Could not obtain token on-the-fly:', err.message);
+    }
   }
+
+  // Send with deviceToken if we have it, otherwise backend sends to all user tokens
   const response = await api.post('/notifications/test-push', { 
-    deviceToken 
+    deviceToken: deviceToken || undefined
   });
   return response.data;
 };

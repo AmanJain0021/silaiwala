@@ -155,16 +155,11 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
   const { deviceToken } = req.body;
 
-  if (!deviceToken) {
-    return next(new ErrorResponse("No device token provided. Please allow notifications and reload.", 400));
-  }
-
-  // Send FCM push directly to this specific device token
   try {
     require("../../../config/firebase.js");
     const { getMessaging } = require('firebase-admin/messaging');
 
-    const payload = {
+    const basePayload = {
       notification: {
         title: "Test Push Notification",
         body: "This is a test push notification to verify the setup is working correctly.",
@@ -189,20 +184,46 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
           }
         }
       },
-      token: deviceToken  // Single token — this specific device only
     };
 
-    const response = await getMessaging().send(payload);
-    console.log(`[TEST-PUSH] FCM sent successfully to device token ${deviceToken.substring(0, 20)}..., response: ${response}`);
+    if (deviceToken) {
+      // CASE 1: Device token provided — send to this specific device only
+      const response = await getMessaging().send({ ...basePayload, token: deviceToken });
+      console.log(`[TEST-PUSH] FCM sent to specific device token ${deviceToken.substring(0, 20)}..., response: ${response}`);
+
+      return res.status(200).json({
+        success: true,
+        message: "Test push notification sent to this device",
+      });
+    }
+
+    // CASE 2: No device token — send to ALL stored tokens for this user
+    const user = req.user;
+    const allTokens = [
+      ...(user.fcmToken || []),
+      ...(user.fcmTokenMobile || [])
+    ].filter(Boolean);
+
+    if (allTokens.length === 0) {
+      return next(new ErrorResponse("No FCM tokens found. Please allow notifications and reload.", 400));
+    }
+
+    console.log(`[TEST-PUSH] No device token provided, sending to all ${allTokens.length} stored tokens for user ${user._id}`);
+    
+    const results = await getMessaging().sendEachForMulticast({
+      ...basePayload,
+      tokens: allTokens
+    });
+
+    console.log(`[TEST-PUSH] Multicast result: ${results.successCount} success, ${results.failureCount} failures`);
 
     res.status(200).json({
       success: true,
-      message: "Test push notification sent to this device",
+      message: `Test push sent to ${results.successCount} of ${allTokens.length} devices`,
     });
   } catch (fcmError) {
     console.error("[TEST-PUSH] FCM Error:", fcmError.message);
     
-    // If the token is invalid/expired, let the user know
     if (fcmError.code === 'messaging/registration-token-not-registered' ||
         fcmError.code === 'messaging/invalid-registration-token') {
       return next(new ErrorResponse("Your device token is expired or invalid. Please reload the page and try again.", 400));
