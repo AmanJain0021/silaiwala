@@ -183,7 +183,12 @@ const sendNotification = async (options) => {
         
         if (fcmTokens.length === 0) return true;
 
-        const fcmData = { type: type || 'SYSTEM' };
+        const fcmData = { 
+          title: title || '',
+          body: message || '',
+          message: message || '',
+          type: type || 'SYSTEM' 
+        };
         if (data) {
           for (const key in data) {
             fcmData[key] = data[key] ? data[key].toString() : '';
@@ -199,6 +204,16 @@ const sendNotification = async (options) => {
             body: message,
           },
           data: fcmData,
+          webpush: {
+            headers: {
+              Urgency: 'high'
+            },
+            notification: {
+              title: title,
+              body: message,
+              requireInteraction: true
+            }
+          },
           android: {
             priority: 'high',
             notification: {

@@ -184,9 +184,22 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
         body: "This is a test push notification to verify the setup is working correctly.",
       },
       data: {
+        title: "Test Push Notification",
+        body: "This is a test push notification to verify the setup is working correctly.",
+        message: "This is a test push notification to verify the setup is working correctly.",
         type: "TEST",
         testUrl: "/dashboard",
         timestamp: new Date().toISOString()
+      },
+      webpush: {
+        headers: {
+          Urgency: 'high'
+        },
+        notification: {
+          title: "Test Push Notification",
+          body: "This is a test push notification to verify the setup is working correctly.",
+          requireInteraction: true
+        }
       },
       android: {
         priority: 'high',

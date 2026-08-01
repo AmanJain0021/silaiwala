@@ -147,10 +147,29 @@ export const usePushNotifications = (user) => {
       // Play sound for all foreground push notifications based on role
       try { playNotificationSound(user?.role || 'customer'); } catch(e) { console.error(e); }
       
-      // Force an OS-level native notification even when the app is open!
+      const title = payload.notification?.title || payload.data?.title || 'SewZella';
+      const body = payload.notification?.body || payload.data?.message || payload.data?.body || 'New Notification';
+
+      // 1. ALWAYS show an immediate in-app toast notification banner
+      import('react-hot-toast').then((module) => {
+        const { toast } = module.default || module;
+        toast.success(`🔔 ${title}\n${body}`, { 
+          position: 'top-center', 
+          duration: 6000,
+          style: {
+            borderRadius: '16px',
+            background: '#111827',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            padding: '14px 22px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+          }
+        });
+      });
+
+      // 2. ALSO trigger OS-level system notification if permission is granted
       if (Notification.permission === 'granted') {
-        const title = payload.notification?.title || payload.data?.title || 'SewZella';
-        const body = payload.notification?.body || payload.data?.message || 'New Notification';
         const iconUrl = window.location.origin + '/vite.svg';
         
         const showForegroundPush = async () => {
@@ -171,12 +190,7 @@ export const usePushNotifications = (user) => {
               });
             }
           } catch (err) {
-            console.error("[FCM] Foreground notification error:", err);
-            // Fallback for mobile if OS blocks foreground system push
-            import('react-hot-toast').then((module) => {
-              const { toast } = module.default || module;
-              toast.success(`🔔 ${title}: ${body}`, { position: 'top-center', duration: 5000 });
-            });
+            console.error("[FCM] Foreground native notification error:", err);
           }
         };
         showForegroundPush();
