@@ -164,6 +164,11 @@ const sendNotification = async (options) => {
       }
 
       if (fcmTokens.length > 0) {
+        // Remove duplicate and empty tokens to prevent FCM errors
+        fcmTokens = [...new Set(fcmTokens.filter(t => t))];
+        
+        if (fcmTokens.length === 0) return true;
+
         const fcmData = { type: type || 'SYSTEM' };
         if (data) {
           for (const key in data) {
@@ -180,6 +185,21 @@ const sendNotification = async (options) => {
             body: message,
           },
           data: fcmData,
+          android: {
+            priority: 'high',
+            notification: {
+              sound: 'default',
+              channelId: 'default'
+            }
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'default',
+                contentAvailable: true
+              }
+            }
+          },
           tokens: fcmTokens
         };
         
