@@ -35,9 +35,12 @@ export const usePushNotifications = (user) => {
             console.log('FCM Token:', currentToken);
             
             // Send token to backend
-            // Since this is the React web app, it always saves as a web token
+            // Send token to backend
+            // Detect if the user is on a mobile browser or desktop browser
             try {
-              const response = await api.post('/notifications/fcm-token', { token: currentToken, platform: 'web' });
+              const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              const platformType = isMobileDevice ? 'mobile' : 'web';
+              const response = await api.post('/notifications/fcm-token', { token: currentToken, platform: platformType });
               console.log('FCM Token successfully saved to backend:', response.data);
             } catch (apiErr) {
               console.error('Failed to save FCM Token to backend:', apiErr.response?.data || apiErr.message);
