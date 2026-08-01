@@ -153,18 +153,26 @@ const sendNotification = async (options) => {
           return tokens;
         });
       } else {
-        // Send to specific user
+        // Send to specific user — collect tokens based on targetPlatform
         const targetUser = await User.findById(recipient);
         if (targetUser) {
+          const webTokens = targetUser.fcmToken || [];
+          const mobileTokens = targetUser.fcmTokenMobile || [];
+          
+          console.log(`[FCM] User ${recipient} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s)`);
+          
           if (targetPlatform === 'mobile') {
-            fcmTokens = targetUser.fcmTokenMobile ? [...targetUser.fcmTokenMobile] : [];
+            // Only mobile tokens
+            fcmTokens = [...mobileTokens];
+            console.log(`[FCM] Targeting MOBILE only: ${fcmTokens.length} token(s)`);
           } else if (targetPlatform === 'web') {
-            fcmTokens = targetUser.fcmToken ? [...targetUser.fcmToken] : [];
+            // Only web tokens
+            fcmTokens = [...webTokens];
+            console.log(`[FCM] Targeting WEB only: ${fcmTokens.length} token(s)`);
           } else {
-            fcmTokens = targetUser.fcmToken ? [...targetUser.fcmToken] : [];
-            if (targetUser.fcmTokenMobile) {
-              fcmTokens.push(...targetUser.fcmTokenMobile);
-            }
+            // No platform filter — send to ALL devices
+            fcmTokens = [...webTokens, ...mobileTokens];
+            console.log(`[FCM] Targeting ALL devices: ${fcmTokens.length} token(s)`);
           }
         }
       }

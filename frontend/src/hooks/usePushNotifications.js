@@ -37,16 +37,15 @@ export const usePushNotifications = (user) => {
             setFcmToken(currentToken);
             console.log('FCM Token:', currentToken);
             
-            // Send token to backend
-            // Detect if the user is on a mobile browser or desktop browser
+            // IMPORTANT: Browser-based FCM tokens (even on mobile browsers) are WEB push tokens.
+            // Only native apps (React Native) generate true mobile FCM tokens.
+            // So browser tokens must ALWAYS be saved as 'web' regardless of device.
             try {
-              const platformType = isMobile ? 'mobile' : 'web';
+              const platformType = 'web';
               const response = await api.post('/notifications/fcm-token', { token: currentToken, platform: platformType });
-              console.log('FCM Token successfully saved to backend:', response.data);
-              if (isMobile) alert("Push Notifications Enabled Successfully on Mobile!");
+              console.log('FCM Token successfully saved to backend as WEB token:', response.data);
             } catch (apiErr) {
               console.error('Failed to save FCM Token to backend:', apiErr.response?.data || apiErr.message);
-              if (isMobile) alert("API Error saving token: " + (apiErr.response?.data?.message || apiErr.message));
             }
           } else {
             console.log('No registration token available. Request permission to generate one.');

@@ -98,29 +98,44 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
   }
 
   const user = req.user;
-  console.log(`[FCM-TOKEN] Received request for user ${user._id} (${user.role}) - token: ${token}, platform: ${platform}`);
+  console.log(`[FCM-TOKEN] Received request for user ${user._id} (${user.role}) - token: ${token.substring(0, 20)}..., platform: ${platform}`);
 
-  // Add token based on platform
-  if (platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native') {
-    console.log(`[FCM-TOKEN] Saving token to MOBILE list (fcmTokenMobile) for user ${user._id}`);
-    if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
+  // Ensure arrays exist
+  if (!user.fcmToken) user.fcmToken = [];
+  if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
+
+  const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
+
+  if (isMobile) {
+    // Save to mobile, remove from web if it was there
+    const webIndex = user.fcmToken.indexOf(token);
+    if (webIndex !== -1) {
+      user.fcmToken.splice(webIndex, 1);
+      console.log(`[FCM-TOKEN] Removed token from WEB list (was misplaced)`);
+    }
     if (!user.fcmTokenMobile.includes(token)) {
       user.fcmTokenMobile.push(token);
+      console.log(`[FCM-TOKEN] Added token to MOBILE list`);
     } else {
-      console.log(`[FCM-TOKEN] Token already exists in MOBILE list`);
+      console.log(`[FCM-TOKEN] Token already in MOBILE list`);
     }
   } else {
-    console.log(`[FCM-TOKEN] Saving token to WEB list (fcmToken) for user ${user._id}`);
-    if (!user.fcmToken) user.fcmToken = [];
+    // Save to web, remove from mobile if it was there
+    const mobileIndex = user.fcmTokenMobile.indexOf(token);
+    if (mobileIndex !== -1) {
+      user.fcmTokenMobile.splice(mobileIndex, 1);
+      console.log(`[FCM-TOKEN] Removed token from MOBILE list (was misplaced)`);
+    }
     if (!user.fcmToken.includes(token)) {
       user.fcmToken.push(token);
+      console.log(`[FCM-TOKEN] Added token to WEB list`);
     } else {
-      console.log(`[FCM-TOKEN] Token already exists in WEB list`);
+      console.log(`[FCM-TOKEN] Token already in WEB list`);
     }
   }
 
   await user.save();
-  console.log(`[FCM-TOKEN] Successfully saved token for user ${user._id}`);
+  console.log(`[FCM-TOKEN] Saved. Web tokens: ${user.fcmToken.length}, Mobile tokens: ${user.fcmTokenMobile.length}`);
 
   res.status(200).json({
     success: true,
@@ -136,16 +151,14 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
   const { sendNotification } = require("../../../utils/notification.js");
   
-  const userAgent = req.headers['user-agent'] || '';
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const targetPlatform = isMobile ? 'mobile' : 'web';
-
+  // Send test notification to ALL devices (both web and mobile tokens)
+  // Do NOT filter by platform — the whole point is to test that ALL devices receive it
   await sendNotification({
     recipient: req.user._id,
     title: "Test Push Notification",
     message: "This is a test push notification to verify the setup is working correctly.",
     type: "TEST",
-    targetPlatform,
+    // targetPlatform intentionally omitted — sends to all devices
     data: {
       testUrl: "/dashboard",
       timestamp: new Date().toISOString()
@@ -154,6 +167,6 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Test push notification sent successfully",
+    message: "Test push notification sent to all registered devices",
   });
 });
