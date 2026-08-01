@@ -203,7 +203,12 @@ export const useDeliveryAuthStore = create(
           return res.data || res;
         } catch (e) { set({ isLoading: false }); throw e; }
       },
-      logout: () => {
+      logout: async () => {
+        // Remove FCM token from database BEFORE clearing auth
+        try {
+            const { removeDeviceTokenOnLogout } = await import('../../../hooks/usePushNotifications');
+            await removeDeviceTokenOnLogout();
+        } catch (_) {}
         const rt = localStorage.getItem('delivery-refresh-token');
         if (rt) api.post('/delivery/auth/logout', { refreshToken: rt }).catch(() => { });
         set({ deliveryBoy: null, token: null, refreshToken: null, isAuthenticated: false, orders: [], returns: [] });

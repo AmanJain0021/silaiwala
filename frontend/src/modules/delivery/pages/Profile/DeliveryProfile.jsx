@@ -467,8 +467,8 @@ const DeliveryProfile = () => {
                 </button>
 
                 <button
-                    onClick={() => {
-                        logout();
+                    onClick={async () => {
+                        await logout();
                         navigate('/delivery/login');
                     }}
                     className="w-full bg-red-50/50 p-4 rounded-2xl border border-red-100 flex items-center justify-between group active:scale-[0.98] transition-all"
@@ -1069,7 +1069,7 @@ const DeliveryProfile = () => {
                                     setIsDeleting(true);
                                     try {
                                         await api.delete('/auth/delete-account');
-                                        logout();
+                                        await logout();
                                         navigate('/delivery/login');
                                     } catch (err) {
                                         toast.error(err.response?.data?.message || 'Failed to delete account');

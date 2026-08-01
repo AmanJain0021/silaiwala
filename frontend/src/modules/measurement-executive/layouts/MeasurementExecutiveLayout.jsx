@@ -132,7 +132,11 @@ const LayoutContent = () => {
         { name: 'Profile', href: '/executive/profile', icon: User },
     ];
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            const { removeDeviceTokenOnLogout } = await import('../../../hooks/usePushNotifications');
+            await removeDeviceTokenOnLogout();
+        } catch (_) {}
         removeToken();
         localStorage.removeItem('user');
         navigate('/executive/login');

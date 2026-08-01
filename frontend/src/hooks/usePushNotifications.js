@@ -29,6 +29,27 @@ export const testPushToThisDevice = async () => {
   return response.data;
 };
 
+/**
+ * Remove this device's FCM token from the database on logout.
+ * Call this BEFORE clearing the auth token from localStorage,
+ * because the API call needs the auth token to authenticate.
+ */
+export const removeDeviceTokenOnLogout = async () => {
+  const deviceToken = getCurrentDeviceFcmToken();
+  if (!deviceToken) {
+    console.log('[FCM] No device token to remove on logout');
+    return;
+  }
+  try {
+    await api.post('/notifications/fcm-token/remove', { token: deviceToken });
+    console.log('[FCM] Device token removed from database on logout');
+    _currentDeviceToken = null;
+  } catch (err) {
+    // Don't block logout if this fails
+    console.error('[FCM] Failed to remove token on logout:', err.message);
+  }
+};
+
 export const usePushNotifications = (user) => {
   const [fcmToken, setFcmToken] = useState(null);
 

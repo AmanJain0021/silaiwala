@@ -107,8 +107,12 @@ const Profile = () => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         if (window.confirm("Are you sure you want to logout?")) {
+            try {
+                const { removeDeviceTokenOnLogout } = await import('../../../hooks/usePushNotifications');
+                await removeDeviceTokenOnLogout();
+            } catch (_) {}
             removeToken();
             localStorage.removeItem('user');
             navigate('/executive/login');

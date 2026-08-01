@@ -27,7 +27,7 @@ export const UnderReview = () => {
                 </p>
 
                 <div className="w-full space-y-4 mt-12">
-                    <Button variant="secondary" className="border-gray-100 text-gray-600" onClick={() => { logout(); navigate('/partner/login'); }}>
+                    <Button variant="secondary" className="border-gray-100 text-gray-600" onClick={async () => { await logout(); navigate('/partner/login'); }}>
                         <LogOut size={18} /> Sign Out
                     </Button>
                     <Button variant="ghost" className="text-primary">
@@ -61,7 +61,7 @@ export const RejectedPage = () => {
                     <Button onClick={() => navigate('/partner/register')}>
                         Re-apply Now
                     </Button>
-                    <Button variant="secondary" className="border-gray-100 text-gray-600" onClick={() => { logout(); navigate('/partner/login'); }}>
+                    <Button variant="secondary" className="border-gray-100 text-gray-600" onClick={async () => { await logout(); navigate('/partner/login'); }}>
                         Sign Out
                     </Button>
                 </div>

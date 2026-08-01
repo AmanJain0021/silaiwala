@@ -67,9 +67,9 @@ const ProfilePage = () => {
         fetchProfile();
     }, [fetchProfile]);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         if (window.confirm("Are you sure you want to logout?")) {
-            logout();
+            await logout();
             navigate('/user/login');
         }
     };
@@ -79,7 +79,7 @@ const ProfilePage = () => {
         setIsDeleting(true);
         try {
             await api.delete('/auth/delete-account');
-            logout();
+            await logout();
             navigate('/user/login');
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to delete account');

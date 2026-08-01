@@ -212,3 +212,44 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
   }
 });
 
+/**
+ * @desc    Remove FCM token on logout (removes from both web and mobile arrays)
+ * @route   POST /api/v1/notifications/fcm-token/remove
+ * @access  Private
+ */
+exports.removeFcmToken = asyncHandler(async (req, res, next) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(200).json({ success: true, message: "No token to remove" });
+  }
+
+  const user = req.user;
+  let removed = false;
+
+  // Remove from web tokens
+  if (user.fcmToken && user.fcmToken.includes(token)) {
+    user.fcmToken = user.fcmToken.filter(t => t !== token);
+    removed = true;
+    console.log(`[FCM-TOKEN] Removed token from WEB list for user ${user._id}`);
+  }
+
+  // Remove from mobile tokens
+  if (user.fcmTokenMobile && user.fcmTokenMobile.includes(token)) {
+    user.fcmTokenMobile = user.fcmTokenMobile.filter(t => t !== token);
+    removed = true;
+    console.log(`[FCM-TOKEN] Removed token from MOBILE list for user ${user._id}`);
+  }
+
+  if (removed) {
+    await user.save();
+    console.log(`[FCM-TOKEN] After removal — Web: ${user.fcmToken.length}, Mobile: ${user.fcmTokenMobile.length}`);
+  } else {
+    console.log(`[FCM-TOKEN] Token not found in any list for user ${user._id}`);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "FCM Token removed successfully",
+  });
+});

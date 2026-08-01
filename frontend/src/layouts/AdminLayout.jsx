@@ -188,8 +188,8 @@ const AdminLayout = () => {
 
                 <div className="p-4 border-t border-white/5 bg-black">
                     <button
-                        onClick={() => {
-                            useAuthStore.getState().logout();
+                        onClick={async () => {
+                            await useAuthStore.getState().logout();
                             window.location.href = '/admin/login';
                         }}
                         className="flex items-center gap-3 px-4 py-3 w-full text-gray-500 hover:text-red-400 transition-all rounded-lg hover:bg-red-400/5">
@@ -244,8 +244,8 @@ const AdminLayout = () => {
                                 </div>
                             </Link>
                             <button
-                                onClick={() => {
-                                    useAuthStore.getState().logout();
+                                onClick={async () => {
+                                    await useAuthStore.getState().logout();
                                     window.location.href = '/admin/login';
                                 }}
                                 title="Sign Out"

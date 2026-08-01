@@ -170,13 +170,19 @@ export const AuthProvider = ({ children }) => {
         setLoading(false); // Stop loading immediately on explicit login
     }, []);
 
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
+        // Remove FCM token from database BEFORE clearing auth token
+        try {
+            const { removeDeviceTokenOnLogout } = await import('../../../hooks/usePushNotifications');
+            await removeDeviceTokenOnLogout();
+        } catch (_) {}
+
         // Invalidate in-flight /tailors/me so it cannot revive this session
         authCheckSeq.current += 1;
         removeToken();
         clearTailorSessionStorage();
 
-        // Reset global Zustand authStore if active
+        // Reset global Zustand authStore if active (skip its FCM removal since we already did it)
         try {
             import('../../../store/authStore').then((mod) => {
                 if (mod.default?.getState()?.logout) {

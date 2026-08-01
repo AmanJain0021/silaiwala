@@ -32,7 +32,11 @@ const PendingApproval = () => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            const { removeDeviceTokenOnLogout } = await import('../../../hooks/usePushNotifications');
+            await removeDeviceTokenOnLogout();
+        } catch (_) {}
         removeToken();
         localStorage.removeItem('user');
         toast.success('Logged out successfully');

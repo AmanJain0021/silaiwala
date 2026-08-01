@@ -151,8 +151,8 @@ const DeliveryProfile = () => {
     setIsEditing(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Logged out successfully');
     navigate('/delivery/login');
   };

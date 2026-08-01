@@ -266,8 +266,8 @@ const DeliveryLayout = () => {
     libraries: GOOGLE_MAPS_LIBRARIES
   });
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success("Logged out successfully");
     navigate("/delivery/login");
   };

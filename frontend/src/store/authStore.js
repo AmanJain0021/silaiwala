@@ -143,7 +143,14 @@ const useAuthStore = create((set) => ({
         }
     },
 
-    logout: () => {
+    logout: async () => {
+        // Remove FCM token from database BEFORE clearing auth token
+        // (API call needs auth token to authenticate)
+        try {
+            const { removeDeviceTokenOnLogout } = await import('../hooks/usePushNotifications');
+            await removeDeviceTokenOnLogout();
+        } catch (_) {}
+
         removeToken();
         const path = typeof window !== 'undefined' ? window.location.pathname : '';
         let storageKey = 'user';

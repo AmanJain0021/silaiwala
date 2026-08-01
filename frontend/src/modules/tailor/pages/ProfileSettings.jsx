@@ -186,8 +186,8 @@ const ProfileSettings = () => {
         }
     };
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate('/partner/login');
     };
 
@@ -196,7 +196,7 @@ const ProfileSettings = () => {
         setIsDeleting(true);
         try {
             await api.delete('/auth/delete-account');
-            logout();
+            await logout();
             navigate('/partner/login');
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to delete account');
