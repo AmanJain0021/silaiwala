@@ -410,32 +410,11 @@ exports.login = asyncHandler(async (req, res, next) => {
   }
 
   if (fcmToken) {
-    let isTokenUpdated = false;
     const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
-    
-    if (isMobile) {
-      console.log(`[FCM-TOKEN] Login: Saving token to MOBILE list (fcmTokenMobile) for user ${user._id}`);
-      if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
-      if (!user.fcmTokenMobile.includes(fcmToken)) {
-        user.fcmTokenMobile.push(fcmToken);
-        isTokenUpdated = true;
-      } else {
-        console.log(`[FCM-TOKEN] Login: Token already exists in MOBILE list`);
-      }
-    } else {
-      console.log(`[FCM-TOKEN] Login: Saving token to WEB list (fcmToken) for user ${user._id}`);
-      if (!user.fcmToken) user.fcmToken = [];
-      if (!user.fcmToken.includes(fcmToken)) {
-        user.fcmToken.push(fcmToken);
-        isTokenUpdated = true;
-      } else {
-        console.log(`[FCM-TOKEN] Login: Token already exists in WEB list`);
-      }
-    }
-
-    if (isTokenUpdated) {
-      await user.save();
-    }
+    const updateField = isMobile ? 'fcmTokenMobile' : 'fcmToken';
+    await User.findByIdAndUpdate(user._id, {
+      $addToSet: { [updateField]: fcmToken }
+    }).catch(e => console.error('[FCM-TOKEN] Save error during login:', e.message));
   }
 
   const token = generateToken(user._id);
@@ -530,26 +509,11 @@ exports.googleLogin = asyncHandler(async (req, res, next) => {
     }
 
     if (fcmToken) {
-      let isTokenUpdated = false;
       const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
-      
-      if (isMobile) {
-        if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
-        if (!user.fcmTokenMobile.includes(fcmToken)) {
-          user.fcmTokenMobile.push(fcmToken);
-          isTokenUpdated = true;
-        }
-      } else {
-        if (!user.fcmToken) user.fcmToken = [];
-        if (!user.fcmToken.includes(fcmToken)) {
-          user.fcmToken.push(fcmToken);
-          isTokenUpdated = true;
-        }
-      }
-
-      if (isTokenUpdated) {
-        await user.save();
-      }
+      const updateField = isMobile ? 'fcmTokenMobile' : 'fcmToken';
+      await User.findByIdAndUpdate(user._id, {
+        $addToSet: { [updateField]: fcmToken }
+      }).catch(e => console.error('[FCM-TOKEN] Save error during google login:', e.message));
     }
 
     const token = generateToken(user._id);
@@ -587,14 +551,21 @@ exports.logout = asyncHandler(async (req, res, next) => {
   const { fcmToken, token } = req.body || {};
   const targetToken = fcmToken || token;
 
-  if (targetToken && req.user) {
-    await User.findByIdAndUpdate(req.user._id, {
-      $pull: {
-        fcmToken: targetToken,
-        fcmTokenMobile: targetToken
+  if (targetToken) {
+    await User.updateMany(
+      {
+        $or: [
+          { fcmToken: targetToken },
+          { fcmTokenMobile: targetToken }
+        ]
+      },
+      {
+        $pull: {
+          fcmToken: targetToken,
+          fcmTokenMobile: targetToken
+        }
       }
-    });
-    console.log(`[AUTH-LOGOUT] $pulled FCM token from DB for user ${req.user._id}`);
+    ).catch(e => console.error('[AUTH-LOGOUT] Error pulling token:', e.message));
   }
 
   res.status(200).json({

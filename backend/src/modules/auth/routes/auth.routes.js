@@ -12,7 +12,7 @@ router.post("/verify-otp", validateOTP, validate, verifyOTP);
 router.post("/login", validateLogin, validate, login);
 router.post("/google-login", googleLogin);
 router.post("/check-user", checkUserExists);
-router.post("/logout", protect, logout);
+router.post("/logout", logout);
 router.delete("/delete-account", protect, deleteAccount);
 
 module.exports = router;
