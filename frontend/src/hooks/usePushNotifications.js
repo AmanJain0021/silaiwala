@@ -166,7 +166,7 @@ export const usePushNotifications = (user) => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const unsubscribe = onMessage(messaging, (payload) => {
+    const unsubscribe = onMessage(messaging, async (payload) => {
       console.log('[FCM] Foreground data message received:', payload);
 
       window.dispatchEvent(new CustomEvent('fcm_message', { detail: payload }));
@@ -190,10 +190,28 @@ export const usePushNotifications = (user) => {
         }
       });
 
-      // If foreground notification is needed via ServiceWorker, use the existing registration
-      // However, it's better to avoid calling this directly in foreground if possible
-      // to avoid duplicates or spam blocking by the browser.
-      // But we will leave it working using standard Notification API as a fallback.
+      // Show OS-level native notification in foreground
+      if (Notification.permission === 'granted') {
+        try {
+          const iconUrl = window.location.origin + '/logo.png';
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const registration = await navigator.serviceWorker.ready;
+            registration.showNotification(title, {
+              body,
+              icon: iconUrl,
+              badge: iconUrl,
+              data: payload.data,
+              vibrate: [200, 100, 200],
+              tag: 'fcm-foreground-' + Date.now()
+            });
+          } else {
+            new Notification(title, { body, icon: iconUrl });
+          }
+        } catch (err) {
+          console.warn('[FCM] Foreground OS notification error:', err);
+          try { new Notification(title, { body }); } catch (e) {}
+        }
+      }
     });
 
     return () => {

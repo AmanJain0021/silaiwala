@@ -13,14 +13,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Clean background handler for Firebase Cloud Messaging
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background FCM message:', payload);
-  
-  const title = payload?.notification?.title || payload?.data?.title || 'SewZella Notification 🔔';
-  const body = payload?.notification?.body || payload?.data?.body || payload?.data?.message || 'New notification received';
+
+  const title = payload?.data?.title || payload?.notification?.title || 'SewZella Notification 🔔';
+  const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || 'New notification received';
   const url = payload?.data?.url || payload?.data?.targetUrl || '/';
-  
+
   const origin = self.location ? self.location.origin : '';
   const iconPath = origin ? origin + '/logo.png' : '/logo.png';
 
@@ -32,14 +31,12 @@ messaging.onBackgroundMessage((payload) => {
       ...payload.data,
       url: url
     },
-    vibrate: [200, 100, 200],
-    requireInteraction: true
+    vibrate: [200, 100, 200]
   };
 
   return self.registration.showNotification(title, notificationOptions);
 });
 
-// Handle notification click to navigate user to target URL
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';

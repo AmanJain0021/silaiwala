@@ -41,20 +41,11 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
 
   const payload = {
     tokens: validTokens,
-    notification: {
-      title: String(title),
-      body: String(body)
-    },
     data: dataWithNotifInfo,
     webpush: {
       headers: {
         Urgency: 'high',
         TTL: '86400'
-      },
-      notification: {
-        title: String(title),
-        body: String(body),
-        vibrate: [200, 100, 200]
       },
       fcmOptions: {
         link: data?.url || data?.targetUrl || '/'
@@ -62,11 +53,6 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
     },
     android: {
       priority: isUrgent ? 'high' : 'normal',
-      notification: {
-        title: String(title),
-        body: String(body),
-        sound: 'default'
-      },
       data: dataWithNotifInfo
     }
   };

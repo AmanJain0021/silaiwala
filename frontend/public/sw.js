@@ -15,15 +15,9 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[sw.js] Received background FCM message:', payload);
-  
-  // If payload already has a notification object, the SDK handles it natively.
-  // We only show it manually if it's a data-only payload to avoid duplicates.
-  if (payload.notification) {
-    return;
-  }
 
-  const title = payload?.data?.title || 'SewZella Notification 🔔';
-  const body = payload?.data?.body || payload?.data?.message || 'New notification received';
+  const title = payload?.data?.title || payload?.notification?.title || 'SewZella Notification 🔔';
+  const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || 'New notification received';
   const url = payload?.data?.url || payload?.data?.targetUrl || '/';
   
   const origin = self.location ? self.location.origin : '';
