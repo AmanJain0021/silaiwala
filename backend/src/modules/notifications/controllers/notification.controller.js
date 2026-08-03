@@ -91,14 +91,15 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.registerFcmToken = asyncHandler(async (req, res, next) => {
-  const { token, platform } = req.body;
+  const targetToken = req.body.fcmToken || req.body.token;
+  const platform = req.body.platform;
 
-  if (!token) {
+  if (!targetToken) {
     return next(new ErrorResponse("Please provide an FCM token", 400));
   }
 
   const user = req.user;
-  console.log(`[FCM-TOKEN] Received request for user ${user._id} (${user.role}) - token: ${token.substring(0, 20)}..., platform: ${platform}`);
+  console.log(`[FCM-TOKEN] Received token registration for user ${user._id} (${user.role}) - token: ${targetToken.substring(0, 20)}..., platform: ${platform}`);
 
   // Ensure arrays exist
   if (!user.fcmToken) user.fcmToken = [];
@@ -107,31 +108,13 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
   const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
 
   if (isMobile) {
-    // Save to mobile, remove from web if it was there
-    const webIndex = user.fcmToken.indexOf(token);
-    if (webIndex !== -1) {
-      user.fcmToken.splice(webIndex, 1);
-      console.log(`[FCM-TOKEN] Removed token from WEB list (was misplaced)`);
-    }
-    if (!user.fcmTokenMobile.includes(token)) {
-      user.fcmTokenMobile.push(token);
-      console.log(`[FCM-TOKEN] Added token to MOBILE list`);
-    } else {
-      console.log(`[FCM-TOKEN] Token already in MOBILE list`);
-    }
+    const webIndex = user.fcmToken.indexOf(targetToken);
+    if (webIndex !== -1) user.fcmToken.splice(webIndex, 1);
+    if (!user.fcmTokenMobile.includes(targetToken)) user.fcmTokenMobile.push(targetToken);
   } else {
-    // Save to web, remove from mobile if it was there
-    const mobileIndex = user.fcmTokenMobile.indexOf(token);
-    if (mobileIndex !== -1) {
-      user.fcmTokenMobile.splice(mobileIndex, 1);
-      console.log(`[FCM-TOKEN] Removed token from MOBILE list (was misplaced)`);
-    }
-    if (!user.fcmToken.includes(token)) {
-      user.fcmToken.push(token);
-      console.log(`[FCM-TOKEN] Added token to WEB list`);
-    } else {
-      console.log(`[FCM-TOKEN] Token already in WEB list`);
-    }
+    const mobileIndex = user.fcmTokenMobile.indexOf(targetToken);
+    if (mobileIndex !== -1) user.fcmTokenMobile.splice(mobileIndex, 1);
+    if (!user.fcmToken.includes(targetToken)) user.fcmToken.push(targetToken);
   }
 
   await user.save();
@@ -147,26 +130,28 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
  * @desc    Send a test push notification to the REQUESTING device
  * @route   POST /api/v1/notifications/test-push
  * @access  Private
- * 
- * The frontend sends the current device's FCM token in req.body.deviceToken.
- * This ensures the push notification goes to ONLY the device that clicked
- * the test button, not all devices logged into the same account.
  */
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
-  const { deviceToken } = req.body || {};
+  const targetToken = req.body.deviceToken || req.body.fcmToken || req.body.token;
   const User = require("../../../models/User.js");
   const { sendMulticastNotification } = require("../../../utils/firebaseHelper.js");
 
   try {
-    // Fetch fresh user from DB to get all stored web & mobile tokens
     const freshUser = await User.findById(req.user._id);
     if (!freshUser) {
       return next(new ErrorResponse("User not found", 404));
     }
 
     let targetTokens = [];
-    if (deviceToken) {
-      targetTokens = [deviceToken];
+    if (targetToken) {
+      targetTokens = [targetToken];
+
+      // Auto-save target token to user DB if not already present
+      if (!freshUser.fcmToken) freshUser.fcmToken = [];
+      if (!freshUser.fcmToken.includes(targetToken)) {
+        freshUser.fcmToken.push(targetToken);
+        await freshUser.save();
+      }
     } else {
       const webTokens = freshUser.fcmToken || [];
       const mobileTokens = freshUser.fcmTokenMobile || [];
@@ -174,10 +159,10 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
     }
 
     if (targetTokens.length === 0) {
-      return next(new ErrorResponse("No FCM tokens found for your account. Please allow notification permissions and refresh.", 400));
+      return next(new ErrorResponse("No FCM tokens found for this device. Please allow notification permissions in your browser and reload.", 400));
     }
 
-    console.log(`[TEST-PUSH] Sending test notification to ${targetTokens.length} device(s)...`);
+    console.log(`[TEST-PUSH] Sending test push to ${targetTokens.length} device token(s)...`);
 
     const results = await sendMulticastNotification({
       tokens: targetTokens,

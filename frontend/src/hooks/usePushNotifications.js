@@ -68,7 +68,9 @@ export const testPushToThisDevice = async () => {
   }
 
   const response = await api.post('/notifications/test-push', {
-    deviceToken: deviceToken || undefined
+    deviceToken: deviceToken || undefined,
+    fcmToken: deviceToken || undefined,
+    token: deviceToken || undefined
   });
   return response.data;
 };
