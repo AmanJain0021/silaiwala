@@ -60,7 +60,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-const CACHE_NAME = 'sewzella-v1';
+const CACHE_NAME = 'sewzella-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

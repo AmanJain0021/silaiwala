@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { messaging, getToken, onMessage } from '../config/firebase';
 import api from '../utils/api';
 import { playNotificationSound } from '../utils/audio';
+import toast from 'react-hot-toast';
 
 let _currentDeviceToken = localStorage.getItem('fcm_token') || null;
 
@@ -175,21 +176,18 @@ export const usePushNotifications = (user) => {
       const title = payload?.data?.title || payload?.notification?.title || 'SewZella';
       const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || 'New Notification';
 
-      import('react-hot-toast').then((module) => {
-        const { toast } = module.default || module;
-        toast.success(`🔔 ${title}\n${body}`, {
-          position: 'bottom-center',
-          duration: 6000,
-          style: {
-            borderRadius: '16px',
-            background: '#111827',
-            color: '#fff',
-            fontWeight: 'bold',
-            fontSize: '14px',
-            padding: '14px 22px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
-          }
-        });
+      toast.success(`🔔 ${title}\n${body}`, {
+        position: 'bottom-center',
+        duration: 6000,
+        style: {
+          borderRadius: '16px',
+          background: '#111827',
+          color: '#fff',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          padding: '14px 22px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+        }
       });
 
       // If foreground notification is needed via ServiceWorker, use the existing registration
