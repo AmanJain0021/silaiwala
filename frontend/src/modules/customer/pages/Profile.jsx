@@ -237,10 +237,10 @@ const ProfilePage = () => {
                         onClick={async () => {
                             try {
                                 const { testPushToThisDevice } = await import('../../../hooks/usePushNotifications');
-                                await testPushToThisDevice();
-                                alert('Test push sent to this device!');
+                                const res = await testPushToThisDevice();
+                                toast.success(res?.message || 'Test push notification sent!');
                             } catch (err) {
-                                alert('Failed to send test push: ' + (err.response?.data?.message || err.message));
+                                toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message));
                             }
                         }}
                         className="w-full mb-4 flex items-center justify-between p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 group hover:bg-indigo-50 transition-all duration-300 active:scale-[0.98]"

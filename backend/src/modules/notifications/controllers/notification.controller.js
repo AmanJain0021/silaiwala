@@ -155,15 +155,13 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 exports.testPushNotification = asyncHandler(async (req, res, next) => {
   const { deviceToken } = req.body || {};
   const User = require("../../../models/User.js");
+  const { sendMulticastNotification } = require("../../../utils/firebaseHelper.js");
 
   try {
-    require("../../../config/firebase.js");
-    const { getMessaging } = require('firebase-admin/messaging');
-
     // Fetch fresh user from DB to get all stored web & mobile tokens
     const freshUser = await User.findById(req.user._id);
     if (!freshUser) {
-      return next(new ErrorResponse("User not found", 44));
+      return next(new ErrorResponse("User not found", 404));
     }
 
     const webTokens = freshUser.fcmToken || [];
@@ -173,110 +171,26 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
     const allTokens = [...new Set([...webTokens, ...mobileTokens, deviceToken].filter(Boolean))];
 
     if (allTokens.length === 0) {
-      return next(new ErrorResponse("No FCM tokens found in database. Please allow notifications and reload.", 400));
+      return next(new ErrorResponse("No FCM tokens found for your account. Please allow notification permissions and refresh.", 400));
     }
 
-    console.log(`[TEST-PUSH] User ${req.user._id} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s). Sending to ${allTokens.length} total token(s)...`);
+    console.log(`[TEST-PUSH] Sending test notification to user ${req.user._id} (${allTokens.length} tokens)...`);
 
-    const basePayload = {
-      notification: {
-        title: "Test Push Notification",
-        body: "This is a test push notification to verify the setup is working correctly.",
-      },
+    const results = await sendMulticastNotification({
+      tokens: allTokens,
+      title: "Test Push Notification 🔔",
+      body: "This is a test push notification from SewZella. Setup is working correctly!",
       data: {
-        title: "Test Push Notification",
-        body: "This is a test push notification to verify the setup is working correctly.",
-        message: "This is a test push notification to verify the setup is working correctly.",
         type: "TEST",
-        testUrl: "/dashboard",
+        url: "/user/notifications",
         timestamp: new Date().toISOString()
       },
-      webpush: {
-        headers: {
-          Urgency: 'high'
-        },
-        notification: {
-          title: "Test Push Notification",
-          body: "This is a test push notification to verify the setup is working correctly.",
-          requireInteraction: true
-        }
-      },
-      android: {
-        priority: 'high',
-        notification: {
-          title: "Test Push Notification",
-          body: "This is a test push notification to verify the setup is working correctly.",
-          sound: 'default',
-          channelId: 'default',
-          priority: 'high',
-          defaultSound: true,
-          defaultVibrateTimings: true
-        }
-      },
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title: "Test Push Notification",
-              body: "This is a test push notification to verify the setup is working correctly."
-            },
-            sound: 'default',
-            contentAvailable: true
-          }
-        }
-      },
-      tokens: allTokens
-    };
-
-    const results = await getMessaging().sendEachForMulticast(basePayload);
-    console.log(`[TEST-PUSH] Multicast result for user ${req.user._id}: ${results.successCount} succeeded, ${results.failureCount} failed out of ${allTokens.length} tokens.`);
-
-    // Auto-purge dead/invalid tokens from DB
-    if (results.failureCount > 0) {
-      try {
-        const tokensToRemove = [];
-        results.responses.forEach((resp, idx) => {
-          if (!resp.success) {
-            const errCode = resp.error?.code;
-            console.log(`[TEST-PUSH] Token ${allTokens[idx].substring(0, 15)}... failed with error:`, errCode || resp.error?.message);
-            if (errCode === 'messaging/registration-token-not-registered' || 
-                errCode === 'messaging/invalid-registration-token') {
-              tokensToRemove.push(allTokens[idx]);
-            }
-          }
-        });
-
-        if (tokensToRemove.length > 0) {
-          console.log(`[TEST-PUSH] Purging ${tokensToRemove.length} stale FCM tokens from DB for user ${req.user._id}`);
-          await User.findByIdAndUpdate(req.user._id, {
-            $pull: {
-              fcmToken: { $in: tokensToRemove },
-              fcmTokenMobile: { $in: tokensToRemove }
-            }
-          });
-        }
-      } catch (cleanupErr) {
-        console.error("[TEST-PUSH] Token cleanup error:", cleanupErr.message);
-      }
-    }
-
-    // Trigger Socket.io & DB Notification so active app sessions get real-time toast
-    try {
-      const { sendNotification } = require("../../../utils/notification.js");
-      await sendNotification({
-        recipient: req.user._id,
-        title: "Test Push Notification",
-        message: "This is a test push notification to verify the setup is working correctly.",
-        type: "TEST",
-        data: { testUrl: "/dashboard", timestamp: new Date().toISOString() }
-      });
-    } catch (socketErr) {
-      console.error("[TEST-PUSH] Socket notification error:", socketErr.message);
-    }
+      isUrgent: true
+    });
 
     res.status(200).json({
       success: true,
-      message: `Test push sent to ${results.successCount} of ${allTokens.length} registered device(s)`,
+      message: `Test push sent to ${results.successCount} device(s)`,
     });
   } catch (fcmError) {
     console.error("[TEST-PUSH] FCM Error:", fcmError.message);

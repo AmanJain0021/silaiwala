@@ -13,33 +13,49 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Handle background messaging for data-only FCM push payloads
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background data message:', payload);
-
-  const title = payload?.data?.title || payload?.notification?.title || 'New Notification';
-  const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || '';
-  const url = payload?.data?.url || payload?.data?.targetUrl || '/';
-
+function showWebPushNotification(title, body, url, data) {
   const notificationOptions = {
-    body: body,
+    body: body || 'New notification',
     icon: '/vite.svg',
     badge: '/vite.svg',
     data: {
-      ...payload.data,
-      url: url
+      ...data,
+      url: url || '/'
     },
     vibrate: [200, 100, 200],
     requireInteraction: false
   };
 
-  self.registration.showNotification(title, notificationOptions);
+  return self.registration.showNotification(title || 'SewZella', notificationOptions);
+}
+
+// Handle background messaging via Firebase SDK
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Received background data message:', payload);
+  const title = payload?.data?.title || payload?.notification?.title || 'SewZella';
+  const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || '';
+  const url = payload?.data?.url || payload?.data?.targetUrl || '/';
+  showWebPushNotification(title, body, url, payload.data);
+});
+
+// Fallback native push listener for Web Push Protocol on mobile Chrome/Safari
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  try {
+    const rawData = event.data.json();
+    console.log('[firebase-messaging-sw.js] Native push event payload:', rawData);
+    const title = rawData?.data?.title || rawData?.notification?.title || 'SewZella';
+    const body = rawData?.data?.body || rawData?.data?.message || rawData?.notification?.body || '';
+    const url = rawData?.data?.url || rawData?.data?.targetUrl || '/';
+    event.waitUntil(showWebPushNotification(title, body, url, rawData.data));
+  } catch (e) {
+    console.warn('[firebase-messaging-sw.js] Non-JSON push payload:', event.data.text());
+  }
 });
 
 // Handle notification click to navigate user to target URL
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
   const targetUrl = event.notification.data?.url || '/';
 
   event.waitUntil(
