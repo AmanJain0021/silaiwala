@@ -164,20 +164,23 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("User not found", 404));
     }
 
-    const webTokens = freshUser.fcmToken || [];
-    const mobileTokens = freshUser.fcmTokenMobile || [];
-    
-    // Combine all tokens from DB + deviceToken from body, filtered and deduplicated
-    const allTokens = [...new Set([...webTokens, ...mobileTokens, deviceToken].filter(Boolean))];
+    let targetTokens = [];
+    if (deviceToken) {
+      targetTokens = [deviceToken];
+    } else {
+      const webTokens = freshUser.fcmToken || [];
+      const mobileTokens = freshUser.fcmTokenMobile || [];
+      targetTokens = [...new Set([...webTokens, ...mobileTokens].filter(Boolean))];
+    }
 
-    if (allTokens.length === 0) {
+    if (targetTokens.length === 0) {
       return next(new ErrorResponse("No FCM tokens found for your account. Please allow notification permissions and refresh.", 400));
     }
 
-    console.log(`[TEST-PUSH] Sending test notification to user ${req.user._id} (${allTokens.length} tokens)...`);
+    console.log(`[TEST-PUSH] Sending test notification to ${targetTokens.length} device(s)...`);
 
     const results = await sendMulticastNotification({
-      tokens: allTokens,
+      tokens: targetTokens,
       title: "Test Push Notification 🔔",
       body: "This is a test push notification from SewZella. Setup is working correctly!",
       data: {
