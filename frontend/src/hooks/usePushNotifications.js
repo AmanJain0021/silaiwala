@@ -25,12 +25,10 @@ const syncTokenWithBackend = async (token) => {
   };
 
   try {
-    // Try primary endpoint
     await api.put('/user/fcm-token', payload);
     console.log('[FCM] Token synced via PUT /api/user/fcm-token');
   } catch (err) {
     try {
-      // Fallback endpoint
       await api.post('/notifications/fcm-token', payload);
       console.log('[FCM] Token synced via POST /notifications/fcm-token fallback');
     } catch (fallbackErr) {
@@ -52,10 +50,8 @@ export const testPushToThisDevice = async () => {
 
       let registration;
       if ('serviceWorker' in navigator) {
-        registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-        if (!registration) {
-          registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-        }
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+        registration = await navigator.serviceWorker.ready;
       }
 
       deviceToken = await fbGetToken(messaging, {
@@ -87,7 +83,6 @@ export const removeDeviceTokenOnLogout = async () => {
     return;
   }
   try {
-    // Try logout / token removal endpoints
     await api.post('/auth/logout', { fcmToken: deviceToken, token: deviceToken }).catch(async () => {
       await api.post('/notifications/fcm-token/remove', { fcmToken: deviceToken, token: deviceToken });
     });
@@ -123,7 +118,8 @@ export const usePushNotifications = (user) => {
 
           let registration;
           if ('serviceWorker' in navigator) {
-            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+            await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+            registration = await navigator.serviceWorker.ready;
           }
 
           const currentToken = await getToken(messaging, {
@@ -147,7 +143,6 @@ export const usePushNotifications = (user) => {
 
     requestPermissionAndGetToken();
 
-    // Re-verify token sync on tab focus visibilitychange
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && Notification.permission === 'granted') {
         requestPermissionAndGetToken();
@@ -155,7 +150,6 @@ export const usePushNotifications = (user) => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Listen for foreground data messages
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('[FCM] Foreground data message received:', payload);
 
@@ -184,7 +178,7 @@ export const usePushNotifications = (user) => {
       });
 
       if (Notification.permission === 'granted') {
-        const iconUrl = window.location.origin + '/vite.svg';
+        const iconUrl = window.location.origin + '/logo.png';
         const showForegroundPush = async () => {
           try {
             if ('serviceWorker' in navigator) {
@@ -194,12 +188,6 @@ export const usePushNotifications = (user) => {
                 icon: iconUrl,
                 data: payload.data,
                 vibrate: [200, 100, 200]
-              });
-            } else {
-              new Notification(title, {
-                body,
-                icon: iconUrl,
-                data: payload.data
               });
             }
           } catch (err) {

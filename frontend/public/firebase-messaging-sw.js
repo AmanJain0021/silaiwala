@@ -23,8 +23,8 @@ messaging.onBackgroundMessage((payload) => {
 
   const notificationOptions = {
     body: body,
-    icon: '/vite.svg',
-    badge: '/vite.svg',
+    icon: '/logo.png',
+    badge: '/logo.png',
     data: {
       ...payload.data,
       url: url

@@ -57,8 +57,8 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
       notification: {
         title: String(title),
         body: String(body),
-        icon: '/vite.svg',
-        badge: '/vite.svg',
+        icon: 'https://sewzella.com/logo.png',
+        badge: 'https://sewzella.com/logo.png',
         vibrate: [200, 100, 200]
       },
       fcmOptions: {
