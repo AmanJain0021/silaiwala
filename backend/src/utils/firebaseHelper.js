@@ -1,4 +1,4 @@
-const admin = require('../config/firebase.js');
+const { getFirebaseMessaging } = require('../config/firebase.js');
 const User = require('../models/User.js');
 
 /**
@@ -73,7 +73,7 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
   };
 
   try {
-    const messaging = admin.messaging ? admin.messaging() : admin.messaging;
+    const messaging = getFirebaseMessaging();
     const response = await messaging.sendEachForMulticast(payload);
     console.log(`[FCM-Helper] Data-only Multicast sent: ${response.successCount} succeeded, ${response.failureCount} failed out of ${validTokens.length} tokens.`);
 

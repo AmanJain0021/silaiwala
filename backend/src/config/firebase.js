@@ -1,19 +1,42 @@
-const admin = require('firebase-admin');
+const { initializeApp, cert, getApps, getApp } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 
-// Parse the service account from the environment variable
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+let app;
+if (!getApps().length) {
+  let serviceAccount;
+  try {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else {
+      console.warn('[Firebase] FIREBASE_SERVICE_ACCOUNT environment variable is not defined.');
+    }
+  } catch (err) {
+    console.error('[Firebase] Error parsing FIREBASE_SERVICE_ACCOUNT JSON:', err.message);
+  }
 
-// The private key might have escaped literal \n strings if it was stored inside .env with \\n
-if (serviceAccount.private_key) {
-  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  if (serviceAccount) {
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
+    app = initializeApp({
+      credential: cert(serviceAccount)
+    });
+    console.log('[Firebase] Admin SDK initialized successfully with project:', serviceAccount.project_id);
+  } else {
+    console.warn('[Firebase] Initialized without credentials.');
+    app = initializeApp();
+  }
+} else {
+  app = getApp();
 }
 
-// In newer firebase-admin versions, admin.credential is undefined, use admin.cert
-// For older versions, fallback to admin.credential.cert
-const credential = admin.credential ? admin.credential.cert(serviceAccount) : admin.cert(serviceAccount);
+const getFirebaseMessaging = () => {
+  return getMessaging(app);
+};
 
-admin.initializeApp({
-  credential
-});
-
-module.exports = admin;
+module.exports = {
+  app,
+  getFirebaseMessaging,
+  getMessaging: getFirebaseMessaging
+};
