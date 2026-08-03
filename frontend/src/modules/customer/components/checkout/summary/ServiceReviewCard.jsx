@@ -73,7 +73,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
             {/* Section Title & Price */}
             <div className="flex items-center justify-between mb-3.5 pr-6">
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    <Shirt size={16} className="text-[#7C3AED]" />
+                    <Shirt size={16} className="text-[#843D9B]" />
                     <span>Service & Details</span>
                 </h3>
                 <span className="text-sm sm:text-base font-extrabold text-slate-900">
@@ -99,11 +99,11 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
 
                         {/* Attribute Badges */}
                         <div className="flex flex-wrap gap-1 pt-0.5">
-                            <div className="flex items-center gap-1 text-[10px] font-semibold text-[#7C3AED] bg-[#FAF5FF] px-2 py-0.5 rounded-full border border-purple-100/80">
+                            <div className="flex items-center gap-1 text-[10px] font-semibold text-[#843D9B] bg-[#FAF5FF] px-2 py-0.5 rounded-full border border-purple-100/80">
                                 <Scissors size={10} />
                                 <span>{config?.fabricSource === 'customer' ? 'Your Fabric' : 'Fabric Provided'}</span>
                             </div>
-                            <div className="flex items-center gap-1 text-[10px] font-semibold text-[#7C3AED] bg-[#FAF5FF] px-2 py-0.5 rounded-full border border-purple-100/80">
+                            <div className="flex items-center gap-1 text-[10px] font-semibold text-[#843D9B] bg-[#FAF5FF] px-2 py-0.5 rounded-full border border-purple-100/80">
                                 <Ruler size={10} />
                                 <span>{isHomeVisitSelected ? 'Executive Visit' : (config?.measurements?.type === 'saved' ? 'Saved Profile' : 'Custom Fit')}</span>
                             </div>
@@ -116,7 +116,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                         </div>
 
                         {/* Tagline: Measurement Executive or Boutique Tailor */}
-                        <div className="pt-0.5 flex items-center gap-1 text-[10px] sm:text-[11px] text-[#7C3AED] font-extrabold uppercase tracking-wide">
+                        <div className="pt-0.5 flex items-center gap-1 text-[10px] sm:text-[11px] text-[#843D9B] font-extrabold uppercase tracking-wide">
                             {isHomeVisitSelected ? (
                                 <>
                                     <Ruler size={10} />
@@ -148,7 +148,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                             <div className="text-left space-y-0.5 min-w-0">
                                 <div className="flex items-center gap-1">
                                     <h5 className="text-[11px] font-bold text-slate-900 truncate">{shopName}</h5>
-                                    <span className="bg-[#7C3AED] text-white text-[8px] font-bold uppercase px-1.5 py-0.2 rounded-full">
+                                    <span className="bg-[#843D9B] text-white text-[8px] font-bold uppercase px-1.5 py-0.2 rounded-full">
                                         VERIFIED
                                     </span>
                                 </div>
@@ -166,7 +166,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                         {/* View Profile Action Button */}
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="w-full py-1 px-3 bg-white border border-slate-200 hover:border-[#7C3AED] hover:bg-purple-50/50 text-slate-800 hover:text-[#7C3AED] rounded-full text-[11px] font-bold transition-all flex items-center justify-center gap-1 shadow-2xs group cursor-pointer"
+                            className="w-full py-1 px-3 bg-white border border-slate-200 hover:border-[#843D9B] hover:bg-purple-50/50 text-slate-800 hover:text-[#843D9B] rounded-full text-[11px] font-bold transition-all flex items-center justify-center gap-1 shadow-2xs group cursor-pointer"
                         >
                             <span>View Profile</span>
                             <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
@@ -175,13 +175,13 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                 ) : (
                     <div className="flex flex-col items-start sm:items-end gap-1.5 shrink-0 pt-1 sm:pt-0">
                         <div className="flex items-center gap-2 bg-[#FAF5FF] p-2.5 rounded-2xl border border-purple-100 min-w-[155px]">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 text-[#7C3AED] flex items-center justify-center font-bold text-xs shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-purple-100 text-[#843D9B] flex items-center justify-center font-bold text-xs shrink-0">
                                 📏
                             </div>
                             <div className="text-left space-y-0.5">
                                 <div className="flex items-center gap-1">
                                     <h5 className="text-[11px] font-bold text-slate-900">Home Visit</h5>
-                                    <span className="bg-[#7C3AED] text-white text-[8px] font-bold uppercase px-1.5 py-0.2 rounded-full">
+                                    <span className="bg-[#843D9B] text-white text-[8px] font-bold uppercase px-1.5 py-0.2 rounded-full">
                                         Executive
                                     </span>
                                 </div>
@@ -196,7 +196,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
             {isHomeVisitSelected && (
                 <div className="pt-2 mt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
                     <span>Measurement Executive Fee</span>
-                    <span className="text-[#7C3AED] font-bold">+₹{pricing?.tailorAtHome || 150}</span>
+                    <span className="text-[#843D9B] font-bold">+₹{pricing?.tailorAtHome || 150}</span>
                 </div>
             )}
 

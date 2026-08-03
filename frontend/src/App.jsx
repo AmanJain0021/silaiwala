@@ -191,10 +191,12 @@ function App() {
     
     // Listen for new orders (Tailor)
     const handleNewOrder = (order) => {
+      const orderId = order?.orderId || order?._id || 'new';
       import('react-hot-toast').then((module) => {
         const { toast } = module.default || module;
-        toast.success(`🎉 New Order Received! ID: ${order?.orderId || 'Unknown'}`, {
-          duration: 6000,
+        toast.success(`🎉 New Order Received! ID: ${orderId}`, {
+          id: `toast-new-order-${orderId}`,
+          duration: 5000,
           position: 'top-right',
         });
       });
@@ -202,13 +204,16 @@ function App() {
 
     // Listen for status updates (Customer/Tailor)
     const handleStatusUpdate = (data) => {
-      // Notification utility used to emit SCREAMING_SNAKE types on this channel.
-      // Only toast real workflow statuses (kebab-case / lowercase).
       if (!data?.status || /^[A-Z0-9_]+$/.test(String(data.status))) return;
+
+      const orderId = data.orderId || data._id;
+      const statusKey = String(data.status).toLowerCase();
+      const notifId = `toast-status-${orderId}-${statusKey}`;
 
       import('react-hot-toast').then((module) => {
         const { toast } = module.default || module;
-        toast(`📦 Order ${data.orderId} status changed to: ${String(data.status).replace(/-/g, ' ')}`, {
+        toast.success(`📦 Order ${orderId} status changed to: ${statusKey.replace(/-/g, ' ')}`, {
+          id: notifId,
           duration: 5000,
           position: 'top-right',
           icon: '🔄',

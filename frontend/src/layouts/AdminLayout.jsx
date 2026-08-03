@@ -79,7 +79,7 @@ const AdminLayout = () => {
             if (data.type === 'NEW_REGISTRATION') icon = '📋';
             if (data.type === 'NEW_ORDER' || data.type === 'ORDER_CREATED') icon = '🛍️';
 
-            toast(data.title ? `${data.title}: ${data.message}` : (data.message || 'New notification received'), {
+            toast.success(data.title ? `${data.title}: ${data.message}` : (data.message || 'New notification received'), {
                 icon,
                 position: 'top-right',
                 duration: 6000
@@ -98,7 +98,7 @@ const AdminLayout = () => {
 
         socket.on('order_status_updated', (data) => {
             setHasUnread(true);
-            toast(`Order ${data.orderId} updated to ${data.status}`, {
+            toast.success(`Order ${data.orderId} updated to ${data.status}`, {
                 icon: '🔄',
                 position: 'top-right'
             });

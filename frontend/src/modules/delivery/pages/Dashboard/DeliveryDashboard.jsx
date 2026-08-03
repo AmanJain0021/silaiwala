@@ -101,7 +101,9 @@ const DeliveryDashboard = () => {
         };
 
         const handleNewNotification = (data) => {
-            toast(data.message, { icon: '🔔' });
+            if (data?.message) {
+                toast.success(data.message, { icon: '🔔' });
+            }
             fetchDashboardData();
         };
 

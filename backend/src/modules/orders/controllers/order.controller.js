@@ -970,8 +970,13 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
       }
     }
     
+    const isFabricPhase =
+      ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "waiting-for-customer-dropoff", "fabric-delivered"].includes(order.status) ||
+      order.pickupDeliveryStatus === "reached-dropoff";
+
     return {
       ...order,
+      dropoffDeliveryOtp: isFabricPhase ? undefined : order.dropoffDeliveryOtp,
       vendorLatitude,
       vendorLongitude,
       customerLatitude,
@@ -1083,6 +1088,20 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
           .lean();
   } catch (err) {
       console.error("Error checking for existing issue:", err);
+  }
+
+  // Scope dropoffDeliveryOtp to appropriate recipient (Customer vs Tailor) based on phase
+  const isFabricPhase =
+    ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "waiting-for-customer-dropoff", "fabric-delivered"].includes(order.status) ||
+    order.pickupDeliveryStatus === "reached-dropoff";
+
+  const isCustomer = order.customer?._id?.toString() === req.user.id;
+  const isTailor = order.tailor?._id?.toString() === req.user.id;
+
+  if (isCustomer && isFabricPhase) {
+    order.dropoffDeliveryOtp = undefined;
+  } else if (isTailor && !isFabricPhase) {
+    order.dropoffDeliveryOtp = undefined;
   }
 
   res.status(200).json({

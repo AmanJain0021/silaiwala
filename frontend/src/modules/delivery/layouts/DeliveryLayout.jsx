@@ -143,7 +143,9 @@ const DeliveryLayout = () => {
             try { playNotificationSound('delivery'); } catch(e) { console.error(e); }
             setNotifications(prev => [data, ...prev]);
             setUnreadCount(prev => prev + 1);
-            toast(data.message, { icon: '🔔' });
+            if (data?.message) {
+                toast.success(data.message, { icon: '🔔' });
+            }
         };
 
         const handleNewTask = (data) => {

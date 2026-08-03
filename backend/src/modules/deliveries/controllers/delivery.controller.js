@@ -1147,9 +1147,11 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
-        const customerId = order.customer?._id || order.customer;
-        const tailorId = order.tailor?._id || order.tailor;
-        const payload = {
+        const isFabricPhase =
+          ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up", "waiting-for-customer-dropoff", "fabric-delivered"].includes(order.status) ||
+          order.pickupDeliveryStatus === "reached-dropoff";
+
+        const customerPayload = {
             _id: order._id,
             orderId: order.orderId,
             status: order.status,
@@ -1158,16 +1160,30 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
             dropoffDeliveryStatus: order.dropoffDeliveryStatus,
             deliveryStatus: order.deliveryStatus,
             pickupDeliveryOtp: order.pickupDeliveryOtp,
-            dropoffDeliveryOtp: order.dropoffDeliveryOtp,
+            dropoffDeliveryOtp: isFabricPhase ? null : order.dropoffDeliveryOtp,
+            pickupOtpVerified: order.pickupOtpVerified,
+            dropoffOtpVerified: order.dropoffOtpVerified,
+        };
+
+        const tailorPayload = {
+            _id: order._id,
+            orderId: order.orderId,
+            status: order.status,
+            acceptedAt: order.acceptedAt,
+            pickupDeliveryStatus: order.pickupDeliveryStatus,
+            dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+            deliveryStatus: order.deliveryStatus,
+            pickupDeliveryOtp: order.pickupDeliveryOtp,
+            dropoffDeliveryOtp: isFabricPhase ? order.dropoffDeliveryOtp : null,
             pickupOtpVerified: order.pickupOtpVerified,
             dropoffOtpVerified: order.dropoffOtpVerified,
         };
 
         if (customerId) {
-          io.to(`user_${customerId}`).emit('order_status_updated', payload);
+          io.to(`user_${customerId}`).emit('order_status_updated', customerPayload);
         }
         if (tailorId) {
-          io.to(`user_${tailorId}`).emit('order_status_updated', payload);
+          io.to(`user_${tailorId}`).emit('order_status_updated', tailorPayload);
         }
     }
   } catch (err) {

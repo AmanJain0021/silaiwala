@@ -248,7 +248,7 @@ const Orders = () => {
             // Play loud buzzer (dispatch alert)
             try { playNotificationSound('tailor'); } catch(e) {}
             
-            toast.success('New order received');
+            toast.success('New order received', { id: `toast-order-${eventKey || 'new'}` });
             fetchOrders();
         };
         // createOrder emits receive_new_order directly and notification utility

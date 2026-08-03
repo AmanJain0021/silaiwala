@@ -1,83 +1,176 @@
-import React from 'react';
-import { Check, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Clock, ChevronDown, ChevronUp, Package, Layers, Scissors, Shirt, Box, ShoppingBag, Truck, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
 
-const TrackingTimeline = ({ states, currentIndex }) => {
-    return (
-        <div className="relative pl-2 py-2">
-            {/* Vertical Progress Line */}
-            <div className="absolute left-[21px] top-6 bottom-6 w-0.5 bg-gray-100 -z-0">
-                <div 
-                    className="w-full bg-green-500 transition-all duration-1000 ease-in-out origin-top" 
-                    style={{ height: `${(Math.min(currentIndex, states.length - 1) / (states.length - 1)) * 100}%` }}
-                />
-            </div>
-            
-            <div className="flex flex-col gap-4 relative z-10">
-                {states.map((state, index) => {
-                    const isCompleted = index <= currentIndex;
-                    const isCurrent = index === currentIndex;
-                    
-                    return (
-                        <div key={index} className="flex items-start gap-3 group">
-                            {/* Dot / Icon Container */}
-                            <div className={cn(
-                                "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-700 bg-white border-2 shrink-0",
-                                isCompleted ? "border-green-500 text-green-500 shadow-sm" : "border-gray-200 text-gray-300",
-                                isCurrent && "ring-4 ring-green-100 scale-110 z-20"
-                            )}>
-                                {isCompleted ? (
-                                    <Check size={14} strokeWidth={4} className="animate-in zoom-in duration-300" />
-                                ) : (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                                )}
-                            </div>
+const DefaultIcons = {
+    'pending': Package,
+    'fabric-received': Layers,
+    'cutting': Scissors,
+    'stitching': Shirt,
+    'completed': Box,
+    'ready-for-delivery': ShoppingBag,
+    'out-for-delivery': Truck,
+    'delivered': CheckCircle2
+};
 
-                            {/* Content */}
-                            <div className="flex-1 pt-0.5">
-                                <div className="flex justify-between items-center gap-2">
-                                    <h4 className={cn(
-                                        "text-[13px] font-black uppercase tracking-wide transition-colors duration-500",
-                                        isCompleted ? "text-gray-900" : "text-gray-400"
-                                    )}>
-                                        {state.label}
-                                    </h4>
-                                    <p className={cn(
-                                        "text-[10px] font-bold transition-opacity duration-500 flex items-center gap-1",
-                                        isCompleted ? "text-gray-500 opacity-100" : "text-gray-300 opacity-100"
-                                    )}>
-                                        {state.completed && state.time ? (
-                                            <>{state.time}</>
+const TrackingTimeline = ({ states = [], currentIndex = 0 }) => {
+    const [expandedStages, setExpandedStages] = useState({
+        'fabric-received': true,
+        'out-for-delivery': true
+    });
+
+    const toggleExpand = (stageKey) => {
+        setExpandedStages(prev => ({
+            ...prev,
+            [stageKey]: !prev[stageKey]
+        }));
+    };
+
+    if (!states || states.length === 0) return null;
+
+    // Check if the entire timeline is completed
+    const isAllCompleted = states.every(s => s.completed);
+
+    const progressPercentage = Math.min(100, Math.max(0, (currentIndex / (states.length - 1)) * 100));
+
+    return (
+        <div className="relative px-1 py-2 font-sans">
+            <div className="relative">
+                {/* Background Vertical Line */}
+                <div className="absolute left-[19px] top-6 bottom-6 w-[2px] bg-gray-100 z-0" />
+                
+                {/* Active Progress Line (Turns Emerald Green when order is fully delivered) */}
+                <div 
+                    className={cn(
+                        "absolute left-[19px] top-6 w-[2px] transition-all duration-700 ease-in-out z-0 origin-top",
+                        isAllCompleted ? "bg-emerald-500" : "bg-[#843D9B]"
+                    )}
+                    style={{ height: `${progressPercentage}%` }}
+                />
+
+                <div className="flex flex-col gap-5 relative z-10">
+                    {states.map((state, index) => {
+                        const isStageDone = !!state.completed;
+
+                        // A stage is completed if it's done AND (before current index OR all stages completed)
+                        const isCompleted = isStageDone && (index < currentIndex || isAllCompleted);
+                        // A stage is current ONLY IF it's the active in-progress stage and order isn't fully completed
+                        const isCurrent = isStageDone && !isAllCompleted && index === currentIndex;
+                        const isFuture = !isStageDone;
+
+                        const hasSubEvents = state.subEvents && state.subEvents.length > 0;
+                        const isExpanded = expandedStages[state.key] !== false;
+
+                        const IconComp = state.icon || DefaultIcons[state.key] || Package;
+
+                        return (
+                            <div key={state.key || index} className="flex flex-col">
+                                <div className="flex items-center justify-between gap-3 group">
+                                    {/* Left Node */}
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0 border-2",
+                                            isCompleted && "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-sm",
+                                            isCurrent && "bg-[#843D9B] border-[#843D9B] text-white ring-4 ring-[#843D9B]/15 scale-105 shadow-md",
+                                            isFuture && "bg-gray-50 border-gray-200 text-gray-300 opacity-60"
+                                        )}>
+                                            {isCompleted ? (
+                                                <Check size={18} strokeWidth={3} />
+                                            ) : (
+                                                <IconComp size={18} strokeWidth={2.2} />
+                                            )}
+                                        </div>
+
+                                        {/* Label & Description */}
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className={cn(
+                                                "text-xs sm:text-sm font-black tracking-tight transition-colors leading-tight",
+                                                isCompleted && "text-emerald-800 font-bold",
+                                                isCurrent && "text-[#843D9B]",
+                                                isFuture && "text-gray-400"
+                                            )}>
+                                                {state.label}
+                                            </h4>
+                                            <p className={cn(
+                                                "text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5 truncate",
+                                                isCompleted && "text-emerald-600 font-semibold",
+                                                isCurrent && "text-gray-500",
+                                                isFuture && "text-gray-300"
+                                            )}>
+                                                {state.desc || (isCompleted ? 'Completed' : 'Pending')}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Timestamp & Expand Toggle */}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className={cn(
+                                            "text-[10px] sm:text-xs font-bold",
+                                            isCompleted && "text-emerald-600 font-extrabold",
+                                            isCurrent && "text-[#843D9B]",
+                                            isFuture && "text-gray-300"
+                                        )}>
+                                            {state.completed && state.time ? (
+                                                state.time
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-gray-300">
+                                                    <Clock size={10} /> Pending
+                                                </span>
+                                            )}
+                                        </span>
+
+                                        {hasSubEvents ? (
+                                            <button 
+                                                onClick={() => toggleExpand(state.key)}
+                                                className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 hover:bg-[#843D9B]/10 hover:text-[#843D9B] flex items-center justify-center transition-colors"
+                                                title="Toggle Details"
+                                            >
+                                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                            </button>
                                         ) : (
-                                            <span className="flex items-center gap-1"><Clock size={10} /> Pending</span>
+                                            <div className={cn(
+                                                "w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                                                isCompleted && "bg-emerald-500 text-white shadow-sm",
+                                                isCurrent && "bg-[#843D9B] text-white shadow-sm",
+                                                isFuture && "bg-gray-100 text-gray-300"
+                                            )}>
+                                                <Check size={12} strokeWidth={3} />
+                                            </div>
                                         )}
-                                    </p>
+                                    </div>
                                 </div>
-                                
-                                {/* Granular sub-events / tracking history injected here */}
-                                {state.subEvents && state.subEvents.length > 0 && (
-                                    <div className="mt-3 mb-1 space-y-2.5">
+
+                                {/* Expandable Activity Log Box */}
+                                {hasSubEvents && isExpanded && (
+                                    <div className={cn(
+                                        "ml-13 mt-2 mb-1 p-3.5 rounded-2xl border space-y-2.5 animate-in fade-in duration-300",
+                                        isCompleted ? "bg-emerald-50/50 border-emerald-100" : "bg-gray-50/80 border-gray-100"
+                                    )}>
                                         {state.subEvents.map((event, idx) => (
-                                            <div key={idx} className="flex items-start gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-                                                <div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0" />
-                                                <div>
-                                                    <p className="text-[11px] font-bold text-gray-600 leading-tight">{event.message}</p>
-                                                    <p className="text-[9px] font-medium text-gray-400">{event.time}</p>
+                                            <div key={idx} className="flex items-start justify-between gap-3 text-[10px] sm:text-[11px]">
+                                                <div className="flex items-start gap-2 flex-1 min-w-0">
+                                                    <span className={cn(
+                                                        "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0",
+                                                        isCompleted ? "bg-emerald-500" : "bg-[#843D9B]"
+                                                    )} />
+                                                    <span className="font-semibold text-gray-700 leading-snug">
+                                                        {event.message}
+                                                    </span>
                                                 </div>
+                                                <span className={cn(
+                                                    "font-bold shrink-0 text-[10px]",
+                                                    isCompleted ? "text-emerald-700" : "text-[#843D9B]"
+                                                )}>
+                                                    {event.time}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
                                 )}
-
-                                {isCurrent && index < states.length - 1 && (!state.subEvents || state.subEvents.length === 0) && (
-                                    <p className="text-[10px] text-primary font-bold mt-1 animate-pulse">
-                                        In progress...
-                                    </p>
-                                )}
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

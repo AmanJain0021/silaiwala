@@ -1,0 +1,149 @@
+import toast from 'react-hot-toast';
+import React from 'react';
+
+// In-memory map to track recently shown toast keys and timestamps
+const recentlyShownToasts = new Map();
+
+/**
+ * Generate a clean, normalized key for a toast to prevent duplicate popups.
+ * Unifies order notifications across Socket.io and FCM push notifications.
+ */
+export const getToastKey = (message, options = {}) => {
+  if (options && options.id) {
+    return String(options.id);
+  }
+
+  let textContent = '';
+  if (typeof message === 'string') {
+    textContent = message;
+  } else if (typeof message === 'number') {
+    textContent = String(message);
+  } else if (message && typeof message === 'object') {
+    textContent = message.title || message.message || message.body || '';
+  }
+
+  if (!textContent) {
+    textContent = 'generic-toast';
+  }
+
+  // Extract order ID if present (e.g. ORD-1002 or 24-char ObjectId)
+  const orderIdMatch = textContent.match(/ORD-?\d+/i) || textContent.match(/[a-f0-9]{24}/i);
+  const orderIdKey = orderIdMatch ? orderIdMatch[0].toLowerCase() : '';
+
+  // Clean string: remove emojis, punctuation, extra spaces
+  const cleanStr = textContent
+    .toLowerCase()
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[^a-z0-9]/g, '');
+
+  if (orderIdKey) {
+    let actionKey = 'update';
+    if (cleanStr.includes('new') || cleanStr.includes('create') || cleanStr.includes('received')) actionKey = 'new';
+    else if (cleanStr.includes('status') || cleanStr.includes('update') || cleanStr.includes('changed')) actionKey = 'status';
+    return `order-${actionKey}-${orderIdKey}`;
+  }
+
+  return cleanStr || 'default-toast-key';
+};
+
+/**
+ * Check if toast key should be suppressed (shown within last 4 seconds).
+ */
+export const shouldSuppressToast = (toastKey, windowMs = 4000) => {
+  const now = Date.now();
+  if (recentlyShownToasts.has(toastKey)) {
+    const lastShown = recentlyShownToasts.get(toastKey);
+    if (now - lastShown < windowMs) {
+      return true; // Suppress duplicate!
+    }
+  }
+  recentlyShownToasts.set(toastKey, now);
+
+  setTimeout(() => {
+    recentlyShownToasts.delete(toastKey);
+  }, windowMs * 2);
+
+  return false;
+};
+
+// Patch react-hot-toast methods globally once on app load
+if (toast && !toast.__dedupePatched) {
+  toast.__dedupePatched = true;
+
+  const originalSuccess = toast.success?.bind(toast);
+  const originalError = toast.error?.bind(toast);
+  const originalCustom = toast.custom?.bind(toast);
+  const originalLoading = toast.loading?.bind(toast);
+
+  const wrapToastFn = (origFn) => {
+    if (!origFn) return () => {};
+    return (message, options = {}) => {
+      const key = getToastKey(message, options);
+      if (shouldSuppressToast(key)) {
+        return key;
+      }
+      return origFn(message, { id: key, ...options });
+    };
+  };
+
+  toast.success = wrapToastFn(originalSuccess);
+  toast.error = wrapToastFn(originalError);
+  toast.custom = wrapToastFn(originalCustom);
+  toast.loading = (message, options = {}) => {
+    const key = getToastKey(message, options);
+    return originalLoading ? originalLoading(message, { id: key, ...options }) : key;
+  };
+}
+
+/**
+ * Show a unified, deduplicated toast notification across Customer, Tailor, and Delivery panels.
+ * Ensures only ONE toast is rendered from the top (top-center) with consistent styling.
+ */
+export const showDeduplicatedToast = ({
+  id,
+  title = 'SewZella Notification',
+  message = '',
+  type = 'info', // 'success', 'info', 'order', 'status'
+  icon
+}) => {
+  if (!message && !title) return;
+
+  const key = getToastKey(id || `${title} ${message}`, { id });
+  if (shouldSuppressToast(key)) {
+    return key;
+  }
+
+  const displayIcon = icon || (
+    type === 'success' ? '✅' :
+    type === 'order' ? '🎉' :
+    type === 'status' ? '📦' : '🔔'
+  );
+
+  return toast.custom(
+    (t) => (
+      <div
+        className={`${
+          t.visible ? 'animate-enter' : 'animate-leave'
+        } max-w-sm w-full bg-slate-900 text-white shadow-2xl rounded-2xl p-3.5 flex items-center gap-3 border border-purple-500/30 backdrop-blur-md pointer-events-auto cursor-pointer`}
+        onClick={() => toast.dismiss(t.id)}
+      >
+        <div className="w-9 h-9 rounded-xl bg-[#843D9B]/30 border border-[#843D9B]/50 flex items-center justify-center text-lg shrink-0">
+          {displayIcon}
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-[11px] font-black uppercase tracking-wider text-purple-300 truncate">
+            {title}
+          </p>
+          <p className="text-xs font-semibold text-slate-100 mt-0.5 line-clamp-2 leading-snug">
+            {message}
+          </p>
+        </div>
+      </div>
+    ),
+    {
+      id: key,
+      duration: 4500,
+      position: 'top-center',
+    }
+  );
+};

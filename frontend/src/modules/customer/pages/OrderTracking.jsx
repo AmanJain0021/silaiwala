@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, MapPin, Phone, MessageSquare,
-    AlertCircle, HelpCircle, Package, Truck,
-    Calendar, ExternalLink, ChevronRight, ShieldCheck,
-    Loader2, CheckCircle2, Star, User, Scissors, Store
+    AlertCircle, Package, Truck,
+    Calendar, ChevronRight, ShieldCheck,
+    Loader2, CheckCircle2, Star, User, Scissors, Store,
+    MoreVertical, Headphones, Radio, Gift, Layers, Shirt, Box, ShoppingBag, Check, CreditCard, FileText
 } from 'lucide-react';
 import api from '../../../utils/api';
 import TrackingTimeline from '../components/orders/TrackingTimeline';
@@ -13,7 +14,6 @@ import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
-import { motion } from 'framer-motion';
 import ExchangeRequestModal from '../components/orders/ExchangeRequestModal';
 
 const OrderTracking = () => {
@@ -33,18 +33,17 @@ const OrderTracking = () => {
     const [measurementOtp, setMeasurementOtp] = useState(null);
     const [settings, setSettings] = useState(null);
     const [unreadChatCount, setUnreadChatCount] = useState(0);
+    const [showOrderDetailsSection, setShowOrderDetailsSection] = useState(true);
 
     const [socketInstance, setSocketInstance] = useState(null);
 
-    const fetchOrderDetails = async () => {
+    const fetchOrderDetails = useCallback(async () => {
         try {
-            // Try fetching from standard orders first
             let response;
             try {
                 response = await api.get(`/orders/${id}`);
             } catch (err) {
                 if (err.response?.status === 404) {
-                    // Try bulk orders if not found in standard
                     response = await api.get(`/bulk-orders/${id}`);
                     setIsBulk(true);
                 } else {
@@ -54,14 +53,12 @@ const OrderTracking = () => {
 
             if (response?.data?.success) {
                 const fetchedOrder = response.data.data;
-                console.log('--- DEBUG: fetchedOrder from backend ---', { status: fetchedOrder.status, measurementOtp: fetchedOrder.measurementOtp });
                 setOrder(fetchedOrder);
                 if (fetchedOrder.measurementOtp) {
                     setMeasurementOtp(fetchedOrder.measurementOtp);
                 }
-                setError(null); // Clear any previous errors if successful
+                setError(null);
                 
-                // Fetch unread chats for this order
                 try {
                     const unreadRes = await api.get('/orders/chats/unread');
                     if (unreadRes.data?.success) {
@@ -71,7 +68,6 @@ const OrderTracking = () => {
                     console.error('Failed to fetch unread chats:', uErr);
                 }
 
-                // Fetch measurement report if needed
                 if (fetchedOrder.isMeasurementHome) {
                     try {
                         const mRes = await api.get(`/orders/${id}/measurements`);
@@ -92,7 +88,7 @@ const OrderTracking = () => {
                 setIsLoading(false);
             }
         }
-    };
+    }, [id]);
 
     const handleMeasurementAction = async (action) => {
         try {
@@ -122,21 +118,15 @@ const OrderTracking = () => {
             fetchOrderDetails();
 
             const socket = io(SOCKET_URL, {
-                auth: {
-                    token: getToken()
-                }
+                auth: { token: getToken() }
             });
             setSocketInstance(socket);
 
-            const joinRooms = () => {
-                socket.emit('join_order_room', id);
-            };
+            const joinRooms = () => { socket.emit('join_order_room', id); };
             socket.on('connect', joinRooms);
             joinRooms();
 
-            const refreshOrder = () => {
-                fetchOrderDetails();
-            };
+            const refreshOrder = () => { fetchOrderDetails(); };
 
             socket.on('order_status_updated', refreshOrder);
             socket.on('order_notification', refreshOrder);
@@ -148,31 +138,24 @@ const OrderTracking = () => {
             });
 
             socket.on('measurement_otp_sent', (data) => {
-                console.log('Measurement OTP received:', data);
-                if (data.otp) {
-                    setMeasurementOtp(data.otp);
-                }
+                if (data.otp) setMeasurementOtp(data.otp);
                 fetchOrderDetails();
             });
 
-            // Also listen for general notifications as fallback
             socket.on('new_notification', (data) => {
-                if (data.data?.orderId === id) {
-                    fetchOrderDetails();
-                }
+                if (data.data?.orderId === id) fetchOrderDetails();
             });
 
             const fetchSettings = async () => {
                 try {
                     const res = await api.get('/cms/settings');
-                    if (res.data && res.data.data && res.data.data.loyaltyConfig) {
+                    if (res.data?.data?.loyaltyConfig) {
                         setSettings(res.data.data.loyaltyConfig);
                     }
                 } catch (err) {
-                    if (err?.name === 'CanceledError' || err?.message === 'canceled' || err?.message?.includes('Cancelled')) {
-                        return;
+                    if (err?.name !== 'CanceledError' && err?.message !== 'canceled' && !err?.message?.includes('Cancelled')) {
+                        console.error("Failed to fetch settings:", err);
                     }
-                    console.error("Failed to fetch settings:", err);
                 }
             };
             fetchSettings();
@@ -185,67 +168,25 @@ const OrderTracking = () => {
                 setSocketInstance(null);
             };
         }
-    }, [id]);
+    }, [id, fetchOrderDetails]);
 
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 pb-12 font-sans text-gray-900">
-                <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe pt-8 flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
-                        <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-                            <div className="h-2 bg-gray-200 rounded animate-pulse w-24"></div>
-                        </div>
+                <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe pt-8 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse shrink-0"></div>
+                    <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                        <div className="h-2.5 bg-gray-200 rounded animate-pulse w-24"></div>
                     </div>
                 </div>
 
                 <div className="max-w-xl mx-auto p-4 space-y-4">
-                    {/* Skeleton Order Quick Summary */}
                     <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
                         <div className="w-16 h-16 rounded-2xl bg-gray-200 animate-pulse shrink-0"></div>
                         <div className="flex-1 space-y-3">
                             <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
                             <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
-                        </div>
-                    </div>
-
-                    {/* Skeleton Live Tracking / Status */}
-                    <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm">
-                        <div className="flex justify-between items-center mb-4">
-                            <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-                            <div className="w-16 h-6 rounded-full bg-gray-200 animate-pulse"></div>
-                        </div>
-                        <div className="h-24 bg-gray-200 rounded-2xl animate-pulse mb-6"></div>
-                        
-                        {/* Skeleton Timeline Items */}
-                        <div className="space-y-6 px-2">
-                            {[1, 2, 3, 4].map(i => (
-                                <div key={i} className="flex gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse shrink-0"></div>
-                                    <div className="flex-1 space-y-2 py-1">
-                                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                                        <div className="h-2 bg-gray-200 rounded animate-pulse w-1/4"></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Skeleton Order Details */}
-                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-2"></div>
-                        <div className="flex gap-3">
-                            <div className="w-12 h-12 bg-gray-200 rounded-xl animate-pulse shrink-0"></div>
-                            <div className="flex-1 space-y-2 py-1">
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
-                                <div className="h-2 bg-gray-200 rounded animate-pulse w-1/4"></div>
-                            </div>
-                        </div>
-                        <div className="pt-3 border-t border-gray-100 space-y-2">
-                            <div className="h-2 bg-gray-200 rounded animate-pulse w-full"></div>
-                            <div className="h-2 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                            <div className="h-2 bg-gray-200 rounded animate-pulse w-4/6"></div>
                         </div>
                     </div>
                 </div>
@@ -260,7 +201,7 @@ const OrderTracking = () => {
                 <h2 className="text-lg font-bold text-gray-900">{error || 'Order Not Found'}</h2>
                 <button 
                     onClick={() => navigate('/user/orders')} 
-                    className="mt-6 px-8 py-3 bg-primary text-white rounded-full font-bold text-sm shadow-lg active:scale-95 transition-all"
+                    className="mt-6 px-8 py-3 bg-[#843D9B] text-white rounded-full font-bold text-sm shadow-lg active:scale-95 transition-all"
                 >
                     Back to My Orders
                 </button>
@@ -345,90 +286,79 @@ const OrderTracking = () => {
     // Data Extraction based on Order Type
     const serviceTitle = isBulk 
         ? `${order.organizationName} - ${order.serviceType}`
-        : (order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Order Detail');
+        : (order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Garment Order');
     
     const imageUrl = isBulk
-        ? (order.referenceImages?.[0] || null)
-        : (order.items?.[0]?.service?.image || order.items?.[0]?.product?.images?.[0] || order.items?.[0]?.product?.image);
+        ? (order.referenceImages?.[0] || '/logo.png')
+        : (order.items?.[0]?.service?.image || order.items?.[0]?.product?.images?.[0] || order.items?.[0]?.product?.image || '/logo.png');
 
     // Arrival Date Calculation
     const getArrivalDate = () => {
         if (isBulk && order.expectedDeliveryDate) {
-            return new Date(order.expectedDeliveryDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            return new Date(order.expectedDeliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
         const baseDate = order.acceptedAt ? new Date(order.acceptedAt) : new Date(order.createdAt);
         const firstItem = order.items?.[0];
         const deliveryType = firstItem?.deliveryType || 'standard';
         const deliveryDays = deliveryType === 'express' ? 10 : (deliveryType === 'premium' ? 7 : 15);
         baseDate.setDate(baseDate.getDate() + deliveryDays);
-        return baseDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        return baseDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     const dateString = getArrivalDate();
+    const createdDateString = new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const createdTimeString = new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const isReadyMade = order?.items?.some(item => item.product);
     const isAlteration = order?.items?.some(item => item.isAlteration) || order?.isAlteration;
 
-    // Timeline Configuration
+    // Timeline Stages Definition
     const stages = isBulk 
         ? [
-            { key: 'pending', label: 'Inquiry', icon: Package },
-            { key: 'accepted', label: 'Paid', icon: ShieldCheck },
-            { key: 'accepted-by-tailor', label: 'Assigned', icon: User },
-            { key: 'in-production', label: 'Production', icon: Scissors },
-            { key: 'shipped', label: 'In Transit', icon: Truck },
-            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+            { key: 'pending', label: 'Order Received', desc: "We've received your order", icon: Package },
+            { key: 'accepted', label: 'Payment Confirmed', desc: "Security deposit paid", icon: ShieldCheck },
+            { key: 'accepted-by-tailor', label: 'Assigned', desc: "Assigned to master artisan", icon: User },
+            { key: 'in-production', label: 'Production', desc: "Bulk manufacturing in progress", icon: Scissors },
+            { key: 'shipped', label: 'Out for Delivery', desc: "Bulk order in transit", icon: Truck },
+            { key: 'delivered', label: 'Delivered', desc: "Order delivered successfully", icon: CheckCircle2 }
         ]
         : isAlteration
         ? [
-            { key: 'pending', label: 'Order Received', icon: Package },
-            ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Dropoff', icon: Package }] : []),
-            { key: 'fabric-received', label: 'Garment Received', icon: Package },
-            { key: 'in-progress', label: 'Alteration Started', icon: Scissors },
-            { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
-            { key: 'ready-for-delivery', label: 'Ready For Delivery', icon: Package },
-            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
-            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
-        ]
-        : order.isBridalConsultation
-        ? [
-            { key: 'pending', label: 'Request Received', icon: Package },
-            { key: 'accepted', label: 'Consultation Accepted', icon: ShieldCheck },
-            { key: 'measurements-approved', label: 'Measurements Taken', icon: Scissors },
-            { key: 'in-progress', label: 'Stitching Started', icon: Scissors },
-            { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
-            { key: 'ready-for-delivery', label: 'Ready For Delivery', icon: Package },
-            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
-            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+            { key: 'pending', label: 'Order Received', desc: "We've received your order", icon: Package },
+            ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Drop-off', desc: 'Awaiting drop-off at shop', icon: Store }] : []),
+            { key: 'fabric-received', label: 'Garment Received', desc: 'Garment received and quality checked', icon: Layers },
+            { key: 'in-progress', label: 'Alteration Started', desc: 'Artisan altering your garment', icon: Scissors },
+            { key: 'quality-check', label: 'Completed', desc: 'Alteration completed & inspected', icon: Box },
+            { key: 'ready-for-delivery', label: 'Ready for Delivery', desc: 'Order is ready to be delivered', icon: ShoppingBag },
+            { key: 'out-for-delivery', label: 'Out for Delivery', desc: 'Your order is out for delivery', icon: Truck },
+            { key: 'delivered', label: 'Delivered', desc: 'Your order has been delivered', icon: CheckCircle2 }
         ]
         : isReadyMade
         ? [
-            { key: 'pending', label: 'Order Received', icon: Package },
-            { key: 'in-progress', label: 'Processing & Packing', icon: Package },
-            { key: 'ready-for-delivery', label: 'Ready To Dispatch', icon: Package },
-            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
-            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+            { key: 'pending', label: 'Order Received', desc: "We've received your order", icon: Package },
+            { key: 'in-progress', label: 'Processing & Packing', desc: 'Item being packed', icon: Box },
+            { key: 'ready-for-delivery', label: 'Ready for Delivery', desc: 'Packed & ready for dispatch', icon: ShoppingBag },
+            { key: 'out-for-delivery', label: 'Out for Delivery', desc: 'Your order is out for delivery', icon: Truck },
+            { key: 'delivered', label: 'Delivered', desc: 'Your order has been delivered', icon: CheckCircle2 }
         ]
         : [
-            { key: 'pending', label: 'Order Received', icon: Package },
-            ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Dropoff', icon: Package }] : []),
-            { key: 'fabric-received', label: 'Fabric Received', icon: Package },
-            { key: 'cutting', label: 'Cutting', icon: Scissors },
-            { key: 'stitching', label: 'Stitching', icon: Scissors },
-            { key: 'quality-check', label: 'Completed', icon: ShieldCheck },
-            { key: 'ready-for-delivery', label: 'Ready For Delivery', icon: Package },
-            { key: 'out-for-delivery', label: 'Out For Delivery', icon: Truck },
-            { key: 'delivered', label: 'Delivered', icon: CheckCircle2 }
+            { key: 'pending', label: 'Order Received', desc: "We've received your order", icon: Package },
+            ...(order.fabricDeliveryPreference === 'self' ? [{ key: 'waiting-for-customer-dropoff', label: 'Waiting For Drop-off', desc: 'Awaiting drop-off at shop', icon: Store }] : []),
+            { key: 'fabric-received', label: 'Fabric Received', desc: 'Fabric received and quality checked', icon: Layers },
+            { key: 'cutting', label: 'Cutting', desc: 'Your fabric is being cut', icon: Scissors },
+            { key: 'stitching', label: 'Stitching', desc: 'Stitching in progress', icon: Shirt },
+            { key: 'quality-check', label: 'Completed', desc: 'Stitching completed', icon: Box },
+            { key: 'ready-for-delivery', label: 'Ready for Delivery', desc: 'Order is ready to be delivered', icon: ShoppingBag },
+            { key: 'out-for-delivery', label: 'Out for Delivery', desc: 'Your order is out for delivery', icon: Truck },
+            { key: 'delivered', label: 'Delivered', desc: 'Your order has been delivered', icon: CheckCircle2 }
         ];
 
     const getStageStatus = (stageKey) => {
         const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
-        const status = order.status.toLowerCase();
+        const status = (order.status || '').toLowerCase();
 
-        // Check completion logic
-        if (stageKey === 'pending') return { completed: true, time: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+        if (stageKey === 'pending') return { completed: true, time: createdTimeString };
         
-        // For Bulk
         if (isBulk) {
             const entry = history.find(h => h.status === stageKey);
             const statusOrder = ['pending', 'reviewing', 'quoted', 'accepted', 'accepted-by-tailor', 'in-production', 'shipped', 'delivered', 'completed'];
@@ -465,7 +395,6 @@ const OrderTracking = () => {
             'order-completed'
         ];
 
-        // Map stage keys to their equivalent status weights for comparison
         let equivalentStageKey = stageKey;
         if (stageKey === 'shipped') equivalentStageKey = 'out-for-delivery';
 
@@ -474,7 +403,6 @@ const OrderTracking = () => {
 
         const isCompleted = currentIndex >= stageIndex && stageIndex !== -1;
 
-        // Try to find exact timestamp from history
         let historyEntry = history.find(h => {
             if (stageKey === 'fabric-received') return ['fabric-delivered', 'fabric-received', 'delivery-fabric-delivered'].includes(h.status);
             if (stageKey === 'ready-for-delivery') return ['ready-for-pickup', 'ready-for-delivery'].includes(h.status);
@@ -483,7 +411,6 @@ const OrderTracking = () => {
             return h.status === stageKey;
         });
 
-        // Fallback to current time if just completed but no history sync yet
         const timeStr = historyEntry 
             ? new Date(historyEntry.timestamp || historyEntry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
             : (isCompleted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null);
@@ -496,7 +423,7 @@ const OrderTracking = () => {
         if (history.length === 0) return [];
 
         let validStatuses = [];
-        let timeConstraint = null; // 'before-cutting', 'after-ready'
+        let timeConstraint = null;
 
         if (stageKey === 'fabric-received') {
             validStatuses = ['pickup-assigned', 'fabric-ready-for-pickup', 'delivery-accepted', 'delivery-reached-pickup', 'delivery-fabric-picked-up', 'reached-pickup', 'fabric-picked-up', 'fabric-delivered', 'delivery-fabric-delivered'];
@@ -508,7 +435,6 @@ const OrderTracking = () => {
 
         if (validStatuses.length === 0) return [];
 
-        // Find boundary timestamps
         const readyForPickupTime = history.find(h => h.status === 'ready-for-pickup')?.timestamp;
         const cuttingTime = history.find(h => h.status === 'cutting' || h.status === 'fabric-delivered')?.timestamp;
 
@@ -518,16 +444,10 @@ const OrderTracking = () => {
             events = events.filter(e => new Date(e.timestamp) <= new Date(cuttingTime));
         } else if (timeConstraint === 'after-ready' && readyForPickupTime) {
             events = events.filter(e => new Date(e.timestamp) >= new Date(readyForPickupTime));
-        } else if (timeConstraint === 'after-ready' && !readyForPickupTime) {
-            // If it hasn't reached ready-for-pickup, there shouldn't be dispatch events
-            // But just in case, if status is out-for-delivery
-            if (stageKey === 'out-for-delivery' && order.status !== 'out-for-delivery' && order.status !== 'delivered') {
-                events = [];
-            }
         }
 
         return events.map(e => ({
-            message: e.message || `Status updated to ${e.status.replace(/-/g, ' ')}`,
+            message: e.message || `Delivery status updated to ${e.status.replace(/-/g, ' ')}`,
             time: new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             rawTime: new Date(e.timestamp).getTime()
         })).sort((a,b) => a.rawTime - b.rawTime);
@@ -548,317 +468,215 @@ const OrderTracking = () => {
         const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
         const latestHistory = history[history.length - 1];
         if (latestHistory?.message) return latestHistory.message;
-        if (order.status === 'delivered') return "Your order has been delivered successfully.";
+        if (order.status === 'delivered') return "Your order has been delivered successfully. Thank you for trusting Sewzella!";
         if (isBulk && order.status === 'accepted') return "Security deposit received. Awaiting production start.";
         return "Your order is progressing smoothly through our production line.";
     };
 
+    // Loyalty points check
+    const earnedPoints = Math.floor((order.totalAmount || 0) / 100) * (settings?.pointsPer100Spent || 1) + (settings?.flatPointsPerBooking || 0);
+
+    // Active partner info
+    const tailorInfo = order.tailor || null;
+    const partnerInfo = order.deliveryPartner || order.pickupPartner || order.dropoffPartner || null;
+
+    // Delivery check for rating section
+    const isFinalDelivered = ['delivered', 'product-delivered', 'completed', 'order-completed'].includes((order.status || '').toLowerCase());
+
     return (
-        <div className="min-h-screen bg-gray-50 pb-12 font-sans text-gray-900">
-            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 pb-4 pt-safe pt-8 flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/user/orders')} className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div className="flex-1">
-                        <h1 className="text-sm font-bold text-gray-900 h-3 pt-2">Track Order</h1>
-                        <p className="text-[10px] text-gray-500 font-medium font-mono uppercase tracking-widest leading-none mt-1 pt-3">
-                            {order.orderId}
-                        </p>
+        <div className="min-h-screen bg-gray-50 font-sans pb-16 text-gray-900">
+            {/* Sticky Clean Header Bar */}
+            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3.5 shadow-xs">
+                <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => navigate('/user/orders')} 
+                            className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div>
+                            <h1 className="text-sm font-bold text-gray-900 leading-tight">Track Order</h1>
+                            <p className="text-[10px] font-bold text-gray-500 font-mono uppercase tracking-widest mt-0.5">
+                                {order.orderId}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => {
+                                const subject = encodeURIComponent(`Help with Order ${order.orderId}`);
+                                window.location.href = `mailto:support@sewzella.com?subject=${subject}`;
+                            }}
+                            className="h-8 px-3 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                        >
+                            <Headphones size={14} />
+                            <span>Help</span>
+                        </button>
+                        <button 
+                            onClick={() => navigate(`/user/orders/${id}/chat`)}
+                            className="p-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors relative"
+                        >
+                            <MoreVertical size={18} />
+                            {unreadChatCount > 0 && (
+                                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-xl mx-auto p-4 space-y-4 animate-in fade-in duration-500">
-            
-                {/* OTP Banner */}
+            {/* Main Content Area */}
+            <div className="max-w-xl mx-auto px-4 py-4 space-y-4">
+
+                {/* OTP Banner Notifications */}
                 {measurementOtp && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm"
-                    >
+                    <div className="bg-white rounded-3xl p-4 border border-[#843D9B]/20 flex items-center justify-between shadow-sm">
                         <div>
-                            <p className="text-sm text-primary font-medium">Measurement Verification OTP</p>
-                            <p className="text-xs text-primary/70 mt-0.5">Share this 6-digit code with the executive</p>
+                            <p className="text-xs font-black text-[#843D9B] uppercase tracking-wider">Measurement Verification OTP</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Share code with measurement executive</p>
                         </div>
-                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-primary/10">
-                            <span className="text-2xl font-bold tracking-widest text-primary">{measurementOtp}</span>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Delivery OTP Banners (For Customer) */}
-                {/* 1. Fabric Pickup from Customer */}
-                {order.pickupDeliveryOtp && order.pickupOtpVerified === false && ['pending', 'accepted', 'pickup-assigned', 'fabric-ready-for-pickup'].includes(order.status) && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between shadow-sm"
-                    >
-                        <div>
-                            <p className="text-sm text-indigo-700 font-bold uppercase tracking-wider">Fabric Pickup OTP</p>
-                            <p className="text-xs text-indigo-600/80 mt-0.5 font-medium">Share with delivery partner to hand over fabric</p>
-                        </div>
-                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-indigo-100">
-                            <span className="text-2xl font-black tracking-widest text-indigo-700">{order.pickupDeliveryOtp}</span>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* 2. Final Dropoff to Customer */}
-                {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && ['out-for-delivery', 'shipped', 'delivery-assigned', 'ready-for-delivery', 'ready-for-pickup'].includes(order.status) && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center justify-between shadow-sm"
-                    >
-                        <div>
-                            <p className="text-sm text-green-700 font-bold uppercase tracking-wider">Order Delivery OTP</p>
-                            <p className="text-xs text-green-600/80 mt-0.5 font-medium">Share with delivery partner to receive your order</p>
-                        </div>
-                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100">
-                            <span className="text-2xl font-black tracking-widest text-green-700">{order.dropoffDeliveryOtp}</span>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* 2. Order Quick Summary */}
-                <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
-                        <img src={imageUrl} alt={serviceTitle} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-sm font-bold text-gray-900 mb-1">{serviceTitle}</h3>
-                        <div className="flex items-center gap-1.5 text-green-700 font-bold text-[10px] uppercase tracking-wide">
-                            <Truck size={12} />
-                            <span>{order.status === 'delivered' ? 'Delivered successfully' : `Arriving by ${dateString}`}</span>
+                        <div className="bg-[#843D9B]/10 px-4 py-2 rounded-2xl border border-[#843D9B]/20">
+                            <span className="text-xl font-black tracking-widest text-[#843D9B]">{measurementOtp}</span>
                         </div>
                     </div>
+                )}
+
+                {order.pickupDeliveryOtp && order.pickupOtpVerified === false && (
+                    <div className="bg-white rounded-3xl p-4 border border-[#843D9B]/20 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-xs font-black text-[#843D9B] uppercase tracking-wider">Fabric Pickup OTP</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Share with partner to hand over fabric</p>
+                        </div>
+                        <div className="bg-[#843D9B]/10 px-4 py-2 rounded-2xl border border-[#843D9B]/20">
+                            <span className="text-xl font-black tracking-widest text-[#843D9B]">{order.pickupDeliveryOtp}</span>
+                        </div>
+                    </div>
+                )}
+
+                {order.dropoffDeliveryOtp && order.dropoffOtpVerified === false && 
+                 ['ready-for-delivery', 'out-for-delivery', 'delivered', 'ready'].includes(order.status) && (
+                    <div className="bg-white rounded-3xl p-4 border border-emerald-100 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-xs font-black text-emerald-700 uppercase tracking-wider">Order Delivery OTP</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Share with partner to receive order</p>
+                        </div>
+                        <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+                            <span className="text-xl font-black tracking-widest text-emerald-700">{order.dropoffDeliveryOtp}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* 1. Top Order Summary Card */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
+                            <img src={imageUrl} alt={serviceTitle} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h3 className="text-sm font-black text-gray-900 truncate leading-tight">{serviceTitle}</h3>
+                            
+                            <div className="flex items-center gap-1.5 text-emerald-600 font-extrabold text-[11px] uppercase tracking-wide mt-1">
+                                <CheckCircle2 size={13} className="shrink-0 fill-emerald-600 text-white" />
+                                <span className="truncate">{order.status === 'delivered' ? 'DELIVERED SUCCESSFULLY' : order.status.replace(/-/g, ' ').toUpperCase()}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-gray-400 font-semibold text-[10px] mt-1">
+                                <Calendar size={12} className="shrink-0" />
+                                <span>
+                                    {order.status === 'delivered' 
+                                        ? `Delivered on ${dateString}` 
+                                        : `Expected by ${dateString}`}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={() => setShowOrderDetailsSection(prev => !prev)}
+                        className="px-3.5 py-1.5 rounded-xl border border-[#843D9B] text-[#843D9B] text-xs font-bold hover:bg-[#843D9B]/5 transition-colors shrink-0 whitespace-nowrap"
+                    >
+                        View Details &gt;
+                    </button>
                 </div>
 
-                {/* 2.5 Loyalty Points Indicator */}
-                {settings && order.status !== 'cancelled' && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-100 shadow-sm flex items-center justify-between"
-                    >
+                {/* 2. Rewards Section (Conditional) */}
+                {settings && earnedPoints > 0 && (
+                    <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white border border-purple-100 flex items-center justify-center shrink-0">
-                                <Star size={18} className="text-[#843D9B] fill-[#843D9B]" />
+                            <div className="w-10 h-10 rounded-2xl bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center shrink-0">
+                                <Star size={20} className="fill-[#843D9B]" />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-gray-900">{order.loyaltyPointsAwarded ? 'Rewards Earned' : 'Loyalty Rewards'}</p>
-                                <p className="text-[10px] text-gray-600 mt-0.5">{order.loyaltyPointsAwarded ? 'Points added to your wallet' : 'Points to be earned upon delivery'}</p>
+                                <h4 className="text-xs font-black text-gray-900 leading-tight">Rewards Earned</h4>
+                                <p className="text-[10px] font-medium text-gray-500 mt-0.5">Points added to your wallet</p>
                             </div>
                         </div>
-                        <div className="text-right shrink-0">
-                            <span className="text-lg font-black text-[#843D9B]">+{Math.floor((order.totalAmount || 0) / 100) * (settings.pointsPer100Spent || 0) + (settings.flatPointsPerBooking || 0)}</span>
-                            <span className="text-[10px] font-bold text-[#843D9B] ml-1">pts</span>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* 3. The Timeline Section */}
-                <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Package size={16} className="text-primary" />
-                            Live Tracking
-                        </h3>
-                        <div className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-100 animate-pulse">
-                            Real-time
+                        <div className="flex items-center gap-1 text-[#843D9B] font-black text-sm shrink-0">
+                            <span>+{earnedPoints} pts</span>
+                            <ChevronRight size={16} />
                         </div>
                     </div>
+                )}
 
-                    {/* New: Status Progress Banner */}
-                    <div className="mb-4 p-3 bg-gradient-to-br from-primary to-primary-dark rounded-2xl text-white shadow-lg relative overflow-hidden">
-                        <div className="relative z-10">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Current Milestone</p>
-                            <h2 className="text-xl font-black tracking-tight leading-none mb-2 capitalize">
-                                {order.status.replace(/-/g, ' ')}
-                            </h2>
-                            <p className="text-[10px] text-white/70 font-medium">
+                {/* 3. Live Tracking Section */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm space-y-4">
+                    {/* Section Header */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-xl bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center">
+                                <Radio size={16} />
+                            </div>
+                            <h3 className="text-sm font-black text-gray-900">Live Tracking</h3>
+                        </div>
+                        <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold rounded-full border border-emerald-200 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Real-time
+                        </span>
+                    </div>
+
+                    {/* App Theme Current Status Banner */}
+                    <div className="bg-gradient-to-r from-[#843D9B] via-[#74338a] to-[#5e2572] rounded-2xl p-4 sm:p-5 text-white shadow-md relative overflow-hidden">
+                        <div className="relative z-10 max-w-[75%]">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60 mb-1">
+                                CURRENT STATUS
+                            </p>
+                            <div className="flex items-center gap-2 mb-2">
+                                <h2 className="text-xl sm:text-2xl font-black tracking-tight capitalize leading-none text-white">
+                                    {order.status === 'delivered' ? 'Delivered' : order.status.replace(/-/g, ' ')}
+                                </h2>
+                                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                                    <CheckCircle2 size={14} strokeWidth={3} />
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-white/80 font-medium leading-relaxed">
                                 {getCurrentStatusMessage()}
                             </p>
                         </div>
-                        <div className="absolute top-0 right-0 p-3 opacity-10">
-                            {React.createElement(timelineStates[actualCurrentIndex]?.icon || Package, { size: 48 })}
+
+                        {/* Gift Box Graphic */}
+                        <div className="absolute top-1/2 -translate-y-1/2 right-3 sm:right-5 w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-md rounded-2xl border border-white/20 flex items-center justify-center shadow-inner">
+                                <Gift size={38} className="text-white drop-shadow-md" />
+                                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white shadow-md">
+                                    <CheckCircle2 size={16} strokeWidth={3} />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    {/* OTP Display for Customer */}
 
+                    {/* Vertical Timeline */}
                     <TrackingTimeline 
                         states={timelineStates} 
                         currentIndex={actualCurrentIndex} 
                     />
                 </div>
 
-                {/* 3.3.5 Live Delivery Tracker */}
-                {(() => {
-                    const hasPickupPartner = !!order.pickupPartner;
-                    const hasDropoffPartner = !!order.dropoffPartner;
-                    const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
-                    const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
-
-                    const isInvalidSearchState = ['pending', 'reviewing', 'quoted', 'cancelled'].includes(order.status);
-
-                    const isSearchingPickup = !isInvalidSearchState && (order.pickupDeliveryStatus === 'pending' || order.pickupDeliveryStatus === 'searching') && 
-                        (['pickup-assigned', 'fabric-ready-for-pickup'].includes(order.status) || 
-                         (order.status === 'accepted' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount))) &&
-                        order.fabricDeliveryPreference === 'partner';
-
-                    const isSearchingDropoff = !isInvalidSearchState && (order.dropoffDeliveryStatus === 'pending' || order.dropoffDeliveryStatus === 'searching') && 
-                        ['ready-for-delivery', 'ready-for-pickup', 'delivery-assigned'].includes(order.status) &&
-                        order.deliveryMethod !== 'self' && order.deliveryMethod !== 'tailor';
-
-                    // Show for pickup: active partner or searching for pickup
-                    const shouldShowForPickup = hasActivePickupPartner || isSearchingPickup;
-                    // Show for dropoff: active partner or searching for dropoff
-                    const shouldShowForDropoff = hasActiveDropoffPartner || isSearchingDropoff;
-
-                    const isTailorSelfDelivery = order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor';
-
-                    if (shouldShowForPickup || shouldShowForDropoff || isTailorSelfDelivery) {
-                        return <LiveDeliveryTracker 
-                            order={order} 
-                            socket={socketInstance} 
-                            forceSearching={(isSearchingPickup || isSearchingDropoff) && !isTailorSelfDelivery} 
-                        />;
-                    }
-                    return null;
-                })()}
-
-                {/* 3.3.6 Customer Self Delivery Tracking CTA */}
-                {order.fabricDeliveryPreference === 'self' && ['accepted', 'waiting-for-customer-dropoff'].includes(order.status) && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-4">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#843D9B] shadow-sm mb-1">
-                            <MapPin size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-black text-gray-900 mb-1">Drop-off Your Fabric</h3>
-                            <p className="text-[11px] text-gray-600 max-w-[260px] mx-auto leading-relaxed">
-                                Please deliver your fabric to the tailor's shop to begin the stitching process.
-                            </p>
-                        </div>
-
-                        {order.tailor && (
-                            <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-indigo-50 text-left flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                                    <Store size={20} className="text-[#843D9B]" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Tailor Shop</p>
-                                    <p className="text-sm font-black text-gray-900">{order.tailor.shopName || order.tailor.name || 'SilaiWala Tailor'}</p>
-                                    <p className="text-xs font-medium text-gray-600 mt-1 line-clamp-2 leading-relaxed">
-                                        {order.tailor.location?.address || order.tailor.address || 'Address provided upon order confirmation.'}
-                                    </p>
-                                    {order.tailor.phoneNumber && (
-                                        <p className="text-xs font-bold text-[#843D9B] mt-2 flex items-center gap-1.5">
-                                            <Phone size={12} /> {order.tailor.phoneNumber}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <button
-                            onClick={() => navigate(`/user/orders/${id}/journey`)}
-                            className="w-full py-3.5 bg-[#843D9B] text-white rounded-2xl font-black text-[12px] uppercase tracking-wider shadow-lg shadow-[#843D9B]/25 active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                            Start Live Trip to Shop
-                        </button>
-                    </div>
-                )}
-
-        {/* Final Product Customer Pickup (Self Delivery) */}
-        {['ready-for-pickup', 'ready-for-delivery'].includes(order.status) && order.deliveryMethod === 'self' && (
-            <div className="mt-8 bg-green-50/50 rounded-3xl p-6 border border-green-100 flex flex-col gap-5 text-center animate-in fade-in zoom-in duration-500">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-green-100 relative">
-                    <MapPin className="text-green-600 animate-bounce" size={28} />
-                    <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
-                </div>
-                <div>
-                    <h3 className="text-sm font-black text-gray-900 mb-1">Pick Up Your Garment</h3>
-                    <p className="text-[11px] text-gray-600 max-w-[260px] mx-auto leading-relaxed">
-                        Your garment is ready! Please travel to the tailor's shop to collect it.
-                    </p>
-                </div>
-
-                {order.tailor && (
-                    <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-green-50 text-left flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                            <Store size={20} className="text-green-600" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Tailor Shop</p>
-                            <p className="text-sm font-black text-gray-900">{order.tailor.shopName || order.tailor.name || 'SilaiWala Tailor'}</p>
-                            <p className="text-xs font-medium text-gray-600 mt-1 line-clamp-2 leading-relaxed">
-                                {order.tailor.location?.address || order.tailor.address || 'Address provided upon order confirmation.'}
-                            </p>
-                            {order.tailor.phoneNumber && (
-                                <p className="text-xs font-bold text-green-700 mt-2 flex items-center gap-1.5">
-                                    <Phone size={12} /> {order.tailor.phoneNumber}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                <button
-                    onClick={() => navigate(`/user/orders/${id}/journey`)}
-                    className="w-full py-3.5 bg-green-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-wider shadow-lg shadow-green-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-green-700"
-                >
-                    Start Live Trip to Shop
-                </button>
-            </div>
-        )}
-
-        {/* 3.4 Payment Actions (if applicable) */}
-                {/* 3.4.0 Advance Payment CTA */}
-                {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && order.advancePaymentAmount > 0 && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center text-center space-y-3">
-                        <h3 className="text-sm font-bold text-gray-900">Advance Payment Required</h3>
-                        <p className="text-xs text-gray-600 max-w-xs">
-                            To begin processing your order, please pay the advance amount of ₹{order.advancePaymentAmount}.
-                        </p>
-                        <button
-                            onClick={() => handlePayment('advance')}
-                            disabled={isProcessingPayment}
-                            className={`w-full max-w-xs py-3 rounded-full font-bold text-white text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
-                                isProcessingPayment ? 'bg-indigo-400' : 'bg-primary hover:bg-primary-dark'
-                            }`}
-                        >
-                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay ₹${order.advancePaymentAmount}`}
-                        </button>
-                    </div>
-                )}
-
-                {/* 3.4.1 Remaining Payment CTA */}
-                {order.status === 'ready-for-delivery' && order.remainingPaymentStatus === 'pending' && order.remainingPaymentAmount > 0 && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl p-5 border border-emerald-100 shadow-sm flex flex-col items-center text-center space-y-3">
-                        <h3 className="text-sm font-bold text-gray-900">Final Payment</h3>
-                        <p className="text-xs text-gray-600 max-w-xs">
-                            Your order is ready! Pay the remaining balance of ₹{order.remainingPaymentAmount}. You can pay online now or pay cash to the delivery partner.
-                        </p>
-                        <button
-                            onClick={() => handlePayment('remaining')}
-                            disabled={isProcessingPayment}
-                            className={`w-full max-w-xs py-3 rounded-full font-bold text-white text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
-                                isProcessingPayment ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700'
-                            }`}
-                        >
-                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay Online ₹${order.remainingPaymentAmount}`}
-                        </button>
-                    </div>
-                )}
-
-                {/* 3.4.2 Measurement Review CTA */}
+                {/* Measurement Verification Card */}
                 {['measurements-uploaded', 'measurement-verification'].includes(order.status) && measurementReport && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-5 border border-indigo-100 shadow-sm flex flex-col items-center space-y-4">
-                        <div className="bg-white p-3 rounded-full shadow-sm text-[#843D9B]">
+                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex flex-col items-center space-y-4">
+                        <div className="bg-[#843D9B]/10 p-3 rounded-full text-[#843D9B]">
                             <Scissors size={24} />
                         </div>
                         <div className="text-center">
@@ -868,11 +686,11 @@ const OrderTracking = () => {
                             </p>
                         </div>
                         
-                        <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-indigo-50">
+                        <div className="w-full bg-gray-50 rounded-2xl p-4 border border-gray-100">
                             <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-3">Recorded Metrics</h4>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(measurementReport.measurements || {}).map(([key, val]) => (
-                                    <div key={key} className="bg-gray-50 rounded-xl p-2 border border-gray-100">
+                                    <div key={key} className="bg-white rounded-xl p-2 border border-gray-100 shadow-sm">
                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                                             {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()}
                                         </p>
@@ -900,12 +718,12 @@ const OrderTracking = () => {
                     </div>
                 )}
 
-                {/* 3.4.5 Delivery Preference (After Advance Payment & Measurement Phase) */}
+                {/* Delivery Preference Selection Card */}
                 {((order.fabricPickupRequired && order.advancePaymentStatus === 'paid') || order.status === 'measurements-approved') && order.fabricDeliveryPreference === 'pending' && 
                  !['measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-verification'].includes(order.status) && (
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
-                        <div className="bg-white p-3 rounded-full shadow-sm">
-                            <Package size={24} className="text-orange-500" />
+                    <div className="bg-white rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
+                        <div className="bg-amber-50 p-3 rounded-full text-amber-600">
+                            <Package size={24} />
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-gray-900">How will the fabric reach the tailor?</h3>
@@ -926,7 +744,7 @@ const OrderTracking = () => {
                             <button
                                 onClick={() => handleDeliveryPreference('partner')}
                                 disabled={isUpdatingPreference}
-                                className="w-full py-3 rounded-xl font-bold text-white bg-primary text-sm transition-all shadow-md hover:bg-primary-dark active:scale-95 flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-xl font-bold text-white bg-[#843D9B] text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                             >
                                 {isUpdatingPreference ? <Loader2 size={16} className="animate-spin" /> : 'Assign a Delivery Partner'}
                             </button>
@@ -934,468 +752,356 @@ const OrderTracking = () => {
                     </div>
                 )}
 
-                {/* 3.5 Order Details (Added by Request) */}
-                <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
-                        <Package size={16} className="text-[#843D9B]" />
-                        Order Details
-                    </h3>
-                    
-                    {/* Items */}
-                    <div className="space-y-3">
-                        {!isBulk && order.items?.map((item, idx) => (
-                            <div key={idx} className="flex gap-3">
-                                <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                    <img src={item.service?.image || item.product?.images?.[0] || item.product?.image} alt={item.service?.title || item.product?.name} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.service?.title || item.product?.name}</h4>
-                                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Qty: {item.quantity}</p>
-                                </div>
-                                <span className="text-xs font-bold text-[#843D9B]">₹{item.price}</span>
-                            </div>
-                        ))}
-                        {isBulk && (
-                            <div className="flex gap-3">
-                                <div className="flex-1">
-                                    <h4 className="text-xs font-bold text-gray-900">{order.serviceType}</h4>
-                                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Est. Qty: {order.estimatedQuantity}</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Measurement Info */}
-                    {!isBulk && order.items?.[0]?.measurements?.type && (
-                        <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Measurement</span>
-                            <span className="text-[10px] font-black text-primary uppercase bg-indigo-50 px-2 py-1 rounded-md">
-                                {order.items[0].measurements.type === 'home' ? 'Tailor At Home' :
-                                 order.items[0].measurements.type === 'sample' ? 'Sample Garment' :
-                                 order.items[0].measurements.type === 'slip' ? 'Uploaded Slip' :
-                                 order.items[0].measurements.type === 'saved' ? 'Saved Profile' : 'Self Measured'}
-                            </span>
-                        </div>
-                    )}
-
-                    {order.deliveryAddress && (
-                        <div className="pt-3 border-t border-gray-100">
-                            <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                                <MapPin size={10} /> {order.fabricPickupRequired ? 'Pickup / Delivery Address' : 'Delivery Address'}
-                            </h4>
-                            <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                                {(!order.deliveryAddress.street && !order.deliveryAddress.city)
-                                    ? 'Address not provided'
-                                    : order.deliveryAddress.city === 'Unknown' || !order.deliveryAddress.city || order.deliveryAddress.city === 'Auto'
-                                    ? order.deliveryAddress.street
-                                    : `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state || ''} - ${order.deliveryAddress.zipCode}`
-                                }
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Price Breakdown */}
-                    <div className="pt-3 border-t border-gray-100 space-y-2">
-                        {order.deliveryFee > 0 && (
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-500">Delivery Fee</span>
-                                <span className="font-medium text-gray-900">₹{order.deliveryFee}</span>
-                            </div>
-                        )}
-                        {order.tailorAtHomeFee > 0 && (
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-500">Tailor Visit Fee</span>
-                                <span className="font-medium text-gray-900">₹{order.tailorAtHomeFee}</span>
-                            </div>
-                        )}
-                        {order.discountAmount > 0 && (
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-500">Discount</span>
-                                <span className="font-medium text-green-600">-₹{order.discountAmount}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200 text-xs">
-                            <span className="font-bold text-gray-900">Total Order Value</span>
-                            <span className="font-bold text-gray-900">₹{order.totalAmount}</span>
-                        </div>
-                        {order.advancePaymentAmount > 0 && (
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-500">Advance Paid</span>
-                                <span className="font-medium text-green-600">-₹{order.advancePaymentAmount}</span>
-                            </div>
-                        )}
-                        {order.remainingPaymentStatus === 'pending' && order.remainingPaymentAmount > 0 && (
-                            <div className="flex justify-between items-center pt-2 border-t border-dashed border-red-200">
-                                <span className="text-sm font-black text-red-600">Remaining Balance</span>
-                                <span className="text-sm font-black text-red-600">₹{order.remainingPaymentAmount}</span>
-                            </div>
-                        )}
-                        {order.remainingPaymentStatus === 'paid' && (
-                            <div className="flex justify-between items-center pt-2 border-t border-dashed border-emerald-200">
-                                <span className="text-sm font-black text-emerald-600">Remaining Paid ({order.remainingPaymentMethod})</span>
-                                <span className="text-sm font-black text-emerald-600">₹{order.remainingPaymentAmount}</span>
-                            </div>
-                        )}
-                        {(() => {
-                            let totalPaid = 0;
-                            if (order.advancePaymentAmount > 0) {
-                                totalPaid += order.advancePaymentAmount;
-                            }
-                            if (order.remainingPaymentStatus === 'paid' && order.remainingPaymentAmount > 0) {
-                                totalPaid += order.remainingPaymentAmount;
-                            }
-                            if (order.advancePaymentAmount === 0 && order.paymentStatus === 'paid') {
-                                totalPaid = order.totalAmount;
-                            }
-                            
-                            return totalPaid > 0 ? (
-                                <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-200">
-                                    <span className="text-sm font-black text-gray-900">Total Paid</span>
-                                    <span className="text-sm font-black text-primary">₹{totalPaid}</span>
-                                </div>
-                            ) : null;
-                        })()}
-                    </div>
-                </div>
-
-                {/* 4. Support & Actions */}
-                {order.status !== 'delivered' && order.status !== 'completed' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount || order.paymentStatus === 'paid') && (
-                    <div className="grid grid-cols-2 gap-3">
-                        <a
-                            href={`tel:${order.tailor?.phoneNumber || '+919876543210'}`}
-                            className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center no-underline hover:bg-gray-50"
-                        >
-                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center">
-                                <Phone size={18} />
-                            </div>
-                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Call Artisan</span>
-                        </a>
-
+                {/* Advance & Remaining Payment Action Cards */}
+                {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && order.advancePaymentAmount > 0 && (
+                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex flex-col items-center text-center space-y-3">
+                        <h3 className="text-sm font-bold text-gray-900">Advance Payment Required</h3>
+                        <p className="text-xs text-gray-600 max-w-xs">
+                            To begin processing your order, please pay the advance amount of ₹{order.advancePaymentAmount}.
+                        </p>
                         <button
-                            onClick={() => navigate(`/user/orders/${order._id}/chat`)}
-                            className="w-full bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-center hover:bg-gray-50 outline-none relative"
+                            onClick={() => handlePayment('advance')}
+                            disabled={isProcessingPayment}
+                            className="w-full max-w-xs py-3 rounded-full font-bold text-white text-sm bg-[#843D9B] hover:bg-[#723287] transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                         >
-                            <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center relative">
-                                <MessageSquare size={18} />
-                                {unreadChatCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span>
-                                )}
-                            </div>
-                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">Chat with Artisan</span>
+                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay ₹${order.advancePaymentAmount}`}
                         </button>
                     </div>
                 )}
 
-                {!order.reportedIssue && (
-                    <div
-                        onClick={() => {
-                            const subject = encodeURIComponent(`Issue with Order ${order.orderId}`);
-                            const body = encodeURIComponent(`Hello Support,\n\nI am facing an issue with my order ${order.orderId} for the service ${serviceTitle}.\n\nPlease help.`);
-                            window.location.href = `mailto:support@silaiwala.com?subject=${subject}&body=${body}`;
-                        }}
-                        className="p-4 bg-primary rounded-[2rem] text-white shadow-xl flex items-center justify-between group cursor-pointer active:scale-[0.98] transition-all"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
-                                <AlertCircle size={22} className="text-red-300" />
-                            </div>
-                            <div>
-                                <p className="text-[13px] font-black uppercase tracking-widest leading-none mb-1">Have an issue?</p>
-                                <p className="text-[10px] text-white/60 font-medium">Auto-generate support ticket</p>
-                            </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-primary transition-all">
-                            <ChevronRight size={16} />
-                        </div>
+                {order.status === 'ready-for-delivery' && order.remainingPaymentStatus === 'pending' && order.remainingPaymentAmount > 0 && (
+                    <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm flex flex-col items-center text-center space-y-3">
+                        <h3 className="text-sm font-bold text-gray-900">Final Balance Payment</h3>
+                        <p className="text-xs text-gray-600 max-w-xs">
+                            Your order is ready! Pay the remaining balance of ₹{order.remainingPaymentAmount}.
+                        </p>
+                        <button
+                            onClick={() => handlePayment('remaining')}
+                            disabled={isProcessingPayment}
+                            className="w-full max-w-xs py-3 rounded-full font-bold text-white text-sm bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay Online ₹${order.remainingPaymentAmount}`}
+                        </button>
                     </div>
                 )}
 
-                {/* 5. Artisan / Shop Profile Card */}
-                {order.tailor && (
-                    <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assigned Shop</h4>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-primary border border-gray-100 font-black text-xs overflow-hidden">
-                                {order.tailor.profileImage ? (
-                                    <img src={order.tailor.profileImage} alt={order.tailor.shopName || order.tailor.name} className="w-full h-full object-cover" />
-                                ) : (order.tailor.shopName || order.tailor.name)?.charAt(0)}
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-black text-gray-900 leading-none mb-1">{order.tailor.shopName || order.tailor.name}</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Verified Expert Tailor</p>
-                            </div>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f2fcf9] rounded-xl border border-primary/10">
-                                <ShieldCheck size={12} className="text-primary" />
-                                <span className="text-[10px] font-black text-primary uppercase">Verified</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {/* 5.5. Delivery Partner Card */}
-                {(order.deliveryPartner || order.pickupPartner || order.dropoffPartner) && (() => {
-                    let activePartner = order.deliveryPartner;
-                    let partnerRole = 'Delivery Partner';
-                    let partnerStatus = order.deliveryStatus;
-                    
-                    if (['pending', 'accepted', 'paid', 'fabric-ready-for-pickup', 'fabric-pickup-assigned', 'fabric-picked-up'].includes(order.status) && order.pickupPartner) {
-                        activePartner = order.pickupPartner;
-                        partnerRole = 'Pickup Partner';
-                        partnerStatus = order.pickupDeliveryStatus;
-                    } else if (order.dropoffPartner) {
-                        activePartner = order.dropoffPartner;
-                        partnerRole = 'Delivery Partner';
-                        partnerStatus = order.dropoffDeliveryStatus;
-                    } else if (order.pickupPartner && !order.dropoffPartner) {
-                        activePartner = order.pickupPartner;
-                        partnerRole = 'Pickup Partner';
-                        partnerStatus = order.pickupDeliveryStatus;
+                {/* Live Delivery Tracker Widget */}
+                {(() => {
+                    const hasActivePickupPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.pickupDeliveryStatus);
+                    const hasActiveDropoffPartner = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff'].includes(order.dropoffDeliveryStatus);
+
+                    const isInvalidSearchState = ['pending', 'reviewing', 'quoted', 'cancelled'].includes(order.status);
+
+                    const isSearchingPickup = !isInvalidSearchState && (order.pickupDeliveryStatus === 'pending' || order.pickupDeliveryStatus === 'searching') && 
+                        (['pickup-assigned', 'fabric-ready-for-pickup'].includes(order.status) || 
+                         (order.status === 'accepted' && (order.advancePaymentStatus === 'paid' || !order.advancePaymentAmount))) &&
+                        order.fabricDeliveryPreference === 'partner';
+
+                    const isSearchingDropoff = !isInvalidSearchState && (order.dropoffDeliveryStatus === 'pending' || order.dropoffDeliveryStatus === 'searching') && 
+                        ['ready-for-delivery', 'ready-for-pickup', 'delivery-assigned'].includes(order.status) &&
+                        order.deliveryMethod !== 'self' && order.deliveryMethod !== 'tailor';
+
+                    const shouldShowForPickup = hasActivePickupPartner || isSearchingPickup;
+                    const shouldShowForDropoff = hasActiveDropoffPartner || isSearchingDropoff;
+                    const isTailorSelfDelivery = order.status === 'out-for-delivery' && order.deliveryMethod === 'tailor';
+
+                    if (shouldShowForPickup || shouldShowForDropoff || isTailorSelfDelivery) {
+                        return (
+                            <LiveDeliveryTracker 
+                                order={order} 
+                                socket={socketInstance} 
+                                forceSearching={(isSearchingPickup || isSearchingDropoff) && !isTailorSelfDelivery} 
+                            />
+                        );
                     }
+                    return null;
+                })()}
 
-                    // Only show the partner if they have accepted the assignment
-                    if (!activePartner || partnerStatus === 'assigned' || partnerStatus === 'pending') return null;
+                {/* Contact Actions Bar (Always accessible) */}
+                <div className="grid grid-cols-2 gap-3">
+                    {tailorInfo && (
+                        <a 
+                            href={`tel:${tailorInfo.phoneNumber || ''}`}
+                            className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center gap-2 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-all no-underline"
+                        >
+                            <Phone size={14} className="text-[#843D9B]" />
+                            <span>Call Provider</span>
+                        </a>
+                    )}
+                    {tailorInfo && (
+                        <button 
+                            onClick={() => navigate(`/user/orders/${id}/chat`)}
+                            className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center gap-2 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-all"
+                        >
+                            <MessageSquare size={14} className="text-emerald-600" />
+                            <span>Chat Provider</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* 4. Order Details Card */}
+                {showOrderDetailsSection && (
+                    <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                            <ShoppingBag size={18} className="text-[#843D9B]" />
+                            <h3 className="text-sm font-black text-gray-900">Order Details</h3>
+                        </div>
+
+                        {/* Items Breakdown */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                        <img src={imageUrl} alt={serviceTitle} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">{serviceTitle}</h4>
+                                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                                            Qty: {order.items?.[0]?.quantity || 1} &nbsp;|&nbsp; Size: {order.items?.[0]?.measurements?.type || 'Custom'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-sm font-black text-gray-900 shrink-0">₹{order.totalAmount?.toLocaleString('en-IN') || '0'}</span>
+                            </div>
+                        </div>
+
+                        {/* Information Grid */}
+                        <div className="pt-3 border-t border-gray-100 space-y-2.5 text-xs">
+                            <div className="flex justify-between items-center text-gray-600">
+                                <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+                                    <Calendar size={13} /> Booking Date
+                                </span>
+                                <span className="font-bold text-gray-900">{createdDateString}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center text-gray-600">
+                                <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+                                    <Truck size={13} /> Expected Service Date
+                                </span>
+                                <span className="font-bold text-gray-900">{dateString}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center text-gray-600">
+                                <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+                                    <CreditCard size={13} /> Payment Method
+                                </span>
+                                <span className="font-bold text-gray-900 uppercase">{order.paymentMethod || 'Online'}</span>
+                            </div>
+                        </div>
+
+                        {/* Address */}
+                        {order.deliveryAddress && (
+                            <div className="pt-3 border-t border-gray-100 space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                        <MapPin size={12} className="text-[#843D9B]" /> ADDRESS
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-[#843D9B]/10 text-[#843D9B] text-[10px] font-black uppercase tracking-wider">
+                                        {order.items?.[0]?.measurements?.type === 'home' ? 'Tailor At Home' : 'Standard Delivery'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-600 font-medium leading-relaxed pl-4">
+                                    {(!order.deliveryAddress.street && !order.deliveryAddress.city)
+                                        ? 'Address provided upon confirmation'
+                                        : `${order.deliveryAddress.street || ''}, ${order.deliveryAddress.city || ''}, ${order.deliveryAddress.state || ''} ${order.deliveryAddress.zipCode || ''}`
+                                    }
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Booking Notes */}
+                        {order.specialInstructions && (
+                            <div className="pt-3 border-t border-gray-100 space-y-1">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                    <FileText size={12} /> Booking Notes
+                                </span>
+                                <p className="text-xs text-gray-600 italic pl-4">"{order.specialInstructions}"</p>
+                            </div>
+                        )}
+
+                        {/* Total Amount */}
+                        <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                            <span className="font-bold text-gray-700 text-xs">Total Amount</span>
+                            <span className="font-black text-[#843D9B] text-base">₹{order.totalAmount?.toLocaleString('en-IN') || '0'}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* 5. Rating Section (STRICTLY Render ONLY IF Order Delivered) */}
+                {isFinalDelivered && (() => {
+                    const hasValidTailor = !!(tailorInfo && (tailorInfo._id || tailorInfo.name || tailorInfo.shopName));
+                    const hasValidPartner = !!(partnerInfo && (partnerInfo._id || partnerInfo.name));
+
+                    if (!hasValidTailor && !hasValidPartner) return null;
 
                     return (
-                        <div className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assigned {partnerRole}</h4>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-[#843D9B] border border-indigo-100 font-black text-xs overflow-hidden shrink-0">
-                                    {activePartner.profileImage ? (
-                                        <img src={activePartner.profileImage} alt={activePartner.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Truck size={16} />
-                                    )}
+                        <div className={`grid grid-cols-1 ${hasValidTailor && hasValidPartner ? 'md:grid-cols-2' : ''} gap-4`}>
+                            {/* Service Provider Card */}
+                            {hasValidTailor && (
+                                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm flex flex-col justify-between space-y-4">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center">
+                                                <Scissors size={14} />
+                                            </div>
+                                            <h4 className="text-xs font-black text-gray-900">Service Provider Rating</h4>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 border-2 border-[#843D9B] shrink-0">
+                                                <img 
+                                                    src={tailorInfo.profileImage || '/logo.png'} 
+                                                    alt={tailorInfo.shopName || tailorInfo.name} 
+                                                    className="w-full h-full object-cover" 
+                                                />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="text-xs sm:text-sm font-black text-gray-900 truncate leading-tight">
+                                                    {tailorInfo.shopName || tailorInfo.name}
+                                                </h4>
+                                                <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold mt-0.5">
+                                                    <CheckCircle2 size={12} className="fill-emerald-600 text-white" />
+                                                    <span>Verified Provider</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-amber-500 text-[11px] font-black mt-1">
+                                                    {[1,2,3,4,5].map(star => (
+                                                        <Star key={star} size={12} className="fill-amber-400 text-amber-400" />
+                                                    ))}
+                                                    <span className="text-gray-900 ml-1 text-xs">{tailorInfo.rating || '4.8'}</span>
+                                                    {tailorInfo.totalRatings && (
+                                                        <span className="text-gray-400 font-normal text-[10px]">({tailorInfo.totalRatings})</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Rating Action Button */}
+                                    <div className="pt-2">
+                                        <button 
+                                            onClick={() => setIsReviewModalOpen(true)}
+                                            className="w-full py-3 bg-[#843D9B] text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-[#723287] transition-all active:scale-[0.98]"
+                                        >
+                                            <Star size={14} className="fill-white" />
+                                            <span>Rate Provider</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-black text-gray-900 leading-none mb-1">{activePartner.name || partnerRole}</p>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight flex items-center gap-1">
-                                        <Phone size={10} /> {activePartner.phoneNumber || 'Contact Unavailable'}
-                                    </p>
+                            )}
+
+                            {/* Delivery Partner Rating Card */}
+                            {hasValidPartner && (
+                                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm flex flex-col justify-between space-y-4">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-[#843D9B]/10 text-[#843D9B] flex items-center justify-center">
+                                                <Truck size={14} />
+                                            </div>
+                                            <h4 className="text-xs font-black text-gray-900">Delivery Partner Rating</h4>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 border-2 border-[#843D9B] shrink-0">
+                                                <img 
+                                                    src={partnerInfo.profileImage || '/logo.png'} 
+                                                    alt={partnerInfo.name} 
+                                                    className="w-full h-full object-cover" 
+                                                />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="text-xs sm:text-sm font-black text-gray-900 truncate leading-tight">
+                                                    {partnerInfo.name}
+                                                </h4>
+                                                <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold mt-0.5">
+                                                    <CheckCircle2 size={12} className="fill-emerald-600 text-white" />
+                                                    <span>Verified Partner</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-amber-500 text-[11px] font-black mt-1">
+                                                    {[1,2,3,4,5].map(star => (
+                                                        <Star key={star} size={12} className="fill-amber-400 text-amber-400" />
+                                                    ))}
+                                                    <span className="text-gray-900 ml-1 text-xs">{partnerInfo.rating || '4.8'}</span>
+                                                    {partnerInfo.totalRatings && (
+                                                        <span className="text-gray-400 font-normal text-[10px]">({partnerInfo.totalRatings})</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Rating Action Button */}
+                                    <div className="pt-2">
+                                        <button 
+                                            onClick={() => setIsReviewModalOpen(true)}
+                                            className="w-full py-3 bg-[#843D9B] text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-[#723287] transition-all active:scale-[0.98]"
+                                        >
+                                            <Star size={14} className="fill-white" />
+                                            <span>Rate Partner</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                {activePartner.phoneNumber && (
-                                    <a 
-                                        href={`tel:${activePartner.phoneNumber}`}
-                                        className="w-8 h-8 bg-indigo-50 text-[#843D9B] rounded-full flex items-center justify-center border border-indigo-100 shrink-0 hover:bg-indigo-100 transition-colors"
-                                    >
-                                        <Phone size={14} />
-                                    </a>
-                                )}
-                            </div>
+                            )}
                         </div>
                     );
                 })()}
 
-                {/* Shiprocket Tracking Card */}
-                {order.deliveryProvider === 'shiprocket' && order.shiprocketDetails?.shipmentId && (
-                    <div className="bg-white rounded-[2rem] p-5 border border-purple-100 shadow-sm mt-4">
-                        <h4 className="text-[10px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Package size={14} className="text-[#843D9B]" /> 
-                            Courier Partner Tracking
-                        </h4>
-                        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</span>
-                                <span className="text-xs font-black uppercase text-[#843D9B]">
-                                    {order.shiprocketDetails.currentStatus || 'Processing'}
-                                </span>
+                {/* Report Issue / Rework Card (Visible after Delivery) */}
+                {isFinalDelivered && (
+                    <div className="bg-white rounded-3xl p-4 sm:p-5 border border-red-100 shadow-sm flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                <AlertCircle size={20} />
                             </div>
-                            {order.shiprocketDetails.courierName && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Courier</span>
-                                    <span className="text-xs font-black text-gray-900">{order.shiprocketDetails.courierName}</span>
-                                </div>
-                            )}
-                            {order.shiprocketDetails.awbCode && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tracking / AWB</span>
-                                    <span className="text-xs font-black text-gray-900">{order.shiprocketDetails.awbCode}</span>
-                                </div>
-                            )}
+                            <div className="min-w-0">
+                                <h4 className="text-xs font-black text-gray-900 leading-tight truncate">Having fitting or quality issues?</h4>
+                                <p className="text-[10px] font-medium text-gray-500 mt-0.5 truncate">Report an issue for alteration & free rework</p>
+                            </div>
                         </div>
-                        {order.shiprocketDetails.trackingUrl && (
-                            <a 
-                                href={order.shiprocketDetails.trackingUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="mt-3 w-full py-3 bg-[#843D9B] text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm hover:bg-[#6c3280] transition-colors"
-                            >
-                                <ExternalLink size={14} /> View Live Tracking
-                            </a>
-                        )}
+                        <button 
+                            onClick={() => {
+                                if (order.reportedIssue?._id || order.issueId) {
+                                    navigate(`/user/issues/${order.reportedIssue?._id || order.issueId}`);
+                                } else {
+                                    navigate(`/user/issues/report/${order._id}`);
+                                }
+                            }}
+                            className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 whitespace-nowrap active:scale-95 flex items-center gap-1.5"
+                        >
+                            <AlertCircle size={14} />
+                            <span>{order.reportedIssue?._id || order.issueId ? 'View Issue' : 'Report Issue'}</span>
+                        </button>
                     </div>
                 )}
 
-                {/* 6. Issue Reporting Section (If Delivered) */}
-                {order.status === 'delivered' && (
-                    <div className="mb-6 space-y-4">
-                        {order.reportedIssue ? (
-                            <div className={`rounded-[2rem] p-6 border relative overflow-hidden ${
-                                order.reportedIssue.status === 'resolved' ? 'bg-green-50 border-green-100' :
-                                order.reportedIssue.status === 'rejected' ? 'bg-red-50 border-red-200' :
-                                'bg-red-50 border-red-100'
-                            }`}>
-                                <div className="flex justify-between items-start mb-3 relative z-10">
-                                    <div>
-                                        <h3 className={`text-lg font-black tracking-tighter mb-1 ${
-                                            order.reportedIssue.status === 'resolved' ? 'text-green-900' :
-                                            order.reportedIssue.status === 'rejected' ? 'text-red-900' :
-                                            'text-red-900'
-                                        }`}>
-                                            {order.reportedIssue.issueId ? `${order.reportedIssue.issueId} - ` : ''}
-                                            {order.reportedIssue.status === 'resolved' ? 'Issue Resolved' : 
-                                             order.reportedIssue.status === 'rejected' ? 'Issue Rejected' : 
-                                             'Issue Reported'}
-                                        </h3>
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                                            order.reportedIssue.status === 'pending' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-                                            order.reportedIssue.status === 'resolved' ? 'bg-green-100 text-green-700 border-green-200' :
-                                            order.reportedIssue.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
-                                            'bg-indigo-100 text-[#843D9B] border-indigo-200'
-                                        }`}>
-                                            {order.reportedIssue.status.replace(/_/g, ' ')}
-                                        </span>
-                                    </div>
-                                    {!['resolved', 'rejected', 'closed'].includes(order.reportedIssue.status) && (
-                                        <button 
-                                            onClick={() => navigate(`/user/issues/${order.reportedIssue._id}`)}
-                                            className="px-4 py-2 bg-red-600 text-white rounded-full font-black text-[10px] uppercase shadow-md shadow-red-200 hover:bg-red-700 active:scale-95 transition-all outline-none"
-                                        >
-                                            Open Chat
-                                        </button>
-                                    )}
-                                </div>
-                                <div className={`p-3 rounded-xl border relative z-10 ${
-                                    order.reportedIssue.status === 'resolved' ? 'bg-white/80 border-green-100/50' :
-                                    'bg-white/60 border-red-100/50'
-                                }`}>
-                                    <p className={`text-xs font-medium line-clamp-2 ${
-                                        order.reportedIssue.status === 'resolved' ? 'text-green-800' :
-                                        'text-red-800'
-                                    }`}>
-                                        "{order.reportedIssue.description}"
-                                    </p>
-                                </div>
-
-                                {order.reportedIssue?.reworkOrder?.pickupDeliveryOtp && order.reportedIssue.reworkOrder.pickupOtpVerified === false && (
-                                    <div className="mt-4 bg-white rounded-2xl p-4 border border-red-100 text-center relative z-10 shadow-sm">
-                                        <div className="flex flex-col items-center justify-center gap-1">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-red-700">Pickup OTP</span>
-                                            <span className="text-xl font-black tracking-widest text-red-700">{order.reportedIssue.reworkOrder.pickupDeliveryOtp}</span>
-                                        </div>
-                                        <p className="text-[9px] text-red-500 font-medium mt-1 leading-relaxed">
-                                            Share this OTP with the delivery partner when they arrive to pick up the garment.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {order.reportedIssue?.reworkOrder?.dropoffDeliveryOtp && order.reportedIssue.reworkOrder.dropoffOtpVerified === false && order.reportedIssue.reworkOrder.dropoffDeliveryStatus !== 'pending' && (
-                                    <div className="mt-4 bg-white rounded-2xl p-4 border border-red-100 text-center relative z-10 shadow-sm">
-                                        <div className="flex flex-col items-center justify-center gap-1">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-red-700">Delivery OTP</span>
-                                            <span className="text-xl font-black tracking-widest text-red-700">{order.reportedIssue.reworkOrder.dropoffDeliveryOtp}</span>
-                                        </div>
-                                        <p className="text-[9px] text-red-500 font-medium mt-1 leading-relaxed">
-                                            Share this OTP with the delivery partner when they arrive to deliver the fixed garment.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="bg-red-50 rounded-[2rem] p-6 text-center border border-red-100 relative overflow-hidden">
-                                <div className="relative z-10">
-                                    <h3 className="text-lg font-black text-red-900 tracking-tighter mb-2">Need a Fix?</h3>
-                                    <p className="text-xs text-red-700 font-medium mb-4 leading-relaxed max-w-[250px] mx-auto">
-                                        If you found a stitching mistake or fitting issue, you can report it within 7 days of delivery.
-                                    </p>
-                                    <button 
-                                        onClick={() => navigate(`/user/issues/report/${order._id}`)}
-                                        className="px-8 py-3 bg-red-600 text-white rounded-full font-black text-[10px] uppercase shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all outline-none"
-                                    >
-                                        Report Issue
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {order?.items?.every(item => !item.service && !item.isAlteration && !item.isCustomDesign) && (
-                            <div className="bg-purple-50 rounded-[2rem] p-6 text-center border border-purple-100 relative overflow-hidden">
-                                <div className="relative z-10">
-                                    {order.exchangeStatus === 'none' ? (
-                                        <>
-                                            <h3 className="text-lg font-black text-purple-900 tracking-tighter mb-2">Wrong Size or Color?</h3>
-                                            <p className="text-xs text-purple-700 font-medium mb-4 leading-relaxed max-w-[250px] mx-auto">
-                                                Since this is a ready-made product, you can request an exchange.
-                                            </p>
-                                            <button 
-                                                onClick={() => setIsExchangeModalOpen(true)}
-                                                className="px-8 py-3 bg-[#843D9B] text-white rounded-full font-black text-[10px] uppercase shadow-lg shadow-purple-200 hover:bg-[#6c3280] active:scale-95 transition-all outline-none"
-                                            >
-                                                Request Exchange
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <h3 className="text-lg font-black text-purple-900 tracking-tighter mb-2">Exchange {order.exchangeStatus}</h3>
-                                            <p className="text-xs text-purple-700 font-medium mb-4 leading-relaxed max-w-[250px] mx-auto">
-                                                {order.exchangeStatus === 'requested' && 'Your exchange request is being reviewed by the tailor.'}
-                                                {order.exchangeStatus === 'approved' && 'Your exchange is approved. A return pickup will be scheduled soon.'}
-                                                {order.exchangeStatus === 'return-initiated' && 'A return pickup has been scheduled.'}
-                                                {order.exchangeStatus === 'rejected' && 'Your exchange request was rejected.'}
-                                            </p>
-                                            {order.shiprocketReturnDetails?.returnAwbCode && (
-                                                <div className="bg-white/60 p-3 rounded-xl border border-purple-100/50 mt-2 text-left">
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Return AWB:</span>
-                                                    <span className="text-xs font-black text-gray-900 ml-2">{order.shiprocketReturnDetails.returnAwbCode}</span>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                {/* Thank You Banner after review */}
+                {(order.isReviewed || isReviewed) && isFinalDelivered && (
+                    <div className="bg-[#843D9B]/10 rounded-2xl p-4 text-center border border-[#843D9B]/20 font-bold text-[#843D9B] text-xs">
+                        <Check size={16} className="inline-block mr-1 text-[#843D9B]" /> Thank you for rating your experience! 💚
                     </div>
                 )}
 
-                {/* 7. Review Section (If Delivered) */}
-                {order.status === 'delivered' && !order.isReviewed && !isReviewed && (
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="bg-gradient-to-br from-primary to-primary-dark rounded-[2rem] p-8 text-center text-white shadow-2xl relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Star size={80} className="fill-white" />
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="text-xl font-black italic tracking-tighter mb-2 uppercase">How was your Experience?</h3>
-                            <p className="text-xs text-white/70 font-medium mb-8 leading-relaxed max-w-[200px] mx-auto">Help us improve the community by sharing your feedback for the Artisan & Rider.</p>
-                            <button 
-                                onClick={() => setIsReviewModalOpen(true)}
-                                className="px-10 py-4 bg-white text-primary rounded-full font-black text-xs uppercase shadow-xl hover:bg-gray-50 active:scale-95 transition-all outline-none"
-                            >
-                                Rate Experience
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {(order.isReviewed || isReviewed) && (
-                    <div className="bg-indigo-50 rounded-[2rem] p-6 text-center border border-indigo-100 italic font-bold text-primary text-xs">
-                        Thank you for your valuable feedback! 💚
-                    </div>
-                )}
-
+                {/* Review Modal */}
                 <ReviewModal
                     isOpen={isReviewModalOpen}
                     onClose={() => setIsReviewModalOpen(false)}
                     orderId={order._id}
-                    tailorId={order.tailor?._id || order.tailor}
-                    deliveryPartnerId={order.deliveryPartner?._id || order.deliveryPartner}
+                    tailorId={tailorInfo?._id || tailorInfo}
+                    deliveryPartnerId={partnerInfo?._id || partnerInfo}
                     onSuccess={() => {
                         setIsReviewed(true);
                         fetchOrderDetails();
                     }}
                 />
 
+                {/* Exchange Modal */}
+                {isExchangeModalOpen && (
+                    <ExchangeRequestModal
+                        isOpen={isExchangeModalOpen}
+                        onClose={() => setIsExchangeModalOpen(false)}
+                        order={order}
+                        onSuccess={() => fetchOrderDetails()}
+                    />
+                )}
             </div>
         </div>
     );

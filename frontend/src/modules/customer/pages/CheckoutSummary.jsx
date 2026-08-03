@@ -651,8 +651,8 @@ const CheckoutSummary = () => {
                                 <p className="text-gray-600 font-medium">
                                     {formatCheckoutAddress(selectedAddress)}
                                 </p>
-                                <p className="pt-1 font-bold text-primary">
-                                    Contact: {selectedAddress?.phone || '9070000338'}
+                                <p className="pt-1 text-slate-600 font-medium">
+                                    Contact: <span className="font-bold text-slate-900">{selectedAddress?.phone || '9070000338'}</span>
                                 </p>
                             </div>
 

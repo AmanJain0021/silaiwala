@@ -37,13 +37,13 @@ const BillDetails = ({ pricing, advancePercentage = 25, baseLabel = 'Stitching C
             {/* Header: Title & Apply Coupon */}
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <FileText size={18} className="text-[#7C3AED]" />
+                    <FileText size={18} className="text-[#843D9B]" />
                     <span>Bill Details</span>
                 </h3>
                 <button
                     type="button"
                     onClick={() => setCouponApplied(!couponApplied)}
-                    className="border border-purple-200 text-[#7C3AED] px-3.5 py-1 rounded-full text-xs font-bold bg-purple-50 hover:bg-purple-100 flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="border border-purple-200 text-[#843D9B] px-3.5 py-1 rounded-full text-xs font-bold bg-purple-50 hover:bg-purple-100 flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                     <Tag size={12} />
                     <span>{couponApplied ? 'Coupon Applied!' : 'Apply Coupon'}</span>
@@ -113,7 +113,7 @@ const BillDetails = ({ pricing, advancePercentage = 25, baseLabel = 'Stitching C
 
                 <div className="border-t border-slate-200 my-2 pt-2 flex justify-between items-center">
                     <span className="text-base font-extrabold text-slate-900">Total Amount</span>
-                    <span className="text-lg font-black text-[#7C3AED]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                    <span className="text-lg font-black text-[#843D9B]">₹{finalTotal.toLocaleString('en-IN')}</span>
                 </div>
 
                 {/* Advance Payable Banner */}
@@ -121,14 +121,14 @@ const BillDetails = ({ pricing, advancePercentage = 25, baseLabel = 'Stitching C
                     <div className="space-y-2 pt-1">
                         <div className="bg-[#FAF5FF] border border-[#F3E8FF] p-3 rounded-2xl flex items-center justify-between">
                             <div>
-                                <span className="text-xs font-bold text-[#7C3AED] block">
+                                <span className="text-xs font-bold text-[#843D9B] block">
                                     Advance Payable ({advancePercentage}%)
                                 </span>
                                 <span className="text-[9px] text-purple-600 font-bold uppercase tracking-wider">
                                     Required to confirm order
                                 </span>
                             </div>
-                            <span className="text-base font-black text-[#7C3AED]">
+                            <span className="text-base font-black text-[#843D9B]">
                                 ₹{advanceAmount.toLocaleString('en-IN')}
                             </span>
                         </div>

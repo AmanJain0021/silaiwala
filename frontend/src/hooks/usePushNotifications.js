@@ -35,6 +35,7 @@ const syncTokenWithBackend = async (token) => {
     localStorage.setItem(syncedKey, 'true');
     console.log('[FCM] Token synced via PUT /api/user/fcm-token');
   } catch (err) {
+    console.warn('[FCM] Error updating token:', err);
     try {
       await api.post('/notifications/fcm-token', payload);
       localStorage.setItem(syncedKey, 'true');
@@ -176,9 +177,22 @@ export const usePushNotifications = (user) => {
       const title = payload?.data?.title || payload?.notification?.title || 'SewZella';
       const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || 'New Notification';
 
+      const orderId = payload?.data?.orderId || payload?.data?.id || payload?.data?.order;
+      const status = payload?.data?.status;
+
+      let toastId;
+      if (orderId && status) {
+        toastId = `toast-status-${orderId}-${String(status).toLowerCase()}`;
+      } else if (orderId) {
+        toastId = `toast-new-order-${orderId}`;
+      } else {
+        toastId = `toast-fcm-${title}-${body}`.replace(/\s+/g, '-').toLowerCase();
+      }
+
       toast.success(`🔔 ${title}\n${body}`, {
-        position: 'bottom-center',
-        duration: 6000,
+        id: toastId,
+        position: 'top-right',
+        duration: 5000,
         style: {
           borderRadius: '16px',
           background: '#111827',
@@ -207,9 +221,9 @@ export const usePushNotifications = (user) => {
           } else {
             new Notification(title, { body, icon: iconUrl });
           }
-        } catch (err) {
-          console.warn('[FCM] Foreground OS notification error:', err);
-          try { new Notification(title, { body }); } catch (e) {}
+        } catch (_err) {
+          console.warn('[FCM] Foreground OS notification error:', _err);
+          try { new Notification(title, { body }); } catch (fallbackErr) { console.warn(fallbackErr); }
         }
       }
     });
