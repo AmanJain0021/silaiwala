@@ -14,7 +14,9 @@ const { protect } = require("../../../middlewares/auth.middleware.js");
 router.use(protect);
 
 router.post("/fcm-token", registerFcmToken);
+router.put("/fcm-token", registerFcmToken);
 router.post("/fcm-token/remove", removeFcmToken);
+router.delete("/fcm-token", removeFcmToken);
 router.post("/test-push", testPushNotification);
 router.get("/", getNotifications);
 router.patch("/read-all", markAllRead);

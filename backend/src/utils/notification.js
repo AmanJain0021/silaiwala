@@ -117,9 +117,7 @@ const sendNotification = async (options) => {
 
     // 3. Dispatch Firebase Cloud Messaging (FCM) push
     try {
-      // Initialize Firebase (if not already initialized)
-      require("../config/firebase.js");
-      const { getMessaging } = require('firebase-admin/messaging');
+      const { sendMulticastNotification } = require("./firebaseHelper.js");
       const User = require("../models/User.js");
       
       let fcmTokens = [];
@@ -162,116 +160,26 @@ const sendNotification = async (options) => {
           console.log(`[FCM] User ${recipient} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s)`);
           
           if (targetPlatform === 'mobile') {
-            // Only mobile tokens
             fcmTokens = [...mobileTokens];
-            console.log(`[FCM] Targeting MOBILE only: ${fcmTokens.length} token(s)`);
           } else if (targetPlatform === 'web') {
-            // Only web tokens
             fcmTokens = [...webTokens];
-            console.log(`[FCM] Targeting WEB only: ${fcmTokens.length} token(s)`);
           } else {
-            // No platform filter — send to ALL devices
             fcmTokens = [...webTokens, ...mobileTokens];
-            console.log(`[FCM] Targeting ALL devices: ${fcmTokens.length} token(s)`);
           }
         }
       }
 
       if (fcmTokens.length > 0) {
-        // Remove duplicate and empty tokens to prevent FCM errors
-        fcmTokens = [...new Set(fcmTokens.filter(t => t))];
-        
-        if (fcmTokens.length === 0) return true;
-
-        const fcmData = { 
-          title: title || '',
-          body: message || '',
-          message: message || '',
-          type: type || 'SYSTEM' 
-        };
-        if (data) {
-          for (const key in data) {
-            fcmData[key] = data[key] ? data[key].toString() : '';
-          }
-        }
-        if (!fcmData.url && data?.targetUrl) {
-          fcmData.url = data.targetUrl.toString();
-        }
-
-        const payload = {
-          notification: {
-            title: title,
-            body: message,
+        await sendMulticastNotification({
+          tokens: fcmTokens,
+          title,
+          body: message,
+          data: {
+            ...data,
+            type: type || 'SYSTEM'
           },
-          data: fcmData,
-          webpush: {
-            headers: {
-              Urgency: 'high'
-            },
-            notification: {
-              title: title,
-              body: message,
-              requireInteraction: true
-            }
-          },
-          android: {
-            priority: 'high',
-            notification: {
-              title: title,
-              body: message,
-              sound: 'default',
-              channelId: 'default',
-              priority: 'high',
-              defaultSound: true,
-              defaultVibrateTimings: true
-            }
-          },
-          apns: {
-            payload: {
-              aps: {
-                alert: {
-                  title: title,
-                  body: message
-                },
-                sound: 'default',
-                contentAvailable: true
-              }
-            }
-          },
-          tokens: fcmTokens
-        };
-        
-        // Send to multiple devices using the modular getMessaging()
-        const response = await getMessaging().sendEachForMulticast(payload);
-        console.log(`[FCM] Broadcast Sent: ${response.successCount} successful, ${response.failureCount} failed out of ${fcmTokens.length} tokens.`);
-
-        // Auto-clean stale/invalid tokens from DB if any failed
-        if (response.failureCount > 0 && recipient && recipient !== 'admins' && recipient !== 'delivery_partners') {
-          try {
-            const tokensToRemove = [];
-            response.responses.forEach((resp, idx) => {
-              if (!resp.success) {
-                const errCode = resp.error?.code;
-                if (errCode === 'messaging/registration-token-not-registered' || 
-                    errCode === 'messaging/invalid-registration-token') {
-                  tokensToRemove.push(fcmTokens[idx]);
-                }
-              }
-            });
-
-            if (tokensToRemove.length > 0) {
-              console.log(`[FCM] Purging ${tokensToRemove.length} expired FCM tokens for user ${recipient}`);
-              await User.findByIdAndUpdate(recipient, {
-                $pull: {
-                  fcmToken: { $in: tokensToRemove },
-                  fcmTokenMobile: { $in: tokensToRemove }
-                }
-              });
-            }
-          } catch (cleanupErr) {
-            console.error("[FCM] Stale token cleanup error:", cleanupErr.message);
-          }
-        }
+          isUrgent: true
+        });
       }
     } catch (fcmError) {
       console.error("❌ FCM Push Error:", fcmError.message);

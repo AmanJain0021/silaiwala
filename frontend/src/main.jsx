@@ -8,9 +8,18 @@ import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import OfflineDetector from './components/Common/OfflineDetector.jsx'
 
-// Register Service Worker for offline caching and preventing "Web Page Not Available"
+// Register Service Workers with scope: '/'
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).then(
+      (registration) => {
+        console.log('[FCM-SW] Firebase Messaging SW registered with scope:', registration.scope);
+      },
+      (error) => {
+        console.warn('[FCM-SW] Firebase Messaging SW registration failed:', error);
+      }
+    );
+
     navigator.serviceWorker.register('/sw.js').then(
       (registration) => {
         console.log('[SW] ServiceWorker registered with scope:', registration.scope);

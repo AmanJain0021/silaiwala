@@ -95,6 +95,9 @@ app.get("/health", (req, res) => {
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api/v1/auth", require("./modules/auth/routes/auth.routes.js"));
+app.use("/api/auth", require("./modules/auth/routes/auth.routes.js"));
+app.use("/api/user", require("./routes/user.routes.js"));
+app.use("/api/v1/user", require("./routes/user.routes.js"));
 app.use("/api/v1/customers", require("./modules/customers/routes/customer.routes.js"));
 app.use("/api/v1/orders", require("./modules/orders/routes/order.routes.js"));
 app.use("/api/v1/products", require("./modules/products/routes/product.routes.js"));

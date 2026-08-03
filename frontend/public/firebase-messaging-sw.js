@@ -13,14 +13,46 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+// Handle background messaging for data-only FCM push payloads
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification.title;
+  console.log('[firebase-messaging-sw.js] Received background data message:', payload);
+
+  const title = payload?.data?.title || payload?.notification?.title || 'New Notification';
+  const body = payload?.data?.body || payload?.data?.message || payload?.notification?.body || '';
+  const url = payload?.data?.url || payload?.data?.targetUrl || '/';
+
   const notificationOptions = {
-    body: payload.notification.body,
+    body: body,
     icon: '/vite.svg',
-    data: payload.data
+    badge: '/vite.svg',
+    data: {
+      ...payload.data,
+      url: url
+    },
+    vibrate: [200, 100, 200],
+    requireInteraction: false
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(title, notificationOptions);
+});
+
+// Handle notification click to navigate user to target URL
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });

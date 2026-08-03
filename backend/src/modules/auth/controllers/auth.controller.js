@@ -577,3 +577,28 @@ exports.googleLogin = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Failed to authenticate with Google", 401));
   }
 });
+
+/**
+ * @desc    Logout user & $pull current FCM token
+ * @route   POST /api/v1/auth/logout or POST /api/auth/logout
+ * @access  Private / Public
+ */
+exports.logout = asyncHandler(async (req, res, next) => {
+  const { fcmToken, token } = req.body || {};
+  const targetToken = fcmToken || token;
+
+  if (targetToken && req.user) {
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: {
+        fcmToken: targetToken,
+        fcmTokenMobile: targetToken
+      }
+    });
+    console.log(`[AUTH-LOGOUT] $pulled FCM token from DB for user ${req.user._id}`);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
