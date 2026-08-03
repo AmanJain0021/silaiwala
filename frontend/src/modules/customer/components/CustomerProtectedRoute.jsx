@@ -14,7 +14,7 @@ const CustomerProtectedRoute = () => {
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/welcome" replace />;
+        return <Navigate to="/user/login" replace />;
     }
 
     return <Outlet />;

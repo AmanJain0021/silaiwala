@@ -11,14 +11,8 @@ import OfflineDetector from './components/Common/OfflineDetector.jsx'
 // Register Service Workers with scope: '/'
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).then(
-      (registration) => {
-        console.log('[FCM-SW] Firebase Messaging SW registered with scope:', registration.scope);
-      },
-      (error) => {
-        console.warn('[FCM-SW] Firebase Messaging SW registration failed:', error);
-      }
-    );
+    // Only register sw.js which now contains Firebase Messaging
+
 
     navigator.serviceWorker.register('/sw.js').then(
       (registration) => {

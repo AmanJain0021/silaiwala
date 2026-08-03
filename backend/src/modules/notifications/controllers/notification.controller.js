@@ -153,9 +153,7 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
         await freshUser.save();
       }
     } else {
-      const webTokens = freshUser.fcmToken || [];
-      const mobileTokens = freshUser.fcmTokenMobile || [];
-      targetTokens = [...new Set([...webTokens, ...mobileTokens].filter(Boolean))];
+      return next(new ErrorResponse("Device FCM token not found. Please allow notification permissions in your browser address bar and reload.", 400));
     }
 
     if (targetTokens.length === 0) {

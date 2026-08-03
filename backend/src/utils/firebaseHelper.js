@@ -2,26 +2,21 @@ const { getFirebaseMessaging } = require('../config/firebase.js');
 const User = require('../models/User.js');
 
 /**
- * Send multicast FCM push notification for Web and Mobile.
- *
- * Includes both notification and data payloads to ensure Web browsers (Chrome Android/Desktop, Safari PWA)
- * and mobile clients display native OS push notifications in foreground, background, and closed states.
- *
- * @param {Object} params
- * @param {Array<string>} params.tokens - Array of FCM registration tokens
- * @param {string} params.title - Notification title
- * @param {string} params.body - Notification body content
- * @param {Object} [params.data] - Additional metadata key-value pairs
- * @param {boolean} [params.isUrgent=true] - Priority flag
- * @returns {Promise<Object>} Summary of multicast send results
+ * Send multicast FCM push notification to an array of tokens (Web & Mobile).
+ * Automatically cleans up invalid/expired tokens from MongoDB User models.
+ * 
+ * @param {Object} options
+ * @param {Array<string>} options.tokens - Array of FCM registration token strings
+ * @param {string} options.title - Notification title
+ * @param {string} options.body - Notification message body
+ * @param {Object} [options.data] - Additional key-value payload data
+ * @param {boolean} [options.isUrgent=true] - Priority flag
  */
-const sendMulticastNotification = async ({ tokens = [], title = '', body = '', data = {}, isUrgent = true }) => {
-  if (!tokens || tokens.length === 0) {
-    return { successCount: 0, failureCount: 0, removedTokens: [] };
-  }
+const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrgent = true }) => {
+  const validTokens = Array.isArray(tokens)
+    ? [...new Set(tokens.filter(t => typeof t === 'string' && t.trim().length > 10))]
+    : [];
 
-  // Sanitize and deduplicate tokens
-  const validTokens = [...new Set(tokens.filter(t => typeof t === 'string' && t.trim() !== ''))];
   if (validTokens.length === 0) {
     return { successCount: 0, failureCount: 0, removedTokens: [] };
   }
@@ -41,24 +36,24 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
     title: String(title),
     body: String(body),
     message: String(body),
+    url: data?.url || data?.targetUrl || '/'
   };
 
   const payload = {
     tokens: validTokens,
     notification: {
       title: String(title),
-      body: String(body),
+      body: String(body)
     },
     data: dataWithNotifInfo,
     webpush: {
       headers: {
-        Urgency: 'high'
+        Urgency: 'high',
+        TTL: '86400'
       },
       notification: {
         title: String(title),
         body: String(body),
-        icon: 'https://sewzella.com/logo.png',
-        badge: 'https://sewzella.com/logo.png',
         vibrate: [200, 100, 200]
       },
       fcmOptions: {
@@ -71,22 +66,8 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
         title: String(title),
         body: String(body),
         sound: 'default'
-      }
-    },
-    apns: {
-      headers: {
-        'apns-priority': isUrgent ? '10' : '5'
       },
-      payload: {
-        aps: {
-          alert: {
-            title: String(title),
-            body: String(body)
-          },
-          sound: 'default',
-          badge: 1
-        }
-      }
+      data: dataWithNotifInfo
     }
   };
 
@@ -134,9 +115,9 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
       failureCount: response.failureCount,
       removedTokens: tokensToRemove
     };
-  } catch (error) {
-    console.error('❌ [FCM-Helper] Multicast Error:', error.message);
-    throw error;
+  } catch (err) {
+    console.error('[FCM-Helper] Multicast push error:', err);
+    throw err;
   }
 };
 

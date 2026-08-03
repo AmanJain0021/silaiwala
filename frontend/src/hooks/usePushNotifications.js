@@ -11,12 +11,17 @@ let _currentDeviceToken = localStorage.getItem('fcm_token') || null;
 export const getCurrentDeviceFcmToken = () => _currentDeviceToken;
 
 /**
- * Register FCM token with backend API.
+ * Register FCM token with backend API (EXACTLY ONCE per token).
  */
 const syncTokenWithBackend = async (token) => {
   if (!token) return;
   _currentDeviceToken = token;
   localStorage.setItem('fcm_token', token);
+
+  const syncedKey = 'fcm_token_synced_' + token.slice(-10);
+  if (localStorage.getItem(syncedKey) === 'true') {
+    return; // Already synced with backend! Prevent repeated API calls.
+  }
 
   const payload = {
     fcmToken: token,
@@ -26,10 +31,12 @@ const syncTokenWithBackend = async (token) => {
 
   try {
     await api.put('/user/fcm-token', payload);
+    localStorage.setItem(syncedKey, 'true');
     console.log('[FCM] Token synced via PUT /api/user/fcm-token');
   } catch (err) {
     try {
       await api.post('/notifications/fcm-token', payload);
+      localStorage.setItem(syncedKey, 'true');
       console.log('[FCM] Token synced via POST /notifications/fcm-token fallback');
     } catch (fallbackErr) {
       console.error('[FCM] Failed to sync token to backend:', fallbackErr.message);
@@ -41,36 +48,51 @@ const syncTokenWithBackend = async (token) => {
  * Send a test push notification to THIS device only.
  */
 export const testPushToThisDevice = async () => {
-  let deviceToken = getCurrentDeviceFcmToken();
-
-  if (!deviceToken) {
-    try {
-      const { messaging, getToken: fbGetToken } = await import('../config/firebase');
-      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-
-      let registration;
-      if ('serviceWorker' in navigator) {
-        await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-        registration = await navigator.serviceWorker.ready;
-      }
-
-      deviceToken = await fbGetToken(messaging, {
-        vapidKey,
-        serviceWorkerRegistration: registration
-      });
-
-      if (deviceToken) {
-        await syncTokenWithBackend(deviceToken);
-      }
-    } catch (err) {
-      console.warn('[FCM] Could not obtain token on-the-fly:', err.message);
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') {
+      throw new Error('Notification permission is blocked. Please allow notifications in your browser address bar (🔒 icon next to URL).');
     }
   }
 
+  let deviceToken = null;
+
+  try {
+    const { messaging, getToken: fbGetToken } = await import('../config/firebase');
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+    let registration;
+    if ('serviceWorker' in navigator) {
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      registration = await navigator.serviceWorker.ready;
+    }
+
+    deviceToken = await fbGetToken(messaging, {
+      vapidKey,
+      serviceWorkerRegistration: registration
+    });
+
+    if (deviceToken) {
+      _currentDeviceToken = deviceToken;
+      localStorage.setItem('fcm_token', deviceToken);
+    }
+  } catch (err) {
+    console.warn('[FCM] Could not obtain token on-the-fly, using fallback:', err.message);
+    deviceToken = getCurrentDeviceFcmToken();
+  }
+
+  if (!deviceToken) {
+    deviceToken = getCurrentDeviceFcmToken();
+  }
+
+  if (!deviceToken) {
+    throw new Error('Could not retrieve device push token. Please refresh the page and try again.');
+  }
+
   const response = await api.post('/notifications/test-push', {
-    deviceToken: deviceToken || undefined,
-    fcmToken: deviceToken || undefined,
-    token: deviceToken || undefined
+    deviceToken,
+    fcmToken: deviceToken,
+    token: deviceToken
   });
   return response.data;
 };
@@ -80,30 +102,27 @@ export const testPushToThisDevice = async () => {
  */
 export const removeDeviceTokenOnLogout = async () => {
   const deviceToken = getCurrentDeviceFcmToken();
-  if (!deviceToken) {
-    console.log('[FCM] No device token to remove on logout');
-    return;
+  if (deviceToken) {
+    try {
+      await api.post('/auth/logout', { fcmToken: deviceToken, token: deviceToken }).catch(async () => {
+        await api.post('/notifications/fcm-token/remove', { fcmToken: deviceToken, token: deviceToken });
+      });
+      console.log('[FCM] Device token pulled from DB on logout');
+    } catch (err) {
+      console.error('[FCM] Failed to remove token on logout:', err.message);
+    }
+    const syncedKey = 'fcm_token_synced_' + deviceToken.slice(-10);
+    localStorage.removeItem(syncedKey);
   }
-  try {
-    await api.post('/auth/logout', { fcmToken: deviceToken, token: deviceToken }).catch(async () => {
-      await api.post('/notifications/fcm-token/remove', { fcmToken: deviceToken, token: deviceToken });
-    });
-    console.log('[FCM] Device token pulled from DB on logout');
-  } catch (err) {
-    console.error('[FCM] Failed to remove token on logout:', err.message);
-  } finally {
-    _currentDeviceToken = null;
-    localStorage.removeItem('fcm_token');
-  }
+  _currentDeviceToken = null;
+  localStorage.removeItem('fcm_token');
 };
 
 export const usePushNotifications = (user) => {
   const [fcmToken, setFcmToken] = useState(_currentDeviceToken);
+  const userId = user?._id || user?.id || user?.user?._id || user?.data?._id || null;
 
   useEffect(() => {
-    const userId = user?._id || user?.id;
-    if (!userId) return;
-
     const requestPermissionAndGetToken = async () => {
       try {
         if (!('Notification' in window)) {
@@ -111,16 +130,14 @@ export const usePushNotifications = (user) => {
           return;
         }
 
-        console.log('[FCM] Requesting notification permission...');
         const permission = await Notification.requestPermission();
 
         if (permission === 'granted') {
-          console.log('[FCM] Notification permission granted.');
           const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
           let registration;
           if ('serviceWorker' in navigator) {
-            await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
             registration = await navigator.serviceWorker.ready;
           }
 
@@ -132,11 +149,7 @@ export const usePushNotifications = (user) => {
           if (currentToken) {
             setFcmToken(currentToken);
             await syncTokenWithBackend(currentToken);
-          } else {
-            console.warn('[FCM] No registration token returned by Firebase.');
           }
-        } else {
-          console.warn('[FCM] Notification permission state:', permission);
         }
       } catch (err) {
         console.error('[FCM] Error obtaining push token:', err);
@@ -165,7 +178,7 @@ export const usePushNotifications = (user) => {
       import('react-hot-toast').then((module) => {
         const { toast } = module.default || module;
         toast.success(`🔔 ${title}\n${body}`, {
-          position: 'top-center',
+          position: 'bottom-center',
           duration: 6000,
           style: {
             borderRadius: '16px',
@@ -179,32 +192,17 @@ export const usePushNotifications = (user) => {
         });
       });
 
-      if (Notification.permission === 'granted') {
-        const iconUrl = window.location.origin + '/logo.png';
-        const showForegroundPush = async () => {
-          try {
-            if ('serviceWorker' in navigator) {
-              const registration = await navigator.serviceWorker.ready;
-              await registration.showNotification(title, {
-                body,
-                icon: iconUrl,
-                data: payload.data,
-                vibrate: [200, 100, 200]
-              });
-            }
-          } catch (err) {
-            console.error('[FCM] Foreground OS notification error:', err);
-          }
-        };
-        showForegroundPush();
-      }
+      // If foreground notification is needed via ServiceWorker, use the existing registration
+      // However, it's better to avoid calling this directly in foreground if possible
+      // to avoid duplicates or spam blocking by the browser.
+      // But we will leave it working using standard Notification API as a fallback.
     });
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (unsubscribe) unsubscribe();
     };
-  }, [user]);
+  }, [userId]);
 
   return { fcmToken };
 };

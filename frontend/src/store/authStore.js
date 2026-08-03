@@ -144,30 +144,29 @@ const useAuthStore = create((set) => ({
     },
 
     logout: async () => {
-        // Remove FCM token from database BEFORE clearing auth token
-        // (API call needs auth token to authenticate)
         try {
             const { removeDeviceTokenOnLogout } = await import('../hooks/usePushNotifications');
             await removeDeviceTokenOnLogout();
         } catch (_) {}
 
         removeToken();
-        const path = typeof window !== 'undefined' ? window.location.pathname : '';
-        let storageKey = 'user';
-        if (path.startsWith('/delivery')) storageKey = 'delivery_user';
-        else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
-        
-        localStorage.removeItem(storageKey);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
-        localStorage.removeItem('tailor_token');
+        localStorage.removeItem('fcm_token');
+        localStorage.removeItem('delivery_user');
         localStorage.removeItem('tailor_user');
+        localStorage.removeItem('delivery_token');
+        localStorage.removeItem('tailor_token');
+        localStorage.removeItem('executive_token');
         localStorage.removeItem('tailor_status');
         try {
             if (typeof window !== 'undefined') sessionStorage.clear();
         } catch (_) {}
         
         set({ user: null, isAuthenticated: false, role: null, error: null });
+        if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/login')) {
+            window.location.href = '/user/login';
+        }
     },
 
     signup: async (userData) => {

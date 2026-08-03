@@ -45,7 +45,7 @@ const Onboarding = () => {
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep((prevStep) => prevStep + 1);
     } else {
       navigate('/user/login');
     }
