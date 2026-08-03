@@ -2,10 +2,10 @@ const { getFirebaseMessaging } = require('../config/firebase.js');
 const User = require('../models/User.js');
 
 /**
- * Send multicast FCM push notification using DATA-ONLY payload.
+ * Send multicast FCM push notification for Web and Mobile.
  *
- * Using a data-only payload prevents OS-level auto-suppression and duplicate popups
- * in both foreground and background modes on Web (PWA) and Mobile (Android/iOS).
+ * Includes both notification and data payloads to ensure Web browsers (Chrome Android/Desktop, Safari PWA)
+ * and mobile clients display native OS push notifications in foreground, background, and closed states.
  *
  * @param {Object} params
  * @param {Array<string>} params.tokens - Array of FCM registration tokens
@@ -36,7 +36,6 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
     }
   }
 
-  // CRITICAL: Data-only payload to avoid OS auto-suppression or duplicate popups
   const dataWithNotifInfo = {
     ...formattedData,
     title: String(title),
@@ -46,14 +45,33 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
 
   const payload = {
     tokens: validTokens,
+    notification: {
+      title: String(title),
+      body: String(body),
+    },
     data: dataWithNotifInfo,
     webpush: {
+      headers: {
+        Urgency: 'high'
+      },
+      notification: {
+        title: String(title),
+        body: String(body),
+        icon: '/vite.svg',
+        badge: '/vite.svg',
+        vibrate: [200, 100, 200]
+      },
       fcmOptions: {
         link: data?.url || data?.targetUrl || '/'
       }
     },
     android: {
-      priority: isUrgent ? 'high' : 'normal'
+      priority: isUrgent ? 'high' : 'normal',
+      notification: {
+        title: String(title),
+        body: String(body),
+        sound: 'default'
+      }
     },
     apns: {
       headers: {
@@ -75,7 +93,7 @@ const sendMulticastNotification = async ({ tokens = [], title = '', body = '', d
   try {
     const messaging = getFirebaseMessaging();
     const response = await messaging.sendEachForMulticast(payload);
-    console.log(`[FCM-Helper] Data-only Multicast sent: ${response.successCount} succeeded, ${response.failureCount} failed out of ${validTokens.length} tokens.`);
+    console.log(`[FCM-Helper] Multicast push sent: ${response.successCount} succeeded, ${response.failureCount} failed out of ${validTokens.length} tokens.`);
 
     const tokensToRemove = [];
     if (response.failureCount > 0) {
