@@ -103,8 +103,12 @@ const Orders = () => {
         try {
             const response = await api.patch(`/tailors/orders/${orderId}/status`, { status, ...extraPayload });
             if (response.data.success) {
-                toast.success(`Status updated to ${status.replace(/-/g, ' ')}`);
                 const updatedObj = response.data.data;
+                const displayId = updatedObj?.orderId || orderId;
+                const statusKey = String(status).toLowerCase();
+                toast.success(`Status updated to ${status.replace(/-/g, ' ')}`, {
+                    id: `toast-status-${displayId}-${statusKey}`
+                });
                 if (updatedObj) {
                     setOrders(prev => prev.map(o => (String(o._id) === String(orderId) ? { ...o, ...updatedObj } : o)));
                     if (selectedOrder && String(selectedOrder._id) === String(orderId)) {
@@ -1447,7 +1451,7 @@ const Orders = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-3 md:px-0">
                         {filteredOrders.map((order) => {
-                            const isNew = order.status === 'pending';
+                            const isNew = order.status === 'pending' || (!order.acceptedAt && order.status === 'pending');
                             return (
                                 <div key={order._id} className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#843D9B]/10 transition-all flex flex-col group">
                                     <div className="flex justify-between items-start mb-3 md:mb-4">
@@ -1585,6 +1589,14 @@ const Orders = () => {
                                                         { current: 'out-for-delivery', next: 'delivered', label: 'Mark Delivered' }
                                                     ];
                                                 
+                                                if (order.advancePaymentStatus !== 'paid' && order.paymentStatus !== 'paid') {
+                                                    return (
+                                                        <div className="flex-1 text-center py-3 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm">
+                                                            <Clock size={12} className="text-amber-600 animate-pulse" /> Awaiting customer payment
+                                                        </div>
+                                                    );
+                                                }
+
                                                 // Customer→tailor fabric must physically arrive before tailor can mark received
                                                 const awaitingCustomerFabric =
                                                     order.fabricPickupRequired &&

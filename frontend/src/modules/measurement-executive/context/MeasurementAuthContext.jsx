@@ -51,7 +51,7 @@ export const MeasurementAuthProvider = ({ children }) => {
             
             // Play Buzzer Sound
             try {
-                const audio = new Audio('/sounds/buzzer.mp3');
+                const audio = new Audio('/sounds/alert.mp3');
                 audio.play().catch(() => {});
             } catch (err) {}
 

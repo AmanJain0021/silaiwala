@@ -11,6 +11,16 @@ const { getIO } = require("../config/socket.js");
  */
 exports.autoAssignMeasurementExecutive = async (order) => {
   try {
+    // Check if advance payment is required but not paid yet
+    const isAdvanceRequired = (order.advancePaymentAmount > 0) && 
+                              order.advancePaymentStatus !== 'paid' && 
+                              order.paymentStatus !== 'paid';
+
+    if (isAdvanceRequired) {
+      console.log(`ℹ️ [measurementAssignment] Skipping auto-assignment for Order #${order.orderId}: Advance payment of ₹${order.advancePaymentAmount} is pending.`);
+      return false;
+    }
+
     // 1. Build the MeasurementRequest
     const request = await MeasurementRequest.findOne({ order: order._id });
     if (!request) {
@@ -24,11 +34,22 @@ exports.autoAssignMeasurementExecutive = async (order) => {
       // Still try to find any available executive
     }
 
-    // 2. Find nearest available, verified executive not in rejectedBy
+    // Exclude executives who ALREADY have an active accepted request in progress
+    const busyExecs = await MeasurementRequest.find({
+      status: { $in: ["accepted", "otp_sent", "otp_verified", "measurements_uploaded"] },
+      executive: { $ne: null }
+    }).distinct("executive");
+
+    const excludedUserIds = Array.from(new Set([
+      ...(request.rejectedBy || []).map(id => id.toString()),
+      ...busyExecs.map(id => id.toString())
+    ]));
+
+    // 2. Find nearest available, verified executive not in excludedUserIds
     const query = {
       availabilityStatus: "online",
       verificationStatus: { $in: ["verified", "approved"] },
-      user: { $nin: request.rejectedBy || [] },
+      user: { $nin: excludedUserIds },
     };
 
     let candidates = [];

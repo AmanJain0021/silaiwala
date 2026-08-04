@@ -20,8 +20,8 @@ const ALLOWED_TRANSITIONS = {
   "waiting-for-customer-dropoff": ["fabric-received", "cancelled"],
 
   // Measurement Executive Flow
-  "measurement-requested": ["measurement-assigned", "cancelled"],
-  "measurement-assigned": ["measurement-accepted", "cancelled"],
+  "measurement-requested": ["accepted", "measurement-assigned", "cancelled"],
+  "measurement-assigned": ["accepted", "measurement-accepted", "cancelled"],
   "measurement-accepted": ["measurement-otp-verified", "cancelled"],
   "measurement-otp-verified": ["measurements-uploaded", "cancelled"],
   "measurements-uploaded": ["measurements-approved", "measurement-revision-required", "cancelled"],

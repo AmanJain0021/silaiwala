@@ -2,12 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { useMeasurementAuth } from '../context/MeasurementAuthContext';
-import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation, RefreshCw } from 'lucide-react';
+import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation, Phone, ArrowRight, X, Loader2, Ruler, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import api from '../../../shared/utils/api';
-import { X, Loader2 } from 'lucide-react';
+
+const formatAddress = (addr) => {
+    if (!addr) return 'Address details pending';
+    if (typeof addr === 'string') return addr.trim() || 'Address details pending';
+    if (typeof addr === 'object') {
+        const parts = [
+            addr.street || addr.addressLine1 || addr.address || addr.houseNo,
+            addr.landmark,
+            addr.city,
+            addr.state,
+            addr.pincode || addr.zipCode || addr.zip
+        ].filter(Boolean);
+        if (parts.length > 0) return parts.join(', ');
+    }
+    return 'Address details pending';
+};
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -19,11 +34,31 @@ const Dashboard = () => {
     const addressName = profile?.address || 'Location not set';
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
+    // Active Accepted Task State
+    const [activeTask, setActiveTask] = useState(null);
+    const [isLoadingActiveTask, setIsLoadingActiveTask] = useState(false);
+
     // Notifications State
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    const fetchActiveTask = async () => {
+        try {
+            setIsLoadingActiveTask(true);
+            const res = await api.get('/measurement-executive/requests?status=active');
+            if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+                setActiveTask(res.data.data[0]);
+            } else {
+                setActiveTask(null);
+            }
+        } catch (error) {
+            console.error('Failed to fetch active task:', error);
+        } finally {
+            setIsLoadingActiveTask(false);
+        }
+    };
 
     const fetchNotifications = async () => {
         try {
@@ -40,6 +75,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchDashboard();
+        fetchActiveTask();
         fetchNotifications();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -51,7 +87,7 @@ const Dashboard = () => {
             const data = await detectLocation();
             if (data && data.latitude && data.longitude) {
                 await useMeasurementStore.getState().updateLocation([data.longitude, data.latitude]);
-                await fetchDashboard(); // refresh profile to get exact address
+                await fetchDashboard();
                 toast.success(`Location updated`, { id: 'loc-toast-refresh' });
             }
         } catch (error) {
@@ -77,7 +113,7 @@ const Dashboard = () => {
                     }
                 } catch (error) {
                     console.error('Location error:', error);
-                    toast.error('Location required to go online. Please enable it or set manually.', { id: 'loc-toast' });
+                    toast.error('Location required to go online.', { id: 'loc-toast' });
                 }
             } else {
                 await toggleAvailability(newStatus);
@@ -127,7 +163,7 @@ const Dashboard = () => {
 
     return (
         <>
-        <PullToRefresh onRefresh={async () => await fetchDashboard()}>
+        <PullToRefresh onRefresh={async () => { await fetchDashboard(); await fetchActiveTask(); }}>
             <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
             {/* ── HEADER ── */}
             <div className="px-5 pt-6 pb-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -197,7 +233,6 @@ const Dashboard = () => {
                 
                 {/* Purple Stats Card */}
                 <div className="bg-gradient-to-br from-[#6b2c80] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-6">
-                    {/* Decorative Elements */}
                     <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10" />
                     <div className="absolute left-10 bottom-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-xl -mb-10" />
                     
@@ -216,7 +251,6 @@ const Dashboard = () => {
                         </button>
                     </div>
 
-                    {/* Floating accents */}
                     <div className="absolute right-6 bottom-6 w-24 h-24 bg-[#5a246b] rounded-2xl rotate-12 opacity-50 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl">
                         <div className="w-4 h-4 rounded-full border-2 border-white/20" />
                     </div>
@@ -228,7 +262,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Grid (4 columns) */}
+                {/* Stats Grid */}
                 <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 flex justify-between items-center mb-6">
                     <div className="flex flex-col items-center gap-1.5 flex-1">
                         <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 mb-1">
@@ -277,32 +311,103 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Live Task Action Card */}
-                <div className="bg-white rounded-[24px] p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center mb-6">
-                    <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 mb-4 rotate-3">
-                        <ClipboardList size={24} />
+                {/* ── WHITE CLEAN ACTIVE TASK CARD (WHEN TASK IS ACCEPTED) ── */}
+                {activeTask ? (
+                    <div className="bg-white rounded-[24px] p-6 shadow-md border border-purple-100 text-gray-900 mb-6 space-y-4 animate-in fade-in duration-300">
+                        {/* Header Badge */}
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                    ACTIVE VISIT IN PROGRESS
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-black text-[#843D9B] bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+                                Order #{activeTask.order?.orderId || activeTask.orderIdStr || 'N/A'}
+                            </span>
+                        </div>
+
+                        {/* Customer Info Box */}
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="text-base font-black text-gray-900">
+                                        {activeTask.customer?.name || activeTask.customerName || 'Customer'}
+                                    </h4>
+                                    <p className="text-[10px] font-bold text-[#843D9B] uppercase tracking-wider mt-0.5">
+                                        EST. EARNINGS: ₹{activeTask.payout || 150}.00
+                                    </p>
+                                </div>
+                                {activeTask.customer?.phoneNumber && (
+                                    <a
+                                        href={`tel:${activeTask.customer.phoneNumber}`}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-md shadow-emerald-600/20 transition-all"
+                                    >
+                                        <Phone size={12} /> Call
+                                    </a>
+                                )}
+                            </div>
+
+                            <div className="flex items-start gap-2 text-gray-600 text-xs mt-2 pt-2 border-t border-gray-200/60">
+                                <MapPin size={14} className="text-[#843D9B] shrink-0 mt-0.5" />
+                                <span className="font-medium">{formatAddress(activeTask.customerAddress || activeTask.address)}</span>
+                            </div>
+                        </div>
+
+                        {/* Workflow Status Info */}
+                        <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck size={14} className="text-[#843D9B]" />
+                                <span>Stage: <strong className="text-gray-900 font-bold capitalize">{activeTask.status?.replace(/_/g, ' ')}</strong></span>
+                            </div>
+                            {activeTask.customerLocation?.coordinates?.length === 2 && (
+                                <a
+                                    href={`https://www.google.com/maps?q=${activeTask.customerLocation.coordinates[1]},${activeTask.customerLocation.coordinates[0]}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] font-black text-[#843D9B] uppercase tracking-wider flex items-center gap-1 hover:underline"
+                                >
+                                    <Navigation size={10} /> Maps
+                                </a>
+                            )}
+                        </div>
+
+                        {/* Single Primary Action Button */}
+                        <button
+                            onClick={() => navigate(`/executive/requests/${activeTask._id}`)}
+                            className="bg-[#843D9B] hover:bg-[#6b2c80] text-white text-[11px] font-black uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 w-full shadow-lg shadow-[#843D9B]/30 active:scale-95 transition-all mt-2 cursor-pointer"
+                        >
+                            <Ruler size={16} /> TASK DETAILS <ArrowRight size={16} />
+                        </button>
                     </div>
-                    {stats?.totalPending > 0 ? (
-                        <>
-                            <h3 className="text-[15px] font-black text-gray-800 mb-1">
-                                You have active tasks, there {stats.totalPending === 1 ? 'is' : 'are'} <span className="text-[#843D9B]">{stats.totalPending} pending</span> {stats.totalPending === 1 ? 'request' : 'requests'}!
-                            </h3>
-                            <button onClick={() => navigate('/executive/requests')} className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
-                                VIEW LIVE POOL
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <h3 className="text-[15px] font-black text-gray-800 mb-1">
-                                You have no active tasks currently.
-                            </h3>
-                            <p className="text-xs text-gray-500 font-medium mt-1">Keep your status online to receive new requests.</p>
-                            <button onClick={() => navigate('/executive/requests')} className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
-                                VIEW LIVE POOL
-                            </button>
-                        </>
-                    )}
-                </div>
+                ) : (
+                    /* Live Task Action Card (No active accepted task) */
+                    <div className="bg-white rounded-[24px] p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center mb-6">
+                        <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 mb-4 rotate-3">
+                            <ClipboardList size={24} />
+                        </div>
+                        {stats?.totalPending > 0 ? (
+                            <>
+                                <h3 className="text-[15px] font-black text-gray-800 mb-1">
+                                    You have active tasks, there {stats.totalPending === 1 ? 'is' : 'are'} <span className="text-[#843D9B]">{stats.totalPending} pending</span> {stats.totalPending === 1 ? 'request' : 'requests'}!
+                                </h3>
+                                <button onClick={() => navigate('/executive/requests')} className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
+                                    VIEW LIVE POOL
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="text-[15px] font-black text-gray-800 mb-1">
+                                    You have no active tasks currently.
+                                </h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">Keep your status online to receive new requests.</p>
+                                <button onClick={() => navigate('/executive/requests')} className="mt-5 bg-[#843D9B] text-white text-[11px] font-black uppercase tracking-widest px-8 py-3.5 rounded-2xl shadow-lg shadow-[#843D9B]/30 hover:shadow-xl hover:shadow-[#843D9B]/40 active:scale-95 transition-all">
+                                    VIEW LIVE POOL
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
 
                 {/* Verification Warning */}
                 {profile?.verificationStatus !== 'verified' && (

@@ -720,23 +720,26 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   // LOGIC: Status just becomes the new status. 
   // We don't auto-change to fabric-ready-for-pickup on "accepted" because we wait for payment.
   // Only initialize payment split on first accept from pending — never rewind paid mid-flow orders.
-  if (status === "accepted" && order.status === "pending") {
-    // 1. Fetch Admin Settings for Wallet Config
-    const Settings = require("../../../models/Settings.js");
-    const adminSettings = await Settings.findOne() || await Settings.create({});
-    const advancePercentage = adminSettings.walletConfig?.advancePercentage || 30;
-    
-    // 2. Calculate partial payments
-    if (order.isBridalConsultation) {
-        order.advancePaymentAmount = order.totalAmount;
-        order.remainingPaymentAmount = 0;
-    } else {
-        order.advancePaymentAmount = Math.round(order.totalAmount * (advancePercentage / 100));
-        order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+  if (status === "accepted") {
+    if (order.advancePaymentStatus !== "paid") {
+      // 1. Fetch Admin Settings for Wallet Config
+      const Settings = require("../../../models/Settings.js");
+      const adminSettings = await Settings.findOne() || await Settings.create({});
+      const advancePercentage = adminSettings.walletConfig?.advancePercentage || 30;
+      
+      // 2. Calculate partial payments
+      if (order.isBridalConsultation) {
+          order.advancePaymentAmount = order.totalAmount;
+          order.remainingPaymentAmount = 0;
+      } else {
+          const calculatedAdvance = Math.round(order.totalAmount * (advancePercentage / 100));
+          order.advancePaymentAmount = calculatedAdvance > 0 ? calculatedAdvance : Math.round(order.totalAmount * 0.3);
+          order.remainingPaymentAmount = order.totalAmount - order.advancePaymentAmount;
+      }
+      order.advancePaymentStatus = "pending";
+      order.remainingPaymentStatus = "pending";
+      order.paymentStatus = "pending"; // Overall status
     }
-    order.advancePaymentStatus = "pending";
-    order.remainingPaymentStatus = "pending";
-    order.paymentStatus = "pending"; // Overall status
   }
 
   if (status === "ready-for-delivery" || status === "ready") {
@@ -771,7 +774,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   }
 
   const { transitionOrder } = require("../../../utils/orderStateMachine.js");
-  transitionOrder(order, status, message || `Order status updated to ${status}`);
+  transitionOrder(order, status, message || `Order status updated to ${status}`, status === 'accepted');
 
   await order.save();
 
@@ -784,11 +787,14 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
       _id: order._id,
       status: order.status,
       acceptedAt: order.acceptedAt,
+      advancePaymentStatus: order.advancePaymentStatus,
+      advancePaymentAmount: order.advancePaymentAmount,
       dropoffDeliveryStatus: order.dropoffDeliveryStatus,
       pickupDeliveryStatus: order.pickupDeliveryStatus,
     };
     statusIo.to(`user_${order.customer}`).emit("order_status_updated", statusPayload);
     statusIo.to(`user_${req.user.id}`).emit("order_status_updated", statusPayload);
+    statusIo.to(`order_${order._id}`).emit("order_status_updated", statusPayload);
   } catch (socketError) {
     console.error("⚠️ Persisted status socket emission failed:", socketError.message);
   }

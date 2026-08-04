@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { removeToken } from '../../../utils/auth';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import ManualLocationModal from '../../../shared/components/ManualLocationModal';
+import NewMeasurementRequestAlert from '../components/NewMeasurementRequestAlert';
 
 const LocationBanner = () => {
     const { profile } = useMeasurementStore();
@@ -186,6 +187,9 @@ const LayoutContent = () => {
 
             {/* Main content */}
             <div className="flex flex-col w-0 flex-1 overflow-hidden relative">
+                {/* Global New Measurement Request Alert Modal with Ringtone */}
+                <NewMeasurementRequestAlert />
+
                 {/* Mobile Header logic is handled in Dashboard.jsx, but we might want a generic one for other pages */}
                 <main className="flex-1 relative overflow-y-auto custom-scrollbar md:p-8 lg:p-10 pb-24 md:pb-8">
                     <div className="max-w-7xl mx-auto min-h-full">

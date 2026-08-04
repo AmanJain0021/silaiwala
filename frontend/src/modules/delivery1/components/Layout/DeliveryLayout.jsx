@@ -113,7 +113,7 @@ const DeliveryLayout = () => {
   const startBuzzer = useCallback(() => {
     if (buzzerRef.current) return;
     try {
-      const audio = new Audio('/sounds/buzzer.mp3');
+      const audio = new Audio('/sounds/alert.mp3');
       audio.loop = true;
       audio.volume = 0.6;
       audio.play().catch(err => {

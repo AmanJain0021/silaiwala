@@ -208,9 +208,17 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
   const requests = await MeasurementRequest.find(query)
     .populate("customer", "name phoneNumber profileImage")
     .populate("tailor", "name phoneNumber profileImage")
-    .populate("order", "orderId totalAmount status items")
+    .populate("order", "orderId totalAmount status items advancePaymentAmount advancePaymentStatus paymentStatus")
     .sort("-createdAt")
     .lean();
+
+  const validRequests = requests.filter(r => {
+    if (!r.order) return true;
+    const isAdvancePending = (r.order.advancePaymentAmount > 0) && 
+                            r.order.advancePaymentStatus !== 'paid' && 
+                            r.order.paymentStatus !== 'paid';
+    return !isAdvancePending;
+  });
 
   const profile = await MeasurementExecutive.findOne({ user: req.user.id }).lean();
   let execCoords = null;
@@ -218,7 +226,7 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
     execCoords = profile.currentLocation.coordinates;
   }
 
-  const requestsWithDistance = requests.map(request => {
+  const requestsWithDistance = validRequests.map(request => {
     let distance = null;
     if (execCoords && request.customerLocation?.coordinates?.length === 2) {
       const [lon1, lat1] = execCoords;

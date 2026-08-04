@@ -159,6 +159,11 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        order.advancePaymentId = razorpay_payment_id;
        order.razorpayOrderId = razorpay_order_id;
        
+       if (!order.advancePaymentAmount || order.advancePaymentAmount <= 0) {
+           order.advancePaymentAmount = Math.max(50, Math.round((order.totalAmount || 0) * 0.3));
+           order.remainingPaymentAmount = Math.max(0, (order.totalAmount || 0) - order.advancePaymentAmount);
+       }
+       
        // Change status to trigger pickup
        const fabricPickupRequired = order.items.some(item => item.fabricSource === 'customer');
        let nextStatus = 'in-progress';
@@ -1066,13 +1071,27 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Fetch Measurement OTP if the order is in measurement-accepted phase and user is customer
+  // Fetch Measurement OTP & Executive details if the order is in measurement-accepted phase and user is customer
   let measurementOtp = null;
-  if (order.isMeasurementHome && order.customer?._id?.toString() === req.user.id) {
+  let measurementExecutive = null;
+  let measurementRequestInfo = null;
+
+  if (order.isMeasurementHome) {
       const MeasurementRequest = require("../../../models/MeasurementRequest.js");
-      const mReq = await MeasurementRequest.findOne({ order: order._id }).select('+otp').sort({ createdAt: -1 }).lean();
-      if (mReq && ['otp_sent', 'accepted'].includes(mReq.status) && mReq.otp) {
-          measurementOtp = mReq.otp;
+      const mReq = await MeasurementRequest.findOne({ order: order._id })
+          .select('+otp')
+          .populate('executive', 'name phoneNumber profileImage')
+          .sort({ createdAt: -1 })
+          .lean();
+
+      if (mReq) {
+          measurementRequestInfo = mReq;
+          if (mReq.executive) {
+              measurementExecutive = mReq.executive;
+          }
+          if (order.customer?._id?.toString() === req.user.id && ['otp_sent', 'accepted'].includes(mReq.status) && mReq.otp) {
+              measurementOtp = mReq.otp;
+          }
       }
   }
 
@@ -1113,6 +1132,8 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
       customerLatitude,
       customerLongitude,
       measurementOtp,
+      measurementExecutive,
+      measurementRequestInfo,
       reportedIssue,
       existingIssueId: reportedIssue?._id // Keep this for backward compatibility with the button
     },

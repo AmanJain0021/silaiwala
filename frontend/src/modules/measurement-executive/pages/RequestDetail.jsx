@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText, Activity } from 'lucide-react';
+import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText, Activity, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../shared/utils/api';
 import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
@@ -12,7 +12,7 @@ const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 const RequestDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getRequestDetail, generateOTP, verifyOTP, uploadMeasurements, completeMeasurement } = useMeasurementStore();
+    const { getRequestDetail, generateOTP, verifyOTP, uploadMeasurements, completeMeasurement, rejectRequest } = useMeasurementStore();
     
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -168,6 +168,21 @@ const RequestDetail = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleCancelTask = async () => {
+        if (!window.confirm('Are you sure you want to cancel this measurement task? It will be automatically reassigned to another available executive.')) {
+            return;
+        }
+
+        try {
+            toast.loading('Cancelling and reassigning task...', { id: 'cancel-detail-task' });
+            await rejectRequest(id);
+            toast.success('Task cancelled. Reassigned to another executive.', { id: 'cancel-detail-task' });
+            navigate('/executive/dashboard');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to cancel task', { id: 'cancel-detail-task' });
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">Loading...</div>;
     if (!request) return null;
 
@@ -192,8 +207,18 @@ const RequestDetail = () => {
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Manage active task</p>
                     </div>
                 </div>
-                <div className="px-4 py-2 rounded-xl flex items-center gap-2 border font-black text-xs uppercase tracking-widest shadow-sm bg-blue-50 text-blue-600 border-blue-100 self-start sm:self-auto">
-                    {request.status.replace('_', ' ')}
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                    {['assigned', 'accepted', 'otp_sent'].includes(request.status) && (
+                        <button
+                            onClick={handleCancelTask}
+                            className="px-4 py-2 rounded-xl flex items-center gap-1.5 font-black text-xs uppercase tracking-widest bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 transition-colors shadow-sm cursor-pointer"
+                        >
+                            <X size={14} /> Cancel Task
+                        </button>
+                    )}
+                    <div className="px-4 py-2 rounded-xl flex items-center gap-2 border font-black text-xs uppercase tracking-widest shadow-sm bg-blue-50 text-blue-600 border-blue-100">
+                        {request.status.replace('_', ' ')}
+                    </div>
                 </div>
             </div>
 

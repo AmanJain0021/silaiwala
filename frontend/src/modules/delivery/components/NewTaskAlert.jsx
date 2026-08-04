@@ -9,82 +9,43 @@ import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { isPendingAcceptanceTask } from '../utils/taskStatus';
 
-// Web Audio API Buzzer Audio Context & Nodes
-let audioCtx = null;
-let oscillator = null;
-let gainNode = null;
-let intervalId = null;
+let currentAlertAudio = null;
 
 const startBuzzer = () => {
     try {
-        stopBuzzer(); // Safety cleanup before starting new context
-        
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
+        stopBuzzer();
+        const audio = new Audio('/sounds/alert.mp3');
+        audio.loop = true;
+        audio.volume = 0.95;
+        currentAlertAudio = audio;
 
-        audioCtx = new AudioContext();
-        oscillator = audioCtx.createOscillator();
-        gainNode = audioCtx.createGain();
-
-        // Sawtooth wave sounds like a digital vehicle buzzer
-        oscillator.type = 'sawtooth';
-        oscillator.frequency.setValueAtTime(140, audioCtx.currentTime); // Low buzz
-
-        // Low volume to prevent discomfort
-        gainNode.gain.setValueAtTime(0.18, audioCtx.currentTime);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-
-        oscillator.start();
-
-        // Pulsing pattern (0.5s sound, 0.5s silence)
-        let isBeeping = true;
-        intervalId = setInterval(() => {
-            if (gainNode && audioCtx) {
-                isBeeping = !isBeeping;
-                gainNode.gain.setValueAtTime(isBeeping ? 0.18 : 0, audioCtx.currentTime);
-            }
-        }, 500);
-
-        // Resume Audio Context if suspended by browser autoplay policy
-        if (audioCtx.state === 'suspended') {
-            const resumeHandler = () => {
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                document.removeEventListener('click', resumeHandler);
-            };
-            document.addEventListener('click', resumeHandler);
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.warn("Autoplay policy or audio device issue blocked alert audio:", err.message);
+                const unlock = () => {
+                    if (currentAlertAudio) {
+                        currentAlertAudio.play().catch(e => console.warn("Retry play error:", e));
+                    }
+                    window.removeEventListener('click', unlock);
+                    window.removeEventListener('touchstart', unlock);
+                };
+                window.addEventListener('click', unlock);
+                window.addEventListener('touchstart', unlock);
+            });
         }
     } catch (error) {
-        console.warn("Autoplay policy or audio device issue blocked buzzer:", error.message);
+        console.warn("Alert audio error:", error.message);
     }
 };
 
 const stopBuzzer = () => {
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-    if (oscillator) {
+    if (currentAlertAudio) {
         try {
-            oscillator.stop();
-            oscillator.disconnect();
+            currentAlertAudio.pause();
+            currentAlertAudio.currentTime = 0;
         } catch (e) {}
-        oscillator = null;
-    }
-    if (gainNode) {
-        try {
-            gainNode.disconnect();
-        } catch (e) {}
-        gainNode = null;
-    }
-    if (audioCtx) {
-        try {
-            audioCtx.close();
-        } catch (e) {}
-        audioCtx = null;
+        currentAlertAudio = null;
     }
 };
 

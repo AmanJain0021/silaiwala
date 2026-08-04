@@ -5,7 +5,7 @@ import {
     AlertCircle, Package, Truck,
     Calendar, ChevronRight, ShieldCheck,
     Loader2, CheckCircle2, Star, User, Scissors, Store,
-    MoreVertical, Headphones, Radio, Gift, Layers, Shirt, Box, ShoppingBag, Check, CreditCard, FileText
+    MoreVertical, Headphones, Radio, Gift, Layers, Shirt, Box, ShoppingBag, Check, CreditCard, FileText, Ruler
 } from 'lucide-react';
 import api from '../../../utils/api';
 import TrackingTimeline from '../components/orders/TrackingTimeline';
@@ -212,7 +212,15 @@ const OrderTracking = () => {
     const handlePayment = async (paymentType) => {
         setIsProcessingPayment(true);
         try {
-            const amountToPay = paymentType === 'advance' ? order.advancePaymentAmount : order.remainingPaymentAmount;
+            const advanceAmt = (order?.advancePaymentAmount && order.advancePaymentAmount > 0)
+                ? order.advancePaymentAmount
+                : Math.max(50, Math.round((order?.totalAmount || 0) * 0.3));
+
+            const remainingAmt = (order?.remainingPaymentAmount && order.remainingPaymentAmount > 0)
+                ? order.remainingPaymentAmount
+                : Math.max(50, (order?.totalAmount || 0) - advanceAmt);
+
+            const amountToPay = paymentType === 'advance' ? advanceAmt : remainingAmt;
             
             const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: amountToPay });
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
@@ -752,22 +760,118 @@ const OrderTracking = () => {
                     </div>
                 )}
 
-                {/* Advance & Remaining Payment Action Cards */}
-                {order.status === 'accepted' && order.advancePaymentStatus === 'pending' && order.advancePaymentAmount > 0 && (
-                    <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex flex-col items-center text-center space-y-3">
+                {/* Waiting for Tailor Acceptance Card */}
+                {order.status === 'pending' && (
+                    <div className="bg-white rounded-3xl p-6 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-3 animate-in fade-in duration-300">
+                        <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 relative">
+                            <Scissors size={24} className="animate-pulse" />
+                            <span className="absolute inset-0 rounded-full border-2 border-amber-300 animate-ping opacity-30"></span>
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-gray-900">Waiting for tailor to accept order...</h3>
+                            <p className="text-xs text-gray-500 font-medium mt-1 max-w-xs mx-auto leading-relaxed">
+                                Your order has been sent to the tailor. Once the tailor reviews and accepts your request, you can proceed with the advance payment.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-600 tracking-widest bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 mt-1">
+                            <Loader2 size={12} className="animate-spin" /> Awaiting Tailor Confirmation
+                        </div>
+                    </div>
+                )}
+
+                {/* Advance & Remaining Payment Action Cards (Only shown AFTER Tailor Accepts & Advance Payment is Pending) */}
+                {(order.acceptedAt || ['accepted', 'measurement-requested', 'measurement-assigned'].includes(order.status)) && order.advancePaymentStatus === 'pending' && (order.advancePaymentAmount > 0 || order.totalAmount > 0) && (
+                    <div className="bg-white rounded-3xl p-5 border border-purple-100 shadow-sm flex flex-col items-center text-center space-y-3">
                         <h3 className="text-sm font-bold text-gray-900">Advance Payment Required</h3>
                         <p className="text-xs text-gray-600 max-w-xs">
-                            To begin processing your order, please pay the advance amount of ₹{order.advancePaymentAmount}.
+                            Tailor has accepted your order! Please pay the advance amount of ₹{order.advancePaymentAmount || Math.round((order.totalAmount || 0) * 0.3)} to confirm your booking and dispatch the measurement executive.
                         </p>
                         <button
                             onClick={() => handlePayment('advance')}
                             disabled={isProcessingPayment}
-                            className="w-full max-w-xs py-3 rounded-full font-bold text-white text-sm bg-[#843D9B] hover:bg-[#723287] transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            className="w-full max-w-xs py-3 rounded-full font-bold text-white text-sm bg-[#843D9B] hover:bg-[#723287] transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                         >
-                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay ₹${order.advancePaymentAmount}`}
+                            {isProcessingPayment ? <Loader2 size={18} className="animate-spin" /> : `Pay ₹${order.advancePaymentAmount || Math.round((order.totalAmount || 0) * 0.3)}`}
                         </button>
                     </div>
                 )}
+
+                {/* Measurement Executive Status Cards (Tailor At Home Flow) */}
+                {(() => {
+                    const mReq = order.measurementRequestInfo;
+                    const isAccepted = mReq && ['accepted', 'otp_sent', 'otp_verified', 'measurements_uploaded'].includes(mReq.status);
+                    const execUser = order.measurementExecutive || mReq?.executive;
+
+                    if (order.isMeasurementHome && order.advancePaymentStatus === 'paid' && !isAccepted && !['completed', 'cancelled', 'measurements-uploaded', 'measurements-approved'].includes(order.status)) {
+                        return (
+                            <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm flex flex-col items-center text-center space-y-3 animate-in fade-in duration-300">
+                                <div className="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center text-[#843D9B] relative">
+                                    <Ruler size={24} className="animate-pulse" />
+                                    <span className="absolute inset-0 rounded-full border-2 border-purple-300 animate-ping opacity-30"></span>
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-gray-900">Waiting for executive to accept visit...</h3>
+                                    <p className="text-xs text-gray-500 font-medium mt-1 max-w-xs mx-auto leading-relaxed">
+                                        Your advance payment is verified! We are requesting the nearest measurement executive to accept your home visit.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-[#843D9B] tracking-widest bg-purple-50 px-3 py-1.5 rounded-full border border-purple-100 mt-1">
+                                    <Loader2 size={12} className="animate-spin" /> Waiting for Executive Acceptance
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    if (order.isMeasurementHome && isAccepted && execUser && !['completed', 'cancelled'].includes(order.status)) {
+                        return (
+                            <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm space-y-4 animate-in fade-in duration-300">
+                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Measurement Executive Assigned
+                                    </span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                        Home Visit
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-purple-100 border border-purple-200 flex items-center justify-center text-[#843D9B] font-black text-xl overflow-hidden shrink-0 shadow-sm">
+                                        {execUser?.profileImage ? (
+                                            <img
+                                                src={
+                                                    execUser.profileImage.startsWith('http')
+                                                        ? execUser.profileImage
+                                                        : `${import.meta.env.VITE_API_URL}${execUser.profileImage}`
+                                                }
+                                                alt="Executive"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                                            />
+                                        ) : null}
+                                        <User size={26} className="text-[#843D9B]" />
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-base font-black text-gray-900 truncate">
+                                            {execUser?.name || 'Measurement Executive'}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 font-medium">Accepted and on the way for your measurement visit</p>
+                                        {execUser?.phoneNumber && (
+                                            <a
+                                                href={`tel:${execUser.phoneNumber}`}
+                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#843D9B] bg-purple-50 hover:bg-purple-100 px-3 py-1 rounded-lg border border-purple-100 mt-2 transition-colors"
+                                            >
+                                                <Phone size={12} /> Call Executive
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return null;
+                })()}
 
                 {order.status === 'ready-for-delivery' && order.remainingPaymentStatus === 'pending' && order.remainingPaymentAmount > 0 && (
                     <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm flex flex-col items-center text-center space-y-3">

@@ -9,10 +9,6 @@ const recentlyShownToasts = new Map();
  * Unifies order notifications across Socket.io and FCM push notifications.
  */
 export const getToastKey = (message, options = {}) => {
-  if (options && options.id) {
-    return String(options.id);
-  }
-
   let textContent = '';
   if (typeof message === 'string') {
     textContent = message;
@@ -22,15 +18,58 @@ export const getToastKey = (message, options = {}) => {
     textContent = message.title || message.message || message.body || '';
   }
 
-  if (!textContent) {
-    textContent = 'generic-toast';
+  const optionIdStr = options && options.id ? String(options.id) : '';
+
+  // 1. Check if optionIdStr matches status toast pattern e.g. `toast-status-${orderId}-${status}`
+  const statusIdMatch = optionIdStr.match(/toast-status-([a-z0-9_-]+)-([a-z0-9_-]+)/i);
+  if (statusIdMatch) {
+    const [, ordId, statusVal] = statusIdMatch;
+    const cleanStatus = statusVal.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanOrd = ordId.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return `toast-status-${cleanOrd}-${cleanStatus}`;
   }
 
-  // Extract order ID if present (e.g. ORD-1002 or 24-char ObjectId)
+  // 2. Check for status update patterns in message or optionIdStr
+  const lowerMsg = (textContent + ' ' + optionIdStr).toLowerCase();
+  const isStatusMsg = lowerMsg.includes('status updated') || 
+                      lowerMsg.includes('status changed') || 
+                      lowerMsg.includes('order status') ||
+                      lowerMsg.includes('status updated to');
+
+  if (isStatusMsg) {
+    // Extract order identifier if present
+    const orderIdMatch = textContent.match(/ORD-?\d+/i) || 
+                         textContent.match(/[a-f0-9]{24}/i) || 
+                         optionIdStr.match(/ORD-?\d+/i) || 
+                         optionIdStr.match(/[a-f0-9]{24}/i);
+
+    // Extract status string
+    const statusMatch = textContent.match(/(?:status\s+(?:updated|changed)(?:\s+to)?:?\s*)([a-z0-9_\-\s]+)/i);
+    let statusVal = statusMatch ? statusMatch[1].trim().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+    
+    if (!statusVal) {
+      const words = lowerMsg.split(/\s+/);
+      statusVal = words[words.length - 1].replace(/[^a-z0-9]/g, '');
+    }
+
+    const cleanOrd = orderIdMatch ? orderIdMatch[0].toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
+    if (cleanOrd && statusVal) {
+      return `toast-status-${cleanOrd}-${statusVal}`;
+    } else if (statusVal) {
+      return `toast-status-${statusVal}`;
+    }
+  }
+
+  // 3. Fallback to optionIdStr if provided
+  if (optionIdStr) {
+    return optionIdStr.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  }
+
+  // 4. Default fallback: clean string with orderId extraction
   const orderIdMatch = textContent.match(/ORD-?\d+/i) || textContent.match(/[a-f0-9]{24}/i);
   const orderIdKey = orderIdMatch ? orderIdMatch[0].toLowerCase() : '';
 
-  // Clean string: remove emojis, punctuation, extra spaces
   const cleanStr = textContent
     .toLowerCase()
     .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
@@ -51,16 +90,39 @@ export const getToastKey = (message, options = {}) => {
  */
 export const shouldSuppressToast = (toastKey, windowMs = 4000) => {
   const now = Date.now();
-  if (recentlyShownToasts.has(toastKey)) {
-    const lastShown = recentlyShownToasts.get(toastKey);
-    if (now - lastShown < windowMs) {
-      return true; // Suppress duplicate!
+
+  const isKeyActive = (key) => {
+    if (key && recentlyShownToasts.has(key)) {
+      const lastShown = recentlyShownToasts.get(key);
+      if (now - lastShown < windowMs) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Build secondary fallback key for status toasts (e.g. "toast-status-ord1002-cutting" -> "toast-status-cutting")
+  let secondaryKey = null;
+  if (typeof toastKey === 'string' && toastKey.startsWith('toast-status-')) {
+    const parts = toastKey.split('-');
+    const statusPart = parts[parts.length - 1];
+    if (statusPart && parts.length > 3) {
+      secondaryKey = `toast-status-${statusPart}`;
     }
   }
+
+  if (isKeyActive(toastKey) || (secondaryKey && isKeyActive(secondaryKey))) {
+    return true; // Suppress duplicate!
+  }
+
   recentlyShownToasts.set(toastKey, now);
+  if (secondaryKey) {
+    recentlyShownToasts.set(secondaryKey, now);
+  }
 
   setTimeout(() => {
     recentlyShownToasts.delete(toastKey);
+    if (secondaryKey) recentlyShownToasts.delete(secondaryKey);
   }, windowMs * 2);
 
   return false;
