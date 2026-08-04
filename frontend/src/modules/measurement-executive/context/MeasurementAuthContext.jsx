@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import socket from '../../../shared/utils/socket';
 import { playNotificationSound } from '../../../utils/audio';
+import { startRingtone } from '../../../utils/audioAlert';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../../../utils/auth';
@@ -51,8 +52,7 @@ export const MeasurementAuthProvider = ({ children }) => {
             
             // Play Buzzer Sound
             try {
-                const audio = new Audio('/sounds/alert.mp3');
-                audio.play().catch(() => {});
+                startRingtone();
             } catch (err) {}
 
             toast.success('New Measurement Request Assigned! 📐', { duration: 6000 });

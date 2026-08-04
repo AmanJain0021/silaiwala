@@ -12,6 +12,8 @@ import { formatPrice } from "../../../../shared/utils/helpers";
 import socketService from "@shared/utils/socket";
 import NewOrderModal from "../NewOrderModal";
 import { useJsApiLoader } from "@react-google-maps/api";
+import { startRingtone, stopRingtone } from "../../../../utils/audioAlert";
+
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const DeliveryLayout = () => {
@@ -100,29 +102,16 @@ const DeliveryLayout = () => {
   const buzzerRef = useRef(null);
 
   const stopBuzzer = useCallback(() => {
-    if (buzzerRef.current) {
-      try {
-        buzzerRef.current.pause();
-        buzzerRef.current.currentTime = 0;
-      } catch (e) { }
-      buzzerRef.current = null;
-    }
+    stopRingtone();
+    buzzerRef.current = null;
     setIsBuzzerActive(false);
   }, []);
 
   const startBuzzer = useCallback(() => {
-    if (buzzerRef.current) return;
-    try {
-      const audio = new Audio('/sounds/alert.mp3');
-      audio.loop = true;
-      audio.volume = 0.6;
-      audio.play().catch(err => {
-        console.warn('Audio blocked:', err);
-      });
-      buzzerRef.current = audio;
-      setIsBuzzerActive(true);
-      setTimeout(() => { if (buzzerRef.current === audio) stopBuzzer(); }, 120000);
-    } catch (e) { }
+    startRingtone();
+    buzzerRef.current = true;
+    setIsBuzzerActive(true);
+    setTimeout(() => { stopBuzzer(); }, 120000);
   }, [stopBuzzer]);
 
   // Global listeners for new tasks

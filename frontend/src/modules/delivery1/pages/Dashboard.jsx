@@ -12,6 +12,8 @@ import { formatPrice } from '../../../shared/utils/helpers';
 import DashboardMap from '../components/DashboardMap';
 import NewOrderModal from '../components/NewOrderModal';
 
+import { startRingtone } from '../../../utils/audioAlert';
+
 const DeliveryDashboard = () => {
   const { isLoaded } = useOutletContext();
   const navigate = useNavigate();
@@ -67,8 +69,7 @@ const DeliveryDashboard = () => {
       
       // Play Buzzer Sound
       try {
-        const audio = new Audio('/sounds/alert.mp3');
-        audio.play().catch(() => {});
+        startRingtone();
       } catch {}
 
       setNewOrderRequest(data);

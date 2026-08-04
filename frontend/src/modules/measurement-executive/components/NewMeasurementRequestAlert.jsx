@@ -6,44 +6,14 @@ import useMeasurementStore from '../store/measurementExecutiveStore';
 import api from '../../../shared/utils/api';
 import toast from 'react-hot-toast';
 
-let currentAlertAudio = null;
+import { startRingtone, stopRingtone } from '../../../utils/audioAlert';
 
 const startAlertAudio = () => {
-    try {
-        stopAlertAudio();
-        const audio = new Audio('/sounds/alert.mp3');
-        audio.loop = true;
-        audio.volume = 0.95;
-        currentAlertAudio = audio;
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch((err) => {
-                console.warn('Autoplay policy blocked alert audio sound:', err.message);
-                const unlock = () => {
-                    if (currentAlertAudio) {
-                        currentAlertAudio.play().catch(e => console.warn(e));
-                    }
-                    window.removeEventListener('click', unlock);
-                    window.removeEventListener('touchstart', unlock);
-                };
-                window.addEventListener('click', unlock);
-                window.addEventListener('touchstart', unlock);
-            });
-        }
-    } catch (err) {
-        console.warn('Error starting alert audio:', err.message);
-    }
+    startRingtone();
 };
 
 const stopAlertAudio = () => {
-    if (currentAlertAudio) {
-        try {
-            currentAlertAudio.pause();
-            currentAlertAudio.currentTime = 0;
-        } catch (e) {}
-        currentAlertAudio = null;
-    }
+    stopRingtone();
 };
 
 const formatAddress = (addr) => {

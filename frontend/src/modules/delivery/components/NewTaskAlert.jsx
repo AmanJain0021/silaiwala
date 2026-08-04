@@ -9,44 +9,14 @@ import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { isPendingAcceptanceTask } from '../utils/taskStatus';
 
-let currentAlertAudio = null;
+import { startRingtone, stopRingtone } from '../../../utils/audioAlert';
 
 const startBuzzer = () => {
-    try {
-        stopBuzzer();
-        const audio = new Audio('/sounds/alert.mp3');
-        audio.loop = true;
-        audio.volume = 0.95;
-        currentAlertAudio = audio;
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch((err) => {
-                console.warn("Autoplay policy or audio device issue blocked alert audio:", err.message);
-                const unlock = () => {
-                    if (currentAlertAudio) {
-                        currentAlertAudio.play().catch(e => console.warn("Retry play error:", e));
-                    }
-                    window.removeEventListener('click', unlock);
-                    window.removeEventListener('touchstart', unlock);
-                };
-                window.addEventListener('click', unlock);
-                window.addEventListener('touchstart', unlock);
-            });
-        }
-    } catch (error) {
-        console.warn("Alert audio error:", error.message);
-    }
+    startRingtone();
 };
 
 const stopBuzzer = () => {
-    if (currentAlertAudio) {
-        try {
-            currentAlertAudio.pause();
-            currentAlertAudio.currentTime = 0;
-        } catch (e) {}
-        currentAlertAudio = null;
-    }
+    stopRingtone();
 };
 
 const NewTaskAlert = ({ onTaskAccepted }) => {
