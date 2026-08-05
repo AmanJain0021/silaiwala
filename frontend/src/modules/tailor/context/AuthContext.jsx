@@ -57,16 +57,28 @@ export const AuthProvider = ({ children }) => {
     const isAuthenticated = !!token && !!user;
 
     const determineStatus = (tailorData) => {
-        // Check Admin managed isActive flag first
-        const isActive = tailorData?.user?.isActive || tailorData?.isActive;
-        if (isActive) return TAILOR_STATUS.APPROVED;
-        
         if (!tailorData) return TAILOR_STATUS.PENDING_APPROVAL;
-        
-        if (tailorData.registrationStatus === 'rejected') return TAILOR_STATUS.REJECTED;
-        if (tailorData.registrationStatus === 'verified') return TAILOR_STATUS.APPROVED;
-        
-        return TAILOR_STATUS.PENDING_APPROVAL;
+
+        const regStatus = String(tailorData?.registrationStatus || '').toLowerCase();
+        if (regStatus === 'rejected') return TAILOR_STATUS.REJECTED;
+
+        // Recognise 'approved', 'verified', or 'active' registrationStatus values
+        if (regStatus === 'verified' || regStatus === 'approved' || regStatus === 'active') {
+            return TAILOR_STATUS.APPROVED;
+        }
+
+        // Check Admin managed isActive flag (default to true unless explicitly false)
+        const isActive = tailorData?.user?.isActive !== false && tailorData?.isActive !== false;
+        if (isActive && regStatus !== 'pending' && regStatus !== 'rejected') {
+            return TAILOR_STATUS.APPROVED;
+        }
+
+        if (regStatus === 'pending') {
+            return TAILOR_STATUS.PENDING_APPROVAL;
+        }
+
+        // Fallback for logged in active tailors
+        return TAILOR_STATUS.APPROVED;
     };
 
     useEffect(() => {

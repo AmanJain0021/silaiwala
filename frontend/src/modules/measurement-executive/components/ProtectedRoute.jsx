@@ -5,7 +5,7 @@ import PendingApproval from '../pages/PendingApproval';
 
 const ProtectedRoute = () => {
     const token = getToken();
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(localStorage.getItem('executive_user') || localStorage.getItem('user') || '{}');
 
     if (!token || user.role !== 'measurement_executive') {
         return <Navigate to="/executive/login" replace />;

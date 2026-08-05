@@ -1,5 +1,6 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, X, Loader2, Star, Plus, Trash2, Camera, Scissors } from 'lucide-react';
+import { ArrowLeft, UploadCloud, X, Loader2, Star, Plus, Trash2, Camera, Scissors, ChevronRight } from 'lucide-react';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
 import SafeImage from '../../../components/Common/SafeImage';
@@ -24,15 +25,32 @@ const CustomDesignForm = () => {
 
     const { profile, fetchProfile, addresses, fetchAddresses, removeAddress } = useUserStore();
 
+    const isMatchingTailor = (tailor, id) => {
+        if (!id || !tailor) return false;
+        const targetId = String(id).toLowerCase();
+        const tailorDocId = String(tailor._id || '').toLowerCase();
+        const userId = String(tailor.user?._id || tailor.user?.id || '').toLowerCase();
+        return tailorDocId === targetId || userId === targetId;
+    };
+
     useEffect(() => {
         fetchProfile();
         fetchAddresses();
-        // Fallback to tailors fetch...
         const fetchTailors = async () => {
             try {
                 const response = await api.get('/customers/tailors');
                 if (response.data.success) {
-                    setTailors(response.data.data);
+                    const fetchedTailors = response.data.data || [];
+                    setTailors(fetchedTailors);
+
+                    if (preselectedTailorId) {
+                        const matched = fetchedTailors.find(t => isMatchingTailor(t, preselectedTailorId));
+                        if (matched) {
+                            setSelectedTailorId(matched._id);
+                        }
+                    } else if (fetchedTailors.length > 0) {
+                        setSelectedTailorId(fetchedTailors[0]._id);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching tailors:', error);
@@ -117,16 +135,19 @@ const CustomDesignForm = () => {
                 return;
             }
 
-            // Send Direct Request
+            // Send Direct Request with resolved tailor ID
+            const selectedTailorObj = tailors.find(t => isMatchingTailor(t, selectedTailorId));
+            const finalTailorIdToSend = selectedTailorObj?.user?._id || selectedTailorObj?._id || selectedTailorId;
+
             await api.post('/custom-designs/request', {
-                tailorId: selectedTailorId,
+                tailorId: finalTailorIdToSend,
                 description,
                 images: validUrls,
                 deliveryAddress
             });
 
             toast.success("Custom Design requested successfully!");
-            navigate('/user/orders'); // Or wherever you want them to go after
+            navigate('/user/orders', { state: { activeTab: 'custom-designs' } });
         } catch (error) {
             console.error('Error sending request:', error);
             toast.error(error.response?.data?.message || "Failed to send request.");
@@ -134,6 +155,8 @@ const CustomDesignForm = () => {
             setIsSubmitting(false);
         }
     };
+
+    const currentSelectedTailor = tailors.find(t => isMatchingTailor(t, selectedTailorId));
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 font-sans">
@@ -150,34 +173,56 @@ const CustomDesignForm = () => {
 
             <div className="max-w-xl mx-auto p-4 space-y-6 mt-4">
                 
-                {/* Tailor Selection */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                    <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-[#843D9B] text-white flex items-center justify-center text-[10px]">1</span>
-                        Select a Tailor
-                    </h2>
-                    
+                {/* Tailor Selection - Shows ONLY Selected Tailor + All Tailors Redirect Button */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-[#843D9B] text-white flex items-center justify-center text-[10px]">1</span>
+                            Selected Tailor
+                        </h2>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/user/tailors')}
+                            className="text-[10px] font-black text-[#843D9B] bg-[#843D9B]/10 hover:bg-[#843D9B]/15 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
+                        >
+                            <span>All Tailors</span>
+                            <ChevronRight size={12} />
+                        </button>
+                    </div>
+
                     {isLoadingTailors ? (
                         <div className="flex justify-center p-4">
                             <Loader2 size={24} className="text-[#843D9B] animate-spin" />
                         </div>
-                    ) : (
-                        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                            {tailors.map(tailor => (
-                                <div 
-                                    key={tailor._id}
-                                    onClick={() => setSelectedTailorId(tailor.user?._id || tailor.user?.id || tailor._id)}
-                                    className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${selectedTailorId === (tailor.user?._id || tailor.user?.id || tailor._id) ? 'border-[#843D9B] bg-indigo-50 ring-1 ring-[#843D9B]' : 'border-gray-100 hover:border-indigo-200'}`}
-                                >
-                                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100">
-                                        <SafeImage src={tailor.user?.profileImage} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-xs font-bold text-gray-900">{tailor.shopName || tailor.user?.name}</h3>
-                                        <p className="text-[10px] text-gray-500 flex items-center gap-1"><Star size={10} className="text-yellow-400 fill-yellow-400"/> {tailor.rating || 'New'}</p>
-                                    </div>
+                    ) : currentSelectedTailor ? (
+                        <div className="p-3.5 rounded-2xl border border-[#843D9B] bg-[#843D9B]/5 ring-2 ring-[#843D9B]/15 flex items-center gap-3 shadow-xs">
+                            <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100 shadow-xs">
+                                <SafeImage src={currentSelectedTailor.user?.profileImage} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-bold text-gray-900 truncate">
+                                        {currentSelectedTailor.shopName || currentSelectedTailor.user?.name}
+                                    </h3>
+                                    <span className="text-[9px] font-black bg-[#843D9B] text-white px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
+                                        Selected
+                                    </span>
                                 </div>
-                            ))}
+                                <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                                    <Star size={10} className="text-amber-400 fill-amber-400"/> {currentSelectedTailor.rating || 'New'}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-4 rounded-2xl border border-dashed border-gray-200 text-center space-y-2">
+                            <p className="text-xs text-gray-500 font-semibold">No tailor selected yet.</p>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/user/tailors')}
+                                className="text-xs font-bold text-white bg-[#843D9B] px-4 py-2 rounded-xl shadow-sm hover:bg-[#6c3080] transition-colors"
+                            >
+                                Choose Tailor from Shops
+                            </button>
                         </div>
                     )}
                 </div>

@@ -117,9 +117,9 @@ const VerificationStatus = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-[#0A0A0A]">
+            <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 bg-gray-50">
                 <Loader2 className="animate-spin text-[#843D9B]" size={32} />
-                <p className="text-[10px] font-black text-white/25 uppercase tracking-widest">Checking Documents...</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Checking Documents...</p>
             </div>
         );
     }
@@ -130,7 +130,7 @@ const VerificationStatus = () => {
     const hasRejected = documents.some(doc => doc.status === 'rejected');
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-500 bg-[#0A0A0A] min-h-screen p-4 pb-24">
+        <div className="space-y-4 animate-in fade-in duration-500 bg-gray-50/50 min-h-screen p-4 pb-24">
             
             {/* Overall Status Banner */}
             {profile?.registrationStatus === 'rejected' && (

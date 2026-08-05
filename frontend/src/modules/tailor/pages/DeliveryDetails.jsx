@@ -22,9 +22,9 @@ const DeliveryDetails = () => {
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-[#0A0A0A] min-h-screen">
+            <div className="flex flex-col items-center justify-center py-20 bg-gray-50/50 min-h-screen">
                 <Loader2 size={36} className="text-[#843D9B] animate-spin mb-4" />
-                <p className="text-[10px] font-black text-white/25 uppercase tracking-widest">Fetching active riders...</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fetching active riders...</p>
             </div>
         );
     }
@@ -35,12 +35,12 @@ const DeliveryDetails = () => {
 
     if (!currentPartner && activeTasks.length === 0 && recentHistory.length === 0) {
         return (
-            <div className="bg-[#111111] border border-[#1E1E1E] p-10 rounded-3xl text-center flex flex-col items-center gap-4 mx-4 mt-4">
-                <div className="w-20 h-20 bg-[#843D9B]/10 rounded-full flex items-center justify-center text-[#843D9B]/40">
+            <div className="bg-white border border-gray-100 p-10 rounded-3xl text-center flex flex-col items-center gap-4 mx-4 mt-4 shadow-sm">
+                <div className="w-20 h-20 bg-[#843D9B]/10 rounded-full flex items-center justify-center text-[#843D9B]">
                     <Truck size={40} />
                 </div>
-                <h3 className="text-lg font-black text-white">No active deliveries</h3>
-                <p className="text-[11px] text-white/25 font-bold uppercase tracking-widest max-w-[200px]">
+                <h3 className="text-lg font-black text-gray-900">No active deliveries</h3>
+                <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest max-w-[200px]">
                     Once a courier is assigned to your orders, they will appear here.
                 </p>
             </div>
@@ -48,11 +48,11 @@ const DeliveryDetails = () => {
     }
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-500 pb-20 bg-[#0A0A0A] min-h-screen p-4">
+        <div className="space-y-4 animate-in fade-in duration-500 pb-20 bg-gray-50/50 min-h-screen p-4">
 
             {/* Active Partner Card */}
             {currentPartner ? (
-                <div className="bg-[#111111] p-6 rounded-3xl border border-[#1E1E1E] relative overflow-hidden">
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
                     {/* Glow */}
                     <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-[#843D9B]/5 blur-2xl pointer-events-none" />
 

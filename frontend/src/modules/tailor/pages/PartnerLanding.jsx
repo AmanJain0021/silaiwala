@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, 
@@ -10,6 +10,7 @@ import {
   Wallet
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTailorAuth } from '../context/AuthContext';
 // Asset Imports
 import img1 from '../../../assets/aunty silai krti hui image.jpeg';
 import img2 from '../../../assets/cc3b8d6c20aa7bdc7d77e233743d163e.jpg';
@@ -19,6 +20,13 @@ import img4 from '../../../assets/cad1195ef729df9e02620ee49c685027.jpg';
 const PartnerLanding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useTailorAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'tailor') {
+      navigate('/partner', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const steps = [
     {

@@ -121,10 +121,12 @@ api.interceptors.response.use(
             }
         }
 
-        // Global error handling: e.g., redirect to login if 401
+        // Global error handling: e.g., clear session on explicit 401 from auth endpoints
         if (error.response && error.response.status === 401) {
-            removeToken();
-            // Optional: window.location.href = '/login';
+            const url = error.config?.url || '';
+            if (url.includes('/auth/me') || url.includes('/tailors/me') || url.includes('/auth/check-user')) {
+                removeToken();
+            }
         }
         return Promise.reject(error);
     }

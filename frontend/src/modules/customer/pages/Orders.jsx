@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Package, Search, ListFilter, Ruler } from 'lucide-react';
 import useOrderStore from '../../../store/orderStore';
 import OrderCard from '../components/orders/OrderCard';
@@ -12,13 +13,20 @@ import { getToken } from '../../../utils/auth';
 import api from '../../../utils/api';
 
 const OrdersPage = () => {
+    const location = useLocation();
     const { orders, fetchOrders, isLoading } = useOrderStore();
     const { user } = useAuthStore();
     const [alterations, setAlterations] = React.useState([]);
     const [customDesigns, setCustomDesigns] = React.useState([]);
-    const [activeTab, setActiveTab] = React.useState('orders'); // 'orders', 'alterations', 'custom-designs'
+    const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'orders'); // 'orders', 'alterations', 'custom-designs'
     const [filterStatus, setFilterStatus] = React.useState('All');
     const [searchQuery, setSearchQuery] = React.useState('');
+
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         fetchOrders();

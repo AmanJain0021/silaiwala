@@ -57,7 +57,7 @@ const Withdraw = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-full bg-[#0A0A0A] flex items-center justify-center">
+            <div className="min-h-full bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#843D9B]" />
             </div>
         );
@@ -66,20 +66,20 @@ const Withdraw = () => {
     /* ── SUCCESS SCREEN ─── */
     if (step === 2) {
         return (
-            <div className="min-h-full bg-[#0A0A0A] flex items-center justify-center p-6 animate-in zoom-in duration-300">
-                <div className="bg-[#111111] border border-[#1E1E1E] rounded-[2.5rem] p-10 w-full max-w-sm text-center flex flex-col items-center">
+            <div className="min-h-full bg-gray-50 flex items-center justify-center p-6 animate-in zoom-in duration-300">
+                <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10 w-full max-w-sm text-center flex flex-col items-center shadow-xl">
                     <div className="h-24 w-24 bg-[#843D9B] rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-[#843D9B]/40">
                         <Check size={40} strokeWidth={3} className="text-white" />
                     </div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">Withdrawal Sent</h2>
-                    <p className="text-white/40 font-medium text-sm mt-4 leading-relaxed">
-                        ₹{amount} is on its way to your bank.<br />Expect it in 2–3 hours.
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Withdrawal Sent</h2>
+                    <p className="text-gray-500 font-medium text-sm mt-4 leading-relaxed">
+                        Your payout request of ₹{numAmount.toLocaleString('en-IN')} has been submitted.
                     </p>
                     <button
-                        onClick={() => navigate('/partner')}
+                        onClick={() => navigate('/partner/earnings')}
                         className="mt-10 w-full bg-[#843D9B] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#843D9B]/30 active:scale-95 transition-all"
                     >
-                        Return to Home
+                        Return to Earnings
                     </button>
                 </div>
             </div>
@@ -110,7 +110,7 @@ const Withdraw = () => {
                 <div className="w-full max-w-lg bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-black/5 overflow-hidden animate-in zoom-in-95 duration-500">
                     
                     {/* Amount Display Area */}
-                    <div className="p-8 md:p-12 flex flex-col items-center text-center bg-[#1A1A1A] relative overflow-hidden group">
+                    <div className="p-8 md:p-12 flex flex-col items-center text-center bg-gradient-to-br from-[#843D9B] via-[#6C3080] to-[#512261] relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
                             <Wallet size={160} color="white" />
                         </div>
