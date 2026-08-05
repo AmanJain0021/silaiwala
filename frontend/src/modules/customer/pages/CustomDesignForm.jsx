@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, X, Loader2, Star, Plus, Trash2, Camera } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, UploadCloud, X, Loader2, Star, Plus, Trash2, Camera, Scissors } from 'lucide-react';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
 import SafeImage from '../../../components/Common/SafeImage';
@@ -9,13 +8,16 @@ import AddressForm from '../components/checkout/address/AddressForm';
 
 const CustomDesignForm = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const preselectedTailorId = location.state?.tailorId || null;
+    const preselectedTailorName = location.state?.tailorName || '';
     const [description, setDescription] = useState('');
     const [images, setImages] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [tailors, setTailors] = useState([]);
-    const [selectedTailorId, setSelectedTailorId] = useState(null);
+    const [selectedTailorId, setSelectedTailorId] = useState(preselectedTailorId);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [isLoadingTailors, setIsLoadingTailors] = useState(true);
     const [isAddingAddress, setIsAddingAddress] = useState(false);

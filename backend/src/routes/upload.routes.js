@@ -90,7 +90,8 @@ const processUpload = async (req, res, isMultiple) => {
     // Local Fallback (using Base64 since we are in memory and Vercel disk is read-only)
     const localUrls = files.map(file => {
       const base64 = file.buffer.toString("base64");
-      return `data:${file.mimetype};base64,${base64}`;
+      const mime = (!file.mimetype || file.mimetype === 'application/octet-stream') ? 'image/jpeg' : file.mimetype;
+      return `data:${mime};base64,${base64}`;
     });
     
     res.status(200).json({

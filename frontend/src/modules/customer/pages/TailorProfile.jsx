@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, Award, Phone, ShieldCheck, Heart, Share2, Scissors, ChevronRight, Tag, CheckCircle2, Info, ShoppingBag, Calendar, X } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, Award, Phone, ShieldCheck, Heart, Share2, Scissors, ChevronRight, Tag, CheckCircle2, Info, ShoppingBag, Calendar, X, Layers, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '../components/store/ProductCard';
 import useCheckoutStore from '../../../store/checkoutStore';
@@ -378,26 +378,26 @@ const TailorProfile = () => {
 
             {/* Sticky Action Footer - DUAL ACTION */}
             <div className="fixed bottom-0 left-0 right-0 p-4 pb-10 sm:pb-6 bg-white/80 backdrop-blur-2xl border-t border-gray-100 z-[40] animate-in slide-in-from-bottom">
-                <div className="max-w-md mx-auto flex gap-2">
+                <div className="max-w-md mx-auto flex gap-3">
                     <button
                         onClick={() => {
                             setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                            navigate('/user/services', { state: { fabricSource: 'customer' } });
+                            navigate('/user/services', { state: { tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name } });
                         }}
-                        className="flex-1 bg-white border-2 border-[#843D9B] text-[#843D9B] py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-sm"
+                        className="flex-1 bg-white border-2 border-[#843D9B] text-[#843D9B] py-3 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm hover:bg-[#843D9B]/5 cursor-pointer"
                     >
-                        <Scissors size={14} />
-                        <span>Stitch Mine</span>
+                        <Layers size={16} />
+                        <span>More Services</span>
                     </button>
                     <button
                         onClick={() => {
-                            const section = document.querySelector('#tailor-fabrics') || document.querySelector('#signature-designs');
-                            section?.scrollIntoView({ behavior: 'smooth' });
+                            setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
+                            navigate('/user/custom-design', { state: { tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name } });
                         }}
-                        className="flex-[1.2] bg-[#843D9B] text-white py-2.5 rounded-xl shadow-lg shadow-[#843D9B]/20 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1.5"
+                        className="flex-1 bg-[#843D9B] hover:bg-[#6c3080] text-white py-3 rounded-2xl shadow-lg shadow-[#843D9B]/20 font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
-                        <ShoppingBag size={14} />
-                        <span>Pick Tailor's</span>
+                        <Wand2 size={16} />
+                        <span>Custom Order</span>
                     </button>
                 </div>
             </div>

@@ -61,6 +61,7 @@ const CustomerHome = React.lazy(() => import('./modules/customer/pages/Home'));
 const WhatWeOffer = React.lazy(() => import('./modules/customer/pages/WhatWeOffer'));
 const ServicesPage = React.lazy(() => import('./modules/customer/pages/Services'));
 const ServiceDetailPage = React.lazy(() => import('./modules/customer/pages/ServiceDetail'));
+const CategoryServicesPage = React.lazy(() => import('./modules/customer/pages/CategoryServices'));
 const StorePage = React.lazy(() => import('./modules/customer/pages/Store')); // NEW
 const StoreProductDetail = React.lazy(() => import('./modules/customer/pages/StoreProductDetail')); // NEW
 const OrdersPage = React.lazy(() => import('./modules/customer/pages/Orders')); // NEW
@@ -203,6 +204,7 @@ const AppRoutes = () => {
                     <Route element={<CustomerMainLayout />}>
                         <Route index element={<CustomerHome />} />
                         <Route path="services" element={<ServicesPage />} />
+                        <Route path="services/category/:categoryId" element={<CategoryServicesPage />} />
                         <Route path="what-we-offer" element={<WhatWeOffer />} />
                         <Route path="services/:id" element={<ServiceDetailPage />} />
                         <Route path="embellishments" element={<Embellishments />} />

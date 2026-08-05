@@ -1,5 +1,6 @@
 const Service = require("../../../models/Service.js");
 const Tailor = require("../../../models/Tailor.js");
+const Category = require("../../../models/Category.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const { sendNotification } = require("../../../utils/notification.js");
@@ -16,7 +17,7 @@ exports.getMyServices = asyncHandler(async (req, res, next) => {
   }
 
   const services = await Service.find({ tailor: tailor._id })
-    .populate("category", "name")
+    .populate("category", "name gender type minPrice maxPrice basePrice description")
     .sort("-createdAt");
 
   res.status(200).json({
@@ -35,6 +36,22 @@ exports.createService = asyncHandler(async (req, res, next) => {
   const tailor = await Tailor.findOne({ user: req.user.id });
   if (!tailor) {
     return next(new ErrorResponse("Tailor profile not found", 404));
+  }
+
+  // Validate price falls within admin-defined category price band
+  if (req.body.category && req.body.basePrice != null) {
+    const category = await Category.findById(req.body.category);
+    if (category && category.minPrice != null && category.maxPrice != null) {
+      const price = Number(req.body.basePrice);
+      if (price < category.minPrice || price > category.maxPrice) {
+        return next(
+          new ErrorResponse(
+            `Price must be between ₹${category.minPrice} and ₹${category.maxPrice} for this service category.`,
+            400
+          )
+        );
+      }
+    }
   }
 
   req.body.tailor = tailor._id;
@@ -79,6 +96,23 @@ exports.updateService = asyncHandler(async (req, res, next) => {
   delete req.body.status;
   delete req.body.isActive;
   delete req.body.tailor;
+
+  // Validate price falls within admin-defined category price band
+  const categoryId = req.body.category || service.category;
+  if (categoryId && req.body.basePrice != null) {
+    const category = await Category.findById(categoryId);
+    if (category && category.minPrice != null && category.maxPrice != null) {
+      const price = Number(req.body.basePrice);
+      if (price < category.minPrice || price > category.maxPrice) {
+        return next(
+          new ErrorResponse(
+            `Price must be between ₹${category.minPrice} and ₹${category.maxPrice} for this service category.`,
+            400
+          )
+        );
+      }
+    }
+  }
 
   req.body.status = "pending";
   req.body.isActive = false;
@@ -128,7 +162,7 @@ exports.deleteService = asyncHandler(async (req, res, next) => {
  */
 exports.getTailorServices = asyncHandler(async (req, res, next) => {
   const services = await Service.find({ tailor: req.params.tailorId, isActive: true, status: "approved" })
-    .populate("category", "name")
+    .populate("category", "name gender type minPrice maxPrice basePrice description")
     .sort("-createdAt");
 
   res.status(200).json({

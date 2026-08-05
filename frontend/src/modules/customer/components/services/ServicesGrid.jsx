@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, CheckCircle2, Star, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle2, Star, Loader2, Users, ArrowRight, X } from 'lucide-react';
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 
 const ServiceCard = ({ service }) => {
     const navigate = useNavigate();
-    const location = useRouteLocation(); // Changed to useRouteLocation as per import alias
+    const location = useRouteLocation();
 
     const handleNavigate = () => {
-        // Forward existing state (like tailor selection) to the detail page
         navigate(`/user/services/${service._id}`, { state: location.state });
     };
 
@@ -83,23 +82,96 @@ const ServiceCard = ({ service }) => {
     );
 };
 
-const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
-    const [services, setServices] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+const CategoryCompareSection = ({ categories }) => {
+    const navigate = useNavigate();
+    // Only show categories that have minPrice and maxPrice set
+    const comparableCategories = categories.filter(c => c.minPrice != null && c.maxPrice != null);
 
+    if (comparableCategories.length === 0) return null;
+
+    return (
+        <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+                <div>
+                    <h3 className="text-sm font-black text-gray-900">Compare Tailors by Category</h3>
+                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">See all tailors & their prices for each service type</p>
+                </div>
+                <Users size={16} className="text-primary" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {comparableCategories.map(cat => (
+                    <button
+                        key={cat._id}
+                        onClick={() => navigate(`/user/services/category/${cat._id}`)}
+                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-left hover:shadow-md hover:border-primary/20 transition-all group cursor-pointer"
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            {cat.image && (
+                                <div className="h-8 w-8 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                                    <img
+                                        src={cat.image}
+                                        alt={cat.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'; }}
+                                    />
+                                </div>
+                            )}
+                            <span className="text-xs font-black text-gray-900 truncate group-hover:text-primary transition-colors">
+                                {cat.name}
+                            </span>
+                        </div>
+                        <div className="text-sm font-black text-primary">
+                            ₹{cat.minPrice} – ₹{cat.maxPrice}
+                        </div>
+                        <div className="flex items-center gap-1 mt-2 text-[9px] font-bold text-primary/70 group-hover:text-primary transition-colors">
+                            Compare Prices <ArrowRight size={10} />
+                        </div>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
+    const navigate = useNavigate();
+    const [services, setServices] = useState([]);
+    const [serviceCategories, setServiceCategories] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const { location: { lat, lng }, error: locationError } = useUnifiedLocation({ autoDetect: true, fetchAddress: false });
     const routeLocation = useRouteLocation();
-    const tailorId = routeLocation.state?.tailorId;
+    const [activeTailorId, setActiveTailorId] = useState(routeLocation.state?.tailorId || null);
+    const [tailorName, setTailorName] = useState(routeLocation.state?.tailorName || '');
+
+    useEffect(() => {
+        if (routeLocation.state?.tailorId !== undefined) {
+            setActiveTailorId(routeLocation.state?.tailorId || null);
+            setTailorName(routeLocation.state?.tailorName || '');
+        }
+    }, [routeLocation.state]);
+
+    const handleClearTailorFilter = () => {
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title);
+        }
+        setActiveTailorId(null);
+        setTailorName('');
+        navigate('/user/services', { replace: true, state: {} });
+    };
 
     useEffect(() => {
         const fetchServices = async () => {
             setIsLoading(true);
             try {
-                const response = await api.get('/services', {
-                    params: { tailor: tailorId }
-                });
-                if (response.data.success) {
-                    setServices(response.data.data);
+                const [servicesRes, catsRes] = await Promise.all([
+                    api.get('/services', { params: { tailor: activeTailorId || undefined } }),
+                    api.get('/products/categories', { params: { type: 'service' } }),
+                ]);
+                if (servicesRes.data.success) {
+                    setServices(servicesRes.data.data);
+                }
+                if (catsRes.data.success) {
+                    setServiceCategories(catsRes.data.data);
                 }
             } catch (error) {
                 if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
@@ -110,7 +182,7 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             }
         };
         fetchServices();
-    }, [tailorId]);
+    }, [activeTailorId]);
 
     const filteredServices = useMemo(() => {
         let result = services;
@@ -122,23 +194,39 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             return '';
         };
 
+        const getCategoryGender = (s) => {
+            if (!s.category || typeof s.category === 'string') return 'all';
+            return (s.category.gender || 'all').toLowerCase();
+        };
+
         const getTitleStr = (s) => (s.title || '').toLowerCase();
         const getDescStr = (s) => (s.description || '').toLowerCase();
 
         // Apply activeFilter
         if (activeFilter !== 'All') {
             if (activeFilter === 'Men') {
-                result = result.filter(s => getCategoryStr(s).includes('men') || getTitleStr(s).includes('men'));
+                result = result.filter(s => getCategoryGender(s) === 'men' || getCategoryStr(s).includes('men') || getTitleStr(s).includes('men'));
             } else if (activeFilter === 'Women') {
-                result = result.filter(s => getCategoryStr(s).includes('women') || getCategoryStr(s).includes('ladies') || getTitleStr(s).includes('women') || getTitleStr(s).includes('ladies') || getTitleStr(s).includes('blouse') || getTitleStr(s).includes('saree') || getTitleStr(s).includes('kurti') || getTitleStr(s).includes('suit'));
+                result = result.filter(s => getCategoryGender(s) === 'women' || getCategoryStr(s).includes('women') || getCategoryStr(s).includes('blouse') || getCategoryStr(s).includes('saree') || getTitleStr(s).includes('women') || getTitleStr(s).includes('blouse') || getTitleStr(s).includes('saree'));
             } else if (activeFilter === 'Bridal') {
-                result = result.filter(s => getCategoryStr(s).includes('bridal') || getTitleStr(s).includes('bridal') || getTitleStr(s).includes('lehenga'));
+                result = result.filter(s => getCategoryGender(s) === 'bridal' || getCategoryStr(s).includes('bridal') || getCategoryStr(s).includes('lehenga') || getTitleStr(s).includes('bridal'));
+            } else if (activeFilter === 'Kids') {
+                result = result.filter(s => getCategoryGender(s) === 'kids' || getCategoryStr(s).includes('kids') || getTitleStr(s).includes('kids'));
             } else if (activeFilter === 'Popular') {
-                result = result.filter(s => s.rating >= 4.5);
+                result = result.filter(s => (s.rating || 0) >= 4.5);
             } else if (activeFilter === 'Under ₹500') {
-                result = result.filter(s => s.basePrice < 500);
+                result = result.filter(s => (s.basePrice || s.price || 0) < 500);
             } else if (activeFilter === 'Express Delivery') {
                 result = result.filter(s => (s.deliveryTime || '').includes('2-4'));
+            } else {
+                // Dynamic Admin Category or keyword match
+                const filterLower = activeFilter.toLowerCase();
+                result = result.filter(s => 
+                    getCategoryStr(s) === filterLower ||
+                    getCategoryStr(s).includes(filterLower) || 
+                    getTitleStr(s).includes(filterLower) ||
+                    getDescStr(s).includes(filterLower)
+                );
             }
         }
 
@@ -166,8 +254,52 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
 
     return (
         <div className="p-4 md:p-6 lg:p-8">
+            {/* Tailor Filter Active Banner */}
+            {activeTailorId && (
+                <div className="bg-white/95 backdrop-blur-xl border border-[#843D9B]/15 rounded-2xl p-3 sm:p-4 shadow-sm mb-5 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-xl bg-[#843D9B]/10 flex items-center justify-center text-[#843D9B] font-bold shrink-0">
+                                <Users size={16} />
+                            </div>
+                            <div className="min-w-0">
+                                <span className="text-[8px] font-black text-[#843D9B] uppercase tracking-wider block leading-none mb-0.5">
+                                    Tailor Catalog
+                                </span>
+                                <h3 className="text-xs sm:text-sm font-black text-gray-900 truncate">
+                                    Services by <span className="text-[#843D9B]">{tailorName || 'Selected Tailor'}</span>
+                                </h3>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                                onClick={() => navigate('/user/tailors')}
+                                className="px-3 py-1.5 bg-[#843D9B] hover:bg-[#6c3080] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            >
+                                All Tailors <ArrowRight size={11} />
+                            </button>
+                            <button
+                                onClick={handleClearTailorFilter}
+                                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                title="Clear Tailor Filter"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Compare by Category Section (only if browsing all tailors) */}
+            {!activeTailorId && activeFilter === 'All' && !searchQuery && (
+                <CategoryCompareSection categories={serviceCategories} />
+            )}
+
             <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
-                {activeFilter === 'All' && !searchQuery ? 'All Services' : `Results for ${searchQuery ? '"' + searchQuery + '"' : activeFilter}`}
+                {activeTailorId
+                    ? `Services by ${tailorName || 'Tailor'}`
+                    : (activeFilter === 'All' && !searchQuery ? 'All Services' : `Results for ${searchQuery ? '"' + searchQuery + '"' : activeFilter}`)}
             </h2>
             {filteredServices.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">

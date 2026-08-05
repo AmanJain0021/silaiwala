@@ -152,6 +152,25 @@ const Products = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Enforce Admin Category Selection First
+        if (!newItem.category && (activeTab === 'samples' || activeTab === 'garments' || (activeTab === 'fabrics' && !selectedParent))) {
+            toast.error('Please select an Admin-created Category first!');
+            return;
+        }
+
+        // Client-side price range validation for service (samples) tab
+        if (activeTab === 'samples' && newItem.category && newItem.basePrice) {
+            const selectedCat = categories.find(c => c._id === newItem.category);
+            if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
+                const price = Number(newItem.basePrice);
+                if (price < selectedCat.minPrice || price > selectedCat.maxPrice) {
+                    toast.error(`Price must be between ₹${selectedCat.minPrice} and ₹${selectedCat.maxPrice} for ${selectedCat.name}.`);
+                    return;
+                }
+            }
+        }
+
         setIsSubmitting(true);
         try {
             let endpoint = '';
@@ -537,15 +556,95 @@ const Products = () => {
                         {/* Modal Content */}
                         <form id="product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 pt-6 space-y-6 custom-scrollbar">
                             
+                            {/* Product Category Selection Card */}
+                            <div className="bg-white border border-gray-100/90 rounded-2xl p-4 shadow-sm space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest flex items-center gap-1.5 ml-0.5">
+                                        <Layers size={14} />
+                                        Category *
+                                    </label>
+                                    {newItem.category && (
+                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
+                                            ✓ Selected
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        required
+                                        className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-xs"
+                                        value={activeTab === 'fabrics' ? selectedParent : newItem.category}
+                                        onChange={(e) => {
+                                            if (activeTab === 'fabrics') {
+                                                setSelectedParent(e.target.value);
+                                                setNewItem({ ...newItem, category: '' });
+                                            } else {
+                                                setNewItem({ ...newItem, category: e.target.value });
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories
+                                            .filter(cat => activeTab === 'samples' ? cat.type === 'service' : (cat.type === 'product' && !cat.parentCategory))
+                                            .map(cat => (
+                                                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                            ))}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                        <ChevronRight size={14} className="rotate-90" />
+                                    </div>
+                                </div>
+
+                                {activeTab === 'fabrics' && selectedParent && (
+                                    <div className="space-y-1.5 pt-1 animate-in slide-in-from-top-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-0.5">Select Sub-Material *</label>
+                                        <div className="relative">
+                                            <select
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-xs"
+                                                value={newItem.category}
+                                                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                            >
+                                                <option value="">Select Material</option>
+                                                {subcategories.map(cat => (
+                                                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <ChevronRight size={14} className="rotate-90" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Allowed Price Band Hint */}
+                                {(() => {
+                                    const selectedCat = newItem.category ? categories.find(c => c._id === newItem.category) : null;
+                                    if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
+                                        return (
+                                            <div className="pt-0.5 flex items-center justify-between text-[10px] font-bold text-gray-500">
+                                                <span>Allowed Price Range:</span>
+                                                <span className="text-[#843D9B] font-black bg-[#843D9B]/5 px-2 py-0.5 rounded-md">
+                                                    ₹{selectedCat.minPrice} – ₹{selectedCat.maxPrice}
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Left Side: Details */}
                                 <div className="space-y-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Title / Service Name</label>
+                                        <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">
+                                            Title / Service Name (According to your shop) *
+                                        </label>
                                         <input
                                             required
                                             className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 placeholder:text-gray-300 shadow-sm"
-                                            placeholder={activeTab === 'samples' ? "e.g. Italian Wedding Suit" : "e.g. Premium Linen Cotton"}
+                                            placeholder={activeTab === 'samples' ? "e.g. Rimjhim Kurti - Special Shop Design" : "e.g. Premium Linen Cotton"}
                                             value={activeTab === 'samples' ? newItem.title : newItem.name}
                                             onChange={(e) => activeTab === 'samples'
                                                 ? setNewItem({ ...newItem, title: e.target.value })
@@ -572,6 +671,31 @@ const Products = () => {
                                                     }
                                                 />
                                             </div>
+                                            {activeTab === 'samples' && (() => {
+                                                const selectedCat = newItem.category ? categories.find(c => c._id === newItem.category) : null;
+                                                if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
+                                                    const price = newItem.basePrice ? Number(newItem.basePrice) : null;
+                                                    const isOutOfRange = price != null && (price < selectedCat.minPrice || price > selectedCat.maxPrice);
+                                                    return (
+                                                        <div className={`mt-1.5 px-3 py-2 rounded-xl text-[10px] font-bold flex items-center gap-1.5 ${
+                                                            isOutOfRange 
+                                                                ? 'bg-red-50 text-red-600 border border-red-100' 
+                                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                                        }`}>
+                                                            <span>{isOutOfRange ? '⚠' : '✓'}</span>
+                                                            <span>Allowed: ₹{selectedCat.minPrice} – ₹{selectedCat.maxPrice}</span>
+                                                        </div>
+                                                    );
+                                                }
+                                                if (selectedCat && selectedCat.basePrice != null) {
+                                                    return (
+                                                        <p className="mt-1 text-[10px] text-gray-400 font-medium ml-1">
+                                                            Suggested: ₹{selectedCat.basePrice}
+                                                        </p>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">
@@ -628,48 +752,8 @@ const Products = () => {
 
                                 </div>
 
-                                {/* Right Side: Media & Categories */}
+                                {/* Right Side: Media */}
                                 <div className="space-y-5">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Product Category</label>
-                                        <select
-                                            required
-                                            className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-sm"
-                                            value={activeTab === 'fabrics' ? selectedParent : newItem.category}
-                                            onChange={(e) => {
-                                                if (activeTab === 'fabrics') {
-                                                    setSelectedParent(e.target.value);
-                                                    setNewItem({ ...newItem, category: '' });
-                                                } else {
-                                                    setNewItem({ ...newItem, category: e.target.value });
-                                                }
-                                            }}
-                                        >
-                                            <option value="">Choose a category</option>
-                                            {categories
-                                                .filter(cat => activeTab === 'samples' ? cat.type === 'service' : (cat.type === 'product' && !cat.parentCategory))
-                                                .map(cat => (
-                                                    <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                                ))}
-                                        </select>
-                                    </div>
-
-                                    {activeTab === 'fabrics' && selectedParent && (
-                                        <div className="space-y-1.5 animate-in slide-in-from-top-2">
-                                            <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Sub-Material</label>
-                                            <select
-                                                required
-                                                className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-sm"
-                                                value={newItem.category}
-                                                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                            >
-                                                <option value="">Select Material</option>
-                                                {subcategories.map(cat => (
-                                                    <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
 
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Product Image</label>

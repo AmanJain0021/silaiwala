@@ -17,8 +17,13 @@ const categorySchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["product", "service", "garment", "embroidery", "addon"],
-      default: "product",
+      default: "service",
+      trim: true,
+    },
+    gender: {
+      type: String,
+      default: "all",
+      trim: true,
     },
     isActive: {
       type: Boolean,
@@ -28,6 +33,14 @@ const categorySchema = new mongoose.Schema(
       type: Number,
       min: [0, "Base price cannot be negative"],
     },
+    minPrice: {
+      type: Number,
+      min: [0, "Minimum price cannot be negative"],
+    },
+    maxPrice: {
+      type: Number,
+      min: [0, "Maximum price cannot be negative"],
+    },
     deliveryTime: {
       type: String,
     },
@@ -36,5 +49,14 @@ const categorySchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Validate that maxPrice >= minPrice when both are provided
+categorySchema.pre("validate", function () {
+  if (this.minPrice != null && this.maxPrice != null) {
+    if (this.maxPrice < this.minPrice) {
+      this.invalidate("maxPrice", "Maximum price must be greater than or equal to minimum price");
+    }
+  }
+});
 
 module.exports = mongoose.model("Category", categorySchema);

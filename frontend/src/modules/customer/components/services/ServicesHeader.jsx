@@ -1,9 +1,48 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AnimatedSearchBar from '../AnimatedSearchBar';
+import api from '../../../../utils/api';
 
 const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFilter }) => {
+    const [adminCategories, setAdminCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/products/categories', { params: { type: 'service' } });
+                if (res.data.success) {
+                    setAdminCategories(res.data.data || []);
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories for header:', error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    // Dynamically build filter pills from Admin Categories data
+    const dynamicGenderTags = Array.from(new Set(
+        adminCategories
+            .map(c => c.gender)
+            .filter(g => g && g !== 'all')
+            .map(g => g.charAt(0).toUpperCase() + g.slice(1))
+    ));
+
+    const adminCategoryNames = adminCategories
+        .map(c => c.name)
+        .filter(Boolean)
+        .filter(name => !dynamicGenderTags.some(t => t.toLowerCase() === name.toLowerCase()));
+
+    const filterOptions = [
+        'All',
+        ...dynamicGenderTags,
+        ...adminCategoryNames,
+        'Popular',
+        'Under ₹500',
+        'Express Delivery'
+    ];
+
     return (
         <div className="sticky top-0 md:top-20 z-[100] bg-white border-b border-gray-100 shadow-sm px-4 md:px-6 lg:px-8 pb-4 transition-all duration-300">
             {/* Top Bar - Mobile Only */}
@@ -31,13 +70,13 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
 
             {/* Filter Pills (Scrollable) */}
             <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-                {['All', 'Men', 'Women', 'Bridal', 'Popular', 'Under ₹500', 'Express Delivery'].map((filter) => (
+                {filterOptions.map((filter) => (
                     <button
                         key={filter}
                         onClick={() => setActiveFilter && setActiveFilter(filter)}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-medium transition-all whitespace-nowrap snap-start ${
+                        className={`flex-shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all whitespace-nowrap snap-start cursor-pointer ${
                             activeFilter === filter 
-                                ? 'bg-[#843D9B] text-white border-[#843D9B]' 
+                                ? 'bg-[#843D9B] text-white border-[#843D9B] shadow-sm' 
                                 : 'bg-white border-gray-200 text-gray-600 hover:border-[#843D9B] hover:text-[#843D9B]'
                         }`}
                     >

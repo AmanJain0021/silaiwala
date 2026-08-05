@@ -1338,6 +1338,18 @@ exports.createCategory = async (req, res) => {
     if (req.body.basePrice !== undefined && req.body.basePrice !== null && Number(req.body.basePrice) < 0) {
       return res.status(400).json({ success: false, message: "Base price cannot be negative" });
     }
+    // Validate min/max price band for service categories
+    const minP = req.body.minPrice != null ? Number(req.body.minPrice) : null;
+    const maxP = req.body.maxPrice != null ? Number(req.body.maxPrice) : null;
+    if (minP !== null && minP < 0) {
+      return res.status(400).json({ success: false, message: "Minimum price cannot be negative" });
+    }
+    if (maxP !== null && maxP < 0) {
+      return res.status(400).json({ success: false, message: "Maximum price cannot be negative" });
+    }
+    if (minP !== null && maxP !== null && maxP < minP) {
+      return res.status(400).json({ success: false, message: "Maximum price must be greater than or equal to minimum price" });
+    }
     const category = await Category.create(req.body);
     await invalidateCache("cache:categories:*");
     res.status(201).json({ success: true, data: category });
@@ -1352,6 +1364,18 @@ exports.updateCategory = async (req, res) => {
     const { id } = req.params;
     if (req.body.basePrice !== undefined && req.body.basePrice !== null && Number(req.body.basePrice) < 0) {
       return res.status(400).json({ success: false, message: "Base price cannot be negative" });
+    }
+    // Validate min/max price band
+    const minP = req.body.minPrice != null ? Number(req.body.minPrice) : null;
+    const maxP = req.body.maxPrice != null ? Number(req.body.maxPrice) : null;
+    if (minP !== null && minP < 0) {
+      return res.status(400).json({ success: false, message: "Minimum price cannot be negative" });
+    }
+    if (maxP !== null && maxP < 0) {
+      return res.status(400).json({ success: false, message: "Maximum price cannot be negative" });
+    }
+    if (minP !== null && maxP !== null && maxP < minP) {
+      return res.status(400).json({ success: false, message: "Maximum price must be greater than or equal to minimum price" });
     }
     const category = await Category.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
     if (!category) return res.status(404).json({ success: false, message: "Category not found" });
@@ -1890,8 +1914,12 @@ const ErrorResponse = require("../../../utils/errorResponse.js");
  */
 exports.getPendingServices = asyncHandler(async (req, res, next) => {
   const pendingServices = await Service.find({ status: "pending" })
-    .populate("tailor", "shopName user")
-    .populate("category", "name")
+    .populate({
+      path: "tailor",
+      select: "shopName user rating location specializations",
+      populate: { path: "user", select: "name email phone profileImage" }
+    })
+    .populate("category", "name minPrice maxPrice basePrice description")
     .sort("-createdAt");
 
   res.status(200).json({
@@ -1981,8 +2009,12 @@ exports.rejectServiceStatus = asyncHandler(async (req, res, next) => {
  */
 exports.getPendingProducts = asyncHandler(async (req, res, next) => {
   const pendingProducts = await Product.find({ status: "pending" })
-    .populate({ path: "tailor", select: "shopName user", populate: { path: "user", select: "name" } })
-    .populate("category", "name")
+    .populate({
+      path: "tailor",
+      select: "shopName user rating location",
+      populate: { path: "user", select: "name email phone profileImage" }
+    })
+    .populate("category", "name description")
     .sort("-createdAt");
 
   res.status(200).json({

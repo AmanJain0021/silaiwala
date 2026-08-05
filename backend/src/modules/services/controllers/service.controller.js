@@ -57,7 +57,7 @@ exports.getServices = asyncHandler(async (req, res, next) => {
         select: "name profileImage" 
       }
     })
-    .populate("category", "name")
+    .populate("category", "name gender type minPrice maxPrice basePrice description")
     .lean();
 
   // 3. Final Filter and Response
