@@ -1,5 +1,5 @@
 require("dotenv").config();
-// Trigger nodemon restart
+// Trigger nodemon reload for fully dynamic SMSIndiaHub env configuration
 
 const http = require("http");
 const app = require("./app.js");

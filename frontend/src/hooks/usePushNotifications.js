@@ -16,12 +16,28 @@ export const getCurrentDeviceFcmToken = () => _currentDeviceToken;
  */
 const syncTokenWithBackend = async (token) => {
   if (!token) return;
+
+  // ONLY sync FCM token if an active user authentication token exists
+  const hasAuthToken = !!(
+    localStorage.getItem('token') ||
+    localStorage.getItem('jwt_token') ||
+    localStorage.getItem('customer_token') ||
+    localStorage.getItem('tailor_token') ||
+    localStorage.getItem('delivery_token') ||
+    localStorage.getItem('exec_token')
+  );
+
+  if (!hasAuthToken) {
+    return; // User is logged out / on login-signup pages. Skip backend API call.
+  }
+
   _currentDeviceToken = token;
   localStorage.setItem('fcm_token', token);
 
   const syncedKey = 'fcm_token_synced_' + token.slice(-10);
-  if (localStorage.getItem(syncedKey) === 'true') {
-    return; // Already synced with backend! Prevent repeated API calls.
+  const syncStatus = localStorage.getItem(syncedKey);
+  if (syncStatus === 'true' || syncStatus === 'attempted') {
+    return; // Already synced or attempted! Prevent repeated API calls.
   }
 
   const payload = {
@@ -35,13 +51,13 @@ const syncTokenWithBackend = async (token) => {
     localStorage.setItem(syncedKey, 'true');
     console.log('[FCM] Token synced via PUT /api/user/fcm-token');
   } catch (err) {
-    console.warn('[FCM] Error updating token:', err);
     try {
       await api.post('/notifications/fcm-token', payload);
       localStorage.setItem(syncedKey, 'true');
       console.log('[FCM] Token synced via POST /notifications/fcm-token fallback');
     } catch (fallbackErr) {
-      console.error('[FCM] Failed to sync token to backend:', fallbackErr.message);
+      // Prevent continuous hammering on unauthenticated or non-supported routes
+      localStorage.setItem(syncedKey, 'attempted');
     }
   }
 };
@@ -126,6 +142,8 @@ export const usePushNotifications = (user) => {
   const userId = user?._id || user?.id || user?.user?._id || user?.data?._id || null;
 
   useEffect(() => {
+    if (!userId) return; // Skip FCM push token request for logged-out visitors & login/signup pages
+
     const requestPermissionAndGetToken = async () => {
       try {
         if (!('Notification' in window)) {
@@ -160,13 +178,6 @@ export const usePushNotifications = (user) => {
     };
 
     requestPermissionAndGetToken();
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && Notification.permission === 'granted') {
-        requestPermissionAndGetToken();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const unsubscribe = onMessage(messaging, async (payload) => {
       console.log('[FCM] Foreground data message received:', payload);
@@ -230,7 +241,6 @@ export const usePushNotifications = (user) => {
     });
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (unsubscribe) unsubscribe();
     };
   }, [userId]);
