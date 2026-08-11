@@ -484,12 +484,12 @@ exports.createReturnShipment = asyncHandler(async (req, res, next) => {
 
   await order.save();
 
-  await sendNotification(order.customer, {
+  await sendNotification({
+    recipient: order.customer,
+    type: "RETURN_PICKUP",
     title: "Return Pickup Scheduled",
     message: `A pickup has been scheduled for your exchange item.`,
-    type: "RETURN_PICKUP",
-    relatedId: order._id,
-    onModel: "Order"
+    data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
   });
 
   res.status(200).json({

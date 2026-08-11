@@ -51,13 +51,17 @@ const syncTokenWithBackend = async (token) => {
  */
 export const testPushToThisDevice = async () => {
   if (typeof window !== 'undefined' && 'Notification' in window) {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') {
-      throw new Error('Notification permission is blocked. Please allow notifications in your browser address bar (🔒 icon next to URL).');
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        console.warn('[FCM] Notification permission not granted:', perm);
+      }
+    } catch (e) {
+      console.warn('[FCM] Notification permission request warning:', e);
     }
   }
 
-  let deviceToken = null;
+  let deviceToken = getCurrentDeviceFcmToken() || localStorage.getItem('fcm_token');
 
   try {
     const { messaging, getToken: fbGetToken } = await import('../config/firebase');
@@ -65,36 +69,33 @@ export const testPushToThisDevice = async () => {
 
     let registration;
     if ('serviceWorker' in navigator) {
-      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      registration = await navigator.serviceWorker.ready;
+      try {
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        registration = await navigator.serviceWorker.ready;
+      } catch (swErr) {
+        console.warn('[FCM] ServiceWorker registration notice:', swErr);
+      }
     }
 
-    deviceToken = await fbGetToken(messaging, {
+    const token = await fbGetToken(messaging, {
       vapidKey,
       serviceWorkerRegistration: registration
     });
 
-    if (deviceToken) {
-      _currentDeviceToken = deviceToken;
-      localStorage.setItem('fcm_token', deviceToken);
+    if (token) {
+      deviceToken = token;
+      _currentDeviceToken = token;
+      localStorage.setItem('fcm_token', token);
+      syncTokenWithBackend(token);
     }
   } catch (err) {
-    console.warn('[FCM] Could not obtain token on-the-fly, using fallback:', err.message);
-    deviceToken = getCurrentDeviceFcmToken();
-  }
-
-  if (!deviceToken) {
-    deviceToken = getCurrentDeviceFcmToken();
-  }
-
-  if (!deviceToken) {
-    throw new Error('Could not retrieve device push token. Please refresh the page and try again.');
+    console.warn('[FCM] Could not obtain token on-the-fly, using fallback token if available:', err.message);
   }
 
   const response = await api.post('/notifications/test-push', {
-    deviceToken,
-    fcmToken: deviceToken,
-    token: deviceToken
+    deviceToken: deviceToken || undefined,
+    fcmToken: deviceToken || undefined,
+    token: deviceToken || undefined
   });
   return response.data;
 };

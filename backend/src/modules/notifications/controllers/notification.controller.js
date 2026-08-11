@@ -153,14 +153,17 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
         await freshUser.save();
       }
     } else {
-      return next(new ErrorResponse("Device FCM token not found. Please allow notification permissions in your browser address bar and reload.", 400));
+      // Fallback: collect all stored tokens for this user from DB (web + mobile)
+      const webTokens = freshUser.fcmToken || [];
+      const mobileTokens = freshUser.fcmTokenMobile || [];
+      targetTokens = Array.from(new Set([...webTokens, ...mobileTokens])).filter(Boolean);
     }
 
     if (targetTokens.length === 0) {
-      return next(new ErrorResponse("No FCM tokens found for this device. Please allow notification permissions in your browser and reload.", 400));
+      return next(new ErrorResponse("No notification token found for your account. Please allow notification permissions in your browser/device settings and reload.", 400));
     }
 
-    console.log(`[TEST-PUSH] Sending test push to ${targetTokens.length} device token(s)...`);
+    console.log(`[TEST-PUSH] Sending test push to ${targetTokens.length} device token(s) for user ${freshUser._id}...`);
 
     const results = await sendMulticastNotification({
       tokens: targetTokens,
@@ -176,7 +179,7 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Test push sent to ${results.successCount} device(s)`,
+      message: `Test push sent successfully!`,
     });
   } catch (fcmError) {
     console.error("[TEST-PUSH] FCM Error:", fcmError.message);

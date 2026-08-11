@@ -1210,6 +1210,13 @@ exports.changeTailorRequest = asyncHandler(async (req, res, next) => {
                 status: order.status
             });
         }
+        await sendNotification({
+            recipient: tailor._id,
+            type: "ORDER_CREATED",
+            title: "New Order Request",
+            message: `You have a new order request #${order.orderId}.`,
+            data: { orderId: order._id, targetUrl: "/partner/orders" }
+        });
     } catch (err) {}
 
     res.status(200).json({
@@ -1282,6 +1289,17 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
           status: order.status
       });
     }
+    if (order.tailor) {
+      await sendNotification({
+        recipient: order.tailor,
+        type: "ORDER_STATUS_UPDATED",
+        title: "Delivery Preference Updated",
+        message: preference === 'self'
+          ? `Customer will self-deliver fabric for order #${order.orderId}.`
+          : `Customer requested a delivery partner for order #${order.orderId}.`,
+        data: { orderId: order._id, targetUrl: "/partner/orders" }
+      });
+    }
   } catch (err) {
     console.error("Socket emission failed:", err);
   }
@@ -1327,6 +1345,15 @@ exports.approveMeasurements = asyncHandler(async (req, res, next) => {
       io.to(`user_${order.tailor}`).emit('order_status_updated', {
           orderId: order.orderId,
           status: order.status
+      });
+    }
+    if (order.tailor) {
+      await sendNotification({
+        recipient: order.tailor,
+        type: "ORDER_STATUS_UPDATED",
+        title: "Measurements Approved",
+        message: `Customer approved measurements for order #${order.orderId}. You can start work.`,
+        data: { orderId: order._id, targetUrl: "/partner/orders" }
       });
     }
   } catch (err) {
@@ -1496,12 +1523,12 @@ exports.requestExchange = asyncHandler(async (req, res, next) => {
 
   await order.save();
 
-  await sendNotification(order.tailor, {
+  await sendNotification({
+    recipient: order.tailor,
+    type: "EXCHANGE_REQUEST",
     title: "New Exchange Request",
     message: `Customer requested exchange for order #${order.orderId}`,
-    type: "EXCHANGE_REQUEST",
-    relatedId: order._id,
-    onModel: "Order"
+    data: { orderId: order._id, targetUrl: "/orders" }
   });
 
   res.status(200).json({
@@ -1538,12 +1565,12 @@ exports.updateExchangeStatus = asyncHandler(async (req, res, next) => {
 
   await order.save();
 
-  await sendNotification(order.customer, {
+  await sendNotification({
+    recipient: order.customer,
+    type: "EXCHANGE_STATUS",
     title: `Exchange Request ${status}`,
     message: `Your exchange request for order #${order.orderId} has been ${status}`,
-    type: "EXCHANGE_STATUS",
-    relatedId: order._id,
-    onModel: "Order"
+    data: { orderId: order._id, targetUrl: "/profile/orders" }
   });
 
   res.status(200).json({
@@ -1696,6 +1723,15 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
           io.in(orderRoom).socketsLeave(orderRoom);
         }, 1000);
       }
+    }
+    if (order.tailor) {
+      await sendNotification({
+        recipient: order.tailor,
+        type: "ORDER_STATUS_UPDATED",
+        title: "Order Status Updated",
+        message: `Order #${order.orderId} status updated to ${status.replace(/-/g, ' ')}.`,
+        data: { orderId: order._id, targetUrl: "/partner/orders" }
+      });
     }
   } catch (err) {
     console.error("Socket emission failed in updateOrderStatus:", err.message);
