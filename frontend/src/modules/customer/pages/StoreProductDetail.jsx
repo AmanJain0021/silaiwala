@@ -7,6 +7,7 @@ import { PRODUCTS } from '../data/products';
 import api from '../../../utils/api';
 import useCheckoutStore from '../../../store/checkoutStore';
 import useBrandingStore from '../../../store/brandingStore';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 
 // Components
 import ProductGallery from '../components/store-detail/ProductGallery';
@@ -28,6 +29,7 @@ const StoreProductDetail = () => {
     const addToCart = useCartStore(state => state.addItem);
     const { toggleWishlist, isInWishlist } = useWishlistStore(state => state);
     const serviceItems = useCheckoutStore(state => state.serviceItems);
+    const { requireAuth } = useRequireAuth();
 
     useEffect(() => {
         // Scroll to top
@@ -84,6 +86,7 @@ const StoreProductDetail = () => {
     };
 
     const handleAddToCart = () => {
+        if (!requireAuth('Please login to add items to cart')) return;
         const hasSizes = productData.variants?.some(v => v.size);
         const hasColors = productData.variants?.some(v => v.color);
 
@@ -100,6 +103,7 @@ const StoreProductDetail = () => {
     };
 
     const handleBuyNow = () => {
+        if (!requireAuth('Please login to buy this product')) return;
         const hasSizes = productData.variants?.some(v => v.size);
         const hasColors = productData.variants?.some(v => v.color);
 
@@ -146,6 +150,7 @@ const StoreProductDetail = () => {
                     </button>
                     <button
                         onClick={() => {
+                            if (!requireAuth('Please login to use wishlist')) return;
                             toggleWishlist(productData._id || productData.id);
                             showToast(isWishlisted ? "Removed from Wishlist" : "Added to Wishlist");
                         }}

@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useBrandingStore from '../store/brandingStore';
 
+import { ChevronRight } from 'lucide-react';
+
 // 🩷🟠🔵🟢 Gradient overlay colors — one per image
 const overlayGradients = [
     "linear-gradient(135deg, #FFB6C1 0%, #FF69B4 50%, #FFD1DC 100%)",   // 🩷 Pink
@@ -108,7 +110,17 @@ const AuthLayout = () => {
     // NEW CUSTOMER 1:1 FULL-PAGE CLEAN LAYOUT
     if (isCustomerAuth) {
         return (
-            <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center p-4 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-[#843D9B]/20">
+            <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center p-4 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-[#843D9B]/20 relative">
+                {/* Top Header Skip Button */}
+                <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-[100]">
+                    <Link
+                        to="/user"
+                        className="px-4 py-2 rounded-full bg-[#F4EFFF] hover:bg-[#843D9B] text-[#843D9B] hover:text-white text-xs sm:text-sm font-black transition-all flex items-center gap-1.5 active:scale-95 shadow-md border border-[#E9DFFE]"
+                    >
+                        <span>Skip</span>
+                        <ChevronRight size={16} className="stroke-[2.5]" />
+                    </Link>
+                </div>
                 <div className="w-full max-w-[400px] mx-auto flex flex-col items-center py-4">
                     <Outlet />
                 </div>

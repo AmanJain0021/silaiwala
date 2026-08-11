@@ -1,14 +1,23 @@
 import React from 'react';
 import { Star, MapPin, ChevronRight, ShieldCheck, Clock, BadgeCheck, Tag, Scissors } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useTailorStore from '../../../store/tailorStore';
 import useLocationStore from '../../../store/locationStore';
 import SafeImage from '../../../components/Common/SafeImage';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 
 const PopularTailors = () => {
     const { tailors, fetchTailors, isLoading } = useTailorStore();
     const { coordinates } = useLocationStore();
+    const { requireAuth } = useRequireAuth();
+    const navigate = useNavigate();
+
+    const handleTailorClick = (e, tailorId) => {
+        e.preventDefault();
+        if (!requireAuth('Please login to view tailor shop details')) return;
+        navigate(`/user/tailor/${tailorId}`);
+    };
 
     React.useEffect(() => {
         const params = { strictRadius: true };
@@ -50,6 +59,7 @@ const PopularTailors = () => {
                     >
                         <Link
                             to={`/user/tailor/${tailor._id}`}
+                            onClick={(e) => handleTailorClick(e, tailor._id)}
                             className="flex flex-col sm:flex-row gap-4 sm:gap-5 bg-white p-4 sm:p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all group relative"
                         >
                             <div className="relative shrink-0">

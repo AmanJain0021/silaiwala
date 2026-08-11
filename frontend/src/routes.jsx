@@ -198,24 +198,31 @@ const AppRoutes = () => {
             {/* Customer Public Routes */}
             <Route path="/welcome" element={<CustomerOnboarding />} />
 
-            {/* Customer Routes */}
-            <Route path="/user" element={<CustomerProtectedRoute />}>
-                <Route element={<CustomerNotificationProvider />}>
-                    <Route element={<CustomerMainLayout />}>
-                        <Route index element={<CustomerHome />} />
-                        <Route path="services" element={<ServicesPage />} />
-                        <Route path="services/category/:categoryId" element={<CategoryServicesPage />} />
-                        <Route path="what-we-offer" element={<WhatWeOffer />} />
-                        <Route path="services/:id" element={<ServiceDetailPage />} />
-                        <Route path="embellishments" element={<Embellishments />} />
-                        <Route path="alteration" element={<AlterationForm />} />
-                        <Route path="custom-design" element={<CustomDesignForm />} />
+            {/* ═══ Customer Routes ═══ */}
+            <Route path="/user" element={<CustomerNotificationProvider />}>
+                <Route element={<CustomerMainLayout />}>
+                    {/* Public Browsing Routes (No Login Required) */}
+                    <Route index element={<CustomerHome />} />
+                    <Route path="services" element={<ServicesPage />} />
+                    <Route path="services/category/:categoryId" element={<CategoryServicesPage />} />
+                    <Route path="what-we-offer" element={<WhatWeOffer />} />
+                    <Route path="services/:id" element={<ServiceDetailPage />} />
+                    <Route path="embellishments" element={<Embellishments />} />
+                    <Route path="embroidery" element={<EmbroideryPage />} />
+                    <Route path="store" element={<StorePage />} />
+                    <Route path="store/product/:id" element={<StoreProductDetail />} />
+                    <Route path="fabric/:id" element={<FabricDetail />} />
+                    <Route path="tailors" element={<TailorListing />} />
+                    <Route path="tailor/:id" element={<TailorProfile />} />
+                    <Route path="support" element={<Support />} />
+                    <Route path="legal/:slug" element={<CMSContent />} />
 
-                        {/* New Store & Nav Routes */}
-                        <Route path="store" element={<StorePage />} />
-                        <Route path="store/product/:id" element={<StoreProductDetail />} />
-                        <Route path="fabric/:id" element={<FabricDetail />} />
+                    {/* Private Authenticated Routes (Login Required) */}
+                    <Route element={<CustomerProtectedRoute />}>
                         <Route path="orders" element={<OrdersPage />} />
+                        <Route path="orders/:id/track" element={<OrderTracking />} />
+                        <Route path="orders/:id/chat" element={<OrderChat />} />
+                        <Route path="orders/:id/journey" element={<CustomerLiveJourney />} />
                         <Route path="profile" element={<ProfilePage />} />
                         <Route path="profile/edit" element={<EditProfile />} />
                         <Route path="profile/measurements" element={<Measurements />} />
@@ -228,27 +235,17 @@ const AppRoutes = () => {
                         <Route path="coupons" element={<CouponsPage />} />
                         <Route path="language" element={<LanguageSettingsPage />} />
                         <Route path="notifications" element={<NotificationSettingsPage />} />
-                        {/* Fixed path from /tailor/:id to /shop/:id to avoid conflict or keep it customer centric */}
-                        <Route path="tailor/:id" element={<TailorProfile />} />
-                        <Route path="tailors" element={<TailorListing />} />
-
-                        {/* Checkout Flow */}
+                        <Route path="cart" element={<CartPage />} />
+                        <Route path="wishlist" element={<WishlistPage />} />
+                        <Route path="reviews" element={<MyReviews />} />
                         <Route path="checkout/tailor" element={<TailorSelection />} />
                         <Route path="checkout/address" element={<CheckoutAddress />} />
                         <Route path="checkout/summary" element={<CheckoutSummary />} />
                         <Route path="checkout/success" element={<OrderSuccess />} />
-                        <Route path="orders/:id/track" element={<OrderTracking />} />
-                        <Route path="orders/:id/chat" element={<OrderChat />} />
-                        <Route path="orders/:id/journey" element={<CustomerLiveJourney />} />
-                        <Route path="support" element={<Support />} />
-                        <Route path="legal/:slug" element={<CMSContent />} />
-
-                        <Route path="cart" element={<CartPage />} />
-                        <Route path="wishlist" element={<WishlistPage />} />
-                        <Route path="reviews" element={<MyReviews />} />
+                        <Route path="alteration" element={<AlterationForm />} />
+                        <Route path="custom-design" element={<CustomDesignForm />} />
                         <Route path="bulk-order" element={<BulkOrderRequest />} />
                         <Route path="bulk-orders" element={<MyBulkOrders />} />
-                        <Route path="embroidery" element={<EmbroideryPage />} />
                         <Route path="issues/report/:orderId" element={<ReportIssue />} />
                         <Route path="issues/:issueId" element={<IssueDetails />} />
                     </Route>

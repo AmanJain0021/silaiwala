@@ -4,10 +4,12 @@ import { cn } from '../../../../utils/cn';
 import useWishlistStore from '../../../../store/wishlistStore';
 import { getImageUrl } from '../../../../utils/imageUrl';
 import SafeImage from '../../../../components/Common/SafeImage';
+import { useRequireAuth } from '../../../../hooks/useRequireAuth';
 
 const ProductCard = ({ product, onAddClick }) => {
     const [isHovered, setIsHovered] = useState(false);
     const { toggleWishlist, isInWishlist } = useWishlistStore(state => state);
+    const { requireAuth } = useRequireAuth();
     const isWishlisted = isInWishlist(product._id || product.id);
 
     const currentPrice = Number(product.price) || 0;
@@ -27,6 +29,7 @@ const ProductCard = ({ product, onAddClick }) => {
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    if (!requireAuth('Please login to save items to wishlist')) return;
                     toggleWishlist(product._id || product.id);
                 }}
                 className={cn(

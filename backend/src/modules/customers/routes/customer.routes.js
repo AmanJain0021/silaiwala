@@ -22,11 +22,13 @@ const {
 } = require("../controllers/cart.controller.js");
 const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
+// Public listing route
+router.get("/tailors", getTailors);
+
 router.use(protect);
 
 router.get("/profile", authorize("customer", "admin", "tailor", "delivery"), getProfile);
 router.patch("/profile", authorize("customer", "admin", "tailor", "delivery"), updateProfile);
-router.get("/tailors", getTailors);
 
 // Address Management
 router.get("/addresses", authorize("customer", "admin", "tailor", "delivery"), getAddresses);

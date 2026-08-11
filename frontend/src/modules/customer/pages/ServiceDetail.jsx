@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import BookingStepper from '../components/BookingStepper';
 import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Clock, ShoppingBag, Ruler, CheckCircle2, ShieldCheck, Info, Tag, Scissors, Wand2, MapPin, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -55,6 +56,7 @@ const ServiceDetail = () => {
     } = useCheckoutStore(state => state);
     const cartItems = useCartStore(state => state.items);
     const addMeasurement = useMeasurementStore(state => state.addMeasurement);
+    const { requireAuth } = useRequireAuth();
 
     const [isLoading, setIsLoading] = useState(true);
     const [serviceData, setServiceData] = useState(null);
@@ -436,6 +438,7 @@ const ServiceDetail = () => {
     };
 
     const handleBuyNow = async () => {
+        if (!requireAuth('Please login to book this service')) return;
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
         

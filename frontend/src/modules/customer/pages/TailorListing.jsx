@@ -6,10 +6,18 @@ import api from '../../../utils/api';
 import useLocationStore from '../../../store/locationStore';
 import SafeImage from '../../../components/Common/SafeImage';
 import TailorFilterDrawer from '../components/TailorFilterDrawer';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 
 const TailorListing = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { requireAuth } = useRequireAuth();
+
+    const handleTailorClick = (e, tailorId) => {
+        e.preventDefault();
+        if (!requireAuth('Please login to view tailor shop details')) return;
+        navigate(`/user/tailor/${tailorId}`);
+    };
     
     const [search, setSearch] = useState(() => {
         const params = new URLSearchParams(location.search);
@@ -147,6 +155,7 @@ const TailorListing = () => {
                             >
                                 <Link
                                     to={`/user/tailor/${tailor._id}`}
+                                    onClick={(e) => handleTailorClick(e, tailor._id)}
                                     className="block bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.98] group relative overflow-hidden h-full"
                                 >
                                     {/* Subtle Gradient Hover Effect */}

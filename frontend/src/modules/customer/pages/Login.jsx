@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuthStore from '../../../store/authStore';
 import useBrandingStore from '../../../store/brandingStore';
@@ -7,18 +7,20 @@ import { validatePhone } from '../../../utils/validation';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 import api from '../../../utils/api';
 import { GoogleLogin } from '@react-oauth/google';
-import { ArrowLeft, Lock, Eye, EyeOff, KeyRound, User, Wifi, Battery } from 'lucide-react';
+import { ArrowLeft, Lock, Eye, EyeOff, KeyRound, User, Wifi, Battery, ChevronRight } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const redirectTo = location.state?.from || '/user';
     const { otpLogin, sendOTP, isLoading, logout, isAuthenticated, user } = useAuthStore();
     const { appName, logos } = useBrandingStore();
 
     useEffect(() => {
         if (isAuthenticated && user?.role === 'customer') {
-            navigate('/user', { replace: true });
+            navigate(redirectTo, { replace: true });
         }
-    }, [isAuthenticated, user, navigate]);
+    }, [isAuthenticated, user, navigate, redirectTo]);
 
     const [mobileNumber, setMobileNumber] = useState('');
     const [password, setPassword] = useState('');
@@ -116,7 +118,7 @@ const Login = () => {
 
     const handleLocationComplete = () => {
         setIsLocating(false);
-        navigate('/user', { replace: true });
+        navigate(redirectTo, { replace: true });
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
@@ -154,8 +156,6 @@ const Login = () => {
     if (isLocating && loggedInUser) {
         return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} />;
     }
-
-    const customerLogoSrc = logos?.customer || '/sewzella_logo-removebg-preview.png';
 
     return (
         <motion.div

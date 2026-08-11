@@ -21,14 +21,17 @@ import useOrderStore from '../../../store/orderStore';
 
 const Home = () => {
     const user = useAuthStore((state) => state.user);
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { orders, fetchOrders } = useOrderStore();
     const [activeCustomDesign, setActiveCustomDesign] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchOrders();
-        fetchCustomDesigns();
-    }, [fetchOrders]);
+        if (isAuthenticated) {
+            fetchOrders();
+            fetchCustomDesigns();
+        }
+    }, [fetchOrders, isAuthenticated]);
 
     const fetchCustomDesigns = async () => {
         try {

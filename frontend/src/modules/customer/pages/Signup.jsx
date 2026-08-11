@@ -1,22 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuthStore from '../../../store/authStore';
 import useBrandingStore from '../../../store/brandingStore';
 import { validateEmail, validatePhone, validateName, validatePassword } from '../../../utils/validation';
 import { GoogleLogin } from '@react-oauth/google';
-import { ArrowLeft, User, Mail, Phone, Lock, Eye, EyeOff, Gift, UserPlus, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Lock, Eye, EyeOff, Gift, UserPlus, ShieldCheck, ChevronRight } from 'lucide-react';
 
 const Signup = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const redirectTo = location.state?.from || '/user';
     const { signup, sendOTP, isLoading, isAuthenticated, user } = useAuthStore();
     const { appName, logos } = useBrandingStore();
 
     useEffect(() => {
         if (isAuthenticated && user?.role === 'customer') {
-            navigate('/user', { replace: true });
+            navigate(redirectTo, { replace: true });
         }
-    }, [isAuthenticated, user, navigate]);
+    }, [isAuthenticated, user, navigate, redirectTo]);
 
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [step, setStep] = useState('info'); // 'info' or 'otp'

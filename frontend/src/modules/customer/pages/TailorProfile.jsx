@@ -7,10 +7,12 @@ import useCheckoutStore from '../../../store/checkoutStore';
 import api from '../../../utils/api';
 import SafeImage from '../../../components/Common/SafeImage';
 import toast from 'react-hot-toast';
+import { useRequireAuth } from '../../../hooks/useRequireAuth';
 
 const TailorProfile = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { requireAuth } = useRequireAuth();
     const setTailorInStore = useCheckoutStore(state => state.setTailor);
     const [tailor, setTailor] = useState(null);
     const [fabrics, setFabrics] = useState([]);
@@ -72,6 +74,7 @@ const TailorProfile = () => {
 
     const handleBridalSubmit = async (e) => {
         e.preventDefault();
+        if (!requireAuth('Please login to book a bridal consultation')) return;
         setIsSubmitting(true);
         try {
             // Note: Sending to the main order checkout endpoint with special flags
