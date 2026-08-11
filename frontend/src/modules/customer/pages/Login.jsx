@@ -12,7 +12,8 @@ import { ArrowLeft, Lock, Eye, EyeOff, KeyRound, User, Wifi, Battery, ChevronRig
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const redirectTo = location.state?.from || '/user';
+    const rawFrom = location.state?.from;
+    const redirectTo = (rawFrom && !rawFrom.includes('/login') && !rawFrom.includes('/register') && !rawFrom.includes('/signup')) ? rawFrom : '/user';
     const { otpLogin, sendOTP, isLoading, logout, isAuthenticated, user } = useAuthStore();
     const { appName, logos } = useBrandingStore();
 

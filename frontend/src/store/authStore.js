@@ -9,8 +9,9 @@ const getInitialUser = () => {
         let storageKey = 'user';
         if (path.startsWith('/delivery')) storageKey = 'delivery_user';
         else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+        else if (path.startsWith('/executive')) storageKey = 'executive_user';
 
-        let userStr = localStorage.getItem(storageKey);
+        let userStr = localStorage.getItem(storageKey) || localStorage.getItem('user');
         if (!userStr || userStr === 'undefined') return null;
         return JSON.parse(userStr);
     } catch (e) {
@@ -47,8 +48,10 @@ const useAuthStore = create((set) => ({
             let storageKey = 'user';
             if (path.startsWith('/delivery')) storageKey = 'delivery_user';
             else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+            else if (path.startsWith('/executive')) storageKey = 'executive_user';
             
             localStorage.setItem(storageKey, JSON.stringify(user));
+            localStorage.setItem('user', JSON.stringify(user));
 
             set({
                 user,
@@ -99,8 +102,10 @@ const useAuthStore = create((set) => ({
             let storageKey = 'user';
             if (path.startsWith('/delivery')) storageKey = 'delivery_user';
             else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
+            else if (path.startsWith('/executive')) storageKey = 'executive_user';
             
             localStorage.setItem(storageKey, JSON.stringify(user));
+            localStorage.setItem('user', JSON.stringify(user));
 
             set({
                 user,

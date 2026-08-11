@@ -40,7 +40,8 @@ const MELogin = () => {
                 return;
             }
 
-            setToken(res.token);
+            setToken(res.token, 'executive');
+            localStorage.setItem('executive_user', JSON.stringify(res.data));
             localStorage.setItem('user', JSON.stringify(res.data));
 
             if (res.data?.isActive === false) {

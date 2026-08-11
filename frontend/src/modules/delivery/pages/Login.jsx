@@ -244,6 +244,13 @@ const DeliveryLogin = () => {
                                 >
                                     {isLoading ? 'Logging in...' : 'Sign In'}
                                 </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setLoginMethod('otp'); setError(''); }}
+                                    className="w-full text-xs font-bold text-[#843D9B] hover:underline transition-colors text-center cursor-pointer pt-1 block"
+                                >
+                                    Login with OTP instead
+                                </button>
                             </div>
                         )}
 
