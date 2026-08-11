@@ -26,10 +26,9 @@ import {
     UserPlus,
     ClipboardList
 } from 'lucide-react';
-const silaiwalaLogo = '/sewzella_logo.jpeg';
-
 
 import useAuthStore from '../store/authStore';
+import useBrandingStore from '../store/brandingStore';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
 import { getToken } from '../utils/auth';
@@ -42,6 +41,7 @@ const AdminLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [hasUnread, setHasUnread] = useState(false);
+    const { appName, logos } = useBrandingStore();
 
     // Read Admin user for FCM registration
     const adminUser = React.useMemo(() => {
@@ -155,10 +155,10 @@ const AdminLayout = () => {
                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                     <h1 className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-xl border border-white/10 overflow-hidden shrink-0 transform -rotate-3">
-                            <img src={silaiwalaLogo} alt="Silaiwala" className="w-full h-full object-cover" />
+                            <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-lg font-black tracking-tighter text-white leading-none">SewZ<span className="text-white/60">ella</span></span>
+                            <span className="text-lg font-black tracking-tighter text-white leading-none">{appName}</span>
                             <span className="tracking-[0.2em] opacity-50 uppercase text-[8px] font-black mt-1">Admin Panel</span>
                         </div>
                     </h1>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Download, Menu, X } from 'lucide-react';
+import useBrandingStore from '../../../store/brandingStore';
 
 const NAV_LINKS = [
   { label: 'Home', path: '/' },
@@ -15,6 +16,7 @@ const LandingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { appName, logos } = useBrandingStore();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 30);
@@ -50,8 +52,8 @@ const LandingNavbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0">
           <img
-            src="/sewzella_logo-removebg-preview.png"
-            alt="Sewzella"
+            src={logos.customer}
+            alt={appName}
             className="h-10 md:h-12 w-auto object-contain"
           />
         </Link>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronRight, Scissors, Ruler, Truck, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import useBrandingStore from '../../../store/brandingStore';
 
 // Asset Imports
 import img_8e608 from '../../../assets/8e60854ad14bc34cafe59b8d14c4bc76.jpg';
@@ -11,6 +12,7 @@ import img_tools from '../../../assets/Tools and Professions777.jpeg';
 const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
+  const appName = useBrandingStore(state => state.appName);
 
   const steps = [
     {
@@ -36,7 +38,7 @@ const Onboarding = () => {
     },
     {
       title: "Master Your Style",
-      description: "Join SewZella today and redefine your wardrobe with personalized style.",
+      description: `Join ${appName} today and redefine your wardrobe with personalized style.`,
       image: img_aunty,
       icon: <Scissors className="w-8 h-8" />,
       color: "#1B263B"

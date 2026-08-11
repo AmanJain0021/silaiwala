@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, Youtube, MapPin, Phone, Mail } from 'lucide-react';
+import useBrandingStore from '../../../store/brandingStore';
 
 const LandingFooter = () => {
+  const { appName, logos } = useBrandingStore();
+
   return (
     <footer style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Main Footer */}
@@ -13,8 +16,8 @@ const LandingFooter = () => {
             <div className="lg:col-span-1">
               <Link to="/" className="flex items-center gap-2 mb-5">
                 <img
-                  src="/sewzella_logo-removebg-preview.png"
-                  alt="Sewzella"
+                  src={logos.customer}
+                  alt={appName}
                   className="h-10 w-auto brightness-0 invert"
                 />
               </Link>
@@ -132,7 +135,7 @@ const LandingFooter = () => {
           {/* Bottom Bar */}
           <div className="border-t border-white/10 pt-7 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/35 text-[12px]">
-              &copy; {new Date().getFullYear()} Sewzella. All Rights Reserved.
+              &copy; {new Date().getFullYear()} {appName}. All Rights Reserved.
             </p>
             <div className="flex gap-6 text-white/35 text-[12px]">
               <Link to="/page/privacy-policy" className="hover:text-white/70 transition-colors">Privacy Policy</Link>

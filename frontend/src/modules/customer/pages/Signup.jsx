@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
 import useAuthStore from '../../../store/authStore';
+import useBrandingStore from '../../../store/brandingStore';
 import { validateEmail, validatePhone, validateName, validatePassword } from '../../../utils/validation';
-import { Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { ArrowLeft, User, Mail, Phone, Lock, Eye, EyeOff, Gift, UserPlus, ShieldCheck } from 'lucide-react';
 
 const Signup = () => {
     const navigate = useNavigate();
     const { signup, sendOTP, isLoading, isAuthenticated, user } = useAuthStore();
+    const { appName, logos } = useBrandingStore();
 
     useEffect(() => {
         if (isAuthenticated && user?.role === 'customer') {
@@ -44,6 +45,7 @@ const Signup = () => {
     useEffect(() => {
         localStorage.setItem('customerSignupData', JSON.stringify(formData));
     }, [formData]);
+
     const [error, setError] = useState('');
 
     const handleChange = (e) => {
@@ -65,13 +67,13 @@ const Signup = () => {
         setOtp(newOtp);
 
         if (value && index < 5) {
-            otpRefs.current[index + 1].focus();
+            otpRefs.current[index + 1]?.focus();
         }
     };
 
     const handleKeyDown = (index, e) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            otpRefs.current[index - 1].focus();
+            otpRefs.current[index - 1]?.focus();
         }
     };
 
@@ -79,26 +81,25 @@ const Signup = () => {
         e.preventDefault();
         setError('');
 
-        // Name Validation
         const nameErr = validateName(formData.name, "Full Name");
         if (nameErr) return setError(nameErr);
 
-        // Email Validation
         const emailErr = validateEmail(formData.email);
         if (emailErr) return setError(emailErr);
 
-        // Phone Validation
         const phoneErr = validatePhone(formData.phoneNumber);
         if (phoneErr) return setError(phoneErr);
 
-        // Extra check for indian numbers starting with 6-9
         if (!/^[6-9]\d{9}$/.test(formData.phoneNumber)) {
             return setError('Please enter a valid 10-digit mobile number starting with 6-9');
         }
 
-        // Password Validation
         const passErr = validatePassword(formData.password);
         if (passErr) return setError(passErr);
+
+        if (!agreedToTerms) {
+            return setError('Please agree with Terms & Conditions');
+        }
 
         try {
             await sendOTP(formData.phoneNumber);
@@ -117,7 +118,11 @@ const Signup = () => {
             return;
         }
         try {
-            await signup({ ...formData, role: 'customer', otp: fullOtp });
+            await signup({ 
+                ...formData, 
+                role: 'customer', 
+                otp: fullOtp 
+            });
             localStorage.removeItem('customerSignupData');
             navigate('/user', { replace: true });
         } catch (err) {
@@ -125,198 +130,263 @@ const Signup = () => {
         }
     };
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            setError('');
+            const user = await useAuthStore.getState().googleLogin(credentialResponse.credential);
+            if (user?.role === 'customer') {
+                navigate('/user', { replace: true });
+            }
+        } catch (err) {
+            setError(err.message || 'Google Login failed');
+        }
+    };
+
     return (
         <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full flex flex-col items-center font-['Plus_Jakarta_Sans',sans-serif] px-2 sm:px-4"
         >
-            <div className="text-left mb-3 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#843D9B] tracking-tight leading-tight">
-                    Welcome to <br className="hidden md:block"/> Sewzella
-                </h2>
-                <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1 sm:mt-4 max-w-[250px]">
-                    Please sign up to continue
-                </p>
+            {/* Top Navigation Back Arrow */}
+            <div className="w-full flex justify-start mb-1">
+                <button 
+                    type="button" 
+                    onClick={() => {
+                        if (step === 'otp') {
+                            setStep('info');
+                        } else {
+                            navigate('/user/login');
+                        }
+                    }} 
+                    className="text-[#0F172A] hover:text-[#843D9B] transition-colors p-1 -ml-1 cursor-pointer"
+                >
+                    <ArrowLeft size={20} strokeWidth={2.2} />
+                </button>
+            </div>
+
+            {/* Top Icon Badge matching reference image 2 & 3 */}
+            <div className="w-16 h-16 rounded-[22px] bg-[#F4EFFF] border border-[#E9DFFE] flex items-center justify-center shadow-2xs mb-4 shrink-0 mx-auto">
+                {step === 'info' ? (
+                    <UserPlus className="w-7 h-7 text-[#843D9B]" />
+                ) : (
+                    <ShieldCheck className="w-7 h-7 text-[#843D9B]" />
+                )}
+            </div>
+
+            {/* Title & Subtitle */}
+            <div className="text-center mb-5 w-full">
+                <h1 className="text-2xl sm:text-[26px] font-bold text-[#0F172A] tracking-tight mb-1">
+                    {step === 'info' ? 'Create Account' : 'Verify Code'}
+                </h1>
+                {step === 'info' ? (
+                    <p className="text-xs sm:text-[13px] font-medium text-[#64748B] max-w-[250px] mx-auto leading-relaxed">
+                        Create your account to get started with our amazing services
+                    </p>
+                ) : (
+                    <div className="text-center">
+                        <p className="text-xs sm:text-[13px] font-medium text-[#64748B] block mb-0.5">
+                            Enter the 6-digit code sent to
+                        </p>
+                        <p className="text-xs sm:text-sm font-bold text-[#843D9B] block">
+                            +91 {formData.phoneNumber}
+                        </p>
+                    </div>
+                )}
             </div>
 
             {error && (
                 <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-2.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center justify-center gap-2"
+                    className="w-full mb-4 p-3 rounded-2xl bg-red-50 border border-red-100 text-xs font-bold text-red-600 flex items-center gap-2"
                 >
-                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0" />
                     {error}
                 </motion.div>
             )}
 
-            <motion.form
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                onSubmit={step === 'info' ? handleSendOTP : handleSubmit}
-                className="space-y-3 sm:space-y-5"
-            >
-                <div className="space-y-2.5 sm:space-y-4">
-                    {step === 'info' ? (
-                        <>
-                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner">
-                                <Input
+            <form onSubmit={step === 'info' ? handleSendOTP : handleSubmit} className="w-full space-y-3.5">
+                {step === 'info' ? (
+                    <>
+                        {/* Full Name Input Field */}
+                        <div className="w-full text-left">
+                            <label className="text-xs font-semibold text-[#0F172A] block mb-1">Full Name</label>
+                            <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                                <User size={18} className="text-[#94A3B8] shrink-0" />
+                                <input
                                     name="name"
-                                    placeholder="Full Name"
+                                    placeholder="John Doe"
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
-                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-gray-500 placeholder:font-medium py-1.5 sm:py-2"
+                                    className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
                                 />
                             </div>
+                        </div>
 
-                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner">
-                                <Input
+                        {/* Email Address Input Field */}
+                        <div className="w-full text-left">
+                            <label className="text-xs font-semibold text-[#0F172A] block mb-1">Email Address</label>
+                            <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                                <Mail size={18} className="text-[#94A3B8] shrink-0" />
+                                <input
                                     name="email"
                                     type="email"
-                                    placeholder="Email Address"
+                                    placeholder="you@example.com"
                                     value={formData.email}
                                     onChange={handleChange}
                                     required
-                                    className="bg-transparent border-none focus:ring-0 font-bold placeholder:text-gray-500 placeholder:font-medium py-1.5 sm:py-2"
+                                    className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
                                 />
                             </div>
+                        </div>
 
-                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
-                                <div className="flex items-center px-3 sm:px-4 gap-2 sm:gap-3 h-full">
-                                    <span className="text-gray-900 font-bold text-base tracking-wide mt-[1px]">+91</span>
-                                    <div className="w-px h-6 bg-slate-200" />
-                                    <input
-                                        type="tel"
-                                        name="phoneNumber"
-                                        placeholder="Phone Number"
-                                        value={formData.phoneNumber}
-                                        onChange={handleChange}
-                                        maxLength={10}
-                                        required
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-bold placeholder:text-slate-300 placeholder:font-medium outline-none py-1.5 sm:py-2"
-                                    />
+                        {/* Mobile Number Input Field */}
+                        <div className="w-full text-left">
+                            <label className="text-xs font-semibold text-[#0F172A] block mb-1">Mobile Number</label>
+                            <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center p-1.5 px-2 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                                <div className="bg-white shadow-2xs rounded-xl px-3 py-2 text-xs font-bold text-[#0F172A] mr-2.5 select-none flex items-center justify-center shrink-0 border border-gray-100/80">
+                                    +91
                                 </div>
-                            </div>
-
-                            <div className="bg-[#F8FAFC] rounded-2xl p-1 border border-slate-100 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
-                                <div className="flex items-center px-3 sm:px-4 gap-2 sm:gap-3 h-full">
-                                    <input
-                                        name="password"
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        required
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-bold placeholder:text-gray-500 placeholder:font-medium tracking-wide outline-none py-1.5 sm:py-2"
-                                    />
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="text-gray-400 hover:text-[#843D9B] transition-colors focus:outline-none shrink-0"
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="bg-[#F7F8FC] rounded-2xl p-1 border border-pink-50 shadow-inner">
-                                <Input
-                                    name="referralCode"
-                                    placeholder="Referral Code (Optional)"
-                                    value={formData.referralCode}
+                                <input
+                                    name="phoneNumber"
+                                    type="tel"
+                                    placeholder="9876543210"
+                                    value={formData.phoneNumber}
                                     onChange={handleChange}
-                                    onFocus={(e) => {
-                                        setTimeout(() => {
-                                            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        }, 100);
-                                    }}
-                                    className="bg-transparent border-none focus:ring-0 font-bold text-[#843D9B] placeholder:text-indigo-400 placeholder:font-medium uppercase tracking-wider py-1.5 sm:py-2"
+                                    maxLength={10}
+                                    required
+                                    className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
                                 />
                             </div>
-                        </>
-                    ) : (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="space-y-6"
-                        >
-                            <div className="text-center py-2">
-                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
-                                    Verification Code Sent to
-                                </p>
-                                <p className="text-xs font-black text-[#843D9B] mt-1">
-                                    {formData.phoneNumber}
-                                </p>
-                            </div>
+                        </div>
 
-                            <div className="flex justify-between gap-2 px-1">
-                                {otp.map((digit, index) => (
-                                    <div key={index} className="flex-1 max-w-[45px] aspect-square bg-[#F8FAFC] rounded-xl border-2 border-slate-100 shadow-inner overflow-hidden focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-[#843D9B]/10 transition-all duration-200">
-                                        <input
-                                            ref={(el) => (otpRefs.current[index] = el)}
-                                            type="text"
-                                            maxLength="1"
-                                            value={digit}
-                                            onChange={(e) => handleOtpChange(index, e.target.value)}
-                                            onKeyDown={(e) => handleKeyDown(index, e)}
-                                            className="w-full h-full text-center text-xl font-black text-slate-800 bg-transparent border-none outline-none focus:ring-0 p-0"
-                                            inputMode="numeric"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="pt-2 text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => setStep('info')}
-                                    className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#843D9B] transition-colors flex items-center justify-center gap-2 mx-auto"
+                        {/* Password Input Field */}
+                        <div className="w-full text-left">
+                            <label className="text-xs font-semibold text-[#0F172A] block mb-1">Password</label>
+                            <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                                <Lock size={18} className="text-[#94A3B8] shrink-0" />
+                                <input
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••••••"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer"
                                 >
-                                    <span className="text-sm">←</span> Edit information
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
-                        </motion.div>
-                    )}
-                </div>
+                        </div>
 
-                <div className="pt-1 sm:pt-2">
-                    {step === 'info' && (
-                        <label className="flex items-center justify-center sm:justify-start gap-2 cursor-pointer mb-4 mt-2">
+                        {/* Referral Code (Optional) */}
+                        <div className="w-full text-left">
+                            <label className="text-xs font-semibold text-[#0F172A] block mb-1">Referral Code (Optional)</label>
+                            <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                                <Gift size={18} className="text-[#843D9B] shrink-0" />
+                                <input
+                                    name="referralCode"
+                                    placeholder="REF123"
+                                    value={formData.referralCode}
+                                    onChange={handleChange}
+                                    className="w-full text-xs sm:text-sm text-[#843D9B] font-bold tracking-wider uppercase bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Terms Checkbox */}
+                        <div className="flex items-center gap-2 pt-1 px-0.5 text-left">
                             <input
+                                id="terms"
                                 type="checkbox"
                                 checked={agreedToTerms}
                                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                                className="w-4 h-4 rounded-[5px] accent-[#843D9B] text-white cursor-pointer"
                             />
-                            <span className="text-xs text-gray-500 font-medium">
-                                I agree to the <button type="button" onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>
-                            </span>
-                        </label>
-                    )}
-                    <Button
-                        type="submit"
-                        className="w-full h-10 sm:h-12 rounded-full bg-[#843D9B] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#843D9B]/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || (step === 'info' && !agreedToTerms)}
-                    >
-                        {isLoading ? (step === 'info' ? 'Sending...' : 'Verifying...') : (
-                            <span className="flex items-center justify-center gap-2">
-                                {step === 'info' ? 'GET STARTED' : 'VERIFY & JOIN'} <span className="text-lg">›</span>
-                            </span>
-                        )}
-                    </Button>
-                </div>
-            </motion.form>
-            <div className="mt-auto pt-4 sm:pt-6 text-center sm:text-left pb-4">
-                <p className="text-xs sm:text-sm font-bold text-slate-400">
+                            <label htmlFor="terms" className="text-xs text-[#64748B] font-medium cursor-pointer select-none">
+                                I agree with{' '}
+                                <button 
+                                    type="button" 
+                                    onClick={() => navigate('/user/legal/terms-and-conditions')} 
+                                    className="text-[#843D9B] font-semibold hover:underline"
+                                >
+                                    Terms
+                                </button>
+                                {' '} & {' '}
+                                <button 
+                                    type="button" 
+                                    onClick={() => navigate('/user/legal/privacy-policy')} 
+                                    className="text-[#843D9B] font-semibold hover:underline"
+                                >
+                                    Privacy Policy
+                                </button>
+                            </label>
+                        </div>
+                    </>
+                ) : (
+                    /* Verify Code OTP step */
+                    <div className="space-y-6 py-2 w-full">
+                        <div className="flex justify-between gap-2 px-1 my-4">
+                            {otp.map((digit, index) => (
+                                <div key={index} className="flex-1 max-w-[45px] aspect-square bg-[#F6F6F8] rounded-2xl border-2 border-gray-200 shadow-2xs text-center text-xl font-bold text-[#0F172A] focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-[#843D9B]/15 transition-all overflow-hidden flex items-center justify-center">
+                                    <input
+                                        ref={(el) => (otpRefs.current[index] = el)}
+                                        type="text"
+                                        maxLength="1"
+                                        value={digit}
+                                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                                        onKeyDown={(e) => handleKeyDown(index, e)}
+                                        className="w-full h-full text-center text-xl font-bold text-[#0F172A] bg-transparent border-none outline-none focus:ring-0 p-0"
+                                        inputMode="numeric"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="text-center space-y-1">
+                            <button
+                                type="button"
+                                onClick={() => setStep('info')}
+                                className="text-xs text-[#843D9B] font-bold hover:underline cursor-pointer"
+                            >
+                                ← Edit details
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                    type="submit"
+                    disabled={isLoading || (step === 'info' && !agreedToTerms)}
+                    className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${
+                        isLoading || (step === 'info' && !agreedToTerms)
+                            ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
+                            : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                    }`}
+                >
+                    {isLoading 
+                        ? (step === 'info' ? 'Sending...' : 'Verifying...') 
+                        : (step === 'info' ? 'Sign Up' : 'Verify & Complete')}
+                </button>
+            </form>
+
+            {/* Footer - Sign In link */}
+            <div className="mt-5 text-center w-full">
+                <p className="text-xs font-medium text-[#64748B]">
                     Already have an account?{' '}
                     <button 
                         type="button"
                         onClick={() => navigate('/user/login')}
-                        className="text-[#843D9B] font-black hover:underline ml-1"
+                        className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer"
                     >
                         Sign In
                     </button>

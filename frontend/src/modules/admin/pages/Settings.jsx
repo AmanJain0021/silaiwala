@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings as SettingsIcon, Shield, Bell, CreditCard,
-    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift, MapPin
+    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift, MapPin, Image as ImageIcon, Upload
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import useBrandingStore, { BRANDING_DEFAULTS } from '../../../store/brandingStore';
 
 const AdminSettings = () => {
-    const [selectedTab, setSelectedTab] = useState('General');
+    const [selectedTab, setSelectedTab] = useState('Branding');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [settings, setSettings] = useState(null);
+    const [uploadingLogo, setUploadingLogo] = useState(null);
 
     // Admin Users State for Security Tab
     const [adminUsers, setAdminUsers] = useState([]);
@@ -40,6 +42,7 @@ const AdminSettings = () => {
     }, [selectedTab]);
 
     const tabs = [
+        { id: 'Branding', icon: <ImageIcon size={16} />, desc: 'App name & logos' },
         { id: 'General', icon: <Globe size={16} />, desc: 'Platform basics' },
         { id: 'Pricing & Fees', icon: <DollarSign size={16} />, desc: 'GST, delivery & advance' },
         { id: 'Loyalty Points', icon: <Gift size={16} />, desc: 'Points rules' },
@@ -75,6 +78,18 @@ const AdminSettings = () => {
         setIsSaving(true);
         try {
             await api.put('/admin/settings', settings);
+            const platformName = settings.general?.platformName || BRANDING_DEFAULTS.appName;
+            useBrandingStore.setState({
+                appName: platformName,
+                logos: {
+                    customer: settings.general?.appLogos?.customer || BRANDING_DEFAULTS.logos.customer,
+                    tailor: settings.general?.appLogos?.tailor || BRANDING_DEFAULTS.logos.tailor,
+                    delivery: settings.general?.appLogos?.delivery || BRANDING_DEFAULTS.logos.delivery,
+                    measurementExecutive: settings.general?.appLogos?.measurementExecutive || BRANDING_DEFAULTS.logos.measurementExecutive,
+                },
+                isLoaded: true,
+            });
+            document.title = platformName;
             toast.success('Settings updated successfully');
         } catch (error) {
             console.error('Failed to update settings:', error);
@@ -92,6 +107,39 @@ const AdminSettings = () => {
                 [field]: value
             }
         }));
+    };
+
+    const logoOptions = [
+        { key: 'customer', label: 'Customer App', fallback: BRANDING_DEFAULTS.logos.customer },
+        { key: 'tailor', label: 'Tailor App', fallback: BRANDING_DEFAULTS.logos.tailor },
+        { key: 'delivery', label: 'Delivery Partner App', fallback: BRANDING_DEFAULTS.logos.delivery },
+        { key: 'measurementExecutive', label: 'Measurement Executive App', fallback: BRANDING_DEFAULTS.logos.measurementExecutive },
+    ];
+
+    const handleLogoUpload = async (key, file) => {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        setUploadingLogo(key);
+        try {
+            const res = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const uploadedUrl = res.data.data;
+            updateNestedSetting('general', 'appLogos', {
+                ...(settings.general?.appLogos || {}),
+                [key]: uploadedUrl,
+            });
+            toast.success('Logo uploaded. Save changes to publish it.');
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Logo upload failed:', error);
+            toast.error(error.response?.data?.message || 'Logo upload failed');
+        } finally {
+            setUploadingLogo(null);
+        }
     };
 
     if (isLoading) {
@@ -149,6 +197,70 @@ const AdminSettings = () => {
 
                 {/* Content Area */}
                 <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-y-auto custom-scrollbar">
+
+                    {selectedTab === 'Branding' && settings && (
+                        <div className="p-8 space-y-8 max-w-3xl">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900">Branding</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">Control the public app name and role-specific logos.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1.5">App Name</label>
+                                <input 
+                                    type="text" 
+                                    value={settings.general?.platformName || ''} 
+                                    onChange={(e) => updateNestedSetting('general', 'platformName', e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
+                                />
+                                <p className="text-[10px] text-gray-400 font-medium mt-2">
+                                    This name and these logos appear across the Customer, Tailor, Delivery Partner, and Measurement Executive apps immediately after saving.
+                                </p>
+                            </div>
+
+                            <hr className="border-gray-50" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {logoOptions.map((logo) => {
+                                    const value = settings.general?.appLogos?.[logo.key] || logo.fallback;
+                                    const inputId = `branding-logo-${logo.key}`;
+
+                                    return (
+                                        <div key={logo.key} className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-black text-gray-900">{logo.label}</label>
+                                                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">PNG, JPG, or WebP</p>
+                                                </div>
+                                                <div className="h-14 w-14 rounded-xl bg-white border border-gray-100 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+                                                    <img src={value} alt={`${logo.label} logo`} className="w-full h-full object-contain" />
+                                                </div>
+                                            </div>
+
+                                            <label
+                                                htmlFor={inputId}
+                                                className={`w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 text-gray-700 text-[10px] font-black rounded-xl hover:border-primary hover:text-primary transition-all uppercase tracking-widest cursor-pointer ${uploadingLogo === logo.key ? 'opacity-60 pointer-events-none' : ''}`}
+                                            >
+                                                {uploadingLogo === logo.key ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                                {uploadingLogo === logo.key ? 'Uploading...' : 'Upload Logo'}
+                                                <input 
+                                                    id={inputId}
+                                                    type="file" 
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        handleLogoUpload(logo.key, e.target.files?.[0]);
+                                                        e.target.value = '';
+                                                    }}
+                                                    className="hidden" 
+                                                    disabled={uploadingLogo === logo.key}
+                                                />
+                                            </label>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {selectedTab === 'General' && settings && (
                         <div className="p-8 space-y-8 max-w-3xl">
@@ -701,7 +813,7 @@ const AdminSettings = () => {
                         </div>
                     )}
 
-                    {(selectedTab !== 'General' && selectedTab !== 'Security' && selectedTab !== 'Payment Gateways' && selectedTab !== 'Tailor Discovery') && (
+                    {(selectedTab !== 'Branding' && selectedTab !== 'General' && selectedTab !== 'Security' && selectedTab !== 'Payment Gateways' && selectedTab !== 'Tailor Discovery') && (
                         <div className="p-16 text-center flex flex-col items-center justify-center h-full text-gray-400">
                             <div className="p-6 bg-gray-50 rounded-full mb-6">
                                 <SettingsIcon size={48} className="opacity-30 animate-spin-slow" />

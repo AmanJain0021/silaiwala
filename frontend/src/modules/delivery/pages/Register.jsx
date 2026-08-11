@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import api from '../../../shared/utils/api';
 import DeliveryLegalModal from '../components/DeliveryLegalModal';
-const logo = '/sewzella_logo-removebg-preview.png';
+import useBrandingStore from '../../../store/brandingStore';
 
 const STEPS = [
   { id: 1, title: 'Personal Info', icon: FiUser },
@@ -41,6 +41,7 @@ const DeliveryRegister = () => {
   const navigate = useNavigate();
   const [legalModal, setLegalModal] = useState({ isOpen: false, type: 'terms' });
   const { register, sendRegistrationOtp, verifyRegistrationOtp, isLoading } = useDeliveryAuthStore();
+  const { appName, logos } = useBrandingStore();
   const fileInputRefs = useRef({});
 
   // Restore draft state from localStorage on page refresh
@@ -75,10 +76,11 @@ const DeliveryRegister = () => {
     emergencyContact: '',
     aadharNumber: '',
     email: '',
+    password: '',
     address: '',
-    vehicleType: 'bike',
+    vehicleType: 'Bike (Motorcycle)',
     vehicleNumber: '',
-    accountName: '',
+    accountHolderName: '',
     accountNumber: '',
     bankName: '',
     ifscCode: '',
@@ -87,6 +89,7 @@ const DeliveryRegister = () => {
   const [previews, setPreviews] = useState(initialState.previews || {});
   const [isPhoneVerified, setIsPhoneVerified] = useState(initialState.isPhoneVerified || false);
 
+  const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [phoneOtp, setPhoneOtp] = useState('');
   const [showOtpField, setShowOtpField] = useState(false);
@@ -317,6 +320,11 @@ const DeliveryRegister = () => {
           toast.error(errs.aadharNumber);
           isValid = false;
         }
+        if (!formData.password || formData.password.length < 6) {
+          errs.password = 'Password must be at least 6 characters long';
+          toast.error(errs.password);
+          isValid = false;
+        }
         setFieldErrors((prev) => ({ ...prev, ...errs }));
         return isValid;
 
@@ -431,10 +439,10 @@ const DeliveryRegister = () => {
 
       const filesToUpload = [
         { name: 'Profile Image', file: getFileObj('profileImage', 'profile.jpg'), isProfile: true },
-        { name: 'Driving License Front', file: getFileObj('drivingLicense', 'dl_front.jpg') },
-        { name: 'Driving License Back', file: getFileObj('drivingLicenseBack', 'dl_back.jpg') },
-        { name: 'Aadhar Front', file: getFileObj('aadharCard', 'aadhar_front.jpg') },
-        { name: 'Aadhar Back', file: getFileObj('aadharCardBack', 'aadhar_back.jpg') }
+        { name: 'Driving License Front', file: getFileObj('licenseFront', 'dl_front.jpg') || getFileObj('drivingLicense', 'dl_front.jpg') },
+        { name: 'Driving License Back', file: getFileObj('licenseBack', 'dl_back.jpg') || getFileObj('drivingLicenseBack', 'dl_back.jpg') },
+        { name: 'Aadhar Front', file: getFileObj('aadharFront', 'aadhar_front.jpg') || getFileObj('aadharCard', 'aadhar_front.jpg') },
+        { name: 'Aadhar Back', file: getFileObj('aadharBack', 'aadhar_back.jpg') || getFileObj('aadharCardBack', 'aadhar_back.jpg') }
       ].filter(item => item.file instanceof File);
 
       let uploadedUrls = [];
@@ -457,21 +465,22 @@ const DeliveryRegister = () => {
       });
 
       const payload = {
-        name: formData.name.trim(),
-        email: formData.email.trim().toLowerCase(),
-        phone: formData.phone.trim(),
-        phoneNumber: formData.phone.trim(),
+        name: (formData.name || '').trim(),
+        email: (formData.email || '').trim().toLowerCase(),
+        phone: (formData.phone || '').trim(),
+        phoneNumber: (formData.phone || '').trim(),
+        password: formData.password || '',
         otp: phoneOtp || '123456',
         role: 'delivery',
-        emergencyContact: formData.emergencyContact.trim(),
-        aadharNumber: formData.aadharNumber.replace(/\s/g, ''),
-        address: formData.address.trim(),
+        emergencyContact: (formData.emergencyContact || '').trim(),
+        aadharNumber: (formData.aadharNumber || '').replace(/\s/g, ''),
+        address: (formData.address || '').trim(),
         vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
-        vehicleNumber: formData.vehicleType === 'cycle' ? 'BICYCLE' : formData.vehicleNumber.trim(),
-        accountName: formData.accountName.trim(),
-        accountNumber: formData.accountNumber.trim(),
-        bankName: formData.bankName.trim(),
-        ifscCode: formData.ifscCode.trim().toUpperCase(),
+        vehicleNumber: formData.vehicleType === 'cycle' ? 'BICYCLE' : (formData.vehicleNumber || '').trim(),
+        accountName: (formData.accountHolderName || formData.accountName || '').trim(),
+        accountNumber: (formData.accountNumber || '').trim(),
+        bankName: (formData.bankName || '').trim(),
+        ifscCode: (formData.ifscCode || '').trim().toUpperCase(),
         documents,
       };
 
@@ -552,146 +561,110 @@ const DeliveryRegister = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col md:flex-row overflow-hidden">
-      {/* Left Side: Branding - Desktop Only */}
-      <div className="hidden md:flex md:w-2/5 items-center justify-center p-12 bg-[#0f172a] relative border-r border-white/5">
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[32rem] h-[32rem] bg-blue-600/10 rounded-full blur-3xl" />
-        <div className="relative z-10 text-center">
-          <div className="w-32 h-32 bg-white/5 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-white/10 shadow-2xl">
-            <img src={logo} alt="CLOSH" className="w-20 h-20 object-contain" />
-          </div>
-          <h1 className="text-5xl font-black text-white mb-4 tracking-tighter uppercase">RIDE CLOSH</h1>
-          <p className="text-xl text-slate-400 font-medium">Join the elite network of delivery partners.</p>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full flex flex-col items-center font-['Plus_Jakarta_Sans',sans-serif] px-1 sm:px-2"
+      >
+        {/* Top Squircle Card with Icon */}
+        <div className="w-16 h-16 rounded-[22px] bg-[#F4EFFF] border border-[#E9DFFE] flex items-center justify-center shadow-2xs mb-4 shrink-0 mx-auto mt-2">
+          <FiTruck className="w-6 h-6 text-[#843D9B]" />
         </div>
-      </div>
 
-      {/* Right Side: Multi-Step Form */}
-      <div className="w-full md:w-3/5 flex items-center justify-center relative z-10 px-0 sm:px-4 py-0 sm:py-8 md:px-0">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 w-full max-w-3xl shadow-2xl min-h-screen sm:min-h-0 sm:max-h-[90vh] overflow-y-auto no-scrollbar relative z-10"
-        >
-          <style dangerouslySetInnerHTML={{ __html: `
-            .no-scrollbar::-webkit-scrollbar { display: none; }
-            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-          `}} />
+        {/* Title & Subtitle */}
+        <div className="text-center mb-5 w-full">
+          <h1 className="text-2xl sm:text-[26px] font-bold text-[#0F172A] tracking-tight mb-1">
+            Create Delivery Account
+          </h1>
+          <p className="text-xs sm:text-[13px] font-medium text-[#64748B] max-w-[280px] mx-auto leading-relaxed">
+            Register as a delivery partner with SewZella
+          </p>
+        </div>
 
-          {/* Mobile Logo */}
-          <div className="md:hidden text-center mb-6">
-            <div className="w-16 h-16 bg-[#0f172a] rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <img src={logo} alt="CLOSH" className="w-10 h-10 object-contain" />
-            </div>
-            <h1 className="text-lg font-black text-gray-900 uppercase tracking-tight">Partner Enrollment</h1>
+        {/* Mobile Responsive Step Progress Bar */}
+        <div className="w-full bg-[#F6F6F8] rounded-[18px] p-3 px-4 mb-5 flex items-center justify-between border border-gray-100">
+          <div className="flex items-center gap-2 overflow-hidden">
+            {currentStep > 1 && (
+              <button 
+                type="button" 
+                onClick={prevStep} 
+                className="p-1 -ml-1 text-[#64748B] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer"
+              >
+                <FiChevronLeft size={20} />
+              </button>
+            )}
+            <span className="text-xs font-bold text-[#0F172A] truncate">
+              {STEPS[currentStep - 1].title}
+            </span>
           </div>
+          <span className="text-[10px] font-bold text-[#843D9B] bg-[#F4EFFF] border border-[#E9DFFE] px-2.5 py-1 rounded-full shrink-0">
+            Step {currentStep} of 3
+          </span>
+        </div>
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              {STEPS.map((step, index) => {
-                const Icon = step.icon;
-                const isCompleted = currentStep > step.id;
-                const isCurrent = currentStep === step.id;
-                return (
-                  <div key={step.id} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center flex-shrink-0">
-                      <div
-                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center border-2 transition-all duration-300 ${
-                          isCompleted
-                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200'
-                            : isCurrent
-                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 scale-110'
-                            : 'bg-gray-50 border-gray-200 text-gray-400'
-                        }`}
-                      >
-                        {isCompleted ? <FiCheck size={18} /> : <Icon size={18} />}
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="w-full space-y-4">
+          <AnimatePresence mode="wait">
+            {/* STEP 1: Personal Info */}
+            {currentStep === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4 w-full"
+              >
+                {/* Profile Photo Uploader */}
+                <div className="flex flex-col items-center justify-center my-2">
+                  <div 
+                    className="relative w-20 h-20 rounded-full border-2 border-dashed border-[#843D9B]/40 bg-[#F4EFFF]/40 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-[#843D9B] transition-all shadow-2xs"
+                    onClick={() => fileInputRefs.current.profileImage?.click()}
+                  >
+                    <input 
+                      type="file" 
+                      name="profileImage" 
+                      accept="image/*"
+                      ref={(el) => (fileInputRefs.current.profileImage = el)}
+                      onChange={handleChange}
+                      className="hidden" 
+                    />
+                    {previews.profileImage ? (
+                      <img src={previews.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <FiCamera className="text-[#843D9B] mb-0.5" size={20} />
+                        <span className="text-[9px] font-bold text-[#843D9B]">Upload</span>
                       </div>
-                      <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider mt-2 ${isCurrent ? 'text-indigo-600' : isCompleted ? 'text-emerald-500' : 'text-gray-400'}`}>
-                        {step.title}
-                      </span>
-                    </div>
-                    {index < STEPS.length - 1 && (
-                      <div className={`flex-1 h-[3px] mx-2 sm:mx-4 rounded-full transition-all duration-500 ${isCompleted ? 'bg-emerald-400' : 'bg-gray-100'}`} />
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1.5">Profile Photo *</p>
+                </div>
 
-          <div className="hidden md:block mb-6">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-              {STEPS[currentStep - 1].title}
-            </h2>
-            <p className="text-gray-500 text-sm font-medium mt-1">Step {currentStep} of 3</p>
-          </div>
-
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            <AnimatePresence mode="wait">
-              {/* STEP 1: Personal Info */}
-              {currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-5"
-                >
-                  <div className="flex flex-col items-center justify-center mb-2">
-                    <div 
-                      className="relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-400 hover:bg-indigo-50 transition-all shadow-sm"
-                      onClick={() => fileInputRefs.current.profileImage?.click()}
-                    >
-                      <input 
-                        type="file" 
-                        name="profileImage" 
-                        accept="image/*"
-                        ref={(el) => (fileInputRefs.current.profileImage = el)}
-                        onChange={handleChange}
-                        className="hidden" 
-                      />
-                      {previews.profileImage ? (
-                        <img src={previews.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <FiCamera className="text-gray-400 group-hover:text-indigo-500 mb-1" size={24} />
-                          <span className="text-[9px] font-bold text-gray-400 uppercase">Upload</span>
-                        </div>
-                      )}
-                      {previews.profileImage && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <FiCamera className="text-white" size={20} />
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-3">Profile Photo *</p>
-                  </div>
+                {/* 2-Column Responsive Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Full Name (Letters Only) *</label>
-                    <div className="relative">
-                      <FiUser className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.name ? 'text-rose-500' : 'text-gray-400'}`} />
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1 text-left">Full Name *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 gap-2.5 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <FiUser className="text-[#94A3B8] shrink-0" size={16} />
                       <input 
                         type="text" 
                         name="name" 
                         value={formData.name} 
                         onChange={handleChange} 
-                        placeholder="Enter your full name (Characters only)" 
+                        placeholder="Enter full name" 
                         required 
-                        className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.name ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
                       />
                     </div>
-                    {fieldErrors.name && (
-                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                        <span>⚠️</span> {fieldErrors.name}
-                      </p>
-                    )}
+                    {fieldErrors.name && <p className="text-[11px] text-red-500 font-semibold mt-1 text-left">{fieldErrors.name}</p>}
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Email Address *</label>
-                    <div className="relative">
-                      <FiMail className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.email ? 'text-rose-500' : 'text-gray-400'}`} />
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1 text-left">Email Address *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 gap-2.5 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <FiMail className="text-[#94A3B8] shrink-0" size={16} />
                       <input 
                         type="email" 
                         name="email" 
@@ -702,289 +675,298 @@ const DeliveryRegister = () => {
                             checkUserExistsInBackend(formData.email, null);
                           }
                         }}
-                        placeholder="partner@email.com" 
+                        placeholder="you@email.com" 
                         required 
-                        className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.email ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
                       />
                     </div>
-                    {fieldErrors.email && (
-                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                        <span>⚠️</span> {fieldErrors.email}
-                      </p>
-                    )}
+                    {fieldErrors.email && <p className="text-[11px] text-red-500 font-semibold mt-1 text-left">{fieldErrors.email}</p>}
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Mobile Number *</label>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <div className="relative flex-1 group w-full">
-                        <FiPhone className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.phone ? 'text-rose-500' : 'text-gray-400 group-focus-within:text-indigo-500'} transition-colors`} size={16} />
-                        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base select-none pointer-events-none">+91</span>
-                        <input 
-                          type="tel" 
-                          name="phone" 
-                          value={formData.phone} 
-                          onChange={handleChange} 
-                          onBlur={() => {
-                            if (formData.phone && formData.phone.length === 10) {
-                              checkUserExistsInBackend(null, formData.phone);
-                            }
-                          }}
-                          placeholder="Mobile number" 
-                          required 
-                          maxLength={10} 
-                          className={`w-full pl-20 ${isPhoneVerified ? 'pr-12' : 'pr-4'} py-3.5 bg-gray-50 border ${fieldErrors.phone ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/30'} rounded-2xl focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} 
-                          disabled={isPhoneVerified}
-                        />
-                        {isPhoneVerified && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-0">
-                            <FiCheck className="text-emerald-500" size={18} />
-                            <FiCheck className="text-emerald-500 -ml-2.5" size={18} />
-                          </div>
-                        )}
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1 text-left">Mobile Number *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center p-1.5 px-2 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <div className="bg-white shadow-2xs rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] mr-2 select-none flex items-center justify-center shrink-0 border border-gray-100/80">
+                        +91
                       </div>
-                      {!isPhoneVerified && (
+                      <input 
+                        type="tel" 
+                        name="phone" 
+                        value={formData.phone} 
+                        onChange={handleChange} 
+                        onBlur={() => {
+                          if (formData.phone && formData.phone.length === 10) {
+                            checkUserExistsInBackend(null, formData.phone);
+                          }
+                        }}
+                        placeholder="Mobile number" 
+                        required 
+                        maxLength={10} 
+                        disabled={isPhoneVerified}
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8] disabled:opacity-60" 
+                      />
+                      {isPhoneVerified ? (
+                        <span className="text-emerald-600 font-bold text-xs shrink-0 pr-2">Verified ✓</span>
+                      ) : (
                         <button
                           type="button"
                           onClick={handleSendOtp}
                           disabled={isSendingOtp || !formData.phone || formData.phone.length !== 10}
-                          className="w-full sm:w-auto px-6 py-3.5 bg-[#4F46E5] text-white rounded-2xl text-[11px] font-black uppercase tracking-wider hover:bg-indigo-700 disabled:opacity-40 transition-all flex-shrink-0 shadow-lg shadow-indigo-200/50 active:scale-95"
+                          className="text-xs font-bold text-[#843D9B] hover:underline shrink-0 pr-1 cursor-pointer disabled:opacity-40"
                         >
-                          {isSendingOtp ? 'Processing...' : 'Verify Number'}
+                          {isSendingOtp ? 'Sending...' : 'Verify'}
                         </button>
                       )}
                     </div>
-                    {fieldErrors.phone && (
-                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                        <span>⚠️</span> {fieldErrors.phone}
-                      </p>
-                    )}
+                    {fieldErrors.phone && <p className="text-[11px] text-red-500 font-semibold mt-1 text-left">{fieldErrors.phone}</p>}
                   </div>
-                  
-                  {showOtpField && !isPhoneVerified && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0, y: -10 }}
-                      animate={{ height: 'auto', opacity: 1, y: 0 }}
-                      className="bg-indigo-50/40 p-4 sm:p-5 rounded-2xl border border-indigo-100/50 space-y-3.5 shadow-inner"
-                    >
-                      <label className="block text-[10px] font-black text-indigo-900 uppercase tracking-[0.15em] mb-1">Enter OTP Authorization Code</label>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="text"
-                          value={phoneOtp}
-                          onChange={(e) => setPhoneOtp(e.target.value)}
-                          placeholder="••••••"
-                          maxLength={6}
-                          className="w-full sm:flex-1 px-4 py-3 bg-white border border-indigo-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200/40 text-center font-black tracking-[0.4em] text-lg sm:text-xl text-indigo-950 placeholder:tracking-normal placeholder:font-medium placeholder:text-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleVerifyOtp}
-                          disabled={isVerifyingOtp || phoneOtp.length !== 6}
-                          className="w-full sm:w-auto px-8 py-3.5 bg-[#0f172a] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-40 transition-all active:scale-95 shadow-xl shadow-slate-200/50"
-                        >
-                          {isVerifyingOtp ? 'Processing...' : 'Confirm OTP'}
-                        </button>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1 text-left">Emergency Contact *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center p-1.5 px-2 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <div className="bg-white shadow-2xs rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] mr-2 select-none flex items-center justify-center shrink-0 border border-gray-100/80">
+                        +91
                       </div>
-                    </motion.div>
-                  )}
+                      <input 
+                        type="tel" 
+                        name="emergencyContact" 
+                        value={formData.emergencyContact} 
+                        onChange={handleChange} 
+                        placeholder="Emergency number" 
+                        required 
+                        maxLength={10} 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
+                      />
+                    </div>
+                    {fieldErrors.emergencyContact && <p className="text-[11px] text-red-500 font-semibold mt-1 text-left">{fieldErrors.emergencyContact}</p>}
+                  </div>
 
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Emergency Contact *</label>
-                    <div className="relative">
-                      <FiShield className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.emergencyContact ? 'text-rose-500' : 'text-gray-400'}`} />
-                      <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm sm:text-base select-none pointer-events-none">+91</span>
-                      <input type="tel" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="Emergency contact number" maxLength={10} className={`w-full pl-20 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.emergencyContact ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-bold text-sm sm:text-base transition-all`} />
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1 text-left">Aadhaar Number *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 gap-2.5 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <FiFileText className="text-[#94A3B8] shrink-0" size={16} />
+                      <input 
+                        type="text" 
+                        name="aadharNumber" 
+                        value={formData.aadharNumber} 
+                        onChange={handleChange} 
+                        placeholder="12-digit Aadhaar" 
+                        maxLength={14} 
+                        required 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
+                      />
                     </div>
-                    {fieldErrors.emergencyContact && (
-                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                        <span>⚠️</span> {fieldErrors.emergencyContact}
-                      </p>
-                    )}
+                    {fieldErrors.aadharNumber && <p className="text-[11px] text-red-500 font-semibold mt-1 text-left">{fieldErrors.aadharNumber}</p>}
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Aadhaar Number *</label>
-                    <div className="relative">
-                      <FiFileText className={`absolute left-4 top-1/2 -translate-y-1/2 ${fieldErrors.aadharNumber ? 'text-rose-500' : 'text-gray-400'}`} />
-                      <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="1234 5678 9012" maxLength={14} className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${fieldErrors.aadharNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'} rounded-xl focus:outline-none text-gray-900 font-bold tracking-widest transition-all`} />
-                    </div>
-                    {fieldErrors.aadharNumber && (
-                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                        <span>⚠️</span> {fieldErrors.aadharNumber}
-                      </p>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* STEP 2: Document Upload */}
-              {currentStep === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6"
-                >
-                  {formData.vehicleType !== 'cycle' ? (
-                    <div>
-                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2 mb-4">Driving License (Required) *</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <DocUploadCard name="drivingLicense" label="License Front" />
-                        <DocUploadCard name="drivingLicenseBack" label="License Back" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">🚲</div>
-                      <p className="text-xs font-bold text-emerald-900">
-                        Bicycle Selected: Driving License is not required for bicycles.
-                      </p>
-                    </div>
-                  )}
 
                   <div>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2 mb-4">Aadhaar Card (Required) *</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <DocUploadCard name="aadharCard" label="Aadhaar Front" />
-                      <DocUploadCard name="aadharCardBack" label="Aadhaar Back" />
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1 text-left">Password *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 gap-2.5 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <FiLock className="text-[#94A3B8] shrink-0" size={16} />
+                      <input 
+                        type={showPassword ? "text" : "password"}
+                        name="password" 
+                        value={formData.password} 
+                        onChange={handleChange} 
+                        placeholder="Create password" 
+                        required 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer"
+                      >
+                        {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                      </button>
                     </div>
+                    {fieldErrors.password && <p className="text-[11px] text-red-500 font-semibold mt-1 text-left">{fieldErrors.password}</p>}
                   </div>
-                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                    <p className="text-xs font-medium text-amber-800">
-                      <span className="font-black uppercase text-[9px] bg-amber-500 text-white px-2 py-0.5 rounded-full mr-2">Note</span>
-                      Upload clear photos. Blurry images will be rejected during verification.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+                </div>
 
-              {/* STEP 3: Vehicle & Bank Details */}
-              {currentStep === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-5"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Type *</label>
-                      <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:border-indigo-300 focus:outline-none text-gray-900 font-bold">
-                        <option value="bike">Bike (Motorcycle)</option>
-                        <option value="scooter">Scooter / Moped</option>
-                        <option value="car">Car / Van</option>
-                        <option value="cycle">Bicycle (Cycle)</option>
-                        <option value="other">Other Vehicle</option>
+                {/* OTP Verification Box */}
+                {showOtpField && !isPhoneVerified && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0, y: -5 }}
+                    animate={{ height: 'auto', opacity: 1, y: 0 }}
+                    className="bg-[#F4EFFF] p-4 rounded-[18px] border border-[#E9DFFE] space-y-2 text-left"
+                  >
+                    <label className="block text-xs font-bold text-[#843D9B]">Enter 6-Digit OTP</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={phoneOtp}
+                        onChange={(e) => setPhoneOtp(e.target.value)}
+                        placeholder="••••••"
+                        maxLength={6}
+                        className="flex-1 px-4 py-2.5 bg-white rounded-xl border border-gray-200 text-center font-bold tracking-widest text-sm text-[#0F172A] focus:outline-none focus:border-[#843D9B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={isVerifyingOtp || !phoneOtp || phoneOtp.length !== 6}
+                        className="px-5 py-2.5 bg-[#843D9B] text-white rounded-xl text-xs font-bold hover:bg-[#713286] disabled:opacity-40 transition-all shrink-0 cursor-pointer"
+                      >
+                        {isVerifyingOtp ? 'Verifying...' : 'Submit OTP'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
+            {/* STEP 2: Documents */}
+            {currentStep === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4 w-full text-left"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-2">Driving License (Required) *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <DocUploadCard name="licenseFront" label="License Front" />
+                    <DocUploadCard name="licenseBack" label="License Back" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-2">Aadhaar Card (Required) *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <DocUploadCard name="aadharFront" label="Aadhaar Front" />
+                    <DocUploadCard name="aadharBack" label="Aadhaar Back" />
+                  </div>
+                </div>
+
+                <div className="bg-[#FFF9E6] border border-[#FFEBAA] rounded-[16px] p-3 text-xs text-[#926000]">
+                  <span className="font-bold">NOTE:</span> Upload clear photos. Blurry images will be rejected during verification.
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 3: Vehicle & Bank */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4 w-full text-left"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1">Vehicle Type *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <select
+                        name="vehicleType"
+                        value={formData.vehicleType}
+                        onChange={handleChange}
+                        required
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0"
+                      >
+                        <option value="Bike (Motorcycle)">Bike (Motorcycle)</option>
+                        <option value="Scooter">Scooter</option>
+                        <option value="Electric Scooter">Electric Scooter</option>
+                        <option value="Bicycle">Bicycle</option>
                       </select>
                     </div>
-
-                    {formData.vehicleType === 'cycle' ? (
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-base">🚲</div>
-                        <p className="text-xs font-bold text-emerald-900 leading-tight">
-                          Vehicle Number not required for Cycle.
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Vehicle Registration Number *</label>
-                        <input 
-                          type="text" 
-                          name="vehicleNumber" 
-                          value={formData.vehicleNumber} 
-                          onChange={handleChange} 
-                          placeholder="e.g. MH 12 AB 1234" 
-                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.vehicleNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-bold uppercase transition-all`} 
-                        />
-                        {fieldErrors.vehicleNumber && (
-                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                            <span>⚠️</span> {fieldErrors.vehicleNumber}
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Residential Address *</label>
-                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Your complete residential address" className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.address ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} />
-                    {fieldErrors.address && (
-                      <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                        <span>⚠️</span> {fieldErrors.address}
-                      </p>
-                    )}
+                    <label className="block text-xs font-semibold text-[#0F172A] mb-1">Vehicle Registration Number *</label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <input 
+                        type="text" 
+                        name="vehicleNumber" 
+                        value={formData.vehicleNumber} 
+                        onChange={handleChange} 
+                        placeholder="e.g. MH 12 AB 1234" 
+                        required 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium uppercase tracking-wider bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
+                      />
+                    </div>
+                    {fieldErrors.vehicleNumber && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.vehicleNumber}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#0F172A] mb-1">Residential Address *</label>
+                  <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                    <input 
+                      type="text" 
+                      name="address" 
+                      value={formData.address} 
+                      onChange={handleChange} 
+                      placeholder="Complete residential address" 
+                      required 
+                      className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
+                    />
+                  </div>
+                  {fieldErrors.address && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.address}</p>}
+                </div>
+
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FiCreditCard className="text-[#843D9B]" size={16} />
+                    <span className="text-xs font-bold text-[#0F172A]">Bank Account Details (For Payouts)</span>
                   </div>
 
-                  {/* Bank Details Section */}
-                  <div className="pt-4 border-t border-gray-100 space-y-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <FiCreditCard className="text-indigo-600" size={18} />
-                      <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.15em]">Bank Account Details (For Payouts)</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Account Holder Name (Letters Only) *</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0F172A] mb-1">Account Holder Name *</label>
+                      <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                         <input 
                           type="text" 
-                          name="accountName" 
-                          value={formData.accountName} 
+                          name="accountHolderName" 
+                          value={formData.accountHolderName} 
                           onChange={handleChange} 
                           placeholder="Name as per bank account" 
                           required 
-                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.accountName ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                          className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
                         />
-                        {fieldErrors.accountName && (
-                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                            <span>⚠️</span> {fieldErrors.accountName}
-                          </p>
-                        )}
                       </div>
+                      {fieldErrors.accountHolderName && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.accountHolderName}</p>}
+                    </div>
 
-                      <div>
-                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Account Number (Numbers Only) *</label>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0F172A] mb-1">Account Number *</label>
+                      <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                         <input 
                           type="text" 
                           name="accountNumber" 
                           value={formData.accountNumber} 
                           onChange={handleChange} 
                           placeholder="9 - 18 digit account number" 
-                          maxLength={18}
                           required 
-                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.accountNumber ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-bold tracking-wider transition-all`} 
+                          className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
                         />
-                        {fieldErrors.accountNumber && (
-                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                            <span>⚠️</span> {fieldErrors.accountNumber}
-                          </p>
-                        )}
                       </div>
+                      {fieldErrors.accountNumber && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.accountNumber}</p>}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Bank Name *</label>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0F172A] mb-1">Bank Name *</label>
+                      <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                         <input 
                           type="text" 
                           name="bankName" 
                           value={formData.bankName} 
                           onChange={handleChange} 
-                          placeholder="e.g. State Bank of India, HDFC" 
+                          placeholder="e.g. SBI, HDFC, ICICI" 
                           required 
-                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.bankName ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-medium transition-all`} 
+                          className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
                         />
-                        {fieldErrors.bankName && (
-                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                            <span>⚠️</span> {fieldErrors.bankName}
-                          </p>
-                        )}
                       </div>
+                      {fieldErrors.bankName && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.bankName}</p>}
+                    </div>
 
-                      <div>
-                        <label className="block text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">IFSC Code *</label>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#0F172A] mb-1">IFSC Code *</label>
+                      <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                         <input 
                           type="text" 
                           name="ifscCode" 
@@ -993,78 +975,67 @@ const DeliveryRegister = () => {
                           placeholder="e.g. SBIN0001234" 
                           maxLength={11}
                           required 
-                          className={`w-full px-4 py-3.5 bg-gray-50 border ${fieldErrors.ifscCode ? 'border-rose-400 focus:border-rose-500 ring-2 ring-rose-100' : 'border-gray-100 focus:border-indigo-300'} rounded-xl focus:outline-none text-gray-900 font-bold uppercase tracking-widest transition-all`} 
+                          className="w-full text-xs sm:text-sm text-[#0F172A] font-medium uppercase tracking-wider bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
                         />
-                        {fieldErrors.ifscCode && (
-                          <p className="text-xs font-bold text-rose-500 mt-1.5 px-1 flex items-center gap-1.5">
-                            <span>⚠️</span> {fieldErrors.ifscCode}
-                          </p>
-                        )}
                       </div>
+                      {fieldErrors.ifscCode && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.ifscCode}</p>}
                     </div>
                   </div>
+                </div>
 
-                  <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4">
-                    <p className="text-xs font-medium text-indigo-900">
-                      <span className="font-black uppercase text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded-full mr-2">Info</span>
-                      Partner approval takes 24-48 hours. You will be notified via SMS & Email.
-                    </p>
-                  </div>
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="w-4 h-4 rounded-[5px] accent-[#843D9B] text-white cursor-pointer"
+                    />
+                    <span className="text-xs text-[#64748B] font-medium">
+                      I agree to the <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'terms' })} className="text-[#843D9B] hover:underline font-semibold cursor-pointer">Terms & Conditions</button> and <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })} className="text-[#843D9B] hover:underline font-semibold cursor-pointer">Privacy Policy</button>
+                    </span>
+                  </label>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                  <div className="pt-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={agreedToTerms}
-                        onChange={(e) => setAgreedToTerms(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#0f172a] focus:ring-[#0f172a]"
-                      />
-                      <span className="text-xs text-gray-500 font-medium">
-                        I agree to the <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'terms' })} className="text-[#0f172a] hover:underline mx-1 font-bold cursor-pointer">Terms & Conditions</button> and <button type="button" onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })} className="text-[#0f172a] hover:underline mx-1 font-bold cursor-pointer">Privacy Policy</button>
-                      </span>
-                    </label>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between mt-6 gap-3 w-full">
+            {currentStep > 1 ? (
+              <button type="button" onClick={prevStep} className="flex items-center gap-1 px-5 py-3.5 bg-[#F6F6F8] text-[#0F172A] rounded-[22px] font-bold text-xs hover:bg-gray-200 active:scale-95 transition-all cursor-pointer">
+                <FiChevronLeft size={16} /> BACK
+              </button>
+            ) : (
+              <div />
+            )}
 
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between mt-8 gap-3 sm:gap-4">
-              {currentStep > 1 ? (
-                <button type="button" onClick={prevStep} className="flex items-center gap-2 px-4 sm:px-6 py-3.5 bg-gray-100 text-gray-700 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm hover:bg-gray-200 active:scale-95 transition-all">
-                  <FiChevronLeft size={18} /> Back
-                </button>
-              ) : (
-                <div />
-              )}
+            {currentStep < 3 ? (
+              <button type="button" onClick={nextStep} className="flex items-center gap-2 px-8 py-3.5 bg-[#843D9B] hover:bg-[#713286] text-white rounded-[22px] font-bold text-sm transition-all shadow-md shadow-[#843D9B]/20 active:scale-95 cursor-pointer">
+                NEXT <FiChevronRight size={16} />
+              </button>
+            ) : (
+              <button type="submit" disabled={isLoading || !agreedToTerms} className={`flex items-center gap-2 px-8 py-3.5 bg-[#843D9B] hover:bg-[#713286] text-white rounded-[22px] font-bold text-sm transition-all shadow-md shadow-[#843D9B]/20 ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'active:scale-95 cursor-pointer'}`}>
+                {isLoading ? 'SUBMITTING...' : 'SUBMIT ENROLLMENT'}
+              </button>
+            )}
+          </div>
 
-              {currentStep < 3 ? (
-                <button type="button" onClick={nextStep} className="flex items-center gap-2 px-6 sm:px-8 py-3.5 bg-[#0f172a] text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm hover:bg-slate-800 active:scale-95 transition-all shadow-xl">
-                  Next <FiChevronRight size={18} />
-                </button>
-              ) : (
-                <button type="submit" disabled={isLoading || !agreedToTerms} className={`flex items-center gap-2 px-6 sm:px-8 py-3.5 bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-xl ${isLoading || !agreedToTerms ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-700 active:scale-95'}`}>
-                  {isLoading ? 'Submitting...' : 'Submit Enrollment'}
-                </button>
-              )}
-            </div>
-
-            <div className="text-center mt-6">
-              <p className="text-sm font-medium text-gray-500">
-                Already have an account?{' '}
-                <Link to="/delivery/login" className="text-[#0f172a] hover:underline font-black">Login</Link>
-              </p>
-            </div>
-          </form>
-        </motion.div>
-      </div>
+          <div className="text-center mt-6 w-full">
+            <p className="text-xs font-medium text-[#64748B]">
+              Already have an account?{' '}
+              <Link to="/delivery/login" onClick={() => localStorage.removeItem(DRAFT_KEY)} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">Login</Link>
+            </p>
+          </div>
+        </form>
+      </motion.div>
 
       <DeliveryLegalModal 
         isOpen={legalModal.isOpen} 
         type={legalModal.type} 
         onClose={() => setLegalModal({ isOpen: false, type: 'terms' })} 
       />
-    </div>
+    </>
   );
 };
 

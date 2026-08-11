@@ -20,6 +20,7 @@ import {
     Scissors
 } from 'lucide-react';
 import api from '../../../utils/api';
+import useBrandingStore from '../../../store/brandingStore';
 
 const statusConfig = {
     pending: { color: 'text-amber-500', bg: 'bg-amber-50', icon: <Clock size={14} />, label: 'Lead Received' },
@@ -32,6 +33,7 @@ const statusConfig = {
 };
 
 const MyBulkOrders = () => {
+    const appName = useBrandingStore(state => state.appName);
     const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -316,7 +318,7 @@ const MyBulkOrders = () => {
                                             <p className="text-[9px] text-gray-400 font-medium leading-tight mb-4">
                                                 {selectedOrder.measurementMethod === 'standard-sizes' ? 'We will stitch based on the size distribution provided below.' :
                                                     selectedOrder.measurementMethod === 'custom-sheet' ? 'Customer will provide an Excel/CSV sheet with detailed body measurements.' :
-                                                        'Silaiwala will send a professional tailor to the customer location for measurements.'}
+                                                        `${appName} will send a professional tailor to the customer location for measurements.`}
                                             </p>
 
                                             {selectedOrder.measurementMethod === 'standard-sizes' && selectedOrder.sizeDistribution && (

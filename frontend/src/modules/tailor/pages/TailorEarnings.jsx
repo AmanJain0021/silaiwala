@@ -9,12 +9,14 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useTailorAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import useBrandingStore from '../../../store/brandingStore';
 
 // ── Figma-matched Earnings Page ──────────────────────────────────────────────
 const TailorEarnings = () => {
     const navigate = useNavigate();
     const { user } = useTailorAuth();
     const { unreadCount } = useNotifications();
+    const { appName, logos } = useBrandingStore();
 
     const [activeTab, setActiveTab] = useState('Daily');
     const [isLoading, setIsLoading] = useState(true);
@@ -98,7 +100,7 @@ const TailorEarnings = () => {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
                 amount: rzpOrderRes.data.data.amount,
                 currency: "INR",
-                name: "Silaiwala",
+                name: appName,
                 description: "COD Cash Deposit",
                 order_id: rzpOrderRes.data.data.id,
                 handler: async function (response) {
@@ -225,7 +227,7 @@ const TailorEarnings = () => {
             <div className="md:hidden bg-white px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0">
-                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+                        <img src={logos.tailor} alt={appName} className="w-full h-full object-cover" />
                     </button>
                     <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight mb-0.5">SEWZELLA</h1>
                 </div>

@@ -12,6 +12,7 @@ import MenuOption from '../components/profile/MenuOption';
 
 import useUserStore from '../../../store/userStore';
 import api from '../../../utils/api';
+import useBrandingStore from '../../../store/brandingStore';
 
 const LegalLinks = () => {
     const [docs, setDocs] = useState([]);
@@ -62,6 +63,7 @@ const ProfilePage = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const appName = useBrandingStore(state => state.appName);
 
     useEffect(() => {
         fetchProfile();
@@ -292,7 +294,7 @@ const ProfilePage = () => {
                 </div>
 
                 <p className="text-center text-[10px] font-bold text-gray-400 mt-10 pb-6 uppercase tracking-widest opacity-50">
-                    SewZella • Version 1.0.0 (Beta)
+                    {appName} • Version 1.0.0 (Beta)
                 </p>
 
             {/* Delete Account Confirmation Modal */}

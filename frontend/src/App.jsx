@@ -5,6 +5,7 @@ import useSocketStore from './store/socketStore';
 import { Toaster } from 'react-hot-toast';
 import SplashScreen from './components/Common/SplashScreen';
 import { usePushNotifications } from './hooks/usePushNotifications';
+import useBrandingStore from './store/brandingStore';
 // import LocationSplashScreen from './components/Common/LocationSplashScreen';
 
 function PushNotificationManager() {
@@ -94,6 +95,10 @@ function App() {
   const { socket, connect, disconnect } = useSocketStore();
   const [splashConfig, setSplashConfig] = useState({ isSplash: false, role: 'customer' });
   const lastConnectedUserRef = React.useRef(null);
+
+  useEffect(() => {
+    useBrandingStore.getState().fetchBranding();
+  }, []);
 
   useEffect(() => {
     // Check if user is logged in

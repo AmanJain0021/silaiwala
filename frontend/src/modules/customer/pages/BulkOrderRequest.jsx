@@ -17,6 +17,7 @@ import {
     Clock
 } from 'lucide-react';
 import api from '../../../utils/api';
+import useBrandingStore from '../../../store/brandingStore';
 
 const steps = [
     { id: 1, title: 'Inquiry', icon: <Building2 /> },
@@ -25,6 +26,7 @@ const steps = [
 ];
 
 const BulkOrderRequest = () => {
+    const appName = useBrandingStore(state => state.appName);
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -321,7 +323,7 @@ const BulkOrderRequest = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <button onClick={() => setFormData({ ...formData, fabricPreference: 'platform-provided' })} className={`p-3 rounded-2xl border text-left transition-all ${formData.fabricPreference === 'platform-provided' ? 'border-[#843D9B] bg-[#843D9B]/5 ring-1 ring-[#843D9B]/20' : 'bg-white border-gray-100'}`}>
-                        <p className={`text-[10px] font-black uppercase tracking-tight ${formData.fabricPreference === 'platform-provided' ? 'text-[#843D9B]' : 'text-gray-900'}`}>Silaiwala Premium</p>
+                        <p className={`text-[10px] font-black uppercase tracking-tight ${formData.fabricPreference === 'platform-provided' ? 'text-[#843D9B]' : 'text-gray-900'}`}>{appName} Premium</p>
                         <p className="text-[8px] text-gray-400 font-medium leading-tight mt-0.5">We source high quality material</p>
                     </button>
                     <button onClick={() => setFormData({ ...formData, fabricPreference: 'customer-provided' })} className={`p-3 rounded-2xl border text-left transition-all ${formData.fabricPreference === 'customer-provided' ? 'border-[#843D9B] bg-[#843D9B]/5 ring-1 ring-[#843D9B]/20' : 'bg-white border-gray-100'}`}>

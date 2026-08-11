@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import useBrandingStore from '../store/brandingStore';
 
 // 🩷🟠🔵🟢 Gradient overlay colors — one per image
 const overlayGradients = [
-    "linear-gradient(135deg, #FFB6C1 0%, #FF69B4 50%, #FFD1DC 100%)",   // 🩷 Pink  (Image 1)
-    "linear-gradient(135deg, #FFDAB9 0%, #FFB347 50%, #FFE0B2 100%)",   // 🟠 Orange (Image 2)
-    "linear-gradient(135deg, #B5D8FF 0%, #6FA8DC 50%, #D6EBFF 100%)",   // 🔵 Blue  (Image 3)
-    "linear-gradient(135deg, #B8F5D8 0%, #7BDCB5 50%, #D4FFEA 100%)"    // 🟢 Green (Image 4)
+    "linear-gradient(135deg, #FFB6C1 0%, #FF69B4 50%, #FFD1DC 100%)",   // 🩷 Pink
+    "linear-gradient(135deg, #FFDAB9 0%, #FFB347 50%, #FFE0B2 100%)",   // 🟠 Orange
+    "linear-gradient(135deg, #B5D8FF 0%, #6FA8DC 50%, #D6EBFF 100%)",   // 🔵 Blue
+    "linear-gradient(135deg, #B8F5D8 0%, #7BDCB5 50%, #D4FFEA 100%)"    // 🟢 Green
 ];
 
-// Page background gradients (lighter tint)
+// Page background gradients
 const bgGradients = [
     "linear-gradient(135deg, #FFF0F5 0%, #FFE4EC 40%, #FFF5F7 100%)",
     "linear-gradient(135deg, #FFF5E6 0%, #FFECD2 40%, #FFF9F0 100%)",
@@ -26,6 +26,7 @@ const AuthLayout = () => {
     const isDelivery = location.pathname.startsWith('/delivery');
     const isPartner = location.pathname.startsWith('/partner');
     const isLogin = location.pathname.endsWith('/login');
+    const { appName, logos } = useBrandingStore();
 
     const isCustomerAuth = !isDelivery && !isPartner;
 
@@ -60,7 +61,7 @@ const AuthLayout = () => {
             "/A Comprehensive Guide to Digital Sewing Patterns.jpeg",
             "/Hacoupian brand identity Photoshooting.jpeg"
         ],
-        brand: "SewZella",
+        brand: appName,
         headings: ["STITCH PERFECT", "THREADS OF ART", "MADE FOR YOU", "SILAI MAGIC"],
         subheading: "Stitching Memories Together",
         loginLink: "/user/login",
@@ -81,7 +82,7 @@ const AuthLayout = () => {
     }, []);
 
     useEffect(() => {
-        if (isCustomerAuth) return; // Skip carousel for customer auth
+        if (isCustomerAuth) return;
 
         const timer = setTimeout(() => {
             if (phase === 0) {
@@ -104,87 +105,17 @@ const AuthLayout = () => {
         return () => clearTimeout(timer);
     }, [phase, config.images?.length, isCustomerAuth]);
 
-    // NEW CUSTOMER SPLIT LAYOUT
+    // NEW CUSTOMER 1:1 FULL-PAGE CLEAN LAYOUT
     if (isCustomerAuth) {
         return (
-            <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row font-sans selection:bg-[#843D9B]/20 overflow-y-auto md:overflow-hidden overflow-x-hidden">
-                {/* Left Side: Auth Content */}
-                <div className="w-full md:w-3/5 lg:w-[55%] flex flex-col flex-1 min-h-[500px] md:min-h-0 md:overflow-y-auto">
-                    <div className="p-4 md:p-10 flex flex-col h-full max-w-[550px] mx-auto w-full">
-                        {/* Header with Logo (Hidden on mobile as it's in the banner) */}
-                        <div className="hidden md:flex justify-between items-center mb-16">
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.6 }}
-                            >
-                                <img src="/sewzella_logo-removebg-preview.png" alt="SewZella" className="h-10 md:h-12 w-auto object-contain" />
-                            </motion.div>
-                        </div>
-
-                        {/* Main Form Content */}
-                        <div className="flex-1 flex flex-col justify-center">
-                            <Outlet />
-                        </div>
-
-                        {/* Footer Section */}
-                        <div className="mt-auto pt-4 md:pt-10 border-t border-slate-50">
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest text-center">
-                                    Trusted by 10,000+ <br/>
-                                    <span className="text-[#843D9B]">Certified Tailors</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Side: Visual Content */}
-                <div className="w-full h-[250px] sm:h-[300px] md:h-auto md:w-2/5 lg:w-[45%] relative overflow-hidden bg-[#F8F9FD] max-w-[100vw] shrink-0">
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="absolute inset-0"
-                    >
-                        <img 
-                            src="/userlogin.png" 
-                            alt="Expert Tailoring" 
-                            className="w-full h-full object-cover object-top md:object-center scale-[1.15] md:scale-100"
-                        />
-                        {/* Gradient Overlay matching reference */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent md:from-white md:via-white/90 md:to-transparent w-[60%] sm:w-[70%] md:w-[70%]" />
-                    </motion.div>
-
-                    {/* Overlay Content matching reference */}
-                    <div className="absolute inset-0 flex flex-col items-start px-5 pt-6 md:px-6 md:pt-10 z-10">
-                        {/* Logo and small title */}
-                        <div className="flex flex-col items-center mb-4 md:mb-8 -ml-2">
-                            <img src="/sewzella_logo-removebg-preview.png" alt="SewZella" className="h-12 md:h-20 w-auto drop-shadow-sm" />
-                            <div className="flex items-center gap-2 -mt-2">
-                                 <div className="h-[1px] w-6 md:w-10 bg-[#2D2F6F] opacity-50" />
-                                 <span className="text-[8px] md:text-[11px] font-black text-[#2D2F6F] tracking-[0.25em] uppercase">Tailored for you</span>
-                                 <div className="h-[1px] w-6 md:w-10 bg-[#2D2F6F] opacity-50" />
-                            </div>
-                        </div>
-
-                        {/* Headings */}
-                        <div className="hidden md:block max-w-[180px] sm:max-w-[220px] md:max-w-[280px] space-y-2 md:space-y-4">
-                            <h1 className="text-lg md:text-3xl font-black text-[#1e293b] leading-[1.1] tracking-tight">
-                                Crafting style.<br />
-                                <span className="text-[#2D2F6F]">Creating smiles.</span>
-                            </h1>
-                            <p className="text-[10px] md:text-[13px] font-bold text-gray-700 leading-snug">
-                                Book your tailoring services, track orders, and experience perfect fits with Sewzella.
-                            </p>
-                        </div>
-                    </div>
+            <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center p-4 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-[#843D9B]/20">
+                <div className="w-full max-w-[400px] mx-auto flex flex-col items-center py-4">
+                    <Outlet />
                 </div>
             </div>
         );
     }
 
-    // LEGACY CARD LAYOUT (For Delivery/Partner)
     return (
         <div
             className="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 font-sans selection:bg-[#843D9B]/20 transition-all duration-[1500ms] ease-in-out"
@@ -218,7 +149,7 @@ const AuthLayout = () => {
 
                     <div className="absolute top-5 left-5 sm:top-6 sm:left-6 z-20 flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/40">
-                            <img src="/sewzella_logo.jpeg" alt="" className="w-4 h-4 object-contain invert grayscale brightness-200" />
+                            <img src={isDelivery ? logos.delivery : isPartner ? logos.tailor : logos.customer} alt="" className="w-4 h-4 object-contain invert grayscale brightness-200" />
                         </div>
                         <span className="text-white font-black text-lg tracking-tighter drop-shadow-lg">{config.brand}</span>
                     </div>
@@ -265,7 +196,7 @@ const AuthLayout = () => {
                 <div className="absolute top-[155px] sm:top-[180px] left-1/2 -translate-x-1/2 z-40">
                     <div className="p-1 bg-[#FDE5D2] rounded-full shadow-lg">
                         <div className="w-[65px] h-[65px] sm:w-[75px] sm:h-[75px] bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
-                            <img src="/sewzella_logo.jpeg" alt="SewZella" className="w-full h-full object-cover" />
+                            <img src={isDelivery ? logos.delivery : isPartner ? logos.tailor : logos.customer} alt={appName} className="w-full h-full object-cover" />
                         </div>
                     </div>
                 </div>

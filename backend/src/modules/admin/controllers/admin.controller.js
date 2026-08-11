@@ -1781,7 +1781,19 @@ exports.updateSettings = async (req, res) => {
     const updateData = req.body;
     
     // Deep merge or specific updates
-    if (updateData.general) settings.general = updateData.general;
+    if (updateData.general) {
+      if (updateData.general.appLogos) {
+        updateData.general.appLogos = {
+          ...(settings.general.appLogos?.toObject?.() ?? settings.general.appLogos ?? {}),
+          ...updateData.general.appLogos,
+        };
+      }
+
+      settings.general = {
+        ...(settings.general.toObject?.() ?? settings.general),
+        ...updateData.general,
+      };
+    }
     if (updateData.maintenanceMode) settings.maintenanceMode = updateData.maintenanceMode;
     if (updateData.notifications) settings.notifications = updateData.notifications;
     if (updateData.paymentGateways) settings.paymentGateways = updateData.paymentGateways;

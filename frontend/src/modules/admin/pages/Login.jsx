@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
+import useBrandingStore from '../../../store/brandingStore';
 const AdminLogin = () => {
     const navigate = useNavigate();
     const { sendOTP, otpLogin, isLoading } = useAuthStore();
@@ -10,6 +11,7 @@ const AdminLogin = () => {
     const [step, setStep] = useState('identifier'); // 'identifier' | 'otp'
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
+    const { appName, logos } = useBrandingStore();
 
     const otpInputs = useRef([]);
 
@@ -108,7 +110,7 @@ const AdminLogin = () => {
 
                     {/* Brand Identity */}
                     <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-2xl border border-gray-50 mb-8 transform transition-all hover:scale-105 active:rotate-6 overflow-hidden">
-                        <img src="/sewzella_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+                        <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
                     </div>
 
                     <div className="text-center space-y-1 mb-10">
@@ -133,7 +135,7 @@ const AdminLogin = () => {
                                         </span>
                                         <input
                                             type="email"
-                                            placeholder="admin@sewzella.com"
+                                            placeholder="admin@example.com"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value.toLowerCase())}
                                             className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold text-gray-900 outline-none focus:border-[#843D9B] focus:bg-white transition-all shadow-inner"

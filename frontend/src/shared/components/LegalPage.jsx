@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
+import useBrandingStore from '../../store/brandingStore';
 
-const getDefaultLegalDoc = (type = '', category = '') => {
+const getDefaultLegalDoc = (type = '', category = '', appName = 'SewZella') => {
     const isPrivacy = type.toLowerCase().includes('privacy');
     const catName = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Partner';
 
@@ -13,7 +14,7 @@ const getDefaultLegalDoc = (type = '', category = '') => {
             content: `
                 <h1>${catName} Privacy Policy</h1>
                 <p><strong>Effective Date:</strong> January 1, 2026</p>
-                <p>SewZella ("we", "our", or "us") values your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you enroll and serve as a ${catName}.</p>
+                <p>${appName} ("we", "our", or "us") values your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you enroll and serve as a ${catName}.</p>
                 
                 <h2>1. Information We Collect</h2>
                 <p>We collect personal and operational information necessary to facilitate your account setup and order fulfillment:</p>
@@ -47,13 +48,13 @@ const getDefaultLegalDoc = (type = '', category = '') => {
         content: `
             <h1>${catName} Terms & Conditions</h1>
             <p><strong>Effective Date:</strong> January 1, 2026</p>
-            <p>Welcome to SewZella. By registering and operating as a ${catName}, you agree to comply with and be bound by the following Terms and Conditions.</p>
+            <p>Welcome to ${appName}. By registering and operating as a ${catName}, you agree to comply with and be bound by the following Terms and Conditions.</p>
 
             <h2>1. Partner Eligibility & Account Setup</h2>
             <p>To register as a ${catName}, you must be at least 18 years of age, possess a valid government-issued ID, maintain active mobile connectivity, and submit true and accurate registration documents.</p>
 
             <h2>2. Service Standards & Responsibilities</h2>
-            <p>As a SewZella ${catName}, you agree to:</p>
+            <p>As a ${appName} ${catName}, you agree to:</p>
             <ul>
                 <li>Promptly accept and handle assigned orders with professionalism and care.</li>
                 <li>Maintain accurate availability status on the app.</li>
@@ -61,13 +62,13 @@ const getDefaultLegalDoc = (type = '', category = '') => {
             </ul>
 
             <h2>3. Payouts & Compensation</h2>
-            <p>Earnings and incentives are calculated per completed order according to SewZella's active rate structure. Payouts will be transferred to your registered bank account or wallet per agreed payout schedules.</p>
+            <p>Earnings and incentives are calculated per completed order according to ${appName}'s active rate structure. Payouts will be transferred to your registered bank account or wallet per agreed payout schedules.</p>
 
             <h2>4. Code of Conduct</h2>
             <p>Misconduct, fraudulent activity, unauthorized account sharing, or violation of safety rules will result in immediate account suspension or termination.</p>
 
             <h2>5. Updates to Terms</h2>
-            <p>SewZella reserves the right to modify these Terms & Conditions at any time. Continued use of the platform after updates constitutes acceptance of the revised terms.</p>
+            <p>${appName} reserves the right to modify these Terms & Conditions at any time. Continued use of the platform after updates constitutes acceptance of the revised terms.</p>
 
             <h2>6. Contact & Support</h2>
             <p>For questions or assistance regarding these terms, reach out to <strong>support@silaiwala.com</strong>.</p>
@@ -79,6 +80,7 @@ const LegalPage = ({ type: propType, category, fallbackTitle = "Legal Document" 
     const { type: paramType } = useParams();
     const type = propType || paramType || 'terms-and-conditions';
     const navigate = useNavigate();
+    const appName = useBrandingStore(state => state.appName);
     const [content, setContent] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -103,7 +105,7 @@ const LegalPage = ({ type: propType, category, fallbackTitle = "Legal Document" 
                 if (match) {
                     setContent(match);
                 } else {
-                    setContent(getDefaultLegalDoc(type, category));
+                    setContent(getDefaultLegalDoc(type, category, appName));
                 }
                 setLoading(false);
             } catch (error) {
@@ -111,12 +113,12 @@ const LegalPage = ({ type: propType, category, fallbackTitle = "Legal Document" 
                     return;
                 }
                 console.warn("Legal content fetch fallback:", error);
-                setContent(getDefaultLegalDoc(type, category));
+                setContent(getDefaultLegalDoc(type, category, appName));
                 setLoading(false);
             }
         };
         fetchContent();
-    }, [type, category]);
+    }, [type, category, appName]);
 
     return (
         <div className="min-h-screen bg-white font-sans pb-20 overflow-x-hidden w-full">

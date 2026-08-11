@@ -13,13 +13,14 @@ import {
 } from 'lucide-react';
 import { useTailorAuth } from '../context/AuthContext';
 import api from '../../../utils/api';
-const silaiwalaLogo = '/logo.png';
+import useBrandingStore from '../../../store/brandingStore';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user, status } = useTailorAuth();
     const [dashboardData, setDashboardData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { appName, logos } = useBrandingStore();
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -111,7 +112,7 @@ const Dashboard = () => {
                     {/* Logo + Name */}
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-white border-2 border-[#843D9B]/10 rounded-2xl flex items-center justify-center p-1.5 overflow-hidden shadow-sm">
-                            <img src={silaiwalaLogo} alt="Logo" className="w-full h-full object-contain" />
+                            <img src={logos.tailor} alt={appName} className="w-full h-full object-contain" />
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">Partner Panel</p>

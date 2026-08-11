@@ -28,9 +28,11 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../../utils/api';
 import { toast } from 'react-hot-toast';
 import wallet3DImage from '../../../../assets/images/3d_wallet.png';
+import useBrandingStore from '../../../../store/brandingStore';
 
 const DeliveryWallet = () => {
     const navigate = useNavigate();
+    const appName = useBrandingStore(state => state.appName);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [walletData, setWalletData] = useState({
@@ -198,7 +200,7 @@ const DeliveryWallet = () => {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
                 amount: rzpOrderRes.data.data.amount,
                 currency: "INR",
-                name: "Silaiwala",
+                name: appName,
                 description: "COD Cash Deposit",
                 order_id: rzpOrderRes.data.data.id,
                 handler: async function (response) {

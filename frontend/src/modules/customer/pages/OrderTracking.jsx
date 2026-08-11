@@ -15,6 +15,7 @@ import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 import ExchangeRequestModal from '../components/orders/ExchangeRequestModal';
+import useBrandingStore from '../../../store/brandingStore';
 
 const OrderTracking = () => {
     const { id } = useParams();
@@ -33,6 +34,7 @@ const OrderTracking = () => {
     const [measurementOtp, setMeasurementOtp] = useState(null);
     const [settings, setSettings] = useState(null);
     const [unreadChatCount, setUnreadChatCount] = useState(0);
+    const appName = useBrandingStore(state => state.appName);
     const [showOrderDetailsSection, setShowOrderDetailsSection] = useState(true);
 
     const [socketInstance, setSocketInstance] = useState(null);
@@ -476,7 +478,7 @@ const OrderTracking = () => {
         const history = isBulk ? (order.history || []) : (order.trackingHistory || []);
         const latestHistory = history[history.length - 1];
         if (latestHistory?.message) return latestHistory.message;
-        if (order.status === 'delivered') return "Your order has been delivered successfully. Thank you for trusting Sewzella!";
+        if (order.status === 'delivered') return `Your order has been delivered successfully. Thank you for trusting ${appName}!`;
         if (isBulk && order.status === 'accepted') return "Security deposit received. Awaiting production start.";
         return "Your order is progressing smoothly through our production line.";
     };

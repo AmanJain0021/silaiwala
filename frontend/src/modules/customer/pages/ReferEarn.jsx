@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import useUserStore from '../../../store/userStore';
+import useBrandingStore from '../../../store/brandingStore';
 
 const ReferEarn = () => {
     const navigate = useNavigate();
     const { fetchReferralStats, referralStats } = useUserStore();
+    const appName = useBrandingStore(state => state.appName);
 
     React.useEffect(() => {
         fetchReferralStats();
@@ -66,7 +68,7 @@ const ReferEarn = () => {
                         onClick={() => {
                             if (navigator.share) {
                                 navigator.share({
-                                    title: 'Join Silaiwala',
+                                    title: `Join ${appName}`,
                                     text: `Use my referral code ${referralCode} — get ${refereePts} loyalty points after your first advance payment!`,
                                     url: window.location.origin,
                                 }).catch(console.error);

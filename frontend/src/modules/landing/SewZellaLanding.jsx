@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import LandingNavbar from './components/LandingNavbar';
 import LandingFooter from './components/LandingFooter';
+import useBrandingStore from '../../store/brandingStore';
 
 /* ─── Animation Variants ─── */
 const fadeUp = {
@@ -175,12 +176,6 @@ const CATEGORIES = [
   { title: "Bulk Stitching", desc: "For boutiques, schools, companies & more", img: '/landing/category_bulk_stitching.png' },
 ];
 
-const TESTIMONIALS = [
-  { text: "Sewzella made custom stitching effortless. The fitting was absolutely perfect and the delivery was on time.", name: "Sara Madhav", avatar: null },
-  { text: "Real-time updates and doorstep delivery were amazing. I highly recommend Sewzella to everyone!", name: "Ayesha Patel", avatar: null },
-  { text: "Finally a modern solution for tailoring. The AI measurement assistant is incredibly accurate!", name: "Rohan Dev", avatar: null },
-];
-
 const ORDER_STEPS = [
   { label: 'Measurements Received', date: '15 Jun, 2025', done: true },
   { label: 'Tailor Assigned', date: '16 Jun, 2025', done: true },
@@ -199,13 +194,19 @@ const PARTNER_FEATURES = [
 
 const SewZellaLanding = () => {
   const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const appName = useBrandingStore(state => state.appName);
+  const testimonials = [
+    { text: `${appName} made custom stitching effortless. The fitting was absolutely perfect and the delivery was on time.`, name: "Sara Madhav", avatar: null },
+    { text: `Real-time updates and doorstep delivery were amazing. I highly recommend ${appName} to everyone!`, name: "Ayesha Patel", avatar: null },
+    { text: "Finally a modern solution for tailoring. The AI measurement assistant is incredibly accurate!", name: "Rohan Dev", avatar: null },
+  ];
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const nextTestimonial = () => setTestimonialIdx((prev) => (prev + 1) % TESTIMONIALS.length);
-  const prevTestimonial = () => setTestimonialIdx((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
+  const nextTestimonial = () => setTestimonialIdx((prev) => (prev + 1) % testimonials.length);
+  const prevTestimonial = () => setTestimonialIdx((prev) => (prev - 1 + testimonials.length) % testimonials.length);
 
   return (
     <div
@@ -222,7 +223,7 @@ const SewZellaLanding = () => {
         <div className="absolute top-[64px] lg:top-[72px] left-0 right-0 bottom-0 z-0">
           <img 
             src="/homepage .jpeg" 
-            alt="Sewzella Hero Banner" 
+            alt={`${appName} Hero Banner`} 
             className="w-full h-full object-contain object-right md:object-right-top"
           />
           {/* Subtle gradient so text remains readable if image is busy */}
@@ -253,7 +254,7 @@ const SewZellaLanding = () => {
                 custom={1}
                 className="text-[#4c4451] text-[16px] md:text-[17px] leading-relaxed mb-7 max-w-lg"
               >
-                Design, customize, and stitch your perfect outfit from the comfort of your home. Sewzella connects customers with skilled tailors and seamless doorstep delivery.
+                Design, customize, and stitch your perfect outfit from the comfort of your home. {appName} connects customers with skilled tailors and seamless doorstep delivery.
               </motion.p>
 
               <motion.div variants={fadeUp} custom={2} className="flex flex-wrap gap-3 mb-8">
@@ -347,7 +348,7 @@ const SewZellaLanding = () => {
                 <path d="M6 18 Q4 20 5 22 Q6 24 8 24" fill="#4a0581"/>
                 <path d="M26 18 Q28 20 27 22 Q26 24 24 24" fill="#4a0581"/>
               </svg>
-              How Sewzella Works
+              How {appName} Works
             </h2>
           </motion.div>
 
@@ -468,7 +469,7 @@ const SewZellaLanding = () => {
                   No measuring tape? No problem.
                 </h3>
                 <p className="text-[#4c4451] text-[13px] leading-relaxed mb-6">
-                  Upload a front and side photo, enter your height and weight, and Sewzella will estimate your measurements instantly.
+                  Upload a front and side photo, enter your height and weight, and {appName} will estimate your measurements instantly.
                 </p>
 
                 {/* Measurement Points - 2 columns */}
@@ -588,7 +589,7 @@ const SewZellaLanding = () => {
                   Become a Tailor Partner
                 </h2>
                 <p className="text-white/80 text-[15px] mb-8 max-w-md">
-                  Grow your tailoring business with Sewzella.
+                  Grow your tailoring business with {appName}.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-10">
@@ -651,7 +652,7 @@ const SewZellaLanding = () => {
             <div className="lg:w-1/3 flex justify-center lg:justify-start pt-10 px-8 lg:pt-0 lg:pl-16">
               <img
                 src="/download.png"
-                alt="Sewzella App Download"
+                alt={`${appName} App Download`}
                 className="w-[240px] md:w-[320px] lg:w-full max-w-[360px] object-contain object-bottom h-[280px] md:h-[360px] lg:h-auto lg:max-h-[400px]"
               />
             </div>
@@ -662,7 +663,7 @@ const SewZellaLanding = () => {
                 className="text-[28px] md:text-[36px] font-bold text-[#4a0581] mb-3 leading-tight"
                 style={{ fontFamily: "'Libre Caslon Text', serif" }}
               >
-                Download Sewzella
+                Download {appName}
               </h2>
               <p className="text-[#4c4451] text-[14px] mb-8 max-w-md mx-auto lg:mx-0">
                 Your perfect outfit is just a few taps away.
@@ -743,7 +744,7 @@ const SewZellaLanding = () => {
           <div className="relative">
             {/* Desktop: Show all 3 */}
             <div className="hidden md:grid md:grid-cols-3 gap-8">
-              {TESTIMONIALS.map((t, i) => (
+              {testimonials.map((t, i) => (
                 <motion.div
                   key={i}
                   className="bg-white rounded-2xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#eae7e7] hover:shadow-[0_8px_30px_rgba(74,5,129,0.1)] transition-all duration-300"
@@ -783,14 +784,14 @@ const SewZellaLanding = () => {
                   <Quote size={32} />
                 </div>
                 <p className="text-[14px] text-[#4c4451] leading-relaxed mb-6 italic">
-                  "{TESTIMONIALS[testimonialIdx].text}"
+                  "{testimonials[testimonialIdx].text}"
                 </p>
                 <div className="flex items-center gap-3 pt-4 border-t border-[#f0eded]">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#dcb8ff] to-[#4a0581] flex items-center justify-center text-white text-[14px] font-bold">
-                    {TESTIMONIALS[testimonialIdx].name.charAt(0)}
+                    {testimonials[testimonialIdx].name.charAt(0)}
                   </div>
                   <div>
-                    <p className="text-[13px] font-bold text-[#1c1b1b]">{TESTIMONIALS[testimonialIdx].name}</p>
+                    <p className="text-[13px] font-bold text-[#1c1b1b]">{testimonials[testimonialIdx].name}</p>
                     <div className="flex gap-0.5">
                       {[...Array(5)].map((_, si) => (
                         <Star key={si} size={12} className="text-[#f59e0b] fill-[#f59e0b]" />

@@ -11,8 +11,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedSearchBar from './AnimatedSearchBar';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
-import silaiwalaLogo from '/sewzella_logo.jpeg';
-
 import { useNotifications } from '../context/NotificationContext';
 import toast from 'react-hot-toast';
 

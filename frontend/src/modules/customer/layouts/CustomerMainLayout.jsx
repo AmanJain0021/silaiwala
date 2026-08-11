@@ -1,16 +1,17 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Shirt, ShoppingBag, ClipboardList, User, Search, Bell, MapPin, ChevronDown } from 'lucide-react';
-import silaiwalaLogo from '/sewzella_logo.jpeg';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
 import useLocationStore from '../../../store/locationStore';
+import useBrandingStore from '../../../store/brandingStore';
 
 const CustomerMainLayout = () => {
     const location = useLocation();
     const cartCount = useCartStore(state => state.getTotalItems());
     const user = useAuthStore(state => state.user);
     const { address: deliveryAddress } = useLocationStore();
+    const { appName, logos } = useBrandingStore();
 
     const navItems = [
         { to: '/', icon: Shirt, label: 'Services' },
@@ -27,11 +28,11 @@ const CustomerMainLayout = () => {
                     {/* Brand */}
                     <Link to="/user" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3 group-hover:rotate-0 transition-transform">
-                            <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
+                            <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-none tracking-tight">
-                                SewZ<span className="text-[#843D9B]">ella</span>
+                                {appName}
                             </h1>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">Modern Stitching</p>
                         </div>

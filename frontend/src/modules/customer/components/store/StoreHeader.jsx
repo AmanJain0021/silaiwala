@@ -3,12 +3,12 @@ import { Search, ShoppingBag, Heart, SlidersHorizontal, Camera, Mic } from 'luci
 import { Link } from 'react-router-dom';
 import useCartStore from '../../../../store/cartStore';
 import useWishlistStore from '../../../../store/wishlistStore';
-
-const silaiwalaLogo = '/sewzella_logo.jpeg';
+import useBrandingStore from '../../../../store/brandingStore';
 
 const StoreHeader = ({ searchQuery, setSearchQuery, onOpenFilter }) => {
     const cartCount = useCartStore(state => state.getTotalItems());
     const wishlistCount = useWishlistStore(state => state.items.length);
+    const { appName, logos } = useBrandingStore();
 
     return (
         <div className="bg-white border-b border-slate-100 transition-all duration-300 shadow-2xs">
@@ -17,10 +17,10 @@ const StoreHeader = ({ searchQuery, setSearchQuery, onOpenFilter }) => {
                 <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
                         <Link to="/user" className="w-10 h-10 bg-[#3b154c] rounded-xl flex items-center justify-center shadow-sm overflow-hidden active:scale-95 transition-transform">
-                            <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
+                            <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
                         </Link>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-black text-[#4b1b68] leading-none tracking-tight">SewZella</h1>
+                            <h1 className="text-xl sm:text-2xl font-black text-[#4b1b68] leading-none tracking-tight">{appName}</h1>
                             <span className="text-[10px] font-semibold text-slate-500 block mt-0.5 tracking-tight">The Future of Tailoring</span>
                         </div>
                     </div>

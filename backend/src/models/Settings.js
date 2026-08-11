@@ -3,7 +3,13 @@ const mongoose = require("mongoose");
 const settingsSchema = new mongoose.Schema(
   {
     general: {
-      platformName: { type: String, default: "Silaiwala" },
+      platformName: { type: String, default: "SewZella" },
+      appLogos: {
+        customer: { type: String, default: "" },
+        tailor: { type: String, default: "" },
+        delivery: { type: String, default: "" },
+        measurementExecutive: { type: String, default: "" },
+      },
       supportEmail: { type: String, default: "support@silaiwala.com" },
       supportPhone: { type: String, default: "+91 1800 123 4567" },
       emergencyPhone: { type: String, default: "+91 9999999999" },

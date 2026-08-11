@@ -1,7 +1,10 @@
 import React from 'react';
 import { UserCheck, Award, Clock, ShieldCheck } from 'lucide-react';
+import useBrandingStore from '../../../store/brandingStore';
 
 const WhyChooseUs = () => {
+    const appName = useBrandingStore(state => state.appName);
+
     return (
         <div className="px-4 md:px-6 lg:px-8 py-4 mb-4">
             <div className="relative flex items-center justify-center mb-6 px-2">
@@ -9,7 +12,7 @@ const WhyChooseUs = () => {
                     <div className="w-full border-t border-dashed border-gray-300"></div>
                 </div>
                 <div className="relative bg-[#F7F8FC] px-4">
-                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.3em] whitespace-nowrap">Why Choose Sewzella?</h2>
+                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.3em] whitespace-nowrap">Why Choose {appName}?</h2>
                 </div>
             </div>
 

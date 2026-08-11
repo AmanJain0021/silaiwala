@@ -11,7 +11,7 @@ exports.validateRegister = [
     }
     return true;
   }),
-  body('password').optional().isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('role').optional().isIn(['customer', 'tailor', 'delivery', 'measurement_executive']).withMessage('Invalid role'),
   
   // Tailor specific fields

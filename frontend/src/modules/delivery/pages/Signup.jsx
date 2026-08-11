@@ -9,12 +9,14 @@ import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import { compressImage } from '../../../utils/imageCompression';
 import DeliveryLegalModal from '../components/DeliveryLegalModal';
+import useBrandingStore from '../../../store/brandingStore';
 
 const libraries = ['places'];
 
 const DeliverySignup = () => {
     const navigate = useNavigate();
     const [legalModal, setLegalModal] = useState({ isOpen: false, type: 'terms' });
+    const appName = useBrandingStore(state => state.appName);
     const signup = useAuthStore((state) => state.signup);
     const isLoading = useAuthStore((state) => state.isLoading);
 
@@ -448,7 +450,7 @@ const DeliverySignup = () => {
             className="w-full"
         >
             <div className="text-left mb-4">
-                <h2 className="text-lg md:text-xl font-black text-[#1A1A1A] tracking-tight whitespace-nowrap">Join the SewZella</h2>
+                <h2 className="text-lg md:text-xl font-black text-[#1A1A1A] tracking-tight whitespace-nowrap">Join {appName}</h2>
                 <p className="text-gray-500 text-[11px] md:text-xs font-bold mt-0.5 whitespace-nowrap">Become a delivery partner today</p>
                 
                 {/* Progress Indicator */}

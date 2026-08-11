@@ -28,8 +28,7 @@ import api from '../../../utils/api';
 import { playNotificationSound } from '../../../utils/audio';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import useSocketStore from '../../../store/socketStore';
-
-const silaiwalaLogo = '/sewzella_logo-removebg-preview.png';
+import useBrandingStore from '../../../store/brandingStore';
 
 const DeliveryLayout = () => {
     const [isOnline, setIsOnline] = useState(false);
@@ -38,6 +37,7 @@ const DeliveryLayout = () => {
     const [platformSettings, setPlatformSettings] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
+    const { appName } = useBrandingStore();
 
     React.useEffect(() => {
         const fetchProfileStatus = async () => {
@@ -443,7 +443,7 @@ const DeliveryLayout = () => {
                         )}
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="font-black text-slate-900 text-xs sm:text-sm tracking-tight leading-none mb-1 truncate">{user?.name || 'SewZelaa Partner'}</span>
+                        <span className="font-black text-slate-900 text-xs sm:text-sm tracking-tight leading-none mb-1 truncate">{user?.name || `${appName} Partner`}</span>
                         <div className="flex items-center gap-1 text-slate-500 min-w-0 w-full overflow-hidden">
                             <MapPin size={10} className="text-indigo-400 shrink-0" />
                             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest truncate leading-none mt-[1px] inline-block w-full">{currentLocationStr}</span>

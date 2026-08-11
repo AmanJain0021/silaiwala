@@ -6,6 +6,7 @@ import useWishlistStore from '../../../store/wishlistStore';
 import { PRODUCTS } from '../data/products';
 import api from '../../../utils/api';
 import useCheckoutStore from '../../../store/checkoutStore';
+import useBrandingStore from '../../../store/brandingStore';
 
 // Components
 import ProductGallery from '../components/store-detail/ProductGallery';
@@ -22,6 +23,7 @@ const StoreProductDetail = () => {
     const [selectedColor, setSelectedColor] = useState(null);
     const [toast, setToast] = useState(null); // { message, type }
     const [productData, setProductData] = useState(null);
+    const appName = useBrandingStore(state => state.appName);
 
     const addToCart = useCartStore(state => state.addItem);
     const { toggleWishlist, isInWishlist } = useWishlistStore(state => state);
@@ -68,7 +70,7 @@ const StoreProductDetail = () => {
             try {
                 await navigator.share({
                     title: productData.title,
-                    text: `Check out this ${productData.title} on Silaiwala!`,
+                    text: `Check out this ${productData.title} on ${appName}!`,
                     url: window.location.href,
                 });
             } catch (err) {

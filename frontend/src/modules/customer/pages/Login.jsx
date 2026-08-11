@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../../../components/ui/Button';
+import { motion } from 'framer-motion';
 import useAuthStore from '../../../store/authStore';
+import useBrandingStore from '../../../store/brandingStore';
 import { validatePhone } from '../../../utils/validation';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 import api from '../../../utils/api';
 import { GoogleLogin } from '@react-oauth/google';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Lock, Eye, EyeOff, KeyRound, User, Wifi, Battery } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
     const { otpLogin, sendOTP, isLoading, logout, isAuthenticated, user } = useAuthStore();
+    const { appName, logos } = useBrandingStore();
 
     useEffect(() => {
         if (isAuthenticated && user?.role === 'customer') {
@@ -43,7 +44,6 @@ const Login = () => {
 
         setSendingOtp(true);
         try {
-            // First check if user is registered
             const checkRes = await api.post('/auth/check-user', { phoneNumber: mobileNumber });
             if (!checkRes.data.exists) {
                 setError('First you must register, then login');
@@ -155,188 +155,191 @@ const Login = () => {
         return <LocationSplashScreen onComplete={handleLocationComplete} role={loggedInUser.role} />;
     }
 
+    const customerLogoSrc = logos?.customer || '/sewzella_logo-removebg-preview.png';
+
     return (
         <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full h-full flex flex-col"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full flex flex-col items-center font-['Plus_Jakarta_Sans',sans-serif] px-2 sm:px-4"
         >
-            <div className="text-left mb-10 sm:mb-12">
-                <h2 className="text-2xl md:text-4xl font-black text-[#843D9B] tracking-tight leading-tight">
-                    Welcome to <br className="hidden md:block" />
-                    Sewzella
-                </h2>
-                <p className="text-xs md:text-sm font-bold text-slate-500 mt-4 sm:mt-5 max-w-[250px]">
-                    Please login to continue
+            {/* Top Squircle Card with Icon matching image */}
+            <div className="w-16 h-16 rounded-[22px] bg-[#F4EFFF] border border-[#E9DFFE] flex items-center justify-center shadow-2xs mb-4 shrink-0 mx-auto mt-2">
+                <User className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} />
+            </div>
+
+            {/* Title & Subtitle matching image */}
+            <div className="text-center mb-6 w-full">
+                <h1 className="text-2xl sm:text-[26px] font-bold text-[#0F172A] tracking-tight mb-1">
+                    Sign In
+                </h1>
+                <p className="text-xs sm:text-[13px] font-medium text-[#64748B] max-w-[250px] mx-auto leading-relaxed">
+                    Welcome back! Please sign in to your account
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 flex-1">
-                <div className="space-y-4 sm:space-y-6">
-                    <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
-                        <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
-                            <span className="text-black font-bold text-base tracking-wide">+91</span>
-                            <div className="w-px h-6 bg-slate-200" />
+            <form onSubmit={handleSubmit} className="w-full space-y-4">
+                {/* Mobile Number Input Card matching mockup */}
+                <div className="w-full text-left">
+                    <label className="text-xs font-semibold text-[#0F172A] block mb-1.5">
+                        Mobile Number
+                    </label>
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center p-1.5 px-2 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                        <div className="bg-white shadow-2xs rounded-xl px-3 py-2 text-xs font-bold text-[#0F172A] mr-2.5 select-none flex items-center justify-center shrink-0 border border-gray-100/80">
+                            +91
+                        </div>
+                        <input
+                            type="tel"
+                            placeholder="Enter mobile number"
+                            value={mobileNumber}
+                            onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
+                            maxLength={10}
+                            required
+                            disabled={otpSent || sendingOtp}
+                            className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
+                        />
+                        {otpSent && (
+                            <button
+                                type="button"
+                                onClick={() => { setOtpSent(false); setOtp(''); }}
+                                className="text-xs font-bold text-[#843D9B] hover:underline shrink-0 pr-2"
+                            >
+                                Change
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Password Mode Input Card matching mockup */}
+                {loginMethod === 'password' && (
+                    <div className="w-full text-left">
+                        <label className="text-xs font-semibold text-[#0F172A] block mb-1.5">
+                            Password
+                        </label>
+                        <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                            <Lock size={18} className="text-[#94A3B8] shrink-0" />
                             <input
-                                type="tel"
-                                placeholder="Mobile Number"
-                                value={mobileNumber}
-                                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                                maxLength={10}
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 required
-                                disabled={otpSent || sendingOtp}
-                                className="flex-1 bg-transparent border-none focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-medium tracking-wide outline-none"
+                                className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
                             />
+                            <button 
+                                type="button" 
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer"
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <button
+                                type="button"
+                                onClick={() => { setLoginMethod('otp'); setOtpSent(false); setError(''); }}
+                                className="text-xs font-bold text-[#843D9B] hover:underline cursor-pointer"
+                            >
+                                Forgot Password?
+                            </button>
                         </div>
                     </div>
+                )}
 
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="px-2 text-xs font-bold text-red-500 flex items-center gap-1.5"
-                        >
-                            <span className="w-1 h-1 bg-red-500 rounded-full" />
-                            {error}
-                        </motion.div>
-                    )}
-
-                    {loginMethod === 'password' && (
-                        <>
-                            <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200 mt-4">
-                                <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-medium tracking-wide outline-none"
-                                    />
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="text-gray-400 hover:text-[#843D9B] transition-colors focus:outline-none shrink-0"
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <Button
-                                type="submit"
-                                disabled={!mobileNumber || mobileNumber.length < 10 || !password || isLoading}
-                                className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || !password || isLoading
-                                        ? 'bg-gray-200 text-gray-500'
-                                        : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20 hover:shadow-lg'
-                                    }`}
-                            >
-                                {isLoading ? 'Signing in...' : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        SIGN IN <span className="text-lg">›</span>
-                                    </span>
-                                )}
-                            </Button>
-                            
+                {/* OTP Mode Input Card (when OTP sent) */}
+                {loginMethod === 'otp' && otpSent && (
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-semibold text-[#0F172A] block mb-1.5">
+                            Enter 6-Digit OTP
+                        </label>
+                        <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                            <KeyRound size={18} className="text-[#843D9B] shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Enter OTP"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                maxLength={6}
+                                required
+                                className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8] tracking-widest font-mono"
+                            />
+                        </div>
+                        <div className="flex justify-end pt-1">
                             <button
-                                type="button"
-                                onClick={() => { setLoginMethod('otp'); setError(''); }}
-                                className="w-full text-xs font-bold text-[#843D9B] hover:text-[#E04D79] transition-colors mt-2"
-                            >
-                                Forgot password? Login with OTP
-                            </button>
-                        </>
-                    )}
-
-                    {loginMethod === 'otp' && !otpSent && (
-                        <>
-                            <Button
                                 type="button"
                                 onClick={handleSendOtp}
-                                disabled={!mobileNumber || mobileNumber.length < 10 || sendingOtp}
-                                className={`w-full h-11 sm:h-12 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-md ${!mobileNumber || mobileNumber.length < 10 || sendingOtp
-                                        ? 'bg-gray-200 text-gray-500'
-                                        : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20 hover:shadow-lg'
-                                    }`}
+                                disabled={sendingOtp}
+                                className="text-xs font-semibold text-[#843D9B] hover:underline cursor-pointer disabled:opacity-50"
                             >
-                                {sendingOtp ? 'Sending...' : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        SEND OTP <span className="text-lg">›</span>
-                                    </span>
-                                )}
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={() => { setLoginMethod('password'); setError(''); }}
-                                className="w-full text-xs font-bold text-[#843D9B] hover:text-[#E04D79] transition-colors mt-2"
-                            >
-                                Login with Password instead
+                                {sendingOtp ? 'Sending...' : 'Resend OTP'}
                             </button>
-                        </>
+                        </div>
+                    </div>
+                )}
+
+                {/* Submit Button matching mockup */}
+                <button
+                    type="submit"
+                    disabled={
+                        !mobileNumber || 
+                        (loginMethod === 'password' && !password) || 
+                        (loginMethod === 'otp' && otpSent && !otp) || 
+                        isLoading || 
+                        sendingOtp
+                    }
+                    className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${
+                        !mobileNumber || 
+                        (loginMethod === 'password' && !password) || 
+                        (loginMethod === 'otp' && otpSent && !otp) || 
+                        isLoading || 
+                        sendingOtp
+                            ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
+                            : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                    }`}
+                >
+                    {isLoading
+                        ? 'Logging in...'
+                        : sendingOtp
+                        ? 'Sending OTP...'
+                        : loginMethod === 'otp' && !otpSent
+                        ? 'Send OTP'
+                        : loginMethod === 'otp' && otpSent
+                        ? 'Verify & Login'
+                        : 'Sign In'}
+                </button>
+
+                {/* Switch between Password & OTP option */}
+                <div className="text-center pt-1">
+                    {loginMethod === 'password' ? (
+                        <button
+                            type="button"
+                            onClick={() => { setLoginMethod('otp'); setOtpSent(false); setError(''); }}
+                            className="text-xs font-semibold text-[#843D9B] hover:underline cursor-pointer"
+                        >
+                            Login with OTP instead
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => { setLoginMethod('password'); setOtpSent(false); setError(''); }}
+                            className="text-xs font-semibold text-[#843D9B] hover:underline cursor-pointer"
+                        >
+                            Login with Password instead
+                        </button>
                     )}
                 </div>
 
-                <AnimatePresence>
-                    {loginMethod === 'otp' && otpSent && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="space-y-4 overflow-hidden pt-2"
-                        >
-                            <div className="bg-[#F8FAFC] rounded-[1.2rem] sm:rounded-[1.5rem] p-1 border border-slate-50 shadow-inner group transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200">
-                                <div className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 gap-2 sm:gap-3">
-                                    <input
-                                        type="text"
-                                        placeholder="Verification Code"
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                        maxLength={6}
-                                        required
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-medium placeholder:tracking-normal placeholder:text-sm tracking-[0.5em] text-center outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="w-full h-11 sm:h-12 rounded-full bg-[#843D9B] hover:bg-[#E04D79] text-white font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 shadow-lg shadow-[#843D9B]/20"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'Verifying...' : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        VERIFY & SIGN IN <span className="text-lg">›</span>
-                                    </span>
-                                )}
-                            </Button>
-
-                            <button
-                                type="button"
-                                onClick={() => setOtpSent(false)}
-                                className="w-full text-[10px] font-black text-indigo-400 hover:text-indigo-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mt-2"
-                            >
-                                ← Change mobile number
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Google Login Divider and Button */}
+                {/* Divider and Google Login matching mockup */}
                 {!otpSent && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="mt-6"
-                    >
-                        <div className="relative flex items-center py-4">
-                            <div className="flex-grow border-t border-gray-200"></div>
-                            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase tracking-widest">Or</span>
-                            <div className="flex-grow border-t border-gray-200"></div>
+                    <div className="space-y-4 pt-1 w-full">
+                        <div className="relative flex items-center justify-center my-3 w-full">
+                            <div className="w-full border-t border-gray-200/80"></div>
+                            <span className="shrink-0 mx-3 text-[#94A3B8] text-xs font-medium bg-white px-2">or continue with</span>
+                            <div className="w-full border-t border-gray-200/80"></div>
                         </div>
-                        
-                        <div className="flex justify-center w-full pb-2" style={{ minHeight: '44px' }}>
+
+                        <div className="flex justify-center w-full min-h-[46px]">
                             <GoogleLogin
                                 onSuccess={handleGoogleSuccess}
                                 onError={handleGoogleError}
@@ -345,25 +348,33 @@ const Login = () => {
                                 size="large"
                             />
                         </div>
-                    </motion.div>
+                    </div>
                 )}
             </form>
-            <div className="mt-auto pt-6 text-center sm:text-left">
-                <p className="text-xs md:text-sm font-bold text-slate-400">
+
+            {/* Footer Sign Up Link matching mockup */}
+            <div className="mt-5 text-center w-full">
+                <p className="text-xs font-medium text-[#64748B]">
                     Don't have an account?{' '}
                     <button 
+                        type="button"
                         onClick={() => navigate('/user/register')}
-                        className="text-[#843D9B] font-black hover:underline ml-1"
+                        className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer"
                     >
-                        Create Account
+                        Sign Up
                     </button>
                 </p>
-                <div className="mt-8 text-[10px] text-gray-400 font-medium">
-                    By logging in, you agree to our <button onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>.
-                </div>
+                <p className="mt-3 text-[10px] text-gray-400 font-medium max-w-[280px] mx-auto leading-relaxed">
+                    By logging in, you agree to our{' '}
+                    <button onClick={() => navigate('/user/legal/terms-and-conditions')} className="text-[#843D9B] hover:underline">Terms & Conditions</button>{' '}
+                    and{' '}
+                    <button onClick={() => navigate('/user/legal/privacy-policy')} className="text-[#843D9B] hover:underline">Privacy Policy</button>.
+                </p>
             </div>
         </motion.div>
     );
 };
 
 export default Login;
+
+

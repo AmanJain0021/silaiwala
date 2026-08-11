@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PartnerLogo from './PartnerLogo';
-import deliveryLogo from '../../assets/deliveryLogo.png';
+import useBrandingStore from '../../store/brandingStore';
 
 /* ── TOP: Needle with curved thread (matching first image reference) ── */
 const NeedleWithThread = () => (
@@ -139,6 +139,7 @@ const BottomStitchLine = () => (
 
 const SplashScreen = ({ role = 'customer', onComplete }) => {
     const [isVisible, setIsVisible] = useState(true);
+    const { appName, logos } = useBrandingStore();
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -179,8 +180,8 @@ const SplashScreen = ({ role = 'customer', onComplete }) => {
                         ) : role === 'delivery' ? (
                             <>
                                 <motion.img
-                                    src={deliveryLogo}
-                                    alt="SewZella Delivery"
+                                    src={logos.delivery}
+                                    alt={`${appName} Delivery`}
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{
@@ -206,8 +207,8 @@ const SplashScreen = ({ role = 'customer', onComplete }) => {
                         ) : (
                             <>
                                 <motion.img
-                                    src="/sewzella_logo-removebg-preview.png"
-                                    alt="SewZella Logo"
+                                    src={logos.customer}
+                                    alt={`${appName} Logo`}
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{

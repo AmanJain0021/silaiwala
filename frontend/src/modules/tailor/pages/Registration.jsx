@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Step1Basic, Step2Business } from '../components/Registration/Steps1_2';
 import { Step3Docs, Step4Portfolio } from '../components/Registration/Steps3_4';
-import { ChevronLeft, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, ArrowRight, UserPlus } from 'lucide-react';
 import { useTailorAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -67,7 +67,7 @@ const TailorRegistration = () => {
         let fieldsToValidate = [];
         switch (step) {
             case 1:
-                fieldsToValidate = ['fullName', 'phone', 'otp', 'email'];
+                fieldsToValidate = ['fullName', 'phone', 'otp', 'email', 'password'];
                 break;
             case 2:
                 fieldsToValidate = ['shopName', 'address', 'city', 'pincode', 'experienceInYears', 'specializations'];
@@ -335,29 +335,48 @@ const TailorRegistration = () => {
 
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="w-full"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full flex flex-col items-center font-['Plus_Jakarta_Sans',sans-serif] px-2 sm:px-4"
         >
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2 sm:gap-3 w-full">
+            {/* Top Squircle Card with Icon */}
+            <div className="w-16 h-16 rounded-[22px] bg-[#F4EFFF] border border-[#E9DFFE] flex items-center justify-center shadow-2xs mb-4 shrink-0 mx-auto mt-2">
+                <UserPlus className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} />
+            </div>
+
+            {/* Title & Subtitle */}
+            <div className="text-center mb-5 w-full">
+                <h1 className="text-2xl sm:text-[26px] font-bold text-[#0F172A] tracking-tight mb-1">
+                    Create Partner Account
+                </h1>
+                <p className="text-xs sm:text-[13px] font-medium text-[#64748B] max-w-[280px] mx-auto leading-relaxed">
+                    Register as a certified tailor partner with SewZella
+                </p>
+            </div>
+
+            {/* Step Progress Header */}
+            <div className="w-full bg-[#F6F6F8] rounded-[18px] p-3 px-4 mb-5 flex items-center justify-between border border-gray-100">
+                <div className="flex items-center gap-2 overflow-hidden">
                     {step > 1 && (
-                        <button type="button" onClick={prevStep} className="p-2 -ml-2 text-gray-400 hover:text-[#843D9B] transition-colors bg-gray-50 rounded-full shrink-0">
+                        <button 
+                            type="button" 
+                            onClick={prevStep} 
+                            className="p-1 -ml-1 text-[#64748B] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer"
+                        >
                             <ChevronLeft size={20} />
                         </button>
                     )}
-                    <div className="flex items-center justify-between w-full gap-2 overflow-hidden">
-                        <h2 className="text-[17px] sm:text-xl font-bold text-slate-800 tracking-tight leading-tight truncate">
-                            {stepTitles[step - 1]}
-                        </h2>
-                        <span className="text-[9px] sm:text-[10px] font-bold text-white bg-[#843D9B] px-2 py-1 rounded-md uppercase tracking-wider shrink-0">
-                            Step {step}/4
-                        </span>
-                    </div>
+                    <span className="text-xs font-bold text-[#0F172A] truncate">
+                        {stepTitles[step - 1]}
+                    </span>
                 </div>
+                <span className="text-[10px] font-bold text-[#843D9B] bg-[#F4EFFF] border border-[#E9DFFE] px-2.5 py-1 rounded-full shrink-0">
+                    Step {step} of 4
+                </span>
             </div>
 
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            <form onSubmit={(e) => e.preventDefault()} className="w-full space-y-5">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step}
@@ -365,13 +384,13 @@ const TailorRegistration = () => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
                         transition={{ duration: 0.3 }}
-                        className="space-y-4"
+                        className="space-y-4 w-full"
                     >
                         {renderStep()}
                     </motion.div>
                 </AnimatePresence>
 
-                <div className="pt-4 flex gap-3">
+                <div className="pt-3 flex gap-3 w-full">
                     {step < 4 ? (
                         <>
                             {step > 1 && (
@@ -379,51 +398,66 @@ const TailorRegistration = () => {
                                     type="button"
                                     onClick={prevStep}
                                     disabled={isValidating}
-                                    className="w-1/3 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                                    className="w-1/3 py-3.5 rounded-[22px] font-bold text-xs tracking-wider uppercase transition-all bg-[#F6F6F8] text-[#0F172A] hover:bg-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                                 >
-                                    <ChevronLeft className="w-5 h-5" /> BACK
+                                    <ChevronLeft className="w-4 h-4" /> BACK
                                 </button>
                             )}
                             <button
                                 type="button"
                                 onClick={handleNext}
                                 disabled={isValidating}
-                                className={`flex-1 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${isValidating ? 'bg-gray-300 text-gray-500' : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20'}`}
+                                className={`flex-1 py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center flex items-center justify-center gap-2 ${
+                                    isValidating 
+                                        ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' 
+                                        : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                }`}
                             >
-                                {isValidating ? 'VALIDATING...' : 'NEXT'} <ArrowRight className="w-5 h-5" />
+                                {isValidating ? 'VALIDATING...' : 'NEXT'} <ArrowRight className="w-4 h-4" />
                             </button>
                         </>
                     ) : (
                         <div className="flex flex-col gap-3 w-full">
-                            <div className="pt-2 mb-2">
-                                <label className="flex items-center gap-2 cursor-pointer">
+                            <div className="pt-1 px-0.5 text-left">
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
                                     <input
                                         type="checkbox"
                                         checked={agreedToTerms}
                                         onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                        className="w-4 h-4 rounded border-gray-300 text-[#843D9B] focus:ring-[#843D9B]"
+                                        className="w-4 h-4 rounded-[5px] accent-[#843D9B] text-white cursor-pointer"
                                     />
-                                    <span className="text-xs text-gray-500 font-medium">
-                                        I agree to the <button type="button" onClick={() => window.open('/partner/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] hover:underline mx-1">Terms & Conditions</button> and <button type="button" onClick={() => window.open('/partner/legal/privacy-policy', '_blank')} className="text-[#843D9B] hover:underline mx-1">Privacy Policy</button>
+                                    <span className="text-xs text-[#64748B] font-medium">
+                                        I agree with{' '}
+                                        <button type="button" onClick={() => window.open('/partner/legal/terms-and-conditions', '_blank')} className="text-[#843D9B] font-semibold hover:underline">
+                                            Terms & Conditions
+                                        </button>
+                                        {' '} & {' '}
+                                        <button type="button" onClick={() => window.open('/partner/legal/privacy-policy', '_blank')} className="text-[#843D9B] font-semibold hover:underline">
+                                            Privacy Policy
+                                        </button>
                                     </span>
                                 </label>
                             </div>
-                            <div className="flex gap-3 w-full">
+                            <div className="flex gap-3 w-full pt-1">
                                 <button
                                     type="button"
                                     onClick={prevStep}
                                     disabled={isLoading}
-                                    className="w-1/3 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-sm bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"
+                                    className="w-1/3 py-3.5 rounded-[22px] font-bold text-xs tracking-wider uppercase transition-all bg-[#F6F6F8] text-[#0F172A] hover:bg-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                                 >
-                                    <ChevronLeft className="w-5 h-5" /> BACK
+                                    <ChevronLeft className="w-4 h-4" /> BACK
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleSubmit(onSubmit)}
                                     disabled={isLoading || !agreedToTerms}
-                                    className={`flex-1 h-14 rounded-full font-black text-sm tracking-widest uppercase transition-all duration-300 shadow-lg ${isLoading || !agreedToTerms ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-[#843D9B] hover:bg-[#E04D79] text-white shadow-[#843D9B]/20'}`}
+                                    className={`flex-1 py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center ${
+                                        isLoading || !agreedToTerms 
+                                            ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' 
+                                            : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                    }`}
                                 >
-                                    {isLoading ? 'Submitting...' : 'SUBMIT APPLICATION'}
+                                    {isLoading ? 'SUBMITTING...' : 'SUBMIT APPLICATION'}
                                 </button>
                             </div>
                         </div>
@@ -431,6 +465,18 @@ const TailorRegistration = () => {
                 </div>
             </form>
 
+            {/* Footer Navigation */}
+            <div className="mt-6 text-center w-full">
+                <p className="text-xs font-medium text-[#64748B]">
+                    Already have an account?{' '}
+                    <Link 
+                        to="/partner/login"
+                        className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer"
+                    >
+                        Sign In
+                    </Link>
+                </p>
+            </div>
         </motion.div>
     );
 };

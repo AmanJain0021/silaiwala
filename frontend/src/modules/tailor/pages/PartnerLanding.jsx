@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTailorAuth } from '../context/AuthContext';
+import useBrandingStore from '../../../store/brandingStore';
 // Asset Imports
 import img1 from '../../../assets/aunty silai krti hui image.jpeg';
 import img2 from '../../../assets/cc3b8d6c20aa7bdc7d77e233743d163e.jpg';
@@ -21,6 +22,7 @@ const PartnerLanding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
   const { isAuthenticated, user } = useTailorAuth();
+  const { appName, logos } = useBrandingStore();
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'tailor') {
@@ -31,7 +33,7 @@ const PartnerLanding = () => {
   const steps = [
     {
       title: "Empower Your Craft",
-      description: "Join SewZella and bring your tailoring skills to a global audience.",
+      description: `Join ${appName} and bring your tailoring skills to a global audience.`,
       image: img1,
       icon: <Sparkles className="w-8 h-8" />,
       color: "#843D9B"
@@ -126,9 +128,9 @@ const PartnerLanding = () => {
               <div className="absolute top-8 left-6">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-[#1B263B] rounded-lg flex items-center justify-center overflow-hidden">
-                        <img src="/sewzella_logo-removebg-preview.png" alt="S" className="w-6 h-6 object-contain" />
+                        <img src={logos.tailor} alt={appName} className="w-6 h-6 object-contain" />
                     </div>
-                    <span className="text-white font-black text-xl tracking-tight drop-shadow-md">SewZella</span>
+                    <span className="text-white font-black text-xl tracking-tight drop-shadow-md">{appName}</span>
                 </div>
               </div>
             </div>

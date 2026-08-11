@@ -16,7 +16,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-const silaiwalaLogo = '/sewzella_logo.jpeg';
+import useBrandingStore from '../store/brandingStore';
 import { useTailorAuth } from '../modules/tailor/context/AuthContext';
 import { useNotifications } from '../modules/tailor/context/NotificationContext';
 import api from '../modules/tailor/services/api';
@@ -32,6 +32,7 @@ const TailorLayout = () => {
     const unreadCount = notificationContext?.unreadCount || 0;
     const isOverview = location.pathname === '/partner' || location.pathname === '/partner/';
     const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+    const { appName, logos } = useBrandingStore();
 
     // ── PULL-TO-REFRESH STATE FOR ALL TAILOR PAGES ──
     const mainRef = useRef(null);
@@ -193,11 +194,11 @@ const TailorLayout = () => {
                 <div className="p-8">
                     <Link to="/partner" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5 overflow-hidden border border-gray-800 rotate-3 group-hover:rotate-0 transition-transform">
-                            <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
+                            <img src={logos.tailor} alt={appName} className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <h1 className="text-xl font-black text-white leading-none tracking-tight">
-                                SewZ<span className="text-[#843D9B]">ella</span>
+                                {appName}
                             </h1>
                             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">Partner Portal</p>
                         </div>
@@ -257,11 +258,11 @@ const TailorLayout = () => {
                 <header className="md:hidden bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-sm">
                     <Link to="/partner" className="flex items-center gap-2.5">
                         <div className="w-8 h-8 bg-[#0A0A0A] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 shrink-0">
-                            <img src={silaiwalaLogo} alt="SewZella" className="w-full h-full object-cover" />
+                            <img src={logos.tailor} alt={appName} className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <h1 className="text-base font-black text-gray-900 leading-none tracking-tight">
-                                SewZ<span className="text-[#843D9B]">ella</span>
+                                {appName}
                             </h1>
                             <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Partner Portal</p>
                         </div>

@@ -10,12 +10,14 @@ import ImageUploader from '../../../components/Common/ImageUploader';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import PlacesAutocompleteField from '../../../shared/components/PlacesAutocompleteField';
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api';
+import useBrandingStore from '../../../store/brandingStore';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const ProfileSettings = () => {
     const navigate = useNavigate();
     const { logout } = useTailorAuth();
+    const appName = useBrandingStore(state => state.appName);
     const [isEditing, setIsEditing] = useState(false);
     const [isEditingPickup, setIsEditingPickup] = useState(false);
     const [activeModal, setActiveModal] = useState(null); // 'pickup', 'terms', 'privacy'
@@ -336,7 +338,7 @@ const ProfileSettings = () => {
                     <div className="space-y-4">
                         <h3 className="text-lg font-black text-gray-900">Terms & Conditions</h3>
                         <div className="text-xs text-gray-600 space-y-2 h-48 overflow-y-auto custom-scrollbar pr-2 leading-relaxed">
-                            <p>1. By using Silaiwala, you agree to fulfill all accepted orders within the specified deadline.</p>
+                            <p>1. By using {appName}, you agree to fulfill all accepted orders within the specified deadline.</p>
                             <p>2. {formData.shopName} is responsible for the fabric quality if provided by the shop.</p>
                             <p>3. Payments are processed every Friday for completed orders.</p>
                             <p>4. Platform commission is fixed at 12% per transaction.</p>
