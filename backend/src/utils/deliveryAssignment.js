@@ -296,6 +296,26 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
         io.to("delivery_partners").emit("receive_new_order", sharedBroadcastPayload);
         io.to("delivery_partners").emit("new_task", sharedBroadcastPayload);
 
+        // Also trigger FCM Push Notification broadcast for all active delivery partners
+        sendNotification({
+          recipient: "delivery_partners",
+          type: "NEW_DELIVERY_TASK",
+          title: cycle === "pickup" ? "New Fabric Pickup Request! 🛵" : "New Delivery Request! 🛵",
+          message: cycle === "pickup" 
+            ? `New job: Fabric pickup for order ${order.orderId}. Please accept or reject.`
+            : `New job: Final delivery for order ${order.orderId}. Please accept or reject.`,
+          data: {
+            orderId: order._id.toString(),
+            orderId_str: order.orderId,
+            type: statusType,
+            taskType,
+            requiresAcceptance: true,
+            targetUrl: "/delivery/tasks",
+            deliveryEarnings: order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0,
+            deliveryDistance: order.deliveryDistance,
+          },
+        }).catch(err => console.error("FCM broadcast error for delivery partners:", err));
+
         io.to(`user_${order.tailor?._id || order.tailor}`).emit("order_status_updated", {
           orderId: order.orderId,
           _id: order._id,

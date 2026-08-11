@@ -24,7 +24,8 @@ const syncTokenWithBackend = async (token) => {
     localStorage.getItem('customer_token') ||
     localStorage.getItem('tailor_token') ||
     localStorage.getItem('delivery_token') ||
-    localStorage.getItem('exec_token')
+    localStorage.getItem('exec_token') ||
+    localStorage.getItem('executive_token')
   );
 
   if (!hasAuthToken) {

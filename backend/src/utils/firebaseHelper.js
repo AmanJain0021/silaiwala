@@ -41,11 +41,21 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
 
   const payload = {
     tokens: validTokens,
+    notification: {
+      title: String(title),
+      body: String(body),
+    },
     data: dataWithNotifInfo,
     webpush: {
       headers: {
         Urgency: 'high',
         TTL: '86400'
+      },
+      notification: {
+        title: String(title),
+        body: String(body),
+        icon: '/logo192.png',
+        click_action: data?.url || data?.targetUrl || '/'
       },
       fcmOptions: {
         link: data?.url || data?.targetUrl || '/'
@@ -53,6 +63,13 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
     },
     android: {
       priority: isUrgent ? 'high' : 'normal',
+      notification: {
+        title: String(title),
+        body: String(body),
+        sound: 'default',
+        priority: 'high',
+        channelId: 'delivery_requests'
+      },
       data: dataWithNotifInfo
     }
   };
