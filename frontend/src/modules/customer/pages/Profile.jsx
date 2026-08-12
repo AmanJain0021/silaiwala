@@ -9,7 +9,6 @@ import useAuthStore from '../../../store/authStore';
 import BottomNav from '../components/BottomNav';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import MenuOption from '../components/profile/MenuOption';
-
 import useUserStore from '../../../store/userStore';
 import api from '../../../utils/api';
 import useBrandingStore from '../../../store/brandingStore';
@@ -41,7 +40,7 @@ const LegalLinks = () => {
                 <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] italic">Legal & Policies</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {docs.map((doc, idx) => (
+                {docs.map((doc) => (
                     <MenuOption
                         key={doc._id}
                         icon={Shield}
@@ -58,8 +57,10 @@ const LegalLinks = () => {
 
 const ProfilePage = () => {
     const navigate = useNavigate();
-    const { logout, user: authUser } = useAuthStore(state => state);
-    const { fetchProfile, profile, isLoading } = useUserStore();
+    const logout = useAuthStore(state => state.logout);
+    const authUser = useAuthStore(state => state.user);
+    const profile = useUserStore(state => state.profile);
+    const fetchProfile = useUserStore(state => state.fetchProfile);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);

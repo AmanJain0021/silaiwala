@@ -218,7 +218,7 @@ export const usePushNotifications = (user) => {
       });
 
       // Show OS-level native notification in foreground
-      if (Notification.permission === 'granted') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         try {
           const iconUrl = window.location.origin + '/logo.png';
           if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import AddToCartModal from './AddToCartModal';
@@ -9,33 +9,38 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productTy
     const [isLoading, setIsLoading] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
 
-    const fetchProducts = async () => {
-        setIsLoading(true);
-        try {
-            const params = {
-                category: categoryId || undefined,
-                search: searchQuery || undefined,
-                productType: productType || undefined,
-                ...filters
-            };
-            const response = await api.get('/products', { params }).catch(() => null);
-
-            if (response?.data?.success && Array.isArray(response.data.data)) {
-                setItems(response.data.data);
-            } else {
-                setItems([]);
-            }
-        } catch (error) {
-            console.error('Error fetching products:', error);
-            setItems([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
 
     useEffect(() => {
+        let isMounted = true;
+        const fetchProducts = async () => {
+            setIsLoading(true);
+            try {
+                const params = {
+                    category: categoryId || undefined,
+                    search: searchQuery || undefined,
+                    productType: productType || undefined,
+                    ...filters
+                };
+                const response = await api.get('/products', { params }).catch(() => null);
+
+                if (isMounted) {
+                    if (response?.data?.success && Array.isArray(response.data.data)) {
+                        setItems(response.data.data);
+                    } else {
+                        setItems([]);
+                    }
+                }
+            } catch (error) {
+                if (isMounted) setItems([]);
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+
         fetchProducts();
-    }, [categoryId, JSON.stringify(filters), searchQuery, productType]);
+        return () => { isMounted = false; };
+    }, [categoryId, filtersKey, searchQuery, productType]);
 
     if (items.length === 0 && !isLoading) {
         return null; // Return null gracefully if section has no items in database yet

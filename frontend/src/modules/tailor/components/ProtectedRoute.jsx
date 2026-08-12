@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useTailorAuth, TAILOR_STATUS } from '../context/AuthContext';
 
 const ProtectedRoute = ({ requiredStatus = [TAILOR_STATUS.APPROVED] }) => {
-    const { token, status, loading } = useTailorAuth();
+    const { token, status, loading, user } = useTailorAuth();
 
     if (loading) {
         return (
@@ -13,7 +13,9 @@ const ProtectedRoute = ({ requiredStatus = [TAILOR_STATUS.APPROVED] }) => {
         );
     }
 
-    if (!token) {
+    const currentRole = user?.role || (localStorage.getItem('tailor_user') ? JSON.parse(localStorage.getItem('tailor_user'))?.role : null);
+
+    if (!token || (currentRole && currentRole !== 'tailor' && currentRole !== 'partner')) {
         return <Navigate to="/partner/login" replace />;
     }
 

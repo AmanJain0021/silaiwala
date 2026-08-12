@@ -39,6 +39,7 @@ const TailorShopOrders = () => {
         try {
             const res = await api.patch(`/tailors/offline-orders/${orderId}/status`, { status });
             if (res.data.success) {
+                window._lastStatusToastTime = Date.now();
                 toast.success(`Updated to ${getOfflineStatusLabel(status)}`);
                 await fetchOrders();
                 if (selected?._id === orderId) setSelected(res.data.data);

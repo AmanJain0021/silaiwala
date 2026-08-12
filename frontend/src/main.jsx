@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import React from 'react'
+import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import './utils/toastNotifier'
 import './styles/index.css'
@@ -12,9 +13,6 @@ import OfflineDetector from './components/Common/OfflineDetector.jsx'
 // Register Service Workers with scope: '/'
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Only register sw.js which now contains Firebase Messaging
-
-
     navigator.serviceWorker.register('/sw.js').then(
       (registration) => {
         console.log('[SW] ServiceWorker registered with scope:', registration.scope);
@@ -31,12 +29,14 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder_client_id
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={clientId}>
-      <ErrorBoundary>
-        <OfflineDetector>
-          <App />
-        </OfflineDetector>
-      </ErrorBoundary>
-    </GoogleOAuthProvider>
+    <BrowserRouter>
+      <GoogleOAuthProvider clientId={clientId}>
+        <ErrorBoundary>
+          <OfflineDetector>
+            <App />
+          </OfflineDetector>
+        </ErrorBoundary>
+      </GoogleOAuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 )

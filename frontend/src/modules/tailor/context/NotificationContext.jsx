@@ -59,7 +59,7 @@ export const NotificationProvider = ({ children }) => {
             try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
             
             // Native Browser Notification (Optional)
-            if (Notification.permission === "granted") {
+            if ("Notification" in window && Notification.permission === "granted") {
                 new Notification(notification.title, { body: notification.message });
             }
         });

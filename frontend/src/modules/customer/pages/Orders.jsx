@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Package, Search, ListFilter, Ruler } from 'lucide-react';
 import useOrderStore from '../../../store/orderStore';
@@ -16,11 +16,11 @@ const OrdersPage = () => {
     const location = useLocation();
     const { orders, fetchOrders, isLoading } = useOrderStore();
     const { user } = useAuthStore();
-    const [alterations, setAlterations] = React.useState([]);
-    const [customDesigns, setCustomDesigns] = React.useState([]);
-    const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'orders'); // 'orders', 'alterations', 'custom-designs'
-    const [filterStatus, setFilterStatus] = React.useState('All');
-    const [searchQuery, setSearchQuery] = React.useState('');
+    const [alterations, setAlterations] = useState([]);
+    const [customDesigns, setCustomDesigns] = useState([]);
+    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'orders'); // 'orders', 'alterations', 'custom-designs'
+    const [filterStatus, setFilterStatus] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (location.state?.activeTab) {
@@ -99,9 +99,9 @@ const OrdersPage = () => {
         return idMatch || detailsMatch;
     };
 
-    const filteredOrders = orders.filter(o => (filterStatus === 'All' || (o.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(o));
-    const filteredAlterations = alterations.filter(a => (filterStatus === 'All' || (a.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(a));
-    const filteredCustomDesigns = customDesigns.filter(d => (filterStatus === 'All' || (d.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(d));
+    const filteredOrders = (orders || []).filter(o => (filterStatus === 'All' || (o.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(o));
+    const filteredAlterations = (alterations || []).filter(a => (filterStatus === 'All' || (a.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(a));
+    const filteredCustomDesigns = (customDesigns || []).filter(d => (filterStatus === 'All' || (d.status || '').toLowerCase() === filterStatus.toLowerCase()) && matchSearch(d));
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans">

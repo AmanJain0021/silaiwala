@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { Shirt, ShoppingBag, ClipboardList, User, Search, Bell, MapPin, ChevronDown } from 'lucide-react';
+import { Shirt, ShoppingBag, ClipboardList, User, Search, MapPin, ChevronDown } from 'lucide-react';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
 import useLocationStore from '../../../store/locationStore';
@@ -14,10 +14,10 @@ const CustomerMainLayout = () => {
     const { appName, logos } = useBrandingStore();
 
     const navItems = [
-        { to: '/', icon: Shirt, label: 'Services' },
-        { to: '/store', icon: ShoppingBag, label: 'Store' },
-        { to: '/orders', icon: ClipboardList, label: 'Orders' },
-        { to: '/profile', icon: User, label: 'Profile' },
+        { to: '/user', icon: Shirt, label: 'Services' },
+        { to: '/user/store', icon: ShoppingBag, label: 'Store' },
+        { to: '/user/orders', icon: ClipboardList, label: 'Orders' },
+        { to: '/user/profile', icon: User, label: 'Profile' },
     ];
 
     return (
@@ -55,7 +55,7 @@ const CustomerMainLayout = () => {
                     {/* Navigation Links */}
                     <nav className="hidden lg:flex items-center gap-1 ml-auto">
                         {navItems.map((item) => {
-                            const isActive = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
+                            const isActive = item.to === '/user' ? location.pathname === '/user' : location.pathname.startsWith(item.to);
                             return (
                                 <Link
                                     key={item.to}
@@ -74,10 +74,10 @@ const CustomerMainLayout = () => {
 
                     {/* Right Actions */}
                     <div className="flex items-center gap-4">
-                        <button className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#843D9B] transition-all relative">
+                        <button className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-[#843D9B]/10 hover:text-[#843D9B] transition-all relative">
                             <Search size={20} />
                         </button>
-                        <Link to="/user/cart" className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-white hover:text-[#843D9B] transition-all relative">
+                        <Link to="/user/cart" className="p-2.5 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 hover:bg-[#843D9B]/10 hover:text-[#843D9B] transition-all relative">
                             <ShoppingBag size={20} />
                             {cartCount > 0 && (
                                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md">

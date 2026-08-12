@@ -49,7 +49,10 @@ class ErrorBoundary extends React.Component {
            errStr.includes('dynamically imported module') ||
            errStr.includes('ChunkLoadError') ||
            errStr.includes('Loading chunk') ||
-           errStr.includes('Failed to load resource');
+           errStr.includes('Failed to load resource') ||
+           errStr.includes('Cannot read properties of null') ||
+           errStr.includes('useRoutes') ||
+           errStr.includes('context of a <Router>');
   }
 
   componentDidCatch(error, errorInfo) {

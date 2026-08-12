@@ -19,14 +19,17 @@ const PopularTailors = () => {
         navigate(`/user/tailor/${tailorId}`);
     };
 
+    const lat = coordinates?.lat;
+    const lng = coordinates?.lng;
+
     React.useEffect(() => {
         const params = { strictRadius: true };
-        if (coordinates?.lat && coordinates?.lng) {
-            params.lat = coordinates.lat;
-            params.lng = coordinates.lng;
+        if (lat && lng) {
+            params.lat = lat;
+            params.lng = lng;
         }
         fetchTailors(params);
-    }, [fetchTailors, coordinates]);
+    }, [fetchTailors, lat, lng]);
 
     // Show top 4 prominently
     const safeTailors = Array.isArray(tailors) ? tailors : [];

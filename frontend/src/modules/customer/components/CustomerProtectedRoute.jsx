@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import useAuthStore from '../../../store/authStore';
 
 const CustomerProtectedRoute = () => {
-    const { isAuthenticated, isLoading } = useAuthStore();
+    const { isAuthenticated, user, isLoading } = useAuthStore();
     const location = useLocation();
 
     if (isLoading) {
@@ -14,7 +14,9 @@ const CustomerProtectedRoute = () => {
         );
     }
 
-    if (!isAuthenticated) {
+    const currentRole = user?.role || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user'))?.role : null);
+
+    if (!isAuthenticated || (currentRole && currentRole !== 'customer')) {
         return <Navigate to="/user/login" state={{ from: location.pathname + location.search }} replace />;
     }
 

@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom']
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'react-is', 'zustand', 'axios', 'lucide-react', 'react-hot-toast']
+  }
 })

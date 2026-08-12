@@ -106,6 +106,7 @@ const Orders = () => {
                 const updatedObj = response.data.data;
                 const displayId = updatedObj?.orderId || orderId;
                 const statusKey = String(status).toLowerCase();
+                window._lastStatusToastTime = Date.now();
                 toast.success(`Status updated to ${status.replace(/-/g, ' ')}`, {
                     id: `toast-status-${displayId}-${statusKey}`
                 });

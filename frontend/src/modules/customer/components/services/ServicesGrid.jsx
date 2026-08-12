@@ -138,7 +138,8 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const [services, setServices] = useState([]);
     const [serviceCategories, setServiceCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { location: { lat, lng }, error: locationError } = useUnifiedLocation({ autoDetect: true, fetchAddress: false });
+    const { location = {}, error: locationError } = useUnifiedLocation({ autoDetect: true, fetchAddress: false });
+    const { lat, lng } = location || {};
     const routeLocation = useRouteLocation();
     const [activeTailorId, setActiveTailorId] = useState(routeLocation.state?.tailorId || null);
     const [tailorName, setTailorName] = useState(routeLocation.state?.tailorName || '');
