@@ -152,7 +152,17 @@ const sendNotification = async (options) => {
         });
       } else {
         // Send to specific user — collect tokens based on targetPlatform
-        const targetUser = await User.findById(recipient);
+        let targetUser = await User.findById(recipient);
+        if (!targetUser) {
+          try {
+            const Tailor = require("../models/Tailor.js");
+            const tailorDoc = await Tailor.findById(recipient);
+            if (tailorDoc && tailorDoc.user) {
+              targetUser = await User.findById(tailorDoc.user);
+            }
+          } catch (tErr) {}
+        }
+
         if (targetUser) {
           const webTokens = targetUser.fcmToken || [];
           const mobileTokens = targetUser.fcmTokenMobile || [];

@@ -14,7 +14,7 @@ export const getCurrentDeviceFcmToken = () => _currentDeviceToken;
 /**
  * Register FCM token with backend API (EXACTLY ONCE per token).
  */
-const syncTokenWithBackend = async (token) => {
+const syncTokenWithBackend = async (token, userId = null) => {
   if (!token) return;
 
   // ONLY sync FCM token if an active user authentication token exists
@@ -35,10 +35,11 @@ const syncTokenWithBackend = async (token) => {
   _currentDeviceToken = token;
   localStorage.setItem('fcm_token', token);
 
-  const syncedKey = 'fcm_token_synced_' + token.slice(-10);
+  const userSuffix = userId ? String(userId).slice(-8) : 'gen';
+  const syncedKey = `fcm_token_synced_${userSuffix}_${token.slice(-10)}`;
   const syncStatus = localStorage.getItem(syncedKey);
-  if (syncStatus === 'true' || syncStatus === 'attempted') {
-    return; // Already synced or attempted! Prevent repeated API calls.
+  if (syncStatus === 'true') {
+    return; // Already synced for this user! Prevent repeated API calls.
   }
 
   const payload = {
@@ -50,15 +51,14 @@ const syncTokenWithBackend = async (token) => {
   try {
     await api.put('/user/fcm-token', payload);
     localStorage.setItem(syncedKey, 'true');
-    console.log('[FCM] Token synced via PUT /api/user/fcm-token');
+    console.log('[FCM] Token synced via PUT /user/fcm-token for user:', userId || 'current');
   } catch (err) {
     try {
       await api.post('/notifications/fcm-token', payload);
       localStorage.setItem(syncedKey, 'true');
-      console.log('[FCM] Token synced via POST /notifications/fcm-token fallback');
+      console.log('[FCM] Token synced via POST /notifications/fcm-token fallback for user:', userId || 'current');
     } catch (fallbackErr) {
-      // Prevent continuous hammering on unauthenticated or non-supported routes
-      localStorage.setItem(syncedKey, 'attempted');
+      console.warn('[FCM] Token sync warning:', fallbackErr.message);
     }
   }
 };
@@ -170,7 +170,7 @@ export const usePushNotifications = (user) => {
 
           if (currentToken) {
             setFcmToken(currentToken);
-            await syncTokenWithBackend(currentToken);
+            await syncTokenWithBackend(currentToken, userId);
           }
         }
       } catch (err) {
