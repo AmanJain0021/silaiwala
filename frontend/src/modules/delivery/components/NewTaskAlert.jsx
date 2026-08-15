@@ -19,6 +19,18 @@ const stopBuzzer = () => {
     stopRingtone();
 };
 
+const safeAddressString = (addr, fallback = 'Address pending') => {
+    if (!addr) return fallback;
+    if (typeof addr === 'string') return addr;
+    if (typeof addr === 'object') {
+        if (typeof addr.address === 'string' && addr.address) return addr.address;
+        const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
+        if (parts.length > 0) return parts.join(', ');
+        if (addr.name || addr.receiverName) return `${addr.receiverName || addr.name}${addr.phone ? ' (' + addr.phone + ')' : ''}`;
+    }
+    return fallback;
+};
+
 const NewTaskAlert = ({ onTaskAccepted }) => {
     const [newTask, setNewTask] = useState(null);
     const { user } = useAuthStore();
@@ -469,7 +481,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                                                 <p className="text-[10px] font-medium text-white/40 leading-tight animate-pulse">Fetching address details...</p>
                                             ) : (
                                                 <p className="text-[10px] font-medium text-white/70 leading-tight line-clamp-2">
-                                                    {newTask.taskType === 'fabric-pickup' ? (newTask.address || 'Address pending') : (newTask.vendorAddress || 'Address pending')}
+                                                    {newTask.taskType === 'fabric-pickup' ? safeAddressString(newTask.address) : safeAddressString(newTask.vendorAddress)}
                                                 </p>
                                             )}
                                         </div>
@@ -483,7 +495,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
                                                 <p className="text-[10px] font-medium text-white/40 leading-tight animate-pulse">Fetching address details...</p>
                                             ) : (
                                                 <p className="text-[10px] font-medium text-white/70 leading-tight line-clamp-2">
-                                                    {newTask.taskType === 'fabric-pickup' ? (newTask.vendorAddress || 'Address pending') : (newTask.address || 'Address pending')}
+                                                    {newTask.taskType === 'fabric-pickup' ? safeAddressString(newTask.vendorAddress) : safeAddressString(newTask.address)}
                                                 </p>
                                             )}
                                         </div>

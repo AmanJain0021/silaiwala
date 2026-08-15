@@ -39,6 +39,14 @@ const serviceSchema = new mongoose.Schema(
       ref: "Category",
       required: true,
     },
+    // Tailor-selected style variants (e.g. ["Anarkali Kurta", "Straight Kurta"]) from category's admin styles
+    selectedStyles: [
+      {
+        name: { type: String, trim: true },
+        image: { type: String, default: "" },
+        description: { type: String, default: "", trim: true },
+      },
+    ],
     tailor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tailor",

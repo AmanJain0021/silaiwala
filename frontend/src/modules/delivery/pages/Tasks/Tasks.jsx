@@ -254,8 +254,13 @@ const Tasks = () => {
     const formatAddress = (addr) => {
         if (!addr) return 'Address not available';
         if (typeof addr === 'string') return addr;
-        const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
-        return parts.join(', ') || 'Address not available';
+        if (typeof addr === 'object') {
+            if (typeof addr.address === 'string' && addr.address) return addr.address;
+            const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
+            if (parts.length > 0) return parts.join(', ');
+            if (addr.receiverName || addr.name) return `${addr.receiverName || addr.name}${addr.phone ? ' (' + addr.phone + ')' : ''}`;
+        }
+        return 'Address not available';
     };
 
     const getTaskType = (task) => {
@@ -808,8 +813,8 @@ const Tasks = () => {
                                                         <div className="flex gap-2 pl-2">
                                                             <MapPin size={11} className="text-primary-dark mt-0.5 shrink-0" />
                                                             <p className="text-[10px] font-bold text-primary-dark leading-snug">
-                                                                {task.taskType === 'fabric-pickup' 
-                                                                    ? (task.address || formatAddress(task.deliveryAddress)) 
+                                                                 {task.taskType === 'fabric-pickup' 
+                                                                    ? formatAddress(task.address || task.deliveryAddress) 
                                                                     : (task.tailor?.shopName || 'Tailor Workshop')}
                                                             </p>
                                                         </div>
@@ -824,7 +829,7 @@ const Tasks = () => {
                                                             <p className="text-[10px] font-bold text-primary-dark leading-snug opacity-80">
                                                                 {task.taskType === 'fabric-pickup'
                                                                     ? (task.tailor?.shopName || 'Tailor Workshop')
-                                                                    : (task.address || formatAddress(task.deliveryAddress))}
+                                                                    : formatAddress(task.address || task.deliveryAddress)}
                                                             </p>
                                                         </div>
                                                     </div>

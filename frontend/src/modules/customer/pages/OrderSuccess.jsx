@@ -27,11 +27,16 @@ const OrderSuccess = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const state = location.state || {};
-    const { 
-        orderId, 
-        orderNumber: stateOrderNum, 
-        pendingAcceptance = true
-    } = state;
+    const { isAlteration = false, isCustomDesign = false, isFullyPaid = false, isBulk = false, pendingAcceptance = false } = state;
+    const savedOrderId = (() => {
+        try { return sessionStorage.getItem('lastCreatedOrderId'); } catch(e) { return null; }
+    })();
+    const savedOrderNum = (() => {
+        try { return sessionStorage.getItem('lastCreatedOrderNum'); } catch(e) { return null; }
+    })();
+
+    const activeOrderId = state.orderId || savedOrderId;
+    const displayOrderNum = state.orderNumber || savedOrderNum;
 
     const [orderDetails, setOrderDetails] = useState(null);
 
@@ -39,13 +44,13 @@ const OrderSuccess = () => {
     const clearCart = useCartStore(state => state.clearCart);
 
     useEffect(() => {
-        if (orderId) {
+        if (activeOrderId && !isAlteration && !isCustomDesign) {
             clearCheckout();
             clearCart();
 
             const fetchOrder = async () => {
                 try {
-                    const res = await api.get(`/orders/${orderId}`);
+                    const res = await api.get(`/orders/${activeOrderId}`);
                     if (res.data?.success) {
                         setOrderDetails(res.data.data);
                     }
@@ -54,12 +59,27 @@ const OrderSuccess = () => {
                 }
             };
             fetchOrder();
+        } else {
+            clearCheckout();
+            clearCart();
         }
-    }, [orderId, clearCheckout, clearCart]);
+    }, [activeOrderId, isAlteration, isCustomDesign, clearCheckout, clearCart]);
 
-    // Redirect if direct access without order data
-    if (!orderId) {
-        return <Navigate to="/user" replace />;
+    // Fallback if accessed without any order context
+    if (!activeOrderId && !orderDetails) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-3"><Check size={28} className="text-white" /></div>
+                <h3 className="text-base font-bold text-gray-900 mb-1">Order Requested!</h3>
+                <p className="text-xs text-gray-500 mb-4">Your order has been submitted successfully.</p>
+                <button
+                    onClick={() => navigate('/user/orders')}
+                    className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-primary-dark cursor-pointer"
+                >
+                    View My Orders
+                </button>
+            </div>
+        );
     }
 
     // Resolve Tailor Info
@@ -72,11 +92,23 @@ const OrderSuccess = () => {
     const profileImage = tailor.profileImage || tailor.image || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=256&auto=format&fit=crop';
 
     // Order number formatting
-    const displayOrderNumber = orderDetails?.orderId || stateOrderNum || (orderId ? `ORD-${orderId.slice(-8).toUpperCase()}` : 'ORD-459CC94A');
+    const displayOrderNumber = orderDetails?.orderId || displayOrderNum || (activeOrderId ? `${isAlteration ? 'ALT' : isCustomDesign ? 'DES' : 'ORD'}-${String(activeOrderId).slice(-8).toUpperCase()}` : 'ORD-459CC94A');
+
+    const titleText = isAlteration 
+        ? "Alteration Requested!" 
+        : isCustomDesign 
+        ? "Custom Design Requested!" 
+        : "Order Requested Successfully!";
+
+    const subtitleText = isAlteration
+        ? "Your alteration request has been submitted to the tailor. You will receive a quote soon."
+        : isCustomDesign
+        ? "Your custom design request has been submitted to the tailor. You will receive a quote soon."
+        : "Your request has been sent to the tailor. You’ll be notified once the tailor accepts your order.";
 
     const handleCopyOrderId = () => {
         navigator.clipboard.writeText(displayOrderNumber);
-        toast.success('Order ID copied to clipboard!');
+        toast.success('ID copied to clipboard!');
     };
 
     const handleShare = async () => {
@@ -84,7 +116,7 @@ const OrderSuccess = () => {
             try {
                 await navigator.share({
                     title: 'SilaiWala Order',
-                    text: `My SilaiWala order request (${displayOrderNumber}) has been submitted successfully!`,
+                    text: `My SilaiWala request (${displayOrderNumber}) has been submitted successfully!`,
                     url: window.location.href,
                 });
             } catch (err) {
@@ -95,7 +127,19 @@ const OrderSuccess = () => {
         }
     };
 
-    const steps = [
+    const steps = isAlteration ? [
+        { icon: <Send size={18} />, label: "Request sent" },
+        { icon: <User size={18} />, label: "Tailor quotes" },
+        { icon: <CreditCard size={18} />, label: "Accept quote" },
+        { icon: <Scissors size={18} />, label: "Garment pickup" },
+        { icon: <Truck size={18} />, label: "Delivered" }
+    ] : isCustomDesign ? [
+        { icon: <Send size={18} />, label: "Design sent" },
+        { icon: <User size={18} />, label: "Tailor quotes" },
+        { icon: <CreditCard size={18} />, label: "Accept & pay" },
+        { icon: <Scissors size={18} />, label: "Crafting" },
+        { icon: <Truck size={18} />, label: "Delivered" }
+    ] : [
         { icon: <Send size={18} />, label: "Order sent to tailor" },
         { icon: <User size={18} />, label: "Tailor accepts" },
         { icon: <CreditCard size={18} />, label: "Pay advance" },
@@ -131,14 +175,14 @@ const OrderSuccess = () => {
 
                     {/* Main Title */}
                     <h1 className="text-2xl sm:text-[26px] font-extrabold text-gray-900 tracking-tight mb-2">
-                        Order Requested Successfully!
+                        {titleText}
                     </h1>
 
                     {/* Order ID Badge */}
                     <button
                         onClick={handleCopyOrderId}
                         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all font-mono font-bold text-xs sm:text-sm tracking-wide shadow-2xs cursor-pointer active:scale-95"
-                        title="Click to copy Order ID"
+                        title="Click to copy ID"
                     >
                         <FileText size={16} className="text-primary" />
                         <span>{displayOrderNumber}</span>
@@ -146,8 +190,7 @@ const OrderSuccess = () => {
 
                     {/* Subtitle */}
                     <p className="text-xs sm:text-sm text-gray-600 max-w-xs text-center mt-3 leading-relaxed font-medium">
-                        Your request has been sent to the tailor.<br />
-                        You’ll be notified once the tailor accepts your order.
+                        {subtitleText}
                     </p>
                 </div>
 
@@ -159,10 +202,10 @@ const OrderSuccess = () => {
                         </div>
                         <div>
                             <h4 className="font-bold text-gray-900 text-xs sm:text-sm leading-snug">
-                                Tailor will respond within 30–60 minutes
+                                {isAlteration || isCustomDesign ? "Tailor will review and provide quote" : "Tailor will respond within 30–60 minutes"}
                             </h4>
                             <p className="text-[11px] sm:text-xs text-gray-600 font-medium mt-0.5">
-                                We’ll notify you as soon as your order is accepted.
+                                We’ll notify you as soon as your request is updated.
                             </p>
                         </div>
                     </div>
@@ -238,14 +281,16 @@ const OrderSuccess = () => {
 
                 {/* Action Buttons Stack */}
                 <div className="w-full space-y-3 pt-2">
-                    {/* Track Order Status Button (Pill shape) */}
+                    {/* Track Order Status / View Orders Button */}
                     <Link
-                        to={`/user/orders/${orderId}/track`}
+                        to={isAlteration || isCustomDesign ? "/user/orders" : `/user/orders/${activeOrderId}/track`}
                         className="w-full py-4 px-6 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-full shadow-lg shadow-primary/30 flex items-center justify-between text-base transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <div className="flex items-center gap-2.5">
                             <PackageCheck size={20} className="text-white shrink-0" />
-                            <span className="text-white font-bold">Track Order Status</span>
+                            <span className="text-white font-bold">
+                                {isAlteration || isCustomDesign ? "View My Requests" : "Track Order Status"}
+                            </span>
                         </div>
                         <ChevronRight size={20} className="text-white shrink-0" />
                     </Link>

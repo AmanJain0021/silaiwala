@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Info, HelpCircle, Save } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import MeasurementInput from './MeasurementInput';
 import { cn } from '../../../../../utils/cn';
 
@@ -51,8 +52,19 @@ const categoryFields = {
     ]
 };
 
-const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide }) => {
-    const [selectedCategory, setSelectedCategory] = useState('Kurta/Kurti');
+const detectDefaultCategory = (name) => {
+    if (!name) return 'Kurta/Kurti';
+    const lower = name.toLowerCase();
+    if (lower.includes('blouse')) return 'Blouse';
+    if (lower.includes('shirt')) return 'Shirt';
+    if (lower.includes('pant') || lower.includes('trouser') || lower.includes('pajama') || lower.includes('pyjama') || lower.includes('salwar') || lower.includes('palazzo') || lower.includes('skirt') || lower.includes('bottom') || lower.includes('lower')) {
+        return 'Pant/Trouser';
+    }
+    return 'Kurta/Kurti';
+};
+
+const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measurementFields, categoryName }) => {
+    const [selectedCategory, setSelectedCategory] = useState(() => detectDefaultCategory(categoryName));
     const [values, setValues] = useState({
         chest: '', waist: '', hips: '', shoulder: '', length: '',
         sleeveLength: '', neck: '', underbust: '', frontNeck: '',
@@ -64,18 +76,33 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide }) => {
     const [profileName, setProfileName] = useState('');
 
     useEffect(() => {
+        if (categoryName) {
+            setSelectedCategory(detectDefaultCategory(categoryName));
+        }
+    }, [categoryName]);
+
+    useEffect(() => {
         if (initialData) {
             setValues(prev => ({ ...prev, ...initialData }));
         }
     }, [initialData]);
 
-    const handleChange = (field, value) => {
+    // Active fields list: custom admin-defined measurementFields OR hardcoded category fallback
+    const activeFields = (measurementFields && measurementFields.length > 0)
+        ? measurementFields
+        : (categoryFields[selectedCategory] || categoryFields['Other']);
+
+
+
+    const getFieldKey = (field) => field.key || field.id || field.name || field.label;
+
+    const handleChange = (fieldKey, value) => {
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
-            setValues(prev => ({ ...prev, [field]: value }));
-            if (errors[field]) {
+            setValues(prev => ({ ...prev, [fieldKey]: value }));
+            if (errors[fieldKey]) {
                 setErrors(prev => {
                     const newErrors = { ...prev };
-                    delete newErrors[field];
+                    delete newErrors[fieldKey];
                     return newErrors;
                 });
             }
@@ -84,15 +111,17 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide }) => {
 
     const validate = () => {
         const newErrors = {};
-        const currentFields = categoryFields[selectedCategory] || categoryFields['Other'];
-        
-        currentFields.forEach(field => {
-            if (!values[field.key]) {
-                newErrors[field.key] = 'Required';
-            } else {
-                const num = parseFloat(values[field.key]);
-                if (num <= 0 || num > 150) {
-                    newErrors[field.key] = 'Invalid range';
+        activeFields.forEach(field => {
+            const key = getFieldKey(field);
+            if (field.isRequired !== false) {
+                const val = values[key];
+                if (val === undefined || val === null || String(val).trim() === '') {
+                    newErrors[key] = 'Required';
+                } else {
+                    const num = parseFloat(val);
+                    if (isNaN(num) || num <= 0 || num > 500) {
+                        newErrors[key] = 'Invalid range (1-500)';
+                    }
                 }
             }
         });
@@ -107,49 +136,57 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide }) => {
 
     const handleSave = () => {
         if (validate()) {
-            const currentFields = categoryFields[selectedCategory] || categoryFields['Other'];
-            const filteredValues = { notes: values.notes };
-            currentFields.forEach(f => {
-                filteredValues[f.key] = values[f.key];
+            const filteredValues = { notes: values.notes || '' };
+            activeFields.forEach(f => {
+                const key = getFieldKey(f);
+                if (values[key] !== undefined && values[key] !== '') {
+                    filteredValues[key] = values[key];
+                }
             });
 
             onSave({
                 type: 'self',
                 data: filteredValues,
                 saveProfile: saveProfile ? { name: profileName } : null,
-                garmentType: selectedCategory
+                garmentType: selectedCategory,
+                isConfirmed: true
             });
+            toast.success("Measurements confirmed ✓");
+        } else {
+            toast.error("Please fill all required measurement fields");
         }
     };
 
     return (
         <div className="bg-gray-50 border border-t-0 border-gray-100 rounded-b-2xl p-4 animate-in slide-in-from-top-2 duration-300">
 
-            {/* Category Dropdown Selector */}
-            <div className="mb-4">
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-widest ml-1 mb-1 block">
-                    Clothing Category
-                </label>
-                <select 
-                    value={selectedCategory} 
-                    onChange={(e) => {
-                        setSelectedCategory(e.target.value);
-                        setErrors({});
-                    }}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-3 text-xs font-bold text-gray-800 outline-none focus:border-primary focus:ring-1 focus:ring-[#e6f4f1] transition-all cursor-pointer shadow-sm"
-                >
-                    {Object.keys(categoryFields).map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                </select>
-            </div>
+            {/* Category Dropdown Selector (Only shown if custom admin fields are NOT provided) */}
+            {(!measurementFields || measurementFields.length === 0) && (
+                <div className="mb-4">
+                    <label className="text-[10px] text-gray-400 font-bold uppercase tracking-widest ml-1 mb-1 block">
+                        Clothing Category
+                    </label>
+                    <select 
+                        value={selectedCategory} 
+                        onChange={(e) => {
+                            setSelectedCategory(e.target.value);
+                            setErrors({});
+                        }}
+                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-3 text-xs font-bold text-gray-800 outline-none focus:border-primary focus:ring-1 focus:ring-[#e6f4f1] transition-all cursor-pointer shadow-sm"
+                    >
+                        {Object.keys(categoryFields).map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {/* Helper Banner */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-4 flex items-start justify-between gap-3">
                 <div className="flex gap-3">
                     <Info size={18} className="text-primary shrink-0 mt-0.5" />
                     <div>
-                        <h4 className="text-xs font-bold text-gray-800">Standard Size Guide ({selectedCategory})</h4>
+                        <h4 className="text-xs font-bold text-gray-800">Standard Size Guide {(!measurementFields || measurementFields.length === 0) && `(${selectedCategory})`}</h4>
                         <p className="text-[10px] text-primary mt-0.5 leading-relaxed">
                             Measure comfortably. Don't pull the tape too tight. All units are in inches.
                         </p>
@@ -168,16 +205,19 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide }) => {
 
             {/* Input Grid */}
             <div className="grid grid-cols-2 gap-x-3 gap-y-4 mb-6">
-                {(categoryFields[selectedCategory] || categoryFields['Other']).map(field => (
-                    <MeasurementInput
-                        key={field.key}
-                        label={field.label}
-                        placeholder={field.placeholder}
-                        value={values[field.key] || ''}
-                        onChange={(v) => handleChange(field.key, v)}
-                        error={errors[field.key]}
-                    />
-                ))}
+                {activeFields.map(field => {
+                    const key = getFieldKey(field);
+                    return (
+                        <MeasurementInput
+                            key={key}
+                            label={field.label || field.name || key}
+                            placeholder={field.placeholder || 'e.g. 34'}
+                            value={values[key] || ''}
+                            onChange={(v) => handleChange(key, v)}
+                            error={errors[key]}
+                        />
+                    );
+                })}
             </div>
 
             {/* Notes Section */}

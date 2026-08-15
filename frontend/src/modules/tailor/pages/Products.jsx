@@ -33,6 +33,7 @@ const Products = () => {
         stock: '',
         category: '',
         serviceType: 'STITCHING',
+        selectedStyles: [],
         tags: '',
         sizes: '',
         colors: ''
@@ -184,6 +185,7 @@ const Products = () => {
                     image: newItem.image,
                     basePrice: newItem.basePrice,
                     deliveryTime: newItem.deliveryTime,
+                    selectedStyles: newItem.selectedStyles || [],
                     ...(newItem.category ? { category: newItem.category } : {}),
                     tags: typeof newItem.tags === 'string'
                         ? newItem.tags.split(',').map(t => t.trim()).filter(t => t !== '')
@@ -251,6 +253,7 @@ const Products = () => {
                 basePrice: item.basePrice,
                 deliveryTime: item.deliveryTime,
                 category: item.category?._id || item.category,
+                selectedStyles: item.selectedStyles || [],
                 tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
             });
         } else {
@@ -284,7 +287,7 @@ const Products = () => {
         setNewItem({
             title: '', name: '', description: '', image: '',
             basePrice: '', price: '', deliveryTime: '2-4 DAYS',
-            stock: '', category: '', serviceType: 'STITCHING',
+            stock: '', category: '', serviceType: 'STITCHING', selectedStyles: [],
             tags: '', sizes: '', colors: ''
         });
         setSelectedParent('');
@@ -623,10 +626,72 @@ const Products = () => {
                                     if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
                                         return (
                                             <div className="pt-0.5 flex items-center justify-between text-[10px] font-bold text-gray-500">
-                                                <span>Allowed Price Range:</span>
                                                 <span className="text-[#843D9B] font-black bg-[#843D9B]/5 px-2 py-0.5 rounded-md">
                                                     ₹{selectedCat.minPrice} – ₹{selectedCat.maxPrice}
                                                 </span>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+                                {/* Style Variants Selection for Tailors */}
+                                {activeTab === 'samples' && (() => {
+                                    const selectedCat = newItem.category ? categories.find(c => c._id === newItem.category) : null;
+                                    if (selectedCat && selectedCat.styles && selectedCat.styles.length > 0) {
+                                        const currentSelected = newItem.selectedStyles || [];
+                                        return (
+                                            <div className="pt-3 border-t border-gray-100 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest">
+                                                        Styles You Can Stitch *
+                                                    </label>
+                                                    <span className="text-[9px] text-gray-400 font-bold">
+                                                        {currentSelected.length} of {selectedCat.styles.length} Selected
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 font-medium">Select which style variants you offer under this service:</p>
+                                                <div className="grid grid-cols-2 gap-2 mt-1">
+                                                    {selectedCat.styles.map((style, idx) => {
+                                                        const isSelected = currentSelected.some(s => (s.name || s) === style.name);
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => {
+                                                                    let newSel;
+                                                                    if (isSelected) {
+                                                                        newSel = currentSelected.filter(s => (s.name || s) !== style.name);
+                                                                    } else {
+                                                                        newSel = [...currentSelected, { name: style.name, image: style.image, description: style.description }];
+                                                                    }
+                                                                    setNewItem({ ...newItem, selectedStyles: newSel });
+                                                                }}
+                                                                className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
+                                                                    isSelected 
+                                                                        ? 'border-[#843D9B] bg-[#843D9B]/5 shadow-xs ring-1 ring-[#843D9B]/20' 
+                                                                        : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                {style.image ? (
+                                                                    <img src={style.image} alt={style.name} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                                                                ) : (
+                                                                    <div className="w-9 h-9 rounded-lg bg-indigo-50 text-[#843D9B] flex items-center justify-center font-bold text-xs shrink-0">
+                                                                        ✂️
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className={`text-xs font-bold truncate ${isSelected ? 'text-[#843D9B]' : 'text-gray-900'}`}>{style.name}</p>
+                                                                    {style.description && <p className="text-[9px] text-gray-400 truncate">{style.description}</p>}
+                                                                </div>
+                                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
+                                                                    isSelected ? 'bg-[#843D9B] border-[#843D9B] text-white' : 'border-gray-300'
+                                                                }`}>
+                                                                    {isSelected && '✓'}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         );
                                     }

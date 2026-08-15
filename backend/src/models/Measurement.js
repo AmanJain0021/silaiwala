@@ -17,9 +17,8 @@ const measurementSchema = new mongoose.Schema(
       required: [true, "Please specify the garment type (e.g., Shirt, Pant)"],
     },
     measurements: {
-      type: Map,
-      of: Number,
-      required: true,
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     unit: {
       type: String,

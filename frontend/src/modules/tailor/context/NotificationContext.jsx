@@ -5,6 +5,7 @@ import { useTailorAuth } from './AuthContext';
 import api from '../services/api';
 import { playNotificationSound } from '../../../utils/audio';
 import { getToken } from '../../../utils/auth';
+import toast from 'react-hot-toast';
 
 const NotificationContext = createContext();
 
@@ -52,19 +53,45 @@ export const NotificationProvider = ({ children }) => {
             socket.emit('join_user_room', userId);
         }
 
+        const handleNewOrder = (data) => {
+            fetchNotifications();
+            try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
+            
+            const orderIdStr = data?.orderId || data?.id || '';
+            const msg = data?.message || `New Order ${orderIdStr ? '#' + orderIdStr : ''} received! Please review.`;
+            toast.success(`🛍️ ${msg}`, { duration: 6000, position: 'top-right' });
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification("New Order Placed! 🛍️", { 
+                        body: msg,
+                        icon: '/logo.png'
+                    });
+                } catch (e) { console.error(e); }
+            }
+        };
+
         socket.on('new_notification', (notification) => {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
             try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
             
-            // Native Browser Notification (Optional)
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(notification.title, { body: notification.message });
+                try {
+                    new Notification(notification.title || "New Notification", { body: notification.message });
+                } catch (e) { console.error(e); }
             }
         });
 
-        return () => socket.disconnect();
+        socket.on('receive_new_order', handleNewOrder);
+        socket.on('new_order', handleNewOrder);
+
+        return () => {
+            socket.off('receive_new_order', handleNewOrder);
+            socket.off('new_order', handleNewOrder);
+            socket.disconnect();
+        };
     }, [token, user?._id, user?.id]);
 
     const markAllRead = async () => {

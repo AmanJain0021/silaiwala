@@ -141,8 +141,13 @@ const DeliveryDashboard = () => {
     const formatAddress = (addr) => {
         if (!addr) return 'Address not specified';
         if (typeof addr === 'string') return addr;
-        const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
-        return parts.join(', ') || 'Address not specified';
+        if (typeof addr === 'object') {
+            if (typeof addr.address === 'string' && addr.address) return addr.address;
+            const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
+            if (parts.length > 0) return parts.join(', ');
+            if (addr.receiverName || addr.name) return `${addr.receiverName || addr.name}${addr.phone ? ' (' + addr.phone + ')' : ''}`;
+        }
+        return 'Address not specified';
     };
 
     const getTaskType = (task) => {

@@ -4,39 +4,103 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../utils/api';
 import { cn } from '../../../../utils/cn';
 
-const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, category }) => {
+const UPPER_KEYWORDS = ['neck', 'collar', 'blouse', 'sleeve', 'shoulder', 'underbust', 'padding', 'pad', 'bust', 'cup', 'cleavage', 'front neck', 'back neck', 'yoke'];
+const LOWER_KEYWORDS = ['pant', 'trouser', 'pajama', 'pyjama', 'salwar', 'palazzo', 'skirt', 'bottom', 'lower', 'inseam', 'mohri', 'waistband'];
+
+const getGarmentType = (categoryName, serviceTitle) => {
+    const combined = `${categoryName || ''} ${serviceTitle || ''}`.toLowerCase();
+    if (LOWER_KEYWORDS.some(k => combined.includes(k))) {
+        return 'bottomwear';
+    }
+    if (combined.includes('blouse')) return 'blouse';
+    if (combined.includes('shirt')) return 'shirt';
+    if (combined.includes('kurta') || combined.includes('kurti') || combined.includes('suit')) return 'topwear';
+    return 'all';
+};
+
+const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, category, serviceTitle, directStyleAddons = [] }) => {
     const [addons, setAddons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const categoryName = category?.name || category || '';
+    const garmentType = getGarmentType(categoryName, serviceTitle);
+
+    const categoryAddonsFromSchema = directStyleAddons.length > 0
+        ? directStyleAddons
+        : (category?.styleAddons || []);
 
     useEffect(() => {
         const fetchAddons = async () => {
             if (!isOpen) return;
             setIsLoading(true);
             try {
-                // Determine search category - mapping known UI categories to DB synonyms if needed
-                let searchCat = category?.name || category || '';
+                // Fetch all active add-ons first
+                const response = await api.get('/style-addons?isActive=true');
 
-                // Fetch addons. Try specific category first, then fallback to all if needed
-                const response = await api.get(`/style-addons?isActive=true${searchCat ? `&category=${searchCat}` : ''}`);
+                let list = response.data?.success ? (response.data.data || []) : [];
 
-                if (response.data.success) {
-                    // If no specific category items found, fetch all as fallback so user isn't stuck
-                    if (response.data.data.length === 0 && searchCat) {
-                        const allResponse = await api.get('/style-addons?isActive=true');
-                        setAddons(allResponse.data.data);
-                    } else {
-                        setAddons(response.data.data);
-                    }
+                // Convert category schema styleAddons to standard add-on objects
+                const categorySchemaItems = categoryAddonsFromSchema.map((item, i) => ({
+                    _id: item._id || `cat_addon_${i}_${item.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+                    name: item.name,
+                    price: item.price || 0,
+                    description: item.description || '',
+                    image: item.image || '',
+                    category: categoryName || 'Service Custom'
+                }));
+
+                const searchCat = (categoryName || '').toLowerCase().trim();
+
+                // 1. Filter add-ons specifically belonging to this service OR set to 'All' / Universal
+                const serviceSpecificOrUniversalAddons = list.filter(addon => {
+                    const addonCat = (addon.category || '').toLowerCase().trim();
+                    if (!addonCat || addonCat === 'all') return true; // Universal
+                    if (!searchCat) return true;
+                    return addonCat === searchCat || searchCat.includes(addonCat) || addonCat.includes(searchCat);
+                });
+
+                // 2. Perform strict garment type check (e.g. Pajama/Bottomwear vs Topwear)
+                let filteredList = serviceSpecificOrUniversalAddons;
+                if (garmentType === 'bottomwear') {
+                    filteredList = serviceSpecificOrUniversalAddons.filter(addon => {
+                        const text = `${addon.name} ${addon.description || ''} ${addon.category || ''}`.toLowerCase();
+                        return !UPPER_KEYWORDS.some(kw => text.includes(kw));
+                    });
+                } else if (garmentType === 'topwear' || garmentType === 'blouse' || garmentType === 'shirt') {
+                    filteredList = serviceSpecificOrUniversalAddons.filter(addon => {
+                        const text = `${addon.name} ${addon.description || ''} ${addon.category || ''}`.toLowerCase();
+                        return !text.includes('pant bottom') && !text.includes('salwar mohri') && !text.includes('inseam');
+                    });
                 }
+
+                // Combine category schema items at top + filtered service add-ons
+                const combinedList = [...categorySchemaItems];
+                filteredList.forEach(item => {
+                    if (!combinedList.some(c => c.name.toLowerCase() === item.name.toLowerCase())) {
+                        combinedList.push(item);
+                    }
+                });
+
+                setAddons(combinedList);
             } catch (error) {
                 console.error('Failed to fetch style addons:', error);
+                // Fallback to category schema items if network fails
+                const categorySchemaItems = categoryAddonsFromSchema.map((item, i) => ({
+                    _id: item._id || `cat_addon_${i}_${item.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+                    name: item.name,
+                    price: item.price || 0,
+                    description: item.description || '',
+                    image: item.image || '',
+                    category: categoryName || 'Service Custom'
+                }));
+                setAddons(categorySchemaItems);
             } finally {
                 setIsLoading(false);
             }
         };
         fetchAddons();
-    }, [isOpen, category]);
+    }, [isOpen, categoryName, garmentType, JSON.stringify(categoryAddonsFromSchema)]);
 
     const filteredAddons = addons.filter(addon =>
         addon.name.toLowerCase().includes(searchTerm.toLowerCase())

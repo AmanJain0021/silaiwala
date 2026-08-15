@@ -17,7 +17,7 @@ exports.getMyServices = asyncHandler(async (req, res, next) => {
   }
 
   const services = await Service.find({ tailor: tailor._id })
-    .populate("category", "name gender type minPrice maxPrice basePrice description")
+    .populate("category", "name gender type minPrice maxPrice basePrice description styles measurementFields styleAddons")
     .sort("-createdAt");
 
   res.status(200).json({
@@ -162,7 +162,7 @@ exports.deleteService = asyncHandler(async (req, res, next) => {
  */
 exports.getTailorServices = asyncHandler(async (req, res, next) => {
   const services = await Service.find({ tailor: req.params.tailorId, isActive: true, status: "approved" })
-    .populate("category", "name gender type minPrice maxPrice basePrice description")
+    .populate("category", "name gender type minPrice maxPrice basePrice description styles measurementFields styleAddons")
     .sort("-createdAt");
 
   res.status(200).json({

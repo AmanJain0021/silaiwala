@@ -6,7 +6,7 @@ import UploadSlip from './measurement-forms/UploadSlip';
 import MeasurementGuideModal from './MeasurementGuideModal';
 import useMeasurementStore from '../../../../store/measurementStore';
 
-const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased }) => {
+const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName }) => {
     const { measurements, fetchMeasurements, isLoading } = useMeasurementStore();
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     
@@ -20,23 +20,57 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
 
     React.useEffect(() => {
         fetchMeasurements();
-    }, [fetchMeasurements]);
+    }, []); // Run ONCE on mount to prevent repeated API polling
 
-    const handleSelfMeasureSave = (data) => {
-        setCompletedMeasurements(prev => ({ ...prev, new: true }));
-        onMeasurementComplete(data);
+    const handleSelfMeasureSave = async (data) => {
+        const isConfirmed = !!(data && data.isConfirmed);
+        
+        if (isConfirmed && data.saveProfile && data.saveProfile.name) {
+            try {
+                const { addMeasurement, fetchMeasurements } = useMeasurementStore.getState();
+                const saved = await addMeasurement({
+                    profileName: data.saveProfile.name,
+                    garmentType: data.garmentType || categoryName || 'Custom Fit',
+                    measurements: data.data,
+                    notes: data.data?.notes || ''
+                });
+                if (saved) {
+                    await fetchMeasurements();
+                }
+            } catch (err) {
+                console.error("Profile save error:", err);
+            }
+        }
+
+        setCompletedMeasurements(prev => ({ ...prev, new: isConfirmed }));
+        onMeasurementComplete(isConfirmed ? data : null);
+        if (isConfirmed) {
+            onSelectType(null); // Auto-close/collapse the measurement card upon confirmation
+        }
     };
 
     const handleUploadComplete = (data) => {
-        setCompletedMeasurements(prev => ({ ...prev, upload: true }));
-        onMeasurementComplete(data);
+        const hasUpload = !!(data && (data.url || data.slipUrl || data.file));
+        setCompletedMeasurements(prev => ({ ...prev, upload: hasUpload }));
+        onMeasurementComplete(hasUpload ? data : null);
+        if (hasUpload) {
+            onSelectType(null); // Auto-close/collapse upload card upon completion
+        }
     };
 
     const handleSavedProfileSelect = (profile) => {
-        setCompletedMeasurements(prev => ({ ...prev, saved: true }));
-        onSelectType('saved');
-        onSelectSavedProfile(profile);
-        onMeasurementComplete(profile.measurements || profile);
+        if (selectedSavedProfile?._id === profile._id && selectedType === 'saved') {
+            // Toggle off / unselect if clicked again
+            setCompletedMeasurements(prev => ({ ...prev, saved: false }));
+            onSelectType(null);
+            onSelectSavedProfile(null);
+            onMeasurementComplete(null);
+        } else {
+            setCompletedMeasurements(prev => ({ ...prev, saved: true }));
+            onSelectType('saved');
+            onSelectSavedProfile(profile);
+            onMeasurementComplete(profile.measurements || profile);
+        }
     };
 
     return (
@@ -82,64 +116,97 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 {measurements.length > 0 && (
                     <div className="space-y-2">
                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-1">Your Saved Profiles</p>
-                         {measurements.map(m => (
-                             <div
-                                key={m._id}
-                                onClick={() => handleSavedProfileSelect(m)}
-                                className={cn(
-                                    "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all relative overflow-hidden",
-                                    selectedSavedProfile?._id === m._id ? "border-primary bg-primary-soft shadow-sm" : "border-gray-100 hover:border-gray-200"
-                                )}
-                            >
-                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-primary z-10">
-                                    <User size={16} />
+                         {measurements.map(m => {
+                             const isSelected = selectedSavedProfile?._id === m._id && selectedType === 'saved';
+                             return (
+                                 <div
+                                    key={m._id}
+                                    onClick={() => handleSavedProfileSelect(m)}
+                                    className={cn(
+                                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all relative overflow-hidden",
+                                        isSelected ? "border-primary bg-primary-soft shadow-sm ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
+                                    )}
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-primary z-10">
+                                        <User size={16} />
+                                    </div>
+                                    <div className="flex-1 z-10">
+                                        <p className="text-sm font-semibold text-gray-900">{m.profileName}</p>
+                                        <p className="text-[10px] text-gray-500">{m.garmentType}</p>
+                                    </div>
+                                    <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center z-10 transition-all", isSelected ? "border-primary bg-primary" : "border-gray-300")}>
+                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
                                 </div>
-                                <div className="flex-1 z-10">
-                                    <p className="text-sm font-semibold text-gray-900">{m.profileName}</p>
-                                    <p className="text-[10px] text-gray-500">{m.garmentType}</p>
-                                </div>
-                                <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center z-10", selectedSavedProfile?._id === m._id ? "border-primary" : "border-gray-300")}>
-                                    {selectedSavedProfile?._id === m._id && <div className="w-2 h-2 rounded-full bg-primary" />}
-                                </div>
-                            </div>
-                         ))}
+                             );
+                         })}
                     </div>
                 )}
 
                 {/* 2. Enter New Measurement */}
                 <div className={cn(
                     "border rounded-xl overflow-hidden transition-all",
-                    selectedType === 'new' ? "border-primary shadow-sm" : "border-gray-100 hover:border-gray-200"
+                    selectedType === 'new' ? "border-primary shadow-sm" : (completedMeasurements.new ? "border-green-200 bg-green-50/20" : "border-gray-100 hover:border-gray-200")
                 )}>
                     <div
                         onClick={() => {
-                            onSelectType('new');
-                            setCompletedMeasurements(prev => ({ ...prev, new: false }));
+                            if (selectedType === 'new') {
+                                onSelectType(null);
+                            } else {
+                                onSelectType('new');
+                            }
                         }}
                         className={cn(
                             "flex items-center gap-3 p-3 cursor-pointer transition-all relative",
-                            selectedType === 'new' ? "bg-primary-soft" : "bg-white"
+                            selectedType === 'new' ? "bg-primary-soft" : (completedMeasurements.new ? "bg-green-50/40" : "bg-white")
                         )}
                     >
-                        <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-primary">
-                            <Ruler size={16} />
+                        <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                            completedMeasurements.new ? "bg-green-100 text-green-700" : "bg-green-50 text-primary"
+                        )}>
+                            {completedMeasurements.new ? <CheckCircle2 size={16} /> : <Ruler size={16} />}
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-gray-900">Enter Measurements</p>
-                                {completedMeasurements.new && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Completed</span>}
+                                <p className="text-sm font-semibold text-gray-900">
+                                    {completedMeasurements.new ? 'Self Measurements Saved' : 'Enter Measurements'}
+                                </p>
+                                {completedMeasurements.new && (
+                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                                        Confirmed ✓
+                                    </span>
+                                )}
                             </div>
-                            <p className="text-[10px] text-gray-500">Manually enter Chest, Waist, etc.</p>
+                            <p className="text-[10px] text-gray-500">
+                                {completedMeasurements.new ? 'Tap Edit / Update to modify your saved values' : 'Manually enter Chest, Waist, etc.'}
+                            </p>
                         </div>
-                        {selectedType === 'new' ? <ChevronUp size={16} className="text-primary" /> : <ChevronDown size={16} className="text-gray-400" />}
+                        {completedMeasurements.new && selectedType !== 'new' ? (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectType('new');
+                                }}
+                                className="px-2.5 py-1 text-[10px] font-black uppercase text-primary bg-white border border-primary/20 rounded-lg shadow-2xs hover:bg-primary hover:text-white transition-all shrink-0 cursor-pointer"
+                            >
+                                Edit / Update
+                            </button>
+                        ) : (
+                            selectedType === 'new' ? <ChevronUp size={16} className="text-primary" /> : <ChevronDown size={16} className="text-gray-400" />
+                        )}
                     </div>
 
                     {/* Expandable Form */}
-                    {selectedType === 'new' && !completedMeasurements.new && (
+                    {selectedType === 'new' && (
                         <SelfMeasureForm
+                            initialData={typeof measurements === 'object' ? (measurements.data || measurements) : null}
                             onSave={handleSelfMeasureSave}
                             onCancel={() => onSelectType(null)}
                             onOpenGuide={() => setIsGuideOpen(true)}
+                            measurementFields={measurementFields}
+                            categoryName={categoryName}
                         />
                     )}
                 </div>
@@ -148,33 +215,60 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 {/* 3. Upload Measurement Slip */}
                 <div className={cn(
                     "border rounded-xl overflow-hidden transition-all",
-                    selectedType === 'upload' ? "border-primary shadow-sm" : "border-gray-100 hover:border-gray-200"
+                    selectedType === 'upload' ? "border-primary shadow-sm" : (completedMeasurements.upload ? "border-green-200 bg-green-50/20" : "border-gray-100 hover:border-gray-200")
                 )}>
                     <div
                         onClick={() => {
-                            onSelectType('upload');
-                            setCompletedMeasurements(prev => ({ ...prev, upload: false }));
+                            if (selectedType === 'upload') {
+                                onSelectType(null);
+                            } else {
+                                onSelectType('upload');
+                            }
                         }}
                         className={cn(
-                            "flex items-center gap-3 p-3 cursor-pointer transition-all",
-                            selectedType === 'upload' ? "bg-primary-soft" : "bg-white"
+                            "flex items-center gap-3 p-3 cursor-pointer transition-all relative",
+                            selectedType === 'upload' ? "bg-primary-soft" : (completedMeasurements.upload ? "bg-green-50/40" : "bg-white")
                         )}
                     >
-                        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
-                            <Upload size={16} />
+                        <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                            completedMeasurements.upload ? "bg-green-100 text-green-700" : "bg-orange-50 text-orange-600"
+                        )}>
+                            {completedMeasurements.upload ? <CheckCircle2 size={16} /> : <Upload size={16} />}
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-gray-900">Upload Slip</p>
-                                {completedMeasurements.upload && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Uploaded</span>}
+                                <p className="text-sm font-semibold text-gray-900">
+                                    {completedMeasurements.upload ? 'Measurement Slip Uploaded' : 'Upload Slip'}
+                                </p>
+                                {completedMeasurements.upload && (
+                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                                        Uploaded ✓
+                                    </span>
+                                )}
                             </div>
-                            <p className="text-[10px] text-gray-500">Photo of handwritten notes</p>
+                            <p className="text-[10px] text-gray-500">
+                                {completedMeasurements.upload ? 'Tap Edit / Update to re-upload slip photo' : 'Photo of handwritten notes'}
+                            </p>
                         </div>
-                        {selectedType === 'upload' ? <ChevronUp size={16} className="text-primary" /> : <ChevronDown size={16} className="text-gray-400" />}
+                        {completedMeasurements.upload && selectedType !== 'upload' ? (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectType('upload');
+                                }}
+                                className="px-2.5 py-1 text-[10px] font-black uppercase text-primary bg-white border border-primary/20 rounded-lg shadow-2xs hover:bg-primary hover:text-white transition-all shrink-0 cursor-pointer"
+                            >
+                                Edit / Update
+                            </button>
+                        ) : (
+                            selectedType === 'upload' ? <ChevronUp size={16} className="text-primary" /> : <ChevronDown size={16} className="text-gray-400" />
+                        )}
                     </div>
 
                     {/* Expandable Form */}
-                    {selectedType === 'upload' && !completedMeasurements.upload && (
+                    {selectedType === 'upload' && (
                         <UploadSlip
                             onUpload={handleUploadComplete}
                             onCancel={() => onSelectType(null)}
@@ -184,7 +278,13 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
 
                 {/* 4. Tailor at Home (Visit) */}
                 <div
-                    onClick={() => onSelectType('home')}
+                    onClick={() => {
+                        if (selectedType === 'home') {
+                            onSelectType(null);
+                        } else {
+                            onSelectType('home');
+                        }
+                    }}
                     className={cn(
                         "group p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden",
                         selectedType === 'home' ? "border-primary bg-indigo-50 ring-1 ring-primary shadow-sm" : "border-gray-100 bg-white hover:border-gray-200"
@@ -221,7 +321,11 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 {/* 5. Provide Sample Garment */}
                 <div
                     onClick={() => {
-                        onSelectType('sample');
+                        if (selectedType === 'sample') {
+                            onSelectType(null);
+                        } else {
+                            onSelectType('sample');
+                        }
                     }}
                     className={cn(
                         "group p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden",

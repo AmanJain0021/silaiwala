@@ -139,15 +139,23 @@ const CustomDesignForm = () => {
             const selectedTailorObj = tailors.find(t => isMatchingTailor(t, selectedTailorId));
             const finalTailorIdToSend = selectedTailorObj?.user?._id || selectedTailorObj?._id || selectedTailorId;
 
-            await api.post('/custom-designs/request', {
+            const res = await api.post('/custom-designs/request', {
                 tailorId: finalTailorIdToSend,
                 description,
                 images: validUrls,
                 deliveryAddress
             });
 
+            const createdDesign = res.data?.data;
             toast.success("Custom Design requested successfully!");
-            navigate('/user/orders', { state: { activeTab: 'custom-designs' } });
+            navigate('/user/checkout/success', {
+                state: {
+                    orderId: createdDesign?._id,
+                    orderNumber: createdDesign?.designId || 'DES-REQ',
+                    pendingAcceptance: true,
+                    isCustomDesign: true
+                }
+            });
         } catch (error) {
             console.error('Error sending request:', error);
             toast.error(error.response?.data?.message || "Failed to send request.");

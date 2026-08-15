@@ -219,9 +219,22 @@ const TailorAlterations = () => {
                             </div>
 
                             <div className="bg-gray-50/80 rounded-2xl p-4 border border-gray-200/80">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 block">Customer Description</label>
-                                <p className="text-xs font-semibold text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedAlt.description}</p>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 block">Customer Requirements & Notes</label>
+                                <p className="text-xs font-semibold text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedAlt.description || 'No description provided.'}</p>
                             </div>
+
+                            {selectedAlt.deliveryAddress && (
+                                <div className="bg-purple-50/60 rounded-2xl p-4 border border-purple-100/80">
+                                    <label className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest mb-1.5 block">📍 Pickup & Delivery Address</label>
+                                    <p className="text-xs font-bold text-gray-900">{selectedAlt.deliveryAddress.receiverName || selectedAlt.customer?.name}</p>
+                                    <p className="text-xs font-medium text-gray-700 mt-0.5">
+                                        {selectedAlt.deliveryAddress.street}, {selectedAlt.deliveryAddress.city}, {selectedAlt.deliveryAddress.state} - {selectedAlt.deliveryAddress.zipCode}
+                                    </p>
+                                    {selectedAlt.deliveryAddress.phoneNumber && (
+                                        <p className="text-[11px] font-bold text-gray-500 mt-1">Phone: {selectedAlt.deliveryAddress.phoneNumber}</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="mt-8 pt-4 border-t border-gray-100 flex gap-3">

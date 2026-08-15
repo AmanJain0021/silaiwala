@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import useBrandingStore from '../store/brandingStore';
 import { useTailorAuth } from '../modules/tailor/context/AuthContext';
 import { useNotifications } from '../modules/tailor/context/NotificationContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import api from '../modules/tailor/services/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/constants';
@@ -28,6 +29,7 @@ const TailorLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, status } = useTailorAuth();
+    usePushNotifications(user);
     const notificationContext = useNotifications();
     const unreadCount = notificationContext?.unreadCount || 0;
     const isOverview = location.pathname === '/partner' || location.pathname === '/partner/';
@@ -121,7 +123,6 @@ const TailorLayout = () => {
             setIsRefreshing(true);
             setPullDistance(60);
             setTimeout(() => {
-                // Hard reload at exact current URL location to stay on the same page
                 window.location.reload();
             }, 300);
         } else {
@@ -165,7 +166,6 @@ const TailorLayout = () => {
 
         socket.on('new_order', refreshPendingCount);
         socket.on('receive_new_order', refreshPendingCount);
-        // Accept/cancel must immediately update the New-order badge too.
         socket.on('order_status_updated', refreshPendingCount);
 
         return () => {
@@ -306,8 +306,6 @@ const TailorLayout = () => {
                         </div>
                     </div>
                 )}
-
-
 
                 <main 
                     ref={mainRef}

@@ -876,6 +876,30 @@ const AdminOrders = () => {
                                                                     <span className="font-semibold text-gray-400">Delivery:</span> {item.deliveryType || 'standard'}
                                                                 </span>
                                                             </div>
+                                                            {/* Selected Style / Custom Reference Design */}
+                                                            {(item.selectedStyle || item.configuration?.selectedStyle) && (
+                                                                <div className="mt-2 pt-2 border-t border-purple-100">
+                                                                    <p className="text-[9px] font-bold text-purple-600 uppercase tracking-wider mb-1">
+                                                                        {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? '📸 Custom Reference Design Photo' : '✂️ Selected Style Variant'}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-3 bg-purple-50/60 p-2 rounded-xl border border-purple-100">
+                                                                        {(item.selectedStyle || item.configuration?.selectedStyle).image && (
+                                                                            <img 
+                                                                                src={(item.selectedStyle || item.configuration?.selectedStyle).image} 
+                                                                                alt="Style" 
+                                                                                className="w-14 h-14 object-cover rounded-lg border border-purple-200 cursor-pointer"
+                                                                                onClick={() => window.open((item.selectedStyle || item.configuration?.selectedStyle).image, '_blank')}
+                                                                            />
+                                                                        )}
+                                                                        <div>
+                                                                            <p className="text-xs font-bold text-gray-900">{(item.selectedStyle || item.configuration?.selectedStyle).name || 'Custom Style'}</p>
+                                                                            <p className="text-[10px] text-gray-500 font-medium italic font-sans">
+                                                                                {(item.selectedStyle || item.configuration?.selectedStyle).description || 'Reference photo provided by customer'}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             {/* Style Add-ons */}
                                                             {item.styleAddons && item.styleAddons.length > 0 && (
                                                                 <div className="mt-2 pt-2 border-t border-gray-50">

@@ -1092,6 +1092,36 @@ const Orders = () => {
                                             {item.deliveryType || 'Standard'}
                                         </span>
                                     </div>
+
+                                    {(item.selectedStyle || item.configuration?.selectedStyle) && (
+                                        <div className="mt-3 p-3 bg-purple-50/70 rounded-2xl border border-purple-100 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
+                                                    <Scissors size={12} /> {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? '📸 Custom Reference Design Photo' : '✂️ Selected Style Variant'}
+                                                </p>
+                                                <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                                                    {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? 'Custom Upload' : 'Variant'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs font-black text-gray-900">{(item.selectedStyle || item.configuration?.selectedStyle).name || 'Custom Design'}</p>
+                                            {(item.selectedStyle || item.configuration?.selectedStyle).image && (
+                                                <div className="relative group max-w-full overflow-hidden rounded-xl border border-purple-200 shadow-xs bg-white mt-1">
+                                                    <img 
+                                                        src={(item.selectedStyle || item.configuration?.selectedStyle).image} 
+                                                        alt="Style Reference" 
+                                                        className="w-full max-h-48 object-contain cursor-pointer transition-transform duration-300 hover:scale-105"
+                                                        onClick={() => window.open((item.selectedStyle || item.configuration?.selectedStyle).image, '_blank')}
+                                                    />
+                                                    <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                                                        Click to expand 🔍
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {(item.selectedStyle || item.configuration?.selectedStyle).description && (
+                                                <p className="text-[10px] text-gray-600 font-medium italic">"{(item.selectedStyle || item.configuration?.selectedStyle).description}"</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

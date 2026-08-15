@@ -37,15 +37,21 @@ const mapBackendStatusToUI = (status) => {
 };
 
 const toAddressLine = (shippingAddress = {}) => {
-  const parts = [
-    shippingAddress.address,
-    shippingAddress.street,
-    shippingAddress.locality,
-    shippingAddress.city,
-    shippingAddress.state,
-    shippingAddress.zipCode || shippingAddress.pincode
-  ].filter(Boolean);
-  return parts.join(', ');
+  if (!shippingAddress) return '';
+  if (typeof shippingAddress === 'string') return shippingAddress;
+  if (typeof shippingAddress === 'object') {
+    if (typeof shippingAddress.address === 'string' && shippingAddress.address) return shippingAddress.address;
+    const parts = [
+      shippingAddress.street,
+      shippingAddress.locality,
+      shippingAddress.city,
+      shippingAddress.state,
+      shippingAddress.zipCode || shippingAddress.pincode
+    ].filter(Boolean);
+    if (parts.length > 0) return parts.join(', ');
+    if (shippingAddress.receiverName || shippingAddress.name) return `${shippingAddress.receiverName || shippingAddress.name}${shippingAddress.phone ? ' (' + shippingAddress.phone + ')' : ''}`;
+  }
+  return '';
 };
 
 const normalizeOrder = (raw) => {
@@ -88,7 +94,7 @@ const normalizeOrder = (raw) => {
     orderId: raw?.orderId || raw?._id || raw?.id,
     customer: (typeof raw?.customer === 'string' ? raw.customer : customerObj?.name) || shippingAddress?.name || guestInfo?.name || 'Customer',
     phone: (typeof raw?.phone === 'string' ? raw.phone : customerObj?.phoneNumber) || shippingAddress?.phone || shippingAddress?.mobile || guestInfo?.phone || raw?.customerPhone || '',
-    address: raw?.address || toAddressLine(shippingAddress) || 'Address unavailable',
+    address: (typeof raw?.address === 'string' ? raw.address : toAddressLine(raw?.address || shippingAddress)) || 'Address unavailable',
     vendorName: tailor?.shopName || raw?.vendorName || tailor?.name || vendorData?.storeName || vendorFirst?.vendorName || 'Tailor',
     vendorAddress: raw?.vendorAddress || vendorAddress,
     vendorPhone: raw?.vendorPhone || tailor?.phone || vendorData?.phone || '',

@@ -109,6 +109,19 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                             </div>
                         </div>
 
+                        {/* Selected Style / Custom Reference Design */}
+                        {config?.selectedStyle && (
+                            <div className="flex items-center gap-2 mt-1.5 p-1.5 bg-purple-50/70 border border-purple-100 rounded-xl">
+                                {config.selectedStyle.image && (
+                                    <img src={config.selectedStyle.image} alt="Style" className="w-8 h-8 rounded-lg object-cover border border-purple-200 shrink-0" />
+                                )}
+                                <div className="text-left min-w-0">
+                                    <p className="text-[10px] font-bold text-slate-900 truncate">{config.selectedStyle.name || 'Custom Style'}</p>
+                                    <p className="text-[8px] text-purple-700 font-bold uppercase">{config.selectedStyle.isCustom ? 'Custom Reference Photo' : 'Selected Style'}</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Delivery Estimated Chip */}
                         <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-[#047857] bg-[#ECFDF5] px-2 py-0.5 rounded-md border border-[#A7F3D0] w-fit mt-1">
                             <Calendar size={11} />

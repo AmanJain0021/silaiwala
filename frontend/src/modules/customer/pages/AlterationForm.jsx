@@ -127,8 +127,16 @@ const AlterationForm = () => {
             });
 
             if (response.data.success) {
+                const createdAlt = response.data.data;
                 toast.success("Alteration request sent to Tailor successfully!");
-                navigate('/user/orders');
+                navigate('/user/checkout/success', {
+                    state: {
+                        orderId: createdAlt?._id,
+                        orderNumber: createdAlt?.alterationId || 'ALT-REQ',
+                        pendingAcceptance: true,
+                        isAlteration: true
+                    }
+                });
             }
         } catch (error) {
             console.error('Error submitting request:', error);

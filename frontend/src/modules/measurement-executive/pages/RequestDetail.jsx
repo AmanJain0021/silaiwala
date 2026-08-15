@@ -380,21 +380,97 @@ const RequestDetail = () => {
                             <h3 className="text-xl font-black text-gray-900 tracking-tight">Take Measurements</h3>
                         </div>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            {['chest', 'waist', 'hips', 'shoulder', 'length', 'neck', 'sleeve', 'inseam'].map((field) => (
-                                <div key={field} className="bg-gray-50 p-3 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-purple-100 transition-all">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">{field}</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="0.0"
-                                        className="block w-full bg-transparent border-0 p-0 text-sm font-black text-gray-900 focus:ring-0"
-                                        value={formData[field] || ''}
-                                        onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                                    />
+                        {(() => {
+                            const customFields = request?.order?.items?.[0]?.service?.category?.measurementFields;
+                            const categoryName = request?.order?.items?.[0]?.service?.category?.name || request?.order?.items?.[0]?.service?.title || '';
+                            const lowerCat = categoryName.toLowerCase();
+
+                            const categoryFieldsMap = {
+                                'kurta': [
+                                    { key: 'chest', label: 'Chest / Bust', placeholder: '34' },
+                                    { key: 'waist', label: 'Waist', placeholder: '28' },
+                                    { key: 'hips', label: 'Hips', placeholder: '36' },
+                                    { key: 'shoulder', label: 'Shoulder', placeholder: '14' },
+                                    { key: 'length', label: 'Full Length', placeholder: '40' },
+                                    { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16' },
+                                    { key: 'neck', label: 'Neck Depth', placeholder: '6' }
+                                ],
+                                'shirt': [
+                                    { key: 'chest', label: 'Chest / Bust', placeholder: '38' },
+                                    { key: 'waist', label: 'Waist', placeholder: '34' },
+                                    { key: 'shoulder', label: 'Shoulder', placeholder: '17' },
+                                    { key: 'length', label: 'Full Length', placeholder: '30' },
+                                    { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24' },
+                                    { key: 'neck', label: 'Collar Size', placeholder: '15' }
+                                ],
+                                'blouse': [
+                                    { key: 'chest', label: 'Bust / Chest', placeholder: '34' },
+                                    { key: 'underbust', label: 'Underbust', placeholder: '30' },
+                                    { key: 'shoulder', label: 'Shoulder', placeholder: '14' },
+                                    { key: 'length', label: 'Blouse Length', placeholder: '14' },
+                                    { key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7' },
+                                    { key: 'backNeck', label: 'Back Neck Depth', placeholder: '8' },
+                                    { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10' }
+                                ],
+                                'pant': [
+                                    { key: 'waist', label: 'Waist', placeholder: '32' },
+                                    { key: 'hips', label: 'Hips', placeholder: '38' },
+                                    { key: 'length', label: 'Full Length / Inseam', placeholder: '40' },
+                                    { key: 'thigh', label: 'Thigh Width', placeholder: '22' },
+                                    { key: 'bottom', label: 'Bottom Opening', placeholder: '14' }
+                                ],
+                                'trouser': [
+                                    { key: 'waist', label: 'Waist', placeholder: '32' },
+                                    { key: 'hips', label: 'Hips', placeholder: '38' },
+                                    { key: 'length', label: 'Full Length / Inseam', placeholder: '40' },
+                                    { key: 'thigh', label: 'Thigh Width', placeholder: '22' },
+                                    { key: 'bottom', label: 'Bottom Opening', placeholder: '14' }
+                                ],
+                                'skirt': [
+                                    { key: 'waist', label: 'Waist', placeholder: '28' },
+                                    { key: 'hips', label: 'Hips', placeholder: '36' },
+                                    { key: 'length', label: 'Full Length', placeholder: '38' }
+                                ]
+                            };
+
+                            let fieldsToRender = [];
+                            if (customFields && customFields.length > 0) {
+                                fieldsToRender = customFields.map(f => ({ key: f.key, label: f.label || f.key, placeholder: f.placeholder || '0.0' }));
+                            } else {
+                                const matchKey = Object.keys(categoryFieldsMap).find(k => lowerCat.includes(k));
+                                if (matchKey && categoryFieldsMap[matchKey]) {
+                                    fieldsToRender = categoryFieldsMap[matchKey];
+                                } else {
+                                    fieldsToRender = ['chest', 'waist', 'hips', 'shoulder', 'length', 'neck', 'sleeve', 'inseam'].map(f => ({ key: f, label: f, placeholder: '0.0' }));
+                                }
+                            }
+                            
+                            return (
+                                <div>
+                                    {categoryName && (
+                                        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 bg-purple-50 border border-purple-100 rounded-full text-xs font-extrabold text-[#843D9B]">
+                                            <span>Garment: {categoryName}</span>
+                                            {customFields && customFields.length > 0 && <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded-full">Custom Form</span>}
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                        {fieldsToRender.map(({ key, label, placeholder }) => (
+                                            <div key={key} className="bg-gray-50 p-3 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-purple-100 transition-all">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">{label}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    placeholder={placeholder}
+                                                    className="block w-full bg-transparent border-0 p-0 text-sm font-black text-gray-900 focus:ring-0"
+                                                    value={formData[key] || ''}
+                                                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
+                            );
+                        })()}
                         <div className="mb-8">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Notes</label>
                             <textarea

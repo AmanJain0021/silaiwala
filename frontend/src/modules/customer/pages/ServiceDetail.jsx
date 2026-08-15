@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRequireAuth } from '../../../hooks/useRequireAuth';
 import BookingStepper from '../components/BookingStepper';
-import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Clock, ShoppingBag, Ruler, CheckCircle2, ShieldCheck, Info, Tag, Scissors, Wand2, MapPin, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Clock, ShoppingBag, Ruler, CheckCircle2, ShieldCheck, Info, Tag, Scissors, Wand2, MapPin, X, Upload, Camera, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../../utils/cn';
 import ServiceHero from '../components/service-detail/ServiceHero';
@@ -62,14 +62,64 @@ const ServiceDetail = () => {
     const [serviceData, setServiceData] = useState(null);
     const [preSelectedTailor, setPreSelectedTailor] = useState(null);
 
-    // Initial check for current step based on selections
-    const restored = location.state?.restoredState || {};
+    // SessionStorage Draft Persistence across page refreshes
+    const getSavedDraft = () => {
+        if (!id) return {};
+        try {
+            const saved = sessionStorage.getItem(`service_draft_${id}`);
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            return {};
+        }
+    };
+    const savedDraft = getSavedDraft();
+    const restored = location.state?.restoredState || (Object.keys(savedDraft).length > 0 ? savedDraft : {});
+
     const [currentStep, setCurrentStep] = useState(restored.currentStep || 'fabric'); // fabric -> details -> review
 
     const [deliveryType, setDeliveryType] = useState(restored.deliveryType || 'standard');
     const [measurementType, setMeasurementType] = useState(restored.measurementType || null);
+    const [selectedStyle, setSelectedStyle] = useState(restored.selectedStyle || null);
     const [isTailorAtHome, setIsTailorAtHome] = useState(restored.isTailorAtHome || false);
     const [selectedAddons, setSelectedAddons] = useState(restored.selectedAddons || []);
+    const [isUploadingCustomStyle, setIsUploadingCustomStyle] = useState(false);
+
+    const handleCustomStyleUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingCustomStyle(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (res.data?.success && res.data?.data) {
+                const imageUrl = res.data.data;
+                setSelectedStyle({
+                    name: 'Custom Reference Design',
+                    image: imageUrl,
+                    isCustom: true,
+                    description: 'Customer uploaded reference design photo'
+                });
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.success('Style reference photo uploaded!');
+                });
+            } else {
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error('Failed to upload style photo.');
+                });
+            }
+        } catch (err) {
+            console.error('Failed to upload custom style image:', err);
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error('Upload failed. Please try again.');
+            });
+        } finally {
+            setIsUploadingCustomStyle(false);
+        }
+    };
     const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
     const [fabricSource, setFabricSource] = useState(restored.fabricSource || location.state?.fabricSource || 'customer');
     const [selectedFabric, setSelectedFabric] = useState(restored.selectedFabric || location.state?.selectedFabric || null);
@@ -89,6 +139,28 @@ const ServiceDetail = () => {
 
     const [showFooter, setShowFooter] = useState(false);
     const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
+
+    // Save draft state to sessionStorage so page refresh retains all inputs & confirmations
+    useEffect(() => {
+        if (!id) return;
+        try {
+            const draft = {
+                deliveryType,
+                measurementType,
+                selectedStyle,
+                isTailorAtHome,
+                selectedAddons,
+                fabricSource,
+                selectedFabric,
+                selectedSavedProfile,
+                measurements,
+                currentStep
+            };
+            sessionStorage.setItem(`service_draft_${id}`, JSON.stringify(draft));
+        } catch (e) {
+            console.error("Failed to save service draft:", e);
+        }
+    }, [id, deliveryType, measurementType, selectedStyle, isTailorAtHome, selectedAddons, fabricSource, selectedFabric, selectedSavedProfile, measurements, currentStep]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -335,10 +407,13 @@ const ServiceDetail = () => {
     const resetDraftForm = () => {
         setMeasurementType(null);
         setMeasurements(null);
+        setSelectedStyle(null);
         setSelectedAddons([]);
         setSelectedSavedProfile(null);
         setIsTailorAtHome(false);
-        // Delivery type, fabric source can persist as defaults
+        try {
+            sessionStorage.removeItem(`service_draft_${id}`);
+        } catch (e) {}
     };
 
     const prepareDraftItem = async () => {
@@ -383,6 +458,7 @@ const ServiceDetail = () => {
                 selectedFabric, 
                 measurements: finalMeasurements,
                 isTailorAtHome,
+                selectedStyle,
                 addons: selectedAddons
             },
             pricing: { 
@@ -419,7 +495,25 @@ const ServiceDetail = () => {
         return false;
     };
 
+    const isMeasurementValid = Boolean(
+        isAlteration ||
+        measurementType === 'home' ||
+        measurementType === 'sample' ||
+        (selectedSavedProfile && (measurementType === 'saved' || !measurementType)) ||
+        (measurements && (measurements.isConfirmed || measurements.type || measurements.url || measurements.slipUrl))
+    );
+
+
+
     const handleAddMore = async () => {
+        if (!isMeasurementValid) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error('Please complete measurements or select "Tailor at Home" first');
+            });
+            const elem = document.getElementById('measurement-section');
+            if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
         addServiceItem(item);
@@ -438,6 +532,14 @@ const ServiceDetail = () => {
     };
 
     const handleBuyNow = async () => {
+        if (!isMeasurementValid) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error('Please complete measurements or select "Tailor at Home" to proceed');
+            });
+            const elem = document.getElementById('measurement-section');
+            if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
         if (!requireAuth('Please login to book this service')) return;
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
@@ -542,32 +644,135 @@ const ServiceDetail = () => {
                     </section>
                 )}
 
+                {/* 2.5 Style Variant & Custom Photo Upload Section */}
                 {!isAlteration && (
-                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <section className="animate-in fade-in slide-in-from-bottom-3 duration-400">
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-700">
+                                    <Scissors size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest leading-tight">Choose Style Variant / Upload Design</h3>
+                                    <p className="text-[10px] text-gray-400 font-bold leading-none mt-0.5">Select a style design or upload your custom reference photo</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2.5">
+                                {/* Custom Photo Upload Card */}
+                                <div 
+                                    className={`p-3 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden ${
+                                        selectedStyle?.isCustom 
+                                            ? 'border-purple-600 bg-purple-50/60 shadow-md ring-2 ring-purple-600/20' 
+                                            : 'border-dashed border-gray-300 bg-gray-50/70 hover:border-purple-300'
+                                    }`}
+                                >
+                                    {selectedStyle?.isCustom && selectedStyle.image ? (
+                                        <div className="relative group">
+                                            <div className="aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-gray-100">
+                                                <img src={selectedStyle.image} alt="Custom Reference" className="w-full h-full object-cover" />
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedStyle(null);
+                                                }}
+                                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 cursor-pointer"
+                                                title="Remove photo"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="flex flex-col items-center justify-center py-4 cursor-pointer">
+                                            {isUploadingCustomStyle ? (
+                                                <Loader2 size={24} className="animate-spin text-purple-600 mb-2" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mb-2 shadow-xs">
+                                                    <Upload size={18} />
+                                                </div>
+                                            )}
+                                            <span className="text-xs font-black text-purple-900 text-center">
+                                                {isUploadingCustomStyle ? 'Uploading...' : 'Upload Design Photo'}
+                                            </span>
+                                            <span className="text-[9px] text-gray-400 font-medium text-center mt-0.5">
+                                                Photo of preferred design
+                                            </span>
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={handleCustomStyleUpload} 
+                                                disabled={isUploadingCustomStyle} 
+                                                className="hidden" 
+                                            />
+                                        </label>
+                                    )}
+
+                                    {selectedStyle?.isCustom && (
+                                        <div className="mt-1">
+                                            <h4 className="text-xs font-black text-purple-900 truncate">Custom Reference Photo</h4>
+                                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-600 text-white inline-block mt-1">
+                                                Uploaded ✓
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Predefined Style Cards (if any exist) */}
+                                {((serviceData?.selectedStyles && serviceData.selectedStyles.length > 0) ? serviceData.selectedStyles : serviceData?.category?.styles || []).map((style, idx) => {
+                                    const styleName = style.name || style;
+                                    const isSelected = selectedStyle?.name === styleName && !selectedStyle?.isCustom;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => {
+                                                if (isSelected) {
+                                                    setSelectedStyle(null);
+                                                } else {
+                                                    setSelectedStyle({ name: styleName, image: style.image, description: style.description, isCustom: false });
+                                                }
+                                            }}
+                                            className={`p-3 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
+                                                isSelected 
+                                                    ? 'border-purple-600 bg-purple-50/60 shadow-md ring-2 ring-purple-600/20' 
+                                                    : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
+                                            }`}
+                                        >
+                                            {style.image && (
+                                                <div className="aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-gray-100">
+                                                    <img src={style.image} alt={styleName} className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <h4 className={`text-xs font-black truncate ${isSelected ? 'text-purple-900' : 'text-gray-900'}`}>{styleName}</h4>
+                                                {style.description && <p className="text-[9px] text-gray-500 font-medium line-clamp-2 mt-0.5">{style.description}</p>}
+                                            </div>
+                                            <div className="mt-2 flex justify-between items-center">
+                                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                                                    {isSelected ? 'Selected ✓' : 'Select'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {!isAlteration && (
+                    <section id="measurement-section" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <MeasurementSelector
                             selectedType={measurementType}
                             visitPrice={isCalculatingDistance ? '...' : (tailorAtHomePrice || visitSettings.baseFee)}
                             isDistanceBased={!!preSelectedTailor}
+                            measurementFields={serviceData?.category?.measurementFields || []}
+                            categoryName={serviceData?.category?.name || serviceData?.title}
                             onSelectType={(type) => {
                                 if (type === 'home') {
                                     setMeasurementType('home');
                                     setIsTailorAtHome(true);
-                                    navigate('/user/checkout/address', {
-                                        state: {
-                                            returnUrl: `/user/services/${id}`,
-                                            restoredState: {
-                                                currentStep,
-                                                deliveryType,
-                                                measurementType: 'home',
-                                                isTailorAtHome: true,
-                                                selectedAddons,
-                                                fabricSource,
-                                                selectedFabric,
-                                                selectedSavedProfile,
-                                                measurements
-                                            }
-                                        }
-                                    });
+                                    setMeasurements({ type: 'home' });
                                 } else if (type === 'sample') {
                                     setIsTailorAtHome(false);
                                     setMeasurementType('sample');
@@ -575,6 +780,10 @@ const ServiceDetail = () => {
                                 } else {
                                     setIsTailorAtHome(false);
                                     setMeasurementType(type);
+                                    if (!type) {
+                                        setSelectedSavedProfile(null);
+                                        setMeasurements(null);
+                                    }
                                 }
                             }}
                             onMeasurementComplete={setMeasurements}
@@ -788,12 +997,11 @@ const ServiceDetail = () => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleAddMore}
-                                    disabled={!measurementType || (measurementType !== 'saved' && measurementType !== 'home' && !measurements)}
                                     className={cn(
-                                        "flex-1 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2",
-                                        measurementType && (measurementType === 'saved' || measurementType === 'home' || measurements) 
+                                        "flex-1 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 cursor-pointer",
+                                        isMeasurementValid 
                                             ? "border-primary text-primary hover:bg-indigo-50 active:scale-95" 
-                                            : "border-gray-100 text-gray-300 cursor-not-allowed"
+                                            : "border-gray-200 text-gray-400 bg-gray-50 hover:bg-gray-100"
                                     )}
                                 >
                                     <Tag size={16} /> Add to Basket
@@ -801,18 +1009,17 @@ const ServiceDetail = () => {
                                 
                                 <button
                                     onClick={handleBuyNow}
-                                    disabled={!measurementType || (measurementType !== 'saved' && measurementType !== 'home' && !measurements)}
                                     className={cn(
-                                        "flex-[2.5] py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
-                                        measurementType && (measurementType === 'saved' || measurementType === 'home' || measurements)
+                                        "flex-[2.5] py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer",
+                                        isMeasurementValid
                                             ? "bg-primary text-white shadow-indigo-100 active:scale-[0.98] hover:bg-primary-dark" 
-                                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-600 hover:from-gray-300 hover:to-gray-400"
                                     )}
                                 >
-                                    {measurementType && (measurementType === 'saved' || measurementType === 'home' || measurements) ? (
+                                    {isMeasurementValid ? (
                                         <>Book Now <ChevronRight size={16} /></>
                                     ) : (
-                                        <>Enter Details to Proceed</>
+                                        <>Enter Details to Proceed <ChevronUp size={14} className="text-gray-500 animate-bounce" /></>
                                     )}
                                 </button>
                             </div>
@@ -828,6 +1035,8 @@ const ServiceDetail = () => {
                 selectedAddons={selectedAddons}
                 onUpdate={setSelectedAddons}
                 category={serviceData.category?.name || serviceData.category}
+                serviceTitle={serviceData.title}
+                directStyleAddons={serviceData.category?.styleAddons || []}
             />
         </div>
     );

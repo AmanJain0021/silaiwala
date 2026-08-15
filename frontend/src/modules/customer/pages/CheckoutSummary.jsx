@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ArrowLeft, ArrowRight, CreditCard, Lock, ShieldCheck, MapPin, Package, Loader2, FileText, ShoppingBag, Ruler, Check } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -57,6 +57,7 @@ const CheckoutSummary = () => {
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [loadingText, setLoadingText] = useState('Initializing...');
+    const hasNavigated = useRef(false);
     const [bulkOrder, setBulkOrder] = useState(null);
     const location = useLocation();
     const bulkOrderId = location.state?.bulkOrderId;
@@ -114,12 +115,7 @@ const CheckoutSummary = () => {
         fetchBulkOrder();
     }, [bulkOrderId]);
 
-    // Redirect if cart becomes empty
-    useEffect(() => {
-        if (!bulkOrderId && currentCheckoutItems.length === 0 && cartItems.length === 0) {
-            navigate('/user/services');
-        }
-    }, [currentCheckoutItems.length, cartItems.length, bulkOrderId, navigate]);
+    // Note: Auto-redirect on empty cart removed to prevent hijacking navigation during/after order creation.
 
     // Fetch Price Summary from Backend API
     useEffect(() => {
@@ -186,7 +182,7 @@ const CheckoutSummary = () => {
             let order;
 
             if (!bulkOrderId) {
-                // If it's a Custom Alteration from Cart, skip Order flow entirely
+                // If it's a Custom Alteration from Cart
                 if (isCartAlteration) {
                     setLoadingText('Submitting alteration request...');
                     const altRes = await api.post('/alterations/request', {
@@ -200,12 +196,22 @@ const CheckoutSummary = () => {
                     });
                     if (!altRes.data.success) throw new Error('Alteration request failed');
                     
+                    const createdAlt = altRes.data.data;
                     clearCart();
-                    navigate('/user/orders', { state: { message: "Alteration request submitted successfully! Awaiting quote." } });
+                    hasNavigated.current = true;
+                    navigate('/user/checkout/success', {
+                        replace: true,
+                        state: {
+                            orderId: createdAlt?._id,
+                            orderNumber: createdAlt?.alterationId || 'ALT-REQ',
+                            pendingAcceptance: true,
+                            isAlteration: true
+                        }
+                    });
                     return;
                 }
 
-                // If it's a Custom Design from Cart, skip Order flow entirely
+                // If it's a Custom Design from Cart
                 if (isCartCustomDesign) {
                     setLoadingText('Submitting custom design request...');
                     const customDesignRes = await api.post('/custom-designs/request', {
@@ -222,8 +228,18 @@ const CheckoutSummary = () => {
                     });
                     if (!customDesignRes.data.success) throw new Error('Custom design request failed');
                     
+                    const createdDesign = customDesignRes.data.data;
                     clearCart();
-                    navigate('/user/orders', { state: { message: "Custom design request submitted successfully! Awaiting quote." } });
+                    hasNavigated.current = true;
+                    navigate('/user/checkout/success', {
+                        replace: true,
+                        state: {
+                            orderId: createdDesign?._id,
+                            orderNumber: createdDesign?.designId || 'DES-REQ',
+                            pendingAcceptance: true,
+                            isCustomDesign: true
+                        }
+                    });
                     return;
                 }
 
@@ -233,27 +249,33 @@ const CheckoutSummary = () => {
                     const resolvedTailorId =
                         (typeof firstItemTailor === 'object' ? (firstItemTailor?._id || firstItemTailor?.id) : firstItemTailor) ||
                         null;
-                    if (!resolvedTailorId) {
-                        throw new Error('No tailor is linked to this service. Please reselect the tailor and try again.');
-                    }
+
                     payload = {
                         tailorId: resolvedTailorId,
                         isMeasurementHome: currentCheckoutItems.some(item => item.configuration?.isTailorAtHome || item.configuration?.measurements?.type === 'home'),
-                        items: currentCheckoutItems.map(item => ({
-                            service: item.serviceDetails.id || item.serviceDetails._id,
-                            fabricSource: item.configuration.fabricSource,
-                            deliveryType: item.configuration.deliveryType,
-                            selectedFabric: item.configuration.selectedFabric?._id || item.configuration.selectedFabric?.id,
-                            quantity: 1,
-                            price: item.pricing.base,
-                            measurements: item.configuration.isTailorAtHome ? { type: 'home' } : item.configuration.measurements,
-                            isTailorAtHome: item.configuration.isTailorAtHome,
-                            addons: item.configuration.addons
-                        })),
+                        items: currentCheckoutItems.map(item => {
+                            const rawId = item.serviceDetails?._id || item.serviceDetails?.id;
+                            const serviceId = (rawId && typeof rawId === 'string' && rawId.length === 24) ? rawId : (item.serviceDetails?.id || item.serviceDetails?._id);
+                            const rawFabric = item.configuration?.selectedFabric?._id || item.configuration?.selectedFabric?.id || item.configuration?.selectedFabric;
+                            const fabricId = (rawFabric && typeof rawFabric === 'string' && rawFabric.length === 24) ? rawFabric : null;
+
+                            return {
+                                service: serviceId,
+                                fabricSource: item.configuration?.fabricSource || 'customer',
+                                deliveryType: item.configuration?.deliveryType || 'standard',
+                                selectedFabric: fabricId,
+                                quantity: 1,
+                                price: item.pricing?.base || 0,
+                                measurements: item.configuration?.isTailorAtHome ? { type: 'home' } : item.configuration?.measurements || {},
+                                isTailorAtHome: !!item.configuration?.isTailorAtHome,
+                                selectedStyle: item.configuration?.selectedStyle || null,
+                                addons: item.configuration?.addons || []
+                            };
+                        }),
                         totalAmount: finalTotal,
-                        deliveryFee: currentPricing.delivery,
-                        platformFee: currentPricing.platformFee,
-                        gstAmount: currentPricing.taxes,
+                        deliveryFee: currentPricing.delivery || 0,
+                        platformFee: currentPricing.platformFee || 0,
+                        gstAmount: currentPricing.taxes || 0,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,
@@ -267,22 +289,21 @@ const CheckoutSummary = () => {
                     const resolvedTailorId =
                         (typeof firstItemTailor === 'object' ? (firstItemTailor?._id || firstItemTailor?.id) : firstItemTailor) ||
                         null;
-                    // Product ownership is also resolved on the backend, but fail loudly if neither
-                    // cart nor product carries a tailor so the customer sees a clear error.
-                    if (!resolvedTailorId && !cartItems[0]?._id) {
-                        throw new Error('Unable to determine the tailor for this order. Please refresh and try again.');
-                    }
+
                     payload = {
                         tailorId: resolvedTailorId,
-                        items: cartItems.map(item => ({
-                            product: item._id,
-                            quantity: item.quantity,
-                            price: item.price
-                        })),
+                        items: cartItems.map(item => {
+                            const productId = item._id || item.id || item.productId;
+                            return {
+                                product: (productId && typeof productId === 'string' && productId.length === 24) ? productId : productId,
+                                quantity: item.quantity || 1,
+                                price: item.price || 0
+                            };
+                        }),
                         totalAmount: finalTotal,
-                        deliveryFee: currentPricing.delivery,
-                        platformFee: currentPricing.platformFee,
-                        gstAmount: currentPricing.taxes,
+                        deliveryFee: currentPricing.delivery || 0,
+                        platformFee: currentPricing.platformFee || 0,
+                        gstAmount: currentPricing.taxes || 0,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,
@@ -294,10 +315,20 @@ const CheckoutSummary = () => {
                 }
 
                 setLoadingText('Submitting order...');
+                setLoadingText('Submitting order...');
                 const endpoint = isCartAlteration ? '/alterations/request' : '/orders';
                 const orderRes = await api.post(endpoint, payload);
                 if (!orderRes.data.success) throw new Error(isCartAlteration ? 'Alteration request failed' : 'Order creation failed');
                 order = orderRes.data.data;
+            }
+
+            const targetOrderId = order?._id || order?.id || order?.orderId;
+            const targetOrderNum = order?.orderId || order?.alterationId || targetOrderId;
+            if (targetOrderId) {
+                try {
+                    sessionStorage.setItem('lastCreatedOrderId', targetOrderId);
+                    sessionStorage.setItem('lastCreatedOrderNum', targetOrderNum);
+                } catch (e) {}
             }
 
             if (!bulkOrderId) {
@@ -320,7 +351,7 @@ const CheckoutSummary = () => {
                                     razorpay_order_id: response.razorpay_order_id,
                                     razorpay_payment_id: response.razorpay_payment_id,
                                     razorpay_signature: response.razorpay_signature,
-                                    orderObjectId: order._id,
+                                    orderObjectId: targetOrderId,
                                     paymentType: 'full'
                                 });
 
@@ -329,7 +360,8 @@ const CheckoutSummary = () => {
                                     else clearCart();
 
                                     navigate('/user/checkout/success', {
-                                        state: { orderId: order._id, orderNumber: order.orderId, isFullyPaid: true }
+                                        replace: true,
+                                        state: { orderId: targetOrderId, orderNumber: targetOrderNum, isFullyPaid: true }
                                     });
                                 }
                             } catch (err) {
@@ -357,14 +389,15 @@ const CheckoutSummary = () => {
                     return;
                 }
 
-                // NORMAL STITCHING ORDER: Skip payment, send to tailor for acceptance
+                // NORMAL STITCHING ORDER: Send to tailor for acceptance and navigate to success screen
                 if (isServiceCheckout) clearCheckout();
                 else clearCart();
-
+                hasNavigated.current = true;
                 navigate('/user/checkout/success', {
+                    replace: true,
                     state: { 
-                        orderId: order._id, 
-                        orderNumber: order.orderId || order.alterationId, 
+                        orderId: targetOrderId, 
+                        orderNumber: targetOrderNum, 
                         pendingAcceptance: true,
                         isAlteration: isCartAlteration
                     }
@@ -449,6 +482,22 @@ const CheckoutSummary = () => {
             setLoadingText('Initializing...');
         }
     };
+
+    if (!bulkOrderId && currentCheckoutItems.length === 0 && cartItems.length === 0 && !isProcessing && !hasNavigated.current) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <ShoppingBag size={48} className="text-gray-300 mb-3" />
+                <h3 className="text-base font-bold text-gray-900 mb-1">Your cart is empty</h3>
+                <p className="text-xs text-gray-500 mb-4">Please select a service or product to continue.</p>
+                <button
+                    onClick={() => navigate('/user/services')}
+                    className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-primary-dark cursor-pointer"
+                >
+                    Explore Services
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans text-gray-900">

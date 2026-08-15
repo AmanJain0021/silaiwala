@@ -262,7 +262,18 @@ exports.getRequestDetail = asyncHandler(async (req, res, next) => {
     .populate("customer", "name phoneNumber profileImage email")
     .populate("tailor", "name phoneNumber profileImage")
     .populate("executive", "name phoneNumber profileImage")
-    .populate("order", "orderId totalAmount status items deliveryAddress")
+    .populate({
+      path: "order",
+      select: "orderId totalAmount status items deliveryAddress",
+      populate: {
+        path: "items.service",
+        select: "title category",
+        populate: {
+          path: "category",
+          select: "name measurementFields"
+        }
+      }
+    })
     .lean();
 
   if (!request) {

@@ -49,8 +49,15 @@ const NewOrderModal = ({ order, isOpen, onClose, onAccept, isAccepting, riderLoc
     const isReturn = !!order?.isReturn;
     
     const safeString = (val, fallback = '') => {
+        if (!val) return fallback;
         if (typeof val === 'string') return val;
-        if (val && typeof val === 'object') return val.address || val.name || JSON.stringify(val);
+        if (typeof val === 'object') {
+            if (typeof val.address === 'string' && val.address) return val.address;
+            const parts = [val.street, val.city, val.state, val.zipCode].filter(Boolean);
+            if (parts.length > 0) return parts.join(', ');
+            if (val.receiverName || val.name) return `${val.receiverName || val.name}${val.phone ? ' (' + val.phone + ')' : ''}`;
+            return fallback;
+        }
         return String(val || fallback);
     };
 

@@ -147,15 +147,16 @@ const DeliveryOrderDetail = () => {
   const tailorAddress = order?.vendorAddress || order?.tailor?.location?.address;
   const formatDeliveryAddress = (addr) => {
     if (!addr) return 'Address not provided';
-    if (addr.street && addr.street.length > 20) return addr.street; // Full Google string
-    const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
-    if (parts.length > 0) return parts.join(', ');
-    if (addr.location?.coordinates?.[1] && addr.location?.coordinates?.[0]) {
-      return `GPS: ${addr.location.coordinates[1].toFixed(5)}, ${addr.location.coordinates[0].toFixed(5)}`;
+    if (typeof addr === 'string') return addr;
+    if (typeof addr === 'object') {
+      if (typeof addr.address === 'string' && addr.address) return addr.address;
+      const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
+      if (parts.length > 0) return parts.join(', ');
+      if (addr.receiverName || addr.name) return `${addr.receiverName || addr.name}${addr.phone ? ' (' + addr.phone + ')' : ''}`;
     }
     return 'Address not provided';
   };
-  const customerAddress = order?.address || formatDeliveryAddress(order?.deliveryAddress);
+  const customerAddress = formatDeliveryAddress(order?.address || order?.deliveryAddress);
 
   const tailorPhone = order?.vendorPhone || order?.tailor?.phone;
   const customerPhone = order?.phone || order?.customerPhone;

@@ -1,8 +1,146 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, X, Tag, Clock, CheckCircle2, Package, Plus, Edit2, Trash2, Eye, ShieldCheck, Mail, Phone, MapPin, User, Check, Layers } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, X, Tag, Clock, CheckCircle2, Package, Plus, Edit2, Trash2, Eye, ShieldCheck, Mail, Phone, MapPin, User, Check, Layers, Upload, Camera } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+
+const MEASUREMENT_PRESETS = [
+    {
+        key: 'kurta',
+        name: 'Kurta / Kurti',
+        fields: [
+            { key: 'chest', label: 'Chest / Bust', placeholder: '34', isRequired: true },
+            { key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
+            { key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
+            { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+            { key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+            { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16', isRequired: false },
+            { key: 'neck', label: 'Front Neck Depth', placeholder: '6', isRequired: false },
+        ]
+    },
+    {
+        key: 'blouse',
+        name: 'Blouse',
+        fields: [
+            { key: 'chest', label: 'Bust / Chest', placeholder: '34', isRequired: true },
+            { key: 'underbust', label: 'Underbust', placeholder: '30', isRequired: true },
+            { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+            { key: 'length', label: 'Blouse Length', placeholder: '14', isRequired: true },
+            { key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7', isRequired: false },
+            { key: 'backNeck', label: 'Back Neck Depth', placeholder: '8', isRequired: false },
+            { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10', isRequired: false },
+        ]
+    },
+    {
+        key: 'shirt',
+        name: 'Shirt',
+        fields: [
+            { key: 'chest', label: 'Chest', placeholder: '38', isRequired: true },
+            { key: 'waist', label: 'Waist', placeholder: '34', isRequired: true },
+            { key: 'shoulder', label: 'Shoulder', placeholder: '17', isRequired: true },
+            { key: 'length', label: 'Shirt Length', placeholder: '30', isRequired: true },
+            { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24', isRequired: true },
+            { key: 'neck', label: 'Collar Size', placeholder: '15', isRequired: false },
+        ]
+    },
+    {
+        key: 'pant',
+        name: 'Pant / Trouser',
+        fields: [
+            { key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
+            { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+            { key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+            { key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
+            { key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
+        ]
+    },
+    {
+        key: 'suit',
+        name: 'Suit / Lehenga',
+        fields: [
+            { key: 'chest', label: 'Bust / Chest', placeholder: '36', isRequired: true },
+            { key: 'waist', label: 'Waist', placeholder: '30', isRequired: true },
+            { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+            { key: 'topLength', label: 'Top Length', placeholder: '24', isRequired: true },
+            { key: 'bottomLength', label: 'Bottom Length', placeholder: '42', isRequired: true },
+        ]
+    }
+];
+
+const STYLE_PRESETS = [
+    {
+        category: 'Kurta',
+        styles: [
+            { name: 'Straight Fit Kurta', image: '', description: 'Classic straight cut kurta' },
+            { name: 'Anarkali Kurta', image: '', description: 'Flared traditional Anarkali style' },
+            { name: 'A-Line Kurta', image: '', description: 'Gradually widening A-shape cut' },
+            { name: 'Angrakha Kurta', image: '', description: 'Overlapping front flap with side tie' },
+            { name: 'Short Kurti', image: '', description: 'Trendy short length casual kurti' },
+        ]
+    },
+    {
+        category: 'Blouse',
+        styles: [
+            { name: 'Padded Designer Blouse', image: '', description: 'Padded cups with premium finish' },
+            { name: 'Sleeveless Blouse', image: '', description: 'Modern sleeveless cut' },
+            { name: 'Backless Tie-Up Blouse', image: '', description: 'Deep back with Dori tie-ups' },
+            { name: 'High Neck Collar Blouse', image: '', description: 'Elegant high neck Chinese collar' },
+        ]
+    },
+    {
+        category: 'Shirt',
+        styles: [
+            { name: 'Slim Fit Formal Shirt', image: '', description: 'Fitted formal shirt stitching' },
+            { name: 'Regular Fit Casual Shirt', image: '', description: 'Comfortable relaxed fit shirt' },
+            { name: 'Mandarin Collar Shirt', image: '', description: 'Band collar casual style' },
+        ]
+    },
+    {
+        category: 'Pant / Bottom',
+        styles: [
+            { name: 'Straight Pant', image: '', description: 'Clean straight leg trouser' },
+            { name: 'Palazzo Pant', image: '', description: 'Wide-legged comfortable palazzo' },
+            { name: 'Salwar / Patiala', image: '', description: 'Traditional pleated salwar' },
+            { name: 'Churidar', image: '', description: 'Fitted gather bottom churidar' },
+        ]
+    }
+];
+
+const ADDON_PRESETS = [
+    {
+        category: 'Pajama / Bottom',
+        addons: [
+            { name: 'Side Pocket', price: 100, description: 'Deep side pocket for phone & wallet', image: '' },
+            { name: 'Zip Pocket', price: 120, description: 'Concealed zipper side pocket', image: '' },
+            { name: 'Elastic + Drawstring Waist', price: 60, description: 'Comfortable elastic with drawstring', image: '' },
+            { name: 'Bottom Side Slit', price: 80, description: 'Stylish ankle side slits', image: '' },
+        ]
+    },
+    {
+        category: 'Kurta',
+        addons: [
+            { name: 'Side Pocket', price: 100, description: 'Functional side pocket', image: '' },
+            { name: 'Designer Piping', price: 80, description: 'Contrast fabric piping on neck & cuffs', image: '' },
+            { name: 'Front Button Placket', price: 120, description: 'Decorative buttons on front placket', image: '' },
+            { name: 'High Slit', price: 70, description: 'High side slits for leg movement', image: '' },
+        ]
+    },
+    {
+        category: 'Blouse',
+        addons: [
+            { name: 'Padded Cups', price: 150, description: 'Built-in foam pads for shape', image: '' },
+            { name: 'Dori & Latkan', price: 100, description: 'Matching dori with handmade latkan', image: '' },
+            { name: 'Back Hook / Zip Closure', price: 80, description: 'Concealed back zipper closure', image: '' },
+        ]
+    },
+    {
+        category: 'Shirt',
+        addons: [
+            { name: 'Chest Pocket', price: 70, description: 'Standard left chest pocket', image: '' },
+            { name: 'Double Cuff Links', price: 100, description: 'French cuff for cuff links', image: '' },
+        ]
+    }
+];
 
 const AdminServices = () => {
     const [selectedTab, setSelectedTab] = useState('Stitching Categories');
@@ -15,7 +153,7 @@ const AdminServices = () => {
     const [pendingProducts, setPendingProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [newService, setNewService] = useState({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png' });
+    const [newService, setNewService] = useState({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png', styles: [], measurementFields: [], styleAddons: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImageUploading, setIsImageUploading] = useState(false);
     const [viewingDetailItem, setViewingDetailItem] = useState(null); // { item, itemType: 'service'|'product', isPending: boolean }
@@ -148,6 +286,41 @@ const AdminServices = () => {
         }
     };
 
+    const handleStyleImageUpload = async (e, idx, isEdit = false) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        setIsImageUploading(true);
+        try {
+            const res = await api.post('/upload', formData);
+            const imageUrl = res.data.data;
+            if (isEdit) {
+                setEditingCategory(prev => {
+                    if (!prev) return prev;
+                    const copy = [...(prev.styles || [])];
+                    copy[idx] = { ...copy[idx], image: imageUrl };
+                    return { ...prev, styles: copy };
+                });
+            } else {
+                setNewService(prev => {
+                    const copy = [...(prev.styles || [])];
+                    copy[idx] = { ...copy[idx], image: imageUrl };
+                    return { ...prev, styles: copy };
+                });
+            }
+            toast.success('Style photo uploaded successfully');
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Upload failed:', error);
+            toast.error('Image upload failed');
+        } finally {
+            setIsImageUploading(false);
+        }
+    };
+
     const handleEditSetting = async (key, currentVal, title) => {
         const inputVal = window.prompt(`Enter new value for ${title}:`, currentVal);
         if (inputVal === null || inputVal.trim() === '') return;
@@ -217,14 +390,17 @@ const AdminServices = () => {
                 description: newService.description,
                 image: newService.image,
                 type: newService.type || 'service',
-                gender: newService.gender || 'all'
+                gender: newService.gender || 'all',
+                styles: (newService.styles || []).filter(s => s.name?.trim()),
+                measurementFields: (newService.measurementFields || []).filter(f => f.key?.trim() && f.label?.trim()),
+                styleAddons: (newService.styleAddons || []).filter(a => a.name?.trim())
             };
             if (minP !== null) payload.minPrice = minP;
             if (maxP !== null) payload.maxPrice = maxP;
             await api.post('/admin/categories', payload);
             toast.success('Category added successfully');
             setIsAddModalOpen(false);
-            setNewService({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png' });
+            setNewService({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png', styles: [], measurementFields: [], styleAddons: [] });
             fetchCategories();
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
@@ -256,8 +432,12 @@ const AdminServices = () => {
                 deliveryTime: editingCategory.deliveryTime,
                 description: editingCategory.description,
                 image: editingCategory.image,
+                gender: editingCategory.gender || 'all',
                 minPrice: minP,
                 maxPrice: maxP,
+                styles: (editingCategory.styles || []).filter(s => s.name?.trim()),
+                measurementFields: (editingCategory.measurementFields || []).filter(f => f.key?.trim() && f.label?.trim()),
+                styleAddons: (editingCategory.styleAddons || []).filter(a => a.name?.trim())
             };
             await api.put(`/admin/categories/${editingCategory._id}`, payload);
             toast.success('Category updated successfully');
@@ -367,7 +547,7 @@ const AdminServices = () => {
                     onClick={() => setIsAddModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest"
                 >
-                    <Plus size={16} /> Add Category
+                    <Plus size={16} /> Add Service
                 </button>
             </div>
 
@@ -464,7 +644,10 @@ const AdminServices = () => {
                                                             basePrice: service.basePrice ?? service.price ?? '',
                                                             deliveryTime: service.deliveryTime || '',
                                                             description: service.description || '',
-                                                            image: service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
+                                                            image: service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png',
+                                                            gender: service.gender || 'all',
+                                                            styles: service.styles || [],
+                                                            measurementFields: service.measurementFields || []
                                                         });
                                                         setIsEditModalOpen(true);
                                                     }}
@@ -790,7 +973,7 @@ const AdminServices = () => {
                             className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                <h2 className="text-lg font-black tracking-tight text-gray-900">Add New Category</h2>
+                                <h2 className="text-lg font-black tracking-tight text-gray-900">Add New Service</h2>
                                 <button onClick={() => setIsAddModalOpen(false)} className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm">
                                     <X size={20} />
                                 </button>
@@ -798,7 +981,7 @@ const AdminServices = () => {
 
                             <div className="p-6 flex-1 overflow-y-auto space-y-5 custom-scrollbar">
                                 <div>
-                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Category Title</label>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Service Title</label>
                                     <input 
                                         type="text" 
                                         value={newService.title}
@@ -807,6 +990,7 @@ const AdminServices = () => {
                                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                     />
                                 </div>
+
 
                                 <div>
                                     <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">Target Audience / Filter Tag</label>
@@ -954,6 +1138,265 @@ const AdminServices = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Style Variants Builder */}
+                                <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-purple-700 tracking-widest">Style Variants</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">Define selectable style types (e.g. Anarkali, Straight, A-line) under this category.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = [...(newService.styles || []), { name: '', image: '', description: '' }];
+                                                setNewService({ ...newService, styles: updated });
+                                            }}
+                                            className="px-3 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-purple-700 transition-all cursor-pointer shadow-xs shrink-0"
+                                        >
+                                            <Plus size={12} /> Add Style
+                                        </button>
+                                    </div>
+
+                                    {/* 1-Click Style Presets */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-y border-purple-100/60">
+                                        <span className="text-[9px] font-black uppercase text-purple-900 tracking-wider">⚡ Quick Add Styles:</span>
+                                        {STYLE_PRESETS.map((preset) => (
+                                            <button
+                                                key={preset.category}
+                                                type="button"
+                                                onClick={() => {
+                                                    const existingNames = new Set((newService.styles || []).map(s => s.name));
+                                                    const newStyles = preset.styles.filter(s => !existingNames.has(s.name));
+                                                    setNewService({ ...newService, styles: [...(newService.styles || []), ...newStyles] });
+                                                    toast.success(`Added ${preset.category} styles`);
+                                                }}
+                                                className="px-2 py-0.5 bg-purple-100/80 hover:bg-purple-200 text-purple-800 rounded-md text-[9px] font-bold transition-all shadow-2xs cursor-pointer"
+                                            >
+                                                + {preset.category}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    {(newService.styles || []).length === 0 ? (
+                                        <p className="text-[10px] text-gray-400 italic">No style variants defined yet.</p>
+                                    ) : (
+                                        <div className="space-y-2.5">
+                                            {(newService.styles || []).map((style, idx) => (
+                                                <div key={idx} className="bg-white p-3 rounded-xl border border-purple-100 space-y-2.5 shadow-2xs">
+                                                    <div className="flex gap-2.5 items-center">
+                                                        {/* Live Photo Preview Thumbnail */}
+                                                        <div className="w-11 h-11 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                                                            {style.image ? (
+                                                                <img
+                                                                    src={style.image}
+                                                                    alt={style.name || 'Preview'}
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                                />
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center text-purple-400">
+                                                                    <Camera size={16} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Style Name Input */}
+                                                        <input
+                                                            type="text"
+                                                            value={style.name}
+                                                            onChange={(e) => {
+                                                                const copy = [...newService.styles];
+                                                                copy[idx].name = e.target.value;
+                                                                setNewService({ ...newService, styles: copy });
+                                                            }}
+                                                            placeholder="Style Name (e.g. Anarkali Kurta)"
+                                                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                        />
+
+                                                        {/* Delete Style Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const copy = newService.styles.filter((_, i) => i !== idx);
+                                                                setNewService({ ...newService, styles: copy });
+                                                            }}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                                            title="Delete Style"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-purple-50">
+                                                        {/* Upload Button + Image URL input */}
+                                                        <div className="flex gap-1.5 items-center">
+                                                            <div className="relative shrink-0">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleStyleImageUpload(e, idx, false)}
+                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                    disabled={isImageUploading}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="px-2.5 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                                                                >
+                                                                    <Upload size={12} />
+                                                                    <span>Upload</span>
+                                                                </button>
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={style.image}
+                                                                onChange={(e) => {
+                                                                    const copy = [...newService.styles];
+                                                                    copy[idx].image = e.target.value;
+                                                                    setNewService({ ...newService, styles: copy });
+                                                                }}
+                                                                placeholder="Or paste photo URL..."
+                                                                className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                            />
+                                                        </div>
+
+                                                        {/* Description Input */}
+                                                        <input
+                                                            type="text"
+                                                            value={style.description}
+                                                            onChange={(e) => {
+                                                                const copy = [...newService.styles];
+                                                                copy[idx].description = e.target.value;
+                                                                setNewService({ ...newService, styles: copy });
+                                                            }}
+                                                            placeholder="Short description (optional)"
+                                                            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                 {/* Dynamic Measurement Fields Builder */}
+                                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">Dynamic Measurement Fields</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">Define customer measurement inputs for this garment (Values in inches by default).</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = [...(newService.measurementFields || []), { key: '', label: '', placeholder: '34', isRequired: true }];
+                                                setNewService({ ...newService, measurementFields: updated });
+                                            }}
+                                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-700 transition-all cursor-pointer shadow-xs shrink-0"
+                                        >
+                                            <Plus size={12} /> Add Field
+                                        </button>
+                                    </div>
+
+                                    {/* 1-Click Field Presets */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-y border-indigo-100/60">
+                                        <span className="text-[9px] font-black uppercase text-indigo-900 tracking-wider">⚡ 1-Click Field Templates:</span>
+                                        {MEASUREMENT_PRESETS.map((preset) => (
+                                            <button
+                                                key={preset.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setNewService({ ...newService, measurementFields: [...preset.fields] });
+                                                    toast.success(`Loaded ${preset.name} measurement fields`);
+                                                }}
+                                                className="px-2 py-0.5 bg-indigo-100/80 hover:bg-indigo-200 text-indigo-800 rounded-md text-[9px] font-bold transition-all shadow-2xs cursor-pointer"
+                                            >
+                                                + {preset.name}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {(newService.measurementFields || []).length === 0 ? (
+                                        <p className="text-[10px] text-gray-400 italic">No custom fields defined yet. Click standard templates above or add custom fields.</p>
+                                    ) : (
+                                        <div className="space-y-2.5">
+                                            {(newService.measurementFields || []).map((field, idx) => (
+                                                <div key={idx} className="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col gap-2 shadow-2xs">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[9px] font-black text-indigo-900/70 uppercase tracking-wider">Field Label (Shown to Customer)</span>
+                                                                {field.key && <span className="text-[8px] font-mono font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">key: {field.key}</span>}
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={field.label}
+                                                                onChange={(e) => {
+                                                                    const copy = [...newService.measurementFields];
+                                                                    const newLabel = e.target.value;
+                                                                    copy[idx].label = newLabel;
+                                                                    const autoKey = newLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                                                    if (!copy[idx].key || copy[idx].key === copy[idx]._autoKey) {
+                                                                        copy[idx].key = autoKey;
+                                                                        copy[idx]._autoKey = autoKey;
+                                                                    }
+                                                                    setNewService({ ...newService, measurementFields: copy });
+                                                                }}
+                                                                placeholder="e.g. Chest / Bust, Waist, Sleeves"
+                                                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                                                            />
+                                                        </div>
+
+                                                        {/* Required Toggle Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const copy = [...newService.measurementFields];
+                                                                copy[idx].isRequired = field.isRequired === false ? true : false;
+                                                                setNewService({ ...newService, measurementFields: copy });
+                                                            }}
+                                                            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all shrink-0 ${
+                                                                field.isRequired !== false 
+                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                                                    : 'bg-gray-100 text-gray-500 border border-gray-200'
+                                                            }`}
+                                                        >
+                                                            {field.isRequired !== false ? 'Required ✓' : 'Optional'}
+                                                        </button>
+
+                                                        {/* Delete Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const copy = newService.measurementFields.filter((_, i) => i !== idx);
+                                                                setNewService({ ...newService, measurementFields: copy });
+                                                            }}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                                                            title="Delete Field"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 pt-1 border-t border-indigo-50">
+                                                        <span className="text-[9px] font-medium text-gray-400 shrink-0">Sample Inch:</span>
+                                                        <input
+                                                            type="text"
+                                                            value={field.placeholder}
+                                                            onChange={(e) => {
+                                                                const copy = [...newService.measurementFields];
+                                                                copy[idx].placeholder = e.target.value;
+                                                                setNewService({ ...newService, measurementFields: copy });
+                                                            }}
+                                                            placeholder="Example value (e.g. 34)"
+                                                            className="flex-1 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
@@ -965,7 +1408,7 @@ const AdminServices = () => {
                                     disabled={isSubmitting}
                                     className="px-6 py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest disabled:opacity-50"
                                 >
-                                    {isSubmitting ? 'Saving...' : 'Save Category'}
+                                    {isSubmitting ? 'Saving...' : 'Save Service'}
                                 </button>
                             </div>
                         </motion.div>
@@ -1153,6 +1596,265 @@ const AdminServices = () => {
                                             />
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Style Variants Builder */}
+                                <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-purple-700 tracking-widest">Style Variants</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">Define selectable style types (e.g. Anarkali, Straight, A-line) under this category.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = [...(editingCategory.styles || []), { name: '', image: '', description: '' }];
+                                                setEditingCategory({ ...editingCategory, styles: updated });
+                                            }}
+                                            className="px-3 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-purple-700 transition-all cursor-pointer shadow-xs shrink-0"
+                                        >
+                                            <Plus size={12} /> Add Style
+                                        </button>
+                                    </div>
+
+                                    {/* 1-Click Style Presets */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-y border-purple-100/60">
+                                        <span className="text-[9px] font-black uppercase text-purple-900 tracking-wider">⚡ Quick Add Styles:</span>
+                                        {STYLE_PRESETS.map((preset) => (
+                                            <button
+                                                key={preset.category}
+                                                type="button"
+                                                onClick={() => {
+                                                    const existingNames = new Set((editingCategory.styles || []).map(s => s.name));
+                                                    const newStyles = preset.styles.filter(s => !existingNames.has(s.name));
+                                                    setEditingCategory({ ...editingCategory, styles: [...(editingCategory.styles || []), ...newStyles] });
+                                                    toast.success(`Added ${preset.category} styles`);
+                                                }}
+                                                className="px-2 py-0.5 bg-purple-100/80 hover:bg-purple-200 text-purple-800 rounded-md text-[9px] font-bold transition-all shadow-2xs cursor-pointer"
+                                            >
+                                                + {preset.category}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    {(editingCategory.styles || []).length === 0 ? (
+                                        <p className="text-[10px] text-gray-400 italic">No style variants defined yet.</p>
+                                    ) : (
+                                        <div className="space-y-2.5">
+                                            {(editingCategory.styles || []).map((style, idx) => (
+                                                <div key={idx} className="bg-white p-3 rounded-xl border border-purple-100 space-y-2.5 shadow-2xs">
+                                                    <div className="flex gap-2.5 items-center">
+                                                        {/* Live Photo Preview Thumbnail */}
+                                                        <div className="w-11 h-11 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                                                            {style.image ? (
+                                                                <img
+                                                                    src={style.image}
+                                                                    alt={style.name || 'Preview'}
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                                />
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center text-purple-400">
+                                                                    <Camera size={16} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Style Name Input */}
+                                                        <input
+                                                            type="text"
+                                                            value={style.name}
+                                                            onChange={(e) => {
+                                                                const copy = [...editingCategory.styles];
+                                                                copy[idx].name = e.target.value;
+                                                                setEditingCategory({ ...editingCategory, styles: copy });
+                                                            }}
+                                                            placeholder="Style Name (e.g. Anarkali Kurta)"
+                                                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                        />
+
+                                                        {/* Delete Style Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const copy = editingCategory.styles.filter((_, i) => i !== idx);
+                                                                setEditingCategory({ ...editingCategory, styles: copy });
+                                                            }}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                                            title="Delete Style"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-purple-50">
+                                                        {/* Upload Button + Image URL input */}
+                                                        <div className="flex gap-1.5 items-center">
+                                                            <div className="relative shrink-0">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleStyleImageUpload(e, idx, true)}
+                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                    disabled={isImageUploading}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="px-2.5 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                                                                >
+                                                                    <Upload size={12} />
+                                                                    <span>Upload</span>
+                                                                </button>
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={style.image}
+                                                                onChange={(e) => {
+                                                                    const copy = [...editingCategory.styles];
+                                                                    copy[idx].image = e.target.value;
+                                                                    setEditingCategory({ ...editingCategory, styles: copy });
+                                                                }}
+                                                                placeholder="Or paste photo URL..."
+                                                                className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                            />
+                                                        </div>
+
+                                                        {/* Description Input */}
+                                                        <input
+                                                            type="text"
+                                                            value={style.description}
+                                                            onChange={(e) => {
+                                                                const copy = [...editingCategory.styles];
+                                                                copy[idx].description = e.target.value;
+                                                                setEditingCategory({ ...editingCategory, styles: copy });
+                                                            }}
+                                                            placeholder="Short description (optional)"
+                                                            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                 {/* Dynamic Measurement Fields Builder */}
+                                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">Dynamic Measurement Fields</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">Define customer measurement inputs for this garment (Values in inches by default).</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = [...(editingCategory.measurementFields || []), { key: '', label: '', placeholder: '34', isRequired: true }];
+                                                setEditingCategory({ ...editingCategory, measurementFields: updated });
+                                            }}
+                                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-700 transition-all cursor-pointer shadow-xs shrink-0"
+                                        >
+                                            <Plus size={12} /> Add Field
+                                        </button>
+                                    </div>
+
+                                    {/* 1-Click Field Presets */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-y border-indigo-100/60">
+                                        <span className="text-[9px] font-black uppercase text-indigo-900 tracking-wider">⚡ 1-Click Field Templates:</span>
+                                        {MEASUREMENT_PRESETS.map((preset) => (
+                                            <button
+                                                key={preset.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditingCategory({ ...editingCategory, measurementFields: [...preset.fields] });
+                                                    toast.success(`Loaded ${preset.name} measurement fields`);
+                                                }}
+                                                className="px-2 py-0.5 bg-indigo-100/80 hover:bg-indigo-200 text-indigo-800 rounded-md text-[9px] font-bold transition-all shadow-2xs cursor-pointer"
+                                            >
+                                                + {preset.name}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {(editingCategory.measurementFields || []).length === 0 ? (
+                                        <p className="text-[10px] text-gray-400 italic">No custom fields defined yet. Click standard templates above or add custom fields.</p>
+                                    ) : (
+                                        <div className="space-y-2.5">
+                                            {(editingCategory.measurementFields || []).map((field, idx) => (
+                                                <div key={idx} className="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col gap-2 shadow-2xs">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[9px] font-black text-indigo-900/70 uppercase tracking-wider">Field Label (Shown to Customer)</span>
+                                                                {field.key && <span className="text-[8px] font-mono font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">key: {field.key}</span>}
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={field.label}
+                                                                onChange={(e) => {
+                                                                    const copy = [...editingCategory.measurementFields];
+                                                                    const newLabel = e.target.value;
+                                                                    copy[idx].label = newLabel;
+                                                                    const autoKey = newLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                                                    if (!copy[idx].key || copy[idx].key === copy[idx]._autoKey) {
+                                                                        copy[idx].key = autoKey;
+                                                                        copy[idx]._autoKey = autoKey;
+                                                                    }
+                                                                    setEditingCategory({ ...editingCategory, measurementFields: copy });
+                                                                }}
+                                                                placeholder="e.g. Chest / Bust, Waist, Sleeves"
+                                                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                                                            />
+                                                        </div>
+
+                                                        {/* Required Toggle Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const copy = [...editingCategory.measurementFields];
+                                                                copy[idx].isRequired = field.isRequired === false ? true : false;
+                                                                setEditingCategory({ ...editingCategory, measurementFields: copy });
+                                                            }}
+                                                            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all shrink-0 ${
+                                                                field.isRequired !== false 
+                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                                                    : 'bg-gray-100 text-gray-500 border border-gray-200'
+                                                            }`}
+                                                        >
+                                                            {field.isRequired !== false ? 'Required ✓' : 'Optional'}
+                                                        </button>
+
+                                                        {/* Delete Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const copy = editingCategory.measurementFields.filter((_, i) => i !== idx);
+                                                                setEditingCategory({ ...editingCategory, measurementFields: copy });
+                                                            }}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                                                            title="Delete Field"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 pt-1 border-t border-indigo-50">
+                                                        <span className="text-[9px] font-medium text-gray-400 shrink-0">Sample Inch:</span>
+                                                        <input
+                                                            type="text"
+                                                            value={field.placeholder}
+                                                            onChange={(e) => {
+                                                                const copy = [...editingCategory.measurementFields];
+                                                                copy[idx].placeholder = e.target.value;
+                                                                setEditingCategory({ ...editingCategory, measurementFields: copy });
+                                                            }}
+                                                            placeholder="Example value (e.g. 34)"
+                                                            className="flex-1 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
