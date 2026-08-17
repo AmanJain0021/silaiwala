@@ -68,9 +68,28 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
         body: String(body),
         sound: 'default',
         priority: 'high',
-        channelId: 'delivery_requests'
+        channelId: data?.channelId || 'default',
+        defaultSound: true,
+        defaultVibrateTimings: true,
+        visibility: 'public'
       },
       data: dataWithNotifInfo
+    },
+    apns: {
+      headers: {
+        'apns-priority': isUrgent ? '10' : '5'
+      },
+      payload: {
+        aps: {
+          alert: {
+            title: String(title),
+            body: String(body)
+          },
+          sound: 'default',
+          badge: 1,
+          'content-available': 1
+        }
+      }
     }
   };
 

@@ -195,12 +195,14 @@ const sendNotification = async (options) => {
         console.log(`[FCM] User ${targetUser._id} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s)`);
         
         if (targetPlatform === 'mobile') {
-          fcmTokens = [...mobileTokens];
+          fcmTokens = mobileTokens.length > 0 ? [...mobileTokens] : [...webTokens];
         } else if (targetPlatform === 'web') {
-          fcmTokens = [...webTokens];
+          fcmTokens = webTokens.length > 0 ? [...webTokens] : [...mobileTokens];
         } else {
           fcmTokens = [...webTokens, ...mobileTokens];
         }
+
+        fcmTokens = Array.from(new Set(fcmTokens)).filter(Boolean);
       }
 
       if (fcmTokens.length > 0) {

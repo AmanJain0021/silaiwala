@@ -92,7 +92,8 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
  */
 exports.registerFcmToken = asyncHandler(async (req, res, next) => {
   const targetToken = req.body.fcmToken || req.body.token;
-  const platform = req.body.platform;
+  const platform = (req.body.platform || req.body.deviceType || req.body.device || '').toString().toLowerCase();
+  const userAgent = (req.headers['user-agent'] || '').toLowerCase();
 
   if (!targetToken) {
     return next(new ErrorResponse("Please provide an FCM token", 400));
@@ -105,16 +106,19 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
   if (!user.fcmToken) user.fcmToken = [];
   if (!user.fcmTokenMobile) user.fcmTokenMobile = [];
 
-  const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
+  const isMobile = 
+    ['mobile', 'android', 'ios', 'react-native', 'flutter'].includes(platform) ||
+    userAgent.includes('android') ||
+    userAgent.includes('iphone') ||
+    userAgent.includes('ipad') ||
+    userAgent.includes('mobile');
 
   if (isMobile) {
-    const webIndex = user.fcmToken.indexOf(targetToken);
-    if (webIndex !== -1) user.fcmToken.splice(webIndex, 1);
     if (!user.fcmTokenMobile.includes(targetToken)) user.fcmTokenMobile.push(targetToken);
-  } else {
-    const mobileIndex = user.fcmTokenMobile.indexOf(targetToken);
-    if (mobileIndex !== -1) user.fcmTokenMobile.splice(mobileIndex, 1);
-    if (!user.fcmToken.includes(targetToken)) user.fcmToken.push(targetToken);
+  }
+  
+  if (!user.fcmToken.includes(targetToken)) {
+    user.fcmToken.push(targetToken);
   }
 
   await user.save();
