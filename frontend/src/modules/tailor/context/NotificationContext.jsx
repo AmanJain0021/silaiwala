@@ -42,20 +42,9 @@ export const NotificationProvider = ({ children }) => {
 
         fetchNotifications();
         
-        const socket = io(SOCKET_URL, {
-            auth: {
-                token: getToken()
-            }
-        });
-        
         const userId = user?._id || user?.id;
-        const joinUserRoom = () => {
-            if (userId) {
-                socket.emit('join_user_room', String(userId));
-            }
-        };
-        socket.on('connect', joinUserRoom);
-        joinUserRoom();
+        const useSocketStore = require('../../../store/socketStore').default;
+        const socket = useSocketStore.getState().connect(userId ? String(userId) : null, 'tailor');
 
         const triggerDesktopNotification = async (title, body) => {
             if (!("Notification" in window) || Notification.permission !== "granted") return;
@@ -89,7 +78,7 @@ export const NotificationProvider = ({ children }) => {
             triggerDesktopNotification("New Order Placed! 🛍️", msg);
         };
 
-        socket.on('new_notification', (notification) => {
+        const handleNotification = (notification) => {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
@@ -100,16 +89,20 @@ export const NotificationProvider = ({ children }) => {
             toast.success(`🔔 ${title}\n${body}`, { id: `toast-notif-${notification._id || Date.now()}`, duration: 5000, position: 'top-right' });
 
             triggerDesktopNotification(title, body);
-        });
+        };
 
-        socket.on('receive_new_order', handleNewOrder);
-        socket.on('new_order', handleNewOrder);
+        if (socket) {
+            socket.on('new_notification', handleNotification);
+            socket.on('receive_new_order', handleNewOrder);
+            socket.on('new_order', handleNewOrder);
+        }
 
         return () => {
-            socket.off('connect', joinUserRoom);
-            socket.off('new_notification');
-            socket.off('receive_new_order', handleNewOrder);
-            socket.off('new_order', handleNewOrder);
+            if (socket) {
+                socket.off('new_notification', handleNotification);
+                socket.off('receive_new_order', handleNewOrder);
+                socket.off('new_order', handleNewOrder);
+            }
         };
     }, [token, user?._id, user?.id]);
 

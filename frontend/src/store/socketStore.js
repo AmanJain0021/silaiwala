@@ -9,21 +9,31 @@ const useSocketStore = create((set, get) => ({
 
     connect: (userId, role) => {
         const existing = get().socket;
-        // Always rebuild the socket when connecting a (possibly different) user so the
-        // previous tailor's JWT / rooms cannot leak into the next session on the same device.
+        const currentToken = getToken();
+
+        // Reuse active socket connection if already connected
+        if (existing && existing.connected) {
+            if (userId) {
+                existing.emit('join_user_room', String(userId));
+                if (role === 'delivery') existing.emit('join', 'delivery_partners');
+                else if (role === 'admin') existing.emit('join_admin_room');
+            }
+            return existing;
+        }
+
         if (existing) {
             existing.disconnect();
-            set({ socket: null, isConnected: false });
         }
 
         console.log('Initializing Socket.IO connection...');
         const newSocket = io(SOCKET_URL, {
             withCredentials: true,
+            transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 10,
             reconnectionDelay: 1000,
             auth: {
-                token: getToken()
+                token: currentToken
             }
         });
 
@@ -32,9 +42,8 @@ const useSocketStore = create((set, get) => ({
             set({ isConnected: true });
             
             if (userId) {
-                newSocket.emit('join_user_room', userId);
+                newSocket.emit('join_user_room', String(userId));
                 
-                // Role-based room joins
                 if (role === 'delivery') {
                     newSocket.emit('join', 'delivery_partners');
                 } else if (role === 'admin') {
@@ -43,12 +52,13 @@ const useSocketStore = create((set, get) => ({
             }
         });
 
-        newSocket.on('disconnect', () => {
-            console.log('❌ Socket disconnected');
+        newSocket.on('disconnect', (reason) => {
+            console.log('❌ Socket disconnected:', reason);
             set({ isConnected: false });
         });
 
         set({ socket: newSocket });
+        return newSocket;
     },
 
     disconnect: () => {

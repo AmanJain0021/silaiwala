@@ -150,32 +150,25 @@ const TailorLayout = () => {
         const token = getToken();
         if (!token) return;
 
-        const socket = io(SOCKET_URL, {
-            auth: { token },
-            transports: ['websocket'],
-            reconnection: true
-        });
-
-        const joinRoom = () => {
-            socket.emit('join_user_room', String(userId));
-        };
-        socket.on('connect', joinRoom);
-        joinRoom();
+        const useSocketStore = require('../store/socketStore').default;
+        const socket = useSocketStore.getState().connect(String(userId), 'tailor');
 
         const refreshPendingCount = () => {
             fetchDashboardData();
         };
 
-        socket.on('new_order', refreshPendingCount);
-        socket.on('receive_new_order', refreshPendingCount);
-        socket.on('order_status_updated', refreshPendingCount);
+        if (socket) {
+            socket.on('new_order', refreshPendingCount);
+            socket.on('receive_new_order', refreshPendingCount);
+            socket.on('order_status_updated', refreshPendingCount);
+        }
 
         return () => {
-            socket.off('connect', joinRoom);
-            socket.off('new_order', refreshPendingCount);
-            socket.off('receive_new_order', refreshPendingCount);
-            socket.off('order_status_updated', refreshPendingCount);
-            socket.disconnect();
+            if (socket) {
+                socket.off('new_order', refreshPendingCount);
+                socket.off('receive_new_order', refreshPendingCount);
+                socket.off('order_status_updated', refreshPendingCount);
+            }
         };
     }, [user?._id, user?.id]);
 
