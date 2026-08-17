@@ -211,20 +211,26 @@ export const usePushNotifications = (user) => {
     requestPermissionAndGetToken();
 
     // ── FLUTTER WEBVIEW NATIVE FCM TOKEN BRIDGE ──
+    // Moved outside of useEffect so it can be called by Flutter even on the login screen
     const handleMobileToken = async (nativeToken) => {
       if (!nativeToken) return;
       console.log('[FCM-Bridge] Received native mobile FCM token from Flutter WebView:', nativeToken.substring(0, 15) + '...');
       _currentDeviceToken = nativeToken;
       localStorage.setItem('fcm_token', nativeToken);
-      try {
-        await api.put('/user/fcm-token', {
-          fcmToken: nativeToken,
-          token: nativeToken,
-          platform: 'mobile'
-        });
-        console.log('[FCM-Bridge] Successfully registered native Flutter FCM token in backend!');
-      } catch (err) {
-        console.warn('[FCM-Bridge] Failed to register native Flutter FCM token:', err.message);
+      
+      // If we are already logged in, sync it immediately
+      const currentUserId = typeof user === 'object' ? (user?._id || user?.id || user?.user?._id || user?.data?._id || null) : null;
+      if (currentUserId) {
+        try {
+          await api.put('/user/fcm-token', {
+            fcmToken: nativeToken,
+            token: nativeToken,
+            platform: 'mobile'
+          });
+          console.log('[FCM-Bridge] Successfully registered native Flutter FCM token in backend!');
+        } catch (err) {
+          console.warn('[FCM-Bridge] Failed to register native Flutter FCM token:', err.message);
+        }
       }
     };
 
@@ -241,6 +247,73 @@ export const usePushNotifications = (user) => {
     };
 
     window.addEventListener('message', handlePostMessage);
+    
+    // Clean up event listener when component unmounts
+    return () => {
+      window.removeEventListener('message', handlePostMessage);
+    };
+  }, [user]); // We must add user to dependency array if we use it inside handleMobileToken
+
+  useEffect(() => {
+    if (!userId) return; // Skip FCM push token request for logged-out visitors & login/signup pages
+
+    const requestPermissionAndGetToken = async () => {
+      try {
+        // ... Detect mobile WebView
+        const isWebView = 
+          typeof window.receiveMobileFcmToken === 'function' || 
+          typeof window.flutter_inappwebview !== 'undefined' || 
+          /(WebView|wv|Android.*Version\/[\d.]+.*Chrome|iPhone.*Safari.*Mobile)/i.test(navigator.userAgent);
+
+        if (isWebView) {
+          // If in mobile WebView, check if we already got the native token from Flutter
+          const savedNativeToken = localStorage.getItem('fcm_token');
+          if (savedNativeToken) {
+            await syncTokenWithBackend(savedNativeToken, userId);
+            // Also explicitly sync via the mobile endpoint just in case
+            try {
+              await api.put('/user/fcm-token', {
+                fcmToken: savedNativeToken,
+                token: savedNativeToken,
+                platform: 'mobile'
+              });
+            } catch (e) {}
+          }
+          return; // Skip Web FCM registration
+        }
+
+        if (!('Notification' in window)) {
+          console.warn('[FCM] Notifications are not supported in this browser.');
+          return;
+        }
+
+        const permission = await Notification.requestPermission();
+
+        if (permission === 'granted') {
+          const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+          let registration;
+          if ('serviceWorker' in navigator) {
+            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            registration = await navigator.serviceWorker.ready;
+          }
+
+          const currentToken = await getToken(messaging, {
+            vapidKey,
+            serviceWorkerRegistration: registration
+          });
+
+          if (currentToken) {
+            setFcmToken(currentToken);
+            await syncTokenWithBackend(currentToken, userId);
+          }
+        }
+      } catch (err) {
+        console.error('[FCM] Error obtaining push token:', err);
+      }
+    };
+
+    requestPermissionAndGetToken();
 
     const unsubscribe = onMessage(messaging, async (payload) => {
       console.log('[FCM] Foreground data message received:', payload);
@@ -304,9 +377,6 @@ export const usePushNotifications = (user) => {
     });
 
     return () => {
-      delete window.receiveMobileFcmToken;
-      delete window.setMobileFcmToken;
-      window.removeEventListener('message', handlePostMessage);
       if (unsubscribe) unsubscribe();
     };
   }, [userId]);
