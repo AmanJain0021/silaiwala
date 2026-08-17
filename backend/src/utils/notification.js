@@ -216,6 +216,8 @@ const sendNotification = async (options) => {
           },
           isUrgent: true
         });
+      } else if (targetUser) {
+        console.warn(`⚠️ [FCM] Notification skipped for User ${targetUser._id}: 0 FCM tokens registered in DB.`);
       }
     } catch (fcmError) {
       console.error("❌ FCM Push Error:", fcmError.message);

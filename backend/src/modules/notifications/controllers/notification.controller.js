@@ -119,15 +119,8 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
     if (!user.fcmToken.includes(targetToken)) user.fcmToken.push(targetToken);
   }
 
-  // Disassociate this device token from any other user to prevent cross-account notification leaks on shared devices
-  const User = require("../../../models/User.js");
-  await User.updateMany(
-    { _id: { $ne: user._id }, $or: [{ fcmToken: targetToken }, { fcmTokenMobile: targetToken }] },
-    { $pull: { fcmToken: targetToken, fcmTokenMobile: targetToken } }
-  );
-
   await user.save();
-  console.log(`[FCM-TOKEN] Saved. Web tokens: ${user.fcmToken.length}, Mobile tokens: ${user.fcmTokenMobile.length}`);
+  console.log(`[FCM-TOKEN] Saved for user ${user._id} (${user.role}). Web tokens: ${user.fcmToken.length}, Mobile tokens: ${user.fcmTokenMobile.length}`);
 
   res.status(200).json({
     success: true,
