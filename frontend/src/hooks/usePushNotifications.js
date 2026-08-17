@@ -76,9 +76,9 @@ export const testPushToThisDevice = async () => {
     } else {
       // Detect if we are inside a mobile WebView (Android/iOS)
       const isWebView = 
-        typeof window.receiveMobileFcmToken === 'function' || 
+        window.isFlutterApp === true ||
         typeof window.flutter_inappwebview !== 'undefined' || 
-        /(WebView|wv|Android.*Version\/[\d.]+.*Chrome|iPhone.*Safari.*Mobile)/i.test(navigator.userAgent);
+        /(WebView|wv|Android.*Version\/[\d.]+.*Chrome)/i.test(navigator.userAgent);
       
       if (!isWebView) {
         // Only request permission if NOT in a webview, because webviews often hang indefinitely
@@ -172,9 +172,10 @@ export const usePushNotifications = (user) => {
   const [fcmToken, setFcmToken] = useState(_currentDeviceToken);
   const userId = user?._id || user?.id || user?.user?._id || user?.data?._id || null;
 
-  // ── 1. FLUTTER WEBVIEW NATIVE FCM TOKEN BRIDGE (ALWAYS ACTIVE) ──
+    // ── 1. FLUTTER WEBVIEW NATIVE FCM TOKEN BRIDGE (ALWAYS ACTIVE) ──
   useEffect(() => {
     const handleMobileToken = async (nativeToken) => {
+      window.isFlutterApp = true;
       if (!nativeToken) return;
       console.log('[FCM-Bridge] Received native mobile FCM token from Flutter WebView:', nativeToken.substring(0, 15) + '...');
       _currentDeviceToken = nativeToken;
@@ -225,9 +226,9 @@ export const usePushNotifications = (user) => {
       try {
         // Detect mobile WebView
         const isWebView = 
-          typeof window.receiveMobileFcmToken === 'function' || 
+          window.isFlutterApp === true ||
           typeof window.flutter_inappwebview !== 'undefined' || 
-          /(WebView|wv|Android.*Version\/[\d.]+.*Chrome|iPhone.*Safari.*Mobile)/i.test(navigator.userAgent);
+          /(WebView|wv|Android.*Version\/[\d.]+.*Chrome)/i.test(navigator.userAgent);
 
         if (isWebView) {
           // If in mobile WebView, check if we already got the native token from Flutter
