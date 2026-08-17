@@ -151,25 +151,16 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("User not found", 404));
     }
 
-    let targetTokens = [];
-    if (targetToken) {
-      targetTokens = [targetToken];
-
-      // Auto-save target token to user DB if not already present
-      if (!freshUser.fcmToken) freshUser.fcmToken = [];
-      if (!freshUser.fcmToken.includes(targetToken)) {
-        freshUser.fcmToken.push(targetToken);
-        await freshUser.save();
-      }
-    } else {
-      // Fallback: collect all stored tokens for this user from DB (web + mobile)
-      const webTokens = freshUser.fcmToken || [];
-      const mobileTokens = freshUser.fcmTokenMobile || [];
-      targetTokens = Array.from(new Set([...webTokens, ...mobileTokens])).filter(Boolean);
-    }
+    const webTokens = freshUser.fcmToken || [];
+    const mobileTokens = freshUser.fcmTokenMobile || [];
+    let targetTokens = Array.from(new Set([
+      ...(targetToken ? [targetToken] : []),
+      ...webTokens,
+      ...mobileTokens
+    ])).filter(Boolean);
 
     if (targetTokens.length === 0) {
-      return next(new ErrorResponse("No notification token found for your account. Please allow notification permissions in your browser/device settings and reload.", 400));
+      return next(new ErrorResponse("No notification token found for your account. Please allow notification permissions in your app/browser settings and reload.", 400));
     }
 
     console.log(`[TEST-PUSH] Sending test push to ${targetTokens.length} device token(s) for user ${freshUser._id}...`);
