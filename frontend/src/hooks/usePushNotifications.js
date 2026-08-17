@@ -75,7 +75,10 @@ export const testPushToThisDevice = async () => {
       hasWebPushSupport = true;
     } else {
       // Detect if we are inside a mobile WebView (Android/iOS)
-      const isWebView = /(WebView|wv|Android.*Version\/[\d.]+.*Chrome|iPhone.*Safari.*Mobile)/i.test(navigator.userAgent);
+      const isWebView = 
+        typeof window.receiveMobileFcmToken === 'function' || 
+        typeof window.flutter_inappwebview !== 'undefined' || 
+        /(WebView|wv|Android.*Version\/[\d.]+.*Chrome|iPhone.*Safari.*Mobile)/i.test(navigator.userAgent);
       
       if (!isWebView) {
         // Only request permission if NOT in a webview, because webviews often hang indefinitely
