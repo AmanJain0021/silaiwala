@@ -67,30 +67,31 @@ const syncTokenWithBackend = async (token, userId = null) => {
  * Send a test push notification to THIS device only.
  */
 export const testPushToThisDevice = async () => {
+  let deviceToken = getCurrentDeviceFcmToken() || localStorage.getItem('fcm_token');
   let hasWebPushSupport = false;
   
   if (typeof window !== 'undefined' && 'Notification' in window) {
-    try {
-      // Android Webviews often hang indefinitely on requestPermission if not handled natively.
-      // Use a timeout to prevent it from blocking the rest of the function.
-      const perm = await Promise.race([
-        Notification.requestPermission(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Permission request timeout')), 1000))
-      ]);
+    if (Notification.permission === 'granted') {
+      hasWebPushSupport = true;
+    } else {
+      // Detect if we are inside a mobile WebView (Android/iOS)
+      const isWebView = /(WebView|wv|Android.*Version\/[\d.]+.*Chrome|iPhone.*Safari.*Mobile)/i.test(navigator.userAgent);
       
-      if (perm === 'granted') {
-        hasWebPushSupport = true;
-      } else {
-        console.warn('[FCM] Notification permission not granted:', perm);
+      if (!isWebView) {
+        // Only request permission if NOT in a webview, because webviews often hang indefinitely
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === 'granted') {
+            hasWebPushSupport = true;
+          }
+        } catch (e) {
+          console.warn('[FCM] Permission request error:', e);
+        }
       }
-    } catch (e) {
-      console.warn('[FCM] Notification permission request warning/timeout:', e.message || e);
     }
   }
 
-  let deviceToken = getCurrentDeviceFcmToken() || localStorage.getItem('fcm_token');
-
-  // Only try fetching Web FCM token if Web Push is supported (prevents hang in Flutter Webview)
+  // Only try fetching Web FCM token if Web Push is explicitly supported
   if (hasWebPushSupport) {
     try {
       const { messaging, getToken: fbGetToken } = await import('../config/firebase');
@@ -106,7 +107,7 @@ export const testPushToThisDevice = async () => {
         }
       }
 
-      // Use Promise.race to prevent indefinite hanging if getToken gets stuck
+      // 5-second timeout on getToken to prevent indefinite hanging in edge cases
       const token = await Promise.race([
         fbGetToken(messaging, { vapidKey, serviceWorkerRegistration: registration }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase getToken timeout')), 5000))
@@ -122,10 +123,7 @@ export const testPushToThisDevice = async () => {
     }
   }
 
-  if (!deviceToken) {
-    throw new Error('No FCM token found on this device. Please allow notifications or reload the app.');
-  }
-
+  // Send request to backend. If deviceToken is null, backend will use tokens stored in MongoDB.
   const response = await api.post('/notifications/test-push', {
     deviceToken: deviceToken || undefined,
     fcmToken: deviceToken || undefined,
