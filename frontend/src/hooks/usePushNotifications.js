@@ -169,34 +169,46 @@ export const usePushNotifications = (user) => {
 
     const requestPermissionAndGetToken = async () => {
       try {
-        // Detect mobile WebView
-        const isWebView = 
-          window.isFlutterApp === true ||
-          typeof window.flutter_inappwebview !== 'undefined' || 
-          /(WebView|wv|Android.*Version\/[\d.]+.*Chrome)/i.test(navigator.userAgent);
-
-        if (isWebView) {
-          // If in mobile WebView, check if we already got the native token from Flutter
-          const savedNativeToken = localStorage.getItem('fcm_token');
-          if (savedNativeToken) {
-            await syncTokenWithBackend(savedNativeToken, userId);
-            try {
-              await api.put('/user/fcm-token', {
-                fcmToken: savedNativeToken,
-                token: savedNativeToken,
-                platform: 'mobile'
-              });
-            } catch (e) {}
-          }
-          return; // Skip Web FCM registration
-        }
-
         if (!('Notification' in window)) {
           console.warn('[FCM] Notifications are not supported in this browser.');
+          // Still try to sync any native token from Flutter
+          const savedToken = localStorage.getItem('fcm_token');
+          if (savedToken) {
+            await syncTokenWithBackend(savedToken, userId);
+            try {
+              await api.put('/user/fcm-token', { fcmToken: savedToken, token: savedToken, platform: 'mobile' });
+              console.log('[FCM] Synced native mobile token to backend (no Notification API)');
+            } catch (e) {}
+          }
           return;
         }
 
-        const permission = await Notification.requestPermission();
+        // Use timeout-based detection instead of unreliable regex
+        // If requestPermission() hangs for 2 seconds → we're in a WebView
+        let permission = 'default';
+        try {
+          permission = await Promise.race([
+            Notification.requestPermission(),
+            new Promise(resolve => setTimeout(() => resolve('timeout'), 2000))
+          ]);
+        } catch (e) {
+          console.warn('[FCM] Permission request error:', e);
+        }
+
+        if (permission === 'timeout') {
+          // We're in a Flutter WebView — sync native token if available
+          console.log('[FCM] Permission request timed out (WebView detected). Syncing native token...');
+          const savedNativeToken = localStorage.getItem('fcm_token');
+          if (savedNativeToken) {
+            _currentDeviceToken = savedNativeToken;
+            await syncTokenWithBackend(savedNativeToken, userId);
+            try {
+              await api.put('/user/fcm-token', { fcmToken: savedNativeToken, token: savedNativeToken, platform: 'mobile' });
+              console.log('[FCM] Native mobile token synced to backend successfully!');
+            } catch (e) {}
+          }
+          return;
+        }
 
         if (permission === 'granted') {
           const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
