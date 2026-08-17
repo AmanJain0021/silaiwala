@@ -172,46 +172,8 @@ export const usePushNotifications = (user) => {
   const [fcmToken, setFcmToken] = useState(_currentDeviceToken);
   const userId = user?._id || user?.id || user?.user?._id || user?.data?._id || null;
 
+  // ── 1. FLUTTER WEBVIEW NATIVE FCM TOKEN BRIDGE (ALWAYS ACTIVE) ──
   useEffect(() => {
-    if (!userId) return; // Skip FCM push token request for logged-out visitors & login/signup pages
-
-    const requestPermissionAndGetToken = async () => {
-      try {
-        if (!('Notification' in window)) {
-          console.warn('[FCM] Notifications are not supported in this browser.');
-          return;
-        }
-
-        const permission = await Notification.requestPermission();
-
-        if (permission === 'granted') {
-          const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-
-          let registration;
-          if ('serviceWorker' in navigator) {
-            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-            registration = await navigator.serviceWorker.ready;
-          }
-
-          const currentToken = await getToken(messaging, {
-            vapidKey,
-            serviceWorkerRegistration: registration
-          });
-
-          if (currentToken) {
-            setFcmToken(currentToken);
-            await syncTokenWithBackend(currentToken, userId);
-          }
-        }
-      } catch (err) {
-        console.error('[FCM] Error obtaining push token:', err);
-      }
-    };
-
-    requestPermissionAndGetToken();
-
-    // ── FLUTTER WEBVIEW NATIVE FCM TOKEN BRIDGE ──
-    // Moved outside of useEffect so it can be called by Flutter even on the login screen
     const handleMobileToken = async (nativeToken) => {
       if (!nativeToken) return;
       console.log('[FCM-Bridge] Received native mobile FCM token from Flutter WebView:', nativeToken.substring(0, 15) + '...');
@@ -248,18 +210,20 @@ export const usePushNotifications = (user) => {
 
     window.addEventListener('message', handlePostMessage);
     
-    // Clean up event listener when component unmounts
     return () => {
       window.removeEventListener('message', handlePostMessage);
+      delete window.receiveMobileFcmToken;
+      delete window.setMobileFcmToken;
     };
-  }, [user]); // We must add user to dependency array if we use it inside handleMobileToken
+  }, [user]);
 
+  // ── 2. WEB PUSH PERMISSION & FOREGROUND NOTIFICATIONS (ONLY WHEN LOGGED IN) ──
   useEffect(() => {
     if (!userId) return; // Skip FCM push token request for logged-out visitors & login/signup pages
 
     const requestPermissionAndGetToken = async () => {
       try {
-        // ... Detect mobile WebView
+        // Detect mobile WebView
         const isWebView = 
           typeof window.receiveMobileFcmToken === 'function' || 
           typeof window.flutter_inappwebview !== 'undefined' || 
@@ -270,7 +234,6 @@ export const usePushNotifications = (user) => {
           const savedNativeToken = localStorage.getItem('fcm_token');
           if (savedNativeToken) {
             await syncTokenWithBackend(savedNativeToken, userId);
-            // Also explicitly sync via the mobile endpoint just in case
             try {
               await api.put('/user/fcm-token', {
                 fcmToken: savedNativeToken,
