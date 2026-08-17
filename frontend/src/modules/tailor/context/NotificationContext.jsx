@@ -65,13 +65,24 @@ export const NotificationProvider = ({ children }) => {
             }
         };
 
+        let lastHandledTime = 0;
+        let lastHandledOrderId = '';
+
         const handleNewOrder = (data) => {
+            const orderIdStr = String(data?.orderId || data?.id || data?._id || '');
+            const now = Date.now();
+
+            if (lastHandledOrderId === orderIdStr && now - lastHandledTime < 4000) {
+                return;
+            }
+            lastHandledOrderId = orderIdStr;
+            lastHandledTime = now;
+
             fetchNotifications();
             try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
             
-            const orderIdStr = data?.orderId || data?.id || data?._id || '';
             const msg = data?.message || data?.title || `New Order ${orderIdStr ? '#' + orderIdStr : ''} received! Please review.`;
-            toast.success(`🛍️ ${msg}`, { id: `toast-new-order-${orderIdStr || Date.now()}`, duration: 6000, position: 'top-right' });
+            toast.success(`🛍️ ${msg}`, { id: `toast-new-order-${orderIdStr || now}`, duration: 6000, position: 'top-right' });
 
             triggerDesktopNotification("New Order Placed! 🛍️", msg);
         };
@@ -79,6 +90,11 @@ export const NotificationProvider = ({ children }) => {
         const handleNotification = (notification) => {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
+
+            // Skip toast if this notification is for an order creation (handleNewOrder handles it)
+            if (notification.type === 'ORDER_CREATED' || notification.type === 'NEW_ORDER') {
+                return;
+            }
             
             try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
             
@@ -92,14 +108,12 @@ export const NotificationProvider = ({ children }) => {
         if (socket) {
             socket.on('new_notification', handleNotification);
             socket.on('receive_new_order', handleNewOrder);
-            socket.on('new_order', handleNewOrder);
         }
 
         return () => {
             if (socket) {
                 socket.off('new_notification', handleNotification);
                 socket.off('receive_new_order', handleNewOrder);
-                socket.off('new_order', handleNewOrder);
             }
         };
     }, [token, user?._id, user?.id]);

@@ -88,15 +88,6 @@ function App() {
   useEffect(() => {
     if (!socket) return;
     
-    // Listen for new orders (Tailor)
-    const handleNewOrder = (order) => {
-      const orderId = order?.orderId || order?._id || 'new';
-      toast.success({
-        title: 'New Order Received!',
-        body: `Order ID: #${orderId}`
-      }, { id: `toast-new-order-${orderId}` });
-    };
-
     // Listen for status updates (Customer/Tailor)
     const handleStatusUpdate = (data) => {
       if (!data?.status || /^[A-Z0-9_]+$/.test(String(data.status))) return;
@@ -110,28 +101,20 @@ function App() {
       const statusKey = String(data.status).toLowerCase();
       const notifId = `toast-status-${orderId}-${statusKey}`;
 
-      toast.success({
-        title: `Order #${orderId} Updated`,
-        body: `Status changed to: ${statusKey.replace(/-/g, ' ')}`
-      }, { id: notifId });
+      toast.success(`Order #${orderId} Updated\nStatus changed to: ${statusKey.replace(/-/g, ' ')}`, { id: notifId });
     };
 
     // Listen for general notifications (like Admin Broadcasts or Test Pushes)
     const handleNewNotification = (data) => {
       if (data.type === 'BROADCAST' || data.type === 'TEST') {
-        toast.success({
-          title: `📣 ${data.title || 'Notification'}`,
-          body: data.message || ''
-        });
+        toast.success(`📣 ${data.title || 'Notification'}\n${data.message || ''}`);
       }
     };
 
-    socket.on('receive_new_order', handleNewOrder);
     socket.on('order_status_updated', handleStatusUpdate);
     socket.on('new_notification', handleNewNotification);
 
     return () => {
-      socket.off('receive_new_order', handleNewOrder);
       socket.off('order_status_updated', handleStatusUpdate);
       socket.off('new_notification', handleNewNotification);
     };
