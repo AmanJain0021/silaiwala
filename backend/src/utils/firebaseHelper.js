@@ -95,8 +95,20 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
 
   try {
     const messaging = getFirebaseMessaging();
+    console.log(`[FCM-Helper] Sending multicast to ${validTokens.length} token(s). sample: ${validTokens.slice(0,5).map(t => (String(t).substring(0,15) + '...'))}`);
+    console.log('[FCM-Helper] webpush.link:', payload.webpush?.fcmOptions?.link || payload.webpush?.notification?.click_action || dataWithNotifInfo.url);
+
     const response = await messaging.sendEachForMulticast(payload);
     console.log(`[FCM-Helper] Multicast push sent: ${response.successCount} succeeded, ${response.failureCount} failed out of ${validTokens.length} tokens.`);
+    if (Array.isArray(response.responses)) {
+      response.responses.forEach((r, idx) => {
+        try {
+          console.log(`[FCM-Helper] response[${idx}] success=${!!r.success}${r.success ? '' : ` error=${r.error?.code || r.error?.message || 'unknown'}`}`);
+        } catch (e) {
+          // ignore
+        }
+      });
+    }
 
     const tokensToRemove = [];
     if (response.failureCount > 0) {

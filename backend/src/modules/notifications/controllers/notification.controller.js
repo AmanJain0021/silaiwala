@@ -165,6 +165,15 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
 
     console.log(`[TEST-PUSH] Sending test push to ${targetTokens.length} device token(s) for user ${freshUser._id}...`);
 
+    // Debug: log token sources and short samples (don't print full tokens)
+    try {
+      console.log(`[TEST-PUSH] provided deviceToken param: ${targetToken ? (String(targetToken).substring(0,20) + '...') : 'none'}`);
+      console.log(`[TEST-PUSH] webTokens: ${webTokens.length}, mobileTokens: ${mobileTokens.length}`);
+      const sample = (arr) => (Array.isArray(arr) ? arr.slice(0,5).map(t => (String(t).substring(0,15) + '...')) : []);
+      console.log('[TEST-PUSH] targetTokens sample:', sample(targetTokens));
+    } catch (e) {
+      console.warn('[TEST-PUSH] Failed to stringify tokens for debug log', e && e.message);
+    }
     const results = await sendMulticastNotification({
       tokens: targetTokens,
       title: "Test Push Notification 🔔",
