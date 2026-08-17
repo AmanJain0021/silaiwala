@@ -501,24 +501,16 @@ ledgerId,
         data: { orderId: order._id, targetUrl: "/admin/orders" }
     });
 
+    await sendNotification({
+        recipient: order.tailor,
+        type: "NEW_ORDER",
+        title: "New Order Received! 🛍️",
+        message: `You have a new paid order #${order.orderId} (₹${order.totalAmount}). Please review and start processing.`,
+        data: { orderId: order._id, targetUrl: "/partner/orders" }
+    });
+
     // Note: Auto-assignment is no longer triggered here. 
     // The customer must select their delivery preference ('self' or 'partner') via a separate endpoint.
-
-    // --- Socket Emission for Tailor ---
-    try {
-        const io = getIO();
-        if (io) {
-            io.to(`user_${order.tailor}`).emit('receive_new_order', {
-                orderId: order.orderId,
-                _id: order._id,
-                totalAmount: order.totalAmount,
-                status: order.status
-            });
-            console.log(`📡 Socket: Notified Tailor ${order.tailor} of new paid order`);
-        }
-    } catch (err) {
-        console.error("Socket emission failed in verifyPayment:", err.message);
-    }
     // ---------------------------------
 
     // --- Referral / first-payment loyalty (advance or full only) ---
