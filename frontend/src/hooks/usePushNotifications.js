@@ -67,10 +67,13 @@ const syncTokenWithBackend = async (token, userId = null) => {
  * Send a test push notification to THIS device only.
  */
 export const testPushToThisDevice = async () => {
+  let hasWebPushSupport = false;
   if (typeof window !== 'undefined' && 'Notification' in window) {
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== 'granted') {
+      if (perm === 'granted') {
+        hasWebPushSupport = true;
+      } else {
         console.warn('[FCM] Notification permission not granted:', perm);
       }
     } catch (e) {
@@ -80,32 +83,36 @@ export const testPushToThisDevice = async () => {
 
   let deviceToken = getCurrentDeviceFcmToken() || localStorage.getItem('fcm_token');
 
-  try {
-    const { messaging, getToken: fbGetToken } = await import('../config/firebase');
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+  // Only try fetching Web FCM token if Web Push is supported (prevents hang in Flutter Webview)
+  if (hasWebPushSupport) {
+    try {
+      const { messaging, getToken: fbGetToken } = await import('../config/firebase');
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
-    let registration;
-    if ('serviceWorker' in navigator) {
-      try {
-        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        registration = await navigator.serviceWorker.ready;
-      } catch (swErr) {
-        console.warn('[FCM] ServiceWorker registration notice:', swErr);
+      let registration;
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          registration = await navigator.serviceWorker.ready;
+        } catch (swErr) {
+          console.warn('[FCM] ServiceWorker registration notice:', swErr);
+        }
       }
-    }
 
-    const token = await fbGetToken(messaging, {
-      vapidKey,
-      serviceWorkerRegistration: registration
-    });
+      // Use Promise.race to prevent indefinite hanging if getToken gets stuck
+      const token = await Promise.race([
+        fbGetToken(messaging, { vapidKey, serviceWorkerRegistration: registration }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase getToken timeout')), 5000))
+      ]);
 
-    if (token) {
-      deviceToken = token;
-      _currentDeviceToken = token;
-      localStorage.setItem('fcm_token', token);
+      if (token) {
+        deviceToken = token;
+        _currentDeviceToken = token;
+        localStorage.setItem('fcm_token', token);
+      }
+    } catch (err) {
+      console.warn('[FCM] Could not obtain token on-the-fly, using fallback token if available:', err.message);
     }
-  } catch (err) {
-    console.warn('[FCM] Could not obtain token on-the-fly, using fallback token if available:', err.message);
   }
 
   const response = await api.post('/notifications/test-push', {
