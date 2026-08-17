@@ -115,11 +115,16 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
 
   if (isMobile) {
     if (!user.fcmTokenMobile.includes(targetToken)) user.fcmTokenMobile.push(targetToken);
+  } else {
+    if (!user.fcmToken.includes(targetToken)) user.fcmToken.push(targetToken);
   }
-  
-  if (!user.fcmToken.includes(targetToken)) {
-    user.fcmToken.push(targetToken);
-  }
+
+  // Disassociate this device token from any other user to prevent cross-account notification leaks on shared devices
+  const User = require("../../../models/User.js");
+  await User.updateMany(
+    { _id: { $ne: user._id }, $or: [{ fcmToken: targetToken }, { fcmTokenMobile: targetToken }] },
+    { $pull: { fcmToken: targetToken, fcmTokenMobile: targetToken } }
+  );
 
   await user.save();
   console.log(`[FCM-TOKEN] Saved. Web tokens: ${user.fcmToken.length}, Mobile tokens: ${user.fcmTokenMobile.length}`);
@@ -175,15 +180,24 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
       body: "This is a test push notification from SewZella. Setup is working correctly!",
       data: {
         type: "TEST",
-        url: "/user/notifications",
+        url: "/partner/notifications",
         timestamp: new Date().toISOString()
       },
       isUrgent: true
     });
 
+    if (results.successCount === 0) {
+      return res.status(200).json({
+        success: false,
+        message: `FCM push attempted for ${targetTokens.length} token(s), but 0 succeeded (token may be expired or blocked by browser). Please refresh your browser page to re-register a fresh FCM token.`,
+        data: results
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: `Test push sent successfully!`,
+      message: `Test push sent successfully! Delivered to ${results.successCount} device(s).`,
+      data: results
     });
   } catch (fcmError) {
     console.error("[TEST-PUSH] FCM Error:", fcmError.message);

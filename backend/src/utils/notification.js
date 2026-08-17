@@ -126,14 +126,14 @@ const sendNotification = async (options) => {
               io.to(roomName).emit("new_order", {
                   orderId: data?.orderId,
                   _id: data?.orderId,
-                  message: title,
+                  message: message || title,
                   title,
                   data
               });
               io.to(roomName).emit("receive_new_order", {
                   orderId: data?.orderId,
                   _id: data?.orderId,
-                  message: title,
+                  message: message || title,
                   title,
                   data
               });

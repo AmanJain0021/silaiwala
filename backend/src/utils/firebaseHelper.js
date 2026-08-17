@@ -68,10 +68,10 @@ const sendMulticastNotification = async ({ tokens, title, body, data = {}, isUrg
         body: String(body),
         sound: 'default',
         priority: 'high',
-        channelId: data?.channelId || 'default',
         defaultSound: true,
         defaultVibrateTimings: true,
-        visibility: 'public'
+        visibility: 'public',
+        ...(data?.channelId ? { channelId: String(data.channelId) } : {})
       },
       data: dataWithNotifInfo
     },

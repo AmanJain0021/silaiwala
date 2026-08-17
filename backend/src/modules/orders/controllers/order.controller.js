@@ -189,7 +189,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            type: "ORDER_CREATED",
            title: "Advance Paid - Start Order!",
            message: `Customer has paid the advance for ${order.orderId}. ${fabricPickupRequired ? 'Wait for fabric delivery.' : 'You can start processing.'}`,
-           data: { orderId: order._id, targetUrl: "/orders" }
+           data: { orderId: order._id, targetUrl: "/partner/orders" }
        });
        
        // Emit socket
@@ -323,7 +323,7 @@ ledgerId,
            type: "ORDER_CREATED",
            title: "Full Payment Received - Start Order!",
            message: `Customer has paid in full for ${order.orderId}. You can start processing.`,
-           data: { orderId: order._id, targetUrl: "/orders" }
+           data: { orderId: order._id, targetUrl: "/partner/orders" }
        });
 
        // Emit socket

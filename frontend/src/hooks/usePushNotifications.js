@@ -39,7 +39,7 @@ const syncTokenWithBackend = async (token, userId = null) => {
   const syncedKey = `fcm_token_synced_${userSuffix}_${token.slice(-10)}`;
   const syncStatus = localStorage.getItem(syncedKey);
   if (syncStatus === 'true') {
-    return; // Already synced for this user! Prevent repeated API calls.
+    return; // Token already registered for this login session. Prevent repeated API calls.
   }
 
   const payload = {
@@ -51,14 +51,14 @@ const syncTokenWithBackend = async (token, userId = null) => {
   try {
     await api.put('/user/fcm-token', payload);
     localStorage.setItem(syncedKey, 'true');
-    console.log('[FCM] Token synced via PUT /user/fcm-token for user:', userId || 'current');
+    console.log('[FCM] Token registered via PUT /user/fcm-token for user:', userId || 'current');
   } catch (err) {
     try {
       await api.post('/notifications/fcm-token', payload);
       localStorage.setItem(syncedKey, 'true');
-      console.log('[FCM] Token synced via POST /notifications/fcm-token fallback for user:', userId || 'current');
+      console.log('[FCM] Token registered via POST /notifications/fcm-token fallback for user:', userId || 'current');
     } catch (fallbackErr) {
-      console.warn('[FCM] Token sync warning:', fallbackErr.message);
+      console.warn('[FCM] Token registration warning:', fallbackErr.message);
     }
   }
 };
@@ -103,7 +103,6 @@ export const testPushToThisDevice = async () => {
       deviceToken = token;
       _currentDeviceToken = token;
       localStorage.setItem('fcm_token', token);
-      syncTokenWithBackend(token);
     }
   } catch (err) {
     console.warn('[FCM] Could not obtain token on-the-fly, using fallback token if available:', err.message);
@@ -121,18 +120,25 @@ export const testPushToThisDevice = async () => {
  * Remove this device's FCM token from DB on logout.
  */
 export const removeDeviceTokenOnLogout = async () => {
-  const deviceToken = getCurrentDeviceFcmToken();
+  const deviceToken = getCurrentDeviceFcmToken() || localStorage.getItem('fcm_token');
   if (deviceToken) {
     try {
-      await api.post('/auth/logout', { fcmToken: deviceToken, token: deviceToken }).catch(async () => {
-        await api.post('/notifications/fcm-token/remove', { fcmToken: deviceToken, token: deviceToken });
+      await api.post('/notifications/fcm-token/remove', { fcmToken: deviceToken, token: deviceToken }).catch(async () => {
+        await api.post('/auth/logout', { fcmToken: deviceToken, token: deviceToken });
       });
-      console.log('[FCM] Device token pulled from DB on logout');
+      console.log('[FCM] Device token removed from DB on logout');
     } catch (err) {
       console.error('[FCM] Failed to remove token on logout:', err.message);
     }
-    const syncedKey = 'fcm_token_synced_' + deviceToken.slice(-10);
-    localStorage.removeItem(syncedKey);
+    
+    // Clear all synced keys in localStorage so new user login re-registers token cleanly
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('fcm_token_synced_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (_) {}
   }
   _currentDeviceToken = null;
   localStorage.removeItem('fcm_token');
@@ -179,6 +185,38 @@ export const usePushNotifications = (user) => {
     };
 
     requestPermissionAndGetToken();
+
+    // ── FLUTTER WEBVIEW NATIVE FCM TOKEN BRIDGE ──
+    const handleMobileToken = async (nativeToken) => {
+      if (!nativeToken) return;
+      console.log('[FCM-Bridge] Received native mobile FCM token from Flutter WebView:', nativeToken.substring(0, 15) + '...');
+      _currentDeviceToken = nativeToken;
+      localStorage.setItem('fcm_token', nativeToken);
+      try {
+        await api.put('/user/fcm-token', {
+          fcmToken: nativeToken,
+          token: nativeToken,
+          platform: 'mobile'
+        });
+        console.log('[FCM-Bridge] Successfully registered native Flutter FCM token in backend!');
+      } catch (err) {
+        console.warn('[FCM-Bridge] Failed to register native Flutter FCM token:', err.message);
+      }
+    };
+
+    window.receiveMobileFcmToken = handleMobileToken;
+    window.setMobileFcmToken = handleMobileToken;
+
+    const handlePostMessage = (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data && (data.type === 'FCM_TOKEN' || data.type === 'SET_FCM_TOKEN') && data.token) {
+          handleMobileToken(data.token);
+        }
+      } catch (_) {}
+    };
+
+    window.addEventListener('message', handlePostMessage);
 
     const unsubscribe = onMessage(messaging, async (payload) => {
       console.log('[FCM] Foreground data message received:', payload);
@@ -242,6 +280,9 @@ export const usePushNotifications = (user) => {
     });
 
     return () => {
+      delete window.receiveMobileFcmToken;
+      delete window.setMobileFcmToken;
+      window.removeEventListener('message', handlePostMessage);
       if (unsubscribe) unsubscribe();
     };
   }, [userId]);
