@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../../../config/constants';
 import { useTailorAuth } from './AuthContext';
 import api from '../services/api';
 import { playNotificationSound } from '../../../utils/audio';
 import { getToken } from '../../../utils/auth';
 import toast from 'react-hot-toast';
+import useSocketStore from '../../../store/socketStore';
 
 const NotificationContext = createContext();
 
@@ -43,7 +42,6 @@ export const NotificationProvider = ({ children }) => {
         fetchNotifications();
         
         const userId = user?._id || user?.id;
-        const useSocketStore = require('../../../store/socketStore').default;
         const socket = useSocketStore.getState().connect(userId ? String(userId) : null, 'tailor');
 
         const triggerDesktopNotification = async (title, body) => {

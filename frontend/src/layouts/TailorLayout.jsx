@@ -21,9 +21,8 @@ import { useTailorAuth } from '../modules/tailor/context/AuthContext';
 import { useNotifications } from '../modules/tailor/context/NotificationContext';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import api from '../modules/tailor/services/api';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../config/constants';
 import { getToken } from '../utils/auth';
+import useSocketStore from '../store/socketStore';
 
 const TailorLayout = () => {
     const location = useLocation();
@@ -150,7 +149,6 @@ const TailorLayout = () => {
         const token = getToken();
         if (!token) return;
 
-        const useSocketStore = require('../store/socketStore').default;
         const socket = useSocketStore.getState().connect(String(userId), 'tailor');
 
         const refreshPendingCount = () => {
