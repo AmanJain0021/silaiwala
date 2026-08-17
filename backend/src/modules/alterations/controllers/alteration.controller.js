@@ -22,21 +22,42 @@ exports.submitAlterationRequest = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Tailor, description, images, and delivery address are required", 400));
   }
 
+  // Resolve tailorId (can be Tailor Profile ID or User ID) to the User ID
+  let targetTailorUserId = null;
+  if (mongoose.Types.ObjectId.isValid(String(tailorId))) {
+    const rawId = String(tailorId);
+    const profile = await Tailor.findById(rawId);
+    if (profile && profile.user) {
+      targetTailorUserId = profile.user.toString();
+    } else {
+      const profileByUser = await Tailor.findOne({ user: rawId });
+      if (profileByUser) {
+        targetTailorUserId = profileByUser.user.toString();
+      } else {
+        targetTailorUserId = rawId;
+      }
+    }
+  }
+
+  if (!targetTailorUserId) {
+    return next(new ErrorResponse("Tailor account not found or invalid", 404));
+  }
+
   const alterationId = `ALT-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 
   const alteration = await Alteration.create({
     alterationId,
     customer: req.user.id,
-    tailor: tailorId,
+    tailor: targetTailorUserId,
     description: description,
     images: images,
     pickupAddress: deliveryAddress,
     quotationStatus: "pending"
   });
 
-  // Notify Tailor
+  // Notify Particular Tailor
   await sendNotification({
-      recipient: tailorId,
+      recipient: targetTailorUserId,
       type: "ALTERATION_REQUEST",
       title: "New Alteration Request!",
       message: `You have received a new alteration request (${alterationId}). Please review and provide a quote.`,

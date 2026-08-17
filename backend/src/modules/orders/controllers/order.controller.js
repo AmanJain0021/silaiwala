@@ -614,11 +614,19 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   // TailorSelection lets customers pick any available expert for a service.
   const Service = require("../../../models/Service.js");
   const Product = require("../../../models/Product.js");
+  
+  const extractIdString = (val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object' && (val._id || val.id)) return String(val._id || val.id);
+    return String(val);
+  };
+
   const validServiceIds = (items || [])
-    .map((item) => item.service)
+    .map((item) => extractIdString(item.service))
     .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
   const validProductIds = (items || [])
-    .map((item) => item.product)
+    .map((item) => extractIdString(item.product))
     .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
 
   const [ownedServices, ownedProducts] = await Promise.all([
@@ -636,26 +644,59 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   ].filter(Boolean);
   const uniqueOwnerProfileIds = [...new Set(ownerProfileIds)];
 
+  const extractUserIdFromProfile = (profile) => {
+    if (!profile) return null;
+    if (profile.user) {
+      if (typeof profile.user === 'object' && (profile.user._id || profile.user.id)) {
+        return String(profile.user._id || profile.user.id);
+      }
+      if (mongoose.Types.ObjectId.isValid(String(profile.user))) {
+        return String(profile.user);
+      }
+    }
+    return null;
+  };
+
   let targetTailorProfile = null;
+  let targetTailorUserId = null;
 
-  if (tailorId && mongoose.Types.ObjectId.isValid(tailorId)) {
-    // Accept either Tailor profile ID or User ID from the client
-    targetTailorProfile = await Tailor.findById(tailorId).populate("user");
+  const rawTailorId = extractIdString(tailorId);
+
+  if (rawTailorId && mongoose.Types.ObjectId.isValid(rawTailorId)) {
+    // 1) Check Tailor profile by ID
+    targetTailorProfile = await Tailor.findById(rawTailorId).populate("user");
+    // 2) Check Tailor profile by User ID
     if (!targetTailorProfile) {
-      targetTailorProfile = await Tailor.findOne({ user: tailorId }).populate("user");
+      targetTailorProfile = await Tailor.findOne({ user: rawTailorId }).populate("user");
+    }
+    // 3) Direct User document check
+    if (!targetTailorProfile) {
+      const directUser = await User.findOne({ _id: rawTailorId, role: "tailor" });
+      if (directUser) targetTailorUserId = String(directUser._id);
     }
   }
 
-  // Fallback only when checkout did not send a selectable tailor
-  if (!targetTailorProfile && uniqueOwnerProfileIds.length >= 1) {
-    targetTailorProfile = await Tailor.findById(uniqueOwnerProfileIds[0]).populate("user");
+  if (!targetTailorUserId && targetTailorProfile) {
+    targetTailorUserId = extractUserIdFromProfile(targetTailorProfile);
+  }
+
+  // Fallback to service/product owner tailor if client tailorId was missing or unresolved
+  if (!targetTailorUserId && uniqueOwnerProfileIds.length >= 1) {
+    const ownerId = uniqueOwnerProfileIds[0];
+    targetTailorProfile = await Tailor.findById(ownerId).populate("user");
     if (!targetTailorProfile) {
-      targetTailorProfile = await Tailor.findOne({ user: uniqueOwnerProfileIds[0] }).populate("user");
+      targetTailorProfile = await Tailor.findOne({ user: ownerId }).populate("user");
+    }
+    if (targetTailorProfile) {
+      targetTailorUserId = extractUserIdFromProfile(targetTailorProfile);
+    } else {
+      const ownerUser = await User.findOne({ _id: ownerId, role: "tailor" });
+      if (ownerUser) targetTailorUserId = String(ownerUser._id);
     }
   }
 
-  // System Fallback: If no specific tailor was selected or found, auto-assign the first active/verified tailor
-  if (!targetTailorProfile) {
+  // System Fallback: ONLY if no tailor was specified and no service owner exists
+  if (!targetTailorUserId) {
     targetTailorProfile = await Tailor.findOne({ registrationStatus: "verified" }).populate("user");
     if (!targetTailorProfile) {
       targetTailorProfile = await Tailor.findOne({ isAvailable: true }).populate("user");
@@ -663,15 +704,13 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     if (!targetTailorProfile) {
       targetTailorProfile = await Tailor.findOne().populate("user");
     }
+    targetTailorUserId = extractUserIdFromProfile(targetTailorProfile);
   }
-
-  const tailor = targetTailorProfile?.user;
-  let targetTailorUserId = tailor?._id || tailor?.id || (typeof tailor === 'string' ? tailor : targetTailorProfile?.user);
 
   if (!targetTailorUserId || !mongoose.Types.ObjectId.isValid(targetTailorUserId)) {
     const fallbackTailorUser = await User.findOne({ role: "tailor" });
     if (fallbackTailorUser) {
-      targetTailorUserId = fallbackTailorUser._id;
+      targetTailorUserId = String(fallbackTailorUser._id);
     }
   }
 
