@@ -122,11 +122,20 @@ export const testPushToThisDevice = async () => {
     }
   }
 
+  if (!deviceToken) {
+    throw new Error('No FCM token found on this device. Please allow notifications or reload the app.');
+  }
+
   const response = await api.post('/notifications/test-push', {
     deviceToken: deviceToken || undefined,
     fcmToken: deviceToken || undefined,
     token: deviceToken || undefined
   });
+  
+  if (response.data && response.data.success === false) {
+    throw new Error(response.data.message || 'Push notification failed to deliver.');
+  }
+  
   return response.data;
 };
 
