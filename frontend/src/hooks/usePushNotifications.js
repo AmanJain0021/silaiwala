@@ -68,16 +68,23 @@ const syncTokenWithBackend = async (token, userId = null) => {
  */
 export const testPushToThisDevice = async () => {
   let hasWebPushSupport = false;
+  
   if (typeof window !== 'undefined' && 'Notification' in window) {
     try {
-      const perm = await Notification.requestPermission();
+      // Android Webviews often hang indefinitely on requestPermission if not handled natively.
+      // Use a timeout to prevent it from blocking the rest of the function.
+      const perm = await Promise.race([
+        Notification.requestPermission(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Permission request timeout')), 1000))
+      ]);
+      
       if (perm === 'granted') {
         hasWebPushSupport = true;
       } else {
         console.warn('[FCM] Notification permission not granted:', perm);
       }
     } catch (e) {
-      console.warn('[FCM] Notification permission request warning:', e);
+      console.warn('[FCM] Notification permission request warning/timeout:', e.message || e);
     }
   }
 
