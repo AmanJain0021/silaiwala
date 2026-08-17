@@ -156,9 +156,11 @@ const TailorLayout = () => {
             reconnection: true
         });
 
-        socket.on('connect', () => {
+        const joinRoom = () => {
             socket.emit('join_user_room', String(userId));
-        });
+        };
+        socket.on('connect', joinRoom);
+        joinRoom();
 
         const refreshPendingCount = () => {
             fetchDashboardData();
@@ -169,6 +171,7 @@ const TailorLayout = () => {
         socket.on('order_status_updated', refreshPendingCount);
 
         return () => {
+            socket.off('connect', joinRoom);
             socket.off('new_order', refreshPendingCount);
             socket.off('receive_new_order', refreshPendingCount);
             socket.off('order_status_updated', refreshPendingCount);

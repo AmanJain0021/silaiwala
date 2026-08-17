@@ -55,7 +55,9 @@ const Overview = () => {
                 toast.success('You have received a new order!');
             }
         });
-        return () => socket.disconnect();
+        return () => {
+            socket.off('new_order');
+        };
     }, [user?._id]);
 
     const summary = dashboardData?.summary || {

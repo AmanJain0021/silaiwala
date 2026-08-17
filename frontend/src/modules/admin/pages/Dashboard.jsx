@@ -148,7 +148,9 @@ const AdminDashboard = () => {
         });
 
         return () => {
-            socket.disconnect();
+            socket.off('new_order');
+            socket.off('order_status_updated');
+            socket.off('task_claimed');
         };
     }, []);
 

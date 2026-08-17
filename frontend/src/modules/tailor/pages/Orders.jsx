@@ -185,7 +185,10 @@ const Orders = () => {
         }
         
         return () => {
-            if (socket) socket.disconnect();
+            if (socket) {
+                socket.off('new_chat_message');
+                socket.off('connect');
+            }
         };
     }, [user]);
 
@@ -307,7 +310,6 @@ const Orders = () => {
             socket.off('new_order', handleNewOrder);
             socket.off('order_status_updated');
             socket.off('new_notification');
-            socket.disconnect();
         };
         // Socket should NOT depend on activeTab — fetchOrders uses activeTabRef
         // to always fetch with the current tab without needing to disconnect/reconnect

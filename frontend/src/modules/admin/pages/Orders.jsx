@@ -141,7 +141,9 @@ const AdminOrders = () => {
 
         fetchUsers();
 
-        return () => socket.disconnect();
+        return () => {
+            socket.off('connect');
+        };
     }, []);
 
     // Fetch orders when page, search, or tab changes with debounce for search

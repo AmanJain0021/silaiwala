@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -39,12 +39,11 @@ import { playNotificationSound } from '../utils/audio';
 const AdminLayout = () => {
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [notifications, setNotifications] = useState([]);
     const [hasUnread, setHasUnread] = useState(false);
     const { appName, logos } = useBrandingStore();
 
     // Read Admin user for FCM registration
-    const adminUser = React.useMemo(() => {
+    const adminUser = useMemo(() => {
         try {
             const userStr = localStorage.getItem('admin_user') || localStorage.getItem('user');
             return userStr ? JSON.parse(userStr) : { role: 'admin' };
@@ -56,7 +55,7 @@ const AdminLayout = () => {
     // Register FCM Push Token for Admin Web Browser
     usePushNotifications(adminUser);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const socket = io(SOCKET_URL, {
             auth: {
                 token: getToken()
@@ -104,7 +103,11 @@ const AdminLayout = () => {
             });
         });
 
-        return () => socket.disconnect();
+        return () => {
+            socket.off('new_notification');
+            socket.off('new_order');
+            socket.off('order_status_updated');
+        };
     }, [adminUser]);
 
     const menuItems = [

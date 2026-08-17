@@ -34,7 +34,9 @@ const TailorAlterations = () => {
             }
         });
 
-        return () => socket.disconnect();
+        return () => {
+            socket.off('new_notification');
+        };
     }, [user]);
 
     // Prevent body scrolling when a modal is open

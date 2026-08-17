@@ -14,10 +14,38 @@ const sendNotification = async (options) => {
   try {
     const { recipient, type, title, message, data, targetPlatform } = options;
 
-    // 1. Save to Database
+    // 1. Resolve target user/tailor if recipient is a specific ID
+    const User = require("../models/User.js");
+    let targetUser = null;
+    let targetTailorId = null;
+
+    if (recipient !== "admins" && recipient !== "delivery_partners" && recipient) {
+      targetUser = await User.findById(recipient);
+      if (!targetUser) {
+        try {
+          const Tailor = require("../models/Tailor.js");
+          const tailorDoc = await Tailor.findById(recipient);
+          if (tailorDoc && tailorDoc.user) {
+            targetTailorId = tailorDoc._id.toString();
+            targetUser = await User.findById(tailorDoc.user);
+          }
+        } catch (tErr) {}
+      } else {
+        try {
+          const Tailor = require("../models/Tailor.js");
+          const tailorDoc = await Tailor.findOne({ user: recipient });
+          if (tailorDoc) {
+            targetTailorId = tailorDoc._id.toString();
+          }
+        } catch (tErr) {}
+      }
+    }
+
+    const finalRecipientUserId = targetUser ? targetUser._id.toString() : (recipient ? recipient.toString() : null);
+
+    // Save to Database
     let notificationsToCreate = [];
     if (recipient === "admins") {
-      const User = require("../models/User.js");
       const admins = await User.find({ role: { $in: ['admin', 'super_admin'] } });
       for (const admin of admins) {
         notificationsToCreate.push({
@@ -31,9 +59,9 @@ const sendNotification = async (options) => {
       if (notificationsToCreate.length > 0) {
         await Notification.insertMany(notificationsToCreate);
       }
-    } else if (recipient !== "delivery_partners") {
+    } else if (recipient !== "delivery_partners" && finalRecipientUserId) {
       await Notification.create({
-        recipient,
+        recipient: finalRecipientUserId,
         type,
         title,
         message,
@@ -45,7 +73,6 @@ const sendNotification = async (options) => {
     const io = tryGetIO();
     if (io) {
       if (recipient === "admins") {
-        const User = require("../models/User.js");
         const admins = await User.find({ role: { $in: ['admin', 'super_admin'] } });
         admins.forEach(admin => {
           io.to(`user_${admin._id.toString()}`).emit("new_notification", {
@@ -73,36 +100,48 @@ const sendNotification = async (options) => {
               message,
               data
           });
-      } else {
-        const recipientId = recipient.toString();
-        io.to(`user_${recipientId}`).emit("new_notification", {
-           title, message, type, data, createdAt: new Date()
-        });
+      } else if (finalRecipientUserId) {
+        const targetRooms = new Set([`user_${finalRecipientUserId}`]);
+        if (targetTailorId) targetRooms.add(`user_${targetTailorId}`);
 
-        if (type === "TASK_ASSIGNED" || type === "NEW_DELIVERY_TASK") {
-          io.to(`user_${recipientId}`).emit("new_task", {
-            title,
-            message,
-            type,
-            data,
-            _id: data?.orderId,
-            orderId: data?.orderId_str || data?.orderId,
-            taskType: data?.taskType,
-            assignedByAdmin: !!data?.assignedByAdmin,
+        targetRooms.forEach(roomName => {
+          io.to(roomName).emit("new_notification", {
+             title, message, type, data, createdAt: new Date()
           });
-        }
-        
-        // Also emit specific type events if needed
-        if (type === "ORDER_CREATED") {
-            io.to(`user_${recipientId}`).emit("new_order", {
-                orderId: data?.orderId,
-                message: title
+
+          if (type === "TASK_ASSIGNED" || type === "NEW_DELIVERY_TASK") {
+            io.to(roomName).emit("new_task", {
+              title,
+              message,
+              type,
+              data,
+              _id: data?.orderId,
+              orderId: data?.orderId_str || data?.orderId,
+              taskType: data?.taskType,
+              assignedByAdmin: !!data?.assignedByAdmin,
             });
-        }
+          }
+          
+          if (type === "ORDER_CREATED" || type === "NEW_ORDER") {
+              io.to(roomName).emit("new_order", {
+                  orderId: data?.orderId,
+                  _id: data?.orderId,
+                  message: title,
+                  title,
+                  data
+              });
+              io.to(roomName).emit("receive_new_order", {
+                  orderId: data?.orderId,
+                  _id: data?.orderId,
+                  message: title,
+                  title,
+                  data
+              });
+          }
+        });
       }
 
-      // Real-time tracking for a specific order. Never reuse order_status_updated
-      // with a notification type — clients treat that field as a real workflow status.
+      // Real-time tracking for a specific order.
       if (data?.orderId) {
           io.to(`order_${data.orderId}`).emit("order_notification", {
               type,
@@ -118,7 +157,6 @@ const sendNotification = async (options) => {
     // 3. Dispatch Firebase Cloud Messaging (FCM) push
     try {
       const { sendMulticastNotification } = require("./firebaseHelper.js");
-      const User = require("../models/User.js");
       
       let fcmTokens = [];
       
@@ -150,32 +188,18 @@ const sendNotification = async (options) => {
           if (p.fcmTokenMobile) tokens.push(...p.fcmTokenMobile);
           return tokens;
         });
-      } else {
-        // Send to specific user — collect tokens based on targetPlatform
-        let targetUser = await User.findById(recipient);
-        if (!targetUser) {
-          try {
-            const Tailor = require("../models/Tailor.js");
-            const tailorDoc = await Tailor.findById(recipient);
-            if (tailorDoc && tailorDoc.user) {
-              targetUser = await User.findById(tailorDoc.user);
-            }
-          } catch (tErr) {}
-        }
-
-        if (targetUser) {
-          const webTokens = targetUser.fcmToken || [];
-          const mobileTokens = targetUser.fcmTokenMobile || [];
-          
-          console.log(`[FCM] User ${recipient} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s)`);
-          
-          if (targetPlatform === 'mobile') {
-            fcmTokens = [...mobileTokens];
-          } else if (targetPlatform === 'web') {
-            fcmTokens = [...webTokens];
-          } else {
-            fcmTokens = [...webTokens, ...mobileTokens];
-          }
+      } else if (targetUser) {
+        const webTokens = targetUser.fcmToken || [];
+        const mobileTokens = targetUser.fcmTokenMobile || [];
+        
+        console.log(`[FCM] User ${targetUser._id} has ${webTokens.length} web token(s) and ${mobileTokens.length} mobile token(s)`);
+        
+        if (targetPlatform === 'mobile') {
+          fcmTokens = [...mobileTokens];
+        } else if (targetPlatform === 'web') {
+          fcmTokens = [...webTokens];
+        } else {
+          fcmTokens = [...webTokens, ...mobileTokens];
         }
       }
 

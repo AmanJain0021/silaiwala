@@ -166,7 +166,6 @@ const OrderTracking = () => {
                 socket.off('connect', joinRooms);
                 socket.off('order_status_updated', refreshOrder);
                 socket.off('order_notification', refreshOrder);
-                socket.disconnect();
                 setSocketInstance(null);
             };
         }

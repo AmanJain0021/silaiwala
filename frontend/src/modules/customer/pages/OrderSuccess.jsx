@@ -35,8 +35,8 @@ const OrderSuccess = () => {
         try { return sessionStorage.getItem('lastCreatedOrderNum'); } catch(e) { return null; }
     })();
 
-    const activeOrderId = state.orderId || savedOrderId;
-    const displayOrderNum = state.orderNumber || savedOrderNum;
+    const activeOrderId = (typeof state.orderId === 'object' ? (state.orderId?._id || state.orderId?.id) : state.orderId) || savedOrderId;
+    const displayOrderNum = (typeof state.orderNumber === 'object' ? (state.orderNumber?.orderId || state.orderNumber?.alterationId || state.orderNumber?._id) : state.orderNumber) || savedOrderNum;
 
     const [orderDetails, setOrderDetails] = useState(null);
 
@@ -44,14 +44,25 @@ const OrderSuccess = () => {
     const clearCart = useCartStore(state => state.clearCart);
 
     useEffect(() => {
-        if (activeOrderId && !isAlteration && !isCustomDesign) {
-            clearCheckout();
-            clearCart();
+        clearCheckout();
+        clearCart();
 
+        if (activeOrderId && !isAlteration && !isCustomDesign) {
             const fetchOrder = async () => {
                 try {
-                    const res = await api.get(`/orders/${activeOrderId}`);
-                    if (res.data?.success) {
+                    let res;
+                    try {
+                        res = await api.get(`/orders/${activeOrderId}`);
+                    } catch (e1) {
+                        try {
+                            res = await api.get(`/alterations/${activeOrderId}`);
+                        } catch (e2) {
+                            try {
+                                res = await api.get(`/custom-designs/${activeOrderId}`);
+                            } catch (e3) {}
+                        }
+                    }
+                    if (res?.data?.success) {
                         setOrderDetails(res.data.data);
                     }
                 } catch (err) {
@@ -59,9 +70,6 @@ const OrderSuccess = () => {
                 }
             };
             fetchOrder();
-        } else {
-            clearCheckout();
-            clearCart();
         }
     }, [activeOrderId, isAlteration, isCustomDesign, clearCheckout, clearCart]);
 

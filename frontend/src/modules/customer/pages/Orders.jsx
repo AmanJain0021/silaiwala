@@ -57,7 +57,8 @@ const OrdersPage = () => {
         });
 
         return () => {
-            socket.disconnect();
+            socket.off('new_notification');
+            socket.off('order_status_updated');
         };
     }, [fetchOrders, user?.id, user?._id]);
 

@@ -49,26 +49,44 @@ export const NotificationProvider = ({ children }) => {
         });
         
         const userId = user?._id || user?.id;
-        if (userId) {
-            socket.emit('join_user_room', userId);
-        }
+        const joinUserRoom = () => {
+            if (userId) {
+                socket.emit('join_user_room', String(userId));
+            }
+        };
+        socket.on('connect', joinUserRoom);
+        joinUserRoom();
+
+        const triggerDesktopNotification = async (title, body) => {
+            if (!("Notification" in window) || Notification.permission !== "granted") return;
+            try {
+                const iconUrl = window.location.origin + '/logo.png';
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const registration = await navigator.serviceWorker.ready;
+                    registration.showNotification(title, {
+                        body,
+                        icon: iconUrl,
+                        badge: iconUrl,
+                        vibrate: [200, 100, 200],
+                        tag: 'tailor-order-' + Date.now()
+                    });
+                } else {
+                    new Notification(title, { body, icon: iconUrl });
+                }
+            } catch (e) {
+                try { new Notification(title, { body }); } catch (_e) {}
+            }
+        };
 
         const handleNewOrder = (data) => {
             fetchNotifications();
             try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
             
-            const orderIdStr = data?.orderId || data?.id || '';
-            const msg = data?.message || `New Order ${orderIdStr ? '#' + orderIdStr : ''} received! Please review.`;
-            toast.success(`🛍️ ${msg}`, { duration: 6000, position: 'top-right' });
+            const orderIdStr = data?.orderId || data?.id || data?._id || '';
+            const msg = data?.message || data?.title || `New Order ${orderIdStr ? '#' + orderIdStr : ''} received! Please review.`;
+            toast.success(`🛍️ ${msg}`, { id: `toast-new-order-${orderIdStr || Date.now()}`, duration: 6000, position: 'top-right' });
 
-            if ("Notification" in window && Notification.permission === "granted") {
-                try {
-                    new Notification("New Order Placed! 🛍️", { 
-                        body: msg,
-                        icon: '/logo.png'
-                    });
-                } catch (e) { console.error(e); }
-            }
+            triggerDesktopNotification("New Order Placed! 🛍️", msg);
         };
 
         socket.on('new_notification', (notification) => {
@@ -77,20 +95,21 @@ export const NotificationProvider = ({ children }) => {
             
             try { playNotificationSound('tailor'); } catch(e) { console.error(e); }
             
-            if ("Notification" in window && Notification.permission === "granted") {
-                try {
-                    new Notification(notification.title || "New Notification", { body: notification.message });
-                } catch (e) { console.error(e); }
-            }
+            const title = notification.title || "New Notification 🔔";
+            const body = notification.message || "";
+            toast.success(`🔔 ${title}\n${body}`, { id: `toast-notif-${notification._id || Date.now()}`, duration: 5000, position: 'top-right' });
+
+            triggerDesktopNotification(title, body);
         });
 
         socket.on('receive_new_order', handleNewOrder);
         socket.on('new_order', handleNewOrder);
 
         return () => {
+            socket.off('connect', joinUserRoom);
+            socket.off('new_notification');
             socket.off('receive_new_order', handleNewOrder);
             socket.off('new_order', handleNewOrder);
-            socket.disconnect();
         };
     }, [token, user?._id, user?.id]);
 
