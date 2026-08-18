@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
 const User = require("../../../models/User.js");
 const Customer = require("../../../models/Customer.js");
 const Tailor = require("../../../models/Tailor.js");
@@ -369,8 +370,10 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
     identifier = `+91${cleanPhone}`;
   }
 
-  // Generate 6-digit random OTP
-  const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+  // Generate 6-digit random OTP (or 123456 if default OTP is enabled)
+  const otpCode = isDefaultOtpEnabled() 
+    ? '123456' 
+    : String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   const phoneKeys = cleanPhone 

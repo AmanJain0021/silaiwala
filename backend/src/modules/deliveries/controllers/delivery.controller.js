@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Delivery = require("../../../models/Delivery.js");
 const Order = require("../../../models/Order.js");
+const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
 const { transitionOrder } = require("../../../utils/orderStateMachine.js");
 const User = require("../../../models/User.js");
 const Tailor = require("../../../models/Tailor.js");
@@ -872,7 +873,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       }
       
       // Generate OTP automatically on arrival
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = isDefaultOtpEnabled() ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
       if (cycle === 'pickup') {
           order.pickupDeliveryOtp = otp;
           order.pickupOtpVerified = false;
@@ -1725,7 +1726,7 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
     const OfflineOrder = require("../../../models/OfflineOrder.js");
     const off = await OfflineOrder.findOne(query);
     if (off) {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = isDefaultOtpEnabled() ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
       off.deliveryOtp = otp;
       await off.save();
       return res.status(200).json({ success: true, message: "OTP sent to customer" });
@@ -1742,7 +1743,7 @@ exports.resendDeliveryOtp = asyncHandler(async (req, res, next) => {
     ["out-for-delivery", "ready", "ready-for-delivery", "ready-for-pickup"].includes(order.status) ||
     (order.pickupOtpVerified && !isFabricToTailor && !isFabricFromCustomer);
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = isDefaultOtpEnabled() ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
   const { sendNotification } = require("../../../utils/notification.js");
   const { getIO } = require("../../../config/socket.js");
   const io = getIO();
@@ -1908,6 +1909,12 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   
   // Calculate delivery earnings
   let earnings = order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0;
+  
+  // Split earnings per trip if order requires both fabric pickup AND delivery
+  if (order.fabricPickupRequired && order.items && order.items.some(item => item.deliveryType !== 'self')) {
+      earnings = Math.round(earnings / 2);
+  }
+
   if (!earnings || earnings <= 0) {
     console.error(`CRITICAL: Delivery Fee missing for Order ${order.orderId}. Wallet will NOT be credited.`);
     earnings = 0;

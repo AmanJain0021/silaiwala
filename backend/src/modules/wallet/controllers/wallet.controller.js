@@ -201,35 +201,25 @@ exports.updateWithdrawalStatus = asyncHandler(async (req, res, next) => {
   if (status === "paid") {
     withdrawal.paidAt = new Date();
     // Update total withdrawn in profile
-    let profile;
-    if (withdrawal.role === "tailor") {
-      profile = await Tailor.findOne({ user: withdrawal.user });
-    } else if (withdrawal.role === "delivery") {
-      profile = await Delivery.findOne({ user: withdrawal.user });
-    } else if (withdrawal.role === "user" || withdrawal.role === "customer") {
-      profile = await Customer.findOne({ user: withdrawal.user });
-    } else if (withdrawal.role === "measurement_executive") {
-      profile = await MeasurementExecutive.findOne({ user: withdrawal.user });
-    }
-    if (profile) {
-      profile.totalWithdrawn = (profile.totalWithdrawn || 0) + withdrawal.amount;
-      await profile.save();
+    let Model;
+    if (withdrawal.role === "tailor") Model = Tailor;
+    else if (withdrawal.role === "delivery") Model = Delivery;
+    else if (withdrawal.role === "user" || withdrawal.role === "customer") Model = Customer;
+    else if (withdrawal.role === "measurement_executive") Model = MeasurementExecutive;
+
+    if (Model) {
+      await Model.updateOne({ user: withdrawal.user }, { $inc: { totalWithdrawn: withdrawal.amount } });
     }
   } else if (status === "rejected") {
     // Refund to wallet
-    let profile;
-    if (withdrawal.role === "tailor") {
-      profile = await Tailor.findOne({ user: withdrawal.user });
-    } else if (withdrawal.role === "delivery") {
-      profile = await Delivery.findOne({ user: withdrawal.user });
-    } else if (withdrawal.role === "user" || withdrawal.role === "customer") {
-      profile = await Customer.findOne({ user: withdrawal.user });
-    } else if (withdrawal.role === "measurement_executive") {
-      profile = await MeasurementExecutive.findOne({ user: withdrawal.user });
-    }
-    if (profile) {
-      profile.walletBalance += withdrawal.amount;
-      await profile.save();
+    let Model;
+    if (withdrawal.role === "tailor") Model = Tailor;
+    else if (withdrawal.role === "delivery") Model = Delivery;
+    else if (withdrawal.role === "user" || withdrawal.role === "customer") Model = Customer;
+    else if (withdrawal.role === "measurement_executive") Model = MeasurementExecutive;
+
+    if (Model) {
+      await Model.updateOne({ user: withdrawal.user }, { $inc: { walletBalance: withdrawal.amount } });
       // Log refund
       await WalletTransaction.create({
         user: withdrawal.user,

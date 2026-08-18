@@ -58,8 +58,9 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
       freeDeliveryApplied = true;
     }
   } else {
-    let deliveryDistanceKm = 0;
-    let deliveryApplied = false;
+    let pickupTrips = 0;
+    let deliveryTrips = 0;
+    let maxDistanceKm = 0;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
@@ -79,6 +80,8 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
 
       if (uLat != null && uLng != null && tLat != null && tLng != null) {
         distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
+        if (distanceKm > maxDistanceKm) maxDistanceKm = distanceKm;
+
         if (item.configuration?.isTailorAtHome) {
           if (distanceKm <= visitSettings.freeKm) {
             dynamicTailorAtHome = Number(visitSettings.baseFee) || 0;
@@ -96,24 +99,29 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
       totalFabric += itemFabric;
       totalTailorAtHome += dynamicTailorAtHome;
 
-      const needsLegDelivery =
-        item.configuration?.fabricSource === "customer" ||
-        (item.configuration?.deliveryType && item.configuration.deliveryType !== "self");
-
-      if (!deliveryApplied && needsLegDelivery) {
-        deliveryDistanceKm = distanceKm;
-        deliveryApplied = true;
+      // Check if fabric pickup is required
+      if (item.configuration?.fabricSource === "customer") {
+        pickupTrips = 1; // At least one pickup trip required
+      }
+      
+      // Check if final delivery is required
+      if (item.configuration?.deliveryType && item.configuration.deliveryType !== "self") {
+        deliveryTrips = 1; // At least one delivery trip required
       }
     }
 
-    if (deliveryApplied) {
-      if (deliveryDistanceKm > 0) {
-        orderDeliveryFee = Math.round(
-          Number(deliveryRates.baseFee) + deliveryDistanceKm * Number(deliveryRates.perKmRate)
+    const totalTrips = pickupTrips + deliveryTrips;
+
+    let actualDeliveryCost = 0;
+    if (totalTrips > 0) {
+      if (maxDistanceKm > 0) {
+        actualDeliveryCost = Math.round(
+          (Number(deliveryRates.baseFee) + maxDistanceKm * Number(deliveryRates.perKmRate)) * totalTrips
         );
       } else {
-        orderDeliveryFee = Math.round(Number(deliveryRates.baseFee) || 0);
+        actualDeliveryCost = Math.round((Number(deliveryRates.baseFee) || 0) * totalTrips);
       }
+      orderDeliveryFee = actualDeliveryCost;
     }
 
     const merchandiseSubtotal = totalBase + totalAddons + totalFabric + totalTailorAtHome;
@@ -122,6 +130,30 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
       freeDeliveryApplied = true;
     }
   }
+
+  // Handle actualDeliveryCost for cart checkout as well
+  let finalActualDeliveryCost = orderDeliveryFee;
+  if (isCartCheckout && freeDeliveryApplied) {
+     // Recalculate original for cart if it was zeroed out
+     const firstItem = items[0];
+     let tLat = null, tLng = null;
+     if (firstItem?.tailor?.location?.coordinates?.length >= 2) {
+         tLng = firstItem.tailor.location.coordinates[0];
+         tLat = firstItem.tailor.location.coordinates[1];
+     }
+     let dist = 0;
+     if (uLat != null && uLng != null && tLat != null && tLng != null) {
+         dist = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
+     }
+     finalActualDeliveryCost = Math.round(Number(deliveryRates.baseFee) + (dist > 0 ? dist * Number(deliveryRates.perKmRate) : 0));
+  } else if (!isCartCheckout && typeof pickupTrips !== 'undefined') {
+     // From the non-cart block above
+     const totalTrips = pickupTrips + deliveryTrips;
+     finalActualDeliveryCost = Math.round(
+          ((Number(deliveryRates.baseFee) || 0) + (maxDistanceKm > 0 ? maxDistanceKm * Number(deliveryRates.perKmRate) : 0)) * totalTrips
+     );
+  }
+
 
   const platformFeeAmount = Math.round(
     (totalBase + totalAddons) * (platformFeePercentage / 100)
@@ -144,6 +176,7 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
     base: totalBase,
     taxes: totalTaxes,
     delivery: orderDeliveryFee,
+    actualDeliveryCost: finalActualDeliveryCost,
     addons: totalAddons,
     fabric: totalFabric,
     tailorAtHome: totalTailorAtHome,
@@ -207,16 +240,15 @@ async function enrichOrderItemsForPricing(items) {
     let addonsTotal = 0;
     if (Array.isArray(addons) && addons.length > 0) {
       for (const a of addons) {
-        if (typeof a === "object" && a !== null && Number(a.price) > 0) {
-          addonsTotal += Number(a.price);
-        } else {
-          const addonId = typeof a === "string" ? a : a?._id || a?.id || a?.addon;
-          if (addonId) {
-            const addonDoc = await StyleAddon.findById(addonId).lean();
-            if (addonDoc && Number(addonDoc.price) > 0) {
-              addonsTotal += Number(addonDoc.price);
-            }
+        const addonId = typeof a === "string" ? a : a?._id || a?.id || a?.addon;
+        if (addonId && mongoose.Types.ObjectId.isValid(addonId)) {
+          const addonDoc = await StyleAddon.findById(addonId).lean();
+          if (addonDoc && Number(addonDoc.price) > 0) {
+            addonsTotal += Number(addonDoc.price);
           }
+        } else if (typeof a === "object" && a !== null && Number(a.price) > 0) {
+          // Fallback only if it's a dynamic text-based addon without an ID
+          addonsTotal += Number(a.price);
         }
       }
     } else if (Number(item.pricing?.addons) > 0) {
@@ -224,9 +256,9 @@ async function enrichOrderItemsForPricing(items) {
     }
 
     const basePrice =
-      Number(item.price) ||
-      Number(item.pricing?.base) ||
       Number(svc?.basePrice) ||
+      Number(item.pricing?.base) ||
+      Number(item.price) ||
       0;
 
     const isTailorAtHome =

@@ -208,7 +208,7 @@ const AuthLayout = () => {
                 <div className="absolute top-[155px] sm:top-[180px] left-1/2 -translate-x-1/2 z-40">
                     <div className="p-1 bg-[#FDE5D2] rounded-full shadow-lg">
                         <div className="w-[65px] h-[65px] sm:w-[75px] sm:h-[75px] bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
-                            <img src={isDelivery ? logos.delivery : isPartner ? logos.tailor : logos.customer} alt={appName} className="w-full h-full object-cover" />
+                            <img src={isDelivery ? logos.delivery : isPartner ? logos.tailor : logos.customer} alt={appName} className="w-full h-full object-contain" />
                         </div>
                     </div>
                 </div>

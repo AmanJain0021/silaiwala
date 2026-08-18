@@ -28,7 +28,7 @@ const CustomerMainLayout = () => {
                     {/* Brand */}
                     <Link to="/user" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3 group-hover:rotate-0 transition-transform">
-                            <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
+                            <img src={logos.customer} alt={appName} className="w-full h-full object-contain" />
                         </div>
                         <div>
                             <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-none tracking-tight">

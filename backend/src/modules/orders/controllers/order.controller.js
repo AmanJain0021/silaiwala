@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const User = require("../../../models/User.js");
 const Tailor = require("../../../models/Tailor.js");
 const Customer = require("../../../models/Customer.js");
+const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
 const WalletTransaction = require("../../../models/WalletTransaction.js");
 const Settings = require("../../../models/Settings.js");
 const PaymentLedger = require("../../../models/PaymentLedger.js");
@@ -563,6 +564,144 @@ ledgerId,
 });
 
 /**
+ * @desc    Razorpay Webhook Listener
+ * @route   POST /api/v1/orders/razorpay/webhook
+ * @access  Public (protected by signature)
+ */
+exports.razorpayWebhook = asyncHandler(async (req, res, next) => {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+  const signature = req.headers["x-razorpay-signature"];
+
+  if (!signature) {
+    return res.status(400).send("No signature provided");
+  }
+
+  // To verify signature, we need the raw body. 
+  // We use req.rawBody attached by express.json() verify function in app.js
+  const payload = req.rawBody;
+  
+  if (!payload) {
+     return res.status(400).send("Raw body missing");
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
+
+  if (expectedSignature !== signature) {
+    console.error("Razorpay webhook signature mismatch. Expected:", expectedSignature, "Got:", signature);
+    return res.status(400).send("Invalid signature");
+  }
+
+  const event = req.body.event;
+  console.log(`\n================================`);
+  console.log(`🔔 RAZORPAY WEBHOOK RECEIVED: ${event}`);
+  console.log(`================================\n`);
+
+  if (event === "payment.captured") {
+    const payment = req.body.payload.payment.entity;
+    const razorpay_order_id = payment.order_id;
+    const razorpay_payment_id = payment.id;
+    const amount = payment.amount / 100; // Convert back to rupees
+
+    // Find the order by Razorpay order ID
+    // We check advancePaymentId and remainingPaymentId to see if it's already recorded
+    const order = await Order.findOne({ 
+      $or: [
+        { razorpayOrderId: razorpay_order_id },
+        { "items.razorpayOrderId": razorpay_order_id } // Just in case it's nested
+      ] 
+    });
+
+    if (order) {
+      // Determine if this is advance or remaining based on amounts or status
+      // We know if advancePaymentStatus is pending and advance amount matches roughly
+      let updated = false;
+
+      // Ensure we don't duplicate ledger entries if already verified by frontend
+      if (order.advancePaymentStatus !== 'paid' && order.advancePaymentAmount && Math.abs(order.advancePaymentAmount - amount) < 10) {
+        order.advancePaymentStatus = "paid";
+        order.advancePaymentId = razorpay_payment_id;
+        order.razorpayOrderId = razorpay_order_id;
+        if (order.paymentStatus !== "paid") order.paymentStatus = "advance_paid";
+        
+        order.trackingHistory.push({
+          status: order.status,
+          message: "Advance payment successfully captured via webhook.",
+          timestamp: new Date()
+        });
+        updated = true;
+      } 
+      else if (order.remainingPaymentStatus !== 'paid' && order.remainingPaymentAmount && Math.abs(order.remainingPaymentAmount - amount) < 10) {
+        order.remainingPaymentStatus = "paid";
+        order.remainingPaymentId = razorpay_payment_id;
+        order.paymentStatus = "paid";
+        
+        order.trackingHistory.push({
+          status: order.status,
+          message: "Remaining payment successfully captured via webhook.",
+          timestamp: new Date()
+        });
+        updated = true;
+      }
+      else if (order.paymentStatus === 'pending' && Math.abs(order.totalAmount - amount) < 10) {
+        // Full payment
+        order.paymentStatus = "paid";
+        order.paymentId = razorpay_payment_id;
+        order.razorpayOrderId = razorpay_order_id;
+        
+        order.trackingHistory.push({
+          status: order.status,
+          message: "Full payment successfully captured via webhook.",
+          timestamp: new Date()
+        });
+        updated = true;
+      }
+
+      if (updated) {
+        await order.save();
+        
+        try {
+          const { getIO } = require("../../../config/socket.js");
+          const io = getIO();
+          if (io) {
+            io.to(`user_${order.customer}`).emit("order_status_updated", {
+              orderId: order.orderId,
+              _id: order._id,
+              paymentStatus: order.paymentStatus,
+              advancePaymentStatus: order.advancePaymentStatus,
+              remainingPaymentStatus: order.remainingPaymentStatus
+            });
+            if (order.tailor) {
+              io.to(`user_${order.tailor}`).emit("order_status_updated", {
+                orderId: order.orderId,
+                _id: order._id,
+                paymentStatus: order.paymentStatus,
+                advancePaymentStatus: order.advancePaymentStatus,
+                remainingPaymentStatus: order.remainingPaymentStatus
+              });
+            }
+          }
+          const { sendNotification } = require("../../../utils/notification.js");
+          await sendNotification({
+            recipient: order.customer,
+            type: "PAYMENT_RECEIVED",
+            title: "Payment Successful",
+            message: `Your payment of ₹${amount} for order ${order.orderId} was received.`,
+            data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
+          });
+        } catch (err) {
+          console.error("Webhook notification error:", err);
+        }
+      }
+    }
+  }
+
+  res.status(200).send("OK");
+});
+
+/**
  * @desc    Create a new order
  * @route   POST /api/v1/orders
  * @access  Private (Customer)
@@ -881,6 +1020,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     items: formattedItems,
     totalAmount: finalAmount,
     deliveryFee: verifiedDeliveryFee,
+    deliveryPartnerEarning: serverPricing.actualDeliveryCost || verifiedDeliveryFee, // Ensures payout even if customer fee is 0
     platformFee,
     gstAmount,
     gstPercentage: gstPct,
@@ -1312,7 +1452,7 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
 
   if (preference === 'self') {
     order.status = 'waiting-for-customer-dropoff';
-    order.dropoffDeliveryOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    order.dropoffDeliveryOtp = isDefaultOtpEnabled() ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
     order.dropoffOtpVerified = false;
     order.trackingHistory.push({
       status: order.status,

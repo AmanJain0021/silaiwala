@@ -1,5 +1,6 @@
 const MeasurementExecutive = require("../../../models/MeasurementExecutive.js");
 const mongoose = require("mongoose");
+const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
 const MeasurementRequest = require("../../../models/MeasurementRequest.js");
 const MeasurementReport = require("../../../models/MeasurementReport.js");
 const Order = require("../../../models/Order.js");
@@ -469,8 +470,9 @@ exports.generateOTP = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("You must upload measurements before generating OTP", 400));
   }
 
-  // Generate 6-digit OTP
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otp = isDefaultOtpEnabled() 
+    ? '123456' 
+    : String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   request.otp = otp;

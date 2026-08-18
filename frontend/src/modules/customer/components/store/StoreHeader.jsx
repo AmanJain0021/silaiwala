@@ -17,7 +17,7 @@ const StoreHeader = ({ searchQuery, setSearchQuery, onOpenFilter }) => {
                 <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
                         <Link to="/user" className="w-10 h-10 bg-[#3b154c] rounded-xl flex items-center justify-center shadow-sm overflow-hidden active:scale-95 transition-transform">
-                            <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
+                            <img src={logos.customer} alt={appName} className="w-full h-full object-contain" />
                         </Link>
                         <div>
                             <h1 className="text-xl sm:text-2xl font-black text-[#4b1b68] leading-none tracking-tight">{appName}</h1>

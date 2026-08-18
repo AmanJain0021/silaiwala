@@ -3,6 +3,9 @@ const router = express.Router();
 const { createOrder, getMyOrders, getOrderDetails, createRazorpayOrder, verifyPayment, changeTailorRequest, updateDeliveryPreference, approveMeasurements, requestMeasurementRevision, requestExchange, updateExchangeStatus, calculatePriceSummary, updateOrderStatus } = require("../controllers/order.controller.js");
 const { protect, authorize } = require("../../../middlewares/auth.middleware.js");
 
+// Webhook (Public, protected by signature)
+router.post("/razorpay/webhook", require("../controllers/order.controller.js").razorpayWebhook);
+
 router.use(protect);
 
 router.post("/price-summary", authorize("customer", "admin"), calculatePriceSummary);

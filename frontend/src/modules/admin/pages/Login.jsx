@@ -110,7 +110,7 @@ const AdminLogin = () => {
 
                     {/* Brand Identity */}
                     <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-2xl border border-gray-50 mb-8 transform transition-all hover:scale-105 active:rotate-6 overflow-hidden">
-                        <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
+                        <img src={logos.customer} alt={appName} className="w-full h-full object-contain" />
                     </div>
 
                     <div className="text-center space-y-1 mb-10">

@@ -154,6 +154,7 @@ const AdminFinance = () => {
         'Payment Ledger', 
         'Wallet Audit',
         'Tailor Earnings', 
+        'Tailor Payouts',
         'Delivery Earnings', 
         'Delivery Payouts',
         'Executive Payouts',
@@ -250,8 +251,8 @@ const AdminFinance = () => {
     };
 
     const handleProcessPayout = async (id) => {
-        if (!payoutRef.trim()) {
-            toast.error("Transaction Reference is required");
+        if (!payoutRef.trim() && !payoutProof) {
+            toast.error("Either Transaction Reference or Screenshot is required");
             return;
         }
         
@@ -267,7 +268,9 @@ const AdminFinance = () => {
             setPayoutProof('');
             fetchData();
         } catch (error) {
-            toast.error("Failed to update payout");
+            console.error("Payout error:", error);
+            const errorMsg = error.response?.data?.message || "Failed to update payout";
+            toast.error(errorMsg);
         }
     };
 
@@ -283,7 +286,7 @@ const AdminFinance = () => {
             const res = await api.post('/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setPayoutProof(res.data.data.url);
+            setPayoutProof(res.data.data);
             toast.success('Screenshot uploaded');
         } catch (error) {
             console.error('Upload failed:', error);
@@ -793,10 +796,15 @@ const AdminFinance = () => {
                                                                             className="px-3 py-1.5 text-[10px] font-bold border border-gray-200 rounded-lg outline-none focus:border-primary w-24"
                                                                         />
                                                                         <label className="cursor-pointer text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-all flex items-center justify-center min-w-[60px]">
-                                                                            {isUploadingProof ? '...' : payoutProof ? 'Attached' : 'Attach'}
+                                                                            {isUploadingProof ? '...' : payoutProof ? 'Change' : 'Attach'}
                                                                             <input type="file" className="hidden" accept="image/*" onChange={handleProofUpload} disabled={isUploadingProof} />
                                                                         </label>
                                                                     </div>
+                                                                    {payoutProof && (
+                                                                        <a href={payoutProof} target="_blank" rel="noreferrer" className="w-full flex justify-end">
+                                                                            <img src={payoutProof} alt="Preview" className="h-10 rounded border border-gray-200 object-cover hover:opacity-80 transition-opacity" />
+                                                                        </a>
+                                                                    )}
                                                                     <div className="flex gap-2">
                                                                         <button
                                                                             onClick={() => handleProcessPayout(payout._id)}
@@ -822,9 +830,18 @@ const AdminFinance = () => {
                                                                 </button>
                                                             )
                                                         ) : (
-                                                            <button className="text-gray-400 hover:text-primary transition-colors p-2 hover:bg-gray-50 rounded-xl">
-                                                                <FileText size={16} />
-                                                            </button>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                {payout.transactionReference && (
+                                                                    <span className="text-[9px] font-black uppercase text-gray-500 tracking-wider">Ref: {payout.transactionReference}</span>
+                                                                )}
+                                                                {payout.proofOfPayment ? (
+                                                                    <a href={payout.proofOfPayment} target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary hover:text-white transition-all shadow-sm flex items-center gap-1.5">
+                                                                        <FileText size={12} /> View Proof
+                                                                    </a>
+                                                                ) : (
+                                                                    <span className="text-[9px] text-gray-400 font-bold uppercase italic">No Proof Attached</span>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>

@@ -1,5 +1,6 @@
 const http = require("http");
 const https = require("https");
+const { isDefaultOtpEnabled } = require("./envUtils");
 
 /**
  * Service to send SMS via SMSIndiaHub Gateway
@@ -7,6 +8,12 @@ const https = require("https");
  */
 const sendSMS = async (phoneNumber, messageText) => {
   try {
+    // If USE_DEFAULT_OTP is true, don't send real SMS
+    if (isDefaultOtpEnabled()) {
+      console.log(`⚠️ [SMS] USE_DEFAULT_OTP is true. Skipping real SMS to ${phoneNumber}.`);
+      return true;
+    }
+
     const apiKey = (process.env.SMS_INDIA_HUB_API_KEY || process.env.INDIA_SMS_HUB_API_KEY || "").replace(/['"]/g, "").trim();
     const senderId = (process.env.SMS_INDIA_HUB_SENDER_ID || process.env.INDIA_SMS_HUB_SENDER_ID || "BGADEC").replace(/['"]/g, "").trim();
     const templateId = (process.env.SMS_INDIA_HUB_DLT_TEMPLATE_ID || process.env.INDIA_SMS_HUB_TEMPLATE_ID || "").replace(/['"]/g, "").trim();

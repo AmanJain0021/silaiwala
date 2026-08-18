@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const Tailor = require("../../../models/Tailor.js");
+const Customer = require("../../../models/Customer.js");
+const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
 const User = require("../../../models/User.js");
 const Order = require("../../../models/Order.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
@@ -894,13 +896,13 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
         
         // Generate OTP for Self Delivery (Customer Pickup)
         if (deliveryMethod === 'self' && (status === 'ready-for-pickup' || status === 'ready-for-delivery')) {
-            order.pickupDeliveryOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            order.pickupDeliveryOtp = isDefaultOtpEnabled() ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
             order.pickupOtpVerified = false;
         }
 
         // Tailor Self-Delivery: Tailor delivers to customer themselves
         if (deliveryMethod === 'tailor') {
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otp = isDefaultOtpEnabled() ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
             order.dropoffDeliveryOtp = otp;
             order.dropoffOtpVerified = false;
             order.status = 'out-for-delivery';

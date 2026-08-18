@@ -8,6 +8,7 @@ import { usePushNotifications } from './hooks/usePushNotifications';
 import SplashScreen from './components/Common/SplashScreen';
 import api from './utils/api';
 import CustomToastCard from './shared/components/CustomToast';
+import useBrandingStore from './store/brandingStore';
 
 // Component to handle push notifications hook
 const PushNotificationManager = () => {
@@ -60,6 +61,9 @@ function App() {
       }
     };
     fetchSplashConfig();
+    
+    // Load dynamic branding (logos, app name)
+    useBrandingStore.getState().fetchBranding();
   }, []);
 
   // Multi-tab socket sync

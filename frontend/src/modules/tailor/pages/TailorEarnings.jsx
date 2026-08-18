@@ -190,15 +190,19 @@ const TailorEarnings = () => {
     const bonus          = periodTotal > 0 ? periodTotal * 0.05 : 0;
     const displayedEarnings = periodTotal || 0;
 
-    const getBadgeStyle = (type) => {
-        if (!type) return 'text-green-700 bg-green-50';
-        if (type === 'INCENTIVE' || type === 'bonus') return 'text-blue-600 bg-blue-50';
-        if (type === 'credit' || type === 'completed') return 'text-green-700 bg-green-50';
+    const getBadgeStyle = (label) => {
+        if (!label) return 'text-green-700 bg-green-50';
+        const lower = label.toLowerCase();
+        if (lower === 'incentive' || lower === 'bonus') return 'text-blue-600 bg-blue-50';
+        if (lower === 'credit' || lower === 'completed' || lower === 'paid') return 'text-green-700 bg-green-50';
+        if (lower === 'pending') return 'text-amber-600 bg-amber-50';
+        if (lower === 'rejected') return 'text-rose-600 bg-rose-50';
         return 'text-gray-500 bg-gray-100';
     };
 
     const getBadgeLabel = (txn) => {
         if (txn.description?.toLowerCase().includes('bonus')) return 'INCENTIVE';
+        if (txn.category === 'withdrawal' && txn.withdrawalRequest) return txn.withdrawalRequest.status.toUpperCase();
         if (txn.type === 'credit') return 'COMPLETED';
         return (txn.status || 'COMPLETED').toUpperCase();
     };
@@ -222,41 +226,6 @@ const TailorEarnings = () => {
 
     return (
         <div className="min-h-full bg-[#F5F5F5] flex flex-col font-sans selection:bg-[#843D9B] selection:text-white pb-24 md:pb-8">
-
-            {/* ── HEADER (MOBILE ONLY) ── */}
-            <div className="md:hidden bg-white px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/partner/settings')} className="w-9 h-9 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm bg-white shrink-0">
-                        <img src={logos.tailor} alt={appName} className="w-full h-full object-cover" />
-                    </button>
-                    <h1 className="text-[17px] font-black text-[#843D9B] tracking-tight mb-0.5">SEWZELLA</h1>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => navigate('/partner/notifications')}
-                        className="relative text-gray-400 hover:text-[#843D9B] transition-colors flex items-center justify-center p-1"
-                    >
-                        <Bell size={22} />
-                        {unreadCount > 0 && (
-                            <span className="absolute top-0 right-0 h-4 w-4 bg-[#843D9B] rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
-                                {unreadCount > 99 ? '99+' : unreadCount}
-                            </span>
-                        )}
-                    </button>
-                    <button
-                        onClick={() => navigate('/partner/settings')}
-                        className="relative"
-                    >
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden">
-                            {user?.profile?.profileImage || user?.profileImage ? (
-                                <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                user?.name?.charAt(0)?.toUpperCase() || 'T'
-                            )}
-                        </div>
-                    </button>
-                </div>
-            </div>
 
             <div className="flex-1 p-2 md:p-0">
                 
@@ -359,66 +328,7 @@ const TailorEarnings = () => {
                             </div>
                         </div>
 
-                        {/* COD Wallet Section */}
-                        <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm mt-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                                        <CreditCard size={16} />
-                                    </div>
-                                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">COD Wallet</h3>
-                                </div>
-                                {stats.cashBlocked && (
-                                    <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-1 rounded-md flex items-center gap-1">
-                                        <AlertCircle size={12} /> BLOCKED
-                                    </span>
-                                )}
-                            </div>
-                            
-                            {stats.cashBlocked && (
-                                <div className="bg-red-50 border border-red-100 p-3 rounded-xl mb-4 flex items-start gap-2 text-red-800 text-xs">
-                                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                                    <p>You have exceeded your pending cash collection limit. Please deposit your collected cash to continue receiving orders.</p>
-                                </div>
-                            )}
 
-                            <div className="flex items-end justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Collected Cash</p>
-                                    <h4 className="text-2xl font-black text-gray-900">₹{(stats.codWalletBalance || 0).toLocaleString()}</h4>
-                                </div>
-                                <button
-                                    onClick={() => setShowDepositModal(true)}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
-                                >
-                                    Deposit Cash
-                                </button>
-                            </div>
-
-                            {depositHistory.length > 0 && (
-                                <div className="mt-5 border-t border-gray-100 pt-4">
-                                    <p className="text-[11px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Recent Deposits</p>
-                                    <div className="space-y-3">
-                                        {depositHistory.slice(0, 3).map((dep, idx) => (
-                                            <div key={idx} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${dep.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : dep.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-500'}`}>
-                                                        <History size={14} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-bold text-gray-900">₹{dep.amount}</p>
-                                                        <p className="text-[9px] text-gray-400">{new Date(dep.createdAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded capitalize ${dep.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : dep.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'}`}>
-                                                    {dep.status}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* RIGHT COLUMN: RECENT PAYOUTS */}
@@ -457,7 +367,11 @@ const TailorEarnings = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-black text-gray-900 leading-tight truncate">
-                                                    {item._id ? (item.description || `Order #${item.orderId || 'N/A'}`) : (item.id.startsWith('AL') ? `Order #${item.id}` : item.id)}
+                                                    {item._id ? (
+                                                        item.category === 'withdrawal' && item.withdrawalRequest?.status === 'paid' 
+                                                        ? 'Withdrawal Completed' 
+                                                        : (item.description || `Order #${item.orderId || 'N/A'}`)
+                                                    ) : (item.id.startsWith('AL') ? `Order #${item.id}` : item.id)}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
@@ -581,96 +495,7 @@ const TailorEarnings = () => {
                 )}
             </AnimatePresence>
 
-            {/* Deposit Cash Modal */}
-            <AnimatePresence>
-                {showDepositModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-slate-900/60 backdrop-blur-sm md:items-center"
-                        onClick={() => !isSubmitting && setShowDepositModal(false)}
-                    >
-                        <motion.div
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-[2.5rem] w-full max-w-md p-8 relative shadow-2xl"
-                        >
-                            <button
-                                onClick={() => setShowDepositModal(false)}
-                                disabled={isSubmitting}
-                                className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
 
-                            <div className="mb-8 flex items-center gap-4">
-                                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                                    <Building2 size={28} />
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Deposit Cash</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Pay COD Dues Online</p>
-                                </div>
-                            </div>
-
-                            <form onSubmit={handleDepositRequest} className="space-y-6">
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Amount (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={depositAmount}
-                                        onChange={(e) => setDepositAmount(e.target.value)}
-                                        placeholder="0.00"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
-                                        required
-                                        max={stats.codWalletBalance}
-                                    />
-                                    <div className="flex justify-between mt-2">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight font-black">Pending Cash: ₹{(stats.codWalletBalance || 0).toLocaleString()}</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => setDepositAmount(stats.codWalletBalance)}
-                                            className="text-[10px] font-black text-blue-600 uppercase tracking-widest"
-                                        >
-                                            Max
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Remarks (Optional)</label>
-                                    <input
-                                        type="text"
-                                        value={depositRemarks}
-                                        onChange={(e) => setDepositRemarks(e.target.value)}
-                                        placeholder="e.g. Paid online"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-500 transition-all"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || !depositAmount}
-                                    className="w-full bg-blue-600 text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <Loader2 size={18} className="animate-spin" />
-                                            Processing Payment
-                                        </>
-                                    ) : (
-                                        'Pay Online'
-                                    )}
-                                </button>
-                            </form>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };

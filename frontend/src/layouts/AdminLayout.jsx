@@ -158,7 +158,7 @@ const AdminLayout = () => {
                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                     <h1 className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-xl border border-white/10 overflow-hidden shrink-0 transform -rotate-3">
-                            <img src={logos.customer} alt={appName} className="w-full h-full object-cover" />
+                            <img src={logos.customer} alt={appName} className="w-full h-full object-contain" />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-lg font-black tracking-tighter text-white leading-none">{appName}</span>

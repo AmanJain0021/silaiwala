@@ -188,7 +188,7 @@ const TailorLayout = () => {
                 <div className="p-8">
                     <Link to="/partner" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5 overflow-hidden border border-gray-800 rotate-3 group-hover:rotate-0 transition-transform">
-                            <img src={logos.tailor} alt={appName} className="w-full h-full object-cover" />
+                            <img src={logos.tailor} alt={appName} className="w-full h-full object-contain p-0.5" />
                         </div>
                         <div>
                             <h1 className="text-xl font-black text-white leading-none tracking-tight">
@@ -228,9 +228,15 @@ const TailorLayout = () => {
                     <div className="bg-[#1C1C1C] rounded-[2rem] p-5 border border-white/5 relative overflow-hidden group">
                         <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-[#843D9B]/10 rounded-full blur-2xl group-hover:bg-[#843D9B]/20 transition-all"></div>
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="h-10 w-10 rounded-xl bg-[#843D9B] flex items-center justify-center text-white font-black text-sm shadow-md">
-                                {user?.name?.charAt(0)?.toUpperCase() || 'T'}
-                            </div>
+                            {user?.profile?.profileImage || user?.profileImage ? (
+                                <div className="h-10 w-10 rounded-xl shadow-md overflow-hidden bg-white shrink-0">
+                                    <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                </div>
+                            ) : (
+                                <div className="h-10 w-10 rounded-xl bg-[#843D9B] flex items-center justify-center text-white font-black text-sm shadow-md shrink-0">
+                                    {user?.name?.charAt(0)?.toUpperCase() || 'T'}
+                                </div>
+                            )}
                             <div className="min-w-0">
                                 <p className="text-xs font-black text-white truncate">{user?.name || 'Partner'}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -251,8 +257,8 @@ const TailorLayout = () => {
                 {/* ── MOBILE TOP HEADER ── */}
                 <header className="md:hidden bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-sm">
                     <Link to="/partner" className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-[#0A0A0A] rounded-xl flex items-center justify-center overflow-hidden border border-gray-800 shrink-0">
-                            <img src={logos.tailor} alt={appName} className="w-full h-full object-cover" />
+                        <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm shrink-0">
+                            <img src={logos.tailor} alt={appName} className="w-full h-full object-contain p-0.5" />
                         </div>
                         <div>
                             <h1 className="text-base font-black text-gray-900 leading-none tracking-tight">
@@ -280,9 +286,15 @@ const TailorLayout = () => {
                                 </span>
                             )}
                         </Link>
-                        <Link to="/partner/settings" className="w-8 h-8 rounded-xl bg-[#843D9B] text-white flex items-center justify-center font-black text-xs shadow-md shadow-[#843D9B]/20 border border-white shrink-0">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'T'}
-                        </Link>
+                        {user?.profile?.profileImage || user?.profileImage ? (
+                            <Link to="/partner/settings" className="w-8 h-8 rounded-xl overflow-hidden shadow-md shrink-0 bg-white block border border-gray-200">
+                                <img src={user?.profile?.profileImage || user?.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                            </Link>
+                        ) : (
+                            <Link to="/partner/settings" className="w-8 h-8 rounded-xl bg-[#843D9B] text-white flex items-center justify-center font-black text-xs shadow-md shadow-[#843D9B]/20 border border-white shrink-0">
+                                {user?.name?.charAt(0)?.toUpperCase() || 'T'}
+                            </Link>
+                        )}
                     </div>
                 </header>
 
