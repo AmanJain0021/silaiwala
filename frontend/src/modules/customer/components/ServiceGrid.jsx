@@ -1,111 +1,89 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Scissors, ClipboardList, Users, Sparkles, Heart, Layers, Feather, Ruler, Wand2 } from 'lucide-react';
-
-const ICON_COLOR = "#FFFFFF";
-const ICON_SIZE = 24;
-const STROKE_WIDTH = 1.5;
+import { Scissors, ClipboardList, Users, Sparkles, Heart, ArrowRight } from 'lucide-react';
 
 const ServiceGrid = () => {
     const navigate = useNavigate();
 
     const services = [
         {
-            label: 'Tailors',
-            icon: <Users size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            title: 'Tailors',
+            subtitle: 'Expert Professionals',
+            icon: <Users size={20} className="text-[#843D9B]" strokeWidth={1.5} />,
             path: '/user/tailors'
         },
         {
-            label: 'My Orders',
-            icon: <ClipboardList size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            title: 'My Orders',
+            subtitle: 'Track & Manage',
+            icon: <ClipboardList size={20} className="text-[#843D9B]" strokeWidth={1.5} />,
             path: '/user/orders'
         },
         {
-            label: 'Stitching',
-            icon: <Scissors size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            title: 'Stitching',
+            subtitle: 'Perfectly Crafted',
+            icon: <Scissors size={20} className="text-[#843D9B]" strokeWidth={1.5} />,
             path: '/user/services'
         },
         {
-            label: 'Style Add-ons',
-            icon: <Sparkles size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            title: 'Style Add-ons',
+            subtitle: 'Elevate Your Look',
+            icon: <Sparkles size={20} className="text-[#843D9B]" strokeWidth={1.5} />,
             path: '/user/embellishments'
         },
         {
-            label: 'Bridal',
-            icon: <Heart size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            title: 'Bridal',
+            subtitle: 'Made For Your Day',
+            icon: <Heart size={20} className="text-[#843D9B]" strokeWidth={1.5} />,
             path: '/user/tailors?service=bridal'
-        },
-        {
-            label: 'Bulk Order',
-            icon: <Layers size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
-            path: '/user/bulk-order'
-        },
-        {
-            label: 'Embroidery',
-            icon: <Feather size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
-            path: '/user/embroidery'
-        },
-        {
-            label: 'Alteration',
-            icon: <Ruler size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
-            path: '/user/alteration'
-        },
-        {
-            label: 'Custom Design',
-            icon: <Wand2 size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
-            path: '/user/custom-design'
         }
     ];
 
-    const handleActionClick = (action) => {
-        if (action.path) {
-            navigate(action.path);
-        }
-    };
-
     return (
-        <div className="px-4 md:px-6 lg:px-8 pt-4 pb-6">
-            {/* Header with Title and Toggle */}
-            <div className="relative flex items-center justify-center mb-6 px-2">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className="w-full border-t border-dashed border-gray-300"></div>
+        <div className="px-4 md:px-6 lg:px-8 mt-4 mb-4">
+            {/* Header Section */}
+            <div className="flex items-center justify-between mb-4 relative">
+                <div className="flex-1 flex justify-center items-center">
+                    <div className="flex items-center gap-2">
+                        <div className="flex gap-0.5 text-[#843D9B] opacity-60 font-black text-[10px] italic">
+                            \\
+                        </div>
+                        <h2 className="text-[11px] font-black text-[#682498] uppercase tracking-[0.2em] px-2">What We Offer</h2>
+                        <div className="flex gap-0.5 text-[#843D9B] opacity-60 font-black text-[10px] italic">
+                            //
+                        </div>
+                    </div>
                 </div>
-                <div className="relative bg-[#F7F8FC] px-4">
-                    <h2 className="text-[11px] sm:text-[13px] font-bold text-[#843D9B] uppercase tracking-[0.3em] whitespace-nowrap">What We Offer</h2>
-                </div>
-                <div className="absolute right-2 bg-[#F7F8FC] pl-2 sm:pl-4">
-                    <button 
-                        onClick={() => navigate('/user/what-we-offer')}
-                        className="text-[10px] font-black text-[#843D9B] hover:text-[#E04D79] uppercase tracking-widest transition-colors flex items-center gap-1"
-                    >
-                        View All
-                    </button>
-                </div>
+                <button 
+                    onClick={() => navigate('/user/what-we-offer')}
+                    className="absolute right-0 text-[9px] font-bold text-[#843D9B] hover:text-[#682498] flex items-center gap-0.5"
+                >
+                    View All <ArrowRight size={10} />
+                </button>
             </div>
 
-            <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x">
-                <AnimatePresence mode="popLayout">
-                    {services.map((service, index) => (
-                        <motion.div
-                            key={index}
-                            layout
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="flex-col items-center gap-2 cursor-pointer group flex min-w-[70px] snap-center"
-                            whileTap={{ scale: 0.92 }}
-                            onClick={() => handleActionClick(service)}
-                        >
-                            <div className="w-14 h-14 bg-[#843D9B] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg mx-auto shadow-sm border-2 border-[#843D9B] shrink-0">
-                                {service.icon}
-                            </div>
-                            <span className="text-[8px] sm:text-[9px] font-black text-center text-gray-800 uppercase tracking-wider leading-tight w-full max-w-[60px] break-words mx-auto">
-                                {service.label}
+            {/* Scrollable Services */}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                {services.map((service, index) => (
+                    <motion.div
+                        key={index}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate(service.path)}
+                        className="flex flex-col items-center gap-1.5 min-w-[72px] cursor-pointer group snap-center"
+                    >
+                        <div className="w-[52px] h-[52px] rounded-full bg-purple-50 flex items-center justify-center border border-purple-100 group-hover:bg-purple-100 transition-colors">
+                            {service.icon}
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[10px] font-bold text-gray-900 leading-tight">
+                                {service.title}
                             </span>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+                            <span className="text-[7px] font-medium text-gray-500 leading-tight text-center">
+                                {service.subtitle}
+                            </span>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
         </div>
     );

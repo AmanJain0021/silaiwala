@@ -25,7 +25,7 @@ const popularSuggestions = [
     "Expert Tailors"
 ];
 
-const AnimatedSearchBar = ({ className = "", value, onChange, onSearch }) => {
+const AnimatedSearchBar = ({ className = "", value, onChange, onSearch, hideBackground = false }) => {
     const [text, setText] = useState('');
     const [termIndex, setTermIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -111,8 +111,8 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch }) => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleSearch}
                 onFocus={() => setIsFocused(true)}
-                placeholder={`Search ${text}`}
-                className={`w-full bg-white border border-transparent rounded-[1.25rem] pl-10 pr-4 text-[13px] font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-white/20 focus:border-white transition-all placeholder:text-gray-400 shadow-inner relative z-10 ${className.includes('py-') ? '' : 'py-3 sm:py-3.5'}`}
+                placeholder="Search tailors, designs, stitching..."
+                className={`w-full h-full pl-10 pr-4 text-[13px] font-medium focus:outline-none focus:ring-0 transition-all placeholder:text-gray-400 relative z-10 ${hideBackground ? 'bg-transparent border-transparent shadow-none' : 'bg-white border border-transparent rounded-[1.25rem] focus:bg-white focus:ring-4 focus:ring-white/20 focus:border-white shadow-inner'} ${className.includes('py-') ? '' : 'py-3 sm:py-3.5'}`}
             />
 
             {/* Suggestions Dropdown */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tag, Clock, ArrowRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { Tag, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../utils/api';
 
 const PromoBanner = () => {
@@ -16,15 +16,7 @@ const PromoBanner = () => {
             subtitle: "On your first custom stitching order",
             badge: "LIMITED OFFER",
             color: "bg-gradient-to-br from-[#843D9B] to-[#ff85a2]",
-            image: "https://cdn-icons-png.flaticon.com/128/9284/9284227.png"
-        },
-        {
-            id: 'default-2',
-            title: "EXPRESS DELIVERY",
-            subtitle: "Get your outfit stitched in 24 hours",
-            badge: "PREMIUM SERVICE",
-            color: "bg-gradient-to-br from-[#1e3e5a] to-[#2d5a8c]",
-            image: "https://cdn-icons-png.flaticon.com/128/9420/9420653.png"
+            image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
         }
     ];
 
@@ -33,14 +25,15 @@ const PromoBanner = () => {
             try {
                 const res = await api.get('/cms/banners/active?location=Home Page - Top Carousel');
                 if (res.data.success && res.data.data.length > 0) {
-                    // Filter for Home Page placement or use all active as needed
                     const activeBanners = res.data.data.map(b => ({
                         id: b._id,
                         title: b.title || "Special Offer",
                         subtitle: b.subtitle || "Premium custom tailoring services",
-                        badge: b.badge || "FEATURED",
-                        color: b.color || "bg-gradient-to-br from-[#843D9B] to-[#ff85a2]",
-                        image: b.image || "https://cdn-icons-png.flaticon.com/128/9284/9284227.png"
+                        description: b.description || "Expert tailoring services for your dream outfit.",
+                        badge: b.badge || "NEW USER OFFER",
+                        color: b.color || "bg-[#843D9B]", // Matching the reference image solid purple
+                        image: b.image || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+                        code: "SEWZELLA10"
                     }));
                     setBanners(activeBanners);
                 } else {
@@ -77,35 +70,15 @@ const PromoBanner = () => {
     };
 
     const variants = {
-        enter: (direction) => {
-            return {
-                x: direction > 0 ? '100%' : '-100%',
-                opacity: 0,
-                scale: 0.95
-            };
-        },
-        center: {
-            zIndex: 1,
-            x: 0,
-            opacity: 1,
-            scale: 1
-        },
-        exit: (direction) => {
-            return {
-                zIndex: 0,
-                x: direction < 0 ? '100%' : '-100%',
-                opacity: 0,
-                scale: 0.95
-            };
-        }
+        enter: (direction) => ({ x: direction > 0 ? '100%' : '-100%', opacity: 0 }),
+        center: { zIndex: 1, x: 0, opacity: 1 },
+        exit: (direction) => ({ zIndex: 0, x: direction < 0 ? '100%' : '-100%', opacity: 0 })
     };
 
     if (isLoading) {
         return (
-            <div className="px-4 md:px-6 lg:px-8 py-3">
-                <div className="w-full h-42 bg-gray-100 animate-pulse rounded-3xl flex items-center justify-center">
-                    <Sparkles size={24} className="text-gray-200" />
-                </div>
+            <div className="px-4 py-3">
+                <div className="w-full h-44 bg-gray-100 animate-pulse rounded-3xl" />
             </div>
         );
     }
@@ -115,7 +88,7 @@ const PromoBanner = () => {
     const currentBanner = banners[currentIndex];
 
     return (
-        <div className="px-3 md:px-6 lg:px-8 py-1.5 relative group overflow-hidden">
+        <div className="px-4 mt-0 relative z-30 group overflow-hidden">
             <AnimatePresence initial={false} custom={direction} mode="popLayout">
                 <motion.div
                     key={currentIndex}
@@ -130,75 +103,62 @@ const PromoBanner = () => {
                     }}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.8}
                     onDragEnd={(e, { offset }) => {
-                        const swipe = offset.x;
-                        if (swipe < -50) {
-                            next();
-                        } else if (swipe > 50) {
-                            prev();
-                        }
+                        if (offset.x < -50) next();
+                        else if (offset.x > 50) prev();
                     }}
-                    className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] ${currentBanner.color || 'bg-gray-900'} text-white shadow-xl h-40 sm:h-64 lg:h-72 w-full flex items-center cursor-grab active:cursor-grabbing`}
+                    className={`relative overflow-hidden rounded-3xl ${currentBanner.color || 'bg-gradient-to-br from-[#401362] to-[#2B0945]'} text-white shadow-lg shadow-purple-900/20 h-[170px] w-full flex`}
                 >
-                    {/* Full Background Image */}
-                    <div className="absolute inset-0 z-0 pointer-events-none">
+                    {/* Left Content Area */}
+                    <div className="flex-1 p-4 sm:p-5 flex flex-col justify-center relative z-10 w-[60%]">
+                        <div className="w-fit px-2 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold tracking-widest flex items-center gap-1 border border-white/40 uppercase mb-2">
+                            <Tag size={8} /> {currentBanner.badge}
+                        </div>
+                        <h2 className="text-3xl sm:text-4xl font-black leading-none tracking-tighter mb-1 line-clamp-1">
+                            {currentBanner.title}
+                        </h2>
+                        <h3 className="text-[9px] sm:text-xs font-bold leading-tight mb-1.5 uppercase opacity-90 tracking-widest line-clamp-2 pr-2">
+                            {currentBanner.subtitle}
+                        </h3>
+                        <p className="text-[8px] sm:text-[9px] text-white/80 leading-snug mb-3 max-w-[140px] line-clamp-2">
+                            {currentBanner.description}
+                        </p>
+                        <button className="bg-white text-[#401362] px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black shadow-md hover:bg-gray-50 active:scale-95 transition-transform flex items-center gap-1 w-fit">
+                            Book Now <ArrowRight size={12} />
+                        </button>
+                    </div>
+
+                    {/* Right Image Area */}
+                    <div className="absolute top-0 right-0 bottom-0 w-[55%] pointer-events-none">
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#401362] via-transparent to-transparent z-10 w-full h-full"></div>
                         <img
                             src={currentBanner.image}
                             alt={currentBanner.title}
-                            className="w-full h-full object-cover opacity-60 pointer-events-none"
+                            className="w-full h-full object-cover object-left"
                             onError={(e) => { e.target.style.display = 'none'; }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none"></div>
                     </div>
 
-                    <div className="absolute inset-0 z-10 flex flex-col justify-center gap-1.5 sm:gap-3 px-6 sm:px-12 pointer-events-none">
-                        <div className="bg-white/20 w-fit px-2.5 py-1 rounded-full text-[8px] sm:text-[10px] font-black tracking-widest backdrop-blur-md flex items-center gap-1.5 border border-white/10 uppercase pointer-events-auto">
-                            <Sparkles size={8} className="text-indigo-300" /> {currentBanner.badge || 'PROMO'}
+                    {/* Code Badge */}
+                    {currentBanner.code && (
+                        <div className="absolute bottom-3 right-3 bg-white/20 backdrop-blur-md border border-white/30 rounded px-2 py-1 flex flex-col items-center justify-center shadow-lg z-20 pointer-events-none">
+                            <span className="text-[6px] font-medium tracking-widest uppercase opacity-80 leading-none mb-0.5">Code:</span>
+                            <span className="text-[10px] font-black tracking-widest leading-none">{currentBanner.code}</span>
                         </div>
-                        <div className="max-w-md">
-                            <h2 className="text-xl sm:text-3xl lg:text-5xl font-black leading-none tracking-tighter uppercase drop-shadow-lg">
-                                {currentBanner.title}
-                            </h2>
-                            <p className="text-[10px] sm:text-sm lg:text-base text-white/90 mt-0.5 sm:mt-3 font-bold tracking-tight drop-shadow-md leading-tight">{currentBanner.subtitle}</p>
-                        </div>
-                        <div className="flex items-center gap-4 mt-2 sm:mt-6 pointer-events-auto">
-                            <button className="bg-[#843D9B] text-white px-5 sm:px-8 py-2 sm:py-3.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-xs font-black shadow-xl shadow-indigo-900/20 hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center gap-1.5 uppercase tracking-widest cursor-pointer z-50">
-                                Book Now <ArrowRight size={12} />
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </motion.div>
             </AnimatePresence>
 
             {/* Dots */}
             {banners.length > 1 && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-20">
                     {banners.map((_, i) => (
                         <div
                             key={i}
-                            className={`h-1 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-4 bg-white' : 'w-1 bg-white/30'}`}
+                            className={`h-1 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-3 bg-white' : 'w-1 bg-white/40'}`}
                         />
                     ))}
                 </div>
-            )}
-
-            {/* Navigation Arrows (Visible on Hover in Desktop) */}
-            {banners.length > 1 && (
-                <>
-                    <button
-                        onClick={prev}
-                        className="absolute left-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        <ChevronLeft size={16} className="text-white" />
-                    </button>
-                    <button
-                        onClick={next}
-                        className="absolute right-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        <ChevronRight size={16} className="text-white" />
-                    </button>
-                </>
             )}
         </div>
     );

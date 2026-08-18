@@ -55,13 +55,15 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-24 md:pb-8 font-sans selection:bg-[#843D9B] selection:text-white">
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-50/50 via-white to-white -z-10" />
+            <div className="fixed inset-0 bg-white -z-10" />
 
             {/* 1. Header & Location */}
             <HomeHeader user={user || { name: 'Guest' }} />
 
-            {/* 2. Hero Banner */}
-            <PromoBanner />
+            {/* White Overlapping Container */}
+            <div className="bg-white rounded-t-[2rem] relative z-30 -mt-6 pt-6 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
+                {/* 2. Hero Banner */}
+                <PromoBanner />
 
             {/* 3. AI Measurement */}
             <AIMeasurementCard />
@@ -117,6 +119,7 @@ const Home = () => {
 
             {/* 12. Bottom Navigation */}
             <BottomNav />
+            </div>
         </div>
     );
 };

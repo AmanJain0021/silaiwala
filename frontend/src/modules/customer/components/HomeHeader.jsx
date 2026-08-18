@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, ShoppingCart, X, User, MapPin, ChevronDown, Check, Loader2, Navigation, Scissors, Shirt, Star, Truck } from 'lucide-react';
+import { Search, Bell, ShoppingCart, X, MapPin, ChevronDown, Filter } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
@@ -9,8 +9,6 @@ import useCheckoutStore from '../../../store/checkoutStore';
 import useLocationStore from '../../../store/locationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedSearchBar from './AnimatedSearchBar';
-import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
-
 import { useNotifications } from '../context/NotificationContext';
 import toast from 'react-hot-toast';
 
@@ -19,14 +17,11 @@ const HomeHeader = ({ user }) => {
     const { items: productCartItems } = useCartStore(state => state);
     const { serviceItems } = useCheckoutStore(state => state);
     const cartCount = (productCartItems || []).length + (serviceItems || []).length;
-    const { notifications = [], unreadCount, markAsRead, markAllRead } = useNotifications();
+    const { notifications = [], unreadCount, markAsRead } = useNotifications();
     const navigate = useNavigate();
 
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
-    const { profile } = useUserStore();
-    const { address: location, setLocation } = useLocationStore();
-    const { detectLocation, isLocating: isLoading } = useUnifiedLocation({ fetchAddress: true });
+    const { address: location } = useLocationStore();
 
     useEffect(() => {
         if (showNotifications || showLocationModal) {
@@ -34,136 +29,66 @@ const HomeHeader = ({ user }) => {
         } else {
             document.body.style.overflow = 'unset';
         }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
+        return () => document.body.style.overflow = 'unset';
     }, [showNotifications, showLocationModal]);
-
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good Morning';
-        if (hour < 18) return 'Good Afternoon';
-        return 'Good Evening';
-    };
-    const userName = user?.name ? user.name.split(' ')[0] : 'Guest';
-
-    const handleSave = () => {
-        if (tempLocation.trim()) {
-            const mockLat = 34.0837 + (Math.random() - 0.5) * 0.01;
-            const mockLng = 74.7973 + (Math.random() - 0.5) * 0.01;
-            setLocation(tempLocation, mockLat, mockLng);
-            setIsEditing(false);
-        }
-    };
-
-    const handleDetectLocation = async () => {
-        try {
-            const data = await detectLocation();
-            if (data) {
-                setLocation(data.address, data.latitude, data.longitude);
-            }
-        } catch (error) {
-            console.error(error);
-            alert(error.message || "Failed to detect location.");
-        } finally {
-            setIsEditing(false);
-        }
-    };
 
     return (
         <>
-            <div className="bg-[#843D9B] pt-2 transition-all duration-300 md:hidden overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3 pb-2 pt-safe">
-
-                {/* Top Row: Brand & Icons */}
-                <div className="flex justify-between items-center">
-                    <div className="flex-1 min-w-0 mr-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="flex items-center gap-2 cursor-pointer group"
-                            onClick={() => setShowLocationModal(true)}
-                        >
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0 shadow-sm">
-                                <MapPin size={14} className="group-hover:scale-110 transition-transform" />
+            <div className="bg-[#843D9B] pt-4 md:pt-6 pb-12 px-4 md:px-6 relative z-20 w-full overflow-hidden">
+                {/* Top Row: Location & Icons */}
+                <div className="flex justify-between items-center mb-5">
+                    <div className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0 pr-4" onClick={() => setShowLocationModal(true)}>
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 border border-white">
+                            <MapPin size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-white/80 font-medium leading-none mb-1">Delivering to</p>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs sm:text-sm font-bold text-white truncate">{location || 'Select Location'}</span>
+                                <ChevronDown size={14} className="text-white shrink-0" />
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-[9px] text-white/70 font-bold uppercase tracking-tighter leading-none mb-0.5">Delivering To</p>
-                                <div className="flex items-center gap-1 overflow-hidden">
-                                    <span className="text-[11px] font-black text-white truncate tracking-tight">{location}</span>
-                                    <ChevronDown size={10} className="text-white opacity-70" />
-                                </div>
-                            </div>
-                            <div className="hidden sm:flex items-center gap-2 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                                <span className="text-[9px] font-black text-white uppercase tracking-widest opacity-90">Riders Online</span>
-                            </div>
-                        </motion.div>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90"
+                            className="w-10 h-10 bg-white/10 rounded-xl text-white border border-white/20 flex items-center justify-center relative active:scale-95 transition-transform"
                         >
                             <Bell size={18} />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-rose-500 rounded-full border-2 border-[#843D9B] animate-pulse shadow-sm"></span>
+                                <span className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full border border-[#843D9B]"></span>
                             )}
                         </button>
 
                         <Link
                             to={(serviceItems || []).length > 0 && (productCartItems || []).length === 0 ? "/user/checkout/summary" : "/user/cart"}
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
-                            className="p-2 sm:p-2.5 bg-white/10 rounded-xl sm:rounded-2xl text-white border border-white/10 hover:bg-white hover:text-[#843D9B] transition-all active:scale-90 relative"
+                            className="w-10 h-10 bg-white/10 rounded-xl text-white border border-white/20 flex items-center justify-center relative active:scale-95 transition-transform"
                         >
                             <ShoppingCart size={18} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#843D9B] text-[8px] font-black flex items-center justify-center rounded-full border-2 border-[#843D9B] shadow-md">
+                                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-white text-[#843D9B] text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm">
                                     {cartCount}
                                 </span>
                             )}
                         </Link>
-
-
                     </div>
                 </div>
-            </div>
-        </div>
 
-            {/* Sticky Search and Marquee Section */}
-            <div className="sticky top-[-1px] mt-[-1px] z-[100] bg-[#843D9B] border-b border-[#843D9B]/50 transition-all duration-300 md:hidden overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 pb-0">
-                    {/* Search Bar - Modernized */}
-                    <AnimatedSearchBar />
-
-                {/* Marquee Tabs */}
-                <div className="mt-3 -mx-4 pt-3 pb-3 border-t border-white/10 overflow-hidden relative flex text-[10px] font-bold text-white tracking-widest uppercase items-center">
-                    <motion.div
-                        className="flex gap-8 px-4 items-center whitespace-nowrap w-max"
-                        animate={{ x: ["0%", "-50%"] }}
-                        transition={{ repeat: Infinity, ease: "linear", duration: 15 }}
-                    >
-                        <span className="cursor-pointer hover:text-white/80 transition-colors shrink-0">DELIVERY</span>
-                        <span className="text-white/30 text-[6px] shrink-0">●</span>
-                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Scissors size={12} /> CUSTOM STITCHING</span>
-                        <span className="text-white/30 text-[6px] shrink-0">●</span>
-                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Shirt size={12} /> EXPERT TAILORS</span>
-                        <span className="text-white/30 text-[6px] shrink-0">●</span>
-                        
-                        {/* Duplicate for seamless looping */}
-                        <span className="cursor-pointer hover:text-white/80 transition-colors shrink-0">DELIVERY</span>
-                        <span className="text-white/30 text-[6px] shrink-0">●</span>
-                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Scissors size={12} /> CUSTOM STITCHING</span>
-                        <span className="text-white/30 text-[6px] shrink-0">●</span>
-                        <span className="flex items-center gap-1.5 cursor-pointer hover:text-white/80 transition-colors shrink-0"><Shirt size={12} /> EXPERT TAILORS</span>
-                        <span className="text-white/30 text-[6px] shrink-0">●</span>
-                    </motion.div>
+                {/* Search Bar Row */}
+                <div className="bg-white rounded-[1.25rem] flex items-center shadow-sm relative overflow-hidden pl-1 pr-1.5 h-[46px] sm:h-[50px]">
+                    <div className="flex-1 h-full">
+                        <AnimatedSearchBar className="h-full bg-transparent shadow-none border-none text-sm w-full" hideBackground={true} />
+                    </div>
+                    <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
+                    <button className="h-full px-3 flex items-center gap-1.5 text-gray-700 font-bold text-[10px] sm:text-xs shrink-0 active:scale-95 transition-transform bg-transparent">
+                        <Filter size={14} className="text-gray-900" /> Filters
+                    </button>
                 </div>
             </div>
-        </div>
 
-        {/* Notification Dropdown Portal-like */}
+            {/* Notification Dropdown Portal */}
             <AnimatePresence>
                 {showNotifications && (
                     <>
@@ -172,50 +97,46 @@ const HomeHeader = ({ user }) => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowNotifications(false)}
-                            className="fixed inset-0 bg-black/10 backdrop-blur-sm z-[110]"
+                            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[110]"
                         />
                         <motion.div
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute top-20 right-4 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 p-6 z-[120] overflow-hidden"
+                            className="absolute top-20 right-4 w-[calc(100vw-2rem)] max-w-sm mx-auto bg-white rounded-3xl shadow-2xl p-5 z-[120] overflow-hidden"
                         >
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight">Updates</h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
                                 <button
                                     onClick={() => setShowNotifications(false)}
-                                    className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 transition-colors"
+                                    className="p-1.5 bg-gray-50 rounded-full text-gray-400"
                                 >
                                     <X size={16} />
                                 </button>
                             </div>
 
-                            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                            <div className="space-y-3 max-h-72 overflow-y-auto">
                                 {(notifications || []).length > 0 ? (notifications || []).map(n => (
                                     <div
                                         key={n._id}
                                         onClick={() => markAsRead(n._id)}
-                                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${!n.isRead ? 'bg-indigo-50/50 border-indigo-100 shadow-sm' : 'bg-white border-gray-100'}`}
+                                        className={`p-3 rounded-2xl border transition-all cursor-pointer ${!n.isRead ? 'bg-purple-50/50 border-purple-100' : 'bg-white border-gray-100'}`}
                                     >
-                                        <div className="flex justify-between items-start mb-1.5">
-                                            <span className="text-xs font-black text-gray-900 leading-none">{n.title}</span>
-                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="text-xs font-bold text-gray-900 leading-tight">{n.title}</span>
+                                            <span className="text-[9px] font-bold text-gray-400">
                                                 {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed">{n.message}</p>
+                                        <p className="text-[11px] text-gray-500 font-medium leading-snug">{n.message}</p>
                                     </div>
                                 )) : (
-                                    <div className="py-12 text-center">
-                                        <Bell size={40} className="mx-auto text-gray-200 mb-3" />
-                                        <p className="text-xs font-bold text-gray-400">All caught up!</p>
+                                    <div className="py-8 text-center">
+                                        <Bell size={32} className="mx-auto text-gray-200 mb-2" />
+                                        <p className="text-xs font-bold text-gray-400">No new notifications</p>
                                     </div>
                                 )}
                             </div>
-
-                            <button onClick={() => { setShowNotifications(false); navigate('/user/activity'); }} className="w-full mt-6 py-3 text-xs font-black text-[#843D9B] uppercase tracking-widest border border-[#843D9B]/10 rounded-2xl hover:bg-[#843D9B]/5 transition-all">
-                                View Activity History
-                            </button>
                         </motion.div>
                     </>
                 )}
