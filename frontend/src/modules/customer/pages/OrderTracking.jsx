@@ -603,7 +603,12 @@ const OrderTracking = () => {
                     </div>
 
                     <button 
-                        onClick={() => setShowOrderDetailsSection(prev => !prev)}
+                        onClick={() => {
+                            setShowOrderDetailsSection(true);
+                            setTimeout(() => {
+                                document.getElementById('order-details-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 50);
+                        }}
                         className="px-3.5 py-1.5 rounded-xl border border-[#843D9B] text-[#843D9B] text-xs font-bold hover:bg-[#843D9B]/5 transition-colors shrink-0 whitespace-nowrap"
                     >
                         View Details &gt;
@@ -946,7 +951,7 @@ const OrderTracking = () => {
 
                 {/* 4. Order Details Card */}
                 {showOrderDetailsSection && (
-                    <div className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm space-y-4">
+                    <div id="order-details-section" className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                             <ShoppingBag size={18} className="text-[#843D9B]" />
                             <h3 className="text-sm font-black text-gray-900">Order Details</h3>
