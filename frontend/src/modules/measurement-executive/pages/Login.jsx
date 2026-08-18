@@ -100,9 +100,18 @@ const MELogin = () => {
 
                 {/* Password Input Field */}
                 <div className="w-full text-left">
-                    <label className="text-xs font-semibold text-[#0F172A] block mb-1.5">
-                        Password
-                    </label>
+                    <div className="flex justify-between items-center mb-1.5">
+                        <label className="text-xs font-semibold text-[#0F172A]">
+                            Password
+                        </label>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/executive/forgot-password')}
+                            className="text-xs text-[#843D9B] font-bold hover:underline cursor-pointer"
+                        >
+                            Forgot password?
+                        </button>
+                    </div>
                     <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                         <Lock size={18} className="text-[#94A3B8] shrink-0" />
                         <input

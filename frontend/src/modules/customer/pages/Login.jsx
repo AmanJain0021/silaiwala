@@ -239,7 +239,7 @@ const Login = () => {
                         <div className="flex justify-end pt-2">
                             <button
                                 type="button"
-                                onClick={() => { setLoginMethod('otp'); setOtpSent(false); setError(''); }}
+                                onClick={() => navigate('/user/forgot-password')}
                                 className="text-xs font-bold text-[#843D9B] hover:underline cursor-pointer"
                             >
                                 Forgot Password?

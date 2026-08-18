@@ -73,6 +73,12 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
         }
     };
 
+    const filteredMeasurements = measurements.filter(m => {
+        if (!categoryName) return true;
+        if (!m.garmentType) return false;
+        return m.garmentType.toLowerCase().trim() === categoryName.toLowerCase().trim();
+    });
+
     return (
         <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
@@ -113,10 +119,10 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 </div>
 
                 {/* 1. Saved Measurement Profiles */}
-                {measurements.length > 0 && (
+                {filteredMeasurements.length > 0 && (
                     <div className="space-y-2">
-                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-1">Your Saved Profiles</p>
-                         {measurements.map(m => {
+                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-1">Your Saved Profiles for {categoryName}</p>
+                         {filteredMeasurements.map(m => {
                              const isSelected = selectedSavedProfile?._id === m._id && selectedType === 'saved';
                              return (
                                  <div

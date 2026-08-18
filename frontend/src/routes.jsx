@@ -27,10 +27,12 @@ import AdminLayout from './layouts/AdminLayout';
 // Auth Pages (now under customer module)
 const Login = React.lazy(() => import('./modules/customer/pages/Login'));
 const Signup = React.lazy(() => import('./modules/customer/pages/Signup'));
+const ForgotPassword = React.lazy(() => import('./modules/customer/pages/ForgotPassword'));
 
 // Tailor Module Pages
 const TailorLogin = React.lazy(() => import('./modules/tailor/pages/Login'));
 const TailorRegistration = React.lazy(() => import('./modules/tailor/pages/Registration'));
+const TailorForgotPassword = React.lazy(() => import('./modules/tailor/pages/ForgotPassword'));
 import CustomerLiveJourney from './modules/customer/pages/CustomerLiveJourney';
 import { UnderReview, RejectedPage } from './modules/tailor/pages/StatusPages';
 import TailorProtectedRoute from './modules/tailor/components/ProtectedRoute';
@@ -103,6 +105,7 @@ const LiveTracking = React.lazy(() => import('./modules/delivery/pages/LiveTrack
 // Measurement Executive Module
 const MELogin = React.lazy(() => import('./modules/measurement-executive/pages/Login'));
 const MESignup = React.lazy(() => import('./modules/measurement-executive/pages/Signup'));
+const MEForgotPassword = React.lazy(() => import('./modules/measurement-executive/pages/ForgotPassword'));
 const MEPendingApproval = React.lazy(() => import('./modules/measurement-executive/pages/PendingApproval'));
 const MEDashboard = React.lazy(() => import('./modules/measurement-executive/pages/Dashboard'));
 const MERequests = React.lazy(() => import('./modules/measurement-executive/pages/Requests'));
@@ -174,6 +177,7 @@ const AppRoutes = () => {
             <Route element={<AuthLayout />}>
                 <Route path="/user/login" element={<Login />} />
                 <Route path="/user/register" element={<Signup />} />
+                <Route path="/user/forgot-password" element={<ForgotPassword />} />
             </Route>
             
             <Route path="/user/legal/:type" element={<SharedLegalPage category="customer" />} />
@@ -261,6 +265,7 @@ const AppRoutes = () => {
                 <Route element={<TailorAuthLayout />}>
                     <Route path="/partner/login" element={<TailorLogin />} />
                     <Route path="/partner/signup" element={<TailorRegistration />} />
+                    <Route path="/partner/forgot-password" element={<TailorForgotPassword />} />
                     <Route path="/partner/register" element={<Navigate to="/partner/signup" replace />} />
                 </Route>
                 
@@ -323,6 +328,7 @@ const AppRoutes = () => {
                 <Route element={<MEAuthLayout />}>
                     <Route path="/executive/login" element={<MELogin />} />
                     <Route path="/executive/signup" element={<MESignup />} />
+                    <Route path="/executive/forgot-password" element={<MEForgotPassword />} />
                     <Route path="/executive/pending-approval" element={<MEPendingApproval />} />
                 </Route>
                 

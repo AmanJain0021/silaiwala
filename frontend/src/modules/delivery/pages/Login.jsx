@@ -184,7 +184,7 @@ const DeliveryLogin = () => {
                                     </label>
                                     <button
                                         type="button"
-                                        onClick={() => { setLoginMethod('otp'); setError(''); }}
+                                        onClick={() => navigate('/delivery/forgot-password')}
                                         className="text-xs text-[#843D9B] font-bold hover:underline cursor-pointer"
                                     >
                                         Forgot password?

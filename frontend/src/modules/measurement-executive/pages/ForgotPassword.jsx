@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import useAuthStore from '../../../store/authStore';
 import { validatePhone } from '../../../utils/validation';
 import api from '../../../utils/api';
-import { Lock, KeyRound, Truck, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Lock, KeyRound, Ruler, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const DeliveryForgotPassword = () => {
+const MEForgotPassword = () => {
     const navigate = useNavigate();
     const { sendOTP, resetPassword, isLoading } = useAuthStore();
     
@@ -44,8 +44,8 @@ const DeliveryForgotPassword = () => {
                 setSendingOtp(false);
                 return;
             }
-            if (checkRes.data.role !== 'delivery') {
-                setError('This number is not registered as a Delivery Partner.');
+            if (checkRes.data.role !== 'measurement_executive') {
+                setError('This number is not registered as an Executive.');
                 setSendingOtp(false);
                 return;
             }
@@ -102,7 +102,7 @@ const DeliveryForgotPassword = () => {
         try {
             await resetPassword(mobileNumber, otp, newPassword);
             toast.success('Password updated successfully!');
-            navigate('/delivery/login');
+            navigate('/executive/login');
         } catch (err) {
             setError(err.message || 'Failed to reset password');
         }
@@ -117,10 +117,10 @@ const DeliveryForgotPassword = () => {
         >
             <div className="w-full mb-4">
                 <button 
-                    onClick={() => navigate('/delivery/login')} 
+                    onClick={() => navigate('/executive/login')} 
                     className="flex items-center text-xs font-bold text-[#843D9B] hover:underline cursor-pointer"
                 >
-                    <ArrowLeft size={16} className="mr-1" /> Back to Delivery Login
+                    <ArrowLeft size={16} className="mr-1" /> Back to Executive Login
                 </button>
             </div>
 
@@ -129,21 +129,21 @@ const DeliveryForgotPassword = () => {
                 {step === 'reset' ? (
                     <CheckCircle2 className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} />
                 ) : (
-                    <Truck className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} />
+                    <Ruler className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} />
                 )}
             </div>
 
             {/* Title & Subtitle */}
             <div className="text-center mb-6 w-full">
                 <h1 className="text-2xl sm:text-[26px] font-bold text-[#0F172A] tracking-tight mb-1">
-                    {step === 'request' ? 'Delivery Password Reset' : step === 'verify' ? 'Verify OTP' : 'Set New Password'}
+                    {step === 'request' ? 'Executive Password Reset' : step === 'verify' ? 'Verify OTP' : 'Set New Password'}
                 </h1>
                 <p className="text-xs sm:text-[13px] font-medium text-[#64748B] max-w-[280px] mx-auto leading-relaxed">
                     {step === 'request' 
                         ? 'Enter your registered mobile number to receive a verification code.' 
                         : step === 'verify' 
                         ? 'Enter the OTP sent to your mobile.'
-                        : 'Create a new, strong password for your delivery account.'}
+                        : 'Create a new, strong password for your executive account.'}
                 </p>
             </div>
 
@@ -319,4 +319,4 @@ const DeliveryForgotPassword = () => {
     );
 };
 
-export default DeliveryForgotPassword;
+export default MEForgotPassword;

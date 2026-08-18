@@ -180,7 +180,7 @@ const TailorLogin = () => {
                                     </label>
                                     <button
                                         type="button"
-                                        onClick={() => { setLoginMethod('otp'); clearErrors('root'); }}
+                                        onClick={() => navigate('/partner/forgot-password')}
                                         className="text-xs text-[#843D9B] font-bold hover:underline cursor-pointer"
                                     >
                                         Forgot password?

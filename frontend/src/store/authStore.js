@@ -122,6 +122,24 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    resetPassword: async (phoneNumber, otp, newPassword) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post('/auth/reset-password', {
+                phoneNumber,
+                otp,
+                newPassword
+            });
+            set({ isLoading: false });
+            return response.data;
+        } catch (err) {
+            const data = err.response?.data;
+            const message = data?.message || 'Failed to reset password.';
+            set({ error: message, isLoading: false });
+            throw new Error(message);
+        }
+    },
+
     googleLogin: async (credential) => {
         set({ isLoading: true, error: null });
         try {
