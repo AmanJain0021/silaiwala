@@ -71,6 +71,8 @@ const AdminOrders = () => {
                 measurements: o.isMeasurementHome ? 'Tailor at Home' : 'Standard Profile',
                 isMeasurementHome: o.isMeasurementHome || false,
                 measurementExecutive: o.measurementRequest?.executive?.name || 'Unassigned',
+                itemMeasurements: o.items?.[0]?.measurements || null,
+                executiveReport: o.measurementRequest?.report || null,
                 trackingHistory: o.trackingHistory || [],
                 createdAt: o.createdAt,
                 deliveredAt: o.deliveredAt,
@@ -559,6 +561,42 @@ const AdminOrders = () => {
                                                 </p>
                                             </div>
                                         </div>
+                                        
+                                        {/* Dynamic Measurements preview in side drawer */}
+                                        {(selectedOrder.itemMeasurements || selectedOrder.executiveReport) && (
+                                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                                <p className="text-[9px] uppercase text-gray-400 font-bold mb-2 flex items-center gap-1.5"><Scissors size={10} /> Measurement Preview</p>
+                                                
+                                                {selectedOrder.itemMeasurements && Object.keys(selectedOrder.itemMeasurements).filter(k => k !== 'slipImage').length > 0 && (
+                                                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
+                                                        {Object.entries(selectedOrder.itemMeasurements).map(([key, val]) => (
+                                                            key !== 'slipImage' && val && typeof val !== 'object' && (
+                                                                <span key={key} className="text-[10px] text-gray-600 bg-gray-100/50 px-2 py-0.5 rounded">
+                                                                    <span className="text-gray-400 capitalize">{key}:</span> {val}"
+                                                                </span>
+                                                            )
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {selectedOrder.executiveReport?.formData && (
+                                                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
+                                                        {Object.entries(selectedOrder.executiveReport.formData).map(([key, val]) => (
+                                                            <span key={key} className="text-[10px] text-gray-600 bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-50">
+                                                                <span className="text-indigo-400 capitalize">{key}:</span> {val} {selectedOrder.executiveReport.unit || 'in'}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                <p 
+                                                    className="text-[9px] font-bold text-primary mt-2 italic flex items-center gap-1 cursor-pointer hover:underline" 
+                                                    onClick={() => handleManageOrderDetails(selectedOrder.fullId)}
+                                                >
+                                                    Click 'Manage Order Details' to view slips & full report
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -921,13 +959,21 @@ const AdminOrders = () => {
                                                                     <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Measurements</p>
                                                                     <div className="grid grid-cols-3 gap-x-4 gap-y-1">
                                                                         {Object.entries(item.measurements).map(([key, val]) => (
-                                                                            val && typeof val !== 'object' && (
+                                                                            key !== 'slipImage' && val && typeof val !== 'object' && (
                                                                                 <span key={key} className="text-[10px] text-gray-600">
                                                                                     <span className="text-gray-400 capitalize">{key}:</span> {val}"
                                                                                 </span>
                                                                             )
                                                                         ))}
                                                                     </div>
+                                                                    {item.measurements.slipImage && (
+                                                                        <div className="mt-2">
+                                                                            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Measurement Slip / Reference</p>
+                                                                            <a href={item.measurements.slipImage} target="_blank" rel="noopener noreferrer" className="inline-block p-1 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                                                                                <img src={item.measurements.slipImage} alt="Measurement Slip" className="h-16 w-16 object-cover rounded" />
+                                                                            </a>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -946,6 +992,53 @@ const AdminOrders = () => {
                                             </div>
                                         )}
                                     </div>
+                                    
+                                    {/* Measurement Executive Report */}
+                                    {manageOrderData.measurementRequest?.report && (
+                                        <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100 mt-4">
+                                            <h4 className="text-[10px] font-semibold uppercase text-indigo-500 tracking-wider mb-3 flex items-center gap-1.5">
+                                                <Scissors size={12} /> Measurement Executive Report
+                                            </h4>
+                                            {manageOrderData.measurementRequest.report.formData && (
+                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-2 mb-4">
+                                                    {Object.entries(manageOrderData.measurementRequest.report.formData).map(([key, val]) => (
+                                                        <div key={key} className="bg-white p-2 rounded-lg border border-indigo-50 shadow-sm text-center">
+                                                            <p className="text-[9px] text-gray-400 uppercase font-bold">{key}</p>
+                                                            <p className="text-xs font-black text-gray-900 mt-0.5">{val} <span className="text-[9px] text-gray-400">{manageOrderData.measurementRequest.report.unit || 'in'}</span></p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {manageOrderData.measurementRequest.report.notes && (
+                                                <div className="bg-white p-3 rounded-lg border border-indigo-50 shadow-sm mb-4">
+                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Executive Notes</p>
+                                                    <p className="text-xs text-gray-700">{manageOrderData.measurementRequest.report.notes}</p>
+                                                </div>
+                                            )}
+                                            <div className="flex flex-wrap gap-4">
+                                                {manageOrderData.measurementRequest.report.pdfUrl && (
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">PDF Report</p>
+                                                        <a href={manageOrderData.measurementRequest.report.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white border border-indigo-100 px-3 py-2 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm">
+                                                            📄 View PDF
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                {manageOrderData.measurementRequest.report.photos?.length > 0 && (
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Reference Photos</p>
+                                                        <div className="flex gap-2">
+                                                            {manageOrderData.measurementRequest.report.photos.map((photo, i) => (
+                                                                <a key={i} href={photo} target="_blank" rel="noopener noreferrer" className="block border border-indigo-100 rounded-xl overflow-hidden shadow-sm hover:opacity-80 transition">
+                                                                    <img src={photo} alt="Ref" className="h-10 w-10 object-cover" />
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Price Breakdown */}

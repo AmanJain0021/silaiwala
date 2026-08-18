@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-    User, ShoppingBag, MapPin, Ruler, Grid, LogOut, Wallet, Star,
-    Settings, Headset, ChevronRight, Share2, Heart, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Sparkles, Package, Trash2, AlertTriangle, Crown
+    ShoppingBag, MapPin, Ruler, LogOut, Wallet, Star,
+    Settings, ChevronRight, Share2, MessageSquare, FileText, Shield, Ticket, Bell, Globe, Package, Trash2, AlertTriangle, Crown, Map
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../../store/authStore';
 import BottomNav from '../components/BottomNav';
@@ -32,19 +32,13 @@ const LegalLinks = () => {
     if (docs.length === 0) return null;
 
     return (
-        <div className="mt-8 space-y-4">
-            <div className="flex items-center gap-2 mb-2 px-1">
-                <div className="p-1 px-1.5 bg-[#843D9B] rounded text-white italic">
-                    <FileText size={12} strokeWidth={3} />
-                </div>
-                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] italic">Legal & Policies</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="mb-6">
+            <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Legal & Policies</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {docs.map((doc) => (
                     <MenuOption
                         key={doc._id}
                         icon={Shield}
-                        color="bg-[#843D9B]"
                         label={doc.title}
                         subLabel={`Official ${doc.title} document`}
                         to={`/user/legal/${doc.slug}`}
@@ -65,9 +59,40 @@ const ProfilePage = () => {
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const appName = useBrandingStore(state => state.appName);
+    
+    const [activeOrder, setActiveOrder] = useState(null);
+    const [savedProfiles, setSavedProfiles] = useState([]);
 
     useEffect(() => {
         fetchProfile();
+        
+        // Fetch active order
+        const fetchActiveOrder = async () => {
+            try {
+                const res = await api.get('/orders/customer/my-orders');
+                if (res.data.success && res.data.data) {
+                    const active = res.data.data.find(o => !['delivered', 'cancelled', 'returned'].includes(o.orderStatus?.toLowerCase()));
+                    if (active) setActiveOrder(active);
+                }
+            } catch (e) {
+                // Ignore
+            }
+        };
+        
+        // Fetch saved measurements
+        const fetchMeasurements = async () => {
+            try {
+                const res = await api.get('/customers/measurements/profiles');
+                if (res.data.success && res.data.data) {
+                    setSavedProfiles(res.data.data.slice(0, 5)); // show up to 5
+                }
+            } catch (e) {
+                // Ignore
+            }
+        };
+        
+        fetchActiveOrder();
+        fetchMeasurements();
     }, [fetchProfile]);
 
     const handleLogout = async () => {
@@ -119,123 +144,188 @@ const ProfilePage = () => {
     }, [profile, authUser, storedUser]);
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 md:pb-8 font-sans text-gray-900">
+        <div className="min-h-screen bg-[#F8F9FB] pb-24 font-sans text-gray-900 w-full flex flex-col items-center overflow-x-hidden">
             {/* 1. Header & Stats */}
             <ProfileHeader user={displayUser} stats={profile?.stats} />
 
-            <div className="max-w-4xl mx-auto px-3 md:px-6 -mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-full max-w-[412px] px-4 pt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                {/* Account Section */}
-                <div className="mb-4">
-                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Account Management</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
+                {/* Current Order (Conditionally Rendered if active) */}
+                {activeOrder && (
+                    <div className="mb-6 bg-white rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-100 flex items-center justify-between gap-3 relative overflow-hidden">
+                        <div className="w-14 h-14 bg-gray-100 rounded-xl shrink-0 overflow-hidden">
+                            {activeOrder.items?.[0]?.product?.images?.[0] ? (
+                                <img src={activeOrder.items[0].product.images[0]} alt="Product" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                    <Package size={24} />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 block">Current Order</span>
+                            <h4 className="text-[13px] font-bold text-gray-900 truncate mb-1">
+                                {activeOrder.items?.[0]?.product?.name || `Order #${activeOrder.orderId?.slice(-6)}`}
+                            </h4>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-4 h-4 bg-[#843D9B]/10 rounded flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-[#843D9B] rounded-full animate-pulse" />
+                                </div>
+                                <span className="text-[10px] font-bold text-[#843D9B]">{activeOrder.orderStatus || 'Processing'}</span>
+                            </div>
+                        </div>
+                        <div className="shrink-0 flex flex-col items-end">
+                            <span className="text-[8px] text-gray-400 font-bold mb-1 uppercase tracking-wider">ETA</span>
+                            <span className="text-[10px] font-bold text-gray-700 mb-2">Tomorrow, 10:30 AM</span>
+                            <Link to={`/user/orders/${activeOrder._id}`} className="bg-[#843D9B] hover:bg-[#713286] text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors">
+                                <MapPin size={10} /> Track Order
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
+                {/* Account Management */}
+                <div className="mb-6">
+                    <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Account Management</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <MenuOption
                             icon={ShoppingBag}
-                            color="bg-[#843D9B]"
                             label="My Orders"
-                            subLabel="Track, Return, Feedback"
+                            subLabel="Track, cancel, reorder"
                             to="/user/orders"
                         />
                         <MenuOption
                             icon={MapPin}
-                            color="bg-[#843D9B]"
                             label="Saved Addresses"
-                            subLabel="Manage Pickup & Delivery locations"
+                            subLabel="Manage delivery"
                             to="/user/profile/addresses"
                         />
                         <MenuOption
                             icon={Ruler}
-                            color="bg-[#843D9B]"
                             label="My Measurements"
-                            subLabel="Saved Body Profiles"
+                            subLabel="Saved body profiles"
                             to="/user/profile/measurements"
                         />
                         <MenuOption
                             icon={Package}
-                            color="bg-[#843D9B]"
                             label="Bulk Inquiries"
-                            subLabel="Wholesale & Corporate Tracking"
+                            subLabel="Wholesale & corporate"
                             to="/user/bulk-orders"
                         />
                     </div>
                 </div>
 
-                {/* Rewards & Benefits Section */}
-                <div className="mb-4">
-                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Rewards & Benefits</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
+
+
+                {/* Rewards & Benefits Section (Horizontal Scroll) */}
+                <div className="mb-6">
+                    <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Rewards & Benefits</h3>
+                    <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 custom-scrollbar hide-scroll-indicator scroll-smooth">
                         <MenuOption
+                            layout="vertical"
                             icon={Star}
-                            color="bg-[#843D9B]"
+                            color="text-[#843D9B]"
                             label="Loyalty Points"
-                            subLabel="View your earned points"
-                            extra={<span className="bg-gray-100 text-[10px] font-black px-2.5 py-1 rounded-full text-gray-900 border border-gray-200">{displayUser.loyaltyPoints || 0}</span>}
+                            subLabel={`${displayUser.loyaltyPoints || 0} Points`}
                             to="/user/loyalty"
                         />
                         <MenuOption
+                            layout="vertical"
                             icon={Crown}
-                            color="bg-[#843D9B]"
+                            color="text-orange-500"
                             label="Membership"
-                            subLabel="Redeem plans with points"
+                            subLabel="Elite Member"
                             to="/user/membership"
                         />
                         <MenuOption
+                            layout="vertical"
                             icon={Wallet}
-                            color="bg-[#843D9B]"
+                            color="text-indigo-600"
                             label="Wallet"
-                            subLabel="View your balance"
+                            subLabel={`₹${profile?.walletBalance || '0.00'}`}
                             to="/user/wallet"
                         />
                         <MenuOption
+                            layout="vertical"
                             icon={Ticket}
-                            color="bg-[#843D9B]"
+                            color="text-[#843D9B]"
                             label="Coupons"
-                            subLabel="View available offers"
+                            subLabel="5 Available"
                             to="/user/coupons"
                         />
                         <MenuOption
+                            layout="vertical"
                             icon={Share2}
-                            color="bg-[#843D9B]"
+                            color="text-pink-500"
                             label="Refer & Earn"
-                            subLabel="Invite friends, earn rewards"
-                            extra={<span className="bg-[#843D9B] text-[8px] font-black px-2 py-0.5 rounded-full text-white animate-pulse">NEW</span>}
+                            subLabel="Earn Rewards"
+                            extra={<span className="absolute -top-2 -right-2 bg-pink-500 text-[8px] font-black px-2 py-0.5 rounded-full text-white shadow-sm transform rotate-12 animate-pulse">NEW</span>}
                             to="/user/refer"
                         />
                     </div>
                 </div>
 
+                {/* Membership Banner */}
+                <div className="mb-6 bg-[#25103E] rounded-2xl p-4 text-white shadow-xl flex items-center justify-between group cursor-pointer relative overflow-hidden" onClick={() => navigate('/user/membership')}>
+                    {/* Background glow */}
+                    <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+                    <div className="flex items-start gap-4 relative z-10">
+                        <div className="w-12 h-12 flex items-center justify-center shrink-0 text-[#FFB800]">
+                            <Crown size={32} strokeWidth={1.5} />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold mb-1 tracking-tight">SewZella Elite Membership</h4>
+                            <p className="text-[9px] text-gray-300 font-medium leading-relaxed max-w-[180px]">
+                                You are enjoying FREE Pickup, Priority Support & Exclusive Discounts
+                            </p>
+                        </div>
+                    </div>
+                    <button className="shrink-0 bg-white text-[#25103E] px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 group-hover:bg-gray-100 transition-colors">
+                        View Benefits <ChevronRight size={12} />
+                    </button>
+                </div>
+
                 {/* Settings Section */}
-                <div className="mb-4">
-                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-2 italic">Settings</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
+                <div className="mb-6">
+                    <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Settings & Support</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <MenuOption
                             icon={Globe}
-                            color="bg-[#843D9B]"
                             label="Language"
-                            subLabel="Change app language"
-                            extra={<span className="text-[10px] font-bold text-gray-400 mr-1">EN</span>}
+                            subLabel="English"
                             to="/user/language"
                         />
                         <MenuOption
                             icon={Bell}
-                            color="bg-[#843D9B]"
                             label="Notifications"
                             subLabel="Manage preferences"
                             to="/user/notifications"
                         />
                         <MenuOption
+                            icon={Wallet}
+                            label="Payment Methods"
+                            subLabel="UPI, Cards, Wallets"
+                            to="/user/payments"
+                        />
+                        <MenuOption
                             icon={MessageSquare}
-                            color="bg-[#843D9B]"
                             label="Support"
-                            subLabel="Get help & chat with us"
+                            subLabel="Help center & chat"
                             to="/user/support"
+                        />
+                        <MenuOption
+                            icon={Map} // Placeholder for FAQ icon
+                            label="Help & FAQs"
+                            subLabel="Find answers quickly"
+                            to="/user/faq"
                         />
                     </div>
                 </div>
 
                 <LegalLinks />
 
-                <div className="max-w-md mx-auto sm:max-w-none px-2 mt-8">
+                {/* Test Push & Logout */}
+                <div className="mt-8 mb-4 space-y-2">
                     <button
                         onClick={async () => {
                             try {
@@ -246,67 +336,58 @@ const ProfilePage = () => {
                                 toast.error('Failed to send test push: ' + (err.response?.data?.message || err.message), { position: 'bottom-center' });
                             }
                         }}
-                        className="w-full mb-4 flex items-center justify-between p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 group hover:bg-indigo-50 transition-all duration-300 active:scale-[0.98]"
+                        className="w-full flex items-center justify-between p-3.5 bg-indigo-50/50 rounded-2xl border border-indigo-100 hover:bg-indigo-50 transition-all group"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
-                                <Bell size={20} strokeWidth={2.5} />
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 transition-transform group-hover:scale-105">
+                                <Bell size={18} />
                             </div>
                             <div className="text-left">
-                                <h4 className="text-sm font-black text-[#843D9B] uppercase tracking-wider italic">Test Push</h4>
-                                <p className="text-[10px] font-bold text-indigo-400">Send a test notification</p>
+                                <h4 className="text-xs font-bold text-indigo-900">Test Push Notification</h4>
+                                <p className="text-[10px] text-indigo-500 mt-0.5">Send a test alert to this device</p>
                             </div>
                         </div>
                         <ChevronRight size={16} className="text-indigo-300" />
                     </button>
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 group hover:bg-red-50 transition-all duration-300 active:scale-[0.98]"
+                        className="w-full flex items-center justify-between p-3.5 bg-red-50/50 rounded-2xl border border-red-100 hover:bg-red-50 transition-all group"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-gray-200 group-hover:rotate-6 transition-transform">
-                                <LogOut size={20} strokeWidth={2.5} />
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 transition-transform group-hover:scale-105">
+                                <LogOut size={18} />
                             </div>
                             <div className="text-left">
-                                <h4 className="text-sm font-black text-red-600 uppercase tracking-wider italic">Logout Account</h4>
-                                <p className="text-[10px] font-bold text-red-400">Sign out from this device</p>
+                                <h4 className="text-xs font-bold text-red-700">Logout Account</h4>
+                                <p className="text-[10px] text-red-500 mt-0.5">Sign out from this device</p>
                             </div>
                         </div>
                         <ChevronRight size={16} className="text-red-300" />
                     </button>
                 </div>
 
-                <div className="max-w-md mx-auto sm:max-w-none px-2 mt-4">
+                <div className="mt-2 mb-8">
                     <button
                         onClick={() => setShowDeleteModal(true)}
-                        className="w-full flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-200 group hover:bg-red-50 hover:border-red-200 transition-all duration-300 active:scale-[0.98]"
+                        className="w-full py-3 rounded-2xl border border-red-100 text-red-500 text-xs font-bold hover:bg-red-50 transition-colors"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-100 group-hover:rotate-6 transition-transform">
-                                <Trash2 size={20} strokeWidth={2.5} />
-                            </div>
-                            <div className="text-left">
-                                <h4 className="text-sm font-black text-red-600 uppercase tracking-wider italic">Delete Account</h4>
-                                <p className="text-[10px] font-bold text-red-400">Permanently remove your account</p>
-                            </div>
-                        </div>
-                        <ChevronRight size={16} className="text-red-300" />
+                        Delete Account
                     </button>
                 </div>
 
-                <p className="text-center text-[10px] font-bold text-gray-400 mt-10 pb-6 uppercase tracking-widest opacity-50">
-                    {appName} • Version 1.0.0 (Beta)
+                <p className="text-center text-[9px] font-bold text-gray-400 pb-6 uppercase tracking-widest opacity-60">
+                    {appName} • Version 1.0.0
                 </p>
 
             {/* Delete Account Confirmation Modal */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowDeleteModal(false)}>
-                    <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}>
+                    <div className="bg-white w-full max-w-sm rounded-[24px] shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="flex flex-col items-center text-center gap-3">
-                            <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center">
-                                <AlertTriangle size={28} className="text-red-600" />
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                                <AlertTriangle size={24} className="text-red-600" />
                             </div>
-                            <h3 className="text-lg font-black text-gray-900 tracking-tight">Delete Account?</h3>
+                            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Delete Account?</h3>
                             <p className="text-xs text-gray-500 leading-relaxed">This action is <span className="font-bold text-red-600">permanent</span> and cannot be undone. All your data, orders, and measurements will be lost forever.</p>
                         </div>
                         <div>
@@ -319,19 +400,19 @@ const ProfilePage = () => {
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold text-center tracking-widest focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
                             />
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex gap-2">
                             <button
                                 onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-all"
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-gray-200 transition-all"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDeleteAccount}
                                 disabled={deleteConfirmText !== 'DELETE' || isDeleting}
-                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                                {isDeleting ? 'Deleting...' : 'Delete'}
                             </button>
                         </div>
                     </div>

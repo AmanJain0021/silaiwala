@@ -172,6 +172,11 @@ const Products = () => {
             }
         }
 
+        if (!newItem.image) {
+            toast.error(`Please upload an image for your ${activeTab === 'samples' ? 'service' : 'product'}!`);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             let endpoint = '';

@@ -135,9 +135,9 @@ const MELogin = () => {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    disabled={loading || !email || !password}
+                    disabled={loading}
                     className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${
-                        loading || !email || !password
+                        loading
                             ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
                             : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
                     }`}

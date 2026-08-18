@@ -84,8 +84,7 @@ const ServiceCard = ({ service }) => {
 
 const CategoryCompareSection = ({ categories }) => {
     const navigate = useNavigate();
-    // Only show categories that have minPrice and maxPrice set
-    const comparableCategories = categories.filter(c => c.minPrice != null && c.maxPrice != null);
+    const comparableCategories = categories;
 
     if (comparableCategories.length === 0) return null;
 
@@ -121,7 +120,9 @@ const CategoryCompareSection = ({ categories }) => {
                             </span>
                         </div>
                         <div className="text-sm font-black text-primary">
-                            ₹{cat.minPrice} – ₹{cat.maxPrice}
+                            {cat.minPrice != null && cat.maxPrice != null 
+                                ? `₹${cat.minPrice} – ₹${cat.maxPrice}` 
+                                : 'View Prices'}
                         </div>
                         <div className="flex items-center gap-1 mt-2 text-[9px] font-bold text-primary/70 group-hover:text-primary transition-colors">
                             Compare Prices <ArrowRight size={10} />

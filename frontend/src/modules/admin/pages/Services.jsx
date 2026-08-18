@@ -153,7 +153,7 @@ const AdminServices = () => {
     const [pendingProducts, setPendingProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [newService, setNewService] = useState({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png', styles: [], measurementFields: [], styleAddons: [] });
+    const [newService, setNewService] = useState({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: '', styles: [], measurementFields: [], styleAddons: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImageUploading, setIsImageUploading] = useState(false);
     const [viewingDetailItem, setViewingDetailItem] = useState(null); // { item, itemType: 'service'|'product', isPending: boolean }
@@ -368,9 +368,25 @@ const AdminServices = () => {
         }
     };
 
+    const handleDeleteTailorService = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this tailor service? It will be removed from the customer app.')) return;
+        try {
+            await api.delete(`/services/${id}`);
+            toast.success('Service deleted and removed from customer app');
+            fetchTailorServices();
+        } catch (error) {
+            if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
+            console.error('Failed to delete service:', error);
+            toast.error('Failed to delete service');
+        }
+    };
+
     const handleAddService = async () => {
         if (!newService.title || newService.price === '' || newService.price === null || newService.price === undefined) {
             return toast.error('Please fill all required fields');
+        }
+        if (!newService.image || newService.image === 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png') {
+            return toast.error('Please upload an image for the category');
         }
         if (Number(newService.price) < 0) {
             return toast.error('Base price cannot be negative');
@@ -400,7 +416,7 @@ const AdminServices = () => {
             await api.post('/admin/categories', payload);
             toast.success('Category added successfully');
             setIsAddModalOpen(false);
-            setNewService({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png', styles: [], measurementFields: [], styleAddons: [] });
+            setNewService({ title: '', price: '', minPrice: '', maxPrice: '', deliveryTime: '', description: '', type: 'service', gender: 'all', image: '', styles: [], measurementFields: [], styleAddons: [] });
             fetchCategories();
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
@@ -414,6 +430,9 @@ const AdminServices = () => {
     const handleEditService = async () => {
         if (!editingCategory || !editingCategory.name || editingCategory.basePrice === '' || editingCategory.basePrice === null || editingCategory.basePrice === undefined) {
             return toast.error('Please fill all required fields');
+        }
+        if (!editingCategory.image || editingCategory.image === 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png') {
+            return toast.error('Please upload an image for the category');
         }
         if (Number(editingCategory.basePrice) < 0) {
             return toast.error('Base price cannot be negative');
@@ -644,7 +663,7 @@ const AdminServices = () => {
                                                             basePrice: service.basePrice ?? service.price ?? '',
                                                             deliveryTime: service.deliveryTime || '',
                                                             description: service.description || '',
-                                                            image: service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png',
+                                                            image: service.image || '',
                                                             gender: service.gender || 'all',
                                                             styles: service.styles || [],
                                                             measurementFields: service.measurementFields || []
@@ -717,6 +736,13 @@ const AdminServices = () => {
                                                                         title="Edit Base Price"
                                                                     >
                                                                         <Edit2 size={12} />
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleDeleteTailorService(service._id); }}
+                                                                        className="p-1 text-gray-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                                                                        title="Delete Service"
+                                                                    >
+                                                                        <Trash2 size={12} />
                                                                     </button>
                                                                 </div>
                                                             </div>

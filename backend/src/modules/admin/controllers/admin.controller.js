@@ -826,6 +826,20 @@ exports.getAllOrders = async (req, res) => {
       Order.countDocuments({ ...query, 'items.product': { $exists: true, $ne: null } })
     ]);
 
+    const MeasurementReport = require("../../../models/MeasurementReport.js");
+    const reports = await MeasurementReport.find({ order: { $in: orders.map(o => o._id) } }).lean();
+
+    const ordersWithReports = orders.map(order => {
+      const orderObj = order.toObject ? order.toObject() : order;
+      if (orderObj.measurementRequest) {
+        const report = reports.find(r => r.order.toString() === orderObj._id.toString());
+        if (report) {
+          orderObj.measurementRequest.report = report;
+        }
+      }
+      return orderObj;
+    });
+
     res.status(200).json({ 
       success: true, 
       count: orders.length, 
@@ -833,7 +847,7 @@ exports.getAllOrders = async (req, res) => {
       totalStitching,
       totalStore,
       pages: Math.ceil(total / limit),
-      data: orders 
+      data: ordersWithReports 
     });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -860,7 +874,16 @@ exports.getOrderById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
     
-    res.status(200).json({ success: true, data: order });
+    const MeasurementReport = require("../../../models/MeasurementReport.js");
+    const orderObj = order.toObject ? order.toObject() : order;
+    if (orderObj.measurementRequest) {
+        const report = await MeasurementReport.findOne({ order: orderObj._id }).lean();
+        if (report) {
+            orderObj.measurementRequest.report = report;
+        }
+    }
+    
+    res.status(200).json({ success: true, data: orderObj });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     res.status(500).json({ success: false, message: error.message });
