@@ -495,12 +495,26 @@ const ServiceDetail = () => {
         return false;
     };
 
+    const hasSelfMeasurements = Boolean(
+        selectedSavedProfile ||
+        measurements?.isConfirmed ||
+        measurements?.type === 'self' ||
+        (measurements?.data && Object.entries(measurements.data).some(([key, val]) => key !== 'notes' && val !== '' && val != null))
+    );
+
     const isMeasurementValid = Boolean(
         isAlteration ||
         measurementType === 'home' ||
         measurementType === 'sample' ||
-        (selectedSavedProfile && (measurementType === 'saved' || !measurementType)) ||
-        (measurements && (measurements.isConfirmed || measurements.type || measurements.url || measurements.slipUrl))
+        measurements?.sampleGarment ||
+        selectedSavedProfile ||
+        hasSelfMeasurements ||
+        measurements?.isConfirmed ||
+        measurements?.type === 'slip' ||
+        measurements?.image ||
+        measurements?.url ||
+        measurements?.slipUrl ||
+        measurements?.file
     );
 
 
@@ -770,25 +784,45 @@ const ServiceDetail = () => {
                             categoryName={serviceData?.category?.name || serviceData?.title}
                             onSelectType={(type) => {
                                 if (type === 'home') {
+                                    if (hasSelfMeasurements) return;
                                     setMeasurementType('home');
                                     setIsTailorAtHome(true);
                                     setMeasurements({ type: 'home' });
                                 } else if (type === 'sample') {
                                     setIsTailorAtHome(false);
                                     setMeasurementType('sample');
-                                    setMeasurements({ type: 'sample', notes: 'Partner will pickup sample garment with fabric' });
-                                } else {
+                                    setMeasurements((prev) => {
+                                        if (prev && (prev.isConfirmed || prev.type === 'self' || prev.type === 'slip' || prev.image || prev.url || prev.slipUrl)) {
+                                            return { ...prev, sampleGarment: true };
+                                        }
+                                        return { type: 'sample', notes: 'Partner will pickup sample garment with fabric' };
+                                    });
+                                } else if (type) {
                                     setIsTailorAtHome(false);
                                     setMeasurementType(type);
-                                    if (!type) {
-                                        setSelectedSavedProfile(null);
-                                        setMeasurements(null);
-                                    }
+                                } else if (measurementType === 'home') {
+                                    setIsTailorAtHome(false);
+                                    setMeasurementType(null);
+                                    setMeasurements((prev) => (prev?.type === 'home' ? null : prev));
                                 }
+                                // Collapse after self/slip complete: keep measurements so Book Now stays enabled
                             }}
-                            onMeasurementComplete={setMeasurements}
+                            onMeasurementComplete={(data) => {
+                                if (!data) return;
+                                setMeasurements((prev) => {
+                                    if (prev && (prev.isConfirmed || prev.type === 'self') && data.type === 'slip') {
+                                        return { ...prev, ...data, type: 'self', slipAttached: true };
+                                    }
+                                    if (prev?.sampleGarment) {
+                                        return { ...prev, ...data, sampleGarment: true };
+                                    }
+                                    return data;
+                                });
+                            }}
                             selectedSavedProfile={selectedSavedProfile}
                             onSelectSavedProfile={setSelectedSavedProfile}
+                            disableHomeVisit={hasSelfMeasurements}
+                            completedSelfData={measurements?.type === 'self' || measurements?.isConfirmed ? measurements : null}
                         />
                     </section>
                 )}

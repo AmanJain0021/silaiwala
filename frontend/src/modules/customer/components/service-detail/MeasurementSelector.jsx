@@ -6,17 +6,23 @@ import UploadSlip from './measurement-forms/UploadSlip';
 import MeasurementGuideModal from './MeasurementGuideModal';
 import useMeasurementStore from '../../../../store/measurementStore';
 
-const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName }) => {
+const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, disableHomeVisit = false, completedSelfData = null }) => {
     const { measurements, fetchMeasurements, isLoading } = useMeasurementStore();
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     
     // Local state to track if a valid measurement has been provided for each type
     const [completedMeasurements, setCompletedMeasurements] = useState({
-        new: false,
+        new: !!(completedSelfData?.isConfirmed || completedSelfData?.type === 'self'),
         upload: false,
         home: false,
         saved: !!selectedSavedProfile
     });
+
+    React.useEffect(() => {
+        if (completedSelfData?.isConfirmed || completedSelfData?.type === 'self') {
+            setCompletedMeasurements(prev => (prev.new ? prev : { ...prev, new: true }));
+        }
+    }, [completedSelfData]);
 
     React.useEffect(() => {
         fetchMeasurements();
@@ -50,10 +56,10 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
     };
 
     const handleUploadComplete = (data) => {
-        const hasUpload = !!(data && (data.url || data.slipUrl || data.file));
+        const hasUpload = !!(data && (data.url || data.slipUrl || data.file || data.image));
         setCompletedMeasurements(prev => ({ ...prev, upload: hasUpload }));
-        onMeasurementComplete(hasUpload ? data : null);
         if (hasUpload) {
+            onMeasurementComplete(data);
             onSelectType(null); // Auto-close/collapse upload card upon completion
         }
     };
@@ -207,7 +213,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     {/* Expandable Form */}
                     {selectedType === 'new' && (
                         <SelfMeasureForm
-                            initialData={typeof measurements === 'object' ? (measurements.data || measurements) : null}
+                            initialData={completedSelfData?.data || completedSelfData || null}
                             onSave={handleSelfMeasureSave}
                             onCancel={() => onSelectType(null)}
                             onOpenGuide={() => setIsGuideOpen(true)}
@@ -282,9 +288,10 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     )}
                 </div>
 
-                {/* 4. Tailor at Home (Visit) */}
+                {/* 4. Tailor at Home (Visit) — disabled once self/saved measurements are confirmed */}
                 <div
                     onClick={() => {
+                        if (disableHomeVisit) return;
                         if (selectedType === 'home') {
                             onSelectType(null);
                         } else {
@@ -292,8 +299,12 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                         }
                     }}
                     className={cn(
-                        "group p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden",
-                        selectedType === 'home' ? "border-primary bg-indigo-50 ring-1 ring-primary shadow-sm" : "border-gray-100 bg-white hover:border-gray-200"
+                        "group p-3 rounded-xl border transition-all flex items-center gap-3 relative overflow-hidden",
+                        disableHomeVisit
+                            ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+                            : selectedType === 'home'
+                                ? "border-primary bg-indigo-50 ring-1 ring-primary shadow-sm cursor-pointer"
+                                : "border-gray-100 bg-white hover:border-gray-200 cursor-pointer"
                     )}
                 >
                     <div className={cn(
@@ -308,13 +319,17 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                             <span className="text-[8px] bg-primary-soft text-primary px-1.5 py-0.5 rounded font-black uppercase tracking-widest">Premium</span>
                         </div>
                         <p className="text-[10px] text-gray-400 font-medium leading-none mt-1">
-                            {isDistanceBased ? 'Expert will visit your location' : 'Expert visits start at base price'}
+                            {disableHomeVisit
+                                ? 'Not needed — measurements already provided'
+                                : isDistanceBased
+                                    ? 'Expert will visit your location'
+                                    : 'Expert visits start at base price'}
                         </p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs font-black text-primary flex flex-col items-end">
-                            <span className="text-[8px] text-gray-400 mb-0.5">{!isDistanceBased && 'starts @'}</span>
-                            ₹{visitPrice || 250}
+                            <span className="text-[8px] text-gray-400 mb-0.5">{!isDistanceBased && !disableHomeVisit && 'starts @'}</span>
+                            {disableHomeVisit ? '—' : `₹${visitPrice || 250}`}
                         </p>
                     </div>
                     {selectedType === 'home' && (
@@ -371,7 +386,9 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 isOpen={isGuideOpen}
                 onClose={() => setIsGuideOpen(false)}
                 onSelectAddMeasurements={() => onSelectType('new')}
-                onBookHomeVisit={() => onSelectType('home')}
+                onBookHomeVisit={() => {
+                    if (!disableHomeVisit) onSelectType('home');
+                }}
             />
         </div>
     );
