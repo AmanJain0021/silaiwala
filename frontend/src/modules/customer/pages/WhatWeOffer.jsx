@@ -1,67 +1,63 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Scissors, ClipboardList, Users, Sparkles, Heart, Layers, Feather, Ruler, Wand2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 
 const WhatWeOffer = () => {
     const navigate = useNavigate();
 
-    const ICON_COLOR = "#FFFFFF";
-    const ICON_SIZE = 28;
-    const STROKE_WIDTH = 1.5;
-
     const services = [
         {
             label: 'Tailors',
-            icon: <Users size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/service_icon_0.png',
             path: '/user/tailors',
             desc: 'Find expert tailors near you'
         },
         {
             label: 'My Orders',
-            icon: <ClipboardList size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/offer_my_orders.png',
             path: '/user/orders',
             desc: 'Track and manage your orders'
         },
         {
             label: 'Stitching',
-            icon: <Scissors size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/service_icon_1.png',
             path: '/user/services',
             desc: 'Custom stitching services'
         },
         {
             label: 'Style Add-ons',
-            icon: <Sparkles size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/service_icon_2.png',
             path: '/user/embellishments',
             desc: 'Enhance your outfits'
         },
         {
             label: 'Bridal',
-            icon: <Heart size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/service_icon_3.png',
             path: '/user/tailors?service=bridal',
             desc: 'Exclusive bridal collections'
         },
         {
             label: 'Bulk Order',
-            icon: <Layers size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/offer_bulk_order.png',
             path: '/user/bulk-order',
             desc: 'Corporate and group orders'
         },
         {
             label: 'Embroidery',
-            icon: <Feather size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/offer_embroidery.png',
             path: '/user/embroidery',
             desc: 'Custom embroidery designs'
         },
         {
             label: 'Alteration',
-            icon: <Ruler size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/offer_alteration.png',
             path: '/user/alteration',
             desc: 'Perfect fit alterations'
         },
         {
             label: 'Custom Design',
-            icon: <Wand2 size={ICON_SIZE} color={ICON_COLOR} strokeWidth={STROKE_WIDTH} />,
+            imgSrc: '/icons/offer_custom_design.png',
             path: '/user/custom-design',
             desc: 'Design your dream outfit'
         }
@@ -87,13 +83,13 @@ const WhatWeOffer = () => {
                         <div 
                             key={index}
                             onClick={() => navigate(service.path)}
-                            className="bg-white rounded-3xl p-6 flex flex-col items-center text-center cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 group"
+                            className="bg-white rounded-3xl p-4 sm:p-6 flex flex-col items-center text-center cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                         >
-                            <div className="w-16 h-16 bg-[#843D9B] rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-900/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                                {service.icon}
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#F3EAFF] flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+                                <img src={service.imgSrc} alt={service.label} className="w-[85%] h-[85%] object-contain object-top mix-blend-multiply -mt-1" />
                             </div>
-                            <h3 className="font-black text-gray-900 text-sm uppercase tracking-wider mb-2 group-hover:text-[#843D9B] transition-colors">{service.label}</h3>
-                            <p className="text-[10px] text-gray-500 font-medium leading-relaxed">{service.desc}</p>
+                            <h3 className="font-black text-gray-900 text-[11px] sm:text-sm uppercase tracking-wider mb-1 sm:mb-2 group-hover:text-[#843D9B] transition-colors">{service.label}</h3>
+                            <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-relaxed">{service.desc}</p>
                         </div>
                     ))}
                 </div>
