@@ -1124,6 +1124,20 @@ const Orders = () => {
                                             )}
                                         </div>
                                     )}
+
+                                    {(item.styleAddons || item.addons || []).length > 0 && (
+                                        <div className="mt-3 p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100 space-y-1.5">
+                                            <p className="text-[10px] font-black uppercase text-indigo-700 tracking-wider">
+                                                Style Add-ons ({(item.styleAddons || item.addons).length})
+                                            </p>
+                                            {(item.styleAddons || item.addons).map((addon, aIdx) => (
+                                                <div key={addon._id || aIdx} className="flex justify-between text-[11px] font-bold text-gray-800">
+                                                    <span className="truncate pr-2">{addon.name}</span>
+                                                    <span className="text-[#843D9B] shrink-0">₹{Number(addon.price || 0).toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -1149,13 +1163,42 @@ const Orders = () => {
                             )}
                             {order.items?.map((item, idx) => {
                                 const measurements = item.measurements || {};
-                                // Handle both plain object and possible Map (though lean() should make it an object)
-                                const entries = Object.entries(
-                                    measurements instanceof Map ? Object.fromEntries(measurements) : measurements
-                                ).filter(([key]) => key !== 'type' && key !== 'slipImage' && key !== 'notes');
+                                const mObj =
+                                    measurements instanceof Map
+                                        ? Object.fromEntries(measurements)
+                                        : measurements;
+                                const slipSrc =
+                                    mObj.slipImage || mObj.image || mObj.url || mObj.slipUrl || '';
+                                const META_KEYS = new Set([
+                                    'type',
+                                    'slipImage',
+                                    'image',
+                                    'url',
+                                    'slipUrl',
+                                    'file',
+                                    'notes',
+                                    'isConfirmed',
+                                    'saveProfile',
+                                    'sampleGarment',
+                                    'slipAttached',
+                                    'data',
+                                ]);
+                                const entries = Object.entries(mObj).filter(
+                                    ([key, value]) =>
+                                        !META_KEYS.has(key) &&
+                                        value !== '' &&
+                                        value != null &&
+                                        typeof value !== 'object'
+                                );
 
                                 // We only return null if there is absolutely NO measurement data at all
-                                if (entries.length === 0 && !measurements.slipImage && !measurements.type) return null;
+                                if (
+                                    entries.length === 0 &&
+                                    !slipSrc &&
+                                    !mObj.type &&
+                                    !mObj.sampleGarment
+                                )
+                                    return null;
 
                                 return (
                                     <div key={idx} className="space-y-3">
@@ -1166,27 +1209,44 @@ const Orders = () => {
                                         )}
                                         
                                         {/* Measurement Type Badge */}
-                                        {measurements.type && (
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-[9px] font-black uppercase bg-indigo-50 text-[#843D9B] px-2.5 py-1 rounded-full border border-indigo-100">
-                                                    {measurements.type === 'slip' ? '📎 Uploaded Slip' : 
-                                                     measurements.type === 'saved' ? '💾 Saved Profile' : 
-                                                     measurements.type === 'home' ? '🏠 Tailor at Home' : 
-                                                     measurements.type === 'sample' ? '👕 Sample Garment' : 
-                                                     '✏️ Self Measured'}
-                                                </span>
+                                        {(mObj.type || mObj.sampleGarment) && (
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                {mObj.type && (
+                                                    <span className="text-[9px] font-black uppercase bg-indigo-50 text-[#843D9B] px-2.5 py-1 rounded-full border border-indigo-100">
+                                                        {mObj.type === 'slip' ? '📎 Uploaded Slip' : 
+                                                         mObj.type === 'saved' ? '💾 Saved Profile' : 
+                                                         mObj.type === 'home' ? '🏠 Tailor at Home' : 
+                                                         mObj.type === 'sample' ? '👕 Sample Garment' : 
+                                                         '✏️ Self Measured'}
+                                                    </span>
+                                                )}
+                                                {mObj.sampleGarment && mObj.type !== 'sample' && (
+                                                    <span className="text-[9px] font-black uppercase bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-100">
+                                                        👕 Sample garment also
+                                                    </span>
+                                                )}
                                             </div>
                                         )}
 
-                                        {/* Slip Image (if measurement was uploaded as slip) */}
-                                        {measurements.slipImage && (
+                                        {/* Slip Image */}
+                                        {slipSrc && (
                                             <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
                                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Measurement Slip</p>
                                                 <img 
-                                                    src={measurements.slipImage} 
+                                                    src={slipSrc} 
                                                     alt="Measurement Slip" 
-                                                    className="w-full max-h-60 object-contain rounded-xl border border-gray-200"
+                                                    className="w-full max-h-60 object-contain rounded-xl border border-gray-200 cursor-pointer bg-white"
+                                                    onClick={() => window.open(slipSrc, '_blank')}
                                                 />
+                                            </div>
+                                        )}
+
+                                        {mObj.type === 'sample' && (
+                                            <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                                                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Sample Garment</p>
+                                                <p className="text-[12px] text-amber-900 font-medium">
+                                                    Customer will provide a sample garment for fitting reference at fabric pickup.
+                                                </p>
                                             </div>
                                         )}
 
@@ -1218,12 +1278,61 @@ const Orders = () => {
                                         )}
 
                                         {/* Customer Notes for this item */}
-                                        {measurements.notes && (
+                                        {mObj.notes && (
                                             <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 mt-2">
                                                 <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1">Customer Notes</p>
-                                                <p className="text-[12px] text-gray-700 font-medium italic">"{measurements.notes}"</p>
+                                                <p className="text-[12px] text-gray-700 font-medium italic">"{mObj.notes}"</p>
                                             </div>
                                         )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Style Add-ons selected by customer */}
+                    {order.items?.some((item) => (item.styleAddons || item.addons || []).length > 0) && (
+                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3">
+                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">✨ Style Add-ons</p>
+                            {order.items.map((item, idx) => {
+                                const addons = item.styleAddons || item.addons || [];
+                                if (!addons.length) return null;
+                                return (
+                                    <div key={`addons-${idx}`} className="space-y-2">
+                                        {order.items.length > 1 && (
+                                            <p className="text-[10px] text-gray-400 font-bold">
+                                                Item {idx + 1}: {item.service?.title || 'Garment'}
+                                            </p>
+                                        )}
+                                        <div className="space-y-2">
+                                            {addons.map((addon, aIdx) => (
+                                                <div
+                                                    key={addon._id || aIdx}
+                                                    className="flex items-center gap-3 p-3 rounded-2xl border border-purple-100 bg-purple-50/40"
+                                                >
+                                                    {addon.image ? (
+                                                        <img
+                                                            src={addon.image}
+                                                            alt={addon.name}
+                                                            className="w-12 h-12 rounded-xl object-cover border border-purple-100 bg-white"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center text-lg font-black">
+                                                            +
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-black text-gray-900 truncate">{addon.name}</p>
+                                                        {addon.description && (
+                                                            <p className="text-[10px] text-gray-500 line-clamp-2">{addon.description}</p>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs font-black text-[#843D9B] shrink-0">
+                                                        ₹{Number(addon.price || 0).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 );
                             })}

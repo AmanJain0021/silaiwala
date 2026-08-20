@@ -910,6 +910,35 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       rawMeasurements = {};
     }
 
+    // Normalize slip photo fields so tailor UI always finds slipImage
+    const slipSrc =
+      rawMeasurements.slipImage ||
+      rawMeasurements.image ||
+      rawMeasurements.url ||
+      rawMeasurements.slipUrl ||
+      "";
+    if (slipSrc) {
+      rawMeasurements = {
+        ...rawMeasurements,
+        slipImage: slipSrc,
+        type: rawMeasurements.type || "slip",
+      };
+      delete rawMeasurements.image;
+      delete rawMeasurements.url;
+      delete rawMeasurements.slipUrl;
+      delete rawMeasurements.file;
+    }
+    // Drop non-display wrapper flags from nested self-measure payloads
+    if (rawMeasurements.data && typeof rawMeasurements.data === "object") {
+      rawMeasurements = {
+        ...rawMeasurements.data,
+        type: rawMeasurements.type || "self",
+        notes: rawMeasurements.notes || rawMeasurements.data.notes || "",
+        ...(rawMeasurements.slipImage ? { slipImage: rawMeasurements.slipImage } : {}),
+        ...(rawMeasurements.sampleGarment ? { sampleGarment: true } : {}),
+      };
+    }
+
     return {
       product: validProduct,
       service: validService,

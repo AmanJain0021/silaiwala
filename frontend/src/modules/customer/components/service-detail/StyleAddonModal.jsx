@@ -1,115 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, Search, Plus, Minus, Wand2, Info } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Check, Search, Plus, Wand2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../../../../utils/api';
 import { cn } from '../../../../utils/cn';
 
-const UPPER_KEYWORDS = ['neck', 'collar', 'blouse', 'sleeve', 'shoulder', 'underbust', 'padding', 'pad', 'bust', 'cup', 'cleavage', 'front neck', 'back neck', 'yoke'];
-const LOWER_KEYWORDS = ['pant', 'trouser', 'pajama', 'pyjama', 'salwar', 'palazzo', 'skirt', 'bottom', 'lower', 'inseam', 'mohri', 'waistband'];
-
-const getGarmentType = (categoryName, serviceTitle) => {
-    const combined = `${categoryName || ''} ${serviceTitle || ''}`.toLowerCase();
-    if (LOWER_KEYWORDS.some(k => combined.includes(k))) {
-        return 'bottomwear';
-    }
-    if (combined.includes('blouse')) return 'blouse';
-    if (combined.includes('shirt')) return 'shirt';
-    if (combined.includes('kurta') || combined.includes('kurti') || combined.includes('suit')) return 'topwear';
-    return 'all';
-};
-
+/**
+ * Style add-ons are defined on the particular service/category in Admin → Services.
+ * Show only those — do not pull the global StyleAddon catalog.
+ */
 const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, category, serviceTitle, directStyleAddons = [] }) => {
-    const [addons, setAddons] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
     const categoryName = category?.name || category || '';
-    const garmentType = getGarmentType(categoryName, serviceTitle);
-
     const categoryAddonsFromSchema = directStyleAddons.length > 0
         ? directStyleAddons
         : (category?.styleAddons || []);
 
-    useEffect(() => {
-        const fetchAddons = async () => {
-            if (!isOpen) return;
-            setIsLoading(true);
-            try {
-                // Fetch all active add-ons first
-                const response = await api.get('/style-addons?isActive=true');
-
-                let list = response.data?.success ? (response.data.data || []) : [];
-
-                // Convert category schema styleAddons to standard add-on objects
-                const categorySchemaItems = categoryAddonsFromSchema.map((item, i) => ({
+    const addons = useMemo(
+        () =>
+            (categoryAddonsFromSchema || [])
+                .filter((item) => item?.name?.trim())
+                .map((item, i) => ({
                     _id: item._id || `cat_addon_${i}_${item.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
                     name: item.name,
                     price: item.price || 0,
                     description: item.description || '',
                     image: item.image || '',
-                    category: categoryName || 'Service Custom'
-                }));
+                    category: categoryName || 'Service Custom',
+                })),
+        [categoryAddonsFromSchema, categoryName]
+    );
 
-                const searchCat = (categoryName || '').toLowerCase().trim();
-
-                // 1. Filter add-ons specifically belonging to this service OR set to 'All' / Universal
-                const serviceSpecificOrUniversalAddons = list.filter(addon => {
-                    const addonCat = (addon.category || '').toLowerCase().trim();
-                    if (!addonCat || addonCat === 'all') return true; // Universal
-                    if (!searchCat) return true;
-                    return addonCat === searchCat || searchCat.includes(addonCat) || addonCat.includes(searchCat);
-                });
-
-                // 2. Perform strict garment type check (e.g. Pajama/Bottomwear vs Topwear)
-                let filteredList = serviceSpecificOrUniversalAddons;
-                if (garmentType === 'bottomwear') {
-                    filteredList = serviceSpecificOrUniversalAddons.filter(addon => {
-                        const text = `${addon.name} ${addon.description || ''} ${addon.category || ''}`.toLowerCase();
-                        return !UPPER_KEYWORDS.some(kw => text.includes(kw));
-                    });
-                } else if (garmentType === 'topwear' || garmentType === 'blouse' || garmentType === 'shirt') {
-                    filteredList = serviceSpecificOrUniversalAddons.filter(addon => {
-                        const text = `${addon.name} ${addon.description || ''} ${addon.category || ''}`.toLowerCase();
-                        return !text.includes('pant bottom') && !text.includes('salwar mohri') && !text.includes('inseam');
-                    });
-                }
-
-                // Combine category schema items at top + filtered service add-ons
-                const combinedList = [...categorySchemaItems];
-                filteredList.forEach(item => {
-                    if (!combinedList.some(c => c.name.toLowerCase() === item.name.toLowerCase())) {
-                        combinedList.push(item);
-                    }
-                });
-
-                setAddons(combinedList);
-            } catch (error) {
-                console.error('Failed to fetch style addons:', error);
-                // Fallback to category schema items if network fails
-                const categorySchemaItems = categoryAddonsFromSchema.map((item, i) => ({
-                    _id: item._id || `cat_addon_${i}_${item.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-                    name: item.name,
-                    price: item.price || 0,
-                    description: item.description || '',
-                    image: item.image || '',
-                    category: categoryName || 'Service Custom'
-                }));
-                setAddons(categorySchemaItems);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchAddons();
-    }, [isOpen, categoryName, garmentType, JSON.stringify(categoryAddonsFromSchema)]);
-
-    const filteredAddons = addons.filter(addon =>
+    const filteredAddons = addons.filter((addon) =>
         addon.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const toggleAddon = (addon) => {
-        const isSelected = selectedAddons.some(a => a._id === addon._id);
+        const isSelected = selectedAddons.some((a) => a._id === addon._id);
         if (isSelected) {
-            onUpdate(selectedAddons.filter(a => a._id !== addon._id));
+            onUpdate(selectedAddons.filter((a) => a._id !== addon._id));
         } else {
             onUpdate([...selectedAddons, addon]);
         }
@@ -119,31 +47,31 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4">
+            <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 />
-
                 <motion.div
-                    initial={{ y: '100%', opacity: 0.5 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: '100%', opacity: 0.5 }}
+                    initial={{ y: '100%' }}
+                    animate={{ y: 0 }}
+                    exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="relative w-full max-w-xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl z-10"
+                    className="relative w-full max-w-lg bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                 >
-                    {/* Header */}
-                    <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/50 to-white">
+                    <div className="p-6 flex items-center justify-between border-b border-gray-50">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#843D9B] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                                <Wand2 size={20} />
+                            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-primary">
+                                <Wand2 size={18} />
                             </div>
                             <div>
                                 <h3 className="text-lg font-black text-gray-900 tracking-tight leading-none">Style Add-ons</h3>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Customize Your Fit</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                                    {categoryName || serviceTitle || 'This service'}
+                                </p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
@@ -151,7 +79,6 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                         </button>
                     </div>
 
-                    {/* Search */}
                     <div className="px-6 py-4 bg-gray-50/50">
                         <div className="relative">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -165,74 +92,73 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div className="p-6 max-h-[60vh] overflow-y-auto no-scrollbar space-y-4">
-                        {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-40">
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                                    className="w-10 h-10 border-2 border-[#843D9B] border-t-transparent rounded-full font-black"
-                                />
-                                <p className="text-[10px] font-black uppercase tracking-widest">Designing Options...</p>
-                            </div>
-                        ) : filteredAddons.length === 0 ? (
+                        {filteredAddons.length === 0 ? (
                             <div className="text-center py-12">
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">No matching styles found</p>
+                                <Info size={28} className="mx-auto text-gray-300 mb-3" />
+                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                                    No style add-ons for this service
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-2 px-6">
+                                    Add them in Admin → Services for this category/service.
+                                </p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 gap-3">
-                                {filteredAddons.map((addon) => {
-                                    const isSelected = selectedAddons.some(a => a._id === addon._id);
-                                    return (
-                                        <motion.div
-                                            key={addon._id}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => toggleAddon(addon)}
+                            filteredAddons.map((addon) => {
+                                const isSelected = selectedAddons.some((a) => a._id === addon._id);
+                                return (
+                                    <button
+                                        key={addon._id}
+                                        type="button"
+                                        onClick={() => toggleAddon(addon)}
+                                        className={cn(
+                                            'w-full text-left p-4 rounded-2xl border transition-all flex items-center gap-3',
+                                            isSelected
+                                                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                                : 'border-gray-100 bg-white hover:border-gray-200'
+                                        )}
+                                    >
+                                        {addon.image ? (
+                                            <img
+                                                src={addon.image}
+                                                alt={addon.name}
+                                                className="w-14 h-14 rounded-xl object-cover shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-14 h-14 rounded-xl bg-indigo-50 text-primary flex items-center justify-center shrink-0">
+                                                <Wand2 size={18} />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-black text-gray-900 truncate">{addon.name}</p>
+                                            {addon.description && (
+                                                <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{addon.description}</p>
+                                            )}
+                                            <p className="text-xs font-black text-primary mt-1">₹{addon.price}</p>
+                                        </div>
+                                        <div
                                             className={cn(
-                                                "p-4 rounded-[1.5rem] border transition-all cursor-pointer flex items-center gap-4 group",
+                                                'w-8 h-8 rounded-full flex items-center justify-center shrink-0 border',
                                                 isSelected
-                                                    ? "border-[#843D9B] bg-indigo-50/30 shadow-sm"
-                                                    : "border-gray-100 bg-white hover:border-[#843D9B]/30"
+                                                    ? 'bg-primary border-primary text-white'
+                                                    : 'bg-white border-gray-200 text-gray-300'
                                             )}
                                         >
-                                            <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-                                                <img
-                                                    src={addon.image}
-                                                    alt={addon.name}
-                                                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                                                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1544441893-675973e31d85?w=200'; }}
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-sm font-black text-gray-900 leading-none mb-1">{addon.name}</h4>
-                                                <p className="text-[10px] text-gray-400 line-clamp-1 font-medium">{addon.description}</p>
-                                                <p className="text-xs font-black text-[#843D9B] mt-2">+₹{addon.price}</p>
-                                            </div>
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
-                                                isSelected ? "bg-[#843D9B] text-white" : "bg-gray-50 text-gray-300"
-                                            )}>
-                                                {isSelected ? <Check size={18} /> : <Plus size={18} />}
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
-                            </div>
+                                            {isSelected ? <Check size={16} /> : <Plus size={16} />}
+                                        </div>
+                                    </button>
+                                );
+                            })
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="p-6 border-t border-gray-100 flex items-center justify-between bg-white pt-safe">
-                        <div>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Total Add-ons</p>
-                            <p className="text-lg font-black text-gray-900 leading-none mt-1">₹{selectedAddons.reduce((sum, a) => sum + a.price, 0)}</p>
-                        </div>
+                    <div className="p-5 border-t border-gray-50 bg-white">
                         <button
+                            type="button"
                             onClick={onClose}
-                            className="bg-[#843D9B] text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-all"
+                            className="w-full py-3.5 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-primary-dark transition-all"
                         >
-                            Confirm Selection
+                            Done{selectedAddons.length > 0 ? ` · ${selectedAddons.length} selected` : ''}
                         </button>
                     </div>
                 </motion.div>

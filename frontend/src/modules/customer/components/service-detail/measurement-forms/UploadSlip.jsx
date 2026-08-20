@@ -43,7 +43,8 @@ const UploadSlip = ({ onUpload, onCancel }) => {
         }
         onUpload({
             type: 'slip',
-            image: preview, // In real app, this would be a URL after upload
+            image: preview,
+            slipImage: preview,
             notes: notes
         });
     };

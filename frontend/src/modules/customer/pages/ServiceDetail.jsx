@@ -429,14 +429,49 @@ const ServiceDetail = () => {
                     measurements: pureMeasurements,
                     notes: notes
                 });
-                finalMeasurements = measurements.data;
+                finalMeasurements = { ...measurements.data, type: 'self', notes: notes || measurements.data?.notes };
             } catch (err) {
                 console.error("Failed to save measurement profile:", err);
             }
-        } else if (measurements?.type === 'self') {
-            finalMeasurements = { ...measurements.data, type: 'self' };
-        } else if (measurements?.type === 'slip' || measurements?.type === 'saved') {
-            finalMeasurements = measurements.type === 'saved' ? { ...(measurements.measurements || {}), type: 'saved' } : measurements;
+        } else if (measurements?.type === 'self' || measurements?.isConfirmed) {
+            finalMeasurements = {
+                ...(measurements.data || {}),
+                type: 'self',
+                notes: measurements.data?.notes || measurements.notes || '',
+                ...(measurements.sampleGarment ? { sampleGarment: true } : {}),
+                ...(measurements.slipAttached || measurements.slipImage || measurements.image
+                    ? {
+                        slipImage:
+                            measurements.slipImage ||
+                            measurements.image ||
+                            measurements.url ||
+                            measurements.slipUrl,
+                    }
+                    : {}),
+            };
+        } else if (measurements?.type === 'slip') {
+            finalMeasurements = {
+                type: 'slip',
+                slipImage:
+                    measurements.slipImage ||
+                    measurements.image ||
+                    measurements.url ||
+                    measurements.slipUrl ||
+                    '',
+                notes: measurements.notes || '',
+                ...(measurements.sampleGarment ? { sampleGarment: true } : {}),
+            };
+        } else if (measurements?.type === 'saved') {
+            finalMeasurements = {
+                ...(measurements.measurements || measurements),
+                type: 'saved',
+            };
+        } else if (measurements?.type === 'sample') {
+            finalMeasurements = {
+                type: 'sample',
+                notes: measurements.notes || 'Partner will pickup sample garment with fabric',
+                sampleGarment: true,
+            };
         }
 
         return {
