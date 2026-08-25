@@ -19,7 +19,7 @@ const LandingNavbar = () => {
   const { appName, logos } = useBrandingStore();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 30);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -41,31 +41,29 @@ const LandingNavbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-400 ${
+      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-[0_2px_20px_rgba(74,5,129,0.08)] py-2'
-          : 'bg-white py-3'
+          ? 'bg-white/95 backdrop-blur-xl border-b border-[#EDE8F2]/80 shadow-[0_4px_24px_rgba(26,21,35,0.02)] py-2.5 md:py-3'
+          : 'bg-white py-3.5 md:py-4'
       }`}
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      <div className="max-w-[1536px] mx-auto px-5 md:px-16 flex justify-between items-center">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group shrink-0">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
+        <Link to="/" className="flex items-center shrink-0">
           <img
             src={logos.customer}
             alt={appName}
-            className="h-10 md:h-12 w-auto object-contain"
+            className="h-8 md:h-11 w-auto object-contain transition-all duration-300"
           />
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-9 absolute left-1/2 -translate-x-1/2">
           {NAV_LINKS.map((item) =>
             item.path.startsWith('/page') ? (
               <Link
                 key={item.label}
                 to={item.path}
-                className="text-[14px] font-medium text-[#1c1b1b] hover:text-[#4a0581] transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-[#4a0581] after:transition-all after:duration-300 hover:after:w-full"
+                className="text-[13px] font-medium tracking-wide text-[#2A2433] hover:text-[#4a0581] transition-colors duration-200"
               >
                 {item.label}
               </Link>
@@ -74,10 +72,10 @@ const LandingNavbar = () => {
                 key={item.label}
                 to={item.path}
                 onClick={(e) => handleNavClick(e, item.path)}
-                className={`text-[14px] font-medium transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-[#4a0581] after:transition-all after:duration-300 hover:after:w-full ${
+                className={`text-[13px] font-medium tracking-wide transition-colors duration-200 relative ${
                   location.pathname === '/' && item.path === '/'
-                    ? 'text-[#4a0581]'
-                    : 'text-[#1c1b1b] hover:text-[#4a0581]'
+                    ? 'text-[#4a0581] after:absolute after:left-0 after:-bottom-1 after:h-[1.5px] after:w-full after:bg-[#4a0581]'
+                    : 'text-[#2A2433] hover:text-[#4a0581]'
                 }`}
               >
                 {item.label}
@@ -86,57 +84,52 @@ const LandingNavbar = () => {
           )}
         </div>
 
-        {/* CTA Button */}
-        <div className="hidden lg:flex items-center">
+        <div className="hidden lg:flex items-center shrink-0">
           <a
             href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-5 py-2.5 rounded-full text-[13px] font-semibold hover:bg-[#622999] transition-all duration-300 shadow-[0_4px_15px_rgba(74,5,129,0.3)] hover:shadow-[0_6px_20px_rgba(74,5,129,0.4)] hover:-translate-y-[1px]"
+            className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300 shadow-[0_8px_24px_rgba(74,5,129,0.22)]"
           >
-            <Download size={15} />
+            <Download size={15} strokeWidth={2} />
             Download App
           </a>
         </div>
 
-        {/* Mobile Toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-[#1c1b1b] hover:text-[#4a0581] transition-colors relative z-[100]"
+          className="lg:hidden p-2 text-[#2A2433] hover:text-[#4a0581] transition-colors"
           aria-label="Toggle menu"
         >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
       <div
         className={`lg:hidden overflow-hidden transition-all duration-300 ${
-          mobileOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          mobileOpen ? 'max-h-[520px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="bg-white border-t border-[#eae7e7] px-5 py-4 space-y-1">
+        <div className="bg-white border-t border-[#EDE8F2] px-5 py-4 space-y-1">
           {NAV_LINKS.map((item) => (
             <Link
               key={item.label}
               to={item.path}
               onClick={(e) => handleNavClick(e, item.path)}
-              className="block py-3 px-4 text-[15px] font-medium text-[#1c1b1b] hover:text-[#4a0581] hover:bg-[#f0dbff]/30 rounded-lg transition-all duration-200"
+              className="block py-3 px-3 text-[14px] font-medium text-[#2A2433] hover:text-[#4a0581] rounded-lg"
             >
               {item.label}
             </Link>
           ))}
-          <div className="pt-3 pb-1">
-            <a
-              href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-[#4a0581] text-white px-5 py-3 rounded-full text-[14px] font-semibold w-full"
-            >
-              <Download size={16} />
-              Download App
-            </a>
-          </div>
+          <a
+            href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex items-center justify-center gap-2 bg-[#4a0581] text-white px-5 py-3 rounded-xl text-[14px] font-semibold w-full"
+          >
+            <Download size={16} />
+            Download App
+          </a>
         </div>
       </div>
     </nav>
