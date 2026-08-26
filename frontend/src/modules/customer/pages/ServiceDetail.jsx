@@ -1103,7 +1103,7 @@ const ServiceDetail = () => {
                 onClose={() => setIsAddonModalOpen(false)}
                 selectedAddons={selectedAddons}
                 onUpdate={setSelectedAddons}
-                category={serviceData.category?.name || serviceData.category}
+                category={serviceData.category}
                 serviceTitle={serviceData.title}
                 directStyleAddons={serviceData.category?.styleAddons || []}
             />

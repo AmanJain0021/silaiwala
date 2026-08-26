@@ -1,34 +1,111 @@
-import React, { useState, useMemo } from 'react';
-import { X, Check, Search, Plus, Wand2, Info } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Check, Search, Plus, Wand2, Info, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../../../../utils/api';
 import { cn } from '../../../../utils/cn';
 
 /**
- * Style add-ons are defined on the particular service/category in Admin → Services.
- * Show only those — do not pull the global StyleAddon catalog.
+ * Style Add-ons sources:
+ * 1) Admin → Style Add-ons catalog (/admin/style-addons)
+ *    - category === service category → that service only
+ *    - category === "All" (universal) → every service
+ * 2) Admin → Services → category.styleAddons (embedded per category)
  */
-const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, category, serviceTitle, directStyleAddons = [] }) => {
+const normalizeCat = (value) => String(value || '').toLowerCase().trim();
+
+const isUniversalCategory = (addonCategory) => {
+    const c = normalizeCat(addonCategory);
+    return !c || c === 'all' || c === 'universal' || c === 'all services' || c === 'all categories';
+};
+
+const matchesServiceCategory = (addonCategory, serviceCategory) => {
+    const addonCat = normalizeCat(addonCategory);
+    const serviceCat = normalizeCat(serviceCategory);
+    if (!serviceCat) return false;
+    if (addonCat === serviceCat) return true;
+    // Flexible match: "Pajama" ↔ "Pajamas" / partial names
+    return serviceCat.includes(addonCat) || addonCat.includes(serviceCat);
+};
+
+const StyleAddonModal = ({
+    isOpen,
+    onClose,
+    selectedAddons = [],
+    onUpdate,
+    category,
+    serviceTitle,
+    directStyleAddons = [],
+}) => {
+    const [catalogAddons, setCatalogAddons] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const categoryName = category?.name || category || '';
-    const categoryAddonsFromSchema = directStyleAddons.length > 0
-        ? directStyleAddons
-        : (category?.styleAddons || []);
+    const categoryName = (typeof category === 'object' ? category?.name : category) || '';
+    const categoryAddonsFromSchema =
+        directStyleAddons?.length > 0
+            ? directStyleAddons
+            : (typeof category === 'object' ? category?.styleAddons : null) || [];
 
-    const addons = useMemo(
-        () =>
-            (categoryAddonsFromSchema || [])
-                .filter((item) => item?.name?.trim())
-                .map((item, i) => ({
-                    _id: item._id || `cat_addon_${i}_${item.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-                    name: item.name,
-                    price: item.price || 0,
-                    description: item.description || '',
-                    image: item.image || '',
-                    category: categoryName || 'Service Custom',
-                })),
-        [categoryAddonsFromSchema, categoryName]
-    );
+    useEffect(() => {
+        if (!isOpen) return;
+
+        let cancelled = false;
+        const fetchAddons = async () => {
+            setIsLoading(true);
+            try {
+                const response = await api.get('/style-addons?isActive=true&addonType=embellishment');
+                if (cancelled) return;
+                const list = response.data?.success ? response.data.data || [] : [];
+                setCatalogAddons(Array.isArray(list) ? list : []);
+            } catch (error) {
+                if (error?.name === 'CanceledError') return;
+                console.error('Failed to fetch style addons:', error);
+                if (!cancelled) setCatalogAddons([]);
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        fetchAddons();
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen]);
+
+    const addons = useMemo(() => {
+        const schemaItems = (categoryAddonsFromSchema || [])
+            .filter((item) => item?.name?.trim())
+            .map((item, i) => ({
+                _id: item._id || `cat_addon_${i}_${normalizeCat(item.name).replace(/[^a-z0-9]/g, '')}`,
+                name: item.name,
+                price: item.price || 0,
+                description: item.description || '',
+                image: item.image || '',
+                category: categoryName || 'Service Custom',
+                _source: 'schema',
+            }));
+
+        const fromCatalog = (catalogAddons || []).filter((addon) => {
+            if (addon?.isActive === false) return false;
+            if (isUniversalCategory(addon.category)) return true;
+            return matchesServiceCategory(addon.category, categoryName);
+        });
+
+        const combined = [...schemaItems];
+        fromCatalog.forEach((item) => {
+            const already = combined.some(
+                (c) => normalizeCat(c.name) === normalizeCat(item.name)
+            );
+            if (!already) {
+                combined.push({
+                    ...item,
+                    _source: 'catalog',
+                });
+            }
+        });
+
+        return combined;
+    }, [catalogAddons, categoryAddonsFromSchema, categoryName]);
 
     const filteredAddons = addons.filter((addon) =>
         addon.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -68,13 +145,19 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                                 <Wand2 size={18} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-gray-900 tracking-tight leading-none">Style Add-ons</h3>
+                                <h3 className="text-lg font-black text-gray-900 tracking-tight leading-none">
+                                    Style Add-ons
+                                </h3>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
                                     {categoryName || serviceTitle || 'This service'}
                                 </p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                        >
                             <X size={20} className="text-gray-400" />
                         </button>
                     </div>
@@ -93,14 +176,20 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                     </div>
 
                     <div className="p-6 max-h-[60vh] overflow-y-auto no-scrollbar space-y-4">
-                        {filteredAddons.length === 0 ? (
+                        {isLoading ? (
+                            <div className="flex flex-col items-center justify-center py-14 text-gray-400">
+                                <Loader2 size={28} className="animate-spin mb-3 text-primary" />
+                                <p className="text-xs font-bold uppercase tracking-widest">Loading add-ons…</p>
+                            </div>
+                        ) : filteredAddons.length === 0 ? (
                             <div className="text-center py-12">
                                 <Info size={28} className="mx-auto text-gray-300 mb-3" />
                                 <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
                                     No style add-ons for this service
                                 </p>
                                 <p className="text-[10px] text-gray-400 mt-2 px-6">
-                                    Add them in Admin → Services for this category/service.
+                                    Add them in Admin → Style Add-ons (for this category or Universal / All),
+                                    or under Admin → Services for this category.
                                 </p>
                             </div>
                         ) : (
@@ -132,7 +221,9 @@ const StyleAddonModal = ({ isOpen, onClose, selectedAddons = [], onUpdate, categ
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-black text-gray-900 truncate">{addon.name}</p>
                                             {addon.description && (
-                                                <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{addon.description}</p>
+                                                <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">
+                                                    {addon.description}
+                                                </p>
                                             )}
                                             <p className="text-xs font-black text-primary mt-1">₹{addon.price}</p>
                                         </div>
