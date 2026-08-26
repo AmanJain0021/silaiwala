@@ -397,19 +397,15 @@ const ServiceDetail = () => {
     // Lock tailor as soon as we know it while basket is active
     useEffect(() => {
         if (!serviceItems.length) return;
-        const store = useCheckoutStore.getState();
-        if (store.lockedTailorId) return;
-        const tid =
-            preSelectedTailor?._id ||
-            preSelectedTailor?.id ||
-            serviceItems[0]?.serviceDetails?.tailorId ||
-            (typeof serviceData?.tailor === 'object'
-                ? serviceData.tailor?._id || serviceData.tailor?.id
-                : serviceData?.tailor);
-        if (!tid) return;
-        useCheckoutStore.setState({
-            lockedTailorId: tid,
-            lockedTailorName:
+        useCheckoutStore.getState().ensureLockedTailor({
+            tailorId:
+                preSelectedTailor?._id ||
+                preSelectedTailor?.id ||
+                serviceItems[0]?.serviceDetails?.tailorId ||
+                (typeof serviceData?.tailor === 'object'
+                    ? serviceData.tailor?._id || serviceData.tailor?.id
+                    : serviceData?.tailor),
+            tailorName:
                 preSelectedTailor?.shopName ||
                 preSelectedTailor?.user?.name ||
                 serviceItems[0]?.serviceDetails?.tailorName ||
@@ -808,22 +804,18 @@ const ServiceDetail = () => {
     const navigateToAddGarment = () => {
         const locked = getLockedTailor();
         const store = useCheckoutStore.getState();
-        const tailorId = store.lockedTailorId || locked?.id;
-        const tailorName = store.lockedTailorName || locked?.name;
+        const ensured = store.ensureLockedTailor({
+            tailorId: store.lockedTailorId || locked?.id,
+            tailorName: store.lockedTailorName || locked?.name,
+        });
+        const tailorId = ensured.tailorId || locked?.id;
+        const tailorName = ensured.tailorName || locked?.name;
 
         if (!tailorId) {
             import('react-hot-toast').then(({ toast }) => {
                 toast.error('Please confirm a tailor for this order first');
             });
             return;
-        }
-
-        // Persist lock so catalog cannot show other tailors
-        if (!store.lockedTailorId) {
-            useCheckoutStore.setState({
-                lockedTailorId: tailorId,
-                lockedTailorName: tailorName || null,
-            });
         }
 
         navigate('/user/services', {

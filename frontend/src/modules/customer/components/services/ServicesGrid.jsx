@@ -3,7 +3,7 @@ import { Clock, CheckCircle2, Star, Loader2, Users, ArrowRight, X, Heart, Info, 
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
-import useCheckoutStore from '../../../../store/checkoutStore';
+import useCheckoutStore, { resolveTailorId } from '../../../../store/checkoutStore';
 
 const ServiceCard = ({ service }) => {
     const navigate = useNavigate();
@@ -13,11 +13,14 @@ const ServiceCard = ({ service }) => {
     const serviceItems = useCheckoutStore((s) => s.serviceItems);
 
     const handleNavigate = () => {
-        const lockedTailorId = useCheckoutStore.getState().lockedTailorId;
-        const lockedTailorName = useCheckoutStore.getState().lockedTailorName;
+        const store = useCheckoutStore.getState();
+        const lock = store.ensureLockedTailor({
+            tailorId: location.state?.tailorId,
+            tailorName: location.state?.tailorName,
+        });
         const hasBasket = (serviceItems?.length || 0) > 0 || location.state?.fromMultiItemBasket;
-        const tailorId = lockedTailorId || location.state?.tailorId;
-        const tailorName = lockedTailorName || location.state?.tailorName;
+        const tailorId = lock.tailorId || location.state?.tailorId;
+        const tailorName = lock.tailorName || location.state?.tailorName;
 
         // Multi-item flow: selecting a service must appear in basket immediately
         if (hasBasket) {
@@ -192,36 +195,51 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const routeLocation = useRouteLocation();
     const lockedTailorId = useCheckoutStore((s) => s.lockedTailorId);
     const lockedTailorName = useCheckoutStore((s) => s.lockedTailorName);
-    const basketCount = useCheckoutStore((s) => s.serviceItems?.length || 0);
+    const serviceItems = useCheckoutStore((s) => s.serviceItems);
+    const basketCount = serviceItems?.length || 0;
     const isMultiItemLock = basketCount > 0 || !!routeLocation.state?.fromMultiItemBasket;
 
-    const [activeTailorId, setActiveTailorId] = useState(
-        lockedTailorId || routeLocation.state?.tailorId || null
-    );
-    const [tailorName, setTailorName] = useState(
-        lockedTailorName || routeLocation.state?.tailorName || ''
-    );
+    const effectiveTailorId =
+        resolveTailorId(
+            lockedTailorId,
+            routeLocation.state?.tailorId,
+            serviceItems?.[0]?.serviceDetails
+        ) || null;
+    const effectiveTailorName =
+        lockedTailorName ||
+        routeLocation.state?.tailorName ||
+        serviceItems?.[0]?.serviceDetails?.tailorName ||
+        '';
+
+    const [activeTailorId, setActiveTailorId] = useState(effectiveTailorId);
+    const [tailorName, setTailorName] = useState(effectiveTailorName);
     const [sortBy, setSortBy] = useState('Popular');
     const [isSortOpen, setIsSortOpen] = useState(false);
     
     const sortOptions = ['Popular', 'Price: Low to High', 'Price: High to Low'];
 
     useEffect(() => {
-        // Multi-item order: always force locked tailor catalog (never show others)
-        if (isMultiItemLock && (lockedTailorId || routeLocation.state?.tailorId)) {
-            setActiveTailorId(lockedTailorId || routeLocation.state?.tailorId);
-            setTailorName(lockedTailorName || routeLocation.state?.tailorName || '');
+        if (isMultiItemLock) {
+            const lock = useCheckoutStore.getState().ensureLockedTailor({
+                tailorId: routeLocation.state?.tailorId || effectiveTailorId,
+                tailorName: routeLocation.state?.tailorName || effectiveTailorName,
+            });
+            const tid = lock.tailorId || effectiveTailorId;
+            if (tid) {
+                setActiveTailorId(tid);
+                setTailorName(lock.tailorName || effectiveTailorName || 'Selected Tailor');
+            }
             return;
         }
         if (routeLocation.state?.tailorId !== undefined) {
             setActiveTailorId(routeLocation.state?.tailorId || null);
             setTailorName(routeLocation.state?.tailorName || '');
         }
-    }, [routeLocation.state, lockedTailorId, lockedTailorName, isMultiItemLock]);
+    }, [routeLocation.state, lockedTailorId, lockedTailorName, isMultiItemLock, effectiveTailorId, effectiveTailorName]);
 
     const handleClearTailorFilter = () => {
         // Locked multi-item basket: cannot browse other tailors
-        if (isMultiItemLock && (lockedTailorId || activeTailorId)) {
+        if (isMultiItemLock && (lockedTailorId || activeTailorId || effectiveTailorId)) {
             import('react-hot-toast').then(({ toast }) => {
                 toast.error('Only this tailor’s services are available for this order');
             });
@@ -239,8 +257,11 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         const fetchServices = async () => {
             setIsLoading(true);
             try {
+                const tailorParam = isMultiItemLock
+                    ? (activeTailorId || effectiveTailorId || undefined)
+                    : (activeTailorId || undefined);
                 const [servicesRes, catsRes] = await Promise.all([
-                    api.get('/services', { params: { tailor: activeTailorId || undefined } }),
+                    api.get('/services', { params: { tailor: tailorParam } }),
                     api.get('/products/categories', { params: { type: 'service' } }),
                 ]);
                 if (servicesRes.data.success) {
@@ -258,10 +279,19 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             }
         };
         fetchServices();
-    }, [activeTailorId]);
+    }, [activeTailorId, effectiveTailorId, isMultiItemLock]);
 
     const filteredServices = useMemo(() => {
         let result = services;
+
+        // Hard client filter: multi-item order → only first item's tailor
+        const lockId = isMultiItemLock ? (activeTailorId || effectiveTailorId) : null;
+        if (lockId) {
+            result = result.filter((s) => {
+                const sid = resolveTailorId(s);
+                return sid && String(sid) === String(lockId);
+            });
+        }
 
         const getCategoryStr = (s) => {
             if (!s.category) return '';
@@ -326,7 +356,7 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         }
 
         return result;
-    }, [services, activeFilter, searchQuery, sortBy]);
+    }, [services, activeFilter, searchQuery, sortBy, isMultiItemLock, activeTailorId, effectiveTailorId]);
 
     if (isLoading) {
         return (
@@ -340,7 +370,7 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     return (
         <div className="p-4 md:p-6 lg:p-8">
             {/* Tailor Filter Active Banner */}
-            {activeTailorId && (
+            {(activeTailorId || (isMultiItemLock && effectiveTailorId)) && (
                 <div className="bg-white/95 backdrop-blur-xl border border-primary/15 rounded-2xl p-3 sm:p-4 shadow-sm mb-5 animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
@@ -351,11 +381,11 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
                                 {isMultiItemLock ? 'Same tailor only' : 'Tailor Catalog'}
                             </span>
                             <h3 className="text-xs sm:text-sm font-black text-gray-900 truncate">
-                                Services by <span className="text-primary">{tailorName || 'Selected Tailor'}</span>
+                                Services by <span className="text-primary">{tailorName || effectiveTailorName || 'Selected Tailor'}</span>
                             </h3>
                             {isMultiItemLock ? (
                                 <p className="text-[9px] text-gray-500 font-medium mt-0.5">
-                                    Multi-item order · other tailor services are hidden here
+                                    Showing only this tailor — same as your first basket item
                                 </p>
                             ) : (
                                 <div className="flex items-center gap-1.5 mt-2">

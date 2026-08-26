@@ -35,15 +35,25 @@ const Services = () => {
         }
     }, [location.state, location.search]);
 
-    // Keep services page locked to basket tailor (no other tailor catalog)
+    // Keep services page locked to first item's tailor (no other tailor catalog)
     useEffect(() => {
-        if (!basketCount || !lockedTailorId) return;
-        if (location.state?.tailorId === lockedTailorId && location.state?.fromMultiItemBasket) return;
+        if (!basketCount) return;
+        const { tailorId, tailorName } = useCheckoutStore.getState().ensureLockedTailor({
+            tailorId: lockedTailorId,
+            tailorName: lockedTailorName,
+        });
+        if (!tailorId) return;
+        if (
+            String(location.state?.tailorId || '') === String(tailorId) &&
+            location.state?.fromMultiItemBasket
+        ) {
+            return;
+        }
         navigate('/user/services', {
             replace: true,
             state: {
-                tailorId: lockedTailorId,
-                tailorName: lockedTailorName || 'Selected Tailor',
+                tailorId,
+                tailorName: tailorName || 'Selected Tailor',
                 fromMultiItemBasket: true,
             },
         });

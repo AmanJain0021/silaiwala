@@ -1,6 +1,62 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/** Normalize tailor id from service / basket row / extras */
+const resolveTailorId = (...sources) => {
+    for (const src of sources) {
+        if (src == null || src === '') continue;
+        if (typeof src === 'string' || typeof src === 'number') {
+            const s = String(src).trim();
+            if (s) return s;
+            continue;
+        }
+        if (typeof src !== 'object') continue;
+
+        // Explicit fields first
+        if (src.tailorId) return String(src.tailorId);
+
+        // Nested tailor on a service / basket row
+        if (src.tailor != null) {
+            if (typeof src.tailor === 'string' || typeof src.tailor === 'number') {
+                return String(src.tailor);
+            }
+            const nested = src.tailor._id || src.tailor.id;
+            if (nested) return String(nested);
+        }
+
+        // Tailor document itself (has shopName / isAvailable — not a service)
+        const looksLikeTailor = !!(src.shopName || src.isAvailable != null);
+        const looksLikeService = !!(src.title || src.basePrice != null || src.category);
+        if (looksLikeTailor && !looksLikeService && (src._id || src.id)) {
+            return String(src._id || src.id);
+        }
+
+        // Bare `{ _id }` / id-only object used as tailor ref
+        if ((src._id || src.id) && !looksLikeService && !src.measurements) {
+            return String(src._id || src.id);
+        }
+    }
+    return null;
+};
+
+const resolveTailorName = (...sources) => {
+    for (const src of sources) {
+        if (!src) continue;
+        if (typeof src === 'string' && src.trim()) return src.trim();
+        if (typeof src === 'object') {
+            const name =
+                src.tailorName ||
+                src.shopName ||
+                src.user?.name ||
+                (typeof src.tailor === 'object'
+                    ? src.tailor?.shopName || src.tailor?.user?.name
+                    : null);
+            if (name) return name;
+        }
+    }
+    return null;
+};
+
 /** Keep basket rows small so localStorage persist does not drop items. */
 const leanServiceDetails = (service = {}, extras = {}) => ({
     _id: service._id || service.id || extras._id || null,
@@ -16,9 +72,11 @@ const leanServiceDetails = (service = {}, extras = {}) => ({
             measurementFields: service.category.measurementFields || [],
         }
         : extras.category || null,
-    tailorId: extras.tailorId || null,
-    tailorName: extras.tailorName || null,
-    tailorCoordinates: extras.tailorCoordinates || null,
+    tailorId:
+        resolveTailorId(extras.tailorId, extras, service.tailorId, service) || null,
+    tailorName:
+        resolveTailorName(extras.tailorName, extras, service.tailorName, service) || null,
+    tailorCoordinates: extras.tailorCoordinates || service.tailorCoordinates || null,
 });
 
 const leanFabric = (fabric) => {
@@ -112,13 +170,17 @@ const useCheckoutStore = create(
                 set((state) => {
                     const lean = leanBasketItem(item);
                     const tailorId =
-                        lean.serviceDetails?.tailorId ||
-                        state.lockedTailorId ||
-                        null;
+                        resolveTailorId(
+                            lean.serviceDetails,
+                            state.lockedTailorId,
+                            state.serviceItems[0]?.serviceDetails
+                        ) || null;
                     const tailorName =
-                        lean.serviceDetails?.tailorName ||
-                        state.lockedTailorName ||
-                        null;
+                        resolveTailorName(
+                            lean.serviceDetails,
+                            state.lockedTailorName,
+                            state.serviceItems[0]?.serviceDetails
+                        ) || null;
                     if (tailorId && lean.serviceDetails) {
                         lean.serviceDetails.tailorId = tailorId;
                         lean.serviceDetails.tailorName = tailorName;
@@ -153,6 +215,53 @@ const useCheckoutStore = create(
                 })),
 
             /**
+             * Resolve + persist the tailor lock from basket / extras.
+             * Call whenever adding first item or opening "add another" catalog.
+             */
+            ensureLockedTailor: (extras = {}) => {
+                const state = get();
+                const tid =
+                    resolveTailorId(
+                        state.lockedTailorId,
+                        extras.tailorId,
+                        extras,
+                        state.serviceItems[0]?.serviceDetails
+                    ) || null;
+                const tname =
+                    resolveTailorName(
+                        state.lockedTailorName,
+                        extras.tailorName,
+                        extras,
+                        state.serviceItems[0]?.serviceDetails
+                    ) || null;
+                if (tid && (String(state.lockedTailorId || '') !== String(tid) || !state.lockedTailorName)) {
+                    set({
+                        lockedTailorId: tid,
+                        lockedTailorName: tname || state.lockedTailorName || null,
+                    });
+                }
+                return {
+                    tailorId: tid || state.lockedTailorId || null,
+                    tailorName: tname || state.lockedTailorName || null,
+                };
+            },
+
+            getLockedTailor: () => {
+                const state = get();
+                const tid =
+                    resolveTailorId(
+                        state.lockedTailorId,
+                        state.serviceItems[0]?.serviceDetails
+                    ) || null;
+                const tname =
+                    resolveTailorName(
+                        state.lockedTailorName,
+                        state.serviceItems[0]?.serviceDetails
+                    ) || null;
+                return { tailorId: tid, tailorName: tname };
+            },
+
+            /**
              * When user picks another garment from catalog while basket has items,
              * add it to basket immediately (pending) so it shows up right away,
              * then open the process page to complete measurements.
@@ -161,23 +270,16 @@ const useCheckoutStore = create(
             selectServiceIntoBasket: (service, extras = {}) => {
                 const sid = String(service?._id || service?.id || '');
                 const state = get();
-                const lockedId = String(
-                    state.lockedTailorId ||
-                    extras.tailorId ||
-                    state.serviceItems[0]?.serviceDetails?.tailorId ||
-                    ''
+                const lockedId = resolveTailorId(
+                    state.lockedTailorId,
+                    extras.tailorId,
+                    state.serviceItems[0]?.serviceDetails
                 );
 
-                const serviceTailorId = String(
-                    (typeof service?.tailor === 'object'
-                        ? service.tailor?._id || service.tailor?.id || service.tailor?.user?._id
-                        : service?.tailor) ||
-                    extras.tailorId ||
-                    ''
-                );
+                const serviceTailorId = resolveTailorId(service, extras.tailorId, extras);
 
                 // Hard lock: another tailor's service cannot join this order
-                if (lockedId && serviceTailorId && lockedId !== serviceTailorId) {
+                if (lockedId && serviceTailorId && String(lockedId) !== String(serviceTailorId)) {
                     return { index: -1, item: null, created: false, blocked: true };
                 }
 
@@ -195,14 +297,14 @@ const useCheckoutStore = create(
                     };
                 }
 
-                const tailorId = lockedId || extras.tailorId || serviceTailorId || null;
+                const tailorId = lockedId || serviceTailorId || null;
                 const tailorName =
-                    state.lockedTailorName ||
-                    extras.tailorName ||
-                    (typeof service?.tailor === 'object'
-                        ? service.tailor?.shopName || service.tailor?.user?.name
-                        : null) ||
-                    null;
+                    resolveTailorName(
+                        state.lockedTailorName,
+                        extras.tailorName,
+                        extras,
+                        service
+                    ) || null;
 
                 const base = Number(service?.basePrice) || 0;
                 const draft = leanBasketItem({
@@ -337,18 +439,31 @@ const useCheckoutStore = create(
                 lockedTailorId: state.lockedTailorId,
                 lockedTailorName: state.lockedTailorName,
             }),
-            merge: (persisted, current) => ({
-                ...current,
-                ...(persisted || {}),
-                serviceItems: Array.isArray(persisted?.serviceItems)
+            merge: (persisted, current) => {
+                const serviceItems = Array.isArray(persisted?.serviceItems)
                     ? persisted.serviceItems.map((row) => leanBasketItem(row))
-                    : [],
-                lockedTailorId: persisted?.lockedTailorId || null,
-                lockedTailorName: persisted?.lockedTailorName || null,
-            }),
+                    : [];
+                const lockedTailorId =
+                    resolveTailorId(
+                        persisted?.lockedTailorId,
+                        serviceItems[0]?.serviceDetails
+                    ) || null;
+                const lockedTailorName =
+                    resolveTailorName(
+                        persisted?.lockedTailorName,
+                        serviceItems[0]?.serviceDetails
+                    ) || null;
+                return {
+                    ...current,
+                    ...(persisted || {}),
+                    serviceItems,
+                    lockedTailorId,
+                    lockedTailorName,
+                };
+            },
         }
     )
 );
 
 export default useCheckoutStore;
-export { leanBasketItem, leanServiceDetails };
+export { leanBasketItem, leanServiceDetails, resolveTailorId, resolveTailorName };
