@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, ShoppingCart, X, MapPin, ChevronDown, Filter } from 'lucide-react';
+import { Bell, ShoppingCart, X, Navigation, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../../../store/cartStore';
 import useAuthStore from '../../../store/authStore';
@@ -38,8 +38,8 @@ const HomeHeader = ({ user }) => {
                 {/* Top Row: Location & Icons */}
                 <div className="flex justify-between items-center mb-5">
                     <div className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0 pr-4" onClick={() => setShowLocationModal(true)}>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 border border-white">
-                            <MapPin size={18} />
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/15 border border-white/40 shrink-0">
+                            <Navigation size={18} className="text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-[10px] text-white/80 font-medium leading-none mb-1">Delivering to</p>
@@ -77,14 +77,10 @@ const HomeHeader = ({ user }) => {
                 </div>
 
                 {/* Search Bar Row */}
-                <div className="bg-white rounded-[1.25rem] flex items-center shadow-sm relative overflow-hidden pl-1 pr-1.5 h-[46px] sm:h-[50px]">
-                    <div className="flex-1 h-full">
+                <div className="bg-white rounded-[1.25rem] flex items-center shadow-sm relative overflow-hidden pl-1 pr-2 h-[46px] sm:h-[50px]">
+                    <div className="flex-1 h-full min-w-0">
                         <AnimatedSearchBar className="h-full bg-transparent shadow-none border-none text-sm w-full" hideBackground={true} />
                     </div>
-                    <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
-                    <button className="h-full px-3 flex items-center gap-1.5 text-gray-700 font-bold text-[10px] sm:text-xs shrink-0 active:scale-95 transition-transform bg-transparent">
-                        <Filter size={14} className="text-gray-900" /> Filters
-                    </button>
                 </div>
             </div>
 

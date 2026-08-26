@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const searchTerms = [
-    '"bridal lehenga"',
-    '"kurta stitching"',
-    '"expert tailors"',
-    '"custom fabrics"',
-    '"alterations"'
+    'Search tailors...',
+    'Search bridal lehenga...',
+    'Search kurta stitching...',
+    'Search alterations...',
+    'Search custom fabrics...',
+    'Search blouse stitching...',
 ];
 
 const popularSuggestions = [
@@ -26,7 +27,7 @@ const popularSuggestions = [
 ];
 
 const AnimatedSearchBar = ({ className = "", value, onChange, onSearch, hideBackground = false }) => {
-    const [text, setText] = useState('');
+    const [placeholderText, setPlaceholderText] = useState('');
     const [termIndex, setTermIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const [internalValue, setInternalValue] = useState('');
@@ -45,38 +46,41 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch, hideBack
         }
     };
 
+    const pauseAnimation = isFocused || Boolean(inputValue?.trim());
+
+    // Typewriter / erase placeholder animation
     useEffect(() => {
-        let timeout;
+        if (pauseAnimation) return undefined;
+
         const currentTerm = searchTerms[termIndex];
+        let timeout;
 
         if (!isDeleting) {
-            if (text === currentTerm) {
-                timeout = setTimeout(() => setIsDeleting(true), 2000);
+            if (placeholderText === currentTerm) {
+                timeout = setTimeout(() => setIsDeleting(true), 1800);
             } else {
                 timeout = setTimeout(() => {
-                    setText(currentTerm.substring(0, text.length + 1));
-                }, 100);
+                    setPlaceholderText(currentTerm.substring(0, placeholderText.length + 1));
+                }, 75);
             }
+        } else if (placeholderText === '') {
+            setIsDeleting(false);
+            setTermIndex((prev) => (prev + 1) % searchTerms.length);
         } else {
-            if (text === '') {
-                setIsDeleting(false);
-                setTermIndex((prev) => (prev + 1) % searchTerms.length);
-            } else {
-                timeout = setTimeout(() => {
-                    setText(currentTerm.substring(0, text.length - 1));
-                }, 50);
-            }
+            timeout = setTimeout(() => {
+                setPlaceholderText(currentTerm.substring(0, placeholderText.length - 1));
+            }, 40);
         }
 
         return () => clearTimeout(timeout);
-    }, [text, isDeleting, termIndex]);
+    }, [placeholderText, isDeleting, termIndex, pauseAnimation]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
                 setIsFocused(false);
             }
-        }
+        };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
@@ -96,9 +100,13 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch, hideBack
         }
     };
 
-    const filteredSuggestions = popularSuggestions.filter(s => 
+    const filteredSuggestions = popularSuggestions.filter(s =>
         inputValue.trim() && s.toLowerCase().includes(inputValue.trim().toLowerCase())
-    ).slice(0, 5); // Limit to top 5 suggestions
+    ).slice(0, 5);
+
+    const livePlaceholder = pauseAnimation
+        ? 'Search tailors, designs, stitching...'
+        : `${placeholderText}|`;
 
     return (
         <div className={`relative group ${className}`} ref={wrapperRef}>
@@ -111,11 +119,10 @@ const AnimatedSearchBar = ({ className = "", value, onChange, onSearch, hideBack
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleSearch}
                 onFocus={() => setIsFocused(true)}
-                placeholder="Search tailors, designs, stitching..."
+                placeholder={livePlaceholder}
                 className={`w-full h-full pl-10 pr-4 text-[13px] font-medium focus:outline-none focus:ring-0 transition-all placeholder:text-gray-400 relative z-10 ${hideBackground ? 'bg-transparent border-transparent shadow-none' : 'bg-white border border-transparent rounded-[1.25rem] focus:bg-white focus:ring-4 focus:ring-white/20 focus:border-white shadow-inner'} ${className.includes('py-') ? '' : 'py-3 sm:py-3.5'}`}
             />
 
-            {/* Suggestions Dropdown */}
             <AnimatePresence>
                 {isFocused && inputValue.trim() && filteredSuggestions.length > 0 && (
                     <motion.div

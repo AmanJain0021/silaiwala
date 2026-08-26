@@ -11,7 +11,7 @@ const QuickActions = () => {
             title: "Upload Design",
             subtitle: "from Pinterest",
             icon: <ImageIcon size={18} className="text-[#E60023]" />,
-            onClick: () => console.log('Pinterest upload clicked'),
+            onClick: () => window.open('https://www.pinterest.com/', '_blank', 'noopener,noreferrer'),
             iconBg: "bg-red-50"
         },
         {
