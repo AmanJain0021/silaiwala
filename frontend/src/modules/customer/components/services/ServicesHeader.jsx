@@ -76,15 +76,14 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
             <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                     <AnimatedSearchBar 
-                        className="py-1"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onSearch={(val) => setSearchQuery(val)}
                         placeholder="Search tailors, designs, stitching..."
                     />
                 </div>
-                <button className="p-2.5 bg-primary/5 rounded-xl border border-primary/20 hover:bg-primary/10 transition-colors text-primary flex-shrink-0">
-                    <Filter size={18} />
+                <button className="h-11 w-11 sm:h-[50px] sm:w-[50px] flex items-center justify-center bg-primary/5 rounded-[1.25rem] sm:rounded-2xl border border-primary/20 hover:bg-primary/10 transition-colors text-primary flex-shrink-0">
+                    <Filter size={20} />
                 </button>
             </div>
 

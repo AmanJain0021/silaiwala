@@ -94,6 +94,7 @@ const ServiceCard = ({ service }) => {
 const CategoryCompareSection = ({ categories }) => {
     const navigate = useNavigate();
     const comparableCategories = categories;
+    const [isExpanded, setIsExpanded] = useState(false);
 
     if (comparableCategories.length === 0) return null;
 
@@ -104,18 +105,23 @@ const CategoryCompareSection = ({ categories }) => {
                     <h3 className="text-sm font-black text-gray-900">Compare Tailors by Category</h3>
                     <Info size={14} className="text-gray-400" />
                 </div>
-                <button className="text-[10px] font-bold text-primary flex items-center gap-0.5">
-                    View All <ArrowRight size={10} />
-                </button>
+                {comparableCategories.length > 4 && (
+                    <button 
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="text-[10px] font-bold text-primary flex items-center gap-0.5"
+                    >
+                        {isExpanded ? 'View Less' : 'View All'} <ArrowRight size={10} className={`transition-transform ${isExpanded ? '-rotate-90' : ''}`} />
+                    </button>
+                )}
             </div>
             <p className="text-[10px] text-gray-500 font-medium mb-3">See all tailors & their prices for each service type</p>
             
-            <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x">
+            <div className={`transition-all duration-300 ${isExpanded ? 'grid grid-cols-3 sm:grid-cols-4 gap-3' : 'flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x'}`}>
                 {comparableCategories.map(cat => (
                     <button
                         key={cat._id}
                         onClick={() => navigate(`/user/services/category/${cat._id}`)}
-                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:shadow-md transition-all flex-shrink-0 w-24 sm:w-28 flex flex-col items-center cursor-pointer group snap-start"
+                        className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:shadow-md transition-all flex flex-col items-center cursor-pointer group ${isExpanded ? 'w-full' : 'flex-shrink-0 w-24 sm:w-28 snap-start'}`}
                     >
                         <div className="h-14 w-14 sm:h-16 sm:w-16 mb-2 overflow-hidden shrink-0 rounded bg-gray-50">
                             <img
@@ -150,6 +156,10 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const routeLocation = useRouteLocation();
     const [activeTailorId, setActiveTailorId] = useState(routeLocation.state?.tailorId || null);
     const [tailorName, setTailorName] = useState(routeLocation.state?.tailorName || '');
+    const [sortBy, setSortBy] = useState('Popular');
+    const [isSortOpen, setIsSortOpen] = useState(false);
+    
+    const sortOptions = ['Popular', 'Price: Low to High', 'Price: High to Low'];
 
     useEffect(() => {
         if (routeLocation.state?.tailorId !== undefined) {
@@ -248,8 +258,17 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             );
         }
 
+        // Apply Sort
+        if (sortBy === 'Price: Low to High') {
+            result = [...result].sort((a, b) => (a.basePrice || a.price || 0) - (b.basePrice || b.price || 0));
+        } else if (sortBy === 'Price: High to Low') {
+            result = [...result].sort((a, b) => (b.basePrice || b.price || 0) - (a.basePrice || a.price || 0));
+        } else if (sortBy === 'Popular') {
+            result = [...result].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        }
+
         return result;
-    }, [services, activeFilter, searchQuery]);
+    }, [services, activeFilter, searchQuery, sortBy]);
 
     if (isLoading) {
         return (
@@ -311,11 +330,34 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
                         : (activeFilter === 'All' && !searchQuery ? 'All Services' : `Results for ${searchQuery ? '"' + searchQuery + '"' : activeFilter}`)}
                 </h2>
                 {!activeTailorId && activeFilter === 'All' && !searchQuery && (
-                    <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
+                    <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500 relative">
                         <span>Sort by</span>
-                        <button className="flex items-center gap-1 font-bold text-gray-900 border border-gray-200 rounded-md px-2 py-1 bg-white shadow-sm hover:bg-gray-50">
-                            Popular <ChevronDown size={14} />
+                        <button 
+                            onClick={() => setIsSortOpen(!isSortOpen)}
+                            className="flex items-center gap-1 font-bold text-gray-900 border border-gray-200 rounded-md px-2 py-1 bg-white shadow-sm hover:bg-gray-50 transition-colors"
+                        >
+                            {sortBy} <ChevronDown size={14} className={`transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
                         </button>
+                        
+                        {isSortOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsSortOpen(false)}></div>
+                                <div className="absolute top-full right-0 mt-1 w-36 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden py-1">
+                                    {sortOptions.map(option => (
+                                        <button
+                                            key={option}
+                                            onClick={() => {
+                                                setSortBy(option);
+                                                setIsSortOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors ${sortBy === option ? 'bg-primary/5 text-primary' : 'text-gray-700 hover:bg-gray-50'}`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
