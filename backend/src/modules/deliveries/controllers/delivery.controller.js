@@ -999,6 +999,15 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
           if (deliveryProfile) {
             deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
             deliveryProfile.lastCashCollectionDate = new Date();
+
+            const Settings = require("../../../models/Settings.js");
+            const settings = await Settings.getSettings();
+            const limit = settings.codWalletConfig?.maxCashLimit || 5000;
+            const autoBlock = settings.codWalletConfig?.autoBlockOnLimit !== false;
+            if (deliveryProfile.codWalletBalance >= limit && autoBlock) {
+              deliveryProfile.cashBlocked = true;
+            }
+
             await deliveryProfile.save({ session });
           }
         }
@@ -1044,24 +1053,25 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
     if (status === "fabric-delivered" || status === "delivered") {
     try {
-      const earnedAmount = order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0;
+      const {
+        computePhaseDeliveryEarning,
+        computeDeliveryBudget,
+        phaseDeliveryTxQuery,
+      } = require("../../../utils/earningsEngine.js");
+      const phase = status === "fabric-delivered" ? "fabric-delivered" : "delivered";
+      const earnedAmount = computePhaseDeliveryEarning(order, phase);
 
       if (!earnedAmount || earnedAmount <= 0) {
-        console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId}. Wallet will not be credited.`);
+        console.error(`CRITICAL: Missing deliveryEarnings on order ${order.orderId} for ${status}. Wallet will not be credited.`);
       } else {
         const WalletTransaction = require("../../../models/WalletTransaction.js");
-        // Prevent duplicate credit by matching the exact status at the start of the description
-        const existingTx = await WalletTransaction.findOne({
-          user: req.user.id,
-          order: order._id,
-          category: { $in: ["order_earnings", "delivery_earnings"] },
-          description: new RegExp(`^Delivery payout for ${status} \\(`, "i")
-        }).session(session);
+        const existingTx = await WalletTransaction.findOne(
+          phaseDeliveryTxQuery(order._id, req.user.id, phase)
+        ).session(session);
 
         if (existingTx) {
           console.warn(`DUPLICATE CREDIT PREVENTED: Wallet already credited for status ${status} on order ${order._id}`);
         } else {
-          // Add to Delivery profile
           await Delivery.findOneAndUpdate(
             { user: req.user.id },
             { 
@@ -1070,25 +1080,22 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
                 totalEarned: earnedAmount,
                 totalDeliveries: 1
               } 
-            }
+            },
+            { session }
           );
 
-          // Create a WalletTransaction record
           await WalletTransaction.create([{
             user: req.user.id,
             amount: earnedAmount,
             type: "credit",
             category: "delivery_earnings",
             order: order._id,
-            description: `Delivery payout for ${status} (${order.deliveryDistance}km)`,
+            description: `Delivery payout for ${status} (${order.deliveryDistance || 0}km)`,
           }], { session });
 
-          // Store deliveryPartnerEarning on Order for audit trail
-          const currentEarning = order.deliveryPartnerEarning || 0;
-          order.deliveryPartnerEarning = currentEarning + earnedAmount;
-          // Save will happen below with other order changes
+          order.deliveryPartnerEarning = computeDeliveryBudget(order);
 
-          console.log(`Credited ₹${earnedAmount} to Delivery Partner ${req.user.id}`);
+          console.log(`Credited ₹${earnedAmount} to Delivery Partner ${req.user.id} for ${status}`);
         }
       }
     } catch (err) {
@@ -1907,30 +1914,33 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   const Settings = require("../../../models/Settings.js");
   const WalletTransaction = require("../../../models/WalletTransaction.js");
   
-  // Calculate delivery earnings
-  let earnings = order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || 0;
-  
-  // Split earnings per trip if order requires both fabric pickup AND delivery
-  if (order.fabricPickupRequired && order.items && order.items.some(item => item.deliveryType !== 'self')) {
-      earnings = Math.round(earnings / 2);
-  }
+  // Calculate delivery earnings per trip phase (pickup vs dropoff)
+  const {
+    computePhaseDeliveryEarning,
+    computeDeliveryBudget,
+    phaseDeliveryTxQuery,
+  } = require("../../../utils/earningsEngine.js");
+  const payoutPhase =
+    order.status === "fabric-picked-up" ||
+    ["pending", "accepted", "fabric-ready-for-pickup"].includes(order.status)
+      ? "fabric-delivered"
+      : "delivered";
+  let earnings = computePhaseDeliveryEarning(order, payoutPhase);
 
   if (!earnings || earnings <= 0) {
     console.error(`CRITICAL: Delivery Fee missing for Order ${order.orderId}. Wallet will NOT be credited.`);
     earnings = 0;
   }
 
+  order.deliveryPartnerEarning = computeDeliveryBudget(order);
+
   // Helper to credit wallet
   const creditDeliveryWallet = async (partnerId, amount, description) => {
     if (!amount || amount <= 0) return;
     
-    // Prevent duplicate credit
-    const existingTx = await WalletTransaction.findOne({
-      user: partnerId,
-      order: order._id,
-      category: "order_earnings",
-      description: description
-    }).session(session);
+    const existingTx = await WalletTransaction.findOne(
+      phaseDeliveryTxQuery(order._id, partnerId, payoutPhase)
+    ).session(session);
     
     if (existingTx) {
       console.warn(`DUPLICATE CREDIT PREVENTED: Wallet already credited for partner ${partnerId} on order ${order._id}`);
@@ -2104,12 +2114,15 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
         data: { orderId: order._id, targetUrl: "/orders" }
       });
 
-      // Ensure platform and delivery fees are populated before distributing earnings
-      if (!order.platformFee) {
+      // Ensure platform fee stays checkout-locked (never invent from totalAmount)
+      if (!order.platformFee || order.platformFee <= 0) {
+         // Fallback only for legacy orders missing the field
          const Settings = require("../../../models/Settings.js");
          const settings = await Settings.getSettings();
          const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
-         order.platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
+         const { computeTailorMerchandise } = require("../../../utils/earningsEngine.js");
+         const baseForFee = computeTailorMerchandise(order);
+         order.platformFee = Math.round(baseForFee * (platformFeePct / 100));
       }
 
       // Distribute Earnings (Tailor)

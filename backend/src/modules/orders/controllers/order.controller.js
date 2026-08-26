@@ -161,8 +161,12 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        order.razorpayOrderId = razorpay_order_id;
        
        if (!order.advancePaymentAmount || order.advancePaymentAmount <= 0) {
-           order.advancePaymentAmount = Math.max(50, Math.round((order.totalAmount || 0) * 0.3));
-           order.remainingPaymentAmount = Math.max(0, (order.totalAmount || 0) - order.advancePaymentAmount);
+           const settingsForAdv = await Settings.getSettings();
+           const advPct = settingsForAdv?.walletConfig?.advancePercentage || 50;
+           const { splitAdvanceRemaining } = require("../../../utils/checkoutPricing.js");
+           const split = splitAdvanceRemaining(order.totalAmount || 0, advPct);
+           order.advancePaymentAmount = split.advanceAmount;
+           order.remainingPaymentAmount = split.remainingAmount;
        }
        
        // Change status to trigger pickup
@@ -209,7 +213,8 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
            if (tailorProfile) {
                const settings = await Settings.getSettings();
                const advancePct = settings?.walletConfig?.advancePercentage || 30;
-               const tailorTotalEarning = order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+               const { computeTailorMerchandise } = require("../../../utils/earningsEngine.js");
+               const tailorTotalEarning = computeTailorMerchandise(order);
                const tailorAdvanceAmount = Math.round(tailorTotalEarning * (advancePct / 100));
 
                tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorAdvanceAmount;
@@ -235,19 +240,13 @@ user: order.tailor,
        order.remainingPaymentMethod = "online";
        order.remainingPaymentId = razorpay_payment_id;
        
-       // Calculate fees from Settings (not hardcoded)
-       const settings = await Settings.getSettings();
-       const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
-       const platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
-       const deliveryFee = order.deliveryFee || 0; 
-       order.platformFee = platformFee;
-       order.deliveryFee = deliveryFee;
-       
-       // Compute earnings distribution
-       const tailorEarning = order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+       // Keep checkout-locked platformFee; only snapshot partner/platform nets
+       const { computeTailorMerchandise, computeDeliveryBudget, computePlatformNet } = require("../../../utils/earningsEngine.js");
+       const tailorEarning = computeTailorMerchandise(order);
+       const deliveryBudget = computeDeliveryBudget(order);
        order.tailorEarning = Math.max(tailorEarning, 0);
-       order.deliveryPartnerEarning = deliveryFee;
-       order.netPlatformEarning = order.totalAmount - order.tailorEarning - deliveryFee - (order.gstAmount || 0);
+       order.deliveryPartnerEarning = deliveryBudget;
+       order.netPlatformEarning = computePlatformNet(order);
        order.paidAt = new Date();
        
        order.paymentStatus = "paid"; // Overall payment complete
@@ -337,24 +336,29 @@ ledgerId,
            });
        }
 
-       // --- Credit Tailor Wallet for Full Payment ---
+       // --- Credit Tailor Wallet for Full Payment (merchandise only; settle rest on delivery) ---
        try {
            const tailorProfile = await Tailor.findOne({ user: order.tailor });
            if (tailorProfile) {
-               // Calculate platform fee here if needed, simplified for now:
-               const platformFee = Math.round(order.totalAmount * 0.10); // Example 10%
-               const tailorShare = order.totalAmount - platformFee;
-               
-               await WalletTransaction.create([{
-user: tailorProfile.user,
+               const { computeTailorMerchandise, computeDeliveryBudget, computePlatformNet } = require("../../../utils/earningsEngine.js");
+               const tailorShare = computeTailorMerchandise(order);
+               const deliveryBudget = computeDeliveryBudget(order);
+               order.tailorEarning = tailorShare;
+               order.deliveryPartnerEarning = deliveryBudget;
+               order.netPlatformEarning = computePlatformNet(order);
+
+               if (tailorShare > 0) {
+                 await WalletTransaction.create([{
+                   user: tailorProfile.user,
                    amount: tailorShare,
                    type: 'credit',
-                   category: 'full_payment',
+                   category: 'advance_payment',
                    order: order._id,
-                   description: `Full payment received for Order ${order.orderId} (less platform fee)`
-}], { session });
-               tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorShare;
-               await tailorProfile.save({ session });
+                   description: `Full payment (tailor share) for order ${order.orderId}`
+                 }], { session });
+                 tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorShare;
+                 await tailorProfile.save({ session });
+               }
            }
        } catch (walletErr) {
            console.error("Wallet credit error (Full Payment):", walletErr);
@@ -374,16 +378,13 @@ user: tailorProfile.user,
        }
        if (!order.acceptedAt) order.acceptedAt = new Date();
        
-       // Calculate and store fees for full payment
-       const settings = await Settings.getSettings();
-       const platformFeePct = settings?.walletConfig?.platformFeePercentage || 5;
-       const platformFee = Math.round(order.totalAmount * (platformFeePct / 100));
-       order.platformFee = platformFee;
-       
-       const tailorEarning = order.items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+       // Keep checkout-locked platformFee; snapshot nets only
+       const { computeTailorMerchandise, computeDeliveryBudget, computePlatformNet } = require("../../../utils/earningsEngine.js");
+       const tailorEarning = computeTailorMerchandise(order);
+       const deliveryBudget = computeDeliveryBudget(order);
        order.tailorEarning = Math.max(tailorEarning, 0);
-       order.deliveryPartnerEarning = order.deliveryFee || 0;
-       order.netPlatformEarning = order.totalAmount - order.tailorEarning - (order.deliveryFee || 0) - (order.gstAmount || 0);
+       order.deliveryPartnerEarning = deliveryBudget;
+       order.netPlatformEarning = computePlatformNet(order);
 
        // Create PaymentLedger for full payment
        try {
@@ -895,7 +896,9 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   }
 
   // 2. Optimization: Map items to ensure structure matches updated schema
-  const formattedItems = items.map(item => {
+  const StyleAddon = require("../../../models/StyleAddon.js");
+  const formattedItems = [];
+  for (const item of items) {
     const rawService = item.service || item.serviceDetails?.id || item.serviceDetails?._id;
     const rawProduct = item.product || item.productDetails?.id || item.productDetails?._id;
     const rawFabric = item.selectedFabric?._id || item.selectedFabric?.id || item.selectedFabric;
@@ -939,19 +942,44 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       };
     }
 
-    return {
+    // Persist style addons with prices so tailor settlement includes them
+    const rawAddons = item.addons || item.styleAddons || item.configuration?.addons || [];
+    const styleAddons = [];
+    if (Array.isArray(rawAddons)) {
+      for (const a of rawAddons) {
+        const addonId = typeof a === "string" ? a : a?._id || a?.id || a?.addon;
+        let price = typeof a === "object" && a !== null ? Number(a.price) || 0 : 0;
+        let name = typeof a === "object" && a !== null ? a.name || a.title || "" : "";
+        if (addonId && mongoose.Types.ObjectId.isValid(addonId) && price <= 0) {
+          const doc = await StyleAddon.findById(addonId).lean();
+          if (doc) {
+            price = Number(doc.price) || 0;
+            name = name || doc.name || "";
+          }
+        }
+        if (addonId || name || price > 0) {
+          styleAddons.push({
+            _id: addonId && mongoose.Types.ObjectId.isValid(addonId) ? addonId : undefined,
+            name,
+            price,
+          });
+        }
+      }
+    }
+
+    formattedItems.push({
       product: validProduct,
       service: validService,
-      fabricSource: item.fabricSource || (validProduct ? 'platform' : 'customer'),
-      deliveryType: item.deliveryType || 'standard',
+      fabricSource: item.fabricSource || item.configuration?.fabricSource || (validProduct ? 'platform' : 'customer'),
+      deliveryType: item.deliveryType || item.configuration?.deliveryType || 'standard',
       selectedFabric: validFabric,
       quantity: item.quantity || 1,
-      price: Number(item.price) || 0,
+      price: Number(item.price) || Number(item.pricing?.base) || 0,
       measurements: rawMeasurements,
       selectedStyle: item.selectedStyle || null,
-      styleAddons: item.addons || item.styleAddons || []
-    };
-  });
+      styleAddons,
+    });
+  }
 
   // 3. Generate unique order ID
   const orderId = `ORD-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
@@ -990,46 +1018,40 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   );
 
   let discountAmount = 0;
-  let finalAmount = serverPricing.total;
+  let finalAmount = Math.round(serverPricing.total);
+  let appliedPromoDoc = null;
 
   if (promoCode) {
-    const promo = await PromoCode.findOne({ code: promoCode, isActive: true });
-    if (promo) {
-      // Check dates
-      const now = new Date();
-      const isActive = promo.startDate <= now && (!promo.endDate || promo.endDate >= now);
-      const isWithinLimit = promo.usedCount < promo.usageLimit;
-      const isMinAmountMet = serverPricing.total >= promo.minOrderAmount;
+    const { calculatePromoDiscount } = require("../../../utils/promoDiscount.js");
+    const promo = await PromoCode.findOne({
+      code: String(promoCode).trim().toUpperCase(),
+      isActive: true,
+    });
 
-      if (isActive && isWithinLimit && isMinAmountMet) {
-        if (promo.discountType === "percentage") {
-          discountAmount = (serverPricing.total * promo.discountValue) / 100;
-          if (promo.maxDiscountAmount && discountAmount > promo.maxDiscountAmount) {
-            discountAmount = promo.maxDiscountAmount;
-          }
-        } else {
-          discountAmount = promo.discountValue;
-        }
-        finalAmount = Math.max(0, serverPricing.total - discountAmount);
-        
-        // Increment used count
-        promo.usedCount += 1;
-        await promo.save();
-      }
+    if (!promo) {
+      return next(new ErrorResponse("Invalid or expired promo code", 400));
     }
+
+    const promoResult = calculatePromoDiscount(serverPricing.total, promo);
+    if (!promoResult.ok) {
+      return next(new ErrorResponse(promoResult.reason || "Promo code could not be applied", 400));
+    }
+
+    discountAmount = promoResult.discount;
+    finalAmount = promoResult.newTotal;
+    appliedPromoDoc = promo;
   }
 
   const clientTotal = Math.round(Number(totalAmount) || 0);
   
   // Price verification: Log mismatch as warning but don't block order.
   // The server-computed total is always authoritative and used for the order.
-  // Mismatches occur because price-summary uses frontend pre-computed values while
-  // createOrder enriches from DB — these paths can diverge due to distance calc
-  // differences, rounding, and data shape differences.
-  if (!promoCode && Math.abs(clientTotal - serverPricing.total) > 5) {
+  // When a promo is applied, compare against discounted finalAmount.
+  const expectedClientTotal = promoCode ? finalAmount : Math.round(serverPricing.total);
+  if (Math.abs(clientTotal - expectedClientTotal) > 5) {
     console.warn(
-      `[Order Price Warning] Client sent ₹${clientTotal}, server computed ₹${serverPricing.total}. ` +
-      `Using server total. Items: ${JSON.stringify(items.map(i => ({ service: i.service, price: i.price, addons: i.addons?.length })))}`
+      `[Order Price Warning] Client sent ₹${clientTotal}, server expected ₹${expectedClientTotal}. ` +
+      `Using server total. promo=${promoCode || 'none'}`
     );
   }
 
@@ -1037,6 +1059,11 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   const gstAmount = serverPricing.taxes;
   const platformFee = serverPricing.platformFee;
   const verifiedDeliveryFee = serverPricing.delivery;
+  const stitchingAdvancePct = settings?.walletConfig?.advancePercentage || 50;
+  // Store / ready-made = full amount up front; stitching services = configured advance %
+  const advancePctForOrder = isCartCheckout || isReadyMade ? 100 : stitchingAdvancePct;
+  const { splitAdvanceRemaining } = require("../../../utils/checkoutPricing.js");
+  const { advanceAmount, remainingAmount } = splitAdvanceRemaining(finalAmount, advancePctForOrder);
 
   // 7. Generate transaction ID
   const transactionId = `TXN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
@@ -1049,13 +1076,24 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     items: formattedItems,
     totalAmount: finalAmount,
     deliveryFee: verifiedDeliveryFee,
-    deliveryPartnerEarning: serverPricing.actualDeliveryCost || verifiedDeliveryFee, // Ensures payout even if customer fee is 0
+    // Partner budget stays even when customer delivery is FREE (admin free-delivery threshold)
+    deliveryPartnerEarning: serverPricing.actualDeliveryCost || verifiedDeliveryFee,
+    actualDeliveryCost: serverPricing.actualDeliveryCost || 0,
+    pickupDeliveryCost: serverPricing.pickupDeliveryCost || 0,
+    dropoffDeliveryCost: serverPricing.dropoffDeliveryCost || 0,
+    // Locked visit fee: customer charge = measurement executive payout
+    measurementVisitFee: Math.round(Number(serverPricing.tailorAtHome) || 0),
+    tailorEarning: Math.round(
+      (Number(serverPricing.base) || 0) + (Number(serverPricing.addons) || 0)
+    ),
     platformFee,
     gstAmount,
     gstPercentage: gstPct,
     transactionId,
     discountAmount,
-    couponCode: promoCode,
+    couponCode: appliedPromoDoc ? appliedPromoDoc.code : undefined,
+    advancePaymentAmount: advanceAmount,
+    remainingPaymentAmount: remainingAmount,
     deliveryAddress,
     status: initialStatus,
     fabricPickupRequired,
@@ -1069,6 +1107,16 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         message: isReadyMade ? "Order received and automatically assigned. Processing started." : "Waiting for the tailor to accept the order before assigning a delivery partner."
     }],
   });
+
+  // Increment promo usage only after order is successfully created (avoid burning codes on failed create)
+  if (appliedPromoDoc) {
+    try {
+      appliedPromoDoc.usedCount = (appliedPromoDoc.usedCount || 0) + 1;
+      await appliedPromoDoc.save();
+    } catch (promoErr) {
+      console.error("Failed to increment promo usedCount after order create:", promoErr.message);
+    }
+  }
 
   // Create MeasurementRequest and trigger auto-assignment ONLY if advance payment is completed
   if (order.isMeasurementHome && order.advancePaymentStatus === 'paid') {

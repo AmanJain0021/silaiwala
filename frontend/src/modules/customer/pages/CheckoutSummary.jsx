@@ -7,9 +7,10 @@ import useCheckoutStore from '../../../store/checkoutStore';
 import useAddressStore from '../../../store/userStore';
 import useCartStore from '../../../store/cartStore';
 import BillDetails from '../components/checkout/summary/BillDetails';
+import CouponOfferSection from '../components/checkout/summary/CouponOfferSection';
 import ServiceReviewCard from '../components/checkout/summary/ServiceReviewCard';
 import { cn } from '../../../utils/cn';
-import { formatCheckoutAddress } from '../../../utils/checkoutBilling';
+import { formatCheckoutAddress, splitAdvanceRemaining } from '../../../utils/checkoutBilling';
 
 import useOrderStore from '../../../store/orderStore';
 
@@ -94,6 +95,7 @@ const CheckoutSummary = () => {
         gstPercentage: 0
     });
     const [isLoadingPricing, setIsLoadingPricing] = useState(true);
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
 
     // Fetch Bulk Order Details
     useEffect(() => {
@@ -149,6 +151,8 @@ const CheckoutSummary = () => {
                 });
                 if (res.data.success) {
                     setCurrentPricing(res.data.data);
+                    // Base total changed — clear coupon so user can re-apply against new amount
+                    setAppliedCoupon(null);
                 }
             } catch (err) {
                 console.error("Failed to fetch price summary:", err);
@@ -168,7 +172,23 @@ const CheckoutSummary = () => {
     ));
     const requireFullPayment = (isCartCheckout && !isCartAlteration && !isCartCustomDesign) || (isServiceCheckout && isAlterationCheckout);
 
-    const finalTotal = currentPricing?.total || 0;
+    const baseTotal = Math.round(Number(currentPricing?.total) || 0);
+    const discountAmount = appliedCoupon ? Math.round(Number(appliedCoupon.discount) || 0) : 0;
+    const displayPricing = React.useMemo(() => {
+        if (!appliedCoupon || discountAmount <= 0) {
+            return { ...currentPricing, discountAmount: 0, couponCode: '' };
+        }
+        return {
+            ...currentPricing,
+            discountAmount,
+            couponCode: appliedCoupon.code,
+            total: Math.max(0, baseTotal - discountAmount),
+        };
+    }, [currentPricing, appliedCoupon, discountAmount, baseTotal]);
+
+    const finalTotal = Math.round(Number(displayPricing?.total) || 0);
+    const effectiveAdvancePct = requireFullPayment ? 100 : (advancePercentage || 25);
+    const { advanceAmount } = splitAdvanceRemaining(finalTotal, effectiveAdvancePct);
 
     const handlePayment = async () => {
         if (!selectedAddress) {
@@ -273,6 +293,7 @@ const CheckoutSummary = () => {
                             };
                         }),
                         totalAmount: finalTotal,
+                        promoCode: appliedCoupon?.code || undefined,
                         deliveryFee: currentPricing.delivery || 0,
                         platformFee: currentPricing.platformFee || 0,
                         gstAmount: currentPricing.taxes || 0,
@@ -301,6 +322,7 @@ const CheckoutSummary = () => {
                             };
                         }),
                         totalAmount: finalTotal,
+                        promoCode: appliedCoupon?.code || undefined,
                         deliveryFee: currentPricing.delivery || 0,
                         platformFee: currentPricing.platformFee || 0,
                         gstAmount: currentPricing.taxes || 0,
@@ -754,7 +776,16 @@ const CheckoutSummary = () => {
                     )}
                 </div>
 
-                {/* 4. Bill Details Card */}
+                {/* 4. Coupon / Offers + Bill Details */}
+                {!isCartAlteration && !isLoadingPricing && (
+                    <CouponOfferSection
+                        orderAmount={baseTotal}
+                        appliedCoupon={appliedCoupon}
+                        onApplied={setAppliedCoupon}
+                        onRemoved={() => setAppliedCoupon(null)}
+                    />
+                )}
+
                 {isCartAlteration ? (
                     <div className="bg-primary/5 border border-primary/10 rounded-3xl p-5 text-center">
                         <h3 className="text-sm font-bold text-primary mb-1">Awaiting Quote</h3>
@@ -768,8 +799,8 @@ const CheckoutSummary = () => {
                     </div>
                 ) : (
                     <BillDetails 
-                        pricing={currentPricing} 
-                        advancePercentage={requireFullPayment ? 100 : (advancePercentage || 25)} 
+                        pricing={displayPricing} 
+                        advancePercentage={effectiveAdvancePct} 
                         baseLabel={isCartCheckout ? "Product Charges" : "Stitching Charges"}
                     />
                 )}
@@ -804,13 +835,20 @@ const CheckoutSummary = () => {
                         <div className="flex items-baseline gap-2">
                             <span className="text-xs text-gray-500 font-semibold">Total Amount</span>
                             <span className="text-lg sm:text-xl font-black text-gray-900">
-                                ₹{finalTotal ? finalTotal.toLocaleString('en-IN') : '2,604'}
+                                ₹{finalTotal.toLocaleString('en-IN')}
                             </span>
                         </div>
+                        {discountAmount > 0 && (
+                            <p className="text-[10px] text-emerald-600 font-bold">
+                                Coupon saved ₹{discountAmount.toLocaleString('en-IN')}
+                            </p>
+                        )}
                         <div className="flex items-baseline gap-1.5">
-                            <span className="text-xs text-primary font-bold">Advance (25%)</span>
+                            <span className="text-xs text-primary font-bold">
+                                {effectiveAdvancePct >= 100 ? 'Payable now' : `Advance (${effectiveAdvancePct}%)`}
+                            </span>
                             <span className="text-sm font-extrabold text-primary">
-                                ₹{finalTotal ? Math.round(finalTotal * 0.25).toLocaleString('en-IN') : '651'}
+                                ₹{advanceAmount.toLocaleString('en-IN')}
                             </span>
                         </div>
                     </div>

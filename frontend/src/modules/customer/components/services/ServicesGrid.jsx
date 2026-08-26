@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, CheckCircle2, Star, Loader2, Users, ArrowRight, X } from 'lucide-react';
+import { Clock, CheckCircle2, Star, Loader2, Users, ArrowRight, X, Heart, Info, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
@@ -7,6 +7,7 @@ import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 const ServiceCard = ({ service }) => {
     const navigate = useNavigate();
     const location = useRouteLocation();
+    const isPopular = (service.rating || 0) >= 4.5;
 
     const handleNavigate = () => {
         navigate(`/user/services/${service._id}`, { state: location.state });
@@ -15,46 +16,54 @@ const ServiceCard = ({ service }) => {
     return (
         <div
             onClick={handleNavigate}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col h-full cursor-pointer"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-row sm:flex-col h-full cursor-pointer"
         >
-            {/* Image Section */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
+            <div className="relative w-2/5 sm:w-full aspect-[4/5] sm:aspect-[4/3] overflow-hidden bg-gray-100 shrink-0">
                 <img
-                    src={service.image || 'https://images.unsplash.com/photo-1556760544-74c6974b89e0?w=800'}
+                    src={service.image || 'https://placehold.co/400x500/e6e8f0/843d9b?text=Service'}
                     alt={service.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x500/e6e8f0/843d9b?text=Service'; }}
                 />
-                <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                    {service.tags?.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
-                            {tag}
-                        </span>
-                    )) || (
-                        <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
-                            Classic
-                        </span>
-                    )}
-                </div>
-                <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-sm px-1.5 py-0.5 rounded-md text-[10px] font-bold shadow-sm flex items-center gap-0.5">
+                <button className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10" onClick={(e) => e.stopPropagation()}>
+                    <Heart size={14} />
+                </button>
+                <div className="absolute bottom-2 left-2 bg-white px-2 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1 z-10">
                     <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                    {service.rating || 0}
+                    {service.rating || '4.8'}
                 </div>
             </div>
 
             {/* Content Section */}
-            <div className="p-4 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">{service.title}</h3>
-                    <span className="font-bold text-primary">₹{service.basePrice}</span>
+            <div className="p-3 sm:p-4 flex flex-col flex-1 min-w-0">
+                {isPopular && (
+                    <span className="self-start px-2 py-0.5 bg-primary text-white text-[8px] sm:text-[10px] uppercase font-bold tracking-wider rounded mb-1.5">
+                        POPULAR
+                    </span>
+                )}
+                <div className="flex justify-between items-start mb-0.5 gap-2">
+                    <h3 className="font-bold text-gray-900 text-sm sm:text-base group-hover:text-primary transition-colors line-clamp-1 flex-1">{service.title}</h3>
+                    <span className="font-black text-primary text-sm sm:text-base shrink-0">₹{service.basePrice}</span>
                 </div>
 
-                <p className="text-xs text-gray-500 line-clamp-2 mb-3 flex-1">{service.description}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 flex-1">{service.description}</p>
 
-                <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-4 bg-gray-50 p-2 rounded-lg">
-                    <Clock size={12} />
-                    <span>Est. {service.deliveryTime || '10-15 Days'}</span>
-                    <span className="w-1 h-1 bg-gray-300 rounded-full mx-1"></span>
-                    <span className="text-green-600 font-medium">Pickup Available</span>
+                <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-gray-500 mb-2">
+                    <div className="flex items-center gap-1">
+                        <Clock size={10} />
+                        <span>Est. {service.deliveryTime || '2-4 Days'}</span>
+                    </div>
+                    <span className="text-green-600 font-bold flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded">
+                        <CheckCircle2 size={10} /> Pickup Available
+                    </span>
+                </div>
+
+                <div className="flex gap-1 flex-wrap mb-3">
+                    {service.tags?.map(tag => (
+                        <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-medium rounded-full">
+                            {tag}
+                        </span>
+                    ))}
                 </div>
 
                 <div className="flex gap-2 mt-auto">
@@ -63,7 +72,7 @@ const ServiceCard = ({ service }) => {
                             e.stopPropagation();
                             handleNavigate();
                         }}
-                        className="flex-1 py-2 px-3 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="flex-1 py-1.5 sm:py-2 px-3 rounded-xl border border-gray-200 text-[10px] sm:text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                         Details
                     </button>
@@ -72,9 +81,9 @@ const ServiceCard = ({ service }) => {
                             e.stopPropagation();
                             handleNavigate();
                         }}
-                        className="flex-1 py-2 px-3 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-dark shadow-sm transition-colors"
+                        className="flex-[1.5] py-1.5 sm:py-2 px-3 rounded-xl bg-primary text-white text-[10px] sm:text-xs font-bold hover:bg-primary-dark shadow-sm transition-colors flex items-center justify-center gap-1"
                     >
-                        Book
+                        Book Now <ArrowRight size={12} />
                     </button>
                 </div>
             </div>
@@ -90,42 +99,39 @@ const CategoryCompareSection = ({ categories }) => {
 
     return (
         <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-                <div>
+            <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
                     <h3 className="text-sm font-black text-gray-900">Compare Tailors by Category</h3>
-                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">See all tailors & their prices for each service type</p>
+                    <Info size={14} className="text-gray-400" />
                 </div>
-                <Users size={16} className="text-primary" />
+                <button className="text-[10px] font-bold text-primary flex items-center gap-0.5">
+                    View All <ArrowRight size={10} />
+                </button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <p className="text-[10px] text-gray-500 font-medium mb-3">See all tailors & their prices for each service type</p>
+            
+            <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x">
                 {comparableCategories.map(cat => (
                     <button
                         key={cat._id}
                         onClick={() => navigate(`/user/services/category/${cat._id}`)}
-                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-left hover:shadow-md hover:border-primary/20 transition-all group cursor-pointer"
+                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:shadow-md transition-all flex-shrink-0 w-24 sm:w-28 flex flex-col items-center cursor-pointer group snap-start"
                     >
-                        <div className="flex items-center gap-2 mb-2">
-                            {cat.image && (
-                                <div className="h-8 w-8 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
-                                    <img
-                                        src={cat.image}
-                                        alt={cat.name}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'; }}
-                                    />
-                                </div>
-                            )}
-                            <span className="text-xs font-black text-gray-900 truncate group-hover:text-primary transition-colors">
-                                {cat.name}
-                            </span>
+                        <div className="h-14 w-14 sm:h-16 sm:w-16 mb-2 overflow-hidden shrink-0 rounded bg-gray-50">
+                            <img
+                                src={cat.image || 'https://placehold.co/150x150/e6e8f0/843d9b?text=Cat'}
+                                alt={cat.name}
+                                className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x150/e6e8f0/843d9b?text=Cat'; }}
+                            />
                         </div>
-                        <div className="text-sm font-black text-primary">
+                        <span className="text-[10px] sm:text-[11px] font-black text-gray-900 mb-1 line-clamp-1 w-full">
+                            {cat.name}
+                        </span>
+                        <div className="text-[9px] sm:text-[10px] font-bold text-primary bg-primary/10 px-1 py-0.5 rounded w-full line-clamp-1 text-center">
                             {cat.minPrice != null && cat.maxPrice != null 
-                                ? `₹${cat.minPrice} – ₹${cat.maxPrice}` 
+                                ? `₹${cat.minPrice} - ₹${cat.maxPrice}` 
                                 : 'View Prices'}
-                        </div>
-                        <div className="flex items-center gap-1 mt-2 text-[9px] font-bold text-primary/70 group-hover:text-primary transition-colors">
-                            Compare Prices <ArrowRight size={10} />
                         </div>
                     </button>
                 ))}
@@ -298,11 +304,21 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
                 <CategoryCompareSection categories={serviceCategories} />
             )}
 
-            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
-                {activeTailorId
-                    ? `Services by ${tailorName || 'Tailor'}`
-                    : (activeFilter === 'All' && !searchQuery ? 'All Services' : `Results for ${searchQuery ? '"' + searchQuery + '"' : activeFilter}`)}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-black text-gray-900">
+                    {activeTailorId
+                        ? `Services by ${tailorName || 'Tailor'}`
+                        : (activeFilter === 'All' && !searchQuery ? 'All Services' : `Results for ${searchQuery ? '"' + searchQuery + '"' : activeFilter}`)}
+                </h2>
+                {!activeTailorId && activeFilter === 'All' && !searchQuery && (
+                    <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
+                        <span>Sort by</span>
+                        <button className="flex items-center gap-1 font-bold text-gray-900 border border-gray-200 rounded-md px-2 py-1 bg-white shadow-sm hover:bg-gray-50">
+                            Popular <ChevronDown size={14} />
+                        </button>
+                    </div>
+                )}
+            </div>
             {filteredServices.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                     <p className="text-gray-400 font-bold text-sm">No services found.</p>

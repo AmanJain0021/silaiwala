@@ -7,6 +7,7 @@ const {
   getWishlist,
   wishlistToggle,
   applyPromoCode,
+  getAvailablePromoCodes,
   getReferralStats
 } = require("../controllers/customer.controller.js");
 const { 
@@ -42,6 +43,7 @@ router.post("/wishlist/toggle", authorize("customer", "admin", "tailor", "delive
 
 // Promo
 router.post("/apply-promo", authorize("customer", "admin", "tailor", "delivery"), applyPromoCode);
+router.get("/promo-codes", authorize("customer", "admin", "tailor", "delivery"), getAvailablePromoCodes);
 
 // Refer & Earn
 router.get("/referral-stats", authorize("customer", "admin", "tailor", "delivery"), getReferralStats);

@@ -28,7 +28,7 @@ const CartPage = () => {
     const qualifiesFreeDelivery =
         freeDeliveryMinOrder != null &&
         freeDeliveryMinOrder > 0 &&
-        totalPrice > freeDeliveryMinOrder;
+        totalPrice >= freeDeliveryMinOrder;
 
     const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
@@ -118,7 +118,7 @@ const CartPage = () => {
                             </div>
                             {qualifiesFreeDelivery && (
                                 <div className="bg-green-50 text-green-700 p-2 rounded-lg text-[10px] font-medium border border-green-100">
-                                    Free delivery unlocked (orders above ₹{freeDeliveryMinOrder.toLocaleString('en-IN')})
+                                    Free delivery unlocked (₹{freeDeliveryMinOrder.toLocaleString('en-IN')} & above)
                                 </div>
                             )}
 

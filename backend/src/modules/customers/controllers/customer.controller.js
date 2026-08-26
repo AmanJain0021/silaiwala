@@ -259,46 +259,74 @@ exports.getWishlist = asyncHandler(async (req, res, next) => {
  */
 exports.applyPromoCode = asyncHandler(async (req, res, next) => {
   const { code, orderAmount } = req.body;
+  const amount = Math.max(0, Math.round(Number(orderAmount) || 0));
+  const normalizedCode = String(code || "").trim().toUpperCase();
 
-  const promo = await PromoCode.findOne({ code, isActive: true });
+  if (!normalizedCode) {
+    return next(new ErrorResponse("Please enter a coupon code", 400));
+  }
+
+  const promo = await PromoCode.findOne({ code: normalizedCode, isActive: true });
 
   if (!promo) {
     return next(new ErrorResponse("Invalid or expired promo code", 404));
   }
 
-  // Check dates
-  const now = new Date();
-  if (promo.startDate > now || (promo.endDate && promo.endDate < now)) {
-    return next(new ErrorResponse("Promo code is not active currently", 400));
-  }
+  const { calculatePromoDiscount } = require("../../../utils/promoDiscount.js");
+  const result = calculatePromoDiscount(amount, promo);
 
-  // Check usage limit
-  if (promo.usedCount >= promo.usageLimit) {
-    return next(new ErrorResponse("Promo code usage limit reached", 400));
-  }
-
-  // Check minimum order amount
-  if (orderAmount < promo.minOrderAmount) {
-    return next(new ErrorResponse(`Minimum order amount of ${promo.minOrderAmount} required`, 400));
-  }
-
-  let discount = 0;
-  if (promo.discountType === "percentage") {
-    discount = (orderAmount * promo.discountValue) / 100;
-    if (promo.maxDiscountAmount && discount > promo.maxDiscountAmount) {
-      discount = promo.maxDiscountAmount;
-    }
-  } else {
-    discount = promo.discountValue;
+  if (!result.ok) {
+    return next(new ErrorResponse(result.reason || "Promo code could not be applied", 400));
   }
 
   res.status(200).json({
     success: true,
     data: {
       code: promo.code,
-      discount,
-      newTotal: orderAmount - discount,
+      description: promo.description || "",
+      discountType: promo.discountType,
+      discountValue: promo.discountValue,
+      discount: result.discount,
+      newTotal: result.newTotal,
+      minOrderAmount: promo.minOrderAmount || 0,
     },
+  });
+});
+
+/**
+ * @desc    List active promo codes / offers for checkout
+ * @route   GET /api/v1/customers/promo-codes
+ * @access  Private (Customer)
+ */
+exports.getAvailablePromoCodes = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const withUsage = await PromoCode.find({
+    isActive: true,
+    startDate: { $lte: now },
+    $or: [{ endDate: null }, { endDate: { $exists: false } }, { endDate: { $gte: now } }],
+  })
+    .select(
+      "code description discountType discountValue minOrderAmount maxDiscountAmount endDate usageLimit usedCount"
+    )
+    .sort("-createdAt")
+    .lean();
+
+  const list = withUsage
+    .filter((p) => (p.usedCount || 0) < (p.usageLimit ?? 1000))
+    .map((p) => ({
+      code: p.code,
+      description: p.description || "",
+      discountType: p.discountType,
+      discountValue: p.discountValue,
+      minOrderAmount: p.minOrderAmount || 0,
+      maxDiscountAmount: p.maxDiscountAmount || null,
+      endDate: p.endDate || null,
+    }));
+
+  res.status(200).json({
+    success: true,
+    count: list.length,
+    data: list,
   });
 });
 

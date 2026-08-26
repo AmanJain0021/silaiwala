@@ -2,6 +2,21 @@ const mongoose = require("mongoose");
 const { getDistanceFromLatLonInKm } = require("./haversine.js");
 
 /**
+ * Same formula customer is charged for home measurement visit (Admin → visitFee).
+ * Executive payout must use this (locked on order at create).
+ */
+function computeVisitFee(distanceKm, visitSettings = {}) {
+  const baseFee = Number(visitSettings.baseFee) || 0;
+  const perKmFee = Number(visitSettings.perKmFee) || 0;
+  const freeKm = Number(visitSettings.freeKm) || 0;
+  const km = Math.max(0, Number(distanceKm) || 0);
+
+  if (baseFee <= 0 && perKmFee <= 0) return 0;
+  if (km <= freeKm) return Math.round(baseFee);
+  return Math.round(baseFee + (km - freeKm) * perKmFee);
+}
+
+/**
  * Single source of truth for checkout totals (matches Bill Details on customer app).
  */
 function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings) {
@@ -20,6 +35,9 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
   let totalTailorAtHome = 0;
   let orderDeliveryFee = 0;
   let freeDeliveryApplied = false;
+  let actualDeliveryCost = 0; // what delivery partners should earn (never zeroed by free-delivery promo)
+  let pickupDeliveryCost = 0;
+  let dropoffDeliveryCost = 0;
 
   let uLat = null;
   let uLng = null;
@@ -53,8 +71,11 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
         );
       }
     }
+    actualDeliveryCost = orderDeliveryFee;
+    dropoffDeliveryCost = orderDeliveryFee;
 
-    if (freeDeliveryMinOrder > 0 && totalBase > freeDeliveryMinOrder) {
+    // Free delivery for customer when merchandise meets threshold (partner cost still tracked)
+    if (freeDeliveryMinOrder > 0 && totalBase >= freeDeliveryMinOrder) {
       orderDeliveryFee = 0;
       freeDeliveryApplied = true;
     }
@@ -84,14 +105,7 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
         if (distanceKm > maxDistanceKm) maxDistanceKm = distanceKm;
 
         if (item.configuration?.isTailorAtHome) {
-          if (distanceKm <= visitSettings.freeKm) {
-            dynamicTailorAtHome = Number(visitSettings.baseFee) || 0;
-          } else {
-            dynamicTailorAtHome = Math.round(
-              Number(visitSettings.baseFee) +
-                (distanceKm - visitSettings.freeKm) * Number(visitSettings.perKmFee)
-            );
-          }
+          dynamicTailorAtHome = computeVisitFee(distanceKm, visitSettings);
         }
       }
 
@@ -100,62 +114,38 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
       totalFabric += itemFabric;
       totalTailorAtHome += dynamicTailorAtHome;
 
-      // Check if fabric pickup is required
       if (item.configuration?.fabricSource === "customer") {
-        pickupTrips = 1; // At least one pickup trip required
+        pickupTrips = 1;
       }
-      
-      // Check if final delivery is required
+
       if (item.configuration?.deliveryType && item.configuration.deliveryType !== "self") {
-        deliveryTrips = 1; // At least one delivery trip required
+        deliveryTrips = 1;
       }
     }
 
     const totalTrips = pickupTrips + deliveryTrips;
 
-    let actualDeliveryCost = 0;
     if (totalTrips > 0) {
-      if (maxDistanceKm > 0) {
-        actualDeliveryCost = Math.round(
-          (Number(deliveryRates.baseFee) + maxDistanceKm * Number(deliveryRates.perKmRate)) * totalTrips
-        );
-      } else {
-        actualDeliveryCost = Math.round((Number(deliveryRates.baseFee) || 0) * totalTrips);
-      }
+      const perTrip =
+        maxDistanceKm > 0
+          ? Math.round(
+              Number(deliveryRates.baseFee) + maxDistanceKm * Number(deliveryRates.perKmRate)
+            )
+          : Math.round(Number(deliveryRates.baseFee) || 0);
+      if (pickupTrips > 0) pickupDeliveryCost = perTrip * pickupTrips;
+      if (deliveryTrips > 0) dropoffDeliveryCost = perTrip * deliveryTrips;
+      actualDeliveryCost = pickupDeliveryCost + dropoffDeliveryCost;
       orderDeliveryFee = actualDeliveryCost;
     }
 
     const merchandiseSubtotal = totalBase + totalAddons + totalFabric + totalTailorAtHome;
-    if (freeDeliveryMinOrder > 0 && merchandiseSubtotal > freeDeliveryMinOrder) {
+    if (freeDeliveryMinOrder > 0 && merchandiseSubtotal >= freeDeliveryMinOrder) {
       orderDeliveryFee = 0;
       freeDeliveryApplied = true;
     }
   }
 
-  // Handle actualDeliveryCost for cart checkout as well
-  let finalActualDeliveryCost = orderDeliveryFee;
-  if (isCartCheckout && freeDeliveryApplied) {
-     // Recalculate original for cart if it was zeroed out
-     const firstItem = items[0];
-     let tLat = null, tLng = null;
-     if (firstItem?.tailor?.location?.coordinates?.length >= 2) {
-         tLng = firstItem.tailor.location.coordinates[0];
-         tLat = firstItem.tailor.location.coordinates[1];
-     }
-     let dist = 0;
-     if (uLat != null && uLng != null && tLat != null && tLng != null) {
-         dist = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
-     }
-     finalActualDeliveryCost = Math.round(Number(deliveryRates.baseFee) + (dist > 0 ? dist * Number(deliveryRates.perKmRate) : 0));
-  } else if (!isCartCheckout && typeof pickupTrips !== 'undefined') {
-     // From the non-cart block above
-     const totalTrips = pickupTrips + deliveryTrips;
-     finalActualDeliveryCost = Math.round(
-          ((Number(deliveryRates.baseFee) || 0) + (maxDistanceKm > 0 ? maxDistanceKm * Number(deliveryRates.perKmRate) : 0)) * totalTrips
-     );
-  }
-
-
+  // Platform fee on stitching + style addons only (not fabric / visit / delivery / GST)
   const platformFeeAmount = Math.round(
     (totalBase + totalAddons) * (platformFeePercentage / 100)
   );
@@ -163,29 +153,47 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
     totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount;
   const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
 
-  const finalTotal =
+  // Grand total customer pays (delivery fee may be 0 if free-delivery promo)
+  const finalTotal = Math.round(
     totalBase +
-    totalAddons +
-    totalFabric +
-    totalTailorAtHome +
+      totalAddons +
+      totalFabric +
+      totalTailorAtHome +
+      platformFeeAmount +
+      totalTaxes +
+      orderDeliveryFee
+  );
+
+  // Sanity: components must recombine to total
+  const recomposed =
+    Math.round(totalBase) +
+    Math.round(totalAddons) +
+    Math.round(totalFabric) +
+    Math.round(totalTailorAtHome) +
     platformFeeAmount +
     totalTaxes +
-    orderDeliveryFee;
+    Math.round(orderDeliveryFee);
+  if (recomposed !== finalTotal) {
+    console.warn(
+      `[checkoutPricing] recompose mismatch: recomposed=${recomposed} finalTotal=${finalTotal}`
+    );
+  }
 
   return {
     total: finalTotal,
-    base: totalBase,
+    base: Math.round(totalBase),
     taxes: totalTaxes,
-    delivery: orderDeliveryFee,
-    actualDeliveryCost: finalActualDeliveryCost,
-    addons: totalAddons,
-    fabric: totalFabric,
-    tailorAtHome: totalTailorAtHome,
+    delivery: Math.round(orderDeliveryFee),
+    actualDeliveryCost: Math.round(actualDeliveryCost),
+    pickupDeliveryCost: Math.round(pickupDeliveryCost),
+    dropoffDeliveryCost: Math.round(dropoffDeliveryCost),
+    addons: Math.round(totalAddons),
+    fabric: Math.round(totalFabric),
+    tailorAtHome: Math.round(totalTailorAtHome),
     platformFee: platformFeeAmount,
     platformFeePercentage,
     gstPercentage,
-    subtotalBeforeTax:
-      totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount,
+    subtotalBeforeTax: Math.round(taxableAmount),
     freeDeliveryApplied,
     freeDeliveryMinOrder,
   };
@@ -313,4 +321,5 @@ module.exports = {
   computeCheckoutPricing,
   enrichOrderItemsForPricing,
   splitAdvanceRemaining,
+  computeVisitFee,
 };

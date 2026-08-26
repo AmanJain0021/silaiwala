@@ -368,7 +368,7 @@ const AdminSettings = () => {
                                     <p className="text-[10px] text-gray-400 font-medium mt-1">Applied to order subtotal + platform fee (before delivery).</p>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Free delivery above (₹)</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Free delivery from (₹)</label>
                                     <input 
                                         type="number" 
                                         min={0}
@@ -376,7 +376,9 @@ const AdminSettings = () => {
                                         onChange={(e) => updateNestedSetting('pricing', 'freeDeliveryMinOrder', Number(e.target.value))}
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                     />
-                                    <p className="text-[10px] text-gray-400 font-medium mt-1">Orders above this merchandise amount get ₹0 delivery on checkout. Set 0 to always charge delivery.</p>
+                                    <p className="text-[10px] text-gray-400 font-medium mt-1">
+                                        Customer gets FREE delivery when order merchandise is ₹{settings.pricing?.freeDeliveryMinOrder ?? 999} or more. Delivery partners are still paid from the platform. Set 0 to always charge delivery.
+                                    </p>
                                 </div>
                             </div>
 
@@ -469,7 +471,10 @@ const AdminSettings = () => {
                             <hr className="border-gray-50" />
 
                             <div>
-                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Tailor at Home Fees</h3>
+                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Tailor at Home / Measurement Visit Fees</h3>
+                                <p className="text-[11px] text-gray-500 font-medium mb-4">
+                                    Customer pays this visit fee on checkout, and the Measurement Executive earns the same locked amount when the visit is completed.
+                                </p>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 mb-1.5">Base Visit Fee (₹)</label>
@@ -499,6 +504,9 @@ const AdminSettings = () => {
                                         />
                                     </div>
                                 </div>
+                                <p className="text-[10px] text-gray-400 font-medium mt-3">
+                                    Formula: base fee if within free km; otherwise base + (distance − free km) × per-km fee.
+                                </p>
                             </div>
 
                             <hr className="border-gray-50" />
@@ -521,32 +529,6 @@ const AdminSettings = () => {
                                             type="number" 
                                             value={settings.deliveryRates?.perKmRate ?? 10} 
                                             onChange={(e) => updateNestedSetting('deliveryRates', 'perKmRate', Number(e.target.value))}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <hr className="border-gray-50" />
-
-                            <div>
-                                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Measurement Executive Payouts</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Base Executive Fee (₹)</label>
-                                        <input 
-                                            type="number" 
-                                            value={settings.executiveRates?.baseFee ?? 50} 
-                                            onChange={(e) => updateNestedSetting('executiveRates', 'baseFee', Number(e.target.value))}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Executive Fee Per km (₹)</label>
-                                        <input 
-                                            type="number" 
-                                            value={settings.executiveRates?.perKmRate ?? 15} 
-                                            onChange={(e) => updateNestedSetting('executiveRates', 'perKmRate', Number(e.target.value))}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm" 
                                         />
                                     </div>

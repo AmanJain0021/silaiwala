@@ -182,13 +182,28 @@ const AdminStyleAddons = () => {
     };
 
     const handleToggleActive = async (addon) => {
+        const currentlyActive = addon.isActive !== false;
+        const nextActive = !currentlyActive;
+        // Optimistic UI so toggle feels instant
+        setAddons((prev) =>
+            prev.map((a) => (a._id === addon._id ? { ...a, isActive: nextActive } : a))
+        );
         try {
-            await api.put(`/style-addons/${addon._id}`, { isActive: !addon.isActive });
-            toast.success(`Add-on ${addon.isActive ? 'deactivated' : 'activated'}`);
-            fetchAddons();
+            const res = await api.put(`/style-addons/${addon._id}`, { isActive: nextActive });
+            const updated = res.data?.data;
+            if (updated) {
+                setAddons((prev) =>
+                    prev.map((a) => (a._id === addon._id ? { ...a, ...updated } : a))
+                );
+            }
+            toast.success(nextActive ? 'Add-on activated' : 'Add-on deactivated');
         } catch (error) {
+            // Revert on failure
+            setAddons((prev) =>
+                prev.map((a) => (a._id === addon._id ? { ...a, isActive: currentlyActive } : a))
+            );
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
-            toast.error('Failed to update status');
+            toast.error(error.response?.data?.message || 'Failed to update status');
         }
     };
 
@@ -364,6 +379,7 @@ const AdminStyleAddons = () => {
                                                     {/* Card Action Controls */}
                                                     <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
                                                         <button
+                                                            type="button"
                                                             onClick={() => handleToggleActive(addon)}
                                                             className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                                                                 addon.isActive !== false 

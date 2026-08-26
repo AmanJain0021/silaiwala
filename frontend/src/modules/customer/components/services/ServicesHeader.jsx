@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ArrowLeft } from 'lucide-react';
+import { Search, Filter, ArrowLeft, Bell, LayoutGrid, Star, Tag, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AnimatedSearchBar from '../AnimatedSearchBar';
 import api from '../../../../utils/api';
@@ -34,23 +34,42 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
         .filter(Boolean)
         .filter(name => !dynamicGenderTags.some(t => t.toLowerCase() === name.toLowerCase()));
 
-    const filterOptions = [
-        'All',
-        ...dynamicGenderTags,
-        ...adminCategoryNames,
-        'Popular',
-        'Under ₹500',
-        'Express Delivery'
+    const staticFilterOptions = [
+        { id: 'All', label: 'All', icon: <LayoutGrid size={14} className="mr-1" /> },
+        { id: 'Popular', label: 'Popular', icon: <Star size={14} className="mr-1" /> },
+        { id: 'Under ₹500', label: 'Under ₹500', icon: <Tag size={14} className="mr-1" /> },
+        { id: 'Express Delivery', label: 'Express Delivery', icon: <Zap size={14} className="mr-1" /> }
+    ];
+
+    // Combine static options with dynamic ones
+    const dynamicOptions = [
+        ...dynamicGenderTags.map(tag => ({ id: tag, label: tag })),
+        ...adminCategoryNames.map(name => ({ id: name, label: name }))
+    ];
+
+    const allFilterOptions = [
+        staticFilterOptions[0],
+        ...dynamicOptions,
+        ...staticFilterOptions.slice(1)
     ];
 
     return (
         <div className="sticky top-0 md:top-20 z-[100] bg-white border-b border-gray-100 shadow-sm px-4 md:px-6 lg:px-8 pb-4 transition-all duration-300">
             {/* Top Bar - Mobile Only */}
-            <div className="flex items-center gap-3 pt-3 mb-3 md:hidden">
-                <Link to="/user" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700 active:scale-90 transition-transform">
-                    <ArrowLeft size={20} />
-                </Link>
-                <h1 className="text-xl font-black text-[#843D9B] tracking-tight">Stitching Services</h1>
+            <div className="flex items-center justify-between pt-3 mb-4 md:hidden">
+                <div className="flex items-center gap-3">
+                    <Link to="/user" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-900 active:scale-90 transition-transform">
+                        <ArrowLeft size={22} />
+                    </Link>
+                    <div>
+                        <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">Stitching Services</h1>
+                        <p className="text-[11px] text-gray-500 font-medium">Find the perfect tailor for your style</p>
+                    </div>
+                </div>
+                <button className="relative p-2 rounded-full hover:bg-gray-50 text-gray-600 transition-colors">
+                    <Bell size={20} />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-white"></span>
+                </button>
             </div>
 
             {/* Search & Filter */}
@@ -61,26 +80,28 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onSearch={(val) => setSearchQuery(val)}
+                        placeholder="Search tailors, designs, stitching..."
                     />
                 </div>
-                <button className="p-2.5 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors text-gray-700">
+                <button className="p-2.5 bg-primary/5 rounded-xl border border-primary/20 hover:bg-primary/10 transition-colors text-primary flex-shrink-0">
                     <Filter size={18} />
                 </button>
             </div>
 
             {/* Filter Pills (Scrollable) */}
-            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-                {filterOptions.map((filter) => (
+            <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+                {allFilterOptions.map((filter) => (
                     <button
-                        key={filter}
-                        onClick={() => setActiveFilter && setActiveFilter(filter)}
-                        className={`flex-shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all whitespace-nowrap snap-start cursor-pointer ${
-                            activeFilter === filter 
-                                ? 'bg-[#843D9B] text-white border-[#843D9B] shadow-sm' 
-                                : 'bg-white border-gray-200 text-gray-600 hover:border-[#843D9B] hover:text-[#843D9B]'
+                        key={filter.id}
+                        onClick={() => setActiveFilter && setActiveFilter(filter.id)}
+                        className={`flex items-center flex-shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all whitespace-nowrap snap-start cursor-pointer ${
+                            activeFilter === filter.id 
+                                ? 'bg-primary text-white border-primary shadow-sm' 
+                                : 'bg-white border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
                         }`}
                     >
-                        {filter}
+                        {filter.icon}
+                        {filter.label}
                     </button>
                 ))}
             </div>

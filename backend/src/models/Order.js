@@ -338,9 +338,39 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Contracted partner costs (immutable after create; used for phase payouts)
+    actualDeliveryCost: {
+      type: Number,
+      default: 0,
+    },
+    pickupDeliveryCost: {
+      type: Number,
+      default: 0,
+    },
+    dropoffDeliveryCost: {
+      type: Number,
+      default: 0,
+    },
+    // Home measurement visit fee charged to customer (= executive payout budget)
+    measurementVisitFee: {
+      type: Number,
+      default: 0,
+    },
+    measurementExecutiveEarning: {
+      type: Number,
+      default: 0,
+    },
+    measurementExecutivePaid: {
+      type: Boolean,
+      default: false,
+    },
     netPlatformEarning: {
       type: Number,
       default: 0,
+    },
+    earningsSettled: {
+      type: Boolean,
+      default: false,
     },
     transactionId: {
       type: String,

@@ -68,10 +68,37 @@ exports.updateStyleAddon = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Style addon not found' });
         }
 
-        addon = await StyleAddon.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
+        // Only allow known fields (partial updates like isActive toggle must not wipe required fields)
+        const allowed = [
+            'name',
+            'description',
+            'price',
+            'image',
+            'category',
+            'referenceImages',
+            'isActive',
+            'addonType',
+        ];
+        const updates = {};
+        for (const key of allowed) {
+            if (Object.prototype.hasOwnProperty.call(req.body, key) && req.body[key] !== undefined) {
+                updates[key] = req.body[key];
+            }
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid fields to update' });
+        }
+
+        addon = await StyleAddon.findByIdAndUpdate(
+            req.params.id,
+            { $set: updates },
+            {
+                new: true,
+                runValidators: true,
+                context: 'query',
+            }
+        );
 
         res.status(200).json({
             success: true,

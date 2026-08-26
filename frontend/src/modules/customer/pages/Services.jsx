@@ -6,6 +6,7 @@ import ServicesGrid from '../components/services/ServicesGrid';
 import DeliveryComparison from '../components/services/DeliveryComparison';
 import CustomRequestBanner from '../components/services/CustomRequestBanner';
 import FAQSection from '../components/services/FAQSection';
+import TrustBenefits from '../components/services/TrustBenefits';
 
 const Services = () => {
     const location = useLocation();
@@ -28,7 +29,7 @@ const Services = () => {
     }, [location.state, location.search]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#f3f9f8] to-[#e6f4f1] pb-20 md:pb-8 font-sans">
+        <div className="min-h-screen bg-white pb-20 md:pb-8 font-sans" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             {/* Sticky Header */}
             <ServicesHeader 
                 searchQuery={searchQuery}
@@ -43,11 +44,8 @@ const Services = () => {
                 activeFilter={activeFilter}
             />
 
-            {/* Custom Request Banner */}
-            <CustomRequestBanner />
-
-            {/* FAQ */}
-            <FAQSection />
+            {/* Trust Benefits */}
+            <TrustBenefits />
 
             {/* Sticky Bottom Nav */}
             <BottomNav />

@@ -766,36 +766,38 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
   await request.save({ session });
 
   // Calculate and process payout for the Measurement Executive
+  // Must match customer visit fee (order.measurementVisitFee / visitFee settings) — not executiveRates
   try {
-    const profile = await MeasurementExecutive.findOne({ user: req.user.id }).session(session).lean();
-    let distance = 0;
-    
-    if (profile?.currentLocation?.coordinates?.length === 2 && request.customerLocation?.coordinates?.length === 2) {
-      const [lon1, lat1] = profile.currentLocation.coordinates;
-      const [lon2, lat2] = request.customerLocation.coordinates;
-      
-      // Haversine formula
-      const R = 6371; // km
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      distance = parseFloat((R * c).toFixed(1));
-    }
-
+    const Order = require("../../../models/Order.js");
     const Settings = require("../../../models/Settings.js");
     const WalletTransaction = require("../../../models/WalletTransaction.js");
+    const { computeVisitFee } = require("../../../utils/checkoutPricing.js");
+
+    const order = await Order.findById(request.order).session(session);
     const settings = await Settings.findOne().session(session).lean();
+    const visitSettings = settings?.visitFee || { baseFee: 150, perKmFee: 20, freeKm: 3 };
 
-    const baseFee = settings?.executiveRates?.baseFee || 50;
-    const perKmRate = settings?.executiveRates?.perKmRate || 15;
-    
-    // Total earned amount based on distance
-    const earnedAmount = baseFee + (distance * perKmRate);
+    let earnedAmount = Math.round(Number(order?.measurementVisitFee) || 0);
 
-    // Prevent duplicate credit
+    // Legacy orders / missing lock: recompute with same visitFee formula as checkout
+    if (earnedAmount <= 0) {
+      const profile = await MeasurementExecutive.findOne({ user: req.user.id }).session(session).lean();
+      let distance = 0;
+      if (profile?.currentLocation?.coordinates?.length === 2 && request.customerLocation?.coordinates?.length === 2) {
+        const [lon1, lat1] = profile.currentLocation.coordinates;
+        const [lon2, lat2] = request.customerLocation.coordinates;
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        distance = parseFloat((R * c).toFixed(1));
+      }
+      earnedAmount = computeVisitFee(distance, visitSettings);
+    }
+
     const existingTx = await WalletTransaction.findOne({
       user: req.user.id,
       order: request.order,
@@ -803,28 +805,34 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
     }).session(session);
 
     if (!existingTx && earnedAmount > 0) {
-      // Add to Executive profile
       await MeasurementExecutive.findOneAndUpdate(
         { user: req.user.id },
-        { 
-          $inc: { 
+        {
+          $inc: {
             walletBalance: earnedAmount,
             totalEarned: earnedAmount
-          } 
-        }
+          }
+        },
+        { session }
       );
 
-      // Create a WalletTransaction record
       await WalletTransaction.create([{
         user: req.user.id,
         amount: earnedAmount,
         type: "credit",
         category: "executive_earnings",
         order: request.order,
-        description: `Measurement payout for completed task (${distance}km)`,
+        description: `Measurement visit payout (matches customer visit fee) for order ${order?.orderId || request.order}`,
       }], { session });
 
-      console.log(`Credited ₹${earnedAmount} to Measurement Executive ${req.user.id} for distance ${distance}km`);
+      if (order) {
+        order.measurementVisitFee = order.measurementVisitFee || earnedAmount;
+        order.measurementExecutiveEarning = earnedAmount;
+        order.measurementExecutivePaid = true;
+        await order.save({ session });
+      }
+
+      console.log(`Credited ₹${earnedAmount} to Measurement Executive ${req.user.id} (visit-fee aligned)`);
     }
   } catch (err) {
     console.error("Failed to process measurement executive payout:", err);
