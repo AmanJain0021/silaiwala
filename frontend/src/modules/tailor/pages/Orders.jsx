@@ -13,6 +13,7 @@ import TailorLiveDeliveryTracker from '../../../shared/components/TailorLiveDeli
 import toast from 'react-hot-toast';
 import MeasurementDetail from './MeasurementDetail';
 import { isGarmentStoreOrder } from '../../../shared/utils/shiprocketEligibility';
+import { formatOrderItemsTitle, getItemImage } from '../../../utils/orderItems';
 
 const Orders = () => {
     const { user } = useTailorAuth();
@@ -387,13 +388,17 @@ const Orders = () => {
     }, [orders]);
 
     const filteredOrders = orders.filter(order => {
+        const q = searchQuery.toLowerCase();
         const orderId = order.orderId || '';
         const customerName = order.customer?.name || '';
-        const serviceTitle = order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || '';
+        const itemMatch = (order.items || []).some((item) => {
+            const title = item.service?.title || item.service?.name || item.product?.name || '';
+            return title.toLowerCase().includes(q);
+        });
 
-        return orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            serviceTitle.toLowerCase().includes(searchQuery.toLowerCase());
+        return orderId.toLowerCase().includes(q) ||
+            customerName.toLowerCase().includes(q) ||
+            itemMatch;
     });
 
     const handleAction = (action, order) => {
@@ -1630,16 +1635,21 @@ const Orders = () => {
                                     </h4>
 
                                     <div className="flex-1 bg-gray-50 p-2.5 md:p-3 rounded-xl md:rounded-[1.5rem] border border-gray-100 mb-3 md:mb-5 flex items-center gap-2.5 md:gap-3">
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg md:rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100">
-                                            {order.items?.[0]?.selectedFabric?.image || order.items?.[0]?.selectedFabric?.images?.[0] || order.items?.[0]?.product?.image || order.items?.[0]?.product?.images?.[0] || order.items?.[0]?.service?.image || order.items?.[0]?.service?.images?.[0] ? (
-                                                <img src={order.items[0].selectedFabric?.image || order.items[0].selectedFabric?.images?.[0] || order.items[0].product?.image || order.items[0].product?.images?.[0] || order.items[0].service?.image || order.items[0].service?.images?.[0]} className="w-full h-full object-cover" />
+                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg md:rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-gray-100 relative">
+                                            {getItemImage(order.items?.[0]) ? (
+                                                <img src={getItemImage(order.items[0])} className="w-full h-full object-cover" alt="" />
                                             ) : (
-                                                <Scissors size={16} className="md:w-[18px] md:h-[18px] text-[#843D9B]" />
+                                                <Scissors size={16} className="md:w-[18px] md:h-[18px] text-primary" />
+                                            )}
+                                            {(order.items?.length || 0) > 1 && (
+                                                <span className="absolute bottom-0 right-0 bg-primary text-white text-[8px] font-black px-1 rounded-tl">
+                                                    {order.items.length}
+                                                </span>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[11px] md:text-xs font-black text-gray-900 truncate">
-                                                {order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Design'}
+                                                {formatOrderItemsTitle(order.items, { fallback: 'Custom Design' })}
                                             </p>
                                             <div className="flex items-center gap-1 mt-0.5 md:mt-1 text-gray-400">
                                                 <MapPin size={10} className="shrink-0" />

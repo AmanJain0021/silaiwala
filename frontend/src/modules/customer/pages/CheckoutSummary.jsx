@@ -22,6 +22,8 @@ const CheckoutSummary = () => {
         isBuyNowMode,
         clearCheckout,
         removeServiceItem,
+        setBuyNowMode,
+        addServiceItem,
         checkoutType
     } = useCheckoutStore(state => state);
     const { items: cartItems, getTotalPrice, clearCart } = useCartStore(state => state);
@@ -42,8 +44,17 @@ const CheckoutSummary = () => {
         }
     }, [addresses.length, fetchAddresses]);
 
+    // Normalize: if buy-now was started while a basket already existed, fold into basket once.
+    useEffect(() => {
+        if (isBuyNowMode && buyNowItem && serviceItems.length > 0) {
+            addServiceItem(buyNowItem);
+            setBuyNowMode(false, null);
+        }
+    }, [isBuyNowMode, buyNowItem, serviceItems.length, addServiceItem, setBuyNowMode]);
+
     const currentCheckoutItems = React.useMemo(() => {
-        return isBuyNowMode && buyNowItem ? [buyNowItem] : serviceItems;
+        if (isBuyNowMode && buyNowItem) return [buyNowItem];
+        return serviceItems;
     }, [isBuyNowMode, buyNowItem, serviceItems]);
     const isServiceCheckout = checkoutType === 'service' || (!checkoutType && currentCheckoutItems.length > 0);
     const isCartCheckout = checkoutType === 'cart' || (!checkoutType && cartItems.length > 0 && currentCheckoutItems.length === 0);
@@ -539,6 +550,11 @@ const CheckoutSummary = () => {
                     </button>
                     <div className="text-left">
                         <h1 className="text-base sm:text-lg font-extrabold text-white leading-tight">Order Summary</h1>
+                        {isServiceCheckout && currentCheckoutItems.length > 1 && (
+                            <p className="text-[10px] font-bold text-white/80">
+                                {currentCheckoutItems.length} garments · one tailor · one delivery
+                            </p>
+                        )}
                         <p className="text-xs text-white/80 font-medium">Final step - Confirm & place your order</p>
                     </div>
                 </div>

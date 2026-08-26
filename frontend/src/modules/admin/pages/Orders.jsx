@@ -8,6 +8,7 @@ import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
 import OrderTrackingTimeline from '../components/OrderTrackingTimeline';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
+import { formatOrderItemsTitle } from '../../../utils/orderItems';
 
 const AdminOrders = () => {
     const [socketInstance, setSocketInstance] = useState(null);
@@ -59,8 +60,11 @@ const AdminOrders = () => {
                 phone: o.customer?.phoneNumber || 'N/A',
                 email: o.customer?.email || 'N/A',
                 address: o.deliveryAddress ? `${o.deliveryAddress.street}, ${o.deliveryAddress.city}` : 'Shipping address provided',
-                service: o.items?.[0]?.service?.title || o.items?.[0]?.product?.name || 'Custom Request',
-                type: o.items?.[0]?.product ? 'Store' : 'Stitching',
+                service: formatOrderItemsTitle(o.items, { fallback: 'Custom Request' }),
+                itemCount: o.items?.length || 0,
+                type: (o.items || []).some((i) => i.service || i.isAlteration || i.isCustomDesign)
+                    ? 'Stitching'
+                    : (o.items || []).some((i) => i.product) ? 'Store' : 'Stitching',
                 tailor: o.tailor?.shopName || o.tailor?.name || 'Unassigned',
                 tailorId: o.tailor?._id,
                 deliveryPartner: o.deliveryPartner?.name || 'Unassigned',
@@ -72,6 +76,7 @@ const AdminOrders = () => {
                 isMeasurementHome: o.isMeasurementHome || false,
                 measurementExecutive: o.measurementRequest?.executive?.name || 'Unassigned',
                 itemMeasurements: o.items?.[0]?.measurements || null,
+                items: o.items || [],
                 executiveReport: o.measurementRequest?.report || null,
                 trackingHistory: o.trackingHistory || [],
                 createdAt: o.createdAt,
@@ -421,7 +426,10 @@ const AdminOrders = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
                                             <span className="text-xs font-bold text-gray-900">{order.service}</span>
-                                            <span className="text-[10px] text-gray-500 font-medium">{order.type}</span>
+                                            <span className="text-[10px] text-gray-500 font-medium">
+                                                {order.type}
+                                                {order.itemCount > 1 ? ` · ${order.itemCount} items` : ''}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 flex items-center gap-2">

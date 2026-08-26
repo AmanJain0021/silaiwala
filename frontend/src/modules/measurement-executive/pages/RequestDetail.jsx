@@ -381,9 +381,17 @@ const RequestDetail = () => {
                         </div>
                         
                         {(() => {
-                            const customFields = request?.order?.items?.[0]?.service?.category?.measurementFields;
-                            const categoryName = request?.order?.items?.[0]?.service?.category?.name || request?.order?.items?.[0]?.service?.title || '';
+                            const orderItems = request?.order?.items || [];
+                            const primaryItem =
+                                orderItems.find((i) => i.measurements?.type === 'home') ||
+                                orderItems.find((i) => i.service) ||
+                                orderItems[0];
+                            const customFields = primaryItem?.service?.category?.measurementFields;
+                            const categoryName = primaryItem?.service?.category?.name || primaryItem?.service?.title || '';
                             const lowerCat = categoryName.toLowerCase();
+                            const itemLabels = orderItems
+                                .map((i) => i.service?.title || i.service?.name)
+                                .filter(Boolean);
 
                             const categoryFieldsMap = {
                                 'kurta': [
@@ -447,9 +455,12 @@ const RequestDetail = () => {
                             
                             return (
                                 <div>
-                                    {categoryName && (
+                                    {(itemLabels.length > 0 || categoryName) && (
                                         <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 bg-purple-50 border border-purple-100 rounded-full text-xs font-extrabold text-[#843D9B]">
-                                            <span>Garment: {categoryName}</span>
+                                            <span>
+                                                Garment{itemLabels.length > 1 ? 's' : ''}:{' '}
+                                                {itemLabels.length > 0 ? itemLabels.join(' + ') : categoryName}
+                                            </span>
                                             {customFields && customFields.length > 0 && <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded-full">Custom Form</span>}
                                         </div>
                                     )}

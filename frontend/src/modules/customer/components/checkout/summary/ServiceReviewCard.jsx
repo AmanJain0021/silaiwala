@@ -105,9 +105,61 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                             </div>
                             <div className="flex items-center gap-1 text-[10px] font-semibold text-[#843D9B] bg-[#FAF5FF] px-2 py-0.5 rounded-full border border-purple-100/80">
                                 <Ruler size={10} />
-                                <span>{isHomeVisitSelected ? 'Executive Visit' : (config?.measurements?.type === 'saved' ? 'Saved Profile' : 'Custom Fit')}</span>
+                                <span>
+                                    {isHomeVisitSelected
+                                        ? 'Executive Visit'
+                                        : config?.measurements?.type === 'slip'
+                                            ? 'Slip Upload'
+                                            : config?.measurements?.type === 'sample'
+                                                ? 'Sample Garment'
+                                                : config?.measurements?.type === 'saved'
+                                                    ? 'Saved Profile'
+                                                    : 'Self Measured'}
+                                </span>
                             </div>
                         </div>
+
+                        {/* Per-item measurement snapshot (multi-garment orders) */}
+                        {!isHomeVisitSelected && config?.measurements && (
+                            <div className="mt-1.5 w-full rounded-xl border border-slate-100 bg-slate-50/80 px-2.5 py-2">
+                                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                                    Measurements for this garment
+                                </p>
+                                {config.measurements.type === 'slip' && (config.measurements.slipImage || config.measurements.image) ? (
+                                    <p className="text-[10px] font-semibold text-slate-600">Measurement slip attached</p>
+                                ) : config.measurements.type === 'sample' ? (
+                                    <p className="text-[10px] font-semibold text-slate-600">Sample garment pickup</p>
+                                ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                        {Object.entries(config.measurements)
+                                            .filter(([key, val]) =>
+                                                !['type', 'notes', 'slipImage', 'image', 'url', 'slipUrl', 'file', 'isConfirmed', 'saveProfile', 'sampleGarment', 'slipAttached', 'data'].includes(key)
+                                                && val !== '' && val != null && typeof val !== 'object'
+                                            )
+                                            .slice(0, 6)
+                                            .map(([key, val]) => (
+                                                <span
+                                                    key={key}
+                                                    className="text-[9px] font-bold text-slate-700 bg-white border border-slate-100 px-1.5 py-0.5 rounded-md"
+                                                >
+                                                    {key}: {val}
+                                                </span>
+                                            ))}
+                                        {Object.entries(config.measurements).filter(([key, val]) =>
+                                            !['type', 'notes', 'slipImage', 'image', 'url', 'slipUrl', 'file', 'isConfirmed', 'saveProfile', 'sampleGarment', 'slipAttached', 'data'].includes(key)
+                                            && val !== '' && val != null && typeof val !== 'object'
+                                        ).length === 0 && (
+                                            <p className="text-[10px] font-semibold text-slate-500">Custom fit details saved</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {isHomeVisitSelected && (
+                            <p className="mt-1.5 text-[9px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-lg px-2 py-1">
+                                Home visit: executive will take measurements for this order (shared visit if multiple garments).
+                            </p>
+                        )}
 
                         {/* Selected Style / Custom Reference Design */}
                         {config?.selectedStyle && (

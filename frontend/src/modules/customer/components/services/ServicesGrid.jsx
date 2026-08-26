@@ -3,13 +3,49 @@ import { Clock, CheckCircle2, Star, Loader2, Users, ArrowRight, X, Heart, Info, 
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
+import useCheckoutStore from '../../../../store/checkoutStore';
 
 const ServiceCard = ({ service }) => {
     const navigate = useNavigate();
     const location = useRouteLocation();
     const isPopular = (service.rating || 0) >= 4.5;
+    const selectServiceIntoBasket = useCheckoutStore((s) => s.selectServiceIntoBasket);
+    const serviceItems = useCheckoutStore((s) => s.serviceItems);
 
     const handleNavigate = () => {
+        const lockedTailorId = useCheckoutStore.getState().lockedTailorId;
+        const lockedTailorName = useCheckoutStore.getState().lockedTailorName;
+        const hasBasket = (serviceItems?.length || 0) > 0 || location.state?.fromMultiItemBasket;
+        const tailorId = lockedTailorId || location.state?.tailorId;
+        const tailorName = lockedTailorName || location.state?.tailorName;
+
+        // Multi-item flow: selecting a service must appear in basket immediately
+        if (hasBasket) {
+            const { index, item, created, blocked } = selectServiceIntoBasket(service, { tailorId, tailorName });
+            if (blocked) {
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error('Only services from the same tailor can be added to this order');
+                });
+                return;
+            }
+            if (created) {
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.success(`Added to basket: ${service.title}`);
+                });
+            }
+            navigate(`/user/services/${service._id}`, {
+                state: {
+                    tailorId,
+                    tailorName,
+                    fromMultiItemBasket: true,
+                    editBasketIndex: index,
+                    restoreBasketItem: item,
+                    fromBasket: true,
+                },
+            });
+            return;
+        }
+
         navigate(`/user/services/${service._id}`, { state: location.state });
     };
 
@@ -154,21 +190,43 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const { location = {}, error: locationError } = useUnifiedLocation({ autoDetect: true, fetchAddress: false });
     const { lat, lng } = location || {};
     const routeLocation = useRouteLocation();
-    const [activeTailorId, setActiveTailorId] = useState(routeLocation.state?.tailorId || null);
-    const [tailorName, setTailorName] = useState(routeLocation.state?.tailorName || '');
+    const lockedTailorId = useCheckoutStore((s) => s.lockedTailorId);
+    const lockedTailorName = useCheckoutStore((s) => s.lockedTailorName);
+    const basketCount = useCheckoutStore((s) => s.serviceItems?.length || 0);
+    const isMultiItemLock = basketCount > 0 || !!routeLocation.state?.fromMultiItemBasket;
+
+    const [activeTailorId, setActiveTailorId] = useState(
+        lockedTailorId || routeLocation.state?.tailorId || null
+    );
+    const [tailorName, setTailorName] = useState(
+        lockedTailorName || routeLocation.state?.tailorName || ''
+    );
     const [sortBy, setSortBy] = useState('Popular');
     const [isSortOpen, setIsSortOpen] = useState(false);
     
     const sortOptions = ['Popular', 'Price: Low to High', 'Price: High to Low'];
 
     useEffect(() => {
+        // Multi-item order: always force locked tailor catalog (never show others)
+        if (isMultiItemLock && (lockedTailorId || routeLocation.state?.tailorId)) {
+            setActiveTailorId(lockedTailorId || routeLocation.state?.tailorId);
+            setTailorName(lockedTailorName || routeLocation.state?.tailorName || '');
+            return;
+        }
         if (routeLocation.state?.tailorId !== undefined) {
             setActiveTailorId(routeLocation.state?.tailorId || null);
             setTailorName(routeLocation.state?.tailorName || '');
         }
-    }, [routeLocation.state]);
+    }, [routeLocation.state, lockedTailorId, lockedTailorName, isMultiItemLock]);
 
     const handleClearTailorFilter = () => {
+        // Locked multi-item basket: cannot browse other tailors
+        if (isMultiItemLock && (lockedTailorId || activeTailorId)) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error('Only this tailor’s services are available for this order');
+            });
+            return;
+        }
         if (window.history.replaceState) {
             window.history.replaceState({}, document.title);
         }
@@ -283,36 +341,38 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         <div className="p-4 md:p-6 lg:p-8">
             {/* Tailor Filter Active Banner */}
             {activeTailorId && (
-                <div className="bg-white/95 backdrop-blur-xl border border-[#843D9B]/15 rounded-2xl p-3 sm:p-4 shadow-sm mb-5 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-xl bg-[#843D9B]/10 flex items-center justify-center text-[#843D9B] font-bold shrink-0">
-                                <Users size={16} />
-                            </div>
-                            <div className="min-w-0">
-                                <span className="text-[8px] font-black text-[#843D9B] uppercase tracking-wider block leading-none mb-0.5">
-                                    Tailor Catalog
-                                </span>
-                                <h3 className="text-xs sm:text-sm font-black text-gray-900 truncate">
-                                    Services by <span className="text-[#843D9B]">{tailorName || 'Selected Tailor'}</span>
-                                </h3>
-                            </div>
+                <div className="bg-white/95 backdrop-blur-xl border border-primary/15 rounded-2xl p-3 sm:p-4 shadow-sm mb-5 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+                            <Users size={16} />
                         </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                                onClick={() => navigate('/user/tailors')}
-                                className="px-3 py-1.5 bg-[#843D9B] hover:bg-[#6c3080] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                            >
-                                All Tailors <ArrowRight size={11} />
-                            </button>
-                            <button
-                                onClick={handleClearTailorFilter}
-                                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                                title="Clear Tailor Filter"
-                            >
-                                <X size={14} />
-                            </button>
+                        <div className="min-w-0 flex-1">
+                            <span className="text-[8px] font-black text-primary uppercase tracking-wider block leading-none mb-0.5">
+                                {isMultiItemLock ? 'Same tailor only' : 'Tailor Catalog'}
+                            </span>
+                            <h3 className="text-xs sm:text-sm font-black text-gray-900 truncate">
+                                Services by <span className="text-primary">{tailorName || 'Selected Tailor'}</span>
+                            </h3>
+                            {isMultiItemLock ? (
+                                <p className="text-[9px] text-gray-500 font-medium mt-0.5">
+                                    Multi-item order · other tailor services are hidden here
+                                </p>
+                            ) : (
+                                <div className="flex items-center gap-1.5 mt-2">
+                                    <button
+                                        onClick={handleClearTailorFilter}
+                                        className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
+                                    >
+                                        Browse all
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/user/tailors')}
+                                        className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                    >
+                                        Tailors <ArrowRight size={11} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

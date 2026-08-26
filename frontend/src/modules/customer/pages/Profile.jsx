@@ -12,6 +12,8 @@ import MenuOption from '../components/profile/MenuOption';
 import useUserStore from '../../../store/userStore';
 import api from '../../../utils/api';
 import useBrandingStore from '../../../store/brandingStore';
+import { formatOrderItemsTitle, getItemImage } from '../../../utils/orderItems';
+import { getImageUrl } from '../../../utils/imageUrl';
 
 const LegalLinks = () => {
     const [docs, setDocs] = useState([]);
@@ -153,31 +155,38 @@ const ProfilePage = () => {
                 {/* Current Order (Conditionally Rendered if active) */}
                 {activeOrder && (
                     <div className="mb-6 bg-white rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-100 flex items-center justify-between gap-3 relative overflow-hidden">
-                        <div className="w-14 h-14 bg-gray-100 rounded-xl shrink-0 overflow-hidden">
-                            {activeOrder.items?.[0]?.product?.images?.[0] ? (
-                                <img src={activeOrder.items[0].product.images[0]} alt="Product" className="w-full h-full object-cover" />
+                        <div className="w-14 h-14 bg-gray-100 rounded-xl shrink-0 overflow-hidden relative">
+                            {getImageUrl(getItemImage(activeOrder.items?.[0])) ? (
+                                <img src={getImageUrl(getItemImage(activeOrder.items[0]))} alt="Order" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-300">
                                     <Package size={24} />
                                 </div>
                             )}
+                            {(activeOrder.items?.length || 0) > 1 && (
+                                <span className="absolute bottom-0 right-0 bg-primary text-white text-[8px] font-black px-1 rounded-tl">
+                                    {activeOrder.items.length}
+                                </span>
+                            )}
                         </div>
                         <div className="flex-1 min-w-0">
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 block">Current Order</span>
                             <h4 className="text-[13px] font-bold text-gray-900 truncate mb-1">
-                                {activeOrder.items?.[0]?.product?.name || `Order #${activeOrder.orderId?.slice(-6)}`}
+                                {formatOrderItemsTitle(activeOrder.items, {
+                                    fallback: `Order #${activeOrder.orderId?.slice(-6) || ''}`,
+                                })}
                             </h4>
                             <div className="flex items-center gap-1.5">
-                                <div className="w-4 h-4 bg-[#843D9B]/10 rounded flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 bg-[#843D9B] rounded-full animate-pulse" />
+                                <div className="w-4 h-4 bg-primary/10 rounded flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                                 </div>
-                                <span className="text-[10px] font-bold text-[#843D9B]">{activeOrder.orderStatus || 'Processing'}</span>
+                                <span className="text-[10px] font-bold text-primary">{activeOrder.orderStatus || activeOrder.status || 'Processing'}</span>
                             </div>
                         </div>
                         <div className="shrink-0 flex flex-col items-end">
                             <span className="text-[8px] text-gray-400 font-bold mb-1 uppercase tracking-wider">ETA</span>
                             <span className="text-[10px] font-bold text-gray-700 mb-2">Tomorrow, 10:30 AM</span>
-                            <Link to={`/user/orders/${activeOrder._id}`} className="bg-[#843D9B] hover:bg-[#713286] text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors">
+                            <Link to={`/user/orders/${activeOrder._id}/track`} className="bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors">
                                 <MapPin size={10} /> Track Order
                             </Link>
                         </div>

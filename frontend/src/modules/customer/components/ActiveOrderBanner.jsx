@@ -3,6 +3,8 @@ import { ChevronRight, Package, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../../utils/cn';
+import { formatOrderItemsTitle, getItemImage } from '../../../utils/orderItems';
+import { getImageUrl } from '../../../utils/imageUrl';
 
 const ActiveOrderBanner = ({ order }) => {
     const navigate = useNavigate();
@@ -10,9 +12,10 @@ const ActiveOrderBanner = ({ order }) => {
 
     if (!order) return null;
 
-    const serviceTitle = order.items?.[0]?.service?.title || "Custom stitching";
+    const items = order.items || [];
+    const serviceTitle = formatOrderItemsTitle(items, { fallback: 'Custom stitching' });
     const status = order.status?.replace(/-/g, ' ').toUpperCase() || "PENDING";
-    const serviceImage = order.items?.[0]?.service?.image || order.items?.[0]?.image;
+    const serviceImage = getImageUrl(getItemImage(items[0])) || items[0]?.image;
 
     return (
         <AnimatePresence>
@@ -29,7 +32,7 @@ const ActiveOrderBanner = ({ order }) => {
                     }}
                     onClick={() => isExpanded ? navigate(`/user/orders/${order._id}/track`) : setIsExpanded(true)}
                     className={cn(
-                        "bg-[#843D9B] text-white shadow-xl shadow-[#843D9B]/30 flex items-center border border-[#6b2f7d] overflow-hidden cursor-pointer h-[64px]",
+                        "bg-primary text-white shadow-xl shadow-primary/30 flex items-center border border-primary-dark overflow-hidden cursor-pointer h-[64px]",
                         isExpanded ? "rounded-[1.25rem] px-2.5 justify-between w-[calc(100vw-2rem)] max-w-sm" : "rounded-[1.25rem] p-1.5 justify-center w-[64px]"
                     )}
                 >
@@ -45,8 +48,13 @@ const ActiveOrderBanner = ({ order }) => {
                             >
                                 <div className="flex items-center gap-3 min-w-0">
                                     {serviceImage ? (
-                                        <div className="w-[44px] h-[44px] bg-white rounded-xl overflow-hidden shrink-0 border-2 border-white/20 flex items-center justify-center">
+                                        <div className="w-[44px] h-[44px] bg-white rounded-xl overflow-hidden shrink-0 border-2 border-white/20 flex items-center justify-center relative">
                                             <img src={serviceImage} alt="Order" className="w-full h-full object-cover" />
+                                            {items.length > 1 && (
+                                                <span className="absolute bottom-0 right-0 bg-primary text-[8px] font-black px-1 rounded-tl">
+                                                    {items.length}
+                                                </span>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="w-[44px] h-[44px] bg-white/20 rounded-xl flex items-center justify-center shrink-0 border-2 border-white/20">
@@ -87,7 +95,7 @@ const ActiveOrderBanner = ({ order }) => {
                                 ) : (
                                     <Package size={24} className="text-white" />
                                 )}
-                                <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#843D9B] animate-pulse" />
+                                <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-primary animate-pulse" />
                             </motion.div>
                         )}
                     </AnimatePresence>

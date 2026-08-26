@@ -19,6 +19,7 @@ import useLocationStore from '../../../store/locationStore';
 import useAddressStore from '../../../store/userStore';
 import { calculateDistance } from '../../../utils/distance';
 import api from '../../../utils/api';
+import { getImageUrl } from '../../../utils/imageUrl';
 
 const FAQItem = ({ question, answer }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -48,9 +49,11 @@ const ServiceDetail = () => {
     const location = useLocation();
     const { 
         initializeCheckout, 
-        addServiceItem, 
+        addServiceItem,
+        selectServiceIntoBasket,
         serviceItems,
         removeServiceItem,
+        updateServiceItem,
         setBuyNowMode,
         serviceDetails: storedDetails 
     } = useCheckoutStore(state => state);
@@ -61,6 +64,12 @@ const ServiceDetail = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [serviceData, setServiceData] = useState(null);
     const [preSelectedTailor, setPreSelectedTailor] = useState(null);
+    const [storeHydrated, setStoreHydrated] = useState(
+        () => useCheckoutStore.persist?.hasHydrated?.() ?? true
+    );
+    const [activeBasketIndex, setActiveBasketIndex] = useState(
+        typeof location.state?.editBasketIndex === 'number' ? location.state.editBasketIndex : null
+    );
 
     // SessionStorage Draft Persistence across page refreshes
     const getSavedDraft = () => {
@@ -74,14 +83,95 @@ const ServiceDetail = () => {
     };
     const savedDraft = getSavedDraft();
     const restored = location.state?.restoredState || (Object.keys(savedDraft).length > 0 ? savedDraft : {});
+    const editBasketIndex =
+        activeBasketIndex != null
+            ? activeBasketIndex
+            : (typeof location.state?.editBasketIndex === 'number' ? location.state.editBasketIndex : null);
+    const restoreBasketItem = location.state?.restoreBasketItem || null;
+
+    // Wait for zustand persist so basket items don't "disappear" on first paint
+    useEffect(() => {
+        const persistApi = useCheckoutStore.persist;
+        if (!persistApi?.onFinishHydration) {
+            setStoreHydrated(true);
+            return undefined;
+        }
+        if (persistApi.hasHydrated?.()) {
+            setStoreHydrated(true);
+            return undefined;
+        }
+        const unsub = persistApi.onFinishHydration(() => setStoreHydrated(true));
+        return unsub;
+    }, []);
+
+    // Opening a service = it must appear in basket on this page (pending until measurements done)
+    useEffect(() => {
+        if (!storeHydrated || !serviceData?._id) return;
+
+        const tailorId =
+            location.state?.tailorId ||
+            preSelectedTailor?._id ||
+            preSelectedTailor?.id ||
+            useCheckoutStore.getState().lockedTailorId ||
+            (typeof serviceData.tailor === 'object'
+                ? serviceData.tailor?._id || serviceData.tailor?.id
+                : serviceData.tailor) ||
+            null;
+        const tailorName =
+            location.state?.tailorName ||
+            preSelectedTailor?.shopName ||
+            preSelectedTailor?.user?.name ||
+            useCheckoutStore.getState().lockedTailorName ||
+            serviceData.tailor?.shopName ||
+            null;
+
+        if (typeof location.state?.editBasketIndex === 'number') {
+            setActiveBasketIndex(location.state.editBasketIndex);
+            return;
+        }
+
+        const sid = String(serviceData._id);
+        const items = useCheckoutStore.getState().serviceItems;
+        const pendingIdx = items.findIndex((row) => {
+            const id = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+            return id === sid && row.configuration?.pending;
+        });
+        if (pendingIdx >= 0) {
+            setActiveBasketIndex(pendingIdx);
+            return;
+        }
+
+        // Already have a completed row for this service — don't auto-overwrite it
+        const completedIdx = items.findIndex((row) => {
+            const id = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+            return id === sid && !row.configuration?.pending;
+        });
+        if (completedIdx >= 0) {
+            return;
+        }
+
+        const { index, item, blocked } = selectServiceIntoBasket(serviceData, { tailorId, tailorName });
+        if (blocked || index < 0 || !item) return;
+        setActiveBasketIndex(index);
+    }, [storeHydrated, serviceData?._id, preSelectedTailor, location.state?.tailorId, location.state?.editBasketIndex, selectServiceIntoBasket]);
 
     const [currentStep, setCurrentStep] = useState(restored.currentStep || 'fabric'); // fabric -> details -> review
 
-    const [deliveryType, setDeliveryType] = useState(restored.deliveryType || 'standard');
-    const [measurementType, setMeasurementType] = useState(restored.measurementType || null);
-    const [selectedStyle, setSelectedStyle] = useState(restored.selectedStyle || null);
-    const [isTailorAtHome, setIsTailorAtHome] = useState(restored.isTailorAtHome || false);
-    const [selectedAddons, setSelectedAddons] = useState(restored.selectedAddons || []);
+    const [deliveryType, setDeliveryType] = useState(
+        restoreBasketItem?.configuration?.deliveryType || restored.deliveryType || 'standard'
+    );
+    const [measurementType, setMeasurementType] = useState(
+        restoreBasketItem?.configuration?.measurements?.type || restored.measurementType || null
+    );
+    const [selectedStyle, setSelectedStyle] = useState(
+        restoreBasketItem?.configuration?.selectedStyle || restored.selectedStyle || null
+    );
+    const [isTailorAtHome, setIsTailorAtHome] = useState(
+        restoreBasketItem?.configuration?.isTailorAtHome || restored.isTailorAtHome || false
+    );
+    const [selectedAddons, setSelectedAddons] = useState(
+        restoreBasketItem?.configuration?.addons || restored.selectedAddons || []
+    );
     const [isUploadingCustomStyle, setIsUploadingCustomStyle] = useState(false);
 
     const handleCustomStyleUpload = async (e) => {
@@ -121,10 +211,16 @@ const ServiceDetail = () => {
         }
     };
     const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
-    const [fabricSource, setFabricSource] = useState(restored.fabricSource || location.state?.fabricSource || 'customer');
-    const [selectedFabric, setSelectedFabric] = useState(restored.selectedFabric || location.state?.selectedFabric || null);
+    const [fabricSource, setFabricSource] = useState(
+        restoreBasketItem?.configuration?.fabricSource || restored.fabricSource || location.state?.fabricSource || 'customer'
+    );
+    const [selectedFabric, setSelectedFabric] = useState(
+        restoreBasketItem?.configuration?.selectedFabric || restored.selectedFabric || location.state?.selectedFabric || null
+    );
     const [selectedSavedProfile, setSelectedSavedProfile] = useState(restored.selectedSavedProfile || null);
-    const [measurements, setMeasurements] = useState(restored.measurements || null);
+    const [measurements, setMeasurements] = useState(
+        restoreBasketItem?.configuration?.measurements || restored.measurements || null
+    );
     const [visitSettings, setVisitSettings] = useState({ baseFee: 150, perKmFee: 20, freeKm: 3 });
     const [gstPercentage, setGstPercentage] = useState(5);
     const [platformFeePercentage, setPlatformFeePercentage] = useState(5);
@@ -137,8 +233,75 @@ const ServiceDetail = () => {
     const [roadDistanceKm, setRoadDistanceKm] = useState(null);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
 
-    const [showFooter, setShowFooter] = useState(false);
     const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
+    const [formEpoch, setFormEpoch] = useState(0);
+
+    /** Restore fabric/style/measurements UI from a basket row (1st vs 2nd garment). */
+    const applyBasketItemToForm = (item) => {
+        if (!item?.configuration) return;
+        const cfg = item.configuration;
+        const m = cfg.measurements || {};
+
+        setDeliveryType(cfg.deliveryType || 'standard');
+        setFabricSource(cfg.fabricSource || 'customer');
+        setSelectedFabric(cfg.selectedFabric || null);
+        setSelectedStyle(cfg.selectedStyle || null);
+        setSelectedAddons(Array.isArray(cfg.addons) ? cfg.addons : []);
+        setIsTailorAtHome(!!cfg.isTailorAtHome || m?.type === 'home');
+        setSelectedSavedProfile(null);
+
+        if (!m || Object.keys(m).length === 0 || cfg.pending) {
+            setMeasurementType(null);
+            setMeasurements(null);
+            setFormEpoch((e) => e + 1);
+            return;
+        }
+
+        if (m.type === 'home') {
+            setMeasurementType('home');
+            setMeasurements({ type: 'home' });
+        } else if (m.type === 'sample') {
+            setMeasurementType('sample');
+            setMeasurements({ ...m, type: 'sample' });
+        } else if (m.type === 'slip' || m.slipImage || m.image) {
+            setMeasurementType('upload');
+            setMeasurements({
+                type: 'slip',
+                slipImage: m.slipImage || m.image || m.url || m.slipUrl || '',
+                notes: m.notes || '',
+                ...(m.sampleGarment ? { sampleGarment: true } : {}),
+            });
+        } else if (m.type === 'saved') {
+            setMeasurementType('saved');
+            setMeasurements({ ...m, type: 'saved' });
+        } else {
+            const { type, notes, sampleGarment, slipImage, isConfirmed, data, ...dims } = m;
+            const dimSource = data && typeof data === 'object' ? data : dims;
+            // Open self form so saved chest/waist/etc. are visible for this basket item
+            setMeasurementType('new');
+            setMeasurements({
+                type: 'self',
+                isConfirmed: true,
+                data: { ...dimSource, notes: notes || dimSource.notes || '' },
+                notes: notes || dimSource.notes || '',
+                ...(sampleGarment ? { sampleGarment: true } : {}),
+                ...(slipImage ? { slipImage } : {}),
+            });
+        }
+        setFormEpoch((e) => e + 1);
+    };
+
+    // Basket item click / navigation → show that garment's saved measurements
+    useEffect(() => {
+        const item = location.state?.restoreBasketItem;
+        const idx = location.state?.editBasketIndex;
+        if (!item || typeof idx !== 'number') return;
+        setActiveBasketIndex(idx);
+        applyBasketItemToForm(item);
+        requestAnimationFrame(() => {
+            document.getElementById('measurement-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }, [id, location.state?.editBasketIndex, location.state?.restoreBasketItem?.basketId]);
 
     // Save draft state to sessionStorage so page refresh retains all inputs & confirmations
     useEffect(() => {
@@ -162,14 +325,9 @@ const ServiceDetail = () => {
         }
     }, [id, deliveryType, measurementType, selectedStyle, isTailorAtHome, selectedAddons, fabricSource, selectedFabric, selectedSavedProfile, measurements, currentStep]);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80;
-            setShowFooter(isBottom);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    // Sticky booking bar is always visible (was previously scroll-to-bottom only,
+    // which hid "Add Another" / "Book Now" for most users).
+    const showFooter = true;
 
     useEffect(() => {
         let isMounted = true;
@@ -235,6 +393,30 @@ const ServiceDetail = () => {
             isMounted = false;
         };
     }, [id, location.state]);
+
+    // Lock tailor as soon as we know it while basket is active
+    useEffect(() => {
+        if (!serviceItems.length) return;
+        const store = useCheckoutStore.getState();
+        if (store.lockedTailorId) return;
+        const tid =
+            preSelectedTailor?._id ||
+            preSelectedTailor?.id ||
+            serviceItems[0]?.serviceDetails?.tailorId ||
+            (typeof serviceData?.tailor === 'object'
+                ? serviceData.tailor?._id || serviceData.tailor?.id
+                : serviceData?.tailor);
+        if (!tid) return;
+        useCheckoutStore.setState({
+            lockedTailorId: tid,
+            lockedTailorName:
+                preSelectedTailor?.shopName ||
+                preSelectedTailor?.user?.name ||
+                serviceItems[0]?.serviceDetails?.tailorName ||
+                serviceData?.tailor?.shopName ||
+                null,
+        });
+    }, [serviceItems.length, preSelectedTailor, serviceData]);
 
     const isAlteration = serviceData?.category?.name?.toLowerCase().includes('alteration') || serviceData?.tags?.some(t => t.toLowerCase().includes('alteration'));
 
@@ -411,9 +593,19 @@ const ServiceDetail = () => {
         setSelectedAddons([]);
         setSelectedSavedProfile(null);
         setIsTailorAtHome(false);
+        setFabricSource('customer');
+        setSelectedFabric(null);
+        setDeliveryType('standard');
         try {
             sessionStorage.removeItem(`service_draft_${id}`);
         } catch (e) {}
+    };
+
+    const handleRemoveBasketItem = (index) => {
+        removeServiceItem(index);
+        import('react-hot-toast').then(({ toast }) => {
+            toast.success('Removed from basket');
+        });
     };
 
     const prepareDraftItem = async () => {
@@ -476,7 +668,19 @@ const ServiceDetail = () => {
 
         return {
             serviceDetails: {
-                ...serviceData,
+                _id: serviceData._id || serviceData.id,
+                id: serviceData._id || serviceData.id,
+                title: serviceData.title,
+                image: serviceData.image || serviceData.images?.[0] || null,
+                basePrice: serviceData.basePrice || 0,
+                tags: serviceData.tags || [],
+                category: serviceData.category
+                    ? {
+                        _id: serviceData.category._id,
+                        name: serviceData.category.name,
+                        measurementFields: serviceData.category.measurementFields || [],
+                    }
+                    : null,
                 tailorId:
                     preSelectedTailor?._id ||
                     preSelectedTailor?.id ||
@@ -490,11 +694,31 @@ const ServiceDetail = () => {
             configuration: { 
                 deliveryType, 
                 fabricSource, 
-                selectedFabric, 
+                selectedFabric: selectedFabric
+                    ? {
+                        _id: selectedFabric._id || selectedFabric.id,
+                        id: selectedFabric._id || selectedFabric.id,
+                        name: selectedFabric.name,
+                        price: selectedFabric.price || 0,
+                        image: selectedFabric.image || selectedFabric.images?.[0] || null,
+                    }
+                    : null,
                 measurements: finalMeasurements,
                 isTailorAtHome,
-                selectedStyle,
-                addons: selectedAddons
+                selectedStyle: selectedStyle
+                    ? {
+                        name: selectedStyle.name,
+                        image: selectedStyle.image,
+                        description: selectedStyle.description,
+                        isCustom: !!selectedStyle.isCustom,
+                    }
+                    : null,
+                addons: (selectedAddons || []).map((a) => ({
+                    _id: a._id || a.id,
+                    name: a.name || a.title,
+                    price: Number(a.price) || 0,
+                })),
+                pending: false,
             },
             pricing: { 
                 base: basePrice, 
@@ -509,7 +733,7 @@ const ServiceDetail = () => {
                 total: currentTotal, 
                 deliveryDays: getDeliveryDays() 
             },
-            basketId: Date.now() + Math.random() // Unique ID for key mapping
+            basketId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
         };
     };
 
@@ -554,10 +778,116 @@ const ServiceDetail = () => {
 
 
 
+    const getLockedTailor = () => {
+        const fromPreselect = preSelectedTailor
+            ? {
+                id: preSelectedTailor._id || preSelectedTailor.id,
+                name: preSelectedTailor.shopName || preSelectedTailor.user?.name || 'Selected Tailor',
+            }
+            : null;
+        if (fromPreselect?.id) return fromPreselect;
+
+        const fromService = serviceData?.tailor
+            ? {
+                id: serviceData.tailor._id || serviceData.tailor.id,
+                name: serviceData.tailor.shopName || serviceData.tailor.user?.name || 'Selected Tailor',
+            }
+            : null;
+        if (fromService?.id) return fromService;
+
+        const fromBasket = serviceItems.find((item) => item.serviceDetails?.tailorId);
+        if (fromBasket?.serviceDetails?.tailorId) {
+            return {
+                id: fromBasket.serviceDetails.tailorId,
+                name: fromBasket.serviceDetails.tailorName || 'Selected Tailor',
+            };
+        }
+        return null;
+    };
+
+    const navigateToAddGarment = () => {
+        const locked = getLockedTailor();
+        const store = useCheckoutStore.getState();
+        const tailorId = store.lockedTailorId || locked?.id;
+        const tailorName = store.lockedTailorName || locked?.name;
+
+        if (!tailorId) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error('Please confirm a tailor for this order first');
+            });
+            return;
+        }
+
+        // Persist lock so catalog cannot show other tailors
+        if (!store.lockedTailorId) {
+            useCheckoutStore.setState({
+                lockedTailorId: tailorId,
+                lockedTailorName: tailorName || null,
+            });
+        }
+
+        navigate('/user/services', {
+            state: {
+                tailorId,
+                tailorName: tailorName || 'Selected Tailor',
+                fromMultiItemBasket: true,
+            },
+        });
+    };
+
+    /** Save current garment into basket, then open catalog for next item */
+    const handleSaveAndAddAnother = async () => {
+        if (!isMeasurementValid) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error('Please complete measurements for this service before adding another');
+            });
+            document.getElementById('measurement-section')?.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+        if (checkCartConflict()) return;
+        const item = await prepareDraftItem();
+        const idx =
+            editBasketIndex != null && editBasketIndex >= 0
+                ? editBasketIndex
+                : serviceItems.findIndex((row) => {
+                    const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+                    return sid === String(serviceData?._id || id) && row.configuration?.pending;
+                });
+
+        if (idx != null && idx >= 0 && idx < serviceItems.length) {
+            updateServiceItem(idx, item);
+        } else {
+            addServiceItem(item);
+        }
+        setBuyNowMode(false, null);
+        setActiveBasketIndex(null);
+        resetDraftForm();
+        import('react-hot-toast').then(({ toast }) => {
+            toast.success('Saved — choose another service');
+        });
+        navigateToAddGarment();
+    };
+
+    const goToCheckoutAfterItemsReady = () => {
+        const store = useCheckoutStore.getState();
+        const targetTailor =
+            preSelectedTailor ||
+            serviceData?.tailor ||
+            store.lockedTailorId ||
+            serviceItems[0]?.serviceDetails?.tailorId;
+        if (!targetTailor) {
+            navigate('/user/checkout/tailor');
+        } else if (isTailorAtHome && selectedAddressId) {
+            navigate('/user/checkout/summary');
+        } else {
+            navigate('/user/checkout/address');
+        }
+    };
+
     const handleAddMore = async () => {
         if (!isMeasurementValid) {
             import('react-hot-toast').then(({ toast }) => {
-                toast.error('Please complete measurements or select "Tailor at Home" first');
+                toast.error('Please complete measurements for this garment first');
             });
             const elem = document.getElementById('measurement-section');
             if (elem) elem.scrollIntoView({ behavior: 'smooth' });
@@ -565,19 +895,59 @@ const ServiceDetail = () => {
         }
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
+
+        const idx =
+            editBasketIndex != null && editBasketIndex >= 0
+                ? editBasketIndex
+                : serviceItems.findIndex((row) => {
+                    const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+                    return sid === String(serviceData?._id || id) && row.configuration?.pending;
+                });
+
+        if (idx != null && idx >= 0 && idx < serviceItems.length) {
+            updateServiceItem(idx, item);
+            setBuyNowMode(false, null);
+            setActiveBasketIndex(null);
+            resetDraftForm();
+            import('react-hot-toast').then(({ toast }) => {
+                toast.success(`Saved in basket (${useCheckoutStore.getState().serviceItems.length} items)`);
+            });
+            requestAnimationFrame(() => {
+                document.getElementById('order-basket')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            return;
+        }
+
         addServiceItem(item);
+        setBuyNowMode(false, null);
+        setActiveBasketIndex(null);
         resetDraftForm();
-        // Stay on page and show a success toast
         import('react-hot-toast').then(({ toast }) => {
-            toast.success('Item added to basket', {
-                icon: '🛒',
-                style: {
-                    borderRadius: '10px',
-                    background: '#333',
-                    color: '#fff',
-                },
+            toast.success(`Added to basket (${useCheckoutStore.getState().serviceItems.length} items)`, {
+                duration: 3500,
             });
         });
+        requestAnimationFrame(() => {
+            document.getElementById('order-basket')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    };
+
+    const handleCheckoutBasket = () => {
+        if (!serviceItems.length) return;
+        const pending = serviceItems.filter((i) => i.configuration?.pending);
+        if (pending.length) {
+            import('react-hot-toast').then(({ toast }) => {
+                toast.error(`Please complete pending garments first: ${pending.map((p) => p.serviceDetails?.title).join(', ')}`);
+            });
+            const first = pending[0];
+            const sid = first.serviceDetails?._id || first.serviceDetails?.id;
+            const idx = serviceItems.findIndex((i) => i.basketId === first.basketId);
+            if (sid) openBasketItem(first, idx >= 0 ? idx : 0);
+            return;
+        }
+        if (!requireAuth('Please login to book these services')) return;
+        setBuyNowMode(false, null);
+        goToCheckoutAfterItemsReady();
     };
 
     const handleBuyNow = async () => {
@@ -592,20 +962,59 @@ const ServiceDetail = () => {
         if (!requireAuth('Please login to book this service')) return;
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
-        
-        // Use 'Book Now' mode instead of adding to basket
-        setBuyNowMode(true, item);
-        
-        // Auto-select logic: if the service belongs to a tailor OR user came from tailor profile
-        const targetTailor = preSelectedTailor || serviceData?.tailor;
-        if (!targetTailor) {
-            navigate('/user/checkout/tailor');
-        } else if (isTailorAtHome && selectedAddressId) {
-            // Address was already explicitly selected during the 'Tailor at Home' configuration
-            navigate('/user/checkout/summary');
-        } else {
-            navigate('/user/checkout/address');
+
+        const idx =
+            editBasketIndex != null && editBasketIndex >= 0
+                ? editBasketIndex
+                : serviceItems.findIndex((row) => {
+                    const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+                    return sid === String(serviceData?._id || id) && row.configuration?.pending;
+                });
+
+        if (idx != null && idx >= 0 && idx < serviceItems.length) {
+            updateServiceItem(idx, item);
+            setBuyNowMode(false, null);
+            goToCheckoutAfterItemsReady();
+            return;
         }
+
+        addServiceItem(item);
+        setBuyNowMode(false, null);
+        goToCheckoutAfterItemsReady();
+    };
+
+    const openBasketItem = (item, idx) => {
+        const sid = item.serviceDetails?._id || item.serviceDetails?.id;
+        if (!sid) return;
+
+        // Always use latest row from store (measurements included)
+        const fresh = useCheckoutStore.getState().serviceItems[idx] || item;
+
+        // Same service page → just restore form (no navigation)
+        if (String(sid) === String(id)) {
+            setActiveBasketIndex(idx);
+            applyBasketItemToForm(fresh);
+            requestAnimationFrame(() => {
+                document.getElementById('measurement-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            import('react-hot-toast').then(({ toast }) => {
+                toast.success(`Showing measurements for: ${fresh.serviceDetails?.title || 'item'}`);
+            });
+            return;
+        }
+
+        const onServiceDetail = /\/user\/services\/[^/]+$/.test(location.pathname);
+        navigate(`/user/services/${sid}`, {
+            replace: onServiceDetail,
+            state: {
+                tailorId: fresh.serviceDetails?.tailorId || useCheckoutStore.getState().lockedTailorId || undefined,
+                tailorName: fresh.serviceDetails?.tailorName || useCheckoutStore.getState().lockedTailorName || undefined,
+                editBasketIndex: idx,
+                restoreBasketItem: fresh,
+                fromBasket: true,
+                fromMultiItemBasket: true,
+            },
+        });
     };
 
     return (
@@ -614,7 +1023,11 @@ const ServiceDetail = () => {
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl pt-safe">
                 <div className="px-5 py-3 flex items-center justify-between border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-all active:scale-90">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-all active:scale-90"
+                            aria-label="Back"
+                        >
                             <ArrowLeft size={22} className="text-gray-900" />
                         </button>
                         <div>
@@ -634,47 +1047,154 @@ const ServiceDetail = () => {
                 )}
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 mt-4 space-y-3.5">
+            <div className="max-w-2xl mx-auto px-4 mt-4 space-y-3.5 pb-44">
 
-                {/* Basket Summary Card */}
-                {serviceItems.length > 0 && (
-                    <section className="animate-in fade-in slide-in-from-top-4">
-                        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-6 opacity-5 rotate-12 pointer-events-none">
-                                <ShoppingBag size={80} />
+                {/* Selected service — only when basket empty (otherwise basket already shows the same item) */}
+                {!(storeHydrated && serviceItems.length > 0) && (
+                <section className="bg-white rounded-[1.5rem] p-3.5 border border-primary/15 shadow-sm space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-16 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 shrink-0">
+                            <img
+                                src={getImageUrl(serviceData.image) || 'https://placehold.co/128x160/e6e8f0/843d9b?text=Service'}
+                                alt={serviceData.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.src = 'https://placehold.co/128x160/e6e8f0/843d9b?text=Service';
+                                }}
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[9px] font-black uppercase tracking-wider text-primary">Selected service</p>
+                            <h2 className="text-sm font-black text-gray-900 truncate">{serviceData.title}</h2>
+                            <p className="text-[11px] font-bold text-gray-500 mt-0.5">
+                                ₹{(serviceData.basePrice || 0).toLocaleString()}
+                                {fabricSource === 'platform' ? ' · Buy fabric' : ' · Your fabric'}
+                                {selectedStyle?.name ? ` · ${selectedStyle.name}` : ''}
+                                {isMeasurementValid ? ' · Measurements ✓' : ' · Measurements pending'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleSaveAndAddAnother}
+                        className="w-full py-3 rounded-xl bg-primary text-white font-black text-[11px] uppercase tracking-wider active:scale-[0.98] hover:bg-primary-dark transition-all flex items-center justify-center gap-2"
+                    >
+                        <ShoppingBag size={14} />
+                        + Add another service
+                    </button>
+                </section>
+                )}
+
+                {/* Basket — visible as soon as items exist (incl. auto-pending on open) */}
+                {storeHydrated && serviceItems.length > 0 && (
+                    <section id="order-basket" className="animate-in fade-in slide-in-from-top-4 scroll-mt-24">
+                        <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-primary/15 overflow-hidden relative">
+                            <div className="flex items-center justify-between mb-3 gap-2">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    Your order basket ({serviceItems.length})
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={handleCheckoutBasket}
+                                    className="text-[9px] font-black uppercase tracking-wider bg-primary text-white px-3 py-1.5 rounded-lg active:scale-95"
+                                >
+                                    Checkout
+                                </button>
                             </div>
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Current Basket</h3>
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 <AnimatePresence mode='popLayout'>
-                                    {serviceItems.map((item, idx) => (
+                                    {serviceItems.map((item, idx) => {
+                                        const thumbSrc = getImageUrl(
+                                            item.configuration?.selectedStyle?.image ||
+                                            item.configuration?.selectedFabric?.image ||
+                                            item.configuration?.selectedFabric?.images?.[0] ||
+                                            item.serviceDetails?.image ||
+                                            item.serviceDetails?.images?.[0]
+                                        );
+                                        const measureType = item.configuration?.pending
+                                            ? 'Complete details'
+                                            : item.configuration?.isTailorAtHome
+                                            ? 'Home visit'
+                                            : item.configuration?.measurements?.type || 'Custom';
+                                        return (
                                         <motion.div 
                                             key={item.basketId || idx}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             exit={{ opacity: 0, scale: 0.9 }}
-                                            className="flex items-center justify-between bg-gray-50/50 p-3 rounded-2xl border border-gray-100"
+                                            className={cn(
+                                                "flex items-center justify-between p-3 rounded-2xl border",
+                                                editBasketIndex === idx
+                                                    ? "bg-primary/5 border-primary/40 ring-1 ring-primary/30"
+                                                    : item.configuration?.pending
+                                                    ? "bg-amber-50/80 border-amber-200"
+                                                    : "bg-gray-50 border-gray-100"
+                                            )}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
-                                                    <Scissors size={18} />
+                                            <button
+                                                type="button"
+                                                onClick={() => openBasketItem(item, idx)}
+                                                className="flex items-center gap-3 min-w-0 flex-1 text-left active:scale-[0.99] transition-transform"
+                                            >
+                                                <div className="w-14 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-primary overflow-hidden border border-gray-100 shrink-0">
+                                                    {thumbSrc ? (
+                                                        <img
+                                                            src={thumbSrc}
+                                                            alt={item.serviceDetails?.title || `Item ${idx + 1}`}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = 'https://placehold.co/112x128/e6e8f0/843d9b?text=Item';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <Scissors size={18} />
+                                                    )}
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs font-black text-gray-900">Item #{idx + 1}: {item.serviceDetails.title}</p>
-                                                    <p className="text-[9px] text-gray-400 font-bold uppercase">₹{item.pricing.total}</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-black text-gray-900 truncate">
+                                                        {idx + 1}. {item.serviceDetails?.title}
+                                                    </p>
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">
+                                                        {item.configuration?.pending
+                                                            ? 'Pending · tap to fill measurements'
+                                                            : `₹${Number(item.pricing?.total || 0).toLocaleString()} · ${String(measureType).replace(/-/g, ' ')}`}
+                                                    </p>
+                                                    <p className="text-[9px] text-primary font-bold mt-0.5">
+                                                        {editBasketIndex === idx
+                                                            ? 'Editing this item · measurements below'
+                                                            : 'Tap to view / edit measurements →'}
+                                                    </p>
                                                 </div>
-                                            </div>
+                                            </button>
                                             <button 
+                                                type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    removeServiceItem(idx);
+                                                    handleRemoveBasketItem(idx);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-error hover:bg-indigo-50 rounded-lg transition-all active:scale-95"
+                                                className="px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-all active:scale-95 shrink-0"
                                             >
-                                                <X size={16} />
+                                                Remove
                                             </button>
                                         </motion.div>
-                                    ))}
+                                        );
+                                    })}
                                 </AnimatePresence>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-1 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleSaveAndAddAnother}
+                                    className="w-full py-3 rounded-xl bg-primary text-white font-black text-[11px] uppercase tracking-wider active:scale-[0.98] hover:bg-primary-dark transition-all flex items-center justify-center gap-2"
+                                >
+                                    <ShoppingBag size={14} />
+                                    + Add another service
+                                </button>
+                            <p className="text-[9px] text-gray-400 font-medium text-center leading-relaxed">
+                                Only this tailor’s services can be added. Highlighted row = item you’re editing below.
+                            </p>
                             </div>
                         </div>
                     </section>
@@ -811,7 +1331,18 @@ const ServiceDetail = () => {
 
                 {!isAlteration && (
                     <section id="measurement-section" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="mb-2 px-1 flex items-center justify-between gap-2">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">
+                                Measurements for
+                            </p>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                                {editBasketIndex != null
+                                    ? `${editBasketIndex + 1}. ${serviceItems[editBasketIndex]?.serviceDetails?.title || serviceData?.title || 'Item'}`
+                                    : (serviceData?.category?.name || serviceData?.title || 'This garment')}
+                            </span>
+                        </div>
                         <MeasurementSelector
+                            key={`measure-${id}-${editBasketIndex ?? 'x'}-${formEpoch}`}
                             selectedType={measurementType}
                             visitPrice={isCalculatingDistance ? '...' : (tailorAtHomePrice || visitSettings.baseFee)}
                             isDistanceBased={!!preSelectedTailor}
@@ -858,6 +1389,11 @@ const ServiceDetail = () => {
                             onSelectSavedProfile={setSelectedSavedProfile}
                             disableHomeVisit={hasSelfMeasurements}
                             completedSelfData={measurements?.type === 'self' || measurements?.isConfirmed ? measurements : null}
+                            completedSlipData={
+                                measurements?.type === 'slip' || measurements?.slipImage || measurements?.image || measurements?.url
+                                    ? measurements
+                                    : null
+                            }
                         />
                     </section>
                 )}
@@ -1067,26 +1603,37 @@ const ServiceDetail = () => {
                                 <button
                                     onClick={handleAddMore}
                                     className={cn(
-                                        "flex-1 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 cursor-pointer",
+                                        "flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex flex-col items-center justify-center gap-0.5 transition-all border-2 cursor-pointer min-h-[52px]",
                                         isMeasurementValid 
-                                            ? "border-primary text-primary hover:bg-indigo-50 active:scale-95" 
+                                            ? "border-primary text-primary hover:bg-primary/5 active:scale-95" 
                                             : "border-gray-200 text-gray-400 bg-gray-50 hover:bg-gray-100"
                                     )}
                                 >
-                                    <Tag size={16} /> Add to Basket
+                                    <span className="flex items-center gap-1.5">
+                                        <Tag size={14} /> {editBasketIndex != null ? 'Update Item' : 'Add Another'}
+                                    </span>
+                                    <span className="text-[8px] font-bold normal-case tracking-normal opacity-70">
+                                        {editBasketIndex != null ? 'Save edits' : 'Keep shopping'}
+                                    </span>
                                 </button>
                                 
                                 <button
                                     onClick={handleBuyNow}
                                     className={cn(
-                                        "flex-[2.5] py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer",
+                                        "flex-[2.5] py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer min-h-[52px]",
                                         isMeasurementValid
-                                            ? "bg-primary text-white shadow-indigo-100 active:scale-[0.98] hover:bg-primary-dark" 
+                                            ? "bg-primary text-white shadow-primary/20 active:scale-[0.98] hover:bg-primary-dark" 
                                             : "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-600 hover:from-gray-300 hover:to-gray-400"
                                     )}
                                 >
                                     {isMeasurementValid ? (
-                                        <>Book Now <ChevronRight size={16} /></>
+                                        editBasketIndex != null ? (
+                                            <>Save Changes <ChevronRight size={16} /></>
+                                        ) : serviceItems.length > 0 ? (
+                                            <>Book All ({serviceItems.length + 1}) <ChevronRight size={16} /></>
+                                        ) : (
+                                            <>Book Now <ChevronRight size={16} /></>
+                                        )
                                     ) : (
                                         <>Enter Details to Proceed <ChevronUp size={14} className="text-gray-500 animate-bounce" /></>
                                     )}

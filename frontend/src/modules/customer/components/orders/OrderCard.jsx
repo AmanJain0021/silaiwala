@@ -3,14 +3,23 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Calendar, Truck, Home } from 'lucide-react';
 import { getImageUrl } from '../../../../utils/imageUrl';
 import ReviewModal from './ReviewModal';
+import {
+    formatOrderItemsTitle,
+    getItemImage,
+    getItemLabel,
+    getOrderItemCount,
+    orderHasTailorAtHome,
+} from '../../../../utils/orderItems';
 
 const OrderCard = ({ order }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     
-    const serviceTitle = order.items?.[0]?.service?.title || order.items?.[0]?.service?.name || order.items?.[0]?.product?.name || "Custom Stitching";
-    const deliveryType = order.items?.[0]?.deliveryType || "Standard Delivery";
+    const items = order.items || [];
+    const serviceTitle = formatOrderItemsTitle(items, { fallback: 'Custom Stitching' });
+    const deliveryType = items[0]?.deliveryType || 'Standard Delivery';
     const displayId = order.orderId || "ORD-0000";
     const status = (order.status || 'Pending').replace(/-/g, ' ').toUpperCase();
+    const itemCount = getOrderItemCount(items);
 
     const getStatusBadgeStyle = (statusStr) => {
         const s = statusStr?.toLowerCase() || '';
@@ -23,7 +32,7 @@ const OrderCard = ({ order }) => {
         if (['cancelled'].includes(s)) {
             return 'bg-red-50 text-red-500 border border-red-100';
         }
-        return 'bg-[#F8F5FF] text-[#843D9B] border border-[#843D9B]/10';
+        return 'bg-primary/5 text-primary border border-primary/10';
     };
 
     const formattedDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB', {
@@ -32,11 +41,9 @@ const OrderCard = ({ order }) => {
         year: 'numeric'
     }) : "Date Unknown";
 
-    const mainImage = getImageUrl(order.items?.[0]?.service?.image || order.items?.[0]?.product?.image) || "https://placehold.co/400x500/e6e8f0/843d9b?text=Order";
+    const mainImage = getImageUrl(getItemImage(items[0])) || "https://placehold.co/400x500/e6e8f0/843d9b?text=Order";
     
-    // Tailor at Home logic: if measurement type is home
-    const isTailorAtHome = order.items?.some(item => item.measurements?.type === 'home');
-    const firstItemQty = order.items?.[0]?.quantity || 1;
+    const isTailorAtHome = orderHasTailorAtHome(items);
 
     return (
         <div className="bg-white rounded-[1.25rem] p-3 border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md transition-all group block">
@@ -50,6 +57,11 @@ const OrderCard = ({ order }) => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x500/e6e8f0/843d9b?text=Order'; }}
                         />
+                        {items.length > 1 && (
+                            <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md">
+                                {items.length} items
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -65,7 +77,7 @@ const OrderCard = ({ order }) => {
                                 #{displayId}
                             </span>
                         </div>
-                        <span className="text-[13px] font-black text-[#843D9B] shrink-0 ml-1">₹{order.totalAmount || 0}</span>
+                        <span className="text-[13px] font-black text-primary shrink-0 ml-1">₹{order.totalAmount || 0}</span>
                     </div>
 
                     {/* Row 2: Title & Arrow */}
@@ -73,7 +85,7 @@ const OrderCard = ({ order }) => {
                         <h3 className="text-[13px] sm:text-sm font-black text-gray-900 uppercase tracking-tight line-clamp-1 pr-2">
                             {serviceTitle}
                         </h3>
-                        <ChevronRight size={14} className="text-gray-300 shrink-0 group-hover:text-[#843D9B] transition-colors" />
+                        <ChevronRight size={14} className="text-gray-300 shrink-0 group-hover:text-primary transition-colors" />
                     </div>
 
                     {/* Row 3: Date and Delivery Type */}
@@ -91,29 +103,42 @@ const OrderCard = ({ order }) => {
                     {/* Row 4: Items Summary and Action Button */}
                     <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-gray-50/50">
                         <div className="flex items-center gap-1.5 min-w-0">
-                            <div className="w-5 h-5 rounded-md overflow-hidden border border-gray-200 shrink-0">
-                                <img 
-                                    src={mainImage} 
-                                    alt="thumbnail" 
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/e6e8f0/843d9b?text=Item'; }}
-                                />
+                            <div className="flex -space-x-1.5 shrink-0">
+                                {items.slice(0, 3).map((item, idx) => (
+                                    <div
+                                        key={item._id || idx}
+                                        className="w-5 h-5 rounded-md overflow-hidden border border-white bg-gray-100"
+                                    >
+                                        <img 
+                                            src={getImageUrl(getItemImage(item)) || 'https://placehold.co/100x100/e6e8f0/843d9b?text=Item'} 
+                                            alt={getItemLabel(item)} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/e6e8f0/843d9b?text=Item'; }}
+                                        />
+                                    </div>
+                                ))}
                             </div>
-                            <span className="text-[9px] sm:text-[10px] font-bold text-gray-700 truncate capitalize flex items-center">
-                                <span className="truncate">{serviceTitle.toLowerCase()}</span>
-                                <span className="text-gray-400 ml-1 font-semibold">x{firstItemQty}</span>
+                            <span className="text-[9px] sm:text-[10px] font-bold text-gray-700 truncate capitalize">
+                                {items.length > 1
+                                    ? `${items.length} garments · qty ${itemCount}`
+                                    : (
+                                        <>
+                                            <span className="truncate">{getItemLabel(items[0]).toLowerCase()}</span>
+                                            <span className="text-gray-400 ml-1 font-semibold">x{items[0]?.quantity || 1}</span>
+                                        </>
+                                    )}
                             </span>
                         </div>
                         
                         {isTailorAtHome ? (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-[#843D9B]/30 text-[#843D9B] text-[8px] font-black uppercase tracking-wider bg-white shrink-0 shadow-sm">
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-primary/30 text-primary text-[8px] font-black uppercase tracking-wider bg-white shrink-0 shadow-sm">
                                 <Home size={10} /> TAILOR AT HOME
                             </div>
                         ) : (
                             <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-wider bg-gray-50 shrink-0">
-                                {order.items?.[0]?.measurements?.type === 'sample' ? 'Sample Garment' :
-                                 order.items?.[0]?.measurements?.type === 'slip' ? 'Slip Uploaded' :
-                                 order.items?.[0]?.measurements?.type === 'saved' ? 'Saved Profile' : 'Self Measured'}
+                                {items[0]?.measurements?.type === 'sample' ? 'Sample Garment' :
+                                 items[0]?.measurements?.type === 'slip' ? 'Slip Uploaded' :
+                                 items[0]?.measurements?.type === 'saved' ? 'Saved Profile' : 'Self Measured'}
                             </div>
                         )}
                     </div>

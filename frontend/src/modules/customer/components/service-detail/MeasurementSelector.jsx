@@ -6,16 +6,16 @@ import UploadSlip from './measurement-forms/UploadSlip';
 import MeasurementGuideModal from './MeasurementGuideModal';
 import useMeasurementStore from '../../../../store/measurementStore';
 
-const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, disableHomeVisit = false, completedSelfData = null }) => {
+const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, disableHomeVisit = false, completedSelfData = null, completedSlipData = null }) => {
     const { measurements, fetchMeasurements, isLoading } = useMeasurementStore();
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     
     // Local state to track if a valid measurement has been provided for each type
     const [completedMeasurements, setCompletedMeasurements] = useState({
         new: !!(completedSelfData?.isConfirmed || completedSelfData?.type === 'self'),
-        upload: false,
-        home: false,
-        saved: !!selectedSavedProfile
+        upload: !!(completedSlipData?.type === 'slip' || completedSlipData?.slipImage || completedSlipData?.image || completedSlipData?.url),
+        home: selectedType === 'home',
+        saved: !!selectedSavedProfile || selectedType === 'saved',
     });
 
     React.useEffect(() => {
@@ -23,6 +23,13 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
             setCompletedMeasurements(prev => (prev.new ? prev : { ...prev, new: true }));
         }
     }, [completedSelfData]);
+
+    React.useEffect(() => {
+        const hasSlip = !!(completedSlipData?.type === 'slip' || completedSlipData?.slipImage || completedSlipData?.image || completedSlipData?.url);
+        if (hasSlip) {
+            setCompletedMeasurements(prev => (prev.upload ? prev : { ...prev, upload: true }));
+        }
+    }, [completedSlipData]);
 
     React.useEffect(() => {
         fetchMeasurements();
@@ -82,20 +89,38 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
     const filteredMeasurements = measurements.filter(m => {
         if (!categoryName) return true;
         if (!m.garmentType) return false;
-        return m.garmentType.toLowerCase().trim() === categoryName.toLowerCase().trim();
+        const a = m.garmentType.toLowerCase().trim();
+        const b = categoryName.toLowerCase().trim();
+        if (a === b) return true;
+        // Soft match: pajama/pant/trouser family, kurta/kurti, etc.
+        const family = (s) => {
+            if (/pajama|pyjama|pant|trouser|salwar|palazzo|lower|bottom|skirt/.test(s)) return 'bottom';
+            if (/kurta|kurti|kameez/.test(s)) return 'kurta';
+            if (/shirt/.test(s)) return 'shirt';
+            if (/blouse/.test(s)) return 'blouse';
+            return s;
+        };
+        return family(a) === family(b);
     });
 
     return (
         <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900">Measurement Options</h3>
+            <div className="flex items-center justify-between mb-3 gap-2">
+                <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-gray-900">Measurement Options</h3>
+                    {categoryName && (
+                        <p className="text-[10px] text-primary font-bold mt-0.5 truncate">
+                            Form for: {categoryName}
+                        </p>
+                    )}
+                </div>
                 <button
                     type="button"
                     onClick={() => setIsGuideOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white shadow-md shadow-purple-200 text-xs font-bold transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary hover:bg-primary-dark active:scale-95 text-white shadow-md shadow-primary/20 text-xs font-bold transition-all cursor-pointer shrink-0"
                 >
                     <BookOpen size={14} className="text-white" />
-                    <span>Measurement Guide</span>
+                    <span>Guide</span>
                 </button>
             </div>
 

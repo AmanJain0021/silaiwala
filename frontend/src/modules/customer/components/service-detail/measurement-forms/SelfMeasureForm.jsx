@@ -76,13 +76,27 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measureme
     const [profileName, setProfileName] = useState('');
 
     useEffect(() => {
+        const empty = {
+            chest: '', waist: '', hips: '', shoulder: '', length: '',
+            sleeveLength: '', neck: '', underbust: '', frontNeck: '',
+            backNeck: '', thigh: '', bottom: '', notes: ''
+        };
         if (categoryName) {
             setSelectedCategory(detectDefaultCategory(categoryName));
         }
+        // Prefer fresh fields for this garment; only hydrate when parent passes initialData
+        if (initialData && typeof initialData === 'object' && Object.keys(initialData).length > 0) {
+            setValues({ ...empty, ...initialData });
+        } else {
+            setValues(empty);
+        }
+        setErrors({});
+        setSaveProfile(false);
+        setProfileName('');
     }, [categoryName]);
 
     useEffect(() => {
-        if (initialData) {
+        if (initialData && typeof initialData === 'object') {
             setValues(prev => ({ ...prev, ...initialData }));
         }
     }, [initialData]);

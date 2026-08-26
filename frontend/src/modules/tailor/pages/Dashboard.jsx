@@ -14,6 +14,7 @@ import {
 import { useTailorAuth } from '../context/AuthContext';
 import api from '../../../utils/api';
 import useBrandingStore from '../../../store/brandingStore';
+import { formatOrderItemsTitle } from '../../../utils/orderItems';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -243,7 +244,7 @@ const Dashboard = () => {
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[13px] font-black text-gray-900 truncate leading-tight">
-                                        {order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Job'}
+                                        {formatOrderItemsTitle(order.items, { fallback: 'Custom Job' })}
                                     </p>
                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 truncate">
                                         {order.customerName || 'Customer'} · {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}

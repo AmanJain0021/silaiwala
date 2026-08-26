@@ -16,6 +16,13 @@ import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 import ExchangeRequestModal from '../components/orders/ExchangeRequestModal';
 import useBrandingStore from '../../../store/brandingStore';
+import {
+    formatOrderItemsTitle,
+    getItemImage,
+    getItemLabel,
+    orderHasTailorAtHome,
+} from '../../../utils/orderItems';
+import { getImageUrl } from '../../../utils/imageUrl';
 
 const OrderTracking = () => {
     const { id } = useParams();
@@ -293,13 +300,14 @@ const OrderTracking = () => {
     };
 
     // Data Extraction based on Order Type
+    const orderItems = order.items || [];
     const serviceTitle = isBulk 
         ? `${order.organizationName} - ${order.serviceType}`
-        : (order.items?.[0]?.service?.title || order.items?.[0]?.product?.name || 'Custom Garment Order');
+        : formatOrderItemsTitle(orderItems, { fallback: 'Custom Garment Order' });
     
     const imageUrl = isBulk
         ? (order.referenceImages?.[0] || '/logo.png')
-        : (order.items?.[0]?.service?.image || order.items?.[0]?.product?.images?.[0] || order.items?.[0]?.product?.image || '/logo.png');
+        : (getImageUrl(getItemImage(orderItems[0])) || '/logo.png');
 
     // Arrival Date Calculation
     const getArrivalDate = () => {
@@ -307,7 +315,7 @@ const OrderTracking = () => {
             return new Date(order.expectedDeliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
         const baseDate = order.acceptedAt ? new Date(order.acceptedAt) : new Date(order.createdAt);
-        const firstItem = order.items?.[0];
+        const firstItem = orderItems[0];
         const deliveryType = firstItem?.deliveryType || 'standard';
         const deliveryDays = deliveryType === 'express' ? 10 : (deliveryType === 'premium' ? 7 : 15);
         baseDate.setDate(baseDate.getDate() + deliveryDays);
@@ -585,6 +593,11 @@ const OrderTracking = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                             <h3 className="text-sm font-black text-gray-900 truncate leading-tight">{serviceTitle}</h3>
+                            {orderItems.length > 1 && (
+                                <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                                    {orderItems.length} garments in this order
+                                </p>
+                            )}
                             
                             <div className="flex items-center gap-1.5 text-emerald-600 font-extrabold text-[11px] uppercase tracking-wide mt-1">
                                 <CheckCircle2 size={13} className="shrink-0 fill-emerald-600 text-white" />
@@ -959,19 +972,54 @@ const OrderTracking = () => {
 
                         {/* Items Breakdown */}
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                        <img src={imageUrl} alt={serviceTitle} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">{serviceTitle}</h4>
-                                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
-                                            Qty: {order.items?.[0]?.quantity || 1} &nbsp;|&nbsp; Size: {order.items?.[0]?.measurements?.type || 'Custom'}
-                                        </p>
+                            {!isBulk && orderItems.length > 0 ? (
+                                orderItems.map((item, idx) => {
+                                    const itemImg = getImageUrl(getItemImage(item)) || '/logo.png';
+                                    const label = getItemLabel(item);
+                                    const linePrice = Number(item.price) || 0;
+                                    const addonTotal = (item.styleAddons || item.addons || []).reduce(
+                                        (sum, a) => sum + (Number(a.price) || 0),
+                                        0
+                                    );
+                                    return (
+                                        <div key={item._id || idx} className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                                    <img src={itemImg} alt={label} className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">
+                                                        {orderItems.length > 1 ? `${idx + 1}. ` : ''}{label}
+                                                    </h4>
+                                                    <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                                                        Qty: {item.quantity || 1}
+                                                        {item.measurements?.type ? ` · ${String(item.measurements.type).replace(/-/g, ' ')}` : ''}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {(linePrice > 0 || addonTotal > 0) && (
+                                                <span className="text-sm font-black text-gray-900 shrink-0">
+                                                    ₹{(linePrice + addonTotal).toLocaleString('en-IN')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                            <img src={imageUrl} alt={serviceTitle} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">{serviceTitle}</h4>
+                                        </div>
                                     </div>
                                 </div>
-                                <span className="text-sm font-black text-gray-900 shrink-0">₹{order.totalAmount?.toLocaleString('en-IN') || '0'}</span>
+                            )}
+                            <div className="flex justify-between items-center pt-1 border-t border-gray-50">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order total</span>
+                                <span className="text-sm font-black text-gray-900">₹{order.totalAmount?.toLocaleString('en-IN') || '0'}</span>
                             </div>
                         </div>
 
@@ -1006,8 +1054,8 @@ const OrderTracking = () => {
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1">
                                         <MapPin size={12} className="text-[#843D9B]" /> ADDRESS
                                     </span>
-                                    <span className="px-2.5 py-1 rounded-lg bg-[#843D9B]/10 text-[#843D9B] text-[10px] font-black uppercase tracking-wider">
-                                        {order.items?.[0]?.measurements?.type === 'home' ? 'Tailor At Home' : 'Standard Delivery'}
+                                    <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider">
+                                        {orderHasTailorAtHome(orderItems) ? 'Tailor At Home' : 'Standard Delivery'}
                                     </span>
                                 </div>
                                 <p className="text-xs text-gray-600 font-medium leading-relaxed pl-4">

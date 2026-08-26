@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ArrowLeft, Bell, LayoutGrid, Star, Tag, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AnimatedSearchBar from '../AnimatedSearchBar';
 import api from '../../../../utils/api';
+import useCheckoutStore from '../../../../store/checkoutStore';
 
 const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFilter }) => {
+    const navigate = useNavigate();
+    const basketCount = useCheckoutStore((s) => s.serviceItems?.length || 0);
     const [adminCategories, setAdminCategories] = useState([]);
 
     useEffect(() => {
@@ -58,12 +61,23 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
             {/* Top Bar - Mobile Only */}
             <div className="flex items-center justify-between pt-3 mb-4 md:hidden">
                 <div className="flex items-center gap-3">
-                    <Link to="/user" className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-900 active:scale-90 transition-transform">
+                    <button
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-900 active:scale-90 transition-transform"
+                        aria-label="Back"
+                    >
                         <ArrowLeft size={22} />
-                    </Link>
+                    </button>
                     <div>
-                        <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">Stitching Services</h1>
-                        <p className="text-[11px] text-gray-500 font-medium">Find the perfect tailor for your style</p>
+                        <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">
+                            {basketCount > 0 ? 'Add another garment' : 'Stitching Services'}
+                        </h1>
+                        <p className="text-[11px] text-gray-500 font-medium">
+                            {basketCount > 0
+                                ? 'Same tailor · select service for your order'
+                                : 'Find the perfect tailor for your style'}
+                        </p>
                     </div>
                 </div>
                 <button className="relative p-2 rounded-full hover:bg-gray-50 text-gray-600 transition-colors">

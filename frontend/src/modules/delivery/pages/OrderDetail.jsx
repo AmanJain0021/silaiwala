@@ -847,11 +847,21 @@ const DeliveryOrderDetail = () => {
                             className={`flex gap-3 p-2 rounded-xl border transition-all ${isTryMode ? (isPicked ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-transparent opacity-60') : 'bg-slate-50 border-transparent'}`}
                           >
                              <div className="w-10 h-10 bg-white rounded-lg overflow-hidden border border-slate-100 shrink-0">
-                                {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <FiPackage className="text-slate-200 mt-2.5 mx-auto" size={16} />}
+                                {(item.image || item.service?.image || item.product?.image || item.product?.images?.[0]) ? (
+                                  <img
+                                    src={item.image || item.service?.image || item.product?.image || item.product?.images?.[0]}
+                                    className="w-full h-full object-cover"
+                                    alt=""
+                                  />
+                                ) : (
+                                  <FiPackage className="text-slate-200 mt-2.5 mx-auto" size={16} />
+                                )}
                              </div>
                              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                <p className="text-[11px] font-bold text-slate-800 truncate">{item.productName || item.name}</p>
-                                <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-tighter">Qty: {item.quantity}</p>
+                                <p className="text-[11px] font-bold text-slate-800 truncate">
+                                  {item.productName || item.name || item.service?.title || item.product?.name || `Item ${idx + 1}`}
+                                </p>
+                                <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-tighter">Qty: {item.quantity || 1}</p>
                              </div>
                              {isTryMode && (
                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 my-auto ${isPicked ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-200'}`}>

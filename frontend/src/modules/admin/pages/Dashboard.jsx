@@ -20,6 +20,7 @@ import api from '../../../utils/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
+import { formatOrderItemsTitle } from '../../../utils/orderItems';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -77,7 +78,7 @@ const AdminDashboard = () => {
                 if (apiRecentOrders && apiRecentOrders.length > 0) {
                     const formatted = apiRecentOrders.map(o => ({
                         id: o.orderId || o._id.substring(0, 8),
-                        service: o.items?.[0]?.service?.title || o.items?.[0]?.product?.name || 'Custom Job',
+                        service: formatOrderItemsTitle(o.items, { fallback: 'Custom Job' }),
                         customer: o.customer?.name || 'Customer',
                         tailor: o.tailor?.shopName || o.tailor?.name || 'Unassigned',
                         amount: `₹${(o.totalAmount || 0).toLocaleString()}`,
