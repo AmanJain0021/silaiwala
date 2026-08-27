@@ -66,7 +66,7 @@ const ProductCard = ({ product, onAddClick }) => {
                     )}
 
                     {/* Product Name */}
-                    <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 line-clamp-1 mb-0.5 tracking-tight group-hover:text-[#7a3299] transition-colors">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 line-clamp-1 mb-0.5 tracking-tight group-hover:text-[#843D9B] transition-colors">
                         {product.name}
                     </h3>
                     
@@ -81,7 +81,7 @@ const ProductCard = ({ product, onAddClick }) => {
                 {/* Bottom Price & Circular Cart Button */}
                 <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-auto">
                     <div className="flex items-baseline gap-0.5">
-                        <span className="text-sm sm:text-base font-black text-[#4b1b68]">₹{currentPrice}</span>
+                        <span className="text-sm sm:text-base font-black text-[#843D9B]">₹{currentPrice}</span>
                         <span className="text-[10px] font-bold text-slate-400">/m</span>
                     </div>
                     
@@ -91,7 +91,7 @@ const ProductCard = ({ product, onAddClick }) => {
                             e.stopPropagation();
                             onAddClick && onAddClick(product);
                         }}
-                        className="w-8 h-8 rounded-full bg-[#7a3299] text-white flex items-center justify-center hover:bg-[#4b1b68] active:scale-95 transition-all shadow-sm cursor-pointer"
+                        className="w-8 h-8 rounded-full bg-[#843D9B] text-white flex items-center justify-center hover:bg-[#843D9B] active:scale-95 transition-all shadow-sm cursor-pointer"
                     >
                         <ShoppingCart size={14} />
                     </button>

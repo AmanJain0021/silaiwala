@@ -211,9 +211,9 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
 
                     <button
                         onClick={() => setIsVideoOpen(true)}
-                        className="px-3.5 py-1.5 rounded-full bg-white border border-[#7C3AED] text-[#7C3AED] hover:bg-purple-50 active:scale-95 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0 shadow-2xs"
+                        className="px-3.5 py-1.5 rounded-full bg-white border border-[#843D9B] text-[#843D9B] hover:bg-purple-50 active:scale-95 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0 shadow-2xs"
                     >
-                        <Play size={12} className="fill-[#7C3AED] text-[#7C3AED]" />
+                        <Play size={12} className="fill-[#843D9B] text-[#843D9B]" />
                         <span>How to Measure</span>
                     </button>
                 </div>
@@ -225,7 +225,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                             onClick={() => setActiveTab('diagram')}
                             className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 activeTab === 'diagram'
-                                    ? 'bg-[#6B21A8] text-white shadow-md shadow-purple-900/20'
+                                    ? 'bg-[#843D9B] text-white shadow-md shadow-purple-900/20'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                             }`}
                         >
@@ -237,7 +237,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                             onClick={() => setActiveTab('photo')}
                             className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 activeTab === 'photo'
-                                    ? 'bg-[#6B21A8] text-white shadow-md shadow-purple-900/20'
+                                    ? 'bg-[#843D9B] text-white shadow-md shadow-purple-900/20'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                             }`}
                         >
@@ -249,7 +249,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                             onClick={() => setActiveTab('tips')}
                             className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 activeTab === 'tips'
-                                    ? 'bg-[#6B21A8] text-white shadow-md shadow-purple-900/20'
+                                    ? 'bg-[#843D9B] text-white shadow-md shadow-purple-900/20'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                             }`}
                         >
@@ -271,7 +271,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                 {/* Card Sub-Header */}
                                 <div className="flex items-center justify-between text-left border-b border-slate-100 pb-3">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="w-10 h-10 rounded-2xl bg-purple-100/70 border border-purple-200 flex items-center justify-center text-[#7C3AED] shrink-0">
+                                        <div className="w-10 h-10 rounded-2xl bg-purple-100/70 border border-purple-200 flex items-center justify-center text-[#843D9B] shrink-0">
                                             <Ruler size={20} />
                                         </div>
                                         <div>
@@ -291,8 +291,8 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         onClick={() => setViewMode('front')}
                                         className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                                             viewMode === 'front' 
-                                                ? 'bg-[#7C3AED] text-white shadow-md shadow-purple-600/20' 
-                                                : 'bg-transparent text-[#7C3AED] hover:bg-purple-100/50'
+                                                ? 'bg-[#843D9B] text-white shadow-md shadow-purple-600/20' 
+                                                : 'bg-transparent text-[#843D9B] hover:bg-purple-100/50'
                                         }`}
                                     >
                                         Front View
@@ -301,8 +301,8 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         onClick={() => setViewMode('back')}
                                         className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                                             viewMode === 'back' 
-                                                ? 'bg-[#7C3AED] text-white shadow-md shadow-purple-600/20' 
-                                                : 'bg-transparent text-[#7C3AED] hover:bg-purple-100/50'
+                                                ? 'bg-[#843D9B] text-white shadow-md shadow-purple-600/20' 
+                                                : 'bg-transparent text-[#843D9B] hover:bg-purple-100/50'
                                         }`}
                                     >
                                         Back View
@@ -327,16 +327,16 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                 {/* Overlayed Measurement Lines & Badges Front */}
                                                 <div className="absolute inset-0 pointer-events-none">
                                                     {/* Line 1 Bust (Horizontal) */}
-                                                    <div className="absolute top-[33%] left-[16%] right-[16%] border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[33%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">1</div>
+                                                    <div className="absolute top-[33%] left-[16%] right-[16%] border-t-2 border-dashed border-[#843D9B]" />
+                                                    <div className="absolute top-[33%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">1</div>
 
                                                     {/* Line 2 Waist (Horizontal) */}
-                                                    <div className="absolute top-[44%] left-[20%] right-[20%] border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">2</div>
+                                                    <div className="absolute top-[44%] left-[20%] right-[20%] border-t-2 border-dashed border-[#843D9B]" />
+                                                    <div className="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">2</div>
 
                                                     {/* Line 3 Hip (Horizontal) */}
-                                                    <div className="absolute top-[55%] left-[18%] right-[18%] border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">3</div>
+                                                    <div className="absolute top-[55%] left-[18%] right-[18%] border-t-2 border-dashed border-[#843D9B]" />
+                                                    <div className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">3</div>
 
                                                     {/* Line 4 Shoulder Width (Horizontal across top shoulders with end ticks) */}
                                                     <div className="absolute top-[22%] left-[20%] right-[20%] border-t-2 border-dashed border-amber-500">
@@ -346,19 +346,19 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                     <div className="absolute top-[22%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">4</div>
 
                                                     {/* Line 5 Sleeve Length (Vertical along sleeve from shoulder to wrist) */}
-                                                    <div className="absolute top-[22%] bottom-[50%] right-[16%] border-r-2 border-dashed border-purple-600">
-                                                        <div className="absolute top-0 -right-1 w-2.5 h-0.5 bg-purple-600" />
-                                                        <div className="absolute bottom-0 -right-1 w-2.5 h-0.5 bg-purple-600" />
+                                                    <div className="absolute top-[22%] bottom-[50%] right-[16%] border-r-2 border-dashed border-primary">
+                                                        <div className="absolute top-0 -right-1 w-2.5 h-0.5 bg-primary" />
+                                                        <div className="absolute bottom-0 -right-1 w-2.5 h-0.5 bg-primary" />
                                                     </div>
-                                                    <div className="absolute top-[36%] right-[8%] -translate-y-1/2 w-5 h-5 rounded-full bg-purple-700 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">5</div>
+                                                    <div className="absolute top-[36%] right-[8%] -translate-y-1/2 w-5 h-5 rounded-full bg-primary-dark text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">5</div>
 
                                                     {/* Line 6 Bicep / Upper Arm (Short horizontal line across bicep) */}
-                                                    <div className="absolute top-[33%] left-[10%] w-[18%] border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[33%] left-[2%] -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">6</div>
+                                                    <div className="absolute top-[33%] left-[10%] w-[18%] border-t-2 border-dashed border-[#843D9B]" />
+                                                    <div className="absolute top-[33%] left-[2%] -translate-y-1/2 w-5 h-5 rounded-full bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">6</div>
 
                                                     {/* Line 7 Wrist (Short horizontal line across wrist) */}
-                                                    <div className="absolute top-[50%] left-[8%] w-[16%] border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[50%] left-[1%] -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">7</div>
+                                                    <div className="absolute top-[50%] left-[8%] w-[16%] border-t-2 border-dashed border-[#843D9B]" />
+                                                    <div className="absolute top-[50%] left-[1%] -translate-y-1/2 w-5 h-5 rounded-full bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">7</div>
 
                                                     {/* Line 9 Kameez / Shirt Length (VERTICAL line from shoulder down to hem) */}
                                                     <div className="absolute top-[22%] bottom-[26%] left-[36%] border-l-2 border-dashed border-emerald-600">
@@ -390,15 +390,15 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                     <div className="absolute top-[28%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">10</div>
 
                                                     {/* Line 11 Armhole Depth (Vertical/curved line around armhole) */}
-                                                    <div className="absolute top-[28%] bottom-[63%] right-[20%] border-r-2 border-dashed border-purple-600 rounded-r-md">
-                                                        <div className="absolute top-0 -right-1 w-2 h-0.5 bg-purple-600" />
-                                                        <div className="absolute bottom-0 -right-1 w-2 h-0.5 bg-purple-600" />
+                                                    <div className="absolute top-[28%] bottom-[63%] right-[20%] border-r-2 border-dashed border-primary rounded-r-md">
+                                                        <div className="absolute top-0 -right-1 w-2 h-0.5 bg-primary" />
+                                                        <div className="absolute bottom-0 -right-1 w-2 h-0.5 bg-primary" />
                                                     </div>
-                                                    <div className="absolute top-[35%] right-[10%] -translate-y-1/2 w-5 h-5 rounded-full bg-purple-700 text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">11</div>
+                                                    <div className="absolute top-[35%] right-[10%] -translate-y-1/2 w-5 h-5 rounded-full bg-primary-dark text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">11</div>
 
                                                     {/* Line 12 Back Waist (Horizontal) */}
-                                                    <div className="absolute top-[46%] left-[18%] right-[18%] border-t-2 border-dashed border-[#7C3AED]" />
-                                                    <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#7C3AED] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">12</div>
+                                                    <div className="absolute top-[46%] left-[18%] right-[18%] border-t-2 border-dashed border-[#843D9B]" />
+                                                    <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#843D9B] text-white text-[10px] font-black flex items-center justify-center shadow-md z-10">12</div>
 
                                                     {/* Line 13 Salwar / Bottom Length (VERTICAL line along leg) */}
                                                     <div className="absolute top-[52%] bottom-[16%] right-[28%] border-r-2 border-dashed border-emerald-600">
@@ -419,7 +419,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                     {measurementItems.map((item) => (
                                         <div key={item.id} className="py-3.5 flex items-center justify-between gap-3">
                                             <div className="flex items-start gap-3 min-w-0">
-                                                <div className="w-7 h-7 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5 shadow-2xs">
+                                                <div className="w-7 h-7 rounded-full bg-[#843D9B] text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5 shadow-2xs">
                                                     {item.id}
                                                 </div>
                                                 <div>
@@ -459,20 +459,20 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                                             </div>
                                                         </div>
                                                     ) : item.lineType === 'sleeve' ? (
-                                                        <div className="h-full border-r-2 border-dashed border-purple-500 relative flex items-center justify-center mr-2">
-                                                            <div className="w-4 h-4 rounded-full bg-purple-700 text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                        <div className="h-full border-r-2 border-dashed border-primary relative flex items-center justify-center mr-2">
+                                                            <div className="w-4 h-4 rounded-full bg-primary-dark text-white text-[9px] font-black flex items-center justify-center shadow-md">
                                                                 {item.id}
                                                             </div>
                                                         </div>
                                                     ) : item.lineType === 'armhole' ? (
-                                                        <div className="h-[80%] border-r-2 border-dashed border-purple-500 rounded-r-md relative flex items-center justify-center mr-2">
-                                                            <div className="w-4 h-4 rounded-full bg-purple-700 text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                        <div className="h-[80%] border-r-2 border-dashed border-primary rounded-r-md relative flex items-center justify-center mr-2">
+                                                            <div className="w-4 h-4 rounded-full bg-primary-dark text-white text-[9px] font-black flex items-center justify-center shadow-md">
                                                                 {item.id}
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <div className="w-full border-t-2 border-dashed border-[#7C3AED] relative flex items-center justify-center">
-                                                            <div className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-black flex items-center justify-center shadow-md">
+                                                        <div className="w-full border-t-2 border-dashed border-[#843D9B] relative flex items-center justify-center">
+                                                            <div className="w-4 h-4 rounded-full bg-[#843D9B] text-white text-[9px] font-black flex items-center justify-center shadow-md">
                                                                 {item.id}
                                                             </div>
                                                         </div>
@@ -500,7 +500,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                             if (onSelectAddMeasurements) onSelectAddMeasurements();
                                             onClose();
                                         }}
-                                        className="px-4 py-2.5 rounded-full bg-[#6B21A8] hover:bg-purple-900 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-800/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
+                                        className="px-4 py-2.5 rounded-full bg-[#843D9B] hover:bg-purple-900 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-800/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
                                     >
                                         <Plus size={15} className="stroke-[3]" />
                                         <span>Add My Measurements</span>
@@ -510,7 +510,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                 {/* 3 Feature Highlights */}
                                 <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-slate-100">
                                     <div className="bg-purple-50/40 rounded-2xl p-3 flex flex-col items-center text-center border border-purple-100/60">
-                                        <div className="w-9 h-9 rounded-full bg-purple-100/80 text-[#7C3AED] flex items-center justify-center mb-1.5 shadow-2xs">
+                                        <div className="w-9 h-9 rounded-full bg-purple-100/80 text-[#843D9B] flex items-center justify-center mb-1.5 shadow-2xs">
                                             <ShieldCheck size={18} />
                                         </div>
                                         <h4 className="text-xs font-extrabold text-slate-900 leading-tight">100% Private</h4>
@@ -518,7 +518,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                     </div>
 
                                     <div className="bg-purple-50/40 rounded-2xl p-3 flex flex-col items-center text-center border border-purple-100/60">
-                                        <div className="w-9 h-9 rounded-full bg-purple-100/80 text-[#7C3AED] flex items-center justify-center mb-1.5 shadow-2xs">
+                                        <div className="w-9 h-9 rounded-full bg-purple-100/80 text-[#843D9B] flex items-center justify-center mb-1.5 shadow-2xs">
                                             <RotateCcw size={18} />
                                         </div>
                                         <h4 className="text-xs font-extrabold text-slate-900 leading-tight">Reusable</h4>
@@ -526,7 +526,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                     </div>
 
                                     <div className="bg-purple-50/40 rounded-2xl p-3 flex flex-col items-center text-center border border-purple-100/60">
-                                        <div className="w-9 h-9 rounded-full bg-purple-100/80 text-[#7C3AED] flex items-center justify-center mb-1.5 shadow-2xs">
+                                        <div className="w-9 h-9 rounded-full bg-purple-100/80 text-[#843D9B] flex items-center justify-center mb-1.5 shadow-2xs">
                                             <Sparkles size={18} />
                                         </div>
                                         <h4 className="text-xs font-extrabold text-slate-900 leading-tight">Accurate Fit</h4>
@@ -551,11 +551,11 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         onClick={() => setIsVideoOpen(true)}
                                         className="p-3.5 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50/70 active:scale-95 transition-all text-left flex items-center sm:flex-col sm:items-start gap-2.5 cursor-pointer shadow-2xs group"
                                     >
-                                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                                            <Play size={16} className="fill-[#7C3AED]" />
+                                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                            <Play size={16} className="fill-[#843D9B]" />
                                         </div>
                                         <div>
-                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#7C3AED] transition-colors">Video Guide</h4>
+                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#843D9B] transition-colors">Video Guide</h4>
                                             <p className="text-[10px] text-slate-500 leading-snug font-medium">Watch measurement video</p>
                                         </div>
                                     </button>
@@ -564,11 +564,11 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         onClick={() => window.open('https://wa.me/?text=Hi%20SewZella%20Support%2C%20I%20need%20help%20with%20body%20measurements', '_blank')}
                                         className="p-3.5 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50/70 active:scale-95 transition-all text-left flex items-center sm:flex-col sm:items-start gap-2.5 cursor-pointer shadow-2xs group"
                                     >
-                                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                                             <MessageSquare size={16} />
                                         </div>
                                         <div>
-                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#7C3AED] transition-colors">Chat with Expert</h4>
+                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#843D9B] transition-colors">Chat with Expert</h4>
                                             <p className="text-[10px] text-slate-500 leading-snug font-medium">Get help from our experts</p>
                                         </div>
                                     </button>
@@ -580,11 +580,11 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         }}
                                         className="p-3.5 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50/70 active:scale-95 transition-all text-left flex items-center sm:flex-col sm:items-start gap-2.5 cursor-pointer shadow-2xs group"
                                     >
-                                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                                             <Home size={16} />
                                         </div>
                                         <div>
-                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#7C3AED] transition-colors">Book Home Measurement</h4>
+                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#843D9B] transition-colors">Book Home Measurement</h4>
                                             <p className="text-[10px] text-slate-500 leading-snug font-medium">Our expert will visit your home</p>
                                         </div>
                                     </button>
@@ -597,7 +597,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                     {activeTab === 'photo' && (
                         <div className="bg-white rounded-3xl p-5 border border-purple-100 shadow-xs space-y-4 text-left">
                             <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0">
+                                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-[#843D9B] flex items-center justify-center shrink-0">
                                     <Camera size={20} />
                                 </div>
                                 <div>
@@ -630,7 +630,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                     {activeTab === 'tips' && (
                         <div className="bg-white rounded-3xl p-5 border border-purple-100 shadow-xs space-y-4 text-left">
                             <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0">
+                                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-[#843D9B] flex items-center justify-center shrink-0">
                                     <Lightbulb size={20} />
                                 </div>
                                 <div>
@@ -641,17 +641,17 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
 
                             <div className="space-y-3">
                                 <div className="p-3 rounded-2xl border border-slate-100 bg-slate-50/50 flex gap-3 items-start">
-                                    <span className="w-6 h-6 rounded-full bg-[#7C3AED] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                                    <span className="w-6 h-6 rounded-full bg-[#843D9B] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
                                     <p className="text-xs text-slate-700 font-medium">Use a soft, flexible cloth measuring tape rather than a metal ruler.</p>
                                 </div>
 
                                 <div className="p-3 rounded-2xl border border-slate-100 bg-slate-50/50 flex gap-3 items-start">
-                                    <span className="w-6 h-6 rounded-full bg-[#7C3AED] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                                    <span className="w-6 h-6 rounded-full bg-[#843D9B] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
                                     <p className="text-xs text-slate-700 font-medium">Keep one finger behind the tape to ensure comfortable breathing room.</p>
                                 </div>
 
                                 <div className="p-3 rounded-2xl border border-slate-100 bg-slate-50/50 flex gap-3 items-start">
-                                    <span className="w-6 h-6 rounded-full bg-[#7C3AED] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                                    <span className="w-6 h-6 rounded-full bg-[#843D9B] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
                                     <p className="text-xs text-slate-700 font-medium">Measure over fitted undergarments or light clothes for accurate dimensions.</p>
                                 </div>
                             </div>

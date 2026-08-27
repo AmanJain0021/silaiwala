@@ -410,7 +410,7 @@ const TailorRegistration = () => {
                                 className={`flex-1 py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center flex items-center justify-center gap-2 ${
                                     isValidating 
                                         ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' 
-                                        : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                        : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'
                                 }`}
                             >
                                 {isValidating ? 'VALIDATING...' : 'NEXT'} <ArrowRight className="w-4 h-4" />
@@ -454,7 +454,7 @@ const TailorRegistration = () => {
                                     className={`flex-1 py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center ${
                                         isLoading || !agreedToTerms 
                                             ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' 
-                                            : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                            : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'
                                     }`}
                                 >
                                     {isLoading ? 'SUBMITTING...' : 'SUBMIT APPLICATION'}

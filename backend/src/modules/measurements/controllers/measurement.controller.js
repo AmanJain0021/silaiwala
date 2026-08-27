@@ -8,7 +8,8 @@ const ErrorResponse = require("../../../utils/errorResponse.js");
  * @access  Private
  */
 exports.getMeasurements = asyncHandler(async (req, res, next) => {
-  const measurements = await Measurement.find({ user: req.user.id });
+  // Strict POV: only this customer's profiles
+  const measurements = await Measurement.find({ user: req.user.id }).sort({ updatedAt: -1 });
 
   res.status(200).json({
     success: true,

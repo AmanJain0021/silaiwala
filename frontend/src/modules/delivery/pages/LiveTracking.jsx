@@ -216,7 +216,7 @@ const LiveTracking = () => {
               <div className="text-xs text-gray-500 font-medium">Trip Earnings</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-primary">
                 {path.length}
               </div>
               <div className="text-xs text-gray-500 font-medium">Checkpoints</div>

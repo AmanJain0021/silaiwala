@@ -42,6 +42,21 @@ const MeasurementDetail = ({ orderId, inline = false }) => {
         }
     }, [id]);
 
+    const sourceDataRaw = profile?.formData || {};
+    const sourceData =
+        sourceDataRaw instanceof Map
+            ? Object.fromEntries(sourceDataRaw)
+            : sourceDataRaw;
+
+    const META_SKIP = new Set([
+        'measurementLayout',
+        'items',
+        '__multi',
+        'type',
+        'notes',
+        'unit',
+    ]);
+
     const defaultMetrics = [
         { label: 'Chest', key: 'chest', value: '0.0' },
         { label: 'Waist', key: 'waist', value: '0.0' },
@@ -52,8 +67,6 @@ const MeasurementDetail = ({ orderId, inline = false }) => {
         { label: 'Sleeve', key: 'sleeve', value: '0.0' },
         { label: 'Inseam', key: 'inseam', value: '0.0' }
     ];
-
-    const sourceData = profile?.formData || {};
     
     // Always render the default metrics in a standard order
     let currentMetrics = defaultMetrics.map(m => {
@@ -65,9 +78,11 @@ const MeasurementDetail = ({ orderId, inline = false }) => {
         return { ...m, value: String(val || '0.0') };
     });
 
-    // Also include any extra custom fields
+    // Also include any extra custom fields (skip meta / layout)
     const dataToCheck = isEditing ? editData : sourceData;
     Object.keys(dataToCheck).forEach(key => {
+        if (META_SKIP.has(key) || key.startsWith('item')) return;
+        if (typeof dataToCheck[key] === 'object') return;
         if (key.toLowerCase() !== 'hip' && !defaultMetrics.find(m => m.key === key)) {
             currentMetrics.push({
                 label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),

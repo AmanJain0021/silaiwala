@@ -169,7 +169,7 @@ const TailorCustomDesigns = () => {
                                 {design.quotationStatus === 'pending' ? (
                                     <button 
                                         onClick={() => handleOpenQuote(design)}
-                                        className="mt-2 w-full bg-[#843D9B] text-white py-3 rounded-xl text-xs font-black tracking-wider uppercase hover:bg-[#6c3080] active:scale-95 transition-all shadow-sm cursor-pointer"
+                                        className="mt-2 w-full bg-[#843D9B] text-white py-3 rounded-xl text-xs font-black tracking-wider uppercase hover:bg-[#6B2F7E] active:scale-95 transition-all shadow-sm cursor-pointer"
                                     >
                                         Submit Quote
                                     </button>
@@ -252,7 +252,7 @@ const TailorCustomDesigns = () => {
                                         setDetailsModalOpen(false);
                                         handleOpenQuote(selectedDesign);
                                     }}
-                                    className="flex-1 bg-[#843D9B] text-white py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase hover:bg-[#6c3080] transition-all shadow-md cursor-pointer"
+                                    className="flex-1 bg-[#843D9B] text-white py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase hover:bg-[#6B2F7E] transition-all shadow-md cursor-pointer"
                                 >
                                     Submit Quote
                                 </button>
@@ -329,7 +329,7 @@ const TailorCustomDesigns = () => {
 
                             <button 
                                 onClick={handleSubmitQuote}
-                                className="w-full bg-[#843D9B] text-white py-4 rounded-2xl text-xs font-black tracking-wider uppercase hover:bg-[#6c3080] active:scale-95 transition-all shadow-md mt-2 cursor-pointer"
+                                className="w-full bg-[#843D9B] text-white py-4 rounded-2xl text-xs font-black tracking-wider uppercase hover:bg-[#6B2F7E] active:scale-95 transition-all shadow-md mt-2 cursor-pointer"
                             >
                                 Send Quote to Customer
                             </button>

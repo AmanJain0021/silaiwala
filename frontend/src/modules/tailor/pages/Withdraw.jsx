@@ -110,7 +110,7 @@ const Withdraw = () => {
                 <div className="w-full max-w-lg bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-black/5 overflow-hidden animate-in zoom-in-95 duration-500">
                     
                     {/* Amount Display Area */}
-                    <div className="p-8 md:p-12 flex flex-col items-center text-center bg-gradient-to-br from-[#843D9B] via-[#6C3080] to-[#512261] relative overflow-hidden group">
+                    <div className="p-8 md:p-12 flex flex-col items-center text-center bg-gradient-to-br from-[#843D9B] via-[#6B2F7E] to-[#512261] relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
                             <Wallet size={160} color="white" />
                         </div>

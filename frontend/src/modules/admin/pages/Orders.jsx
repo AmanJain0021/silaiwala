@@ -9,6 +9,7 @@ import { getToken } from '../../../utils/auth';
 import OrderTrackingTimeline from '../components/OrderTrackingTimeline';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 import { formatOrderItemsTitle } from '../../../utils/orderItems';
+import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDisplay';
 
 const AdminOrders = () => {
     const [socketInstance, setSocketInstance] = useState(null);
@@ -290,7 +291,7 @@ const AdminOrders = () => {
             case 'completed': return 'bg-green-100 text-green-700 border-green-200';
             case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'accepted': return 'bg-indigo-50 text-primary border-indigo-100';
-            case 'ready-for-pickup': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'ready-for-pickup': return 'bg-purple-100 text-primary border-purple-200';
             case 'out-for-delivery': return 'bg-orange-100 text-orange-700 border-orange-200';
             case 'pending': return 'bg-gray-100 text-gray-700 border-gray-200';
             case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
@@ -322,7 +323,7 @@ const AdminOrders = () => {
                         </div>
                     </div>
                     <div className="bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 flex-1 min-w-[180px]">
-                        <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 shrink-0">
+                        <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center text-primary shrink-0">
                             <Scissors size={24} strokeWidth={2.5} />
                         </div>
                         <div>
@@ -575,15 +576,12 @@ const AdminOrders = () => {
                                             <div className="mt-4 pt-4 border-t border-gray-200">
                                                 <p className="text-[9px] uppercase text-gray-400 font-bold mb-2 flex items-center gap-1.5"><Scissors size={10} /> Measurement Preview</p>
                                                 
-                                                {selectedOrder.itemMeasurements && Object.keys(selectedOrder.itemMeasurements).filter(k => k !== 'slipImage').length > 0 && (
-                                                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
-                                                        {Object.entries(selectedOrder.itemMeasurements).map(([key, val]) => (
-                                                            key !== 'slipImage' && val && typeof val !== 'object' && (
-                                                                <span key={key} className="text-[10px] text-gray-600 bg-gray-100/50 px-2 py-0.5 rounded">
-                                                                    <span className="text-gray-400 capitalize">{key}:</span> {val}"
-                                                                </span>
-                                                            )
-                                                        ))}
+                                                {selectedOrder.itemMeasurements && Object.keys(selectedOrder.itemMeasurements).filter(k => k !== 'slipImage' && k !== 'measurementLayout' && typeof selectedOrder.itemMeasurements[k] !== 'object').length > 0 && (
+                                                    <div className="mb-2">
+                                                        <MeasurementDataDisplay
+                                                            measurements={selectedOrder.itemMeasurements}
+                                                            layoutFields={selectedOrder.itemMeasurements?.measurementLayout || null}
+                                                        />
                                                     </div>
                                                 )}
                                                 
@@ -707,7 +705,7 @@ const AdminOrders = () => {
                                 <button
                                     onClick={() => handleManageOrderDetails(selectedOrder.fullId)}
                                     disabled={isLoadingDetails || selectedOrder.isCustomBooking}
-                                    className="px-6 py-3 bg-[#843D9B] text-white text-xs font-bold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-6 py-3 bg-[#843D9B] text-white text-xs font-bold rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isLoadingDetails ? 'Loading...' : 'Manage Order Details'}
                                 </button>
@@ -826,7 +824,7 @@ const AdminOrders = () => {
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900">{manageOrderData.shiprocketDetails.courierName || 'Courier Assigned'}</p>
                                                     <p className="text-xs text-gray-500 mt-0.5">AWB: {manageOrderData.shiprocketDetails.awbCode || 'Pending'}</p>
-                                                    <p className="text-[10px] mt-1 inline-block px-2 py-0.5 bg-purple-100 text-purple-700 rounded uppercase font-bold tracking-wider">
+                                                    <p className="text-[10px] mt-1 inline-block px-2 py-0.5 bg-purple-100 text-primary rounded uppercase font-bold tracking-wider">
                                                         {manageOrderData.shiprocketDetails.currentStatus || 'Processing'}
                                                     </p>
                                                     {manageOrderData.shiprocketDetails.trackingUrl && (
@@ -927,7 +925,7 @@ const AdminOrders = () => {
                                                             {/* Selected Style / Custom Reference Design */}
                                                             {(item.selectedStyle || item.configuration?.selectedStyle) && (
                                                                 <div className="mt-2 pt-2 border-t border-purple-100">
-                                                                    <p className="text-[9px] font-bold text-purple-600 uppercase tracking-wider mb-1">
+                                                                    <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">
                                                                         {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? '📸 Custom Reference Design Photo' : '✂️ Selected Style Variant'}
                                                                     </p>
                                                                     <div className="flex items-center gap-3 bg-purple-50/60 p-2 rounded-xl border border-purple-100">
@@ -964,16 +962,15 @@ const AdminOrders = () => {
                                                             {/* Measurements */}
                                                             {item.measurements && Object.keys(item.measurements).length > 0 && (
                                                                 <div className="mt-2 pt-2 border-t border-gray-50">
-                                                                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Measurements</p>
-                                                                    <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-                                                                        {Object.entries(item.measurements).map(([key, val]) => (
-                                                                            key !== 'slipImage' && val && typeof val !== 'object' && (
-                                                                                <span key={key} className="text-[10px] text-gray-600">
-                                                                                    <span className="text-gray-400 capitalize">{key}:</span> {val}"
-                                                                                </span>
-                                                                            )
-                                                                        ))}
-                                                                    </div>
+                                                                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Measurements</p>
+                                                                    <MeasurementDataDisplay
+                                                                        measurements={item.measurements}
+                                                                        layoutFields={
+                                                                            item.measurements?.measurementLayout ||
+                                                                            item.service?.category?.measurementFields ||
+                                                                            null
+                                                                        }
+                                                                    />
                                                                     {item.measurements.slipImage && (
                                                                         <div className="mt-2">
                                                                             <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Measurement Slip / Reference</p>
@@ -1008,14 +1005,36 @@ const AdminOrders = () => {
                                                 <Scissors size={12} /> Measurement Executive Report
                                             </h4>
                                             {manageOrderData.measurementRequest.report.formData && (
-                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-2 mb-4">
-                                                    {Object.entries(manageOrderData.measurementRequest.report.formData).map(([key, val]) => (
-                                                        <div key={key} className="bg-white p-2 rounded-lg border border-indigo-50 shadow-sm text-center">
-                                                            <p className="text-[9px] text-gray-400 uppercase font-bold">{key}</p>
-                                                            <p className="text-xs font-black text-gray-900 mt-0.5">{val} <span className="text-[9px] text-gray-400">{manageOrderData.measurementRequest.report.unit || 'in'}</span></p>
+                                                (() => {
+                                                    const raw = manageOrderData.measurementRequest.report.formData;
+                                                    const fd = raw instanceof Map ? Object.fromEntries(raw) : raw;
+                                                    const multiItems = Array.isArray(fd.items) ? fd.items : null;
+                                                    if (multiItems?.length) {
+                                                        return (
+                                                            <div className="space-y-4 mb-4">
+                                                                {multiItems.map((entry, i) => (
+                                                                    <div key={i}>
+                                                                        <p className="text-[10px] font-bold text-indigo-600 mb-1">
+                                                                            {entry.title || `Item ${i + 1}`}
+                                                                        </p>
+                                                                        <MeasurementDataDisplay
+                                                                            measurements={entry.values || {}}
+                                                                            layoutFields={entry.measurementLayout}
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <div className="mb-4">
+                                                            <MeasurementDataDisplay
+                                                                measurements={fd}
+                                                                layoutFields={fd.measurementLayout}
+                                                            />
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                    );
+                                                })()
                                             )}
                                             {manageOrderData.measurementRequest.report.notes && (
                                                 <div className="bg-white p-3 rounded-lg border border-indigo-50 shadow-sm mb-4">

@@ -20,6 +20,7 @@ import useAddressStore from '../../../store/userStore';
 import { calculateDistance } from '../../../utils/distance';
 import api from '../../../utils/api';
 import { getImageUrl } from '../../../utils/imageUrl';
+import { sanitizeMeasurementFields } from '../../../utils/measurementFields';
 
 const FAQItem = ({ question, answer }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -606,6 +607,9 @@ const ServiceDetail = () => {
 
     const prepareDraftItem = async () => {
         let finalMeasurements = measurements;
+        const measurementLayout = sanitizeMeasurementFields(
+            serviceData?.category?.measurementFields || []
+        );
 
         // If user requested to save this measurement profile
         if (measurements?.saveProfile) {
@@ -614,10 +618,16 @@ const ServiceDetail = () => {
                 await addMeasurement({
                     profileName: measurements.saveProfile.name,
                     garmentType: serviceData.category?.name || "Other",
+                    categoryId: serviceData.category?._id || serviceData.category || null,
                     measurements: pureMeasurements,
                     notes: notes
                 });
-                finalMeasurements = { ...measurements.data, type: 'self', notes: notes || measurements.data?.notes };
+                finalMeasurements = {
+                    ...measurements.data,
+                    type: 'self',
+                    notes: notes || measurements.data?.notes,
+                    ...(measurementLayout.length ? { measurementLayout } : {}),
+                };
             } catch (err) {
                 console.error("Failed to save measurement profile:", err);
             }
@@ -636,6 +646,7 @@ const ServiceDetail = () => {
                             measurements.slipUrl,
                     }
                     : {}),
+                ...(measurementLayout.length ? { measurementLayout } : {}),
             };
         } else if (measurements?.type === 'slip') {
             finalMeasurements = {
@@ -653,6 +664,7 @@ const ServiceDetail = () => {
             finalMeasurements = {
                 ...(measurements.measurements || measurements),
                 type: 'saved',
+                ...(measurementLayout.length ? { measurementLayout } : {}),
             };
         } else if (measurements?.type === 'sample') {
             finalMeasurements = {
@@ -660,6 +672,8 @@ const ServiceDetail = () => {
                 notes: measurements.notes || 'Partner will pickup sample garment with fabric',
                 sampleGarment: true,
             };
+        } else if (finalMeasurements && typeof finalMeasurements === 'object' && measurementLayout.length) {
+            finalMeasurements = { ...finalMeasurements, measurementLayout };
         }
 
         return {
@@ -1210,7 +1224,7 @@ const ServiceDetail = () => {
                     <section className="animate-in fade-in slide-in-from-bottom-3 duration-400">
                         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-700">
+                                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-primary">
                                     <Scissors size={18} />
                                 </div>
                                 <div>
@@ -1224,7 +1238,7 @@ const ServiceDetail = () => {
                                 <div 
                                     className={`p-3 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden ${
                                         selectedStyle?.isCustom 
-                                            ? 'border-purple-600 bg-purple-50/60 shadow-md ring-2 ring-purple-600/20' 
+                                            ? 'border-primary bg-purple-50/60 shadow-md ring-2 ring-primary/20' 
                                             : 'border-dashed border-gray-300 bg-gray-50/70 hover:border-purple-300'
                                     }`}
                                 >
@@ -1247,9 +1261,9 @@ const ServiceDetail = () => {
                                     ) : (
                                         <label className="flex flex-col items-center justify-center py-4 cursor-pointer">
                                             {isUploadingCustomStyle ? (
-                                                <Loader2 size={24} className="animate-spin text-purple-600 mb-2" />
+                                                <Loader2 size={24} className="animate-spin text-primary mb-2" />
                                             ) : (
-                                                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mb-2 shadow-xs">
+                                                <div className="w-10 h-10 rounded-full bg-purple-100 text-primary flex items-center justify-center mb-2 shadow-xs">
                                                     <Upload size={18} />
                                                 </div>
                                             )}
@@ -1272,7 +1286,7 @@ const ServiceDetail = () => {
                                     {selectedStyle?.isCustom && (
                                         <div className="mt-1">
                                             <h4 className="text-xs font-black text-purple-900 truncate">Custom Reference Photo</h4>
-                                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-600 text-white inline-block mt-1">
+                                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-primary text-white inline-block mt-1">
                                                 Uploaded ✓
                                             </span>
                                         </div>
@@ -1295,7 +1309,7 @@ const ServiceDetail = () => {
                                             }}
                                             className={`p-3 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
                                                 isSelected 
-                                                    ? 'border-purple-600 bg-purple-50/60 shadow-md ring-2 ring-purple-600/20' 
+                                                    ? 'border-primary bg-purple-50/60 shadow-md ring-2 ring-primary/20' 
                                                     : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
                                             }`}
                                         >
@@ -1309,7 +1323,7 @@ const ServiceDetail = () => {
                                                 {style.description && <p className="text-[9px] text-gray-500 font-medium line-clamp-2 mt-0.5">{style.description}</p>}
                                             </div>
                                             <div className="mt-2 flex justify-between items-center">
-                                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'}`}>
                                                     {isSelected ? 'Selected ✓' : 'Select'}
                                                 </span>
                                             </div>
@@ -1340,6 +1354,7 @@ const ServiceDetail = () => {
                             isDistanceBased={!!preSelectedTailor}
                             measurementFields={serviceData?.category?.measurementFields || []}
                             categoryName={serviceData?.category?.name || serviceData?.title}
+                            categoryId={serviceData?.category?._id || serviceData?.category || null}
                             onSelectType={(type) => {
                                 if (type === 'home') {
                                     if (hasSelfMeasurements) return;

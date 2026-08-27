@@ -256,11 +256,11 @@ const NewMeasurementRequestAlert = () => {
                 exit={{ y: -100, opacity: 0 }}
                 className="fixed top-4 left-4 right-4 z-[9999]"
             >
-                <div className="bg-slate-900 rounded-[2rem] border border-purple-500/30 shadow-2xl shadow-black/50 overflow-hidden">
+                <div className="bg-slate-900 rounded-[2rem] border border-primary/30 shadow-2xl shadow-black/50 overflow-hidden">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-purple-900/60 to-slate-900 px-6 py-4 flex justify-between items-center border-b border-white/10">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-600/30">
+                            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-600/30">
                                 <Ruler size={20} />
                             </div>
                             <div>
@@ -289,7 +289,7 @@ const NewMeasurementRequestAlert = () => {
                                     <User size={12} /> Customer Measurement Visit
                                 </span>
                                 {request.distance && (
-                                    <span className="text-[10px] font-black text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <span className="text-[10px] font-black text-purple-300 bg-purple-500/10 border border-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
                                         <Navigation size={10} /> {request.distance}
                                     </span>
                                 )}
@@ -313,7 +313,7 @@ const NewMeasurementRequestAlert = () => {
                                     </div>
                                     <a
                                         href={`tel:${request.customerPhone}`}
-                                        className="text-[10px] font-black uppercase tracking-wider text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 px-3 py-1 rounded-lg border border-purple-500/40 transition-colors"
+                                        className="text-[10px] font-black uppercase tracking-wider text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 px-3 py-1 rounded-lg border border-primary/40 transition-colors"
                                     >
                                         Call Customer
                                     </a>
@@ -367,7 +367,7 @@ const NewMeasurementRequestAlert = () => {
                                 style={{ x }}
                                 className="w-13 h-13 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-xl cursor-grab active:cursor-grabbing z-10"
                             >
-                                {isAccepting ? <Package className="animate-spin text-purple-600" size={20} /> : <ArrowRight size={24} className="text-purple-600" />}
+                                {isAccepting ? <Package className="animate-spin text-primary" size={20} /> : <ArrowRight size={24} className="text-primary" />}
                             </motion.div>
                         </div>
                     </div>

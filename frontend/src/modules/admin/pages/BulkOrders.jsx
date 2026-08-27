@@ -435,7 +435,7 @@ const AdminBulkOrders = () => {
                                             selectedOrder.quote && (
                                                 <div className="bg-purple-50 border border-purple-100 p-6 rounded-[2rem] space-y-4">
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2 text-purple-600">
+                                                        <div className="flex items-center gap-2 text-primary">
                                                             <DollarSign size={18} strokeWidth={3} />
                                                             <h3 className="text-sm font-black uppercase tracking-widest">Existing Quote</h3>
                                                         </div>
@@ -444,11 +444,11 @@ const AdminBulkOrders = () => {
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
                                                             <p className="text-[8px] text-purple-400 font-bold uppercase">Unit Price</p>
-                                                            <p className="text-sm font-black text-purple-700">₹{selectedOrder.quote.pricePerUnit}</p>
+                                                            <p className="text-sm font-black text-primary">₹{selectedOrder.quote.pricePerUnit}</p>
                                                         </div>
                                                         <div>
                                                             <p className="text-[8px] text-purple-400 font-bold uppercase">Total Quote</p>
-                                                            <p className="text-sm font-black text-purple-700">₹{selectedOrder.quote.totalAmount}</p>
+                                                            <p className="text-sm font-black text-primary">₹{selectedOrder.quote.totalAmount}</p>
                                                         </div>
                                                     </div>
                                                 </div>

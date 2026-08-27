@@ -152,7 +152,7 @@ const SewZellaLanding = () => {
                 Custom Tailoring,
                 <br />
                 Delivered to{' '}
-                <span className="italic text-[#4a0581]">Your Doorstep</span>
+                <span className="italic text-[#843D9B]">Your Doorstep</span>
               </motion.h1>
 
               <motion.p
@@ -169,7 +169,7 @@ const SewZellaLanding = () => {
                   href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-6 py-3.5 rounded-xl text-[14px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300 shadow-[0_10px_28px_rgba(74,5,129,0.25)]"
+                  className="inline-flex items-center gap-2 bg-[#843D9B] text-white px-6 py-3.5 rounded-xl text-[14px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300 shadow-[0_10px_28px_rgba(74,5,129,0.25)]"
                 >
                   Download App
                   <ArrowRight size={16} />
@@ -178,7 +178,7 @@ const SewZellaLanding = () => {
                   href="https://play.google.com/store/apps/details?id=com.sewzella.tailor&pcampaignid=web_share"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 border border-[#4a0581]/40 text-[#4a0581] px-6 py-3.5 rounded-xl text-[14px] font-semibold hover:bg-[#F3EAF8] transition-all duration-300"
+                  className="inline-flex items-center gap-2 border border-[#843D9B]/40 text-[#843D9B] px-6 py-3.5 rounded-xl text-[14px] font-semibold hover:bg-[#F3EAF8] transition-all duration-300"
                 >
                   <Scissors size={15} />
                   Become a Tailor
@@ -194,7 +194,7 @@ const SewZellaLanding = () => {
                   {['S', 'A', 'R'].map((letter, i) => (
                     <div
                       key={i}
-                      className="w-8 h-8 rounded-full bg-[#4a0581] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold"
+                      className="w-8 h-8 rounded-full bg-[#843D9B] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold"
                     >
                       {letter}
                     </div>
@@ -244,7 +244,7 @@ const SewZellaLanding = () => {
                   custom={i}
                   className="flex flex-col items-center text-center gap-3"
                 >
-                  <Icon size={28} strokeWidth={1.4} className="text-[#4a0581]" />
+                  <Icon size={28} strokeWidth={1.4} className="text-[#843D9B]" />
                   <div>
                     <h3 className="text-[14px] font-bold text-[#1A1523] mb-1">{f.title}</h3>
                     <p className="text-[12px] text-[#6B6575] leading-snug max-w-[180px] mx-auto">
@@ -274,7 +274,7 @@ const SewZellaLanding = () => {
                 return (
                   <motion.div key={f.title} variants={fadeUp} custom={i} className="flex gap-4">
                     <div className="w-12 h-12 rounded-full bg-[#F3EAF8] flex items-center justify-center shrink-0">
-                      <Icon size={22} strokeWidth={1.5} className="text-[#4a0581]" />
+                      <Icon size={22} strokeWidth={1.5} className="text-[#843D9B]" />
                     </div>
                     <div>
                       <h3 className="text-[15px] font-bold text-[#1A1523] mb-1.5">{f.title}</h3>
@@ -308,7 +308,7 @@ const SewZellaLanding = () => {
               href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 self-start md:self-auto border border-[#EDE8F2] text-[#4a0581] px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:border-[#4a0581]/40 hover:bg-[#FAF8FC] transition-all"
+              className="inline-flex items-center gap-2 self-start md:self-auto border border-[#EDE8F2] text-[#843D9B] px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:border-[#843D9B]/40 hover:bg-[#FAF8FC] transition-all"
             >
               Download App
               <ArrowRight size={14} />
@@ -334,12 +334,12 @@ const SewZellaLanding = () => {
                     custom={i}
                     className="relative bg-white rounded-2xl border border-[#EDE8F2] p-5 md:p-6 md:pt-8 shadow-[0_4px_20px_rgba(26,21,35,0.03)] hover:shadow-[0_12px_32px_rgba(74,5,129,0.08)] hover:border-[#DCCFEA] transition-all duration-300 flex flex-row md:flex-col gap-4 md:gap-0"
                   >
-                    <div className="hidden md:flex absolute -top-3 left-5 w-8 h-8 rounded-full bg-[#4a0581] text-white text-[11px] font-bold items-center justify-center shadow-[0_4px_12px_rgba(74,5,129,0.3)]">
+                    <div className="hidden md:flex absolute -top-3 left-5 w-8 h-8 rounded-full bg-[#843D9B] text-white text-[11px] font-bold items-center justify-center shadow-[0_4px_12px_rgba(74,5,129,0.3)]">
                       {step.num}
                     </div>
                     
                     <div className="md:hidden shrink-0 flex flex-col items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-[#4a0581] text-white text-[11px] font-bold flex items-center justify-center shadow-[0_2px_8px_rgba(74,5,129,0.25)]">
+                      <div className="w-8 h-8 rounded-full bg-[#843D9B] text-white text-[11px] font-bold flex items-center justify-center shadow-[0_2px_8px_rgba(74,5,129,0.25)]">
                         {step.num}
                       </div>
                       {i < HOW_STEPS.length - 1 && (
@@ -349,10 +349,10 @@ const SewZellaLanding = () => {
 
                     <div className="flex-1 flex flex-col items-start md:items-center">
                       <div className="hidden md:flex w-14 h-14 rounded-full bg-[#F3EAF8] items-center justify-center mb-5 mx-auto">
-                        <Icon size={24} strokeWidth={1.4} className="text-[#4a0581]" />
+                        <Icon size={24} strokeWidth={1.4} className="text-[#843D9B]" />
                       </div>
                       <div className="md:hidden flex items-center gap-2 mb-1.5">
-                        <Icon size={18} strokeWidth={1.5} className="text-[#4a0581]" />
+                        <Icon size={18} strokeWidth={1.5} className="text-[#843D9B]" />
                         <h3
                           className="text-[16px] font-bold text-[#1A1523] leading-tight"
                           style={{ fontFamily: "'Libre Caslon Text', serif" }}
@@ -427,7 +427,7 @@ const SewZellaLanding = () => {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                   />
                 </div>
-                <h3 className="text-[15px] font-bold text-[#1A1523] mb-1 group-hover:text-[#4a0581] transition-colors">
+                <h3 className="text-[15px] font-bold text-[#1A1523] mb-1 group-hover:text-[#843D9B] transition-colors">
                   {cat.title}
                 </h3>
                 <p className="text-[12px] text-[#6B6575] leading-snug">{cat.desc}</p>
@@ -449,7 +449,7 @@ const SewZellaLanding = () => {
               variants={fadeUp}
             >
               <div className="flex-1 w-full">
-                <div className="inline-flex items-center gap-2 text-[#4a0581] font-semibold text-[13px] mb-4">
+                <div className="inline-flex items-center gap-2 text-[#843D9B] font-semibold text-[13px] mb-4">
                   <Scan size={18} strokeWidth={1.6} />
                   AI Measurement Assistant
                 </div>
@@ -466,14 +466,14 @@ const SewZellaLanding = () => {
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-7">
                   {['Chest', 'Shoulder', 'Waist', 'Sleeve', 'Hip', 'Neck'].map((label) => (
                     <div key={label} className="flex items-center gap-2">
-                      <CheckCircle size={14} className="text-[#4a0581] shrink-0" strokeWidth={2.2} />
+                      <CheckCircle size={14} className="text-[#843D9B] shrink-0" strokeWidth={2.2} />
                       <span className="text-[13px] font-semibold text-[#1A1523]">{label}</span>
                     </div>
                   ))}
                 </div>
                 <button
                   type="button"
-                  className="bg-[#4a0581] text-white px-6 py-3 rounded-xl text-[13px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300"
+                  className="bg-[#843D9B] text-white px-6 py-3 rounded-xl text-[13px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300"
                 >
                   Try AI Measurement
                 </button>
@@ -497,7 +497,7 @@ const SewZellaLanding = () => {
               variants={fadeUp}
               custom={1}
             >
-              <div className="inline-flex items-center gap-2 text-[#4a0581] font-semibold text-[13px] mb-3">
+              <div className="inline-flex items-center gap-2 text-[#843D9B] font-semibold text-[13px] mb-3">
                 <Eye size={18} strokeWidth={1.6} />
                 Live Order Tracking
               </div>
@@ -512,7 +512,7 @@ const SewZellaLanding = () => {
                     const Icon = step.icon;
                     return (
                       <div key={step.label} className="flex items-start gap-3 relative z-10">
-                        <div className="w-7 h-7 rounded-full bg-[#4a0581] text-white flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-[#843D9B] text-white flex items-center justify-center shrink-0">
                           <Icon size={12} />
                         </div>
                         <div>
@@ -533,7 +533,7 @@ const SewZellaLanding = () => {
                       <div key={step.label} className="flex items-start gap-3 relative z-10">
                         <div
                           className={`w-7 h-7 rounded-full text-white flex items-center justify-center shrink-0 ${
-                            step.delivered ? 'bg-emerald-500' : 'bg-[#4a0581]'
+                            step.delivered ? 'bg-emerald-500' : 'bg-[#843D9B]'
                           }`}
                         >
                           <Icon size={12} strokeWidth={step.delivered ? 3 : 2} />
@@ -553,7 +553,7 @@ const SewZellaLanding = () => {
               <div className="flex justify-center mt-auto">
                 <button
                   type="button"
-                  className="border border-[#DCCFEA] text-[#4a0581] px-7 py-2.5 rounded-xl text-[13px] font-semibold hover:border-[#4a0581] transition-all duration-300"
+                  className="border border-[#DCCFEA] text-[#843D9B] px-7 py-2.5 rounded-xl text-[13px] font-semibold hover:border-[#843D9B] transition-all duration-300"
                 >
                   Track Your Order
                 </button>
@@ -567,7 +567,7 @@ const SewZellaLanding = () => {
       <section className="py-8 md:py-10 bg-white">
         <div className="max-w-[1200px] mx-auto px-5 md:px-8">
           <motion.div
-            className="relative overflow-hidden rounded-[24px] bg-[#4a0581] px-6 py-8 md:px-10 md:py-10"
+            className="relative overflow-hidden rounded-[24px] bg-[#843D9B] px-6 py-8 md:px-10 md:py-10"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
@@ -600,7 +600,7 @@ const SewZellaLanding = () => {
                 href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-white text-[#4a0581] px-6 py-3 rounded-xl text-[14px] font-bold hover:bg-[#F3EAF8] transition-all shrink-0"
+                className="inline-flex items-center gap-2 bg-white text-[#843D9B] px-6 py-3 rounded-xl text-[14px] font-bold hover:bg-[#F3EAF8] transition-all shrink-0"
               >
                 Download App
                 <ArrowRight size={16} />
@@ -621,7 +621,7 @@ const SewZellaLanding = () => {
             variants={fadeUp}
           >
             <div className="flex items-center gap-3">
-              <Users size={22} strokeWidth={1.4} className="text-[#4a0581]" />
+              <Users size={22} strokeWidth={1.4} className="text-[#843D9B]" />
               <div className="text-left">
                 <p className="text-[22px] font-bold text-[#1A1523]">10,000+</p>
                 <p className="text-[12px] text-[#6B6575]">Customers & professionals across Kashmir</p>
@@ -629,7 +629,7 @@ const SewZellaLanding = () => {
             </div>
             <div className="hidden sm:block w-px h-10 bg-[#EDE8F2]" />
             <div className="flex items-center gap-3">
-              <ShieldCheck size={22} strokeWidth={1.4} className="text-[#4a0581]" />
+              <ShieldCheck size={22} strokeWidth={1.4} className="text-[#843D9B]" />
               <div className="text-left">
                 <p className="text-[15px] font-bold text-[#1A1523]">Verified Tailors</p>
                 <p className="text-[12px] text-[#6B6575]">Experienced & trusted professionals</p>
@@ -637,7 +637,7 @@ const SewZellaLanding = () => {
             </div>
             <div className="hidden sm:block w-px h-10 bg-[#EDE8F2]" />
             <div className="flex items-center gap-3">
-              <Truck size={22} strokeWidth={1.4} className="text-[#4a0581]" />
+              <Truck size={22} strokeWidth={1.4} className="text-[#843D9B]" />
               <div className="text-left">
                 <p className="text-[15px] font-bold text-[#1A1523]">Doorstep Delivery</p>
                 <p className="text-[12px] text-[#6B6575]">Pickup, stitch & deliver</p>
@@ -651,7 +651,7 @@ const SewZellaLanding = () => {
       <section id="become-partner" className="py-16 md:py-20 bg-[#FAF8FC]">
         <div className="max-w-[1200px] mx-auto px-5 md:px-8">
           <motion.div
-            className="relative bg-[#4a0581] rounded-[28px] overflow-hidden"
+            className="relative bg-[#843D9B] rounded-[28px] overflow-hidden"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
@@ -689,7 +689,7 @@ const SewZellaLanding = () => {
                     href="https://play.google.com/store/apps/details?id=com.sewzella.tailor&pcampaignid=web_share"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-white text-[#4a0581] px-7 py-3.5 rounded-xl text-[14px] font-bold hover:bg-[#F3EAF8] transition-all"
+                    className="inline-flex items-center gap-2 bg-white text-[#843D9B] px-7 py-3.5 rounded-xl text-[14px] font-bold hover:bg-[#F3EAF8] transition-all"
                   >
                     Join as Tailor <ChevronRight size={16} />
                   </a>
@@ -697,7 +697,7 @@ const SewZellaLanding = () => {
                     href="https://play.google.com/store/apps/details?id=com.sewzella.delivery&pcampaignid=web_share"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-transparent text-white border border-white/50 px-7 py-3.5 rounded-xl text-[14px] font-bold hover:bg-white hover:text-[#4a0581] transition-all"
+                    className="inline-flex items-center gap-2 bg-transparent text-white border border-white/50 px-7 py-3.5 rounded-xl text-[14px] font-bold hover:bg-white hover:text-[#843D9B] transition-all"
                   >
                     Join as Delivery Boy <ChevronRight size={16} />
                   </a>
@@ -736,7 +736,7 @@ const SewZellaLanding = () => {
 
             <div className="lg:w-1/3 py-10 px-8 lg:px-6 text-center lg:text-left flex flex-col items-center lg:items-start">
               <h2
-                className="text-[28px] md:text-[34px] font-bold text-[#4a0581] mb-3 leading-tight"
+                className="text-[28px] md:text-[34px] font-bold text-[#843D9B] mb-3 leading-tight"
                 style={{ fontFamily: "'Libre Caslon Text', serif" }}
               >
                 Download {appName}
@@ -774,7 +774,7 @@ const SewZellaLanding = () => {
                       <p className="text-[14px] font-semibold leading-none">App Store</p>
                     </div>
                   </div>
-                  <span className="text-[#4a0581] text-[11px] font-bold tracking-wide">
+                  <span className="text-[#843D9B] text-[11px] font-bold tracking-wide">
                     Coming Soon
                   </span>
                 </div>
@@ -789,7 +789,7 @@ const SewZellaLanding = () => {
                   const Icon = f.icon;
                   return (
                     <div key={f.label} className="flex flex-col items-center text-center gap-3">
-                      <div className="w-14 h-14 rounded-2xl bg-white border border-[#EDE8F2] flex items-center justify-center text-[#4a0581]">
+                      <div className="w-14 h-14 rounded-2xl bg-white border border-[#EDE8F2] flex items-center justify-center text-[#843D9B]">
                         <Icon size={22} strokeWidth={1.4} />
                       </div>
                       <span className="text-[12px] font-bold text-[#1A1523] max-w-[72px] leading-tight">
@@ -839,7 +839,7 @@ const SewZellaLanding = () => {
                     &ldquo;{t.text}&rdquo;
                   </p>
                   <div className="flex items-center gap-3 pt-4 border-t border-[#EDE8F2]">
-                    <div className="w-10 h-10 rounded-full bg-[#4a0581] flex items-center justify-center text-white text-[14px] font-bold">
+                    <div className="w-10 h-10 rounded-full bg-[#843D9B] flex items-center justify-center text-white text-[14px] font-bold">
                       {t.name.charAt(0)}
                     </div>
                     <div>
@@ -862,7 +862,7 @@ const SewZellaLanding = () => {
                   &ldquo;{testimonials[testimonialIdx].text}&rdquo;
                 </p>
                 <div className="flex items-center gap-3 pt-4 border-t border-[#EDE8F2]">
-                  <div className="w-10 h-10 rounded-full bg-[#4a0581] flex items-center justify-center text-white text-[14px] font-bold">
+                  <div className="w-10 h-10 rounded-full bg-[#843D9B] flex items-center justify-center text-white text-[14px] font-bold">
                     {testimonials[testimonialIdx].name.charAt(0)}
                   </div>
                   <div>
@@ -883,7 +883,7 @@ const SewZellaLanding = () => {
               <button
                 type="button"
                 onClick={prevTestimonial}
-                className="w-10 h-10 rounded-full border border-[#EDE8F2] text-[#6B6575] flex items-center justify-center hover:bg-[#4a0581] hover:text-white hover:border-[#4a0581] transition-all"
+                className="w-10 h-10 rounded-full border border-[#EDE8F2] text-[#6B6575] flex items-center justify-center hover:bg-[#843D9B] hover:text-white hover:border-[#843D9B] transition-all"
                 aria-label="Previous testimonial"
               >
                 <ChevronLeft size={18} />
@@ -891,7 +891,7 @@ const SewZellaLanding = () => {
               <button
                 type="button"
                 onClick={nextTestimonial}
-                className="w-10 h-10 rounded-full border border-[#EDE8F2] text-[#6B6575] flex items-center justify-center hover:bg-[#4a0581] hover:text-white hover:border-[#4a0581] transition-all"
+                className="w-10 h-10 rounded-full border border-[#EDE8F2] text-[#6B6575] flex items-center justify-center hover:bg-[#843D9B] hover:text-white hover:border-[#843D9B] transition-all"
                 aria-label="Next testimonial"
               >
                 <ChevronRight size={18} />

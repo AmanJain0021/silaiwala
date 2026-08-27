@@ -12,9 +12,17 @@ const measurementSchema = new mongoose.Schema(
       required: [true, "Please provide a name for this measurement profile"],
       trim: true,
     },
+    /** Display label — usually the service/category name (e.g. Shirt, Blouse) */
     garmentType: {
       type: String,
-      required: [true, "Please specify the garment type (e.g., Shirt, Pant)"],
+      required: [true, "Please specify the garment / service type"],
+    },
+    /** Links profile to admin service category (measurement schema source) */
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      default: null,
+      index: true,
     },
     measurements: {
       type: mongoose.Schema.Types.Mixed,
@@ -39,8 +47,9 @@ const measurementSchema = new mongoose.Schema(
   }
 );
 
-// Ensure a user can only have one default per garment type (optional but good)
-// measurementSchema.index({ user: 1, garmentType: 1, isDefault: 1 }, { unique: true, partialFilterExpression: { isDefault: true } });
+// Each customer only sees their own profiles (queried by user)
+measurementSchema.index({ user: 1, categoryId: 1 });
+measurementSchema.index({ user: 1, garmentType: 1 });
 
 const Measurement = mongoose.model("Measurement", measurementSchema);
 

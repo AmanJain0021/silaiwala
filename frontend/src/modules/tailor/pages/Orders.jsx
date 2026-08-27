@@ -12,6 +12,7 @@ import CustomerDropoffTracker from '../../../shared/components/CustomerDropoffTr
 import TailorLiveDeliveryTracker from '../../../shared/components/TailorLiveDeliveryTracker';
 import toast from 'react-hot-toast';
 import MeasurementDetail from './MeasurementDetail';
+import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDisplay';
 import { isGarmentStoreOrder } from '../../../shared/utils/shiprocketEligibility';
 import { formatOrderItemsTitle, getItemImage } from '../../../utils/orderItems';
 
@@ -591,7 +592,7 @@ const Orders = () => {
                                             <Package size={14} className="text-[#843D9B]" /> 
                                             Shiprocket Delivery
                                         </p>
-                                        <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-600 px-2 py-1 rounded-full border border-purple-100">Garment Order</span>
+                                        <span className="text-[9px] font-black uppercase bg-purple-50 text-primary px-2 py-1 rounded-full border border-purple-100">Garment Order</span>
                                     </div>
 
                                     {!order.shiprocketDetails?.shipmentId ? (
@@ -1187,6 +1188,10 @@ const Orders = () => {
                                     'sampleGarment',
                                     'slipAttached',
                                     'data',
+                                    'measurementLayout',
+                                    'categoryId',
+                                    'garmentType',
+                                    'unit',
                                 ]);
                                 const entries = Object.entries(mObj).filter(
                                     ([key, value]) =>
@@ -1195,6 +1200,12 @@ const Orders = () => {
                                         value != null &&
                                         typeof value !== 'object'
                                 );
+                                const layoutFields =
+                                    Array.isArray(mObj.measurementLayout) && mObj.measurementLayout.length
+                                        ? mObj.measurementLayout
+                                        : item.service?.category?.measurementFields ||
+                                          item.serviceDetails?.category?.measurementFields ||
+                                          null;
 
                                 // We only return null if there is absolutely NO measurement data at all
                                 if (
@@ -1255,31 +1266,12 @@ const Orders = () => {
                                             </div>
                                         )}
 
-                                        {/* Measurement Values Grid */}
+                                        {/* Measurement Values — sectioned by service headings */}
                                         {entries.length > 0 && (
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {entries.map(([key, value]) => {
-                                                    const isImage = typeof value === 'string' && (value.startsWith('data:image') || value.match(/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|svg)/i));
-                                                    return (
-                                                        <div key={key} className={`bg-gray-50 rounded-xl p-3 border border-gray-100 ${isImage ? 'col-span-2' : ''}`}>
-                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()}
-                                                            </p>
-                                                            {isImage ? (
-                                                                <img 
-                                                                    src={value} 
-                                                                    alt={key} 
-                                                                    className="w-full max-h-60 object-contain rounded-xl border border-gray-200 mt-1 bg-white"
-                                                                />
-                                                            ) : (
-                                                                <p className="text-[14px] font-black text-gray-900">
-                                                                    {typeof value === 'number' ? `${value}"` : (typeof value === 'object' ? 'Configured' : (value || '—'))}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                            <MeasurementDataDisplay
+                                                measurements={mObj}
+                                                layoutFields={layoutFields}
+                                            />
                                         )}
 
                                         {/* Customer Notes for this item */}
@@ -1620,7 +1612,7 @@ const Orders = () => {
                                         </div>
                                         <div className="flex gap-2">
                                             {order.exchangeStatus && order.exchangeStatus !== 'none' && (
-                                                <div className="flex items-center justify-center px-2 bg-purple-100 text-purple-700 text-[9px] font-black uppercase rounded-lg border border-purple-200 animate-pulse">
+                                                <div className="flex items-center justify-center px-2 bg-purple-100 text-primary text-[9px] font-black uppercase rounded-lg border border-purple-200 animate-pulse">
                                                     Exchange
                                                 </div>
                                             )}
@@ -1898,12 +1890,12 @@ const Orders = () => {
                                 disabled={isDispatching}
                                 className="w-full p-4 border border-purple-100 bg-purple-50 hover:bg-purple-100 hover:border-purple-200 rounded-2xl flex items-center gap-4 transition-all text-left group disabled:opacity-60"
                             >
-                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-purple-600 shadow-sm shrink-0">
-                                    {isDispatching && dispatchingMethod === 'shiprocket' ? <Loader2 className="w-5 h-5 animate-spin text-purple-600" /> : <Package size={20} />}
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm shrink-0">
+                                    {isDispatching && dispatchingMethod === 'shiprocket' ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Package size={20} />}
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-black text-purple-900 mb-0.5 group-hover:text-purple-700">Shiprocket Delivery</h4>
-                                    <p className="text-[10px] font-bold text-purple-600/70">Courier pickup for garment orders (long distance).</p>
+                                    <h4 className="text-sm font-black text-purple-900 mb-0.5 group-hover:text-primary">Shiprocket Delivery</h4>
+                                    <p className="text-[10px] font-bold text-primary/70">Courier pickup for garment orders (long distance).</p>
                                 </div>
                             </button>
                             )}

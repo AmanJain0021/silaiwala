@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText, Activity, X } from 'lucide-react';
@@ -6,8 +6,81 @@ import toast from 'react-hot-toast';
 import api from '../../../shared/utils/api';
 import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import { useJsApiLoader } from '@react-google-maps/api';
+import {
+    isHeadingField,
+    getInputFields,
+    getFieldKey,
+    sanitizeMeasurementFields,
+} from '../../../utils/measurementFields';
+import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDisplay';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
+
+const CATEGORY_FIELDS_FALLBACK = {
+    kurta: [
+        { key: 'chest', label: 'Chest / Bust', placeholder: '34', isRequired: true },
+        { key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
+        { key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
+        { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+        { key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+        { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16', isRequired: false },
+        { key: 'neck', label: 'Neck Depth', placeholder: '6', isRequired: false },
+    ],
+    shirt: [
+        { key: 'chest', label: 'Chest / Bust', placeholder: '38', isRequired: true },
+        { key: 'waist', label: 'Waist', placeholder: '34', isRequired: true },
+        { key: 'shoulder', label: 'Shoulder', placeholder: '17', isRequired: true },
+        { key: 'length', label: 'Full Length', placeholder: '30', isRequired: true },
+        { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24', isRequired: true },
+        { key: 'neck', label: 'Collar Size', placeholder: '15', isRequired: false },
+    ],
+    blouse: [
+        { key: 'chest', label: 'Bust / Chest', placeholder: '34', isRequired: true },
+        { key: 'underbust', label: 'Underbust', placeholder: '30', isRequired: true },
+        { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+        { key: 'length', label: 'Blouse Length', placeholder: '14', isRequired: true },
+        { key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7', isRequired: false },
+        { key: 'backNeck', label: 'Back Neck Depth', placeholder: '8', isRequired: false },
+        { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10', isRequired: false },
+    ],
+    pant: [
+        { key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
+        { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+        { key: 'length', label: 'Full Length / Inseam', placeholder: '40', isRequired: true },
+        { key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
+        { key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
+    ],
+    trouser: [
+        { key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
+        { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+        { key: 'length', label: 'Full Length / Inseam', placeholder: '40', isRequired: true },
+        { key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
+        { key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
+    ],
+    skirt: [
+        { key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
+        { key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
+        { key: 'length', label: 'Full Length', placeholder: '38', isRequired: true },
+    ],
+};
+
+const DEFAULT_FALLBACK_FIELDS = ['chest', 'waist', 'hips', 'shoulder', 'length', 'neck', 'sleeve', 'inseam'].map(
+    (f) => ({ key: f, label: f, placeholder: '0.0', isRequired: true })
+);
+
+const resolveFieldsForService = (item) => {
+    const custom = item?.service?.category?.measurementFields;
+    if (Array.isArray(custom) && custom.length > 0) return custom;
+    const name = (
+        item?.service?.category?.name ||
+        item?.service?.title ||
+        item?.service?.name ||
+        ''
+    ).toLowerCase();
+    const matchKey = Object.keys(CATEGORY_FIELDS_FALLBACK).find((k) => name.includes(k));
+    if (matchKey) return CATEGORY_FIELDS_FALLBACK[matchKey];
+    return DEFAULT_FALLBACK_FIELDS;
+};
 
 const RequestDetail = () => {
     const { id } = useParams();
@@ -29,14 +102,39 @@ const RequestDetail = () => {
         libraries: GOOGLE_MAPS_LIBRARIES
     });
     
-    // Measurement Form State
-    const [formData, setFormData] = useState({
-        chest: '', waist: '', hips: '', shoulder: '', length: '', neck: '', sleeve: '', inseam: ''
-    });
+    // Per booked-service measurement values: { [itemIndex]: { fieldKey: value } }
+    const [itemForms, setItemForms] = useState({});
     const [notes, setNotes] = useState('');
     const [pdfFile, setPdfFile] = useState(null);
     const [photos, setPhotos] = useState([]);
     const [uploading, setUploading] = useState(false);
+
+    const serviceItems = useMemo(() => {
+        const items = request?.order?.items || [];
+        const withService = items
+            .map((item, index) => ({ item, index }))
+            .filter(({ item }) => item?.service);
+        if (withService.length > 0) return withService;
+        return items.length ? [{ item: items[0], index: 0 }] : [];
+    }, [request]);
+
+    const itemSchemas = useMemo(
+        () =>
+            serviceItems.map(({ item, index }) => {
+                const fields = resolveFieldsForService(item);
+                const layout = sanitizeMeasurementFields(fields);
+                const title =
+                    item?.service?.title ||
+                    item?.service?.name ||
+                    item?.service?.category?.name ||
+                    `Item ${index + 1}`;
+                const hasCustom =
+                    Array.isArray(item?.service?.category?.measurementFields) &&
+                    item.service.category.measurementFields.length > 0;
+                return { index, item, title, fields, layout, hasCustom };
+            }),
+        [serviceItems]
+    );
 
     useEffect(() => {
         loadDetail();
@@ -46,6 +144,23 @@ const RequestDetail = () => {
             })
             .catch(err => console.error('Failed to load settings:', err));
     }, [id]);
+
+    useEffect(() => {
+        if (!itemSchemas.length) return;
+        setItemForms((prev) => {
+            const next = {};
+            itemSchemas.forEach(({ index, fields }) => {
+                const prevVals = prev[index] || {};
+                const empty = {};
+                getInputFields(fields).forEach((f) => {
+                    const key = getFieldKey(f);
+                    empty[key] = prevVals[key] ?? '';
+                });
+                next[index] = empty;
+            });
+            return next;
+        });
+    }, [itemSchemas]);
 
     useEffect(() => {
         if (!navigator.geolocation) {
@@ -107,8 +222,72 @@ const RequestDetail = () => {
         }
     };
 
+    const updateItemField = (itemIndex, fieldKey, value) => {
+        setItemForms((prev) => ({
+            ...prev,
+            [itemIndex]: {
+                ...(prev[itemIndex] || {}),
+                [fieldKey]: value,
+            },
+        }));
+    };
+
+    const validateForms = () => {
+        for (const schema of itemSchemas) {
+            const values = itemForms[schema.index] || {};
+            for (const field of getInputFields(schema.fields)) {
+                if (field.isRequired === false) continue;
+                const key = getFieldKey(field);
+                const val = values[key];
+                if (val === undefined || val === null || String(val).trim() === '') {
+                    toast.error(`Please fill ${field.label || key} (${schema.title})`);
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    const buildSubmitFormData = () => {
+        const multi = itemSchemas.length > 1;
+        const itemsPayload = itemSchemas.map((schema) => {
+            const raw = itemForms[schema.index] || {};
+            const values = {};
+            getInputFields(schema.fields).forEach((f) => {
+                const key = getFieldKey(f);
+                if (raw[key] !== undefined && raw[key] !== '') values[key] = raw[key];
+            });
+            return {
+                index: schema.index,
+                title: schema.title,
+                categoryName: schema.item?.service?.category?.name || '',
+                measurementLayout: schema.layout,
+                values,
+            };
+        });
+
+        const primary = itemsPayload[0] || { values: {}, measurementLayout: [] };
+        const formData = {
+            ...primary.values,
+            measurementLayout: primary.measurementLayout,
+        };
+
+        if (multi) {
+            formData.__multi = true;
+            formData.items = itemsPayload;
+            itemsPayload.forEach((entry, i) => {
+                Object.entries(entry.values).forEach(([k, v]) => {
+                    formData[`item${i}_${k}`] = v;
+                });
+            });
+        }
+
+        return formData;
+    };
+
     const handleUpload = async (e) => {
         e.preventDefault();
+        if (!validateForms()) return;
         setUploading(true);
         try {
             // Upload PDF if exists
@@ -135,9 +314,8 @@ const RequestDetail = () => {
                 if(photoRes.data.success) photoUrls = photoRes.data.data;
             }
 
-            // Submit Measurement Data
             await uploadMeasurements(id, {
-                formData,
+                formData: buildSubmitFormData(),
                 notes,
                 pdfUrl,
                 photos: photoUrls,
@@ -162,10 +340,6 @@ const RequestDetail = () => {
         } catch (error) {
             toast.error('Failed to complete');
         }
-    };
-
-    const handleFormChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleCancelTask = async () => {
@@ -380,108 +554,74 @@ const RequestDetail = () => {
                             <h3 className="text-xl font-black text-gray-900 tracking-tight">Take Measurements</h3>
                         </div>
                         
-                        {(() => {
-                            const orderItems = request?.order?.items || [];
-                            const primaryItem =
-                                orderItems.find((i) => i.measurements?.type === 'home') ||
-                                orderItems.find((i) => i.service) ||
-                                orderItems[0];
-                            const customFields = primaryItem?.service?.category?.measurementFields;
-                            const categoryName = primaryItem?.service?.category?.name || primaryItem?.service?.title || '';
-                            const lowerCat = categoryName.toLowerCase();
-                            const itemLabels = orderItems
-                                .map((i) => i.service?.title || i.service?.name)
-                                .filter(Boolean);
-
-                            const categoryFieldsMap = {
-                                'kurta': [
-                                    { key: 'chest', label: 'Chest / Bust', placeholder: '34' },
-                                    { key: 'waist', label: 'Waist', placeholder: '28' },
-                                    { key: 'hips', label: 'Hips', placeholder: '36' },
-                                    { key: 'shoulder', label: 'Shoulder', placeholder: '14' },
-                                    { key: 'length', label: 'Full Length', placeholder: '40' },
-                                    { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16' },
-                                    { key: 'neck', label: 'Neck Depth', placeholder: '6' }
-                                ],
-                                'shirt': [
-                                    { key: 'chest', label: 'Chest / Bust', placeholder: '38' },
-                                    { key: 'waist', label: 'Waist', placeholder: '34' },
-                                    { key: 'shoulder', label: 'Shoulder', placeholder: '17' },
-                                    { key: 'length', label: 'Full Length', placeholder: '30' },
-                                    { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24' },
-                                    { key: 'neck', label: 'Collar Size', placeholder: '15' }
-                                ],
-                                'blouse': [
-                                    { key: 'chest', label: 'Bust / Chest', placeholder: '34' },
-                                    { key: 'underbust', label: 'Underbust', placeholder: '30' },
-                                    { key: 'shoulder', label: 'Shoulder', placeholder: '14' },
-                                    { key: 'length', label: 'Blouse Length', placeholder: '14' },
-                                    { key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7' },
-                                    { key: 'backNeck', label: 'Back Neck Depth', placeholder: '8' },
-                                    { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10' }
-                                ],
-                                'pant': [
-                                    { key: 'waist', label: 'Waist', placeholder: '32' },
-                                    { key: 'hips', label: 'Hips', placeholder: '38' },
-                                    { key: 'length', label: 'Full Length / Inseam', placeholder: '40' },
-                                    { key: 'thigh', label: 'Thigh Width', placeholder: '22' },
-                                    { key: 'bottom', label: 'Bottom Opening', placeholder: '14' }
-                                ],
-                                'trouser': [
-                                    { key: 'waist', label: 'Waist', placeholder: '32' },
-                                    { key: 'hips', label: 'Hips', placeholder: '38' },
-                                    { key: 'length', label: 'Full Length / Inseam', placeholder: '40' },
-                                    { key: 'thigh', label: 'Thigh Width', placeholder: '22' },
-                                    { key: 'bottom', label: 'Bottom Opening', placeholder: '14' }
-                                ],
-                                'skirt': [
-                                    { key: 'waist', label: 'Waist', placeholder: '28' },
-                                    { key: 'hips', label: 'Hips', placeholder: '36' },
-                                    { key: 'length', label: 'Full Length', placeholder: '38' }
-                                ]
-                            };
-
-                            let fieldsToRender = [];
-                            if (customFields && customFields.length > 0) {
-                                fieldsToRender = customFields.map(f => ({ key: f.key, label: f.label || f.key, placeholder: f.placeholder || '0.0' }));
-                            } else {
-                                const matchKey = Object.keys(categoryFieldsMap).find(k => lowerCat.includes(k));
-                                if (matchKey && categoryFieldsMap[matchKey]) {
-                                    fieldsToRender = categoryFieldsMap[matchKey];
-                                } else {
-                                    fieldsToRender = ['chest', 'waist', 'hips', 'shoulder', 'length', 'neck', 'sleeve', 'inseam'].map(f => ({ key: f, label: f, placeholder: '0.0' }));
-                                }
-                            }
-                            
-                            return (
-                                <div>
-                                    {(itemLabels.length > 0 || categoryName) && (
-                                        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 bg-purple-50 border border-purple-100 rounded-full text-xs font-extrabold text-[#843D9B]">
-                                            <span>
-                                                Garment{itemLabels.length > 1 ? 's' : ''}:{' '}
-                                                {itemLabels.length > 0 ? itemLabels.join(' + ') : categoryName}
-                                            </span>
-                                            {customFields && customFields.length > 0 && <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded-full">Custom Form</span>}
-                                        </div>
-                                    )}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                        {fieldsToRender.map(({ key, label, placeholder }) => (
-                                            <div key={key} className="bg-gray-50 p-3 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-purple-100 transition-all">
-                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">{label}</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    placeholder={placeholder}
-                                                    className="block w-full bg-transparent border-0 p-0 text-sm font-black text-gray-900 focus:ring-0"
-                                                    value={formData[key] || ''}
-                                                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                                                />
+                        {itemSchemas.length === 0 ? (
+                            <p className="text-sm text-gray-500 mb-6">No service found on this order — cannot load measurement form.</p>
+                        ) : (
+                            <div className="space-y-8 mb-6">
+                                {itemSchemas.map((schema) => (
+                                    <div key={schema.index} className="space-y-3">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-100 rounded-full text-xs font-extrabold text-[#843D9B]">
+                                                <Scissors size={12} />
+                                                {schema.title}
+                                                {schema.item?.service?.category?.name &&
+                                                    schema.item.service.category.name !== schema.title && (
+                                                        <span className="text-[10px] font-bold text-purple-400">
+                                                            · {schema.item.service.category.name}
+                                                        </span>
+                                                    )}
                                             </div>
-                                        ))}
+                                            {schema.hasCustom && (
+                                                <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.5 rounded-full font-bold">
+                                                    Service form
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {schema.fields.map((field, fIdx) => {
+                                                if (isHeadingField(field)) {
+                                                    return (
+                                                        <div
+                                                            key={`h-${schema.index}-${fIdx}-${field.label}`}
+                                                            className="col-span-2 md:col-span-4 pt-2 first:pt-0"
+                                                        >
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#843D9B] border-b border-[#843D9B]/15 pb-1.5">
+                                                                {field.label}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                }
+                                                const key = getFieldKey(field);
+                                                return (
+                                                    <div
+                                                        key={`${schema.index}-${key}-${fIdx}`}
+                                                        className="bg-gray-50 p-3 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-purple-100 transition-all"
+                                                    >
+                                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
+                                                            {field.label || key}
+                                                            {field.isRequired === false ? (
+                                                                <span className="normal-case text-gray-400 font-medium"> (optional)</span>
+                                                            ) : null}
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.1"
+                                                            placeholder={field.placeholder || '0.0'}
+                                                            className="block w-full bg-transparent border-0 p-0 text-sm font-black text-gray-900 focus:ring-0"
+                                                            value={itemForms[schema.index]?.[key] ?? ''}
+                                                            onChange={(e) =>
+                                                                updateItemField(schema.index, key, e.target.value)
+                                                            }
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })()}
+                                ))}
+                            </div>
+                        )}
                         <div className="mb-8">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Notes</label>
                             <textarea
@@ -672,14 +812,39 @@ const RequestDetail = () => {
                             <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <FileText className="h-4 w-4" /> Submitted Measurements
                             </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                                {Object.entries(request.report.formData || {}).map(([key, value]) => (
-                                    <div key={key} className="bg-gray-50/80 p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{key}</p>
-                                        <p className="text-xl font-black text-gray-900">{value} <span className="text-xs font-bold text-gray-400">{request.report.unit || 'in'}</span></p>
+                            {(() => {
+                                const raw = request.report.formData || {};
+                                const fd =
+                                    raw instanceof Map ? Object.fromEntries(raw) : raw;
+                                const multiItems = Array.isArray(fd.items) ? fd.items : null;
+
+                                if (multiItems?.length) {
+                                    return (
+                                        <div className="space-y-6 mb-8">
+                                            {multiItems.map((entry, i) => (
+                                                <div key={i} className="space-y-2">
+                                                    <p className="text-xs font-black text-[#843D9B]">
+                                                        {entry.title || `Item ${i + 1}`}
+                                                    </p>
+                                                    <MeasurementDataDisplay
+                                                        measurements={entry.values || {}}
+                                                        layoutFields={entry.measurementLayout}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="mb-8">
+                                        <MeasurementDataDisplay
+                                            measurements={fd}
+                                            layoutFields={fd.measurementLayout}
+                                        />
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })()}
                             
                             {request.report.notes && (
                                 <div className="mb-8">

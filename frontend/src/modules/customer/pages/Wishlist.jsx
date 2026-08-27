@@ -22,7 +22,7 @@ const WishlistPage = () => {
                 <p className="text-sm text-gray-500 mb-6 max-w-xs">Save items that you like to your wishlist to review them later.</p>
                 <Link
                     to="/user/store"
-                    className="px-6 py-3 rounded-xl bg-[#843D9B] text-white font-bold text-sm shadow-lg hover:bg-[#1E1F4D] transition-all"
+                    className="px-6 py-3 rounded-xl bg-[#843D9B] text-white font-bold text-sm shadow-lg hover:bg-[#6B2F7E] transition-all"
                 >
                     Explore Store
                 </Link>

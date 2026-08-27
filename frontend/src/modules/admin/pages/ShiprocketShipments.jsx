@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast';
 const STATUS_COLORS = {
     'NEW': 'bg-blue-50 text-blue-700 border-blue-100',
     'PICKUP SCHEDULED': 'bg-indigo-50 text-indigo-700 border-indigo-100',
-    'PICKED UP': 'bg-violet-50 text-violet-700 border-violet-100',
+    'PICKED UP': 'bg-violet-50 text-primary border-violet-100',
     'IN TRANSIT': 'bg-cyan-50 text-cyan-700 border-cyan-100',
     'OUT FOR DELIVERY': 'bg-teal-50 text-teal-700 border-teal-100',
     'DELIVERED': 'bg-green-50 text-green-700 border-green-100',
@@ -84,7 +84,7 @@ const ShiprocketShipments = () => {
         { 
             label: 'Total Shipments', 
             value: summary.total, 
-            color: 'text-purple-600', bg: 'bg-purple-100', 
+            color: 'text-primary', bg: 'bg-purple-100', 
             icon: <Package size={20} /> 
         },
         { 

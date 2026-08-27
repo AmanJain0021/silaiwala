@@ -147,7 +147,7 @@ const AdminLogin = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full py-5 bg-[#843D9B] hover:bg-[#1E1F4D] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
+                                    className="w-full py-5 bg-[#843D9B] hover:bg-[#6B2F7E] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
                                 >
                                     {isLoading ? (
                                         <RefreshCw size={18} className="animate-spin" />
@@ -186,7 +186,7 @@ const AdminLogin = () => {
                                     <button
                                         type="submit"
                                         disabled={isLoading || otp.join('').length !== 6}
-                                        className="w-full py-5 bg-[#843D9B] hover:bg-[#1E1F4D] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
+                                        className="w-full py-5 bg-[#843D9B] hover:bg-[#6B2F7E] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
                                     >
                                         {isLoading ? (
                                             <RefreshCw size={18} className="animate-spin" />

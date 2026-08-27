@@ -15,7 +15,7 @@ const TrustSection = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {items.map((item, index) => (
                         <div key={index} className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-purple-50 text-[#7a3299] flex items-center justify-center shrink-0 shadow-2xs">
+                            <div className="w-9 h-9 rounded-xl bg-purple-50 text-[#843D9B] flex items-center justify-center shrink-0 shadow-2xs">
                                 <item.icon className="h-4.5 w-4.5" />
                             </div>
                             <div className="min-w-0">

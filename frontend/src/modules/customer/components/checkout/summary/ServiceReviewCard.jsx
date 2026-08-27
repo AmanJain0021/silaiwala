@@ -169,7 +169,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                                 )}
                                 <div className="text-left min-w-0">
                                     <p className="text-[10px] font-bold text-slate-900 truncate">{config.selectedStyle.name || 'Custom Style'}</p>
-                                    <p className="text-[8px] text-purple-700 font-bold uppercase">{config.selectedStyle.isCustom ? 'Custom Reference Photo' : 'Selected Style'}</p>
+                                    <p className="text-[8px] text-primary font-bold uppercase">{config.selectedStyle.isCustom ? 'Custom Reference Photo' : 'Selected Style'}</p>
                                 </div>
                             </div>
                         )}
@@ -250,7 +250,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                                         Executive
                                     </span>
                                 </div>
-                                <p className="text-[9px] text-purple-700 font-semibold">Verified Professional</p>
+                                <p className="text-[9px] text-primary font-semibold">Verified Professional</p>
                             </div>
                         </div>
                     </div>

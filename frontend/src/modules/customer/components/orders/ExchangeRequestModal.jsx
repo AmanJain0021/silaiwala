@@ -35,7 +35,7 @@ const ExchangeRequestModal = ({ isOpen, onClose, orderId, onSuccess }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-                <div className="p-6 bg-gradient-to-br from-purple-500 to-purple-700 text-white relative">
+                <div className="p-6 bg-gradient-to-br from-purple-500 to-primary-dark text-white relative">
                     <button 
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
@@ -105,7 +105,7 @@ const ExchangeRequestModal = ({ isOpen, onClose, orderId, onSuccess }) => {
                     <button
                         type="submit"
                         disabled={isLoading || !reason}
-                        className="w-full mt-2 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-md"
+                        className="w-full mt-2 py-4 bg-primary hover:bg-primary-dark disabled:bg-purple-300 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-md"
                     >
                         {isLoading ? 'Submitting...' : 'Submit Request'}
                     </button>

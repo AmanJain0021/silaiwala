@@ -203,7 +203,7 @@ const AdminEmbroideryAddons = () => {
                 </div>
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#843D9B] text-white text-xs font-semibold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[#843D9B] text-white text-xs font-semibold rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider"
                 >
                     <Plus size={16} /> Add Add-on
                 </button>
@@ -497,7 +497,7 @@ const AdminEmbroideryAddons = () => {
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="px-6 py-3 bg-[#843D9B] text-white text-xs font-semibold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider disabled:opacity-50"
+                                    className="px-6 py-3 bg-[#843D9B] text-white text-xs font-semibold rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-[#843D9B]/20 transition-all uppercase tracking-wider disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Saving...' : (editingAddon ? 'Update Add-on' : 'Save Add-on')}
                                 </button>

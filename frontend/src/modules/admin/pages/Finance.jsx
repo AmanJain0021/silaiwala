@@ -747,7 +747,7 @@ const AdminFinance = () => {
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xs font-black text-gray-900">{payout.user?.name || 'Unknown User'}</span>
-                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : payout.role === 'measurement_executive' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${payout.role === 'delivery' ? 'bg-indigo-50 text-primary border-indigo-100' : payout.role === 'measurement_executive' ? 'bg-purple-50 text-primary border-purple-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                                                                     {payout.role.replace('_', ' ')}
                                                                 </span>
                                                             </div>

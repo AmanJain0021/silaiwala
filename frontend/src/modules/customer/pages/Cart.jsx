@@ -50,7 +50,7 @@ const CartPage = () => {
                 <p className="text-sm text-gray-500 mb-6 max-w-xs">Looks like you haven't added anything to your cart yet.</p>
                 <Link
                     to="/user/store"
-                    className="px-6 py-3 rounded-xl bg-[#843D9B] text-white font-bold text-sm shadow-lg hover:bg-[#1E1F4D] transition-all"
+                    className="px-6 py-3 rounded-xl bg-[#843D9B] text-white font-bold text-sm shadow-lg hover:bg-[#6B2F7E] transition-all"
                 >
                     Start Shopping
                 </Link>
@@ -132,7 +132,7 @@ const CartPage = () => {
                             <button
                                 onClick={handleCheckout}
                                 disabled={isCheckoutLoading}
-                                className="w-full py-4 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-[#1E1F4D] active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="w-full py-4 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-[#6B2F7E] active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 {isCheckoutLoading ? 'Processing...' : 'Proceed to Checkout'}
                             </button>
@@ -157,7 +157,7 @@ const CartPage = () => {
                 <button
                     onClick={handleCheckout}
                     disabled={isCheckoutLoading}
-                    className="w-full py-3.5 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg hover:bg-[#1E1F4D] active:scale-95 transition-all flex items-center justify-between px-6 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full py-3.5 rounded-xl bg-[#843D9B] text-white text-sm font-bold shadow-lg hover:bg-[#6B2F7E] active:scale-95 transition-all flex items-center justify-between px-6 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     <div className="text-left">
                         <p className="text-[10px] text-white/70 uppercase font-bold tracking-wider mb-0.5">Estimated Total</p>

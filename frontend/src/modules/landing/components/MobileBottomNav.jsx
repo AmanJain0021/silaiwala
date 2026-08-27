@@ -53,14 +53,14 @@ const MobileBottomNav = () => {
               onClick={(e) => handleNavClick(e, item.path, item.id)}
               className="flex flex-col items-center justify-center w-full h-full space-y-1 relative"
             >
-              <div className={`transition-transform duration-300 ${isActive ? 'text-[#4a0581] -translate-y-1' : 'text-[#8E8699]'}`}>
+              <div className={`transition-transform duration-300 ${isActive ? 'text-[#843D9B] -translate-y-1' : 'text-[#8E8699]'}`}>
                 <Icon size={24} strokeWidth={isActive ? 2.5 : 1.8} />
               </div>
-              <span className={`text-[10px] sm:text-[11px] transition-all duration-300 ${isActive ? 'text-[#4a0581] font-bold' : 'text-[#8E8699] font-medium'}`}>
+              <span className={`text-[10px] sm:text-[11px] transition-all duration-300 ${isActive ? 'text-[#843D9B] font-bold' : 'text-[#8E8699] font-medium'}`}>
                 {item.label}
               </span>
               {isActive && (
-                <div className="absolute top-0 w-8 h-1 bg-[#4a0581] rounded-b-full shadow-[0_2px_8px_rgba(74,5,129,0.4)]" />
+                <div className="absolute top-0 w-8 h-1 bg-[#843D9B] rounded-b-full shadow-[0_2px_8px_rgba(74,5,129,0.4)]" />
               )}
             </Link>
           );

@@ -123,7 +123,7 @@ const LegalPage = ({ type: propType, category, fallbackTitle = "Legal Document" 
     return (
         <div className="min-h-screen bg-white font-sans pb-20 overflow-x-hidden w-full">
             {/* Header */}
-            <div className="bg-gradient-to-br from-[#2D2F6F] to-[#843D9B] text-white pt-10 pb-6 px-4 sticky top-0 z-50 shadow-lg">
+            <div className="bg-gradient-to-br from-[#843D9B] to-[#843D9B] text-white pt-10 pb-6 px-4 sticky top-0 z-50 shadow-lg">
                 <div className="max-w-3xl mx-auto flex items-center gap-4">
                     <button 
                         onClick={() => navigate(-1)} 

@@ -57,8 +57,8 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
                     >
                         <div className={`w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] rounded-full overflow-hidden border-[3px] flex items-center justify-center transition-all duration-300 relative shadow-sm group-hover:shadow-lg ${
                             activeCategory === "All" || !activeCategory
-                                ? 'border-[#4b1b68] ring-4 ring-[#4b1b68]/20 bg-[#4b1b68] text-white shadow-[#4b1b68]/30' 
-                                : 'border-slate-100 bg-purple-50 text-[#4b1b68] hover:border-[#4b1b68]/40'
+                                ? 'border-[#843D9B] ring-4 ring-[#843D9B]/20 bg-[#843D9B] text-white shadow-[#843D9B]/30' 
+                                : 'border-slate-100 bg-purple-50 text-[#843D9B] hover:border-[#843D9B]/40'
                         }`}>
                             <img 
                                 src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop&q=80" 
@@ -67,7 +67,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
                             />
                         </div>
                         <span className={`text-xs font-extrabold text-center whitespace-nowrap tracking-tight transition-colors ${
-                            activeCategory === "All" || !activeCategory ? 'text-[#4b1b68]' : 'text-slate-700'
+                            activeCategory === "All" || !activeCategory ? 'text-[#843D9B]' : 'text-slate-700'
                         }`}>
                             All Categories
                         </span>
@@ -91,8 +91,8 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
                             >
                                 <div className={`w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] rounded-full overflow-hidden border-[3px] flex items-center justify-center transition-all duration-300 relative shadow-sm group-hover:shadow-lg ${
                                     isSelected 
-                                        ? 'border-[#4b1b68] ring-4 ring-[#4b1b68]/20 shadow-[#4b1b68]/30' 
-                                        : 'border-slate-100 bg-slate-50 hover:border-[#4b1b68]/40'
+                                        ? 'border-[#843D9B] ring-4 ring-[#843D9B]/20 shadow-[#843D9B]/30' 
+                                        : 'border-slate-100 bg-slate-50 hover:border-[#843D9B]/40'
                                 }`}>
                                     <SafeImage
                                         src={getImageUrl(catImage)}
@@ -102,7 +102,7 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
                                     />
                                 </div>
                                 <span className={`text-xs font-extrabold text-center whitespace-nowrap tracking-tight transition-colors capitalize ${
-                                    isSelected ? 'text-[#4b1b68]' : 'text-slate-700'
+                                    isSelected ? 'text-[#843D9B]' : 'text-slate-700'
                                 }`}>
                                     {categoryName}
                                 </span>
@@ -121,8 +121,8 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
                                 onClick={() => setSelectedMaterial(mat)}
                                 className={`px-5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                                     isMatActive 
-                                        ? 'bg-[#7a3299] text-white shadow-sm' 
-                                        : 'bg-white border border-slate-200/90 text-slate-700 hover:border-[#7a3299]'
+                                        ? 'bg-[#843D9B] text-white shadow-sm' 
+                                        : 'bg-white border border-slate-200/90 text-slate-700 hover:border-[#843D9B]'
                                 }`}
                             >
                                 {mat}
@@ -131,9 +131,9 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
                     })}
                     <button 
                         onClick={onSelectCategory}
-                        className="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white border border-slate-200/90 text-slate-700 flex items-center gap-1.5 hover:border-[#7a3299] transition-all cursor-pointer shadow-2xs ml-auto"
+                        className="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white border border-slate-200/90 text-slate-700 flex items-center gap-1.5 hover:border-[#843D9B] transition-all cursor-pointer shadow-2xs ml-auto"
                     >
-                        <SlidersHorizontal size={14} className="text-[#7a3299]" />
+                        <SlidersHorizontal size={14} className="text-[#843D9B]" />
                         Filter
                     </button>
                 </div>

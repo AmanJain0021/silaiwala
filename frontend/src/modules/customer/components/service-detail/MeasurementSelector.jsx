@@ -6,7 +6,7 @@ import UploadSlip from './measurement-forms/UploadSlip';
 import MeasurementGuideModal from './MeasurementGuideModal';
 import useMeasurementStore from '../../../../store/measurementStore';
 
-const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, disableHomeVisit = false, completedSelfData = null, completedSlipData = null }) => {
+const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, categoryId = null, disableHomeVisit = false, completedSelfData = null, completedSlipData = null }) => {
     const { measurements, fetchMeasurements, isLoading } = useMeasurementStore();
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     
@@ -44,6 +44,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                 const saved = await addMeasurement({
                     profileName: data.saveProfile.name,
                     garmentType: data.garmentType || categoryName || 'Custom Fit',
+                    categoryId: categoryId || null,
                     measurements: data.data,
                     notes: data.data?.notes || ''
                 });
@@ -82,26 +83,32 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
             setCompletedMeasurements(prev => ({ ...prev, saved: true }));
             onSelectType('saved');
             onSelectSavedProfile(profile);
-            onMeasurementComplete(profile.measurements || profile);
+            onMeasurementComplete({
+                ...(profile.measurements || {}),
+                type: 'saved',
+                categoryId: profile.categoryId || categoryId || null,
+                garmentType: profile.garmentType || categoryName,
+            });
         }
     };
 
-    const filteredMeasurements = measurements.filter(m => {
-        if (!categoryName) return true;
-        if (!m.garmentType) return false;
-        const a = m.garmentType.toLowerCase().trim();
-        const b = categoryName.toLowerCase().trim();
-        if (a === b) return true;
-        // Soft match: pajama/pant/trouser family, kurta/kurti, etc.
-        const family = (s) => {
-            if (/pajama|pyjama|pant|trouser|salwar|palazzo|lower|bottom|skirt/.test(s)) return 'bottom';
-            if (/kurta|kurti|kameez/.test(s)) return 'kurta';
-            if (/shirt/.test(s)) return 'shirt';
-            if (/blouse/.test(s)) return 'blouse';
-            return s;
-        };
-        return family(a) === family(b);
-    });
+    // Only this customer's profiles (API) + only matching this service/category
+    const filteredMeasurements = measurements
+        .filter((m) => {
+            if (!m) return false;
+            if (categoryId && m.categoryId) {
+                return String(m.categoryId) === String(categoryId);
+            }
+            if (!categoryName) return false;
+            if (!m.garmentType) return false;
+            return m.garmentType.toLowerCase().trim() === categoryName.toLowerCase().trim();
+        })
+        .slice()
+        .sort(
+            (a, b) =>
+                new Date(b.updatedAt || b.createdAt || 0) -
+                new Date(a.updatedAt || a.createdAt || 0)
+        );
 
     return (
         <div className="bg-white rounded-2xl p-3.5 mb-3 shadow-sm border border-gray-100">
@@ -132,11 +139,11 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     className="group p-3 rounded-xl border border-purple-100 bg-gradient-to-r from-purple-50/80 via-indigo-50/50 to-purple-50/80 cursor-pointer transition-all flex items-center justify-between hover:border-purple-300 shadow-2xs mb-3"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm shrink-0">
                             <BookOpen size={16} />
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                            <h4 className="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors">
                                 Need Help Taking Measurements?
                             </h4>
                             <p className="text-[10px] text-gray-500 font-medium">
@@ -144,7 +151,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                             </p>
                         </div>
                     </div>
-                    <span className="px-2.5 py-1 text-[10px] font-black text-purple-700 bg-white rounded-full border border-purple-200 shadow-2xs group-hover:bg-purple-600 group-hover:text-white transition-all shrink-0">
+                    <span className="px-2.5 py-1 text-[10px] font-black text-primary bg-white rounded-full border border-purple-200 shadow-2xs group-hover:bg-primary group-hover:text-white transition-all shrink-0">
                         Open Guide
                     </span>
                 </div>
@@ -164,7 +171,7 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                                         isSelected ? "border-primary bg-primary-soft shadow-sm ring-1 ring-primary" : "border-gray-100 hover:border-gray-200"
                                     )}
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-primary z-10">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary z-10">
                                         <User size={16} />
                                     </div>
                                     <div className="flex-1 z-10">

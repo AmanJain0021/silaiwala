@@ -10,7 +10,10 @@ const useMeasurementStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const response = await api.get('/measurements');
-            set({ measurements: response.data.data, isLoading: false });
+            const list = Array.isArray(response.data.data) ? response.data.data : [];
+            // Newest first (API also sorts; keep client-side too)
+            list.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+            set({ measurements: list, isLoading: false });
         } catch (err) {
             set({ error: err.message, isLoading: false });
         }
@@ -20,9 +23,10 @@ const useMeasurementStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const response = await api.post('/measurements', measurementData);
-            set(state => ({ 
-                measurements: [...state.measurements, response.data.data],
-                isLoading: false 
+            // Newest saved profile always on top
+            set((state) => ({
+                measurements: [response.data.data, ...state.measurements],
+                isLoading: false,
             }));
             return response.data.data;
         } catch (err) {
@@ -35,9 +39,13 @@ const useMeasurementStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const response = await api.put(`/measurements/${id}`, updatedData);
-            set(state => ({
-                measurements: state.measurements.map(m => m._id === id ? response.data.data : m),
-                isLoading: false
+            // Updated profile moves to top
+            set((state) => ({
+                measurements: [
+                    response.data.data,
+                    ...state.measurements.filter((m) => m._id !== id),
+                ],
+                isLoading: false,
             }));
             return response.data.data;
         } catch (err) {

@@ -120,7 +120,7 @@ const BillDetails = ({ pricing, advancePercentage = 25, baseLabel = 'Stitching C
                                 <span className="text-xs font-bold text-[#843D9B] block">
                                     Advance Payable ({advancePercentage}%)
                                 </span>
-                                <span className="text-[9px] text-purple-600 font-bold uppercase tracking-wider">
+                                <span className="text-[9px] text-primary font-bold uppercase tracking-wider">
                                     Required to confirm order
                                 </span>
                             </div>

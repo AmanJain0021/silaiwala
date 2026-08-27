@@ -65,7 +65,7 @@ const LandingSupportPage = () => {
           
           {isSuccess ? (
             <div className="text-center py-10 bg-[#f0dbff]/20 rounded-2xl">
-              <div className="w-16 h-16 bg-[#4a0581] text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_8px_25px_rgba(74,5,129,0.3)]">
+              <div className="w-16 h-16 bg-[#843D9B] text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_8px_25px_rgba(74,5,129,0.3)]">
                 <CheckCircle size={32} />
               </div>
               <h2 className="text-2xl font-bold text-[#1c1b1b] mb-2" style={{ fontFamily: "'Libre Caslon Text', serif" }}>
@@ -74,7 +74,7 @@ const LandingSupportPage = () => {
               <p className="text-[#7d7483] mb-6">Thank you for reaching out. We will get back to you shortly.</p>
               <button
                 onClick={() => setIsSuccess(false)}
-                className="border-2 border-[#4a0581] text-[#4a0581] px-8 py-3 rounded-full text-[13px] font-semibold hover:bg-[#4a0581] hover:text-white transition-all duration-300 inline-block"
+                className="border-2 border-[#843D9B] text-[#843D9B] px-8 py-3 rounded-full text-[13px] font-semibold hover:bg-[#843D9B] hover:text-white transition-all duration-300 inline-block"
               >
                 Send Another Message
               </button>
@@ -96,7 +96,7 @@ const LandingSupportPage = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#4a0581] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] text-[14px]"
+                    className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] text-[14px]"
                     placeholder="Your name"
                   />
                 </div>
@@ -108,7 +108,7 @@ const LandingSupportPage = () => {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#4a0581] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] text-[14px]"
+                    className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] text-[14px]"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -122,7 +122,7 @@ const LandingSupportPage = () => {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#4a0581] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] text-[14px]"
+                  className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] text-[14px]"
                   placeholder="Inquiry about custom stitching"
                 />
               </div>
@@ -135,7 +135,7 @@ const LandingSupportPage = () => {
                   onChange={handleChange}
                   required
                   rows={6}
-                  className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#4a0581] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] resize-none text-[14px]"
+                  className="w-full bg-[#fcf9f8] border border-[#eae7e7] rounded-xl px-4 py-3 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#f0dbff] transition-all text-[#1c1b1b] resize-none text-[14px]"
                   placeholder="Tell us about your requirements..."
                 ></textarea>
               </div>
@@ -144,7 +144,7 @@ const LandingSupportPage = () => {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="bg-[#4a0581] text-white px-10 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#622999] transition-all duration-300 flex items-center justify-center gap-2 w-full md:w-auto mx-auto disabled:opacity-50 shadow-[0_4px_20px_rgba(74,5,129,0.3)]"
+                  className="bg-[#843D9B] text-white px-10 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#843D9B] transition-all duration-300 flex items-center justify-center gap-2 w-full md:w-auto mx-auto disabled:opacity-50 shadow-[0_4px_20px_rgba(74,5,129,0.3)]"
                 >
                   {isSubmitting ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

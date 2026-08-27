@@ -26,15 +26,24 @@ const CustomerMainLayout = () => {
             <header className="hidden md:block sticky top-0 z-[110] bg-white/80 backdrop-blur-2xl border-b border-gray-100/50 shadow-sm transition-all duration-300">
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
                     {/* Brand */}
-                    <Link to="/user" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden border border-gray-50 rotate-3 group-hover:rotate-0 transition-transform">
-                            <img src={logos.customer} alt={appName} className="w-full h-full object-contain" />
+                    <Link to="/user" className="flex items-center gap-3 group min-w-0">
+                        <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden border border-primary/10 ring-1 ring-black/[0.03] group-hover:shadow-md transition-all shrink-0">
+                            <img
+                                src={logos.customer}
+                                alt={appName}
+                                className="w-[88%] h-[88%] object-contain"
+                                onError={(e) => {
+                                    e.currentTarget.src = '/sewzella_logo-removebg-preview.png';
+                                }}
+                            />
                         </div>
-                        <div>
-                            <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-none tracking-tight">
+                        <div className="min-w-0">
+                            <h1 className="text-xl lg:text-2xl font-black text-primary leading-none tracking-tight truncate">
                                 {appName}
                             </h1>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">Modern Stitching</p>
+                            <p className="text-[10px] text-slate-500 font-semibold tracking-tight mt-1 truncate">
+                                The Future of Tailoring
+                            </p>
                         </div>
                     </Link>
 

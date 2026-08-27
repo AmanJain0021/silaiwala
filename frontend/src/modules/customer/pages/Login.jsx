@@ -296,7 +296,7 @@ const Login = () => {
                         isLoading || 
                         sendingOtp
                             ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
-                            : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                            : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'
                     }`}
                 >
                     {isLoading

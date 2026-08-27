@@ -186,7 +186,7 @@ export const showDeduplicatedToast = ({
       <div
         className={`${
           t.visible ? 'animate-enter' : 'animate-leave'
-        } max-w-sm w-full bg-slate-900 text-white shadow-2xl rounded-2xl p-3.5 flex items-center gap-3 border border-purple-500/30 backdrop-blur-md pointer-events-auto cursor-pointer`}
+        } max-w-sm w-full bg-slate-900 text-white shadow-2xl rounded-2xl p-3.5 flex items-center gap-3 border border-primary/30 backdrop-blur-md pointer-events-auto cursor-pointer`}
         onClick={() => toast.dismiss(t.id)}
       >
         <div className="w-9 h-9 rounded-xl bg-[#843D9B]/30 border border-[#843D9B]/50 flex items-center justify-center text-lg shrink-0">

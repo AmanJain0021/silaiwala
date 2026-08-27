@@ -94,7 +94,7 @@ const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemov
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-3">
                         <Tag size={16} className="text-[#843D9B]" />
-                        <h3 className="text-sm font-bold text-[#4a0581]">Apply Coupon / Offer</h3>
+                        <h3 className="text-sm font-bold text-[#843D9B]">Apply Coupon / Offer</h3>
                     </div>
 
                     {appliedCoupon?.code ? (
@@ -130,7 +130,7 @@ const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemov
                                 type="button"
                                 disabled={applying}
                                 onClick={() => applyCode(code)}
-                                className="shrink-0 px-4 py-2.5 rounded-xl bg-[#F3E8FF] text-[#6B21A8] text-[11px] font-black uppercase tracking-wider hover:bg-[#E9D5FF] disabled:opacity-60 cursor-pointer"
+                                className="shrink-0 px-4 py-2.5 rounded-xl bg-[#F3E8FF] text-[#843D9B] text-[11px] font-black uppercase tracking-wider hover:bg-[#E9D5FF] disabled:opacity-60 cursor-pointer"
                             >
                                 {applying ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
                             </button>
@@ -151,8 +151,8 @@ const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemov
                         className={cn(
                             'w-full sm:w-auto self-start inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer',
                             showOffers
-                                ? 'border-[#843D9B] bg-[#Faf5ff] text-[#6B21A8]'
-                                : 'border-[#C4B5FD] text-[#6B21A8] hover:bg-[#Faf5ff]'
+                                ? 'border-[#843D9B] bg-[#Faf5ff] text-[#843D9B]'
+                                : 'border-[#C4B5FD] text-[#843D9B] hover:bg-[#Faf5ff]'
                         )}
                     >
                         <Tag size={14} />
@@ -213,7 +213,7 @@ const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemov
                                                 'shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
                                                 isApplied
                                                     ? 'bg-emerald-50 text-emerald-700'
-                                                    : 'bg-[#843D9B] text-white hover:bg-[#6B21A8]'
+                                                    : 'bg-[#843D9B] text-white hover:bg-[#843D9B]'
                                             )}
                                         >
                                             {isApplied ? 'Applied' : 'Apply'}

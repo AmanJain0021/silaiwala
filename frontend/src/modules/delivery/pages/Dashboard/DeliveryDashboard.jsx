@@ -167,7 +167,7 @@ const DeliveryDashboard = () => {
         <div className="animate-in fade-in duration-700 bg-slate-50 min-h-screen pb-24 w-full pt-4">
             <div className="px-5 space-y-6">
                 {/* Main Earnings Card */}
-                <div className="bg-gradient-to-br from-[#6b2c80] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-2">
+                <div className="bg-gradient-to-br from-[#6B2F7E] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-2">
                     {/* Decorative Elements */}
                     <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10" />
                     <div className="absolute left-10 bottom-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-xl -mb-10" />

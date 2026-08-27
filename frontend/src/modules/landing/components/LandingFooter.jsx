@@ -37,7 +37,7 @@ const LandingFooter = () => {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-[#F3EAF8] text-[#4a0581] flex items-center justify-center hover:bg-[#4a0581] hover:text-white transition-all duration-300"
+                  className="w-9 h-9 rounded-full bg-[#F3EAF8] text-[#843D9B] flex items-center justify-center hover:bg-[#843D9B] hover:text-white transition-all duration-300"
                 >
                   {social.icon}
                 </a>
@@ -61,7 +61,7 @@ const LandingFooter = () => {
                 <li key={link.label}>
                   <Link
                     to={link.path}
-                    className="text-[#6B6575] hover:text-[#4a0581] transition-colors text-[13px]"
+                    className="text-[#6B6575] hover:text-[#843D9B] transition-colors text-[13px]"
                   >
                     {link.label}
                   </Link>
@@ -85,7 +85,7 @@ const LandingFooter = () => {
                 <li key={link.label}>
                   <Link
                     to={link.path}
-                    className="text-[#6B6575] hover:text-[#4a0581] transition-colors text-[13px]"
+                    className="text-[#6B6575] hover:text-[#843D9B] transition-colors text-[13px]"
                   >
                     {link.label}
                   </Link>
@@ -106,7 +106,7 @@ const LandingFooter = () => {
                 <li key={link.label}>
                   <Link
                     to={link.path}
-                    className="text-[#6B6575] hover:text-[#4a0581] transition-colors text-[13px]"
+                    className="text-[#6B6575] hover:text-[#843D9B] transition-colors text-[13px]"
                   >
                     {link.label}
                   </Link>
@@ -122,15 +122,15 @@ const LandingFooter = () => {
             </h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <Phone size={15} className="text-[#4a0581] mt-0.5 shrink-0" />
+                <Phone size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
                 <span className="text-[#6B6575] text-[13px]">+91 98765 43210</span>
               </li>
               <li className="flex items-start gap-3">
-                <Mail size={15} className="text-[#4a0581] mt-0.5 shrink-0" />
+                <Mail size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
                 <span className="text-[#6B6575] text-[13px]">support@sewzella.com</span>
               </li>
               <li className="flex items-start gap-3">
-                <MapPin size={15} className="text-[#4a0581] mt-0.5 shrink-0" />
+                <MapPin size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
                 <span className="text-[#6B6575] text-[13px]">Srinagar, Kashmir, India</span>
               </li>
             </ul>
@@ -142,9 +142,9 @@ const LandingFooter = () => {
             &copy; {new Date().getFullYear()} {appName}. All Rights Reserved.
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-[#9A94A3] text-[12px]">
-            <Link to="/page/privacy-policy" className="hover:text-[#4a0581] transition-colors">Privacy Policy</Link>
-            <Link to="/page/terms-of-service" className="hover:text-[#4a0581] transition-colors">Terms of Service</Link>
-            <Link to="/page/accessibility" className="hover:text-[#4a0581] transition-colors">Accessibility</Link>
+            <Link to="/page/privacy-policy" className="hover:text-[#843D9B] transition-colors">Privacy Policy</Link>
+            <Link to="/page/terms-of-service" className="hover:text-[#843D9B] transition-colors">Terms of Service</Link>
+            <Link to="/page/accessibility" className="hover:text-[#843D9B] transition-colors">Accessibility</Link>
           </div>
         </div>
       </div>

@@ -27,7 +27,7 @@ const FinanceDashboardOverview = ({ data }) => {
             {/* Top Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {[
-                    { label: 'Total Payments Collected', value: formatCurrency(summary.totalRevenue), trend: '', color: 'text-purple-600', bg: 'bg-purple-100', icon: <Banknote size={20} /> },
+                    { label: 'Total Payments Collected', value: formatCurrency(summary.totalRevenue), trend: '', color: 'text-primary', bg: 'bg-purple-100', icon: <Banknote size={20} /> },
                     { label: 'Total Orders', value: summary.totalOrders, trend: '', color: 'text-green-600', bg: 'bg-green-100', icon: <ShoppingBag size={20} /> },
                     { label: 'Admin Earnings', value: formatCurrency(summary.netPlatformEarnings), trend: '', color: 'text-orange-500', bg: 'bg-orange-100', icon: <Crown size={20} /> },
                     { label: 'Tailor Payable (Wallet)', value: formatCurrency(summary.totalTailorEarnings), trend: '', color: 'text-blue-500', bg: 'bg-blue-100', icon: <User size={20} /> },
@@ -104,8 +104,8 @@ const FinanceDashboardOverview = ({ data }) => {
                                 <div className="space-y-3">
                                     <h3 className="text-xs font-bold text-purple-500 uppercase tracking-widest">Tailor & Delivery Distribution</h3>
                                     <div className="space-y-2 text-xs font-medium text-gray-600">
-                                        <div className="flex justify-between"><span>Tailor (To Wallet)</span><span className="text-purple-600 font-bold">{formatCurrency(recentPaidOrder.tailorEarning)}</span></div>
-                                        <div className="flex justify-between"><span>Delivery (To Wallet)</span><span className="text-purple-600 font-bold">{formatCurrency(recentPaidOrder.deliveryPartnerEarning)}</span></div>
+                                        <div className="flex justify-between"><span>Tailor (To Wallet)</span><span className="text-primary font-bold">{formatCurrency(recentPaidOrder.tailorEarning)}</span></div>
+                                        <div className="flex justify-between"><span>Delivery (To Wallet)</span><span className="text-primary font-bold">{formatCurrency(recentPaidOrder.deliveryPartnerEarning)}</span></div>
                                     </div>
                                 </div>
                                 
@@ -133,8 +133,8 @@ const FinanceDashboardOverview = ({ data }) => {
                         {/* Tailors */}
                         <div className="flex-1 bg-purple-50/50 rounded-xl p-4 border border-purple-100 flex flex-col">
                             <div className="flex items-center gap-2 mb-4">
-                                <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><User size={16} /></div>
-                                <h3 className="text-sm font-black text-purple-700">Tailors</h3>
+                                <div className="p-2 bg-purple-100 text-primary rounded-lg"><User size={16} /></div>
+                                <h3 className="text-sm font-black text-primary">Tailors</h3>
                             </div>
                             <div className="space-y-4 flex-1">
                                 <div className="flex justify-between items-center text-xs">
@@ -248,7 +248,7 @@ const FinanceDashboardOverview = ({ data }) => {
                     
                     <div className="flex items-center gap-6 mt-6">
                         {/* Static Donut Chart Representation using CSS */}
-                        <div className="relative w-32 h-32 rounded-full flex items-center justify-center shrink-0 border-[16px] border-purple-500 cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg hover:shadow-purple-500/20" style={{ borderRightColor: '#10b981', borderBottomColor: '#f59e0b', borderLeftColor: '#ef4444'}}>
+                        <div className="relative w-32 h-32 rounded-full flex items-center justify-center shrink-0 border-[16px] border-primary cursor-pointer hover:scale-105 transition-transform duration-300 hover:shadow-lg hover:shadow-purple-500/20" style={{ borderRightColor: '#10b981', borderBottomColor: '#f59e0b', borderLeftColor: '#ef4444'}}>
                            <div className="absolute inset-0 m-auto flex flex-col items-center justify-center bg-white rounded-full">
                                <span className="text-[10px] font-bold text-gray-400 text-center leading-tight">Total Net<br/>Earned</span>
                                <span className="text-xs font-black text-gray-900 mt-1">{formatCurrency(summary.netPlatformEarnings)}</span>

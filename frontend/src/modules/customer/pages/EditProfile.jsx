@@ -312,7 +312,7 @@ const EditProfile = () => {
                                 type="button"
                                 onClick={handleDetectLocation}
                                 disabled={isLocating}
-                                className="absolute right-2 px-3 py-1.5 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#1E1F4D] transition-colors shadow-sm disabled:opacity-50"
+                                className="absolute right-2 px-3 py-1.5 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#6B2F7E] transition-colors shadow-sm disabled:opacity-50"
                             >
                                 {isLocating ? (
                                     <>
@@ -333,7 +333,7 @@ const EditProfile = () => {
                 <div className="pt-6">
                     <button
                         type="submit"
-                        className="w-full bg-[#843D9B] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all hover:bg-[#1E1F4D] active:scale-95"
+                        className="w-full bg-[#843D9B] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all hover:bg-[#6B2F7E] active:scale-95"
                         disabled={isLoading}
                     >
                         {isLoading ? (

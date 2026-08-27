@@ -106,7 +106,7 @@ const DeliveryDashboard = () => {
       case 'picked-up':
       case 'processing': return 'bg-sky-50 text-sky-700 border border-sky-200';
       case 'out_for_delivery':
-      case 'out-for-delivery': return 'bg-violet-50 text-violet-700 border border-violet-200';
+      case 'out-for-delivery': return 'bg-violet-50 text-primary border border-violet-200';
       case 'delivered':
       case 'completed': return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
       default: return 'bg-slate-50 text-slate-600 border border-slate-200';

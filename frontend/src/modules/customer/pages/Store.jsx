@@ -86,7 +86,7 @@ const StorePage = () => {
                     const bannerSubtitle = activeBanner?.subtitle || "Fabrics for every celebration";
                     const bannerBadge = activeBanner?.badge;
                     const bannerImage = activeBanner?.image;
-                    const bannerColor = activeBanner?.color || 'bg-[#4b1b68]';
+                    const bannerColor = activeBanner?.color || 'bg-[#843D9B]';
 
                     return (
                         <div className={`relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-2xl ${bannerColor} text-white shadow-md transition-all duration-500`}>
@@ -160,7 +160,7 @@ const StorePage = () => {
 
             {/* 6. ⭐ Best Sellers & 🆕 New Arrivals */}
             <ProductGrid 
-                sectionTitle={<span>⭐ Best Sellers <span className="text-slate-300 font-normal">|</span> <span className="text-[#7a3299]">🆕 New Arrivals</span></span>}
+                sectionTitle={<span>⭐ Best Sellers <span className="text-slate-300 font-normal">|</span> <span className="text-[#843D9B]">🆕 New Arrivals</span></span>}
                 onViewAll={() => setActiveCategory({ name: "All", id: null })}
                 filters={{ storeSection: "Best Sellers", ...filters }} 
                 categoryId={null} 

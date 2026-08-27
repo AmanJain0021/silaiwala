@@ -184,7 +184,7 @@ const DeliveryForgotPassword = () => {
                         className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${
                             !mobileNumber || sendingOtp
                                 ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
-                                : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'
                         }`}
                     >
                         {sendingOtp ? 'Sending OTP...' : 'Send OTP'}
@@ -231,7 +231,7 @@ const DeliveryForgotPassword = () => {
                         className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${
                             !otp || otp.length !== 6 || verifyingOtp
                                 ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
-                                : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'
                         }`}
                     >
                         {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
@@ -308,7 +308,7 @@ const DeliveryForgotPassword = () => {
                         className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${
                             !newPassword || !confirmPassword || isLoading
                                 ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none'
-                                : 'bg-[#843D9B] hover:bg-[#713286] text-white shadow-lg shadow-[#843D9B]/20'
+                                : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'
                         }`}
                     >
                         {isLoading ? 'Resetting Password...' : 'Reset Password'}

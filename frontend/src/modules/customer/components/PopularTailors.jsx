@@ -104,7 +104,7 @@ const PopularTailors = () => {
                                     </div>
 
                                     <div className="hidden sm:flex flex-wrap items-center gap-2 mb-3">
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-purple-50 text-purple-600 border border-purple-100 rounded-md flex items-center gap-1"><Scissors size={10}/> Expert Tailors</span>
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-purple-50 text-primary border border-purple-100 rounded-md flex items-center gap-1"><Scissors size={10}/> Expert Tailors</span>
                                         <span className="text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md flex items-center gap-1"><ShieldCheck size={10}/> Quality Stitching</span>
                                         <span className="text-[10px] font-bold px-2 py-1 bg-orange-50 text-orange-600 border border-orange-100 rounded-md flex items-center gap-1"><Clock size={10}/> On-time Delivery</span>
                                     </div>

@@ -3,66 +3,74 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, MoreHorizontal, X, Tag, Clock, CheckCircle2, Package, Plus, Edit2, Trash2, Eye, ShieldCheck, Mail, Phone, MapPin, User, Check, Layers, Upload, Camera } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { sanitizeMeasurementFields } from '../../../utils/measurementFields';
+import MeasurementFieldsBuilder from '../components/MeasurementFieldsBuilder';
 
 const MEASUREMENT_PRESETS = [
     {
         key: 'kurta',
         name: 'Kurta / Kurti',
         fields: [
-            { key: 'chest', label: 'Chest / Bust', placeholder: '34', isRequired: true },
-            { key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
-            { key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
-            { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
-            { key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
-            { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16', isRequired: false },
-            { key: 'neck', label: 'Front Neck Depth', placeholder: '6', isRequired: false },
+            { type: 'heading', key: 'heading_body', label: 'Body Measurements' },
+            { type: 'field', key: 'chest', label: 'Chest / Bust', placeholder: '34', isRequired: true },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
+            { type: 'field', key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+            { type: 'heading', key: 'heading_length', label: 'Length & Sleeves' },
+            { type: 'field', key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+            { type: 'field', key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16', isRequired: false },
+            { type: 'field', key: 'neck', label: 'Front Neck Depth', placeholder: '6', isRequired: false },
         ]
     },
     {
         key: 'blouse',
         name: 'Blouse',
         fields: [
-            { key: 'chest', label: 'Bust / Chest', placeholder: '34', isRequired: true },
-            { key: 'underbust', label: 'Underbust', placeholder: '30', isRequired: true },
-            { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
-            { key: 'length', label: 'Blouse Length', placeholder: '14', isRequired: true },
-            { key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7', isRequired: false },
-            { key: 'backNeck', label: 'Back Neck Depth', placeholder: '8', isRequired: false },
-            { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10', isRequired: false },
+            { type: 'heading', key: 'heading_body', label: 'Body Measurements' },
+            { type: 'field', key: 'chest', label: 'Bust / Chest', placeholder: '34', isRequired: true },
+            { type: 'field', key: 'underbust', label: 'Underbust', placeholder: '30', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+            { type: 'heading', key: 'heading_detail', label: 'Blouse Details' },
+            { type: 'field', key: 'length', label: 'Blouse Length', placeholder: '14', isRequired: true },
+            { type: 'field', key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7', isRequired: false },
+            { type: 'field', key: 'backNeck', label: 'Back Neck Depth', placeholder: '8', isRequired: false },
+            { type: 'field', key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10', isRequired: false },
         ]
     },
     {
         key: 'shirt',
         name: 'Shirt',
         fields: [
-            { key: 'chest', label: 'Chest', placeholder: '38', isRequired: true },
-            { key: 'waist', label: 'Waist', placeholder: '34', isRequired: true },
-            { key: 'shoulder', label: 'Shoulder', placeholder: '17', isRequired: true },
-            { key: 'length', label: 'Shirt Length', placeholder: '30', isRequired: true },
-            { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24', isRequired: true },
-            { key: 'neck', label: 'Collar Size', placeholder: '15', isRequired: false },
+            { type: 'field', key: 'chest', label: 'Chest', placeholder: '38', isRequired: true },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '34', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '17', isRequired: true },
+            { type: 'field', key: 'length', label: 'Shirt Length', placeholder: '30', isRequired: true },
+            { type: 'field', key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24', isRequired: true },
+            { type: 'field', key: 'neck', label: 'Collar Size', placeholder: '15', isRequired: false },
         ]
     },
     {
         key: 'pant',
         name: 'Pant / Trouser',
         fields: [
-            { key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
-            { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
-            { key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
-            { key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
-            { key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
+            { type: 'field', key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+            { type: 'field', key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+            { type: 'field', key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
+            { type: 'field', key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
         ]
     },
     {
         key: 'suit',
         name: 'Suit / Lehenga',
         fields: [
-            { key: 'chest', label: 'Bust / Chest', placeholder: '36', isRequired: true },
-            { key: 'waist', label: 'Waist', placeholder: '30', isRequired: true },
-            { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
-            { key: 'topLength', label: 'Top Length', placeholder: '24', isRequired: true },
-            { key: 'bottomLength', label: 'Bottom Length', placeholder: '42', isRequired: true },
+            { type: 'heading', key: 'heading_top', label: 'Top / Blouse' },
+            { type: 'field', key: 'chest', label: 'Bust / Chest', placeholder: '36', isRequired: true },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '30', isRequired: true },
+            { type: 'field', key: 'topLength', label: 'Top Length', placeholder: '24', isRequired: true },
+            { type: 'heading', key: 'heading_bottom', label: 'Bottom / Lehenga' },
+            { type: 'field', key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+            { type: 'field', key: 'bottomLength', label: 'Bottom Length', placeholder: '42', isRequired: true },
         ]
     }
 ];
@@ -408,7 +416,7 @@ const AdminServices = () => {
                 type: newService.type || 'service',
                 gender: newService.gender || 'all',
                 styles: (newService.styles || []).filter(s => s.name?.trim()),
-                measurementFields: (newService.measurementFields || []).filter(f => f.key?.trim() && f.label?.trim()),
+                measurementFields: sanitizeMeasurementFields(newService.measurementFields || []),
                 styleAddons: (newService.styleAddons || []).filter(a => a.name?.trim())
             };
             if (minP !== null) payload.minPrice = minP;
@@ -455,7 +463,7 @@ const AdminServices = () => {
                 minPrice: minP,
                 maxPrice: maxP,
                 styles: (editingCategory.styles || []).filter(s => s.name?.trim()),
-                measurementFields: (editingCategory.measurementFields || []).filter(f => f.key?.trim() && f.label?.trim()),
+                measurementFields: sanitizeMeasurementFields(editingCategory.measurementFields || []),
                 styleAddons: (editingCategory.styleAddons || []).filter(a => a.name?.trim())
             };
             await api.put(`/admin/categories/${editingCategory._id}`, payload);
@@ -996,7 +1004,7 @@ const AdminServices = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                            className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                 <h2 className="text-lg font-black tracking-tight text-gray-900">Add New Service</h2>
@@ -1169,7 +1177,7 @@ const AdminServices = () => {
                                 <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 space-y-3">
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-purple-700 tracking-widest">Style Variants</p>
+                                            <p className="text-[10px] font-black uppercase text-primary tracking-widest">Style Variants</p>
                                             <p className="text-[10px] text-gray-500 font-medium">Define selectable style types (e.g. Anarkali, Straight, A-line) under this category.</p>
                                         </div>
                                         <button
@@ -1178,7 +1186,7 @@ const AdminServices = () => {
                                                 const updated = [...(newService.styles || []), { name: '', image: '', description: '' }];
                                                 setNewService({ ...newService, styles: updated });
                                             }}
-                                            className="px-3 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-purple-700 transition-all cursor-pointer shadow-xs shrink-0"
+                                            className="px-3 py-1 bg-primary text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-primary-dark transition-all cursor-pointer shadow-xs shrink-0"
                                         >
                                             <Plus size={12} /> Add Style
                                         </button>
@@ -1237,7 +1245,7 @@ const AdminServices = () => {
                                                                 setNewService({ ...newService, styles: copy });
                                                             }}
                                                             placeholder="Style Name (e.g. Anarkali Kurta)"
-                                                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-primary focus:bg-white transition-all"
                                                         />
 
                                                         {/* Delete Style Button */}
@@ -1267,7 +1275,7 @@ const AdminServices = () => {
                                                                 />
                                                                 <button
                                                                     type="button"
-                                                                    className="px-2.5 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                                                                    className="px-2.5 py-1.5 bg-purple-100 text-primary hover:bg-purple-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
                                                                 >
                                                                     <Upload size={12} />
                                                                     <span>Upload</span>
@@ -1282,7 +1290,7 @@ const AdminServices = () => {
                                                                     setNewService({ ...newService, styles: copy });
                                                                 }}
                                                                 placeholder="Or paste photo URL..."
-                                                                className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                                className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-primary focus:bg-white transition-all"
                                                             />
                                                         </div>
 
@@ -1296,7 +1304,7 @@ const AdminServices = () => {
                                                                 setNewService({ ...newService, styles: copy });
                                                             }}
                                                             placeholder="Short description (optional)"
-                                                            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-primary focus:bg-white transition-all"
                                                         />
                                                     </div>
                                                 </div>
@@ -1306,123 +1314,15 @@ const AdminServices = () => {
                                 </div>
 
                                  {/* Dynamic Measurement Fields Builder */}
-                                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">Dynamic Measurement Fields</p>
-                                            <p className="text-[10px] text-gray-500 font-medium">Define customer measurement inputs for this garment (Values in inches by default).</p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const updated = [...(newService.measurementFields || []), { key: '', label: '', placeholder: '34', isRequired: true }];
-                                                setNewService({ ...newService, measurementFields: updated });
-                                            }}
-                                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-700 transition-all cursor-pointer shadow-xs shrink-0"
-                                        >
-                                            <Plus size={12} /> Add Field
-                                        </button>
-                                    </div>
-
-                                    {/* 1-Click Field Presets */}
-                                    <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-y border-indigo-100/60">
-                                        <span className="text-[9px] font-black uppercase text-indigo-900 tracking-wider">⚡ 1-Click Field Templates:</span>
-                                        {MEASUREMENT_PRESETS.map((preset) => (
-                                            <button
-                                                key={preset.key}
-                                                type="button"
-                                                onClick={() => {
-                                                    setNewService({ ...newService, measurementFields: [...preset.fields] });
-                                                    toast.success(`Loaded ${preset.name} measurement fields`);
-                                                }}
-                                                className="px-2 py-0.5 bg-indigo-100/80 hover:bg-indigo-200 text-indigo-800 rounded-md text-[9px] font-bold transition-all shadow-2xs cursor-pointer"
-                                            >
-                                                + {preset.name}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {(newService.measurementFields || []).length === 0 ? (
-                                        <p className="text-[10px] text-gray-400 italic">No custom fields defined yet. Click standard templates above or add custom fields.</p>
-                                    ) : (
-                                        <div className="space-y-2.5">
-                                            {(newService.measurementFields || []).map((field, idx) => (
-                                                <div key={idx} className="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col gap-2 shadow-2xs">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[9px] font-black text-indigo-900/70 uppercase tracking-wider">Field Label (Shown to Customer)</span>
-                                                                {field.key && <span className="text-[8px] font-mono font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">key: {field.key}</span>}
-                                                            </div>
-                                                            <input
-                                                                type="text"
-                                                                value={field.label}
-                                                                onChange={(e) => {
-                                                                    const copy = [...newService.measurementFields];
-                                                                    const newLabel = e.target.value;
-                                                                    copy[idx].label = newLabel;
-                                                                    const autoKey = newLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                                                    if (!copy[idx].key || copy[idx].key === copy[idx]._autoKey) {
-                                                                        copy[idx].key = autoKey;
-                                                                        copy[idx]._autoKey = autoKey;
-                                                                    }
-                                                                    setNewService({ ...newService, measurementFields: copy });
-                                                                }}
-                                                                placeholder="e.g. Chest / Bust, Waist, Sleeves"
-                                                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                                                            />
-                                                        </div>
-
-                                                        {/* Required Toggle Button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const copy = [...newService.measurementFields];
-                                                                copy[idx].isRequired = field.isRequired === false ? true : false;
-                                                                setNewService({ ...newService, measurementFields: copy });
-                                                            }}
-                                                            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all shrink-0 ${
-                                                                field.isRequired !== false 
-                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                                                    : 'bg-gray-100 text-gray-500 border border-gray-200'
-                                                            }`}
-                                                        >
-                                                            {field.isRequired !== false ? 'Required ✓' : 'Optional'}
-                                                        </button>
-
-                                                        {/* Delete Button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const copy = newService.measurementFields.filter((_, i) => i !== idx);
-                                                                setNewService({ ...newService, measurementFields: copy });
-                                                            }}
-                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                                                            title="Delete Field"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 pt-1 border-t border-indigo-50">
-                                                        <span className="text-[9px] font-medium text-gray-400 shrink-0">Sample Inch:</span>
-                                                        <input
-                                                            type="text"
-                                                            value={field.placeholder}
-                                                            onChange={(e) => {
-                                                                const copy = [...newService.measurementFields];
-                                                                copy[idx].placeholder = e.target.value;
-                                                                setNewService({ ...newService, measurementFields: copy });
-                                                            }}
-                                                            placeholder="Example value (e.g. 34)"
-                                                            className="flex-1 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <MeasurementFieldsBuilder
+                                    fields={newService.measurementFields || []}
+                                    onChange={(next) => setNewService({ ...newService, measurementFields: next })}
+                                    presets={MEASUREMENT_PRESETS}
+                                    onLoadPreset={(preset) => {
+                                        setNewService({ ...newService, measurementFields: [...preset.fields] });
+                                        toast.success(`Loaded ${preset.name} measurement fields`);
+                                    }}
+                                />
                             </div>
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
@@ -1456,7 +1356,7 @@ const AdminServices = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                            className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                 <h2 className="text-lg font-black tracking-tight text-gray-900">Edit Category</h2>
@@ -1628,7 +1528,7 @@ const AdminServices = () => {
                                 <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 space-y-3">
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-purple-700 tracking-widest">Style Variants</p>
+                                            <p className="text-[10px] font-black uppercase text-primary tracking-widest">Style Variants</p>
                                             <p className="text-[10px] text-gray-500 font-medium">Define selectable style types (e.g. Anarkali, Straight, A-line) under this category.</p>
                                         </div>
                                         <button
@@ -1637,7 +1537,7 @@ const AdminServices = () => {
                                                 const updated = [...(editingCategory.styles || []), { name: '', image: '', description: '' }];
                                                 setEditingCategory({ ...editingCategory, styles: updated });
                                             }}
-                                            className="px-3 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-purple-700 transition-all cursor-pointer shadow-xs shrink-0"
+                                            className="px-3 py-1 bg-primary text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-primary-dark transition-all cursor-pointer shadow-xs shrink-0"
                                         >
                                             <Plus size={12} /> Add Style
                                         </button>
@@ -1696,7 +1596,7 @@ const AdminServices = () => {
                                                                 setEditingCategory({ ...editingCategory, styles: copy });
                                                             }}
                                                             placeholder="Style Name (e.g. Anarkali Kurta)"
-                                                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-primary focus:bg-white transition-all"
                                                         />
 
                                                         {/* Delete Style Button */}
@@ -1726,7 +1626,7 @@ const AdminServices = () => {
                                                                 />
                                                                 <button
                                                                     type="button"
-                                                                    className="px-2.5 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                                                                    className="px-2.5 py-1.5 bg-purple-100 text-primary hover:bg-purple-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
                                                                 >
                                                                     <Upload size={12} />
                                                                     <span>Upload</span>
@@ -1741,7 +1641,7 @@ const AdminServices = () => {
                                                                     setEditingCategory({ ...editingCategory, styles: copy });
                                                                 }}
                                                                 placeholder="Or paste photo URL..."
-                                                                className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                                className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-primary focus:bg-white transition-all"
                                                             />
                                                         </div>
 
@@ -1755,7 +1655,7 @@ const AdminServices = () => {
                                                                 setEditingCategory({ ...editingCategory, styles: copy });
                                                             }}
                                                             placeholder="Short description (optional)"
-                                                            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                                                            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-primary focus:bg-white transition-all"
                                                         />
                                                     </div>
                                                 </div>
@@ -1765,123 +1665,15 @@ const AdminServices = () => {
                                 </div>
 
                                  {/* Dynamic Measurement Fields Builder */}
-                                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-indigo-700 tracking-widest">Dynamic Measurement Fields</p>
-                                            <p className="text-[10px] text-gray-500 font-medium">Define customer measurement inputs for this garment (Values in inches by default).</p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const updated = [...(editingCategory.measurementFields || []), { key: '', label: '', placeholder: '34', isRequired: true }];
-                                                setEditingCategory({ ...editingCategory, measurementFields: updated });
-                                            }}
-                                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-700 transition-all cursor-pointer shadow-xs shrink-0"
-                                        >
-                                            <Plus size={12} /> Add Field
-                                        </button>
-                                    </div>
-
-                                    {/* 1-Click Field Presets */}
-                                    <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-y border-indigo-100/60">
-                                        <span className="text-[9px] font-black uppercase text-indigo-900 tracking-wider">⚡ 1-Click Field Templates:</span>
-                                        {MEASUREMENT_PRESETS.map((preset) => (
-                                            <button
-                                                key={preset.key}
-                                                type="button"
-                                                onClick={() => {
-                                                    setEditingCategory({ ...editingCategory, measurementFields: [...preset.fields] });
-                                                    toast.success(`Loaded ${preset.name} measurement fields`);
-                                                }}
-                                                className="px-2 py-0.5 bg-indigo-100/80 hover:bg-indigo-200 text-indigo-800 rounded-md text-[9px] font-bold transition-all shadow-2xs cursor-pointer"
-                                            >
-                                                + {preset.name}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {(editingCategory.measurementFields || []).length === 0 ? (
-                                        <p className="text-[10px] text-gray-400 italic">No custom fields defined yet. Click standard templates above or add custom fields.</p>
-                                    ) : (
-                                        <div className="space-y-2.5">
-                                            {(editingCategory.measurementFields || []).map((field, idx) => (
-                                                <div key={idx} className="bg-white p-3 rounded-xl border border-indigo-100 flex flex-col gap-2 shadow-2xs">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[9px] font-black text-indigo-900/70 uppercase tracking-wider">Field Label (Shown to Customer)</span>
-                                                                {field.key && <span className="text-[8px] font-mono font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">key: {field.key}</span>}
-                                                            </div>
-                                                            <input
-                                                                type="text"
-                                                                value={field.label}
-                                                                onChange={(e) => {
-                                                                    const copy = [...editingCategory.measurementFields];
-                                                                    const newLabel = e.target.value;
-                                                                    copy[idx].label = newLabel;
-                                                                    const autoKey = newLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                                                    if (!copy[idx].key || copy[idx].key === copy[idx]._autoKey) {
-                                                                        copy[idx].key = autoKey;
-                                                                        copy[idx]._autoKey = autoKey;
-                                                                    }
-                                                                    setEditingCategory({ ...editingCategory, measurementFields: copy });
-                                                                }}
-                                                                placeholder="e.g. Chest / Bust, Waist, Sleeves"
-                                                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                                                            />
-                                                        </div>
-
-                                                        {/* Required Toggle Button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const copy = [...editingCategory.measurementFields];
-                                                                copy[idx].isRequired = field.isRequired === false ? true : false;
-                                                                setEditingCategory({ ...editingCategory, measurementFields: copy });
-                                                            }}
-                                                            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all shrink-0 ${
-                                                                field.isRequired !== false 
-                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                                                    : 'bg-gray-100 text-gray-500 border border-gray-200'
-                                                            }`}
-                                                        >
-                                                            {field.isRequired !== false ? 'Required ✓' : 'Optional'}
-                                                        </button>
-
-                                                        {/* Delete Button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const copy = editingCategory.measurementFields.filter((_, i) => i !== idx);
-                                                                setEditingCategory({ ...editingCategory, measurementFields: copy });
-                                                            }}
-                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                                                            title="Delete Field"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 pt-1 border-t border-indigo-50">
-                                                        <span className="text-[9px] font-medium text-gray-400 shrink-0">Sample Inch:</span>
-                                                        <input
-                                                            type="text"
-                                                            value={field.placeholder}
-                                                            onChange={(e) => {
-                                                                const copy = [...editingCategory.measurementFields];
-                                                                copy[idx].placeholder = e.target.value;
-                                                                setEditingCategory({ ...editingCategory, measurementFields: copy });
-                                                            }}
-                                                            placeholder="Example value (e.g. 34)"
-                                                            className="flex-1 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-medium text-gray-800 outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <MeasurementFieldsBuilder
+                                    fields={editingCategory.measurementFields || []}
+                                    onChange={(next) => setEditingCategory({ ...editingCategory, measurementFields: next })}
+                                    presets={MEASUREMENT_PRESETS}
+                                    onLoadPreset={(preset) => {
+                                        setEditingCategory({ ...editingCategory, measurementFields: [...preset.fields] });
+                                        toast.success(`Loaded ${preset.name} measurement fields`);
+                                    }}
+                                />
                             </div>
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">

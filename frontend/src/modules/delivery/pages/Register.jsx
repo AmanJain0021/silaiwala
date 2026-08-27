@@ -805,7 +805,7 @@ const DeliveryRegister = () => {
                         type="button"
                         onClick={handleVerifyOtp}
                         disabled={isVerifyingOtp || !phoneOtp || phoneOtp.length !== 6}
-                        className="px-5 py-2.5 bg-[#843D9B] text-white rounded-xl text-xs font-bold hover:bg-[#713286] disabled:opacity-40 transition-all shrink-0 cursor-pointer"
+                        className="px-5 py-2.5 bg-[#843D9B] text-white rounded-xl text-xs font-bold hover:bg-[#843D9B] disabled:opacity-40 transition-all shrink-0 cursor-pointer"
                       >
                         {isVerifyingOtp ? 'Verifying...' : 'Submit OTP'}
                       </button>
@@ -1011,11 +1011,11 @@ const DeliveryRegister = () => {
             )}
 
             {currentStep < 3 ? (
-              <button type="button" onClick={nextStep} className="flex items-center gap-2 px-8 py-3.5 bg-[#843D9B] hover:bg-[#713286] text-white rounded-[22px] font-bold text-sm transition-all shadow-md shadow-[#843D9B]/20 active:scale-95 cursor-pointer">
+              <button type="button" onClick={nextStep} className="flex items-center gap-2 px-8 py-3.5 bg-[#843D9B] hover:bg-[#843D9B] text-white rounded-[22px] font-bold text-sm transition-all shadow-md shadow-[#843D9B]/20 active:scale-95 cursor-pointer">
                 NEXT <FiChevronRight size={16} />
               </button>
             ) : (
-              <button type="submit" disabled={isLoading || !agreedToTerms} className={`flex items-center gap-2 px-8 py-3.5 bg-[#843D9B] hover:bg-[#713286] text-white rounded-[22px] font-bold text-sm transition-all shadow-md shadow-[#843D9B]/20 ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'active:scale-95 cursor-pointer'}`}>
+              <button type="submit" disabled={isLoading || !agreedToTerms} className={`flex items-center gap-2 px-8 py-3.5 bg-[#843D9B] hover:bg-[#843D9B] text-white rounded-[22px] font-bold text-sm transition-all shadow-md shadow-[#843D9B]/20 ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'active:scale-95 cursor-pointer'}`}>
                 {isLoading ? 'SUBMITTING...' : 'SUBMIT ENROLLMENT'}
               </button>
             )}

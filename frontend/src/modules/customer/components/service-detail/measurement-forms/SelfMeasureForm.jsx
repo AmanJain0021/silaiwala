@@ -3,6 +3,7 @@ import { Info, HelpCircle, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import MeasurementInput from './MeasurementInput';
 import { cn } from '../../../../../utils/cn';
+import { isHeadingField, getFieldKey as resolveFieldKey, getInputFields } from '../../../../../utils/measurementFields';
 
 const categoryFields = {
     'Kurta/Kurti': [
@@ -33,7 +34,7 @@ const categoryFields = {
     ],
     'Pant/Trouser': [
         { key: 'waist', label: 'Waist', placeholder: '32' },
-        { key: 'hips', label: 'Hips', placeholder: '38' },
+        { key: 'hips', label: 'Hips', placeholder: '36' },
         { key: 'length', label: 'Full Length / Inseam', placeholder: '40' },
         { key: 'thigh', label: 'Thigh Width', placeholder: '22' },
         { key: 'bottom', label: 'Bottom Opening', placeholder: '14' }
@@ -106,9 +107,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measureme
         ? measurementFields
         : (categoryFields[selectedCategory] || categoryFields['Other']);
 
-
-
-    const getFieldKey = (field) => field.key || field.id || field.name || field.label;
+    const inputFields = getInputFields(activeFields);
 
     const handleChange = (fieldKey, value) => {
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
@@ -125,8 +124,8 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measureme
 
     const validate = () => {
         const newErrors = {};
-        activeFields.forEach(field => {
-            const key = getFieldKey(field);
+        inputFields.forEach(field => {
+            const key = resolveFieldKey(field);
             if (field.isRequired !== false) {
                 const val = values[key];
                 if (val === undefined || val === null || String(val).trim() === '') {
@@ -151,8 +150,8 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measureme
     const handleSave = () => {
         if (validate()) {
             const filteredValues = { notes: values.notes || '' };
-            activeFields.forEach(f => {
-                const key = getFieldKey(f);
+            inputFields.forEach(f => {
+                const key = resolveFieldKey(f);
                 if (values[key] !== undefined && values[key] !== '') {
                     filteredValues[key] = values[key];
                 }
@@ -162,7 +161,7 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measureme
                 type: 'self',
                 data: filteredValues,
                 saveProfile: saveProfile ? { name: profileName } : null,
-                garmentType: selectedCategory,
+                garmentType: categoryName || selectedCategory,
                 isConfirmed: true
             });
             toast.success("Measurements confirmed ✓");
@@ -210,20 +209,29 @@ const SelfMeasureForm = ({ initialData, onSave, onCancel, onOpenGuide, measureme
                     <button
                         type="button"
                         onClick={onOpenGuide}
-                        className="shrink-0 text-[10px] font-black text-purple-700 bg-purple-100 hover:bg-purple-200 border border-purple-200 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                        className="shrink-0 text-[10px] font-black text-primary bg-purple-100 hover:bg-purple-200 border border-purple-200 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
                     >
                         📐 Guide
                     </button>
                 )}
             </div>
 
-            {/* Input Grid */}
+            {/* Input Grid with section headings */}
             <div className="grid grid-cols-2 gap-x-3 gap-y-4 mb-6">
-                {activeFields.map(field => {
-                    const key = getFieldKey(field);
+                {activeFields.map((field, idx) => {
+                    if (isHeadingField(field)) {
+                        return (
+                            <div key={`heading-${idx}-${field.label}`} className="col-span-2 pt-2 first:pt-0">
+                                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-primary border-b border-primary/15 pb-1.5">
+                                    {field.label}
+                                </p>
+                            </div>
+                        );
+                    }
+                    const key = resolveFieldKey(field);
                     return (
                         <MeasurementInput
-                            key={key}
+                            key={`${key}-${idx}`}
                             label={field.label || field.name || key}
                             placeholder={field.placeholder || 'e.g. 34'}
                             value={values[key] || ''}

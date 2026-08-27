@@ -408,7 +408,7 @@ const LocationModal = ({ isOpen, onClose }) => {
                                     <button 
                                         onClick={handleConfirmLocation}
                                         disabled={!formattedAddress || isGeocoding}
-                                        className="w-full py-3.5 bg-[#843D9B] text-white text-xs font-black rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full py-3.5 bg-[#843D9B] text-white text-xs font-black rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Confirm Location
                                     </button>
@@ -494,7 +494,7 @@ const LocationModal = ({ isOpen, onClose }) => {
                         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-white border-t border-gray-100 z-20">
                             <button 
                                 onClick={handleSaveAddress}
-                                className="w-full py-3.5 bg-[#843D9B] text-white text-xs font-black rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest"
+                                className="w-full py-3.5 bg-[#843D9B] text-white text-xs font-black rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest"
                             >
                                 Save Address & Proceed
                             </button>

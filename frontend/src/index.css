@@ -2,10 +2,10 @@
 
 @theme {
     /* === PRIMARY BRAND COLORS (Dark Navy/Purple) === */
-    --color-primary: #2D2F6F;
-    --color-primary-light: #B35BCB;
-    --color-primary-dark: #1E1F4D;
-    --color-primary-soft: #F0F1FF;
+    --color-primary: #843D9B;
+    --color-primary-light: #9B5BB0;
+    --color-primary-dark: #6B2F7E;
+    --color-primary-soft: #F3EAF8;
 
     /* === ACCENT COLORS (Gold/Peach) === */
     --color-accent: #D4AF37;
@@ -41,8 +41,8 @@
 }
 
 :root {
-    --brand-color: #2D2F6F;
-    --brand-gradient-start: #2D2F6F;
+    --brand-color: #843D9B;
+    --brand-gradient-start: #843D9B;
     --brand-gradient-end: #B35BCB;
     --accent-color: #D4AF37;
     --page-bg: #F8F9FD;
@@ -60,16 +60,16 @@ body {
 }
 
 /* ===== BRAND UTILITIES ===== */
-.bg-brand { background-color: #2D2F6F; }
-.text-brand { color: #2D2F6F; }
-.border-brand { border-color: #2D2F6F; }
+.bg-brand { background-color: #843D9B; }
+.text-brand { color: #843D9B; }
+.border-brand { border-color: #843D9B; }
 
 .shadow-brand {
     box-shadow: 0 8px 25px -5px rgba(45, 47, 111, 0.25);
 }
 
 .gradient-brand {
-    background: linear-gradient(135deg, #2D2F6F 0%, #B35BCB 100%);
+    background: linear-gradient(135deg, #843D9B 0%, #B35BCB 100%);
 }
 
 /* ===== CARD STYLE ===== */

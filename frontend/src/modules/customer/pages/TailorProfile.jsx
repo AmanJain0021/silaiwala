@@ -397,7 +397,7 @@ const TailorProfile = () => {
                             setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
                             navigate('/user/custom-design', { state: { tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name } });
                         }}
-                        className="flex-1 bg-[#843D9B] hover:bg-[#6c3080] text-white py-3 rounded-2xl shadow-lg shadow-[#843D9B]/20 font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="flex-1 bg-[#843D9B] hover:bg-[#6B2F7E] text-white py-3 rounded-2xl shadow-lg shadow-[#843D9B]/20 font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <Wand2 size={16} />
                         <span>Custom Order</span>

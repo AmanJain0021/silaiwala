@@ -52,9 +52,14 @@ const categorySchema = new mongoose.Schema(
         description: { type: String, default: "", trim: true },
       },
     ],
-    // Admin-defined measurement fields for dynamic forms
+    // Admin-defined measurement fields for dynamic forms (fields + optional section headings)
     measurementFields: [
       {
+        type: {
+          type: String,
+          enum: ["field", "heading"],
+          default: "field",
+        },
         key: { type: String, required: true, trim: true },
         label: { type: String, required: true, trim: true },
         placeholder: { type: String, default: "" },

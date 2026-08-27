@@ -57,7 +57,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productTy
                         {onViewAll && (
                             <button 
                                 onClick={onViewAll}
-                                className="text-xs font-bold text-[#7a3299] hover:underline flex items-center gap-0.5 cursor-pointer"
+                                className="text-xs font-bold text-[#843D9B] hover:underline flex items-center gap-0.5 cursor-pointer"
                             >
                                 View All <ChevronRight size={14} />
                             </button>
@@ -68,7 +68,7 @@ const ProductGrid = ({ filters, categoryId, categoryName, searchQuery, productTy
             {showTitle && (
                 <div className="flex justify-between items-end px-4 md:px-6 lg:px-8 pt-4 pb-3">
                     <div>
-                        <span className="text-[10px] font-black uppercase text-purple-700 tracking-widest bg-purple-100/70 border border-purple-200/50 px-2.5 py-1 rounded-lg">
+                        <span className="text-[10px] font-black uppercase text-primary tracking-widest bg-purple-100/70 border border-purple-200/50 px-2.5 py-1 rounded-lg">
                             {productType === 'fabric' ? 'Fabrics' : 'Custom Garments'}
                         </span>
                         <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mt-1.5">

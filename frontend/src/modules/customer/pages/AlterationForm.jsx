@@ -284,7 +284,7 @@ const AlterationForm = () => {
                 <button 
                     onClick={handleSubmitRequest}
                     disabled={isSubmitting || !selectedTailorId || !description || images.length === 0 || addresses.length === 0}
-                    className="flex-1 bg-[#843D9B] text-white h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6c3080] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-[#843D9B] text-white h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6B2F7E] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Proceed to Request'}
                 </button>

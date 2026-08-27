@@ -347,7 +347,7 @@ const AdminCMS = () => {
                             }
                             setIsAddContentModalOpen(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-purple-700 text-white text-xs font-black rounded-xl hover:bg-purple-800 shadow-lg shadow-purple-900/20 transition-all uppercase tracking-widest cursor-pointer"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-primary-dark text-white text-xs font-black rounded-xl hover:bg-purple-800 shadow-lg shadow-purple-900/20 transition-all uppercase tracking-widest cursor-pointer"
                     >
                         <Plus size={16} /> {cmsContent && cmsContent.length > 0 ? 'Edit Guide Video' : 'Add Guide Video'}
                     </button>
@@ -593,7 +593,7 @@ const AdminCMS = () => {
                             <div key={vid._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                                 <div className="p-4 bg-purple-50/50 border-b border-gray-100 flex items-center justify-between">
                                     <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                                        <div className="w-8 h-8 rounded-xl bg-purple-100 text-primary flex items-center justify-center font-bold shrink-0">
                                             🎥
                                         </div>
                                         <div className="min-w-0">
@@ -627,7 +627,7 @@ const AdminCMS = () => {
                                 <div className="p-3.5 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-2">
                                     <button
                                         onClick={() => handleEditContent(vid)}
-                                        className="px-4 py-2 bg-white text-purple-700 text-[10px] font-black rounded-lg hover:bg-purple-50 uppercase tracking-widest border border-purple-200 shadow-2xs cursor-pointer"
+                                        className="px-4 py-2 bg-white text-primary text-[10px] font-black rounded-lg hover:bg-purple-50 uppercase tracking-widest border border-purple-200 shadow-2xs cursor-pointer"
                                     >
                                         Edit Video
                                     </button>
@@ -639,7 +639,7 @@ const AdminCMS = () => {
                         ))}
                         {cmsContent.length === 0 && (
                             <div className="col-span-full bg-white rounded-2xl p-12 border border-gray-100 text-center space-y-3">
-                                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-2xl">
+                                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-primary flex items-center justify-center mx-auto text-2xl">
                                     🎥
                                 </div>
                                 <h3 className="text-sm font-extrabold text-gray-800">No Measurement Guide Video Added Yet</h3>
@@ -659,7 +659,7 @@ const AdminCMS = () => {
                                         });
                                         setIsAddContentModalOpen(true);
                                     }}
-                                    className="px-5 py-2.5 bg-purple-700 text-white text-xs font-black rounded-xl hover:bg-purple-800 shadow-md cursor-pointer inline-flex items-center gap-1.5"
+                                    className="px-5 py-2.5 bg-primary-dark text-white text-xs font-black rounded-xl hover:bg-purple-800 shadow-md cursor-pointer inline-flex items-center gap-1.5"
                                 >
                                     <Plus size={15} /> Add Guide Video Now
                                 </button>
@@ -852,7 +852,7 @@ const AdminCMS = () => {
                                                     <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">
                                                         Video URL or Upload Video File
                                                     </label>
-                                                    <label className="cursor-pointer text-xs font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 border border-purple-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs">
+                                                    <label className="cursor-pointer text-xs font-bold text-primary bg-purple-100 hover:bg-purple-200 border border-purple-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs">
                                                         {isVideoUploading ? (
                                                             <span className="flex items-center gap-1.5">
                                                                 <span className="w-3 h-3 border-2 border-purple-700 border-t-transparent animate-spin rounded-full"></span>
@@ -877,7 +877,7 @@ const AdminCMS = () => {
                                                     value={newContent.content} 
                                                     onChange={e => setNewContent({ ...newContent, content: e.target.value })} 
                                                     placeholder="https://www.youtube.com/watch?v=... or click Upload Video File" 
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-purple-600 transition-colors" 
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" 
                                                 />
                                                 <p className="text-[10px] text-gray-400 mt-1.5 font-medium leading-relaxed">
                                                     💡 <b>Option 1:</b> Click <b>Upload Video File</b> to pick a downloaded MP4/WEBM/MOV video from your PC.<br />
@@ -888,7 +888,7 @@ const AdminCMS = () => {
                                             {/* Video Live Preview */}
                                             {newContent.content && (
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase text-purple-700 tracking-widest mb-1.5">
+                                                    <label className="block text-[10px] font-black uppercase text-primary tracking-widest mb-1.5">
                                                         Video Live Preview
                                                     </label>
                                                     <div className="aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center relative border border-purple-200">

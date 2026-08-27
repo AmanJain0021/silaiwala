@@ -217,7 +217,7 @@ const DeliveryProfile = () => {
     { label: 'Total Deliveries', value: Number(deliveryBoy?.totalDeliveries || 0), icon: FiTruck, bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100' },
     { label: 'Completed Today', value: Number(profileMetrics.completedToday || 0), icon: FiCheckCircle, bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' },
     { label: 'Cash in Hand', value: formatPrice(Number(profileMetrics.cashInHand || 0)), icon: FiActivity, bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
-    { label: 'Avg Rating', value: Number(deliveryBoy?.rating || 0).toFixed(1), icon: FiUser, bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
+    { label: 'Avg Rating', value: Number(deliveryBoy?.rating || 0).toFixed(1), icon: FiUser, bg: 'bg-purple-50', text: 'text-primary', border: 'border-purple-100' },
   ];
 
   if (loadFailed) {

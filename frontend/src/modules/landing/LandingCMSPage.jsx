@@ -43,7 +43,7 @@ const LandingCMSPage = () => {
       <main className="flex-grow pt-28 pb-20 px-5 md:px-16 max-w-4xl mx-auto w-full">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-[#e9def5] border-t-[#4a0581] rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-[#e9def5] border-t-[#843D9B] rounded-full animate-spin"></div>
           </div>
         ) : !content ? (
           <div className="text-center py-20">
@@ -53,7 +53,7 @@ const LandingCMSPage = () => {
             <p className="text-[#7d7483] mb-8">The page you are looking for does not exist or has been removed.</p>
             <Link
               to="/"
-              className="bg-[#4a0581] text-white px-8 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#622999] transition-colors inline-block"
+              className="bg-[#843D9B] text-white px-8 py-3.5 rounded-full text-[14px] font-semibold hover:bg-[#843D9B] transition-colors inline-block"
             >
               Return Home
             </Link>
@@ -71,7 +71,7 @@ const LandingCMSPage = () => {
             </div>
             
             <div 
-              className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-[#1c1b1b] prose-p:text-[#4c4451] prose-a:text-[#4a0581] prose-a:no-underline hover:prose-a:underline prose-li:text-[#4c4451] cms-landing-content"
+              className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-[#1c1b1b] prose-p:text-[#4c4451] prose-a:text-[#843D9B] prose-a:no-underline hover:prose-a:underline prose-li:text-[#4c4451] cms-landing-content"
               style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
               dangerouslySetInnerHTML={{ __html: content.content }}
             />

@@ -398,7 +398,7 @@ const AdminDelivery = () => {
                                 <div>
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="text-[10px] font-black uppercase text-primary">{order.id}</span>
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${order.type === 'Pickup' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${order.type === 'Pickup' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-primary'}`}>
                                             {order.type}
                                         </span>
                                     </div>

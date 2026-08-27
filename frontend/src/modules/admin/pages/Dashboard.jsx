@@ -200,7 +200,7 @@ const AdminDashboard = () => {
         if (s === 'pending') return 'bg-orange-100 text-orange-700 border-orange-200';
         if (s === 'cancelled' || s === 'failed-delivery') return 'bg-red-100 text-red-700 border-red-200';
         if (s.includes('progress') || s.includes('production') || s.includes('stitching')) return 'bg-blue-100 text-blue-700 border-blue-200';
-        if (s.includes('ready')) return 'bg-purple-100 text-purple-700 border-purple-200';
+        if (s.includes('ready')) return 'bg-purple-100 text-primary border-purple-200';
         return 'bg-gray-100 text-gray-700 border-gray-200';
     };
 

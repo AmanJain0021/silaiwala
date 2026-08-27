@@ -18,8 +18,7 @@ const measurementReportSchema = new mongoose.Schema(
       required: true,
     },
     formData: {
-      type: Map,
-      of: mongoose.Schema.Types.Mixed, // Allows numbers and strings for flexibility
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
     unit: {

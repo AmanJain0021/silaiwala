@@ -15,7 +15,7 @@ export default function DeliveryLegalModal({ isOpen, onClose, type = 'terms' }) 
     <div className="fixed inset-0 z-[99999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden relative">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-[#2D2F6F] to-[#843D9B] text-white p-5 sm:p-6 flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-[#843D9B] to-[#843D9B] text-white p-5 sm:p-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white">
               <ShieldCheck className="w-6 h-6" />

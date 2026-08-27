@@ -6,9 +6,12 @@
     --font-body: "Manrope", sans-serif;
     --font-jakarta: "Plus Jakarta Sans", sans-serif;
     
-    /* Existing Colors */
+    /* Brand — single source of truth (#843D9B everywhere) */
     --color-primary: #843D9B;
-    --color-secondary: #5D2A73;
+    --color-primary-dark: #6B2F7E;
+    --color-primary-light: #9B5BB0;
+    --color-primary-soft: #F3EAF8;
+    --color-secondary: #6B2F7E;
     --color-accent: #D4AF37;
 
     /* Landing Page Specific Colors */
@@ -20,8 +23,8 @@
     --color-gold: #B18D48;
 
     /* NEW: Premium Atelier Purple Theme */
-    --color-sw-primary: #4a0581;
-    --color-sw-primary-container: #622999;
+    --color-sw-primary: #843D9B;
+    --color-sw-primary-container: #6B2F7E;
     --color-sw-on-primary: #ffffff;
     --color-sw-on-primary-container: #d2a4ff;
     --color-sw-surface: #fcf9f8;
@@ -32,11 +35,11 @@
     --color-sw-on-surface-variant: #4c4451;
     --color-sw-outline: #7d7483;
     --color-sw-outline-variant: #cec3d3;
-    --color-sw-surface-tint: #7a42b1;
-    --color-sw-secondary: #635b6e;
+    --color-sw-surface-tint: #843D9B;
+    --color-sw-secondary: #6B2F7E;
     --color-sw-secondary-container: #e9def5;
-    --color-sw-tertiary: #4a0085;
-    --color-sw-tertiary-container: #651baa;
+    --color-sw-tertiary: #843D9B;
+    --color-sw-tertiary-container: #843D9B;
     --color-sw-inverse-primary: #dcb8ff;
     --color-sw-primary-fixed: #f0dbff;
     --color-sw-primary-fixed-dim: #dcb8ff;

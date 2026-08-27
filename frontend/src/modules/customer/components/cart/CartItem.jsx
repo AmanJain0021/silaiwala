@@ -59,7 +59,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
                             <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                             <button
                                 onClick={() => onUpdateQuantity(item.cartId, item.quantity + 1)}
-                                className="w-6 h-6 flex items-center justify-center bg-[#843D9B] rounded shadow-sm text-white hover:bg-[#1E1F4D] active:scale-90 transition-all"
+                                className="w-6 h-6 flex items-center justify-center bg-[#843D9B] rounded shadow-sm text-white hover:bg-[#6B2F7E] active:scale-90 transition-all"
                             >
                                 <Plus size={12} />
                             </button>

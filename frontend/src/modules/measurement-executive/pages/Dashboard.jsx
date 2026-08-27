@@ -232,7 +232,7 @@ const Dashboard = () => {
             <div className="px-4 mt-6 max-w-lg mx-auto">
                 
                 {/* Purple Stats Card */}
-                <div className="bg-gradient-to-br from-[#6b2c80] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-6">
+                <div className="bg-gradient-to-br from-[#6B2F7E] to-[#843D9B] rounded-[24px] p-6 shadow-xl relative overflow-hidden mb-6">
                     <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10" />
                     <div className="absolute left-10 bottom-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-xl -mb-10" />
                     
@@ -375,7 +375,7 @@ const Dashboard = () => {
                         {/* Single Primary Action Button */}
                         <button
                             onClick={() => navigate(`/executive/requests/${activeTask._id}`)}
-                            className="bg-[#843D9B] hover:bg-[#6b2c80] text-white text-[11px] font-black uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 w-full shadow-lg shadow-[#843D9B]/30 active:scale-95 transition-all mt-2 cursor-pointer"
+                            className="bg-[#843D9B] hover:bg-[#6B2F7E] text-white text-[11px] font-black uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 w-full shadow-lg shadow-[#843D9B]/30 active:scale-95 transition-all mt-2 cursor-pointer"
                         >
                             <Ruler size={16} /> TASK DETAILS <ArrowRight size={16} />
                         </button>

@@ -229,7 +229,7 @@ const AdminStyleAddons = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-xs">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-100">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-primary border border-purple-100">
                             Service-Wise Add-ons
                         </span>
                     </div>
@@ -248,7 +248,7 @@ const AdminStyleAddons = () => {
                             placeholder="Search add-ons or services..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2.5 text-xs font-medium bg-gray-50 border border-gray-200 focus:border-purple-500 focus:bg-white rounded-xl outline-none transition-all shadow-xs"
+                            className="w-full pl-9 pr-4 py-2.5 text-xs font-medium bg-gray-50 border border-gray-200 focus:border-primary focus:bg-white rounded-xl outline-none transition-all shadow-xs"
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -259,7 +259,7 @@ const AdminStyleAddons = () => {
 
                     <button
                         onClick={() => openAddModalForCategory('Kurta/Kurti')}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#843D9B] text-white text-xs font-bold rounded-xl hover:bg-[#1E1F4D] shadow-lg shadow-purple-900/20 transition-all uppercase tracking-wider shrink-0 cursor-pointer"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#843D9B] text-white text-xs font-bold rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-purple-900/20 transition-all uppercase tracking-wider shrink-0 cursor-pointer"
                     >
                         <Plus size={16} /> New Add-on
                     </button>
@@ -269,7 +269,7 @@ const AdminStyleAddons = () => {
             {/* Service-Wise Cards Section */}
             {isLoading ? (
                 <div className="flex justify-center items-center py-20">
-                    <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
             ) : (
                 <div className="space-y-6">
@@ -290,7 +290,7 @@ const AdminStyleAddons = () => {
                                 {/* Service Card Header */}
                                 <div className="p-5 bg-gradient-to-r from-gray-50 via-purple-50/20 to-white border-b border-gray-100 flex flex-wrap justify-between items-center gap-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm shadow-xs">
+                                        <div className="w-10 h-10 rounded-2xl bg-purple-100 text-primary flex items-center justify-center font-black text-sm shadow-xs">
                                             {categoryName === 'All' ? <Layers size={18} /> : <Scissors size={18} />}
                                         </div>
                                         <div>
@@ -310,7 +310,7 @@ const AdminStyleAddons = () => {
 
                                     <button
                                         onClick={() => openAddModalForCategory(categoryName)}
-                                        className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-purple-700 transition-all shadow-md shadow-purple-900/10 cursor-pointer"
+                                        className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-primary-dark transition-all shadow-md shadow-purple-900/10 cursor-pointer"
                                     >
                                         <Plus size={14} /> Add Add-on to {categoryName === 'All' ? 'All Services' : categoryName}
                                     </button>
@@ -325,7 +325,7 @@ const AdminStyleAddons = () => {
                                             <p className="text-[11px] text-gray-400 mt-0.5">Click the button above to add custom add-ons like Pockets, Piping, or Lining for this service.</p>
                                             <button
                                                 onClick={() => openAddModalForCategory(categoryName)}
-                                                className="mt-3 px-3.5 py-1.5 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer"
+                                                className="mt-3 px-3.5 py-1.5 bg-white border border-purple-200 text-primary hover:bg-purple-50 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer"
                                             >
                                                 <Plus size={12} /> Add First Add-on
                                             </button>
@@ -394,7 +394,7 @@ const AdminStyleAddons = () => {
                                                         <div className="flex items-center gap-1">
                                                             <button
                                                                 onClick={() => openEditModal(addon)}
-                                                                className="p-1.5 text-gray-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
+                                                                className="p-1.5 text-gray-500 hover:text-primary hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
                                                                 title="Edit Add-on"
                                                             >
                                                                 <Edit2 size={14} />
@@ -441,7 +441,7 @@ const AdminStyleAddons = () => {
                                     <h2 className="text-lg font-black tracking-tight text-gray-900">
                                         {editingAddon ? 'Edit Style Add-on' : 'Add New Style Add-on'}
                                     </h2>
-                                    <p className="text-[11px] text-purple-700 font-bold mt-0.5">
+                                    <p className="text-[11px] text-primary font-bold mt-0.5">
                                         Target Service: <span className="bg-purple-100 px-2 py-0.5 rounded-md">{formData.category || 'All Services'}</span>
                                     </p>
                                 </div>
@@ -457,7 +457,7 @@ const AdminStyleAddons = () => {
                                     <select
                                         value={formData.category}
                                         onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-600 transition-colors shadow-xs cursor-pointer"
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-xs cursor-pointer"
                                     >
                                         <option value="All">All Categories (Universal Add-on)</option>
                                         {Array.from(new Set([...categoryList, ...addons.map(a => a.category).filter(Boolean)])).filter(c => c !== 'All').sort().map(c => (
@@ -474,7 +474,7 @@ const AdminStyleAddons = () => {
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                                         placeholder="e.g. Side Pocket, Padded Cups, Bottom Slit"
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-600 transition-colors shadow-xs"
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-xs"
                                     />
                                 </div>
 
@@ -488,7 +488,7 @@ const AdminStyleAddons = () => {
                                             value={formData.price}
                                             onChange={e => setFormData({ ...formData, price: e.target.value })}
                                             placeholder="100"
-                                            className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-purple-600 transition-colors shadow-xs"
+                                            className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-primary transition-colors shadow-xs"
                                         />
                                     </div>
                                 </div>
@@ -501,7 +501,7 @@ const AdminStyleAddons = () => {
                                         value={formData.description}
                                         onChange={e => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="Explain this style add-on to the customer..."
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 outline-none focus:border-purple-600 transition-colors shadow-xs resize-none"
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 outline-none focus:border-primary transition-colors shadow-xs resize-none"
                                     />
                                 </div>
 
@@ -546,7 +546,7 @@ const AdminStyleAddons = () => {
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="px-5 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 shadow-md shadow-purple-900/20 transition-all uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                                    className="px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-dark shadow-md shadow-purple-900/20 transition-all uppercase tracking-wider disabled:opacity-50 cursor-pointer"
                                 >
                                     {isSubmitting ? 'Saving...' : (editingAddon ? 'Update Add-on' : 'Save Add-on')}
                                 </button>

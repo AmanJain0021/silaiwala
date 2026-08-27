@@ -63,7 +63,7 @@ const LandingNavbar = () => {
               <Link
                 key={item.label}
                 to={item.path}
-                className="text-[13px] font-medium tracking-wide text-[#2A2433] hover:text-[#4a0581] transition-colors duration-200"
+                className="text-[13px] font-medium tracking-wide text-[#2A2433] hover:text-[#843D9B] transition-colors duration-200"
               >
                 {item.label}
               </Link>
@@ -74,8 +74,8 @@ const LandingNavbar = () => {
                 onClick={(e) => handleNavClick(e, item.path)}
                 className={`text-[13px] font-medium tracking-wide transition-colors duration-200 relative ${
                   location.pathname === '/' && item.path === '/'
-                    ? 'text-[#4a0581] after:absolute after:left-0 after:-bottom-1 after:h-[1.5px] after:w-full after:bg-[#4a0581]'
-                    : 'text-[#2A2433] hover:text-[#4a0581]'
+                    ? 'text-[#843D9B] after:absolute after:left-0 after:-bottom-1 after:h-[1.5px] after:w-full after:bg-[#843D9B]'
+                    : 'text-[#2A2433] hover:text-[#843D9B]'
                 }`}
               >
                 {item.label}
@@ -89,7 +89,7 @@ const LandingNavbar = () => {
             href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#4a0581] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300 shadow-[0_8px_24px_rgba(74,5,129,0.22)]"
+            className="inline-flex items-center gap-2 bg-[#843D9B] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300 shadow-[0_8px_24px_rgba(74,5,129,0.22)]"
           >
             <Download size={15} strokeWidth={2} />
             Download App
@@ -98,7 +98,7 @@ const LandingNavbar = () => {
 
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-[#2A2433] hover:text-[#4a0581] transition-colors"
+          className="lg:hidden p-2 text-[#2A2433] hover:text-[#843D9B] transition-colors"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -116,7 +116,7 @@ const LandingNavbar = () => {
               key={item.label}
               to={item.path}
               onClick={(e) => handleNavClick(e, item.path)}
-              className="block py-3 px-3 text-[14px] font-medium text-[#2A2433] hover:text-[#4a0581] rounded-lg"
+              className="block py-3 px-3 text-[14px] font-medium text-[#2A2433] hover:text-[#843D9B] rounded-lg"
             >
               {item.label}
             </Link>
@@ -125,7 +125,7 @@ const LandingNavbar = () => {
             href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 flex items-center justify-center gap-2 bg-[#4a0581] text-white px-5 py-3 rounded-xl text-[14px] font-semibold w-full"
+            className="mt-3 flex items-center justify-center gap-2 bg-[#843D9B] text-white px-5 py-3 rounded-xl text-[14px] font-semibold w-full"
           >
             <Download size={16} />
             Download App
