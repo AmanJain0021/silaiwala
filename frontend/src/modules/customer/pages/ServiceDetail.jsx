@@ -121,10 +121,9 @@ const ServiceDetail = () => {
         const tailorName =
             location.state?.tailorName ||
             preSelectedTailor?.shopName ||
-            preSelectedTailor?.user?.name ||
             useCheckoutStore.getState().lockedTailorName ||
             serviceData.tailor?.shopName ||
-            null;
+            'Tailor Partner';
 
         if (typeof location.state?.editBasketIndex === 'number') {
             setActiveBasketIndex(location.state.editBasketIndex);
@@ -408,10 +407,9 @@ const ServiceDetail = () => {
                     : serviceData?.tailor),
             tailorName:
                 preSelectedTailor?.shopName ||
-                preSelectedTailor?.user?.name ||
                 serviceItems[0]?.serviceDetails?.tailorName ||
                 serviceData?.tailor?.shopName ||
-                null,
+                'Tailor Partner',
         });
     }, [serviceItems.length, preSelectedTailor, serviceData]);
 
@@ -698,7 +696,7 @@ const ServiceDetail = () => {
                         ? (serviceData.tailor?._id || serviceData.tailor?.id || serviceData.tailor?.user?._id)
                         : serviceData?.tailor) ||
                     null,
-                tailorName: preSelectedTailor?.shopName || preSelectedTailor?.user?.name || serviceData?.tailor?.shopName || serviceData?.tailor?.user?.name || null,
+                tailorName: preSelectedTailor?.shopName || serviceData?.tailor?.shopName || 'Tailor Partner',
                 tailorCoordinates: preSelectedTailor?.location?.coordinates || serviceData?.tailor?.location?.coordinates || null
             },
             configuration: { 
@@ -792,7 +790,7 @@ const ServiceDetail = () => {
         const fromPreselect = preSelectedTailor
             ? {
                 id: preSelectedTailor._id || preSelectedTailor.id,
-                name: preSelectedTailor.shopName || preSelectedTailor.user?.name || 'Selected Tailor',
+                name: preSelectedTailor.shopName || 'Selected Tailor',
             }
             : null;
         if (fromPreselect?.id) return fromPreselect;
@@ -800,7 +798,7 @@ const ServiceDetail = () => {
         const fromService = serviceData?.tailor
             ? {
                 id: serviceData.tailor._id || serviceData.tailor.id,
-                name: serviceData.tailor.shopName || serviceData.tailor.user?.name || 'Selected Tailor',
+                name: serviceData.tailor.shopName || 'Selected Tailor',
             }
             : null;
         if (fromService?.id) return fromService;

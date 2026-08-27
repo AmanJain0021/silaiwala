@@ -64,7 +64,7 @@ const TailorListing = () => {
 
     const searchTerm = search.trim().toLowerCase();
     const filteredTailors = tailors.filter(t =>
-        (t.shopName || t.user?.name || "").toLowerCase().includes(searchTerm) ||
+        (t.shopName || "").toLowerCase().includes(searchTerm) ||
         (t.specializations || []).some(s => s.toLowerCase().includes(searchTerm))
     );
 
@@ -165,7 +165,7 @@ const TailorListing = () => {
                                         {/* Profile Picture with Status Ring */}
                                         <div className="relative shrink-0">
                                             <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border-2 border-white shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                                                <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName || tailor.user?.name} className="w-full h-full scale-110" />
+                                                <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName || 'Tailor Partner'} className="w-full h-full scale-110" />
                                             </div>
                                             <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white shadow-sm ring-2 ring-green-500/20"></div>
                                         </div>
@@ -174,7 +174,7 @@ const TailorListing = () => {
                                         <div className="flex-1 min-w-0 pt-1">
                                             <div className="flex justify-between items-start mb-1">
                                                 <div className="flex items-center gap-1.5 min-w-0">
-                                                    <h3 className="font-black text-gray-900 truncate tracking-tight">{tailor.shopName || tailor.user?.name}</h3>
+                                                    <h3 className="font-black text-gray-900 truncate tracking-tight">{tailor.shopName || 'Tailor Partner'}</h3>
                                                     <ShieldCheck size={14} className="text-[#843D9B] shrink-0" />
                                                 </div>
                                                 <div className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-[#843D9B] rounded-lg text-[10px] font-black border border-[#843D9B]/10">

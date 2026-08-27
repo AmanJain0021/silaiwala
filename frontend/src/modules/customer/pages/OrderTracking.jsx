@@ -1109,13 +1109,13 @@ const OrderTracking = () => {
                                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 border-2 border-[#843D9B] shrink-0">
                                                 <img 
                                                     src={tailorInfo.profileImage || '/logo.png'} 
-                                                    alt={tailorInfo.shopName || tailorInfo.name} 
+                                                    alt={tailorInfo.shopName || 'Tailor Partner'} 
                                                     className="w-full h-full object-cover" 
                                                 />
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <h4 className="text-xs sm:text-sm font-black text-gray-900 truncate leading-tight">
-                                                    {tailorInfo.shopName || tailorInfo.name}
+                                                    {tailorInfo.shopName || 'Tailor Partner'}
                                                 </h4>
                                                 <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold mt-0.5">
                                                     <CheckCircle2 size={12} className="fill-emerald-600 text-white" />

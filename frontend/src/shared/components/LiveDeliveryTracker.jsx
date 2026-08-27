@@ -289,7 +289,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
               {isCustomerDelivering
                 ? order.customer?.name?.charAt(0) || 'C'
                 : isTailorDelivery
-                  ? order.tailor?.shopName?.charAt(0) || order.tailor?.name?.charAt(0) || 'T'
+                  ? order.tailor?.shopName?.charAt(0) || 'T'
                   : rider?.name?.charAt(0) || 'R'}
             </span>
           </div>
@@ -298,7 +298,7 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
               {isCustomerDelivering
                 ? order.customer?.name || 'Customer'
                 : isTailorDelivery
-                  ? order.tailor?.shopName || order.tailor?.name || 'Artisan Tailor'
+                  ? order.tailor?.shopName || 'Artisan Tailor'
                   : rider?.name || 'Delivery Partner'}
             </h4>
 

@@ -163,7 +163,7 @@ const CustomDesignCard = ({ design, onPaymentSuccess }) => {
                             {formattedDate}
                         </div>
                         <div className="flex items-center gap-1 truncate text-gray-400">
-                            Tailor: <span className="font-bold text-gray-700 truncate">{design.tailor?.shopName || design.tailor?.name || 'Assigned'}</span>
+                            Tailor: <span className="font-bold text-gray-700 truncate">{design.tailor?.shopName || 'Assigned'}</span>
                         </div>
                     </div>
                     <p className="text-[10px] text-gray-500 line-clamp-2 mb-2 italic">"{design.description}"</p>

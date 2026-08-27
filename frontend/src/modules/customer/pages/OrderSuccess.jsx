@@ -128,7 +128,7 @@ const OrderSuccess = () => {
 
     // Resolve Tailor Info
     const tailor = orderDetails?.tailor || state.tailor || {};
-    const shopName = tailor.shopName || tailor.name || 'Laila The Boutique';
+    const shopName = tailor.shopName || 'Tailor Partner';
     const rating = tailor.rating || 4.8;
     const totalReviews = tailor.totalReviews || 320;
     const experience = tailor.experienceInYears || 8;

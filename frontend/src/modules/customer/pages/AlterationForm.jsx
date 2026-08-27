@@ -184,7 +184,7 @@ const AlterationForm = () => {
                                         <SafeImage src={tailor.user?.profileImage} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-xs font-bold text-gray-900">{tailor.shopName || tailor.user?.name}</h3>
+                                        <h3 className="text-xs font-bold text-gray-900">{tailor.shopName || 'Tailor Partner'}</h3>
                                         <p className="text-[10px] text-gray-500 flex items-center gap-1"><Star size={10} className="text-yellow-400 fill-yellow-400"/> {tailor.rating || 'New'}</p>
                                     </div>
                                 </div>

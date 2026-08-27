@@ -141,7 +141,7 @@ const OrderChat = () => {
                         {order.tailor.profileImage ? (
                             <img src={order.tailor.profileImage} alt="Tailor" className="w-full h-full object-cover" />
                         ) : (
-                            <span className="text-lg">{(order.tailor.shopName || order.tailor.name || 'A')[0]}</span>
+                            <span className="text-lg">{(order.tailor.shopName || 'T')[0]}</span>
                         )}
                     </div>
                 )}

@@ -289,7 +289,7 @@ const CustomerLiveJourney = () => {
                         <MapPin size={24} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-gray-900">{order.tailor?.shopName || order.tailor?.name || 'Tailor Shop'}</h3>
+                        <h3 className="text-sm font-black text-gray-900">{order.tailor?.shopName || 'Tailor Shop'}</h3>
                         <p className="text-xs text-gray-500 line-clamp-1">{order.tailor?.location?.address || 'Indore, Madhya Pradesh (Fallback Address)'}</p>
                     </div>
                 </div>

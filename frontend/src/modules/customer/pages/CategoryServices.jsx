@@ -241,7 +241,7 @@ const CategoryServices = () => {
                                                         )}
                                                     </div>
                                                     <span className="text-[11px] font-bold text-gray-600 truncate">
-                                                        {service.tailor.shopName || service.tailor.user?.name || 'Tailor'}
+                                                        {service.tailor.shopName || 'Tailor Partner'}
                                                     </span>
                                                     <ShieldCheck size={12} className="text-blue-500 shrink-0" />
                                                 </div>

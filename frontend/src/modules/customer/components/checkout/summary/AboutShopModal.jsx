@@ -9,8 +9,7 @@ const AboutShopModal = ({ isOpen, onClose, tailor, tailorId }) => {
     if (!isOpen) return null;
 
     const resolvedId = tailor?._id || tailor?.id || tailor?.user?._id || tailorId;
-    const shopName = tailor?.shopName || tailor?.user?.name || 'Expert Tailor Shop';
-    const ownerName = tailor?.user?.name || tailor?.shopName || 'Master Tailor';
+    const shopName = tailor?.shopName || 'Expert Tailor Shop';
     const profileImage = tailor?.user?.profileImage || tailor?.profileImage;
     const rating = tailor?.rating || 4.8;
     const totalReviews = tailor?.totalReviews || 320;
@@ -68,7 +67,7 @@ const AboutShopModal = ({ isOpen, onClose, tailor, tailorId }) => {
                     <div className="space-y-1">
                         <h3 className="text-xl font-black text-gray-900 leading-tight">{shopName}</h3>
                         <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                            <Scissors size={12} className="text-[#843D9B]" /> Tailored by {ownerName}
+                            <Scissors size={12} className="text-[#843D9B]" /> {shopName}
                         </p>
                     </div>
 

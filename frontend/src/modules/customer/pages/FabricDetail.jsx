@@ -150,7 +150,7 @@ const FabricDetail = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 mb-1">
-                                    <h4 className="font-black text-gray-900 truncate group-hover:text-[#843D9B] transition-colors">{tailor.shopName || tailor.user?.name}</h4>
+                                    <h4 className="font-black text-gray-900 truncate group-hover:text-[#843D9B] transition-colors">{tailor.shopName || 'Tailor Partner'}</h4>
                                     <ShieldCheck size={14} className="text-[#843D9B]" />
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -175,8 +175,8 @@ const FabricDetail = () => {
                 <div className="max-w-md mx-auto">
                     <button
                         onClick={() => {
-                            setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                            navigate('/user/services', { state: { selectedFabric: fabric, tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name, fabricSource: 'platform' } });
+                            setTailorInStore(tailor._id, tailor.shopName || 'Tailor Partner');
+                            navigate('/user/services', { state: { selectedFabric: fabric, tailorId: tailor._id, tailorName: tailor.shopName || 'Tailor Partner', fabricSource: 'platform' } });
                         }}
                         className="w-full bg-[#843D9B] text-white py-4 rounded-2xl shadow-xl shadow-[#843D9B]/30 font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
                     >

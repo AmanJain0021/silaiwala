@@ -95,7 +95,7 @@ const normalizeOrder = (raw) => {
     customer: (typeof raw?.customer === 'string' ? raw.customer : customerObj?.name) || shippingAddress?.name || guestInfo?.name || 'Customer',
     phone: (typeof raw?.phone === 'string' ? raw.phone : customerObj?.phoneNumber) || shippingAddress?.phone || shippingAddress?.mobile || guestInfo?.phone || raw?.customerPhone || '',
     address: (typeof raw?.address === 'string' ? raw.address : toAddressLine(raw?.address || shippingAddress)) || 'Address unavailable',
-    vendorName: tailor?.shopName || raw?.vendorName || tailor?.name || vendorData?.storeName || vendorFirst?.vendorName || 'Tailor',
+    vendorName: tailor?.shopName || raw?.vendorName || vendorData?.storeName || vendorFirst?.vendorName || 'Tailor',
     vendorAddress: raw?.vendorAddress || vendorAddress,
     vendorPhone: raw?.vendorPhone || tailor?.phone || vendorData?.phone || '',
     taskType: raw?.taskType || (['fabric-ready-for-pickup', 'fabric-picked-up', 'fabric-delivered'].includes(backendStatus) ? 'fabric-pickup' : 'order-delivery'),

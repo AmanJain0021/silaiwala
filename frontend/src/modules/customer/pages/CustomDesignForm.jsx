@@ -337,7 +337,7 @@ const CustomDesignForm = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-bold text-gray-900 truncate">
-                                        {currentSelectedTailor.shopName || currentSelectedTailor.user?.name}
+                                        {currentSelectedTailor.shopName || 'Tailor Partner'}
                                     </h3>
                                     <span className="text-[9px] font-black bg-[#843D9B] text-white px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
                                         Selected

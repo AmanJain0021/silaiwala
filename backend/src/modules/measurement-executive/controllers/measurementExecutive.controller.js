@@ -11,6 +11,7 @@ const ErrorResponse = require("../../../utils/errorResponse.js");
 const { sendNotification } = require("../../../utils/notification.js");
 const { getIO } = require("../../../config/socket.js");
 const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
+const { attachTailorShopPrivacy } = require("../../../utils/tailorPrivacy.js");
 const crypto = require("crypto");
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -208,10 +209,12 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
 
   const requests = await MeasurementRequest.find(query)
     .populate("customer", "name phoneNumber profileImage")
-    .populate("tailor", "name phoneNumber profileImage")
+    .populate("tailor", "phoneNumber profileImage")
     .populate("order", "orderId totalAmount status items advancePaymentAmount advancePaymentStatus paymentStatus")
     .sort("-createdAt")
     .lean();
+
+  await attachTailorShopPrivacy(requests);
 
   const validRequests = requests.filter(r => {
     if (!r.order) return true;
@@ -261,7 +264,7 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
 exports.getRequestDetail = asyncHandler(async (req, res, next) => {
   const request = await MeasurementRequest.findById(req.params.id)
     .populate("customer", "name phoneNumber profileImage email")
-    .populate("tailor", "name phoneNumber profileImage")
+    .populate("tailor", "phoneNumber profileImage")
     .populate("executive", "name phoneNumber profileImage")
     .populate({
       path: "order",
@@ -280,6 +283,8 @@ exports.getRequestDetail = asyncHandler(async (req, res, next) => {
   if (!request) {
     return next(new ErrorResponse("Measurement request not found", 404));
   }
+
+  await attachTailorShopPrivacy(request);
 
   // Check ownership (executive or admin)
   if (

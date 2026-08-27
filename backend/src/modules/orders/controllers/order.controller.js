@@ -1231,12 +1231,15 @@ exports.getMyOrders = asyncHandler(async (req, res, next) => {
       const tailorDoc = await Tailor.findOne({ user: order.tailor._id }).lean();
       if (tailorDoc) {
         if (typeof order.tailor === 'object') {
-          order.tailor.shopName = tailorDoc.shopName || order.tailor.shopName || order.tailor.name;
+          order.tailor.shopName = tailorDoc.shopName || order.tailor.shopName || null;
+          delete order.tailor.name;
         }
         if (tailorDoc.location?.coordinates?.length >= 2) {
           vendorLongitude = tailorDoc.location.coordinates[0];
           vendorLatitude = tailorDoc.location.coordinates[1];
         }
+      } else if (typeof order.tailor === 'object') {
+        delete order.tailor.name;
       }
     }
 
@@ -1311,7 +1314,8 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
     const tailorDoc = await Tailor.findOne({ user: order.tailor._id }).lean();
     if (tailorDoc) {
       if (typeof order.tailor === 'object') {
-        order.tailor.shopName = tailorDoc.shopName || order.tailor.shopName || order.tailor.name;
+        order.tailor.shopName = tailorDoc.shopName || order.tailor.shopName || null;
+        delete order.tailor.name;
         order.tailor.rating = tailorDoc.rating || 4.8;
         order.tailor.totalReviews = tailorDoc.totalReviews || 120;
         order.tailor.experienceInYears = tailorDoc.experienceInYears || 5;
@@ -1324,6 +1328,8 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
         vendorLongitude = tailorDoc.location.coordinates[0];
         vendorLatitude = tailorDoc.location.coordinates[1];
       }
+    } else if (typeof order.tailor === 'object') {
+      delete order.tailor.name;
     }
   }
 

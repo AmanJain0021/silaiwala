@@ -101,7 +101,7 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
                             onClick={() => setShowFabricPicker(true)}
                             className="w-full p-3 bg-primary text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
                         >
-                            Select Fabric from {tailor.shopName || tailor.name} <ChevronRight size={14} />
+                            Select Fabric from {tailor.shopName || 'Tailor Partner'} <ChevronRight size={14} />
                         </button>
                     )}
                 </div>
@@ -113,7 +113,7 @@ const FabricSelector = ({ selected, onSelect, selectedFabric, onSelectFabric, ta
                     <div className="bg-white w-full max-w-md rounded-t-3xl p-6 pb-12 animate-in slide-in-from-bottom duration-300">
                         <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Fabrics by {tailor.shopName || tailor.name}</h3>
+                                <h3 className="text-lg font-bold text-gray-900">Fabrics by {tailor.shopName || 'Tailor Partner'}</h3>
                                 <p className="text-xs text-gray-500">Pick a fabric for your outfit</p>
                             </div>
                             <button onClick={() => setShowFabricPicker(false)} className="p-2 bg-gray-100 rounded-full">

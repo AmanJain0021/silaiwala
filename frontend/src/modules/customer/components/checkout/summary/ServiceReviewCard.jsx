@@ -40,9 +40,8 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
     deliveryDate.setDate(deliveryDate.getDate() + deliveryDays);
     const dateString = deliveryDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-    // Derive Tailor Profile Info
-    const shopName = tailorData?.shopName || service.tailorName || 'LAILA THE BOUTIQUE';
-    const ownerName = tailorData?.user?.name || shopName.split(' ')[0] || 'Laila';
+    // Derive Tailor Profile Info (shop name only — privacy)
+    const shopName = tailorData?.shopName || service.tailorName || 'Tailor Partner';
     const avatarImg = tailorData?.user?.profileImage || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=256&auto=format&fit=crop';
     const rating = tailorData?.rating || 4.8;
     const totalReviews = tailorData?.totalReviews || 320;
@@ -203,7 +202,7 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                         <div className="flex items-center gap-2 bg-[#F8FAFC] p-2 rounded-2xl border border-slate-100 min-w-[155px]">
                             <SafeImage
                                 src={avatarImg}
-                                alt={ownerName}
+                                alt={shopName}
                                 className="w-9 h-9 rounded-full object-cover border-2 border-purple-200 shadow-2xs bg-purple-100 shrink-0"
                                 onError={(e) => {
                                     e.target.src = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=256&auto=format&fit=crop';

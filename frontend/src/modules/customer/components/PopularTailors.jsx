@@ -69,7 +69,7 @@ const PopularTailors = () => {
                                 <div className="h-48 w-full sm:w-40 sm:h-40 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
                                     <SafeImage
                                         src={tailor.user?.profileImage}
-                                        alt={tailor.user?.name}
+                                        alt={tailor.shopName || 'Tailor Partner'}
                                         className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
                                 </div>
@@ -79,7 +79,7 @@ const PopularTailors = () => {
                                 <div>
                                     <div className="flex justify-between items-start mb-1 gap-2">
                                         <h3 className="text-lg font-black text-gray-900 leading-tight flex items-center gap-1.5 truncate">
-                                            <span className="truncate">{tailor.shopName || tailor.user?.name}</span>
+                                            <span className="truncate">{tailor.shopName || 'Tailor Partner'}</span>
                                             <BadgeCheck className="w-5 h-5 text-blue-500 shrink-0 fill-blue-500 stroke-white" />
                                         </h3>
                                         <div className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-black tracking-wider flex items-center gap-1 shrink-0">

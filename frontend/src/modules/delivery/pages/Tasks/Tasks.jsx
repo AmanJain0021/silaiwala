@@ -577,7 +577,7 @@ const Tasks = () => {
                                         (typeof activeTask.customer === 'object' ? (activeTask.customer?.phoneNumber || activeTask.customer?.phone) : '') || 
                                         activeTask.deliveryAddress?.phone || activeTask.deliveryAddress?.mobile || activeTask.shippingAddress?.phone || activeTask.shippingAddress?.mobile || '';
 
-                                    const tailorName = activeTask.vendorName || activeTask.tailor?.shopName || activeTask.tailor?.name || 
+                                    const tailorName = activeTask.vendorName || activeTask.tailor?.shopName || 
                                         (typeof activeTask.tailor === 'string' ? activeTask.tailor : 'Tailor Workshop');
 
                                     const tailorPhone = activeTask.vendorPhone || activeTask.tailorPhone || activeTask.tailor?.phoneNumber || activeTask.tailor?.phone || '';

@@ -118,8 +118,8 @@ const TailorProfile = () => {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: tailor.shopName || tailor.user?.name,
-                    text: `Check out ${tailor.shopName || tailor.user?.name} on SilaiWala!`,
+                    title: tailor.shopName || 'Tailor Partner',
+                    text: `Check out ${tailor.shopName || 'Tailor Partner'} on SilaiWala!`,
                     url: window.location.href,
                 });
             } catch (err) {
@@ -187,7 +187,7 @@ const TailorProfile = () => {
                         </div>
                         <div className="pt-2 flex-1">
                             <div className="flex justify-between items-start">
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{tailor.shopName || tailor.user?.name}</h2>
+                                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{tailor.shopName || 'Tailor Partner'}</h2>
                             </div>
                             <div className="flex items-center gap-1.5 mb-3">
                                 <div className="bg-[#843D9B] text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Expert Artisan</div>
@@ -289,7 +289,7 @@ const TailorProfile = () => {
                             >
                                 <div
                                     onClick={() => {
-                                        setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
+                                        setTailorInStore(tailor._id, tailor.shopName || 'Tailor Partner');
                                         navigate(`/user/fabric/${fabric._id}`);
                                     }}
                                     className="bg-white rounded-[2.5rem] p-3 shadow-md border border-gray-100 group cursor-pointer hover:shadow-xl transition-all duration-500 overflow-hidden"
@@ -341,7 +341,7 @@ const TailorProfile = () => {
                             <div
                                 onClick={() => {
                                     if (sample.type === 'service') {
-                                        setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
+                                        setTailorInStore(tailor._id, tailor.shopName || 'Tailor Partner');
                                         navigate(`/user/services/${sample._id}`, { state: { tailorId: tailor._id } });
                                     }
                                 }}
@@ -384,8 +384,8 @@ const TailorProfile = () => {
                 <div className="max-w-md mx-auto flex gap-3">
                     <button
                         onClick={() => {
-                            setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                            navigate('/user/services', { state: { tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name } });
+                            setTailorInStore(tailor._id, tailor.shopName || 'Tailor Partner');
+                            navigate('/user/services', { state: { tailorId: tailor._id, tailorName: tailor.shopName || 'Tailor Partner' } });
                         }}
                         className="flex-1 bg-white border-2 border-[#843D9B] text-[#843D9B] py-3 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm hover:bg-[#843D9B]/5 cursor-pointer"
                     >
@@ -394,8 +394,8 @@ const TailorProfile = () => {
                     </button>
                     <button
                         onClick={() => {
-                            setTailorInStore(tailor._id, tailor.shopName || tailor.user?.name);
-                            navigate('/user/custom-design', { state: { tailorId: tailor._id, tailorName: tailor.shopName || tailor.user?.name } });
+                            setTailorInStore(tailor._id, tailor.shopName || 'Tailor Partner');
+                            navigate('/user/custom-design', { state: { tailorId: tailor._id, tailorName: tailor.shopName || 'Tailor Partner' } });
                         }}
                         className="flex-1 bg-[#843D9B] hover:bg-[#6B2F7E] text-white py-3 rounded-2xl shadow-lg shadow-[#843D9B]/20 font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
@@ -435,7 +435,7 @@ const TailorProfile = () => {
 
                             <h3 className="text-xl font-black text-gray-900 mb-1">Bridal Consultation</h3>
                             <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                                Book an exclusive in-person bridal fitting. {tailor.shopName || tailor.user?.name} will travel to your location to take measurements.
+                                Book an exclusive in-person bridal fitting. {tailor.shopName || 'Tailor Partner'} will travel to your location to take measurements.
                             </p>
 
                             <form onSubmit={handleBridalSubmit} className="space-y-4">

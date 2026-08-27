@@ -39,7 +39,7 @@ const TailorSelection = () => {
         // We use the tailor's User ID for the order assignment in the backend
         const tailorUserId = tailor.user?._id || tailor.user?.id || tailor._id;
 
-        setTailor(tailorUserId, tailor.shopName || tailor.user?.name);
+        setTailor(tailorUserId, tailor.shopName || 'Tailor Partner');
         navigate('/user/checkout/address');
     };
 
@@ -92,10 +92,10 @@ const TailorSelection = () => {
                         className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer group"
                     >
                         <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                            <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName || tailor.user?.name} className="w-full h-full" />
+                            <SafeImage src={tailor.user?.profileImage} alt={tailor.shopName || 'Tailor Partner'} className="w-full h-full" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#843D9B] transition-colors">{tailor.shopName || tailor.user?.name}</h3>
+                            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#843D9B] transition-colors">{tailor.shopName || 'Tailor Partner'}</h3>
                             <p className="text-[10px] text-[#843D9B] font-bold mb-1">{tailor.specializations?.[0] || 'Expert Tailor'}</p>
                             <div className="flex items-center gap-3 text-[10px] text-gray-500">
                                 <span className="flex items-center gap-0.5"><Star size={10} className="fill-yellow-400 text-yellow-400" /> {tailor.rating || 0}</span>

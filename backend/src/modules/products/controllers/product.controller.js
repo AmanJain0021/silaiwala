@@ -107,7 +107,7 @@ exports.getProducts = asyncHandler(async (req, res, next) => {
 exports.getProductDetails = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.id)
     .populate("category", "name")
-    .populate("tailor", "name shopName profileImage bio")
+    .populate("tailor", "shopName profileImage bio")
     .lean();
 
   if (!product) {

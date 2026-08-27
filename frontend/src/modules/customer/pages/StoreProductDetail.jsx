@@ -87,7 +87,6 @@ const StoreProductDetail = () => {
     const reviewCount = productData.reviews || productData.numReviews || '120+';
     const storeName =
         productData.tailor?.shopName ||
-        productData.tailor?.name ||
         productData.storeName ||
         `${appName} Store`;
     const productTitle = productData.title || productData.name || 'Product';

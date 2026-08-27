@@ -77,7 +77,7 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
     const reviewCount = product.reviews || product.numReviews || '120+';
 
     const storeName =
-        product.tailor?.shopName || product.tailor?.name || product.storeName || `${appName} Store`;
+        product.tailor?.shopName || product.storeName || `${appName} Store`;
     const productTitle = product.title || product.name || 'Product';
     const brandLabel = product.brand || `${appName} Brand`;
 

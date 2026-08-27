@@ -44,14 +44,14 @@ const resolveTailorName = (...sources) => {
         if (!src) continue;
         if (typeof src === 'string' && src.trim()) return src.trim();
         if (typeof src === 'object') {
+            // Privacy: shop name only — never personal user.name
             const name =
                 src.tailorName ||
                 src.shopName ||
-                src.user?.name ||
-                (typeof src.tailor === 'object'
-                    ? src.tailor?.shopName || src.tailor?.user?.name
-                    : null);
-            if (name) return name;
+                (typeof src.tailor === 'object' ? src.tailor?.shopName : null) ||
+                src.user?.shopName ||
+                null;
+            if (name && String(name).trim()) return String(name).trim();
         }
     }
     return null;
