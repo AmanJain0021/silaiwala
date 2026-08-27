@@ -532,11 +532,11 @@ const CRM = () => {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
-                      <span>When a new user signs up with a valid code, rewards are queued.</span>
+                      <span>When a new user signs up with a valid code, both get loyalty points instantly (amounts set in Settings).</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
-                      <span>Reward points are credited automatically upon completion of first order advance.</span>
+                      <span>Admin decides referrer &amp; new-friend point amounts under Settings → Referral rewards.</span>
                     </li>
                   </ul>
                 </div>

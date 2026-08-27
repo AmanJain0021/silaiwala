@@ -21,7 +21,7 @@ const ReferEarnBanner = () => {
                 <div className="flex-1 relative z-10">
                     <h3 className="text-white font-black text-[13px] tracking-tight">Refer & Earn</h3>
                     <p className="text-white/90 text-[9px] font-bold mt-0.5 leading-tight pr-2">
-                    Refer your friends — earn loyalty points when they pay their first advance
+                    Refer your friends — earn loyalty points when they sign up with your code
                     </p>
                 </div>
 

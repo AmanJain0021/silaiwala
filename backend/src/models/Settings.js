@@ -87,8 +87,9 @@ const settingsSchema = new mongoose.Schema(
     },
     referralConfig: {
       enabled: { type: Boolean, default: true },
-      /** Loyalty points for referrer when referee's first advance/full payment succeeds */
+      /** Loyalty points for referrer when referee signs up with their code */
       referrerPointsOnFirstAdvance: { type: Number, default: 50 },
+      /** Loyalty points for new user when they sign up with a referral code */
       refereePointsOnFirstAdvance: { type: Number, default: 25 },
     },
     tailorSearch: {

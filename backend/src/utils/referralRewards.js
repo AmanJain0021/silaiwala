@@ -3,20 +3,109 @@ const Customer = require("../models/Customer.js");
 const Settings = require("../models/Settings.js");
 const LoyaltyPointTransaction = require("../models/LoyaltyPointTransaction.js");
 
+const creditLoyaltyPoints = async (userDoc, points, reason, description, orderId, session) => {
+  if (!points || points <= 0 || !userDoc) return;
+  userDoc.loyaltyPoints = (userDoc.loyaltyPoints || 0) + points;
+  const saveOpts = session ? { session } : undefined;
+  await userDoc.save(saveOpts);
+
+  const payload = {
+    user: userDoc._id,
+    points,
+    type: "credit",
+    reason,
+    description,
+    balanceAfter: userDoc.loyaltyPoints,
+  };
+  if (orderId) payload.order = orderId;
+
+  if (session) {
+    await LoyaltyPointTransaction.create([payload], { session });
+  } else {
+    await LoyaltyPointTransaction.create(payload);
+  }
+};
+
+const getReferralPointConfig = async () => {
+  const settings = await Settings.getSettings();
+  const cfg = settings.referralConfig || {};
+  return {
+    enabled: cfg.enabled !== false,
+    referrerPoints: Number(cfg.referrerPointsOnFirstAdvance) || 0,
+    refereePoints: Number(cfg.refereePointsOnFirstAdvance) || 0,
+  };
+};
+
 /**
- * Award referral loyalty points when referred customer's first advance (or full) payment succeeds.
- * @param {object} order - Order doc (customer populated id)
- * @param {import('mongoose').ClientSession} session
- * @param {'advance'|'full'} paymentType
+ * Award referral loyalty points at signup when a valid referral code is used.
+ * Admin controls amounts via Settings → referralConfig.
+ */
+async function processReferralRewardsOnSignup({ newUser, customerProfile, referrerUserId }) {
+  if (!customerProfile || !referrerUserId || !newUser) return;
+  if (customerProfile.referralBonusAwarded) return;
+
+  const cfg = await getReferralPointConfig();
+
+  const markAwarded = async () => {
+    customerProfile.referralBonusAwarded = true;
+    await customerProfile.save();
+  };
+
+  if (!cfg.enabled) {
+    await markAwarded();
+    return;
+  }
+
+  const referrerUser = await User.findById(referrerUserId);
+  if (!referrerUser) {
+    await markAwarded();
+    return;
+  }
+
+  const refereeName = newUser.name || "your friend";
+
+  if (cfg.referrerPoints > 0) {
+    await creditLoyaltyPoints(
+      referrerUser,
+      cfg.referrerPoints,
+      "referral_referrer",
+      `Referral bonus: ${refereeName} signed up with your code`,
+      null,
+      null
+    );
+    const referrerProfile = await Customer.findOne({ user: referrerUserId });
+    if (referrerProfile) {
+      referrerProfile.referralEarnings =
+        (referrerProfile.referralEarnings || 0) + cfg.referrerPoints;
+      await referrerProfile.save();
+    }
+  }
+
+  if (cfg.refereePoints > 0) {
+    // Reload new user in case points field changed elsewhere
+    const freshNewUser = await User.findById(newUser._id);
+    await creditLoyaltyPoints(
+      freshNewUser || newUser,
+      cfg.refereePoints,
+      "referral_welcome",
+      `Welcome bonus for signing up with a referral code`,
+      null,
+      null
+    );
+  }
+
+  await markAwarded();
+}
+
+/**
+ * Legacy / safety: award on first advance/full payment if not already awarded at signup
+ * (e.g. users referred before signup-rewards launched).
  */
 async function processReferralRewardsOnFirstPayment(order, session, paymentType) {
   if (paymentType !== "advance" && paymentType !== "full") return;
 
   const customerProfile = await Customer.findOne({ user: order.customer }).session(session);
   if (!customerProfile || customerProfile.referralBonusAwarded) return;
-
-  const settings = await Settings.getSettings();
-  const cfg = settings.referralConfig || {};
 
   const finishFirstPayment = async () => {
     customerProfile.referralBonusAwarded = true;
@@ -29,67 +118,51 @@ async function processReferralRewardsOnFirstPayment(order, session, paymentType)
     return;
   }
 
+  const cfg = await getReferralPointConfig();
   const referredUser = await User.findById(customerProfile.user).session(session);
   const referrerUser = await User.findById(customerProfile.referredBy).session(session);
-  if (!referrerUser) {
+
+  if (!referrerUser || !cfg.enabled) {
     await finishFirstPayment();
     return;
   }
-
-  if (cfg.enabled === false) {
-    await finishFirstPayment();
-    return;
-  }
-
-  const referrerPoints = Number(cfg.referrerPointsOnFirstAdvance) || 0;
-  const refereePoints = Number(cfg.refereePointsOnFirstAdvance) || 0;
-
-  const creditPoints = async (userDoc, points, reason, description) => {
-    if (!points || points <= 0 || !userDoc) return;
-    userDoc.loyaltyPoints = (userDoc.loyaltyPoints || 0) + points;
-    await userDoc.save({ session });
-    await LoyaltyPointTransaction.create(
-      [
-        {
-          user: userDoc._id,
-          points,
-          type: "credit",
-          reason,
-          order: order._id,
-          description,
-          balanceAfter: userDoc.loyaltyPoints,
-        },
-      ],
-      { session }
-    );
-  };
 
   const refereeName = referredUser?.name || "your friend";
 
-  if (referrerPoints > 0) {
-    await creditPoints(
+  if (cfg.referrerPoints > 0) {
+    await creditLoyaltyPoints(
       referrerUser,
-      referrerPoints,
+      cfg.referrerPoints,
       "referral_referrer",
-      `Referral bonus: ${refereeName} paid first advance on order ${order.orderId}`
+      `Referral bonus: ${refereeName} paid first advance on order ${order.orderId}`,
+      order._id,
+      session
     );
-    const referrerProfile = await Customer.findOne({ user: customerProfile.referredBy }).session(session);
+    const referrerProfile = await Customer.findOne({
+      user: customerProfile.referredBy,
+    }).session(session);
     if (referrerProfile) {
-      referrerProfile.referralEarnings = (referrerProfile.referralEarnings || 0) + referrerPoints;
+      referrerProfile.referralEarnings =
+        (referrerProfile.referralEarnings || 0) + cfg.referrerPoints;
       await referrerProfile.save({ session });
     }
   }
 
-  if (refereePoints > 0 && referredUser) {
-    await creditPoints(
+  if (cfg.refereePoints > 0 && referredUser) {
+    await creditLoyaltyPoints(
       referredUser,
-      refereePoints,
+      cfg.refereePoints,
       "referral_welcome",
-      `Welcome bonus for your first order payment (${order.orderId})`
+      `Welcome bonus for your first order payment (${order.orderId})`,
+      order._id,
+      session
     );
   }
 
   await finishFirstPayment();
 }
 
-module.exports = { processReferralRewardsOnFirstPayment };
+module.exports = {
+  processReferralRewardsOnSignup,
+  processReferralRewardsOnFirstPayment,
+};

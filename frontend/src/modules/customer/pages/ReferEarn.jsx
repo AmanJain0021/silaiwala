@@ -46,7 +46,7 @@ const ReferEarn = () => {
                 </motion.div>
                 <h2 className="text-2xl font-black mb-2 uppercase tracking-tighter">Refer a Friend</h2>
                 <p className="text-white/80 text-sm font-medium">
-                    Earn {referrerPts} loyalty points when your friend pays the advance on their first order.
+                    Earn {referrerPts} loyalty points when your friend signs up with your code.
                     They get {refereePts} points welcome bonus (1 point = ₹1).
                 </p>
             </div>
@@ -69,7 +69,7 @@ const ReferEarn = () => {
                             if (navigator.share) {
                                 navigator.share({
                                     title: `Join ${appName}`,
-                                    text: `Use my referral code ${referralCode} — get ${refereePts} loyalty points after your first advance payment!`,
+                                    text: `Use my referral code ${referralCode} — get ${refereePts} loyalty points when you sign up!`,
                                     url: window.location.origin,
                                 }).catch(console.error);
                             } else {
@@ -101,9 +101,9 @@ const ReferEarn = () => {
                             <span className="font-black text-primary">2</span>
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm mb-1">Friend pays advance</h4>
+                            <h4 className="font-bold text-sm mb-1">Friend signs up</h4>
                             <p className="text-xs text-gray-500 leading-relaxed">
-                                When they pay the advance (or full amount) on their first order, rewards unlock — not at signup alone.
+                                When they enter your code at signup, both of you get loyalty points instantly.
                             </p>
                         </div>
                     </div>

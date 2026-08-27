@@ -589,7 +589,7 @@ const AdminSettings = () => {
                             <div className="border-t border-gray-100 pt-8">
                                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-1">Referral rewards</h3>
                                 <p className="text-xs text-gray-500 font-medium mb-4">
-                                    Loyalty points when a referred friend pays their first advance (or full payment). 1 point = ₹1.
+                                    Decide how many loyalty points the referrer and the new friend get when they sign up with a referral code. 1 point = ₹1.
                                 </p>
                                 <label className="flex items-center gap-3 mb-4 cursor-pointer">
                                     <input
@@ -602,7 +602,7 @@ const AdminSettings = () => {
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Referrer points (first advance paid)</label>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Referrer points (who shared the code)</label>
                                         <input
                                             type="number"
                                             min={0}
@@ -610,9 +610,10 @@ const AdminSettings = () => {
                                             onChange={(e) => updateNestedSetting('referralConfig', 'referrerPointsOnFirstAdvance', Number(e.target.value))}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
                                         />
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">Credited instantly when a friend signs up with their code.</p>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">New friend points (first advance paid)</label>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5">New friend points (who used the code)</label>
                                         <input
                                             type="number"
                                             min={0}
@@ -620,6 +621,7 @@ const AdminSettings = () => {
                                             onChange={(e) => updateNestedSetting('referralConfig', 'refereePointsOnFirstAdvance', Number(e.target.value))}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
                                         />
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">Welcome bonus on signup with a valid referral code.</p>
                                     </div>
                                 </div>
                             </div>

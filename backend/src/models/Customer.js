@@ -78,10 +78,13 @@ const customerSchema = new mongoose.Schema(
   }
 );
 
-// Generate referral code before saving
 customerSchema.pre("save", function () {
   if (!this.referralCode) {
-    this.referralCode = "TR" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Unique-ish random code: TR + 6 alphanumeric uppercase
+    this.referralCode =
+      "TR" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  } else {
+    this.referralCode = String(this.referralCode).trim().toUpperCase();
   }
 });
 

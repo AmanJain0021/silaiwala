@@ -122,10 +122,13 @@ exports.register = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`A user with this ${conflictField} already exists`, 400));
   }
 
-  // 3. Validate Referral Code for customers
+  // 3. Validate Referral Code for customers (case-insensitive)
   let referrerProfile = null;
   if (referralCode && finalRole === "customer") {
-    referrerProfile = await Customer.findOne({ referralCode });
+    const code = String(referralCode).trim().toUpperCase();
+    referrerProfile = await Customer.findOne({
+      referralCode: { $regex: new RegExp(`^${code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
+    });
     if (!referrerProfile) {
       return next(new ErrorResponse("Invalid referral code. Please check and try again.", 400));
     }
@@ -167,14 +170,22 @@ exports.register = asyncHandler(async (req, res, next) => {
         let referredBy = null;
         if (referrerProfile) {
           referredBy = referrerProfile.user;
-          // Increment referrer's referredCount
-          referrerProfile.referredCount += 1;
+          referrerProfile.referredCount = (referrerProfile.referredCount || 0) + 1;
           await referrerProfile.save();
         }
         profile = await Customer.create({ 
           user: user._id,
           referredBy
         });
+        // Instant loyalty points for both sides (amounts from Admin Settings)
+        if (referredBy) {
+          const { processReferralRewardsOnSignup } = require("../../../utils/referralRewards.js");
+          await processReferralRewardsOnSignup({
+            newUser: user,
+            customerProfile: profile,
+            referrerUserId: referredBy,
+          });
+        }
         break;
       case "tailor":
         profile = await Tailor.create({ 
