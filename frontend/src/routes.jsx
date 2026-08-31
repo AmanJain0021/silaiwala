@@ -81,6 +81,8 @@ const TailorSelection = React.lazy(() => import('./modules/customer/pages/Tailor
 const CouponsPage = React.lazy(() => import('./modules/customer/pages/Coupons'));
 const LanguageSettingsPage = React.lazy(() => import('./modules/customer/pages/LanguageSettings'));
 const NotificationSettingsPage = React.lazy(() => import('./modules/customer/pages/NotificationSettings'));
+const PaymentMethodsPage = React.lazy(() => import('./modules/customer/pages/PaymentMethods'));
+const FAQPage = React.lazy(() => import('./modules/customer/pages/FAQ'));
 import CustomerProtectedRoute from './modules/customer/components/CustomerProtectedRoute';
 import CustomerMainLayout from './modules/customer/layouts/CustomerMainLayout';
 const CustomerOnboarding = React.lazy(() => import('./modules/customer/pages/Onboarding'));
@@ -168,6 +170,7 @@ const SharedLegalPage = React.lazy(() => import('./shared/components/LegalPage')
 const LoyaltyPoints = React.lazy(() => import('./modules/customer/pages/LoyaltyPoints')); // NEW
 const CustomerMembership = React.lazy(() => import('./modules/customer/pages/CustomerMembership'));
 const OrderChat = React.lazy(() => import('./modules/customer/pages/OrderChat')); // NEW
+import NotFoundRedirect from './components/Common/NotFoundRedirect';
 
 const AppRoutes = () => {
     return (
@@ -239,6 +242,8 @@ const AppRoutes = () => {
                         <Route path="coupons" element={<CouponsPage />} />
                         <Route path="language" element={<LanguageSettingsPage />} />
                         <Route path="notifications" element={<NotificationSettingsPage />} />
+                        <Route path="payments" element={<PaymentMethodsPage />} />
+                        <Route path="faq" element={<FAQPage />} />
                         <Route path="cart" element={<CartPage />} />
                         <Route path="wishlist" element={<WishlistPage />} />
                         <Route path="reviews" element={<MyReviews />} />
@@ -377,8 +382,8 @@ const AppRoutes = () => {
                 </Route>
             </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Fallback — keep app users inside their section instead of marketing landing */}
+            <Route path="*" element={<NotFoundRedirect />} />
         </Routes>
         </React.Suspense>
     );

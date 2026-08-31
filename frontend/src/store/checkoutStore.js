@@ -450,16 +450,18 @@ const useCheckoutStore = create(
                 const serviceItems = Array.isArray(persisted?.serviceItems)
                     ? persisted.serviceItems.map((row) => leanBasketItem(row))
                     : [];
-                const lockedTailorId =
-                    resolveTailorId(
-                        persisted?.lockedTailorId,
-                        serviceItems[0]?.serviceDetails
-                    ) || null;
-                const lockedTailorName =
-                    resolveTailorName(
-                        persisted?.lockedTailorName,
-                        serviceItems[0]?.serviceDetails
-                    ) || null;
+                const lockedTailorId = serviceItems.length
+                    ? resolveTailorId(
+                          persisted?.lockedTailorId,
+                          serviceItems[0]?.serviceDetails
+                      ) || null
+                    : null;
+                const lockedTailorName = serviceItems.length
+                    ? resolveTailorName(
+                          persisted?.lockedTailorName,
+                          serviceItems[0]?.serviceDetails
+                      ) || null
+                    : null;
                 return {
                     ...current,
                     ...(persisted || {}),

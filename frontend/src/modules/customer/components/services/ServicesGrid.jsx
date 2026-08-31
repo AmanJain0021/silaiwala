@@ -4,21 +4,23 @@ import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 import useCheckoutStore, { resolveTailorId } from '../../../../store/checkoutStore';
+import ServiceDetailsModal from './ServiceDetailsModal';
 
 const ServiceCard = ({ service }) => {
     const navigate = useNavigate();
     const location = useRouteLocation();
+    const [showDetails, setShowDetails] = useState(false);
     const isPopular = (service.rating || 0) >= 4.5;
     const selectServiceIntoBasket = useCheckoutStore((s) => s.selectServiceIntoBasket);
     const serviceItems = useCheckoutStore((s) => s.serviceItems);
 
-    const handleNavigate = () => {
+    const handleBookNow = () => {
         const store = useCheckoutStore.getState();
         const lock = store.ensureLockedTailor({
             tailorId: location.state?.tailorId,
             tailorName: location.state?.tailorName,
         });
-        const hasBasket = (serviceItems?.length || 0) > 0 || location.state?.fromMultiItemBasket;
+        const hasBasket = (serviceItems?.length || 0) > 0;
         const tailorId = lock.tailorId || location.state?.tailorId;
         const tailorName = lock.tailorName || location.state?.tailorName;
 
@@ -53,9 +55,9 @@ const ServiceCard = ({ service }) => {
     };
 
     return (
+        <>
         <div
-            onClick={handleNavigate}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-row sm:flex-col h-full cursor-pointer"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-row sm:flex-col h-full"
         >
             <div className="relative w-2/5 sm:w-full aspect-[4/5] sm:aspect-[4/3] overflow-hidden bg-gray-100 shrink-0">
                 <img
@@ -107,26 +109,30 @@ const ServiceCard = ({ service }) => {
 
                 <div className="flex gap-2 mt-auto">
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleNavigate();
-                        }}
-                        className="flex-1 py-1.5 sm:py-2 px-3 rounded-xl border border-gray-200 text-[10px] sm:text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                        type="button"
+                        onClick={() => setShowDetails(true)}
+                        className="flex-1 py-1.5 sm:py-2 px-3 rounded-xl border border-gray-200 text-[10px] sm:text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                         Details
                     </button>
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleNavigate();
-                        }}
-                        className="flex-[1.5] py-1.5 sm:py-2 px-3 rounded-xl bg-primary text-white text-[10px] sm:text-xs font-bold hover:bg-primary-dark shadow-sm transition-colors flex items-center justify-center gap-1"
+                        type="button"
+                        onClick={handleBookNow}
+                        className="flex-[1.5] py-1.5 sm:py-2 px-3 rounded-xl bg-primary text-white text-[10px] sm:text-xs font-bold hover:bg-primary-dark shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     >
                         Book Now <ArrowRight size={12} />
                     </button>
                 </div>
             </div>
         </div>
+
+        <ServiceDetailsModal
+            service={service}
+            isOpen={showDetails}
+            onClose={() => setShowDetails(false)}
+            onBookNow={handleBookNow}
+        />
+        </>
     );
 };
 
@@ -197,19 +203,24 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const lockedTailorName = useCheckoutStore((s) => s.lockedTailorName);
     const serviceItems = useCheckoutStore((s) => s.serviceItems);
     const basketCount = serviceItems?.length || 0;
-    const isMultiItemLock = basketCount > 0 || !!routeLocation.state?.fromMultiItemBasket;
+    // Only lock tailor when user is actively building a multi-garment order
+    const isMultiItemLock = basketCount > 0;
 
-    const effectiveTailorId =
-        resolveTailorId(
-            lockedTailorId,
-            routeLocation.state?.tailorId,
-            serviceItems?.[0]?.serviceDetails
-        ) || null;
-    const effectiveTailorName =
-        lockedTailorName ||
-        routeLocation.state?.tailorName ||
-        serviceItems?.[0]?.serviceDetails?.tailorName ||
-        '';
+    const effectiveTailorId = isMultiItemLock
+        ? resolveTailorId(
+              lockedTailorId,
+              routeLocation.state?.tailorId,
+              serviceItems?.[0]?.serviceDetails
+          ) || null
+        : routeLocation.state?.tailorId
+          ? String(routeLocation.state.tailorId)
+          : null;
+    const effectiveTailorName = isMultiItemLock
+        ? lockedTailorName ||
+          routeLocation.state?.tailorName ||
+          serviceItems?.[0]?.serviceDetails?.tailorName ||
+          ''
+        : routeLocation.state?.tailorName || '';
 
     const [activeTailorId, setActiveTailorId] = useState(effectiveTailorId);
     const [tailorName, setTailorName] = useState(effectiveTailorName);
@@ -234,8 +245,13 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         if (routeLocation.state?.tailorId !== undefined) {
             setActiveTailorId(routeLocation.state?.tailorId || null);
             setTailorName(routeLocation.state?.tailorName || '');
+            return;
         }
-    }, [routeLocation.state, lockedTailorId, lockedTailorName, isMultiItemLock, effectiveTailorId, effectiveTailorName]);
+        if (!isMultiItemLock) {
+            setActiveTailorId(null);
+            setTailorName('');
+        }
+    }, [routeLocation.state, lockedTailorId, lockedTailorName, isMultiItemLock, effectiveTailorId, effectiveTailorName, basketCount]);
 
     const handleClearTailorFilter = () => {
         // Locked multi-item basket: cannot browse other tailors

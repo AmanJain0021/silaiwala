@@ -35,7 +35,25 @@ const Services = () => {
         }
     }, [location.state, location.search]);
 
-    // Keep services page locked to first item's tailor (no other tailor catalog)
+    // Tailor lock applies only while an active stitching basket exists
+    useEffect(() => {
+        if (basketCount > 0) return;
+
+        const store = useCheckoutStore.getState();
+        if (store.lockedTailorId || store.lockedTailorName) {
+            useCheckoutStore.setState({ lockedTailorId: null, lockedTailorName: null });
+        }
+
+        // Drop stale multi-item navigation flag when basket is empty
+        if (location.state?.fromMultiItemBasket && !location.state?.tailorId) {
+            navigate('/user/services', {
+                replace: true,
+                state: location.state?.filter ? { filter: location.state.filter } : {},
+            });
+        }
+    }, [basketCount, location.state?.fromMultiItemBasket, location.state?.tailorId, location.state?.filter, navigate]);
+
+    // While basket has items, keep catalog locked to that tailor
     useEffect(() => {
         if (!basketCount) return;
         const { tailorId, tailorName } = useCheckoutStore.getState().ensureLockedTailor({
