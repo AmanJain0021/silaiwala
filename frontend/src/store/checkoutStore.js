@@ -157,6 +157,7 @@ const useCheckoutStore = create(
             buyNowItem: null,
             isBuyNowMode: false,
             checkoutType: null,
+            appliedCoupon: null,
             /** Once basket starts, all extra garments must use this tailor only */
             lockedTailorId: null,
             lockedTailorName: null,
@@ -196,6 +197,10 @@ const useCheckoutStore = create(
                 }),
 
             setCheckoutType: (type) => set({ checkoutType: type }),
+
+            setAppliedCoupon: (coupon) => set({ appliedCoupon: coupon || null }),
+
+            clearAppliedCoupon: () => set({ appliedCoupon: null }),
 
             removeServiceItem: (index) =>
                 set((state) => {
@@ -415,6 +420,7 @@ const useCheckoutStore = create(
                     checkoutType: null,
                     lockedTailorId: null,
                     lockedTailorName: null,
+                    appliedCoupon: null,
                 }),
 
             clearDrafting: () =>
@@ -438,6 +444,7 @@ const useCheckoutStore = create(
                 checkoutType: state.checkoutType,
                 lockedTailorId: state.lockedTailorId,
                 lockedTailorName: state.lockedTailorName,
+                appliedCoupon: state.appliedCoupon,
             }),
             merge: (persisted, current) => {
                 const serviceItems = Array.isArray(persisted?.serviceItems)

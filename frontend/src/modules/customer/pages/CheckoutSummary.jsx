@@ -24,7 +24,10 @@ const CheckoutSummary = () => {
         removeServiceItem,
         setBuyNowMode,
         addServiceItem,
-        checkoutType
+        checkoutType,
+        appliedCoupon,
+        setAppliedCoupon,
+        clearAppliedCoupon,
     } = useCheckoutStore(state => state);
     const { items: cartItems, getTotalPrice, clearCart } = useCartStore(state => state);
     const addOrder = useOrderStore(state => state.addOrder);
@@ -106,7 +109,6 @@ const CheckoutSummary = () => {
         gstPercentage: 0
     });
     const [isLoadingPricing, setIsLoadingPricing] = useState(true);
-    const [appliedCoupon, setAppliedCoupon] = useState(null);
 
     // Fetch Bulk Order Details
     useEffect(() => {
@@ -198,7 +200,7 @@ const CheckoutSummary = () => {
                 });
                 if (cancelled) return;
                 if (!res.data?.success) {
-                    setAppliedCoupon(null);
+                    clearAppliedCoupon();
                     return;
                 }
                 const data = res.data.data;
@@ -210,7 +212,7 @@ const CheckoutSummary = () => {
                     discountValue: data.discountValue,
                 });
             } catch {
-                if (!cancelled) setAppliedCoupon(null);
+                if (!cancelled) clearAppliedCoupon();
             }
         };
         revalidate();
@@ -424,7 +426,10 @@ const CheckoutSummary = () => {
 
                                 if (verifyRes.data.success) {
                                     if (isServiceCheckout) clearCheckout();
-                                    else clearCart();
+                                    else {
+                                        clearCart();
+                                        clearAppliedCoupon();
+                                    }
 
                                     navigate('/user/checkout/success', {
                                         replace: true,
@@ -458,7 +463,10 @@ const CheckoutSummary = () => {
 
                 // NORMAL STITCHING ORDER: Send to tailor for acceptance and navigate to success screen
                 if (isServiceCheckout) clearCheckout();
-                else clearCart();
+                else {
+                    clearCart();
+                    clearAppliedCoupon();
+                }
                 hasNavigated.current = true;
                 navigate('/user/checkout/success', {
                     replace: true,
@@ -833,7 +841,7 @@ const CheckoutSummary = () => {
                         checkoutType={couponCheckoutType}
                         appliedCoupon={appliedCoupon}
                         onApplied={setAppliedCoupon}
-                        onRemoved={() => setAppliedCoupon(null)}
+                        onRemoved={clearAppliedCoupon}
                     />
                 )}
 

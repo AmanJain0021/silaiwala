@@ -7,7 +7,15 @@ import { cn } from '../../../../../utils/cn';
 /**
  * Checkout coupon / offer card — apply admin PromoCodes and browse available offers.
  */
-const CouponOfferSection = ({ orderAmount = 0, checkoutType = 'all', appliedCoupon, onApplied, onRemoved }) => {
+const CouponOfferSection = ({
+    orderAmount = 0,
+    checkoutType = 'all',
+    appliedCoupon,
+    onApplied,
+    onRemoved,
+    variant = 'default',
+}) => {
+    const isCompact = variant === 'compact';
     const [code, setCode] = useState('');
     const [applying, setApplying] = useState(false);
     const [showOffers, setShowOffers] = useState(false);
@@ -91,13 +99,27 @@ const CouponOfferSection = ({ orderAmount = 0, checkoutType = 'all', appliedCoup
     };
 
     return (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-xs mb-4 overflow-hidden">
-            <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-[1.2fr_auto_1fr] gap-4 sm:gap-5 items-stretch">
+        <div
+            className={cn(
+                'bg-white border shadow-xs overflow-hidden',
+                isCompact
+                    ? 'rounded-xl border-dashed border-gray-200 mb-0'
+                    : 'rounded-3xl border-slate-100 mb-4'
+            )}
+        >
+            <div
+                className={cn(
+                    'p-4 sm:p-5 items-stretch',
+                    isCompact ? 'space-y-3' : 'grid grid-cols-1 sm:grid-cols-[1.2fr_auto_1fr] gap-4 sm:gap-5'
+                )}
+            >
                 {/* Apply coupon */}
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-3">
                         <Tag size={16} className="text-[#843D9B]" />
-                        <h3 className="text-sm font-bold text-[#843D9B]">Apply Coupon / Offer</h3>
+                        <h3 className="text-sm font-bold text-[#843D9B]">
+                            {isCompact ? 'Apply Coupon' : 'Apply Coupon / Offer'}
+                        </h3>
                     </div>
 
                     {appliedCoupon?.code ? (
@@ -141,25 +163,32 @@ const CouponOfferSection = ({ orderAmount = 0, checkoutType = 'all', appliedCoup
                     )}
                 </div>
 
-                {/* Divider */}
-                <div className="hidden sm:block w-px bg-slate-200 self-stretch" />
-                <div className="sm:hidden h-px bg-slate-100" />
+                {!isCompact && (
+                    <>
+                        {/* Divider */}
+                        <div className="hidden sm:block w-px bg-slate-200 self-stretch" />
+                        <div className="sm:hidden h-px bg-slate-100" />
+                    </>
+                )}
 
                 {/* Available offers */}
-                <div className="min-w-0 flex flex-col">
-                    <p className="text-[11px] italic text-slate-500 font-medium mb-3">Available Offers</p>
+                <div className={cn('min-w-0 flex flex-col', isCompact && 'pt-1')}>
+                    {!isCompact && (
+                        <p className="text-[11px] italic text-slate-500 font-medium mb-3">Available Offers</p>
+                    )}
                     <button
                         type="button"
                         onClick={() => (showOffers ? setShowOffers(false) : loadOffers())}
                         className={cn(
-                            'w-full sm:w-auto self-start inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer',
+                            'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer',
+                            isCompact ? 'w-full' : 'w-full sm:w-auto self-start',
                             showOffers
                                 ? 'border-[#843D9B] bg-[#Faf5ff] text-[#843D9B]'
                                 : 'border-[#C4B5FD] text-[#843D9B] hover:bg-[#Faf5ff]'
                         )}
                     >
                         <Tag size={14} />
-                        {showOffers ? 'Hide Offers' : 'View Offers'}
+                        {showOffers ? 'Hide Offers' : isCompact ? 'View Available Offers' : 'View Offers'}
                     </button>
                 </div>
             </div>
