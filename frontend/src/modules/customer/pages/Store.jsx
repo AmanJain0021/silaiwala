@@ -13,7 +13,7 @@ import api from '../../../utils/api';
 import { SOCKET_URL } from '../../../config/constants';
 import useCartStore from '../../../store/cartStore';
 import useWishlistStore from '../../../store/wishlistStore';
-import SafeImage from '../../../components/Common/SafeImage';
+import { resolveBannerImageUrl, BANNER_LOCATIONS } from '../../../utils/bannerImage';
 
 
 const StorePage = () => {
@@ -27,18 +27,17 @@ const StorePage = () => {
     useEffect(() => {
         const fetchStoreData = async () => {
             try {
-                // Fetch Banners
-                const response = await api.get('/cms/banners/active');
+                const response = await api.get('/cms/banners/active', {
+                    params: { location: BANNER_LOCATIONS.STORE },
+                });
                 if (response.data.success && Array.isArray(response.data.data)) {
-                    const filtered = response.data.data.filter(b => 
-                        b.targetLocation === 'Store Tab - Header Banner' || 
-                        b.targetLocation === 'Store Page - Top Banner' || 
-                        b.targetLocation === 'Store Page'
-                    );
-                    setStoreBanners(filtered.length > 0 ? filtered : response.data.data);
+                    setStoreBanners(response.data.data.filter((b) => b.image));
+                } else {
+                    setStoreBanners([]);
                 }
             } catch (error) {
-                console.error('Error fetching store data:', error);
+                console.error('Error fetching store banners:', error);
+                setStoreBanners([]);
             }
         };
 
@@ -61,11 +60,7 @@ const StorePage = () => {
         setActiveCategory({ name, id });
     };
 
-    const getImageUrl = (img) => {
-        if (!img) return '';
-        if (img.startsWith('http')) return img;
-        return `${SOCKET_URL}${img}`;
-    };
+    const getImageUrl = (img) => resolveBannerImageUrl(img, SOCKET_URL);
 
     const [activeTab, setActiveTab] = useState('store_item');
 
@@ -78,14 +73,15 @@ const StorePage = () => {
                 onOpenFilter={() => setIsFilterOpen(true)}
             />
 
-            {/* 2. Dynamic Hero Banner (Admin CMS Powered) */}
+            {/* 2. Dynamic Hero Banner — only admin-uploaded banners for Store page */}
+            {storeBanners.length > 0 && (
             <div className="px-4 md:px-6 lg:px-8 py-3 max-w-[1400px] mx-auto">
                 {(() => {
-                    const activeBanner = storeBanners.length > 0 ? storeBanners[currentBannerIndex % storeBanners.length] : null;
-                    const bannerTitle = activeBanner?.title || "New Eid Collection";
-                    const bannerSubtitle = activeBanner?.subtitle || "Fabrics for every celebration";
+                    const activeBanner = storeBanners[currentBannerIndex % storeBanners.length];
+                    const bannerTitle = activeBanner?.title || '';
+                    const bannerSubtitle = activeBanner?.subtitle || '';
                     const bannerBadge = activeBanner?.badge;
-                    const bannerImage = activeBanner?.image;
+                    const bannerImage = getImageUrl(activeBanner?.image);
                     const bannerColor = activeBanner?.color || 'bg-[#843D9B]';
 
                     return (
@@ -93,11 +89,10 @@ const StorePage = () => {
                             
                             {/* Full Background Image */}
                             <div className="absolute inset-0 w-full h-full">
-                                <SafeImage
-                                    src={getImageUrl(bannerImage)}
-                                    alt={bannerTitle}
+                                <img
+                                    src={bannerImage}
+                                    alt={bannerTitle || 'Store banner'}
                                     className="w-full h-full object-cover"
-                                    fallback="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1200&auto=format&fit=crop&q=80"
                                 />
                             </div>
 
@@ -105,12 +100,21 @@ const StorePage = () => {
                             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent pointer-events-none" />
 
                             <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 max-w-[80%] sm:max-w-[60%] space-y-2">
+                                {bannerBadge && (
+                                    <span className="inline-flex w-fit px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-white/20 border border-white/30">
+                                        {bannerBadge}
+                                    </span>
+                                )}
+                                {bannerTitle && (
                                 <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight uppercase italic drop-shadow-md text-white">
                                     {bannerTitle}
                                 </h2>
+                                )}
+                                {bannerSubtitle && (
                                 <p className="text-xs sm:text-sm md:text-base text-gray-200 font-semibold line-clamp-2 drop-shadow-sm">
                                     {bannerSubtitle}
                                 </p>
+                                )}
                                 <div className="pt-2">
                                     <button className="px-5 py-2.5 bg-white text-black text-xs font-black rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer">
                                         SHOP NOW <ChevronRight size={14} className="stroke-[3]" />
@@ -138,6 +142,7 @@ const StorePage = () => {
                     );
                 })()}
             </div>
+            )}
 
             {/* 3. Category Circles & Material Filter Pills Row */}
             <CategoryScroll

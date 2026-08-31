@@ -1137,11 +1137,17 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.createBanner = async (req, res) => {
   try {
-    const banner = await Banner.create(req.body);
+    const { normalizeBannerPayload, validateBannerPayload } = require("../../../utils/bannerValidation.js");
+    const payload = normalizeBannerPayload(req.body);
+    const validationError = validateBannerPayload(payload);
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+    const banner = await Banner.create(payload);
     await invalidateCache("cache:public:banners");
     res.status(201).json({ success: true, data: banner });
   } catch (error) {
-    console.error("Error in getAllUsers:", error);
+    console.error("Error in createBanner:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -1158,14 +1164,21 @@ exports.getAllBanners = async (req, res) => {
 
 exports.updateBanner = async (req, res) => {
   try {
-    const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!banner) {
+    const existing = await Banner.findById(req.params.id);
+    if (!existing) {
       return res.status(404).json({ success: false, message: "Banner not found" });
     }
+    const { normalizeBannerPayload, validateBannerPayload } = require("../../../utils/bannerValidation.js");
+    const payload = normalizeBannerPayload({ ...existing.toObject(), ...req.body });
+    const validationError = validateBannerPayload(payload);
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+    const banner = await Banner.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
     await invalidateCache("cache:public:banners");
     res.status(200).json({ success: true, data: banner });
   } catch (error) {
-    console.error("Error in getAllUsers:", error);
+    console.error("Error in updateBanner:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

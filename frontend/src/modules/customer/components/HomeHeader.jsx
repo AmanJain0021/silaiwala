@@ -34,7 +34,7 @@ const HomeHeader = ({ user }) => {
 
     return (
         <>
-            <div className="bg-[#843D9B] pt-4 md:pt-6 pb-12 px-4 md:px-6 relative z-20 w-full overflow-hidden">
+            <div className="bg-[#843D9B] pt-4 md:pt-6 pb-6 px-4 md:px-6 relative z-20 w-full overflow-hidden">
                 {/* Top Row: Location & Icons */}
                 <div className="flex justify-between items-center mb-5">
                     <div className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0 pr-4" onClick={() => setShowLocationModal(true)}>

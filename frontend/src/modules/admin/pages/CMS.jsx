@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Image as ImageIcon, Send, FileText, Bell, Plus, Edit2, Trash2, Smartphone, Megaphone, X } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { isUploadedBannerImage } from '../../../utils/bannerImage';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 const AdminCMS = () => {
@@ -14,14 +15,16 @@ const AdminCMS = () => {
     // Banner States
     const [bannersData, setBannersData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [newBanner, setNewBanner] = useState({
+    const emptyBanner = () => ({
         title: '',
         subtitle: '',
         badge: '',
         color: 'bg-gradient-to-br from-[#843D9B] to-[#ff85a2]',
         targetLocation: 'Home Page - Top Carousel',
-        image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
+        image: '',
     });
+
+    const [newBanner, setNewBanner] = useState(emptyBanner());
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImageUploading, setIsImageUploading] = useState(false);
 
@@ -114,7 +117,14 @@ const AdminCMS = () => {
     };
 
     const handleCreateBanner = async () => {
-        if (!newBanner.title || !newBanner.image) return;
+        if (!newBanner.title?.trim()) {
+            toast.error('Banner title is required');
+            return;
+        }
+        if (!isUploadedBannerImage(newBanner.image)) {
+            toast.error('Please upload a banner image. Default or placeholder images are not allowed.');
+            return;
+        }
         setIsSubmitting(true);
         try {
             if (isEditingBanner) {
@@ -125,21 +135,14 @@ const AdminCMS = () => {
                 toast.success('Banner published successfully');
             }
             setIsAddBannerModalOpen(false);
-            setNewBanner({
-                title: '',
-                subtitle: '',
-                badge: '',
-                color: 'bg-gradient-to-br from-[#843D9B] to-[#ff85a2]',
-                targetLocation: 'Home Page - Top Carousel',
-                image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
-            });
+            setNewBanner(emptyBanner());
             setIsEditingBanner(false);
             setEditBannerId(null);
             fetchData();
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             console.error('Failed to save banner:', error);
-            toast.error('Failed to save banner');
+            toast.error(error.response?.data?.message || 'Failed to save banner');
         } finally {
             setIsSubmitting(false);
         }
@@ -230,13 +233,16 @@ const AdminCMS = () => {
 
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('folder', 'banners');
 
         setIsImageUploading(true);
         try {
             const res = await api.post('/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setNewBanner({ ...newBanner, image: res.data.data });
+            const uploadedUrl = res.data?.data || res.data?.fileUrl;
+            if (!uploadedUrl) throw new Error('No image URL returned');
+            setNewBanner({ ...newBanner, image: uploadedUrl });
             toast.success('Image uploaded successfully');
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
@@ -292,14 +298,7 @@ const AdminCMS = () => {
                         onClick={() => {
                             setIsEditingBanner(false);
                             setEditBannerId(null);
-                            setNewBanner({
-                                title: '',
-                                subtitle: '',
-                                badge: '',
-                                color: 'bg-gradient-to-br from-[#843D9B] to-[#ff85a2]',
-                                targetLocation: 'Home Page - Top Carousel',
-                                image: 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'
-                            });
+                            setNewBanner(emptyBanner());
                             setIsAddBannerModalOpen(true);
                         }}
                         className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-green-900/20 transition-all uppercase tracking-widest"
@@ -729,42 +728,46 @@ const AdminCMS = () => {
                                     </div>
                                     <div>
                                         <div className="flex justify-between items-end mb-1.5">
-                                            <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">Banner Image</label>
-                                            <span className="text-[9px] font-medium text-gray-400">Recommended Size: 1200x400 (3:1)</span>
+                                            <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">Banner Image *</label>
+                                            <span className="text-[9px] font-medium text-gray-400">Recommended: 1200×400 (3:1)</span>
                                         </div>
                                         <div className="flex flex-col gap-3">
-                                            <div className="flex gap-2">
+                                            <div className="relative">
                                                 <input
-                                                    type="text"
-                                                    value={newBanner.image}
-                                                    onChange={e => setNewBanner({ ...newBanner, image: e.target.value })}
-                                                    placeholder="https://..."
-                                                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors"
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/*"
+                                                    onChange={handleImageUpload}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    disabled={isImageUploading}
                                                 />
-                                                <div className="relative">
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={handleImageUpload}
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                        disabled={isImageUploading}
-                                                    />
-                                                    <button className="h-full px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 border border-gray-200 whitespace-nowrap">
-                                                        {isImageUploading ? (
-                                                            <div className="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
-                                                        ) : (
-                                                            <ImageIcon size={16} />
-                                                        )}
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">Upload</span>
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="w-full py-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-100 hover:border-primary/40 transition-colors flex flex-col items-center justify-center gap-2"
+                                                >
+                                                    {isImageUploading ? (
+                                                        <div className="w-6 h-6 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                                                    ) : (
+                                                        <ImageIcon size={24} className="text-gray-400" />
+                                                    )}
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">
+                                                        {newBanner.image ? 'Change Image' : 'Upload Banner Image'}
+                                                    </span>
+                                                    <span className="text-[9px] text-gray-400 font-medium">JPG, PNG or WEBP — upload required</span>
+                                                </button>
                                             </div>
-                                            {newBanner.image && (
+                                            {newBanner.image && isUploadedBannerImage(newBanner.image) && (
                                                 <div className="h-32 w-full rounded-xl border border-gray-100 overflow-hidden bg-gray-50 relative group">
                                                     <img src={newBanner.image} alt="Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                         <span className="text-[10px] font-black text-white uppercase tracking-widest bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-sm">Live Preview</span>
                                                     </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewBanner({ ...newBanner, image: '' })}
+                                                        className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-600 rounded-lg text-[10px] font-black uppercase shadow-sm hover:bg-white"
+                                                    >
+                                                        Remove
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>

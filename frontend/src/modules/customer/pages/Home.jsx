@@ -60,8 +60,8 @@ const Home = () => {
             {/* 1. Header & Location */}
             <HomeHeader user={user || { name: 'Guest' }} />
 
-            {/* White Overlapping Container */}
-            <div className="bg-white rounded-t-[2rem] relative z-30 -mt-6 pt-6 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
+            {/* White Overlapping Container — sits cleanly below header */}
+            <div className="bg-white rounded-t-[2rem] relative z-30 -mt-4 pt-2 shadow-[0_-8px_16px_-6px_rgba(0,0,0,0.08)]">
                 {/* 2. Hero Banner */}
                 <PromoBanner />
 
