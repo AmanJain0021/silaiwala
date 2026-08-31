@@ -1032,7 +1032,11 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Invalid or expired promo code", 400));
     }
 
-    const promoResult = calculatePromoDiscount(serverPricing.total, promo);
+    const promoResult = calculatePromoDiscount(
+      serverPricing.total,
+      promo,
+      isCartCheckout ? "store" : "service"
+    );
     if (!promoResult.ok) {
       return next(new ErrorResponse(promoResult.reason || "Promo code could not be applied", 400));
     }

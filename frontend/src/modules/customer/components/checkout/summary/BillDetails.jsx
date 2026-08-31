@@ -18,10 +18,15 @@ const BillDetails = ({ pricing, advancePercentage = 25, baseLabel = 'Stitching C
         gstPercentage = 0,
         discountAmount = 0,
         couponCode = '',
+        preDiscountTotal = null,
         subtotalBeforeTax = null,
     } = pricing;
 
     const finalTotal = Math.round(Number(total) || 0);
+    const couponDiscount = Math.round(Number(discountAmount) || 0);
+    const amountBeforeCoupon = preDiscountTotal != null
+        ? Math.round(Number(preDiscountTotal))
+        : finalTotal + couponDiscount;
     const { advanceAmount, remainingAmount } = splitAdvanceRemaining(finalTotal, advancePercentage);
     const fullAdvance = advancePercentage >= 100;
 
@@ -101,11 +106,17 @@ const BillDetails = ({ pricing, advancePercentage = 25, baseLabel = 'Stitching C
                     <span className="font-semibold text-slate-900">₹{Math.round(taxes).toLocaleString('en-IN')}</span>
                 </div>
 
-                {discountAmount > 0 && (
-                    <div className="flex justify-between text-xs text-emerald-700 font-bold">
-                        <span>Coupon Discount{couponCode ? ` (${couponCode})` : ''}</span>
-                        <span>-₹{Math.round(discountAmount).toLocaleString('en-IN')}</span>
-                    </div>
+                {couponDiscount > 0 && (
+                    <>
+                        <div className="flex justify-between text-xs text-slate-500 font-medium pt-1">
+                            <span>Amount before coupon</span>
+                            <span className="font-semibold text-slate-700">₹{amountBeforeCoupon.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-emerald-700 font-bold">
+                            <span>Coupon Discount{couponCode ? ` (${couponCode})` : ''}</span>
+                            <span>-₹{couponDiscount.toLocaleString('en-IN')}</span>
+                        </div>
+                    </>
                 )}
 
                 <div className="border-t border-slate-200 my-2 pt-2 flex justify-between items-center">

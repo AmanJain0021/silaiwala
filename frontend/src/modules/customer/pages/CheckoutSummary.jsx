@@ -162,8 +162,6 @@ const CheckoutSummary = () => {
                 });
                 if (res.data.success) {
                     setCurrentPricing(res.data.data);
-                    // Base total changed — clear coupon so user can re-apply against new amount
-                    setAppliedCoupon(null);
                 }
             } catch (err) {
                 console.error("Failed to fetch price summary:", err);
@@ -184,6 +182,41 @@ const CheckoutSummary = () => {
     const requireFullPayment = (isCartCheckout && !isCartAlteration && !isCartCustomDesign) || (isServiceCheckout && isAlterationCheckout);
 
     const baseTotal = Math.round(Number(currentPricing?.total) || 0);
+    const couponCheckoutType = isCartCheckout ? 'store' : 'service';
+
+    // Re-validate applied coupon when order total changes (address, cart qty, etc.)
+    useEffect(() => {
+        if (!appliedCoupon?.code || baseTotal <= 0 || isLoadingPricing) return;
+
+        let cancelled = false;
+        const revalidate = async () => {
+            try {
+                const res = await api.post('/customers/apply-promo', {
+                    code: appliedCoupon.code,
+                    orderAmount: baseTotal,
+                    checkoutType: couponCheckoutType,
+                });
+                if (cancelled) return;
+                if (!res.data?.success) {
+                    setAppliedCoupon(null);
+                    return;
+                }
+                const data = res.data.data;
+                setAppliedCoupon({
+                    code: data.code,
+                    discount: Math.round(Number(data.discount) || 0),
+                    description: data.description || '',
+                    discountType: data.discountType,
+                    discountValue: data.discountValue,
+                });
+            } catch {
+                if (!cancelled) setAppliedCoupon(null);
+            }
+        };
+        revalidate();
+        return () => { cancelled = true; };
+    }, [baseTotal, couponCheckoutType, isLoadingPricing]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const discountAmount = appliedCoupon ? Math.round(Number(appliedCoupon.discount) || 0) : 0;
     const displayPricing = React.useMemo(() => {
         if (!appliedCoupon || discountAmount <= 0) {
@@ -193,6 +226,7 @@ const CheckoutSummary = () => {
             ...currentPricing,
             discountAmount,
             couponCode: appliedCoupon.code,
+            preDiscountTotal: baseTotal,
             total: Math.max(0, baseTotal - discountAmount),
         };
     }, [currentPricing, appliedCoupon, discountAmount, baseTotal]);
@@ -796,6 +830,7 @@ const CheckoutSummary = () => {
                 {!isCartAlteration && !isLoadingPricing && (
                     <CouponOfferSection
                         orderAmount={baseTotal}
+                        checkoutType={couponCheckoutType}
                         appliedCoupon={appliedCoupon}
                         onApplied={setAppliedCoupon}
                         onRemoved={() => setAppliedCoupon(null)}

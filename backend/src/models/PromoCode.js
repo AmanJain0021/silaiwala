@@ -41,6 +41,12 @@ const promoCodeSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    /** all | store (ready-made cart) | service (stitching) */
+    applicableTo: {
+      type: String,
+      enum: ["all", "store", "service"],
+      default: "all",
+    },
   },
   {
     timestamps: true,

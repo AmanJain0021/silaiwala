@@ -1557,6 +1557,13 @@ exports.updateInventory = async (req, res) => {
 
 // --- COUPON MANAGEMENT ---
 
+const {
+  normalizeCouponPayload,
+  validateCouponPayload,
+  normalizeCheckoutType,
+  isPromoApplicableToCheckout,
+} = require("../../../utils/promoDiscount.js");
+
 exports.getAllCoupons = async (req, res) => {
   try {
     const coupons = await PromoCode.find().sort("-createdAt");
@@ -1569,7 +1576,18 @@ exports.getAllCoupons = async (req, res) => {
 
 exports.createCoupon = async (req, res) => {
   try {
-    const coupon = await PromoCode.create(req.body);
+    const payload = normalizeCouponPayload(req.body);
+    const validationError = validateCouponPayload(payload);
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+
+    const existing = await PromoCode.findOne({ code: payload.code });
+    if (existing) {
+      return res.status(400).json({ success: false, message: "Coupon code already exists" });
+    }
+
+    const coupon = await PromoCode.create(payload);
     res.status(201).json({ success: true, data: coupon });
   } catch (error) {
     console.error("Error in createCoupon:", error);
@@ -1579,8 +1597,27 @@ exports.createCoupon = async (req, res) => {
 
 exports.updateCoupon = async (req, res) => {
   try {
-    const coupon = await PromoCode.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!coupon) return res.status(404).json({ success: false, message: "Coupon not found" });
+    const existing = await PromoCode.findById(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: "Coupon not found" });
+
+    const payload = normalizeCouponPayload({ ...existing.toObject(), ...req.body });
+    const validationError = validateCouponPayload(payload);
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+
+    const duplicate = await PromoCode.findOne({
+      code: payload.code,
+      _id: { $ne: req.params.id },
+    });
+    if (duplicate) {
+      return res.status(400).json({ success: false, message: "Coupon code already exists" });
+    }
+
+    const coupon = await PromoCode.findByIdAndUpdate(req.params.id, payload, {
+      new: true,
+      runValidators: true,
+    });
     res.status(200).json({ success: true, data: coupon });
   } catch (error) {
     console.error("Error in updateCoupon:", error);

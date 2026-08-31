@@ -7,6 +7,10 @@ const Order = require("../../../models/Order.js");
 const PromoCode = require("../../../models/PromoCode.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
+const {
+  normalizeCheckoutType,
+  isPromoApplicableToCheckout,
+} = require("../../../utils/promoDiscount.js");
 
 /**
  * @desc    Get current customer profile
@@ -258,9 +262,10 @@ exports.getWishlist = asyncHandler(async (req, res, next) => {
  * @access  Private (Customer)
  */
 exports.applyPromoCode = asyncHandler(async (req, res, next) => {
-  const { code, orderAmount } = req.body;
+  const { code, orderAmount, checkoutType } = req.body;
   const amount = Math.max(0, Math.round(Number(orderAmount) || 0));
   const normalizedCode = String(code || "").trim().toUpperCase();
+  const type = normalizeCheckoutType(checkoutType);
 
   if (!normalizedCode) {
     return next(new ErrorResponse("Please enter a coupon code", 400));
@@ -273,7 +278,7 @@ exports.applyPromoCode = asyncHandler(async (req, res, next) => {
   }
 
   const { calculatePromoDiscount } = require("../../../utils/promoDiscount.js");
-  const result = calculatePromoDiscount(amount, promo);
+  const result = calculatePromoDiscount(amount, promo, type);
 
   if (!result.ok) {
     return next(new ErrorResponse(result.reason || "Promo code could not be applied", 400));
@@ -289,6 +294,7 @@ exports.applyPromoCode = asyncHandler(async (req, res, next) => {
       discount: result.discount,
       newTotal: result.newTotal,
       minOrderAmount: promo.minOrderAmount || 0,
+      applicableTo: promo.applicableTo || "all",
     },
   });
 });
@@ -300,19 +306,21 @@ exports.applyPromoCode = asyncHandler(async (req, res, next) => {
  */
 exports.getAvailablePromoCodes = asyncHandler(async (req, res) => {
   const now = new Date();
+  const checkoutType = normalizeCheckoutType(req.query.checkoutType || req.query.for);
   const withUsage = await PromoCode.find({
     isActive: true,
     startDate: { $lte: now },
     $or: [{ endDate: null }, { endDate: { $exists: false } }, { endDate: { $gte: now } }],
   })
     .select(
-      "code description discountType discountValue minOrderAmount maxDiscountAmount endDate usageLimit usedCount"
+      "code description discountType discountValue minOrderAmount maxDiscountAmount endDate usageLimit usedCount applicableTo"
     )
     .sort("-createdAt")
     .lean();
 
   const list = withUsage
     .filter((p) => (p.usedCount || 0) < (p.usageLimit ?? 1000))
+    .filter((p) => isPromoApplicableToCheckout(p, checkoutType))
     .map((p) => ({
       code: p.code,
       description: p.description || "",
@@ -321,6 +329,7 @@ exports.getAvailablePromoCodes = asyncHandler(async (req, res) => {
       minOrderAmount: p.minOrderAmount || 0,
       maxDiscountAmount: p.maxDiscountAmount || null,
       endDate: p.endDate || null,
+      applicableTo: p.applicableTo || "all",
     }));
 
   res.status(200).json({

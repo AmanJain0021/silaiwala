@@ -7,7 +7,7 @@ import { cn } from '../../../../../utils/cn';
 /**
  * Checkout coupon / offer card — apply admin PromoCodes and browse available offers.
  */
-const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemoved }) => {
+const CouponOfferSection = ({ orderAmount = 0, checkoutType = 'all', appliedCoupon, onApplied, onRemoved }) => {
     const [code, setCode] = useState('');
     const [applying, setApplying] = useState(false);
     const [showOffers, setShowOffers] = useState(false);
@@ -36,6 +36,7 @@ const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemov
             const res = await api.post('/customers/apply-promo', {
                 code: trimmed,
                 orderAmount,
+                checkoutType,
             });
             if (!res.data?.success) {
                 throw new Error(res.data?.message || 'Invalid coupon');
@@ -69,7 +70,9 @@ const CouponOfferSection = ({ orderAmount = 0, appliedCoupon, onApplied, onRemov
         setShowOffers(true);
         setLoadingOffers(true);
         try {
-            const res = await api.get('/customers/promo-codes');
+            const res = await api.get('/customers/promo-codes', {
+                params: { checkoutType },
+            });
             setOffers(res.data?.data || []);
         } catch (err) {
             if (err?.name === 'CanceledError') return;

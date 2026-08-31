@@ -31,7 +31,10 @@ const AdminStore = () => {
 
     const [newCoupon, setNewCoupon] = useState({
         code: '', description: '', discountType: 'percentage', discountValue: '',
-        minOrderAmount: 0, isActive: true
+        minOrderAmount: 0, maxDiscountAmount: '', usageLimit: 1000,
+        applicableTo: 'all', isActive: true,
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: ''
     });
 
     const tabs = ['Products', 'Categories', 'Inventory', 'Coupons'];
@@ -94,7 +97,13 @@ const AdminStore = () => {
         setEditId(null);
         setNewProduct({ name: '', description: '', price: '', originalPrice: '', stock: '', category: '', image: '', isActive: true, productType: 'store_item' });
         setNewCategory({ name: '', description: '', type: 'product', isActive: true, image: '' });
-        setNewCoupon({ code: '', description: '', discountType: 'percentage', discountValue: '', minOrderAmount: 0, isActive: true });
+        setNewCoupon({
+            code: '', description: '', discountType: 'percentage', discountValue: '',
+            minOrderAmount: 0, maxDiscountAmount: '', usageLimit: 1000,
+            applicableTo: 'all', isActive: true,
+            startDate: new Date().toISOString().slice(0, 10),
+            endDate: ''
+        });
     };
 
     const handleDelete = async (id) => {
@@ -136,7 +145,16 @@ const AdminStore = () => {
             } else if (isCoupon) {
                 if (!newCoupon.code || !newCoupon.discountValue) return toast.error('Code and Value are required');
                 endpoint = isEditing ? `/admin/store/coupons/${editId}` : '/admin/store/coupons';
-                payload = newCoupon;
+                payload = {
+                    ...newCoupon,
+                    code: String(newCoupon.code).trim().toUpperCase(),
+                    discountValue: Number(newCoupon.discountValue),
+                    minOrderAmount: Number(newCoupon.minOrderAmount) || 0,
+                    maxDiscountAmount: newCoupon.maxDiscountAmount !== '' ? Number(newCoupon.maxDiscountAmount) : undefined,
+                    usageLimit: Number(newCoupon.usageLimit) || 1000,
+                    startDate: newCoupon.startDate || new Date().toISOString(),
+                    endDate: newCoupon.endDate || undefined,
+                };
             }
 
             if (isEditing) {
@@ -171,7 +189,17 @@ const AdminStore = () => {
         } else if (selectedTab === 'Categories') {
             setNewCategory(item);
         } else if (selectedTab === 'Coupons') {
-            setNewCoupon(item);
+            setNewCoupon({
+                ...item,
+                discountValue: item.discountValue ?? '',
+                minOrderAmount: item.minOrderAmount ?? 0,
+                maxDiscountAmount: item.maxDiscountAmount ?? '',
+                usageLimit: item.usageLimit ?? 1000,
+                applicableTo: item.applicableTo || 'all',
+                isActive: item.isActive !== false,
+                startDate: item.startDate ? new Date(item.startDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+                endDate: item.endDate ? new Date(item.endDate).toISOString().slice(0, 10) : '',
+            });
         }
         setIsAddModalOpen(true);
     };
@@ -298,8 +326,10 @@ const AdminStore = () => {
                                         <>
                                             <th className="px-6 py-4">Promo Code</th>
                                             <th className="px-6 py-4">Discount</th>
+                                            <th className="px-6 py-4">Applies To</th>
                                             <th className="px-6 py-4">Min. Order</th>
                                             <th className="px-6 py-4">Usage</th>
+                                            <th className="px-6 py-4">Status</th>
                                         </>
                                     )}
                                     <th className="px-6 py-4 text-right">Actions</th>
@@ -388,14 +418,36 @@ const AdminStore = () => {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <Tag size={14} className="text-orange-500" />
-                                                        <span className="text-sm font-black text-gray-900 uppercase tracking-wider">{item.code}</span>
+                                                        <div>
+                                                            <span className="text-sm font-black text-gray-900 uppercase tracking-wider block">{item.code}</span>
+                                                            {item.description && (
+                                                                <span className="text-[10px] text-gray-400 font-medium line-clamp-1 max-w-[180px]">{item.description}</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-bold text-green-600">
                                                     {item.discountType === 'percentage' ? `${item.discountValue}% Off` : `₹${item.discountValue} Off`}
+                                                    {item.discountType === 'percentage' && item.maxDiscountAmount ? (
+                                                        <span className="block text-[10px] text-gray-400 font-medium">Max ₹{item.maxDiscountAmount}</span>
+                                                    ) : null}
                                                 </td>
-                                                <td className="px-6 py-4 text-xs font-bold text-gray-500">Min. ₹{item.minOrderAmount}</td>
-                                                <td className="px-6 py-4 text-xs font-medium text-gray-400">{item.usedCount} Uses</td>
+                                                <td className="px-6 py-4 text-xs font-bold text-gray-600 capitalize">
+                                                    {item.applicableTo === 'store' ? 'Store' : item.applicableTo === 'service' ? 'Stitching' : 'All Orders'}
+                                                </td>
+                                                <td className="px-6 py-4 text-xs font-bold text-gray-500">₹{item.minOrderAmount || 0}</td>
+                                                <td className="px-6 py-4 text-xs font-medium text-gray-400">{item.usedCount || 0} / {item.usageLimit || 1000}</td>
+                                                <td className="px-6 py-4">
+                                                    {(() => {
+                                                        const now = new Date();
+                                                        const expired = item.endDate && new Date(item.endDate) < now;
+                                                        const exhausted = (item.usedCount || 0) >= (item.usageLimit || 1000);
+                                                        if (!item.isActive) return <span className="text-[10px] font-black uppercase text-red-600 bg-red-50 px-2 py-1 rounded-lg">Inactive</span>;
+                                                        if (expired) return <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Expired</span>;
+                                                        if (exhausted) return <span className="text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">Limit Reached</span>;
+                                                        return <span className="text-[10px] font-black uppercase text-green-600 bg-green-50 px-2 py-1 rounded-lg">Active</span>;
+                                                    })()}
+                                                </td>
                                             </>
                                         )}
 
@@ -555,7 +607,19 @@ const AdminStore = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Coupon Code</label>
-                                                <input type="text" value={newCoupon.code} onChange={(e) => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="E.G. SUMMER50" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                                <input type="text" value={newCoupon.code} onChange={(e) => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="E.G. STORE50" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all uppercase" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Applies To</label>
+                                                <select value={newCoupon.applicableTo} onChange={(e) => setNewCoupon({...newCoupon, applicableTo: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all appearance-none">
+                                                    <option value="all">All Orders</option>
+                                                    <option value="store">Store Orders Only</option>
+                                                    <option value="service">Stitching Orders Only</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Description (shown to customer)</label>
+                                                <input type="text" value={newCoupon.description} onChange={(e) => setNewCoupon({...newCoupon, description: e.target.value})} placeholder="e.g. Flat 10% off on store orders above ₹999" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Discount Type</label>
@@ -566,11 +630,33 @@ const AdminStore = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Discount Value</label>
-                                                <input type="number" value={newCoupon.discountValue} onChange={(e) => setNewCoupon({...newCoupon, discountValue: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                                <input type="number" min="1" value={newCoupon.discountValue} onChange={(e) => setNewCoupon({...newCoupon, discountValue: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                            </div>
+                                            {newCoupon.discountType === 'percentage' && (
+                                                <div>
+                                                    <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Max Discount (₹, optional)</label>
+                                                    <input type="number" min="0" value={newCoupon.maxDiscountAmount} onChange={(e) => setNewCoupon({...newCoupon, maxDiscountAmount: e.target.value})} placeholder="No cap" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Min Order Amount (₹)</label>
+                                                <input type="number" min="0" value={newCoupon.minOrderAmount} onChange={(e) => setNewCoupon({...newCoupon, minOrderAmount: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Min Order Amount</label>
-                                                <input type="number" value={newCoupon.minOrderAmount} onChange={(e) => setNewCoupon({...newCoupon, minOrderAmount: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Usage Limit</label>
+                                                <input type="number" min="1" value={newCoupon.usageLimit} onChange={(e) => setNewCoupon({...newCoupon, usageLimit: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">Start Date</label>
+                                                <input type="date" value={newCoupon.startDate} onChange={(e) => setNewCoupon({...newCoupon, startDate: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black uppercase text-gray-400 tracking-widest mb-1.5">End Date (optional)</label>
+                                                <input type="date" value={newCoupon.endDate} onChange={(e) => setNewCoupon({...newCoupon, endDate: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold shadow-sm outline-none focus:border-primary transition-all" />
+                                            </div>
+                                            <div className="col-span-2 flex items-center gap-3 pt-1">
+                                                <input type="checkbox" id="coupon-active" checked={newCoupon.isActive !== false} onChange={(e) => setNewCoupon({...newCoupon, isActive: e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                                                <label htmlFor="coupon-active" className="text-sm font-bold text-gray-700">Active — customers can use this coupon</label>
                                             </div>
                                         </div>
                                     )}
