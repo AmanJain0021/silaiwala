@@ -17,11 +17,19 @@ const HomeHeader = ({ user }) => {
     const { items: productCartItems } = useCartStore(state => state);
     const { serviceItems } = useCheckoutStore(state => state);
     const cartCount = (productCartItems || []).length + (serviceItems || []).length;
-    const { notifications = [], unreadCount, markAsRead } = useNotifications();
+    const { notifications = [], unreadCount, markAsRead, markAllRead } = useNotifications();
     const navigate = useNavigate();
 
     const [showLocationModal, setShowLocationModal] = useState(false);
     const { address: location } = useLocationStore();
+
+    const handleBellClick = () => {
+        const nextState = !showNotifications;
+        setShowNotifications(nextState);
+        if (nextState && unreadCount > 0 && markAllRead) {
+            markAllRead();
+        }
+    };
 
     useEffect(() => {
         if (showNotifications || showLocationModal) {
@@ -52,7 +60,7 @@ const HomeHeader = ({ user }) => {
 
                     <div className="flex items-center gap-2 shrink-0">
                         <button
-                            onClick={() => setShowNotifications(!showNotifications)}
+                            onClick={handleBellClick}
                             className="w-10 h-10 bg-white/10 rounded-xl text-white border border-white/20 flex items-center justify-center relative active:scale-95 transition-transform"
                         >
                             <Bell size={18} />
