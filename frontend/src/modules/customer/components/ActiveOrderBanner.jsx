@@ -19,7 +19,7 @@ const ActiveOrderBanner = ({ order }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed bottom-[88px] right-4 z-40 flex justify-end">
+            <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+6.25rem)] md:bottom-8 right-4 z-50 flex justify-end">
                 <motion.div 
                     layout
                     initial={{ scale: 0.8, opacity: 0 }}

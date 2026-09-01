@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 const TrendingCategories = () => {
     const navigate = useNavigate();
@@ -19,37 +20,39 @@ const TrendingCategories = () => {
     };
 
     return (
-        <div className="py-4 px-4 md:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-[13px] font-black text-gray-900 uppercase tracking-widest">
-                    Trending Categories
+        <div className="py-3 px-4 md:px-6 lg:px-8">
+            <div className="flex justify-between items-center mb-3.5">
+                <h2 className="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-widest">
+                    TRENDING CATEGORIES
                 </h2>
                 <button 
                     onClick={() => navigate('/user/services')}
-                    className="text-[10px] font-bold text-[#843D9B] hover:underline"
+                    className="text-[10px] sm:text-xs font-black text-[#843D9B] hover:underline flex items-center gap-0.5 uppercase tracking-wider cursor-pointer"
                 >
-                    See All
+                    See All <ArrowRight size={12} />
                 </button>
             </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 {categories.map((item, index) => (
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 15 }}
+                        whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ delay: index * 0.1 }}
+                        transition={{ delay: index * 0.05 }}
                         key={item.id}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => handleCategoryClick(item.name)}
-                        className="min-w-[100px] sm:min-w-[120px] aspect-[3/4] rounded-xl overflow-hidden relative group cursor-pointer snap-center shadow-sm"
+                        className="aspect-[3/4] rounded-2xl overflow-hidden relative group cursor-pointer shadow-sm border border-gray-100 hover:shadow-md transition-all"
                     >
                         <img
                             src={item.image}
                             alt={item.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end justify-center pb-3">
-                            <span className="text-white text-[11px] font-black tracking-wider text-center px-2">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-end justify-center pb-2.5 px-1">
+                            <span className="text-white text-[11px] sm:text-xs font-black tracking-wider text-center drop-shadow-md">
                                 {item.name}
                             </span>
                         </div>

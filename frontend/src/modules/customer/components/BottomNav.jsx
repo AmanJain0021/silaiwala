@@ -7,10 +7,41 @@ const NavItem = ({ to, icon: Icon, label }) => {
     const location = useLocation();
     
     let isActive = false;
+    const path = location.pathname;
+
     if (to === '/user') {
-        isActive = location.pathname === '/user' || location.pathname.startsWith('/user/services') || location.pathname.startsWith('/user/embellishments');
+        isActive = path === '/user' || 
+                   path === '/user/' || 
+                   path.startsWith('/user/services') || 
+                   path.startsWith('/user/what-we-offer') || 
+                   path.startsWith('/user/embellishments') || 
+                   path.startsWith('/user/embroidery') || 
+                   path.startsWith('/user/tailor');
+    } else if (to === '/user/store') {
+        isActive = path.startsWith('/user/store') || 
+                   path.startsWith('/user/fabric');
+    } else if (to === '/user/orders') {
+        isActive = path.startsWith('/user/orders') || 
+                   path.startsWith('/user/alteration') || 
+                   path.startsWith('/user/custom-design') || 
+                   path.startsWith('/user/bulk-order');
+    } else if (to === '/user/profile') {
+        isActive = path.startsWith('/user/profile') || 
+                   path.startsWith('/user/wallet') || 
+                   path.startsWith('/user/refer') || 
+                   path.startsWith('/user/coupons') || 
+                   path.startsWith('/user/language') || 
+                   path.startsWith('/user/notifications') || 
+                   path.startsWith('/user/payments') || 
+                   path.startsWith('/user/faq') || 
+                   path.startsWith('/user/support') || 
+                   path.startsWith('/user/activity') || 
+                   path.startsWith('/user/wishlist') || 
+                   path.startsWith('/user/reviews') || 
+                   path.startsWith('/user/membership') || 
+                   path.startsWith('/user/loyalty');
     } else {
-        isActive = location.pathname === to || location.pathname.startsWith(to + '/');
+        isActive = path === to || path.startsWith(to + '/');
     }
 
     return (
@@ -21,13 +52,13 @@ const NavItem = ({ to, icon: Icon, label }) => {
             {isActive && (
                 <motion.span 
                     layoutId="customerBottomNavActive"
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#843D9B] rounded-full" 
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#843D9B] rounded-full z-10" 
                 />
             )}
             <div className={`p-1.5 rounded-xl transition-all duration-300 flex items-center justify-center relative ${
                 isActive
-                    ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/25 scale-105'
-                    : 'text-gray-400 active:scale-90'
+                    ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/30 scale-105'
+                    : 'text-gray-400 active:scale-90 hover:text-gray-600'
             }`}>
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
             </div>

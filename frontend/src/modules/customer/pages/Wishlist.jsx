@@ -62,7 +62,7 @@ const WishlistPage = () => {
             {/* Quick Link to Cart if items available */}
             <Link
                 to="/user/cart"
-                className="fixed bottom-6 right-6 w-14 h-14 bg-[#843D9B] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 md:hidden"
+                className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] md:bottom-8 right-6 w-14 h-14 bg-[#843D9B] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 md:hidden"
             >
                 <ShoppingBag size={24} />
             </Link>

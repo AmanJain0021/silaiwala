@@ -34,45 +34,45 @@ const ServiceGrid = () => {
     ];
 
     return (
-        <div className="px-4 md:px-6 lg:px-8 mt-4 mb-4">
+        <div className="px-4 md:px-6 lg:px-8 mt-3 mb-5">
             {/* Header Section */}
-            <div className="flex items-center justify-between mb-4 relative">
+            <div className="flex items-center justify-between mb-3 relative">
                 <div className="flex-1 flex justify-center items-center">
-                    <div className="flex items-center gap-1">
-                        <div className="text-[#843D9B] opacity-60 font-black text-[10px] italic">
-                            //
-                        </div>
-                        <h2 className="text-[11px] font-black text-[#682498] uppercase tracking-[0.15em] mx-1">What We Offer</h2>
-                        <div className="text-[#843D9B] opacity-60 font-black text-[10px] italic">
-                            //
-                        </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[#843D9B] opacity-60 font-black text-xs italic">//</span>
+                        <h2 className="text-xs sm:text-sm font-black text-[#682498] uppercase tracking-[0.18em]">WHAT WE OFFER</h2>
+                        <span className="text-[#843D9B] opacity-60 font-black text-xs italic">//</span>
                     </div>
                 </div>
                 <button 
                     onClick={() => navigate('/user/what-we-offer')}
-                    className="absolute right-0 text-[9px] font-bold text-[#843D9B] hover:text-[#682498] flex items-center gap-0.5"
+                    className="absolute right-0 text-[10px] sm:text-xs font-black text-[#843D9B] hover:text-[#682498] flex items-center gap-0.5 uppercase tracking-wider cursor-pointer"
                 >
-                    View All <ArrowRight size={10} />
+                    View All <ArrowRight size={12} />
                 </button>
             </div>
 
-            {/* Scrollable Services */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x justify-between sm:justify-start">
+            {/* 4 Category Icons Row */}
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
                 {services.map((service, index) => (
                     <motion.div
                         key={index}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => navigate(service.path)}
-                        className="flex flex-col items-center gap-1.5 min-w-[90px] cursor-pointer group snap-center"
+                        className="flex flex-col items-center gap-1 cursor-pointer group"
                     >
-                        <div className="w-[88px] h-[88px] flex items-center justify-center transition-transform group-hover:scale-105">
-                            <img src={service.imgSrc} alt={service.title} className="w-full h-full object-contain" />
+                        <div className="w-[76px] h-[76px] sm:w-[92px] sm:h-[92px] flex items-center justify-center transition-transform group-hover:scale-105">
+                            <img 
+                                src={service.imgSrc} 
+                                alt={service.title} 
+                                className="w-full h-full object-contain" 
+                            />
                         </div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-[10px] font-bold text-gray-900 leading-tight text-center">
+                        <div className="flex flex-col items-center text-center">
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-900 leading-tight text-center whitespace-nowrap">
                                 {service.title}
                             </span>
-                            <span className="text-[7px] font-medium text-gray-500 leading-tight text-center">
+                            <span className="text-[8px] sm:text-[9px] font-medium text-gray-500 leading-tight text-center mt-0.5">
                                 {service.subtitle}
                             </span>
                         </div>
