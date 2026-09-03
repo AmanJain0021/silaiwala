@@ -25,8 +25,9 @@ const TailorRegistration = () => {
     const { login } = useTailorAuth();
     const navigate = useNavigate();
 
-    const { register, handleSubmit, watch, setValue, trigger, setError, formState: { errors } } = useForm({
+    const { register, handleSubmit, watch, setValue, trigger, setError, clearErrors, formState: { errors } } = useForm({
         mode: 'onChange',
+        reValidateMode: 'onChange',
         shouldUnregister: false,
         defaultValues: (() => {
             const savedData = localStorage.getItem('tailorSignupData');
@@ -67,7 +68,7 @@ const TailorRegistration = () => {
         let fieldsToValidate = [];
         switch (step) {
             case 1:
-                fieldsToValidate = ['fullName', 'phone', 'otp', 'email', 'password'];
+                fieldsToValidate = ['fullName', 'phone', 'email', 'password'];
                 break;
             case 2:
                 fieldsToValidate = ['shopName', 'address', 'city', 'pincode', 'experienceInYears', 'specializations'];
@@ -84,9 +85,6 @@ const TailorRegistration = () => {
 
         const isStepValid = await trigger(fieldsToValidate);
         if (!isStepValid) {
-            if (step === 1 && (!watch('otp') || watch('otp').length < 6)) {
-                toast.error("Please verify your mobile number by sending OTP first.");
-            }
             setIsValidating(false);
             return;
         }
@@ -94,40 +92,59 @@ const TailorRegistration = () => {
         if (step === 1) {
             // Profile image is REQUIRED
             if (!watch('profileImage')) {
+                setError('profileImage', { type: 'manual', message: 'Profile picture is required' });
                 toast.error("Profile picture is required to proceed.");
                 setIsValidating(false);
                 return;
             }
 
-            setIsLoading(true);
-            try {
-                const otpResponse = await api.post('/auth/verify-otp', {
-                    phone: watch('phone'),
-                    otp: watch('otp')
-                });
-                
-                if (!otpResponse.data.success) {
-                    setError('otp', { type: 'manual', message: 'Invalid OTP' });
+            // Check phone verification status
+            if (!watch('isPhoneVerified')) {
+                if (!watch('otp') || watch('otp').length < 6) {
+                    setError('phone', { type: 'manual', message: 'Please send and verify OTP' });
+                    setError('otp', { type: 'manual', message: 'OTP is required' });
+                    toast.error("Please verify your mobile number by sending OTP first.");
+                    setIsValidating(false);
+                    return;
+                }
+
+                setIsLoading(true);
+                try {
+                    const otpResponse = await api.post('/auth/verify-otp', {
+                        phone: watch('phone'),
+                        otp: watch('otp')
+                    });
+                    
+                    if (!otpResponse.data.success) {
+                        setError('otp', { type: 'manual', message: 'Invalid OTP' });
+                        setIsValidating(false);
+                        setIsLoading(false);
+                        return;
+                    }
+                    setValue('isPhoneVerified', true);
+                } catch (error) {
+                    console.error('OTP Validation failed:', error);
+                    const errMsg = error.response?.data?.message || 'Invalid OTP';
+                    setError('otp', { type: 'manual', message: errMsg });
                     setIsValidating(false);
                     setIsLoading(false);
                     return;
                 }
+            }
 
+            setIsLoading(true);
+            try {
                 const response = await api.post('/auth/check-user', { email: watch('email'), phoneNumber: watch('phone') });
                 if (response.data.exists) {
-                    setError(response.data.field, { type: 'manual', message: response.data.message });
+                    const fieldName = response.data.field || (response.data.message?.includes('email') ? 'email' : 'phone');
+                    setError(fieldName, { type: 'manual', message: response.data.message });
                     setIsValidating(false);
                     setIsLoading(false);
                     return;
                 }
             } catch (error) {
-                console.error('Validation failed:', error);
-                const errMsg = error.response?.data?.message || 'Verification failed';
-                if (error.config?.url?.includes('verify-otp')) {
-                    setError('otp', { type: 'manual', message: errMsg });
-                } else {
-                    toast.error(errMsg);
-                }
+                console.error('Check user failed:', error);
+                toast.error(error.response?.data?.message || 'Validation failed');
                 setIsValidating(false);
                 setIsLoading(false);
                 return;
@@ -144,19 +161,22 @@ const TailorRegistration = () => {
         }
 
         if (step === 3) {
-            // Document uploads MUST BE REQUIRED
+            let hasDocError = false;
             if (!watch('aadharFront')) {
-                toast.error("Aadhaar Card (Front) photo is required.");
-                setIsValidating(false);
-                return;
+                setError('aadharFront', { type: 'manual', message: 'Aadhaar Card (Front) photo is required' });
+                hasDocError = true;
             }
             if (!watch('aadharBack')) {
-                toast.error("Aadhaar Card (Back) photo is required.");
-                setIsValidating(false);
-                return;
+                setError('aadharBack', { type: 'manual', message: 'Aadhaar Card (Back) photo is required' });
+                hasDocError = true;
             }
             if (!watch('panImage')) {
-                toast.error("PAN Card photo is required.");
+                setError('panImage', { type: 'manual', message: 'PAN Card photo is required' });
+                hasDocError = true;
+            }
+
+            if (hasDocError) {
+                toast.error("Please upload all required document photos.");
                 setIsValidating(false);
                 return;
             }
@@ -256,7 +276,7 @@ const TailorRegistration = () => {
                 { name: 'Shop License', url: watch('licenseImage') },
                 { name: 'Portfolio 1', url: watch('portfolio1') },
                 { name: 'Portfolio 2', url: watch('portfolio2') }
-            ].filter(doc => typeof doc.url === 'string' && doc.url.startsWith('http'));
+            ].filter(doc => typeof doc.url === 'string' && doc.url.trim().length > 0);
 
 
             const payload = {
@@ -268,7 +288,9 @@ const TailorRegistration = () => {
                 role: 'tailor',
                 shopName: data.shopName,
                 experienceInYears: Number(data.experienceInYears),
-                specializations: data.specializations.split(',').map(s => s.trim()).filter(s => s),
+                specializations: typeof data.specializations === 'string' 
+                    ? data.specializations.split(',').map(s => s.trim()).filter(s => s)
+                    : Array.isArray(data.specializations) ? data.specializations : [],
                 documents,
                 address: `${data.address}, ${data.city}, ${data.pincode}`,
                 coordinates: [Number(data.longitude) || 72.8777, Number(data.latitude) || 19.0760],
@@ -286,7 +308,7 @@ const TailorRegistration = () => {
             }
         } catch (error) {
             const message = error.response?.data?.message || "Registration failed. Try again.";
-            alert(message);
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -294,10 +316,10 @@ const TailorRegistration = () => {
 
     const renderStep = () => {
         switch (step) {
-            case 1: return <Step1Basic register={register} errors={errors} watch={watch} setValue={setValue} />;
-            case 2: return <Step2Business register={register} errors={errors} setValue={setValue} />;
-            case 3: return <Step3Docs register={register} errors={errors} watch={watch} setValue={setValue} />;
-            case 4: return <Step4Portfolio register={register} errors={errors} watch={watch} setValue={setValue} />;
+            case 1: return <Step1Basic register={register} errors={errors} watch={watch} setValue={setValue} setError={setError} clearErrors={clearErrors} />;
+            case 2: return <Step2Business register={register} errors={errors} setValue={setValue} clearErrors={clearErrors} />;
+            case 3: return <Step3Docs register={register} errors={errors} watch={watch} setValue={setValue} clearErrors={clearErrors} />;
+            case 4: return <Step4Portfolio register={register} errors={errors} watch={watch} setValue={setValue} clearErrors={clearErrors} />;
             default: return null;
         }
     };

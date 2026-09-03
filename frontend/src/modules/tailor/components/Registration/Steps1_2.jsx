@@ -6,13 +6,13 @@ import { Navigation, Lock, Eye, EyeOff, Camera, CheckCircle2 } from 'lucide-reac
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 import { validatePassword } from '../../../../utils/validation';
 
-export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
+export const Step1Basic = ({ register, errors, setValue, watch, setError, clearErrors }) => {
     const profileImage = watch('profileImage');
     const phone = watch('phone');
+    const isPhoneVerified = watch('isPhoneVerified') || false;
     const [otpSent, setOtpSent] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
-    const [isPhoneVerified, setIsPhoneVerified] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const profileInputRef = useRef(null);
 
@@ -24,6 +24,7 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
                 const checkRes = await api.post('/auth/check-user', { phoneNumber: phone });
                 if (checkRes.data.exists) {
                     toast.error(checkRes.data.message || 'This phone number is already registered');
+                    if (setError) setError('phone', { type: 'manual', message: 'Phone number is already registered' });
                     setIsSending(false);
                     return;
                 }
@@ -43,6 +44,7 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
             }
         } else {
             toast.error('Enter a valid 10-digit mobile number starting with 6-9');
+            if (setError) setError('phone', { type: 'manual', message: 'Invalid 10-digit mobile number starting with 6-9' });
         }
     };
 
@@ -56,13 +58,16 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
         try {
             const res = await api.post('/auth/verify-otp', { phone, otp: otpVal });
             if (res.data.success) {
-                setIsPhoneVerified(true);
+                setValue('isPhoneVerified', true, { shouldValidate: true });
+                if (clearErrors) clearErrors(['phone', 'otp']);
                 toast.success('Mobile number verified!');
             } else {
                 toast.error(res.data.message || 'Invalid OTP');
+                if (setError) setError('otp', { type: 'manual', message: res.data.message || 'Invalid OTP' });
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Invalid OTP verification');
+            if (setError) setError('otp', { type: 'manual', message: error.response?.data?.message || 'Invalid OTP' });
         } finally {
             setIsVerifying(false);
         }
@@ -73,7 +78,9 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
             {/* Circular & Compact Profile Picture Container */}
             <div className="flex flex-col items-center justify-center mb-4">
                 <div 
-                    className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-[#843D9B] bg-purple-50/50 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-[#E04D79] transition-all shadow-sm"
+                    className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-dashed ${
+                        errors.profileImage ? 'border-red-400 bg-red-50/50' : 'border-[#843D9B] bg-purple-50/50 hover:border-[#E04D79]'
+                    } flex items-center justify-center cursor-pointer overflow-hidden group transition-all shadow-sm`}
                     onClick={() => profileInputRef.current?.click()}
                 >
                     <input 
@@ -82,7 +89,10 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
                         accept="image/*"
                         onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) setValue('profileImage', file, { shouldValidate: true });
+                            if (file) {
+                                setValue('profileImage', file, { shouldValidate: true });
+                                if (clearErrors) clearErrors('profileImage');
+                            }
                         }}
                         className="hidden" 
                     />
@@ -114,7 +124,9 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
                         message: 'Name can only contain alphabets'
                     },
                     onChange: (e) => {
-                        e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                        const sanitized = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                        setValue('fullName', sanitized, { shouldValidate: true });
+                        if (clearErrors && sanitized.trim()) clearErrors('fullName');
                     }
                 })}
                 error={errors.fullName?.message}
@@ -123,7 +135,7 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch sm:items-end w-full">
                 <div className="flex-1 space-y-1.5 group">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#843D9B]">Phone Number</label>
-                    <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.phone ? 'border-red-100 bg-red-50/30' : 'border-transparent focus-within:border-[#843D9B]'}`}>
+                    <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.phone ? 'border-red-300 bg-red-50/40' : 'border-transparent focus-within:border-[#843D9B]'}`}>
                         <span className="text-gray-800 font-medium text-sm mr-2 select-none pointer-events-none">+91</span>
                         <input
                             type="tel"
@@ -136,8 +148,10 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
                                     message: 'Invalid 10-digit mobile number starting with 6-9'
                                 },
                                 onChange: (e) => {
-                                    e.target.value = e.target.value.replace(/\D/g, '');
-                                    setIsPhoneVerified(false);
+                                    const sanitized = e.target.value.replace(/\D/g, '');
+                                    setValue('phone', sanitized, { shouldValidate: true });
+                                    setValue('isPhoneVerified', false);
+                                    if (clearErrors && sanitized.length === 10) clearErrors('phone');
                                 }
                             })}
                             disabled={isPhoneVerified}
@@ -169,7 +183,12 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
                             maxLength={6}
                             {...register('otp', {
                                 required: 'OTP is required',
-                                pattern: { value: /^\d{6}$/, message: 'OTP must be 6 digits' }
+                                pattern: { value: /^\d{6}$/, message: 'OTP must be 6 digits' },
+                                onChange: (e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    setValue('otp', val, { shouldValidate: true });
+                                    if (clearErrors && val.length === 6) clearErrors('otp');
+                                }
                             })}
                             className="flex-1 px-4 py-3 bg-white border border-purple-200 rounded-xl font-bold text-center tracking-[0.3em] text-lg focus:outline-none focus:border-[#843D9B]"
                         />
@@ -195,6 +214,10 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
                     pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Invalid email address'
+                    },
+                    onChange: (e) => {
+                        setValue('email', e.target.value, { shouldValidate: true });
+                        if (clearErrors && e.target.value.includes('@')) clearErrors('email');
                     }
                 })}
                 error={errors.email?.message}
@@ -202,14 +225,18 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
 
             <div className="flex flex-col space-y-1.5 w-full group">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#843D9B]">Password</label>
-                <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.password ? 'border-red-100 bg-red-50/30' : 'border-transparent focus-within:border-[#843D9B]'}`}>
+                <div className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.password ? 'border-red-300 bg-red-50/40' : 'border-transparent focus-within:border-[#843D9B]'}`}>
                     <Lock className={`w-4 h-4 mr-3 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400 group-focus-within:text-[#843D9B]'}`} />
                     <input
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         {...register('password', {
                             required: 'Password is required',
-                            validate: validatePassword
+                            validate: validatePassword,
+                            onChange: (e) => {
+                                setValue('password', e.target.value, { shouldValidate: true });
+                                if (clearErrors && e.target.value.length >= 6) clearErrors('password');
+                            }
                         })}
                         className="flex-1 bg-transparent border-none focus:ring-0 font-medium text-sm text-gray-900 placeholder:text-gray-300 outline-none w-full"
                     />
@@ -227,7 +254,7 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError }) => {
     );
 };
 
-export const Step2Business = ({ register, errors, setValue }) => {
+export const Step2Business = ({ register, errors, setValue, clearErrors }) => {
     const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
 
     const handleAutoLocation = async () => {
@@ -239,6 +266,7 @@ export const Step2Business = ({ register, errors, setValue }) => {
                 setValue('pincode', data.pincode || '', { shouldValidate: true });
                 setValue('latitude', data.latitude);
                 setValue('longitude', data.longitude);
+                if (clearErrors) clearErrors(['address', 'city', 'pincode']);
             }
         } catch (error) {
             console.error(error);
@@ -269,7 +297,11 @@ export const Step2Business = ({ register, errors, setValue }) => {
                 placeholder="e.g. Royal Stitches"
                 {...register('shopName', { 
                     required: 'Shop name is required',
-                    validate: (v) => (v && v.trim().length >= 2) || 'Shop name cannot be empty or spaces only'
+                    validate: (v) => (v && v.trim().length >= 2) || 'Shop name cannot be empty or spaces only',
+                    onChange: (e) => {
+                        setValue('shopName', e.target.value, { shouldValidate: true });
+                        if (clearErrors && e.target.value.trim()) clearErrors('shopName');
+                    }
                 })}
                 error={errors.shopName?.message}
             />
@@ -278,7 +310,11 @@ export const Step2Business = ({ register, errors, setValue }) => {
                 placeholder="Street, Landmark, Area"
                 {...register('address', { 
                     required: 'Address is required',
-                    validate: (v) => (v && v.trim().length >= 5) || 'Shop address cannot be empty or spaces only'
+                    validate: (v) => (v && v.trim().length >= 5) || 'Shop address cannot be empty or spaces only',
+                    onChange: (e) => {
+                        setValue('address', e.target.value, { shouldValidate: true });
+                        if (clearErrors && e.target.value.trim().length >= 5) clearErrors('address');
+                    }
                 })}
                 error={errors.address?.message}
             />
@@ -294,7 +330,9 @@ export const Step2Business = ({ register, errors, setValue }) => {
                             message: 'City can only contain alphabets'
                         },
                         onChange: (e) => {
-                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                            const sanitized = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                            setValue('city', sanitized, { shouldValidate: true });
+                            if (clearErrors && sanitized.trim()) clearErrors('city');
                         }
                     })}
                     error={errors.city?.message}
@@ -310,7 +348,9 @@ export const Step2Business = ({ register, errors, setValue }) => {
                             message: 'Enter a valid 6-digit pincode'
                         },
                         onChange: (e) => {
-                            e.target.value = e.target.value.replace(/\D/g, '');
+                            const sanitized = e.target.value.replace(/\D/g, '');
+                            setValue('pincode', sanitized, { shouldValidate: true });
+                            if (clearErrors && sanitized.length === 6) clearErrors('pincode');
                         }
                     })}
                     error={errors.pincode?.message}
@@ -320,7 +360,14 @@ export const Step2Business = ({ register, errors, setValue }) => {
                 label="Experience (Years)"
                 type="number"
                 placeholder="e.g. 5"
-                {...register('experienceInYears', { required: 'Experience is required', min: { value: 0, message: 'Invalid experience' } })}
+                {...register('experienceInYears', { 
+                    required: 'Experience is required', 
+                    min: { value: 0, message: 'Invalid experience' },
+                    onChange: (e) => {
+                        setValue('experienceInYears', e.target.value, { shouldValidate: true });
+                        if (clearErrors && e.target.value !== '') clearErrors('experienceInYears');
+                    }
+                })}
                 error={errors.experienceInYears?.message}
             />
             <Input
@@ -328,7 +375,11 @@ export const Step2Business = ({ register, errors, setValue }) => {
                 placeholder="e.g. Suits, Bridal, Alterations"
                 {...register('specializations', { 
                     required: 'Specializations are required',
-                    validate: (v) => (v && v.trim().length >= 2) || 'Specializations cannot be empty or spaces only'
+                    validate: (v) => (v && v.trim().length >= 2) || 'Specializations cannot be empty or spaces only',
+                    onChange: (e) => {
+                        setValue('specializations', e.target.value, { shouldValidate: true });
+                        if (clearErrors && e.target.value.trim()) clearErrors('specializations');
+                    }
                 })}
                 error={errors.specializations?.message}
             />

@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '../UIElements';
 import ImageUploader from '../../../../components/Common/ImageUploader';
 
-export const Step3Docs = ({ register, errors, setValue, watch }) => {
+export const Step3Docs = ({ register, errors, setValue, watch, clearErrors }) => {
     return (
         <div className="space-y-6 animate-in slide-in-from-right duration-300">
             <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 mb-2">
@@ -21,7 +21,9 @@ export const Step3Docs = ({ register, errors, setValue, watch }) => {
                         message: 'Aadhar must be exactly 12 digits'
                     },
                     onChange: (e) => {
-                        e.target.value = e.target.value.replace(/\D/g, '');
+                        const sanitized = e.target.value.replace(/\D/g, '');
+                        setValue('aadharNumber', sanitized, { shouldValidate: true });
+                        if (clearErrors && sanitized.length === 12) clearErrors('aadharNumber');
                     }
                 })}
                 error={errors.aadharNumber?.message}
@@ -29,17 +31,25 @@ export const Step3Docs = ({ register, errors, setValue, watch }) => {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <ImageUploader
-                        label="Aadhar Front"
+                        label="Aadhar Front *"
                         value={watch('aadharFront')}
-                        onChange={(file) => setValue('aadharFront', file, { shouldValidate: true })}
+                        onChange={(file) => {
+                            setValue('aadharFront', file, { shouldValidate: true });
+                            if (clearErrors && file) clearErrors('aadharFront');
+                        }}
+                        error={errors.aadharFront?.message}
                     />
                     {errors.aadharFront && <p className="text-[10px] text-red-500 font-bold pl-2 mt-1">{errors.aadharFront.message}</p>}
                 </div>
                 <div>
                     <ImageUploader
-                        label="Aadhar Back"
+                        label="Aadhar Back *"
                         value={watch('aadharBack')}
-                        onChange={(file) => setValue('aadharBack', file, { shouldValidate: true })}
+                        onChange={(file) => {
+                            setValue('aadharBack', file, { shouldValidate: true });
+                            if (clearErrors && file) clearErrors('aadharBack');
+                        }}
+                        error={errors.aadharBack?.message}
                     />
                     {errors.aadharBack && <p className="text-[10px] text-red-500 font-bold pl-2 mt-1">{errors.aadharBack.message}</p>}
                 </div>
@@ -56,16 +66,22 @@ export const Step3Docs = ({ register, errors, setValue, watch }) => {
                         message: 'Invalid PAN format (e.g. ABCDE1234F)'
                     },
                     onChange: (e) => {
-                        e.target.value = e.target.value.toUpperCase();
+                        const uppercaseVal = e.target.value.toUpperCase();
+                        setValue('panNumber', uppercaseVal, { shouldValidate: true });
+                        if (clearErrors && uppercaseVal.length === 10) clearErrors('panNumber');
                     }
                 })}
                 error={errors.panNumber?.message}
             />
             <div>
                 <ImageUploader
-                    label="PAN Card Image"
+                    label="PAN Card Image *"
                     value={watch('panImage')}
-                    onChange={(file) => setValue('panImage', file, { shouldValidate: true })}
+                    onChange={(file) => {
+                        setValue('panImage', file, { shouldValidate: true });
+                        if (clearErrors && file) clearErrors('panImage');
+                    }}
+                    error={errors.panImage?.message}
                 />
                 {errors.panImage && <p className="text-[10px] text-red-500 font-bold pl-2 mt-1">{errors.panImage.message}</p>}
             </div>
@@ -74,7 +90,11 @@ export const Step3Docs = ({ register, errors, setValue, watch }) => {
                 <ImageUploader
                     label="Shop License (Gumasta)"
                     value={watch('licenseImage')}
-                    onChange={(file) => setValue('licenseImage', file, { shouldValidate: true })}
+                    onChange={(file) => {
+                        setValue('licenseImage', file, { shouldValidate: true });
+                        if (clearErrors && file) clearErrors('licenseImage');
+                    }}
+                    error={errors.licenseImage?.message}
                 />
                 {errors.licenseImage && <p className="text-[10px] text-red-500 font-bold pl-2 mt-1">{errors.licenseImage.message}</p>}
             </div>
@@ -82,7 +102,7 @@ export const Step3Docs = ({ register, errors, setValue, watch }) => {
     );
 };
 
-export const Step4Portfolio = ({ register, errors, setValue, watch }) => {
+export const Step4Portfolio = ({ register, errors, setValue, watch, clearErrors }) => {
     return (
         <div className="space-y-6 animate-in slide-in-from-right duration-300">
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-2">
@@ -94,7 +114,11 @@ export const Step4Portfolio = ({ register, errors, setValue, watch }) => {
                 <ImageUploader
                     label="Portfolio Image 1"
                     value={watch('portfolio1')}
-                    onChange={(file) => setValue('portfolio1', file, { shouldValidate: true })}
+                    onChange={(file) => {
+                        setValue('portfolio1', file, { shouldValidate: true });
+                        if (clearErrors && file) clearErrors('portfolio1');
+                    }}
+                    error={errors.portfolio1?.message}
                 />
                 {errors.portfolio1 && <p className="text-[10px] text-red-500 font-bold pl-2 mt-1">{errors.portfolio1.message}</p>}
             </div>
@@ -103,7 +127,11 @@ export const Step4Portfolio = ({ register, errors, setValue, watch }) => {
                 <ImageUploader
                     label="Portfolio Image 2"
                     value={watch('portfolio2')}
-                    onChange={(file) => setValue('portfolio2', file, { shouldValidate: true })}
+                    onChange={(file) => {
+                        setValue('portfolio2', file, { shouldValidate: true });
+                        if (clearErrors && file) clearErrors('portfolio2');
+                    }}
+                    error={errors.portfolio2?.message}
                 />
                 {errors.portfolio2 && <p className="text-[10px] text-red-500 font-bold pl-2 mt-1">{errors.portfolio2.message}</p>}
             </div>
@@ -115,7 +143,13 @@ export const Step4Portfolio = ({ register, errors, setValue, watch }) => {
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold text-gray-400">Working Days</label>
                         <select
-                            {...register('workingDays', { required: 'Working days required' })}
+                            {...register('workingDays', { 
+                                required: 'Working days required',
+                                onChange: (e) => {
+                                    setValue('workingDays', e.target.value, { shouldValidate: true });
+                                    if (clearErrors && e.target.value) clearErrors('workingDays');
+                                }
+                            })}
                             className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
                         >
                             <option value="">Select Days</option>
@@ -123,11 +157,18 @@ export const Step4Portfolio = ({ register, errors, setValue, watch }) => {
                             <option value="mon-sat">Mon - Sat</option>
                             <option value="everyday">Everyday (Mon-Sun)</option>
                         </select>
+                        {errors.workingDays && <p className="text-[10px] text-red-500 font-bold pl-1">{errors.workingDays.message}</p>}
                     </div>
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold text-gray-400">Daily Hours</label>
                         <select
-                            {...register('workingHours', { required: 'Working hours required' })}
+                            {...register('workingHours', { 
+                                required: 'Working hours required',
+                                onChange: (e) => {
+                                    setValue('workingHours', e.target.value, { shouldValidate: true });
+                                    if (clearErrors && e.target.value) clearErrors('workingHours');
+                                }
+                            })}
                             className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
                         >
                             <option value="">Select Hours</option>
@@ -135,6 +176,7 @@ export const Step4Portfolio = ({ register, errors, setValue, watch }) => {
                             <option value="10-7">10:00 AM - 7:00 PM</option>
                             <option value="10-8">10:00 AM - 8:00 PM</option>
                         </select>
+                        {errors.workingHours && <p className="text-[10px] text-red-500 font-bold pl-1">{errors.workingHours.message}</p>}
                     </div>
                 </div>
             </div>
