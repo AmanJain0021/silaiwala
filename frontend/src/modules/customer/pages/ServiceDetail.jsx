@@ -1638,28 +1638,11 @@ const ServiceDetail = () => {
                                 )}
                             </AnimatePresence>
 
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleAddMore}
-                                    className={cn(
-                                        "flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex flex-col items-center justify-center gap-0.5 transition-all border-2 cursor-pointer min-h-[52px]",
-                                        isMeasurementValid 
-                                            ? "border-primary text-primary hover:bg-primary/5 active:scale-95" 
-                                            : "border-gray-200 text-gray-400 bg-gray-50 hover:bg-gray-100"
-                                    )}
-                                >
-                                    <span className="flex items-center gap-1.5">
-                                        <Tag size={14} /> {editBasketIndex != null ? 'Update Item' : 'Add Another'}
-                                    </span>
-                                    <span className="text-[8px] font-bold normal-case tracking-normal opacity-70">
-                                        {editBasketIndex != null ? 'Save edits' : 'Keep shopping'}
-                                    </span>
-                                </button>
-                                
+                            <div>
                                 <button
                                     onClick={handleBuyNow}
                                     className={cn(
-                                        "flex-[2.5] py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer min-h-[52px]",
+                                        "w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer min-h-[52px]",
                                         isMeasurementValid
                                             ? "bg-primary text-white shadow-primary/20 active:scale-[0.98] hover:bg-primary-dark" 
                                             : "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-600 hover:from-gray-300 hover:to-gray-400"
