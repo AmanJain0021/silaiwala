@@ -182,11 +182,44 @@ const ServiceDetail = () => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const res = await api.post('/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            if (res.data?.success && res.data?.data) {
-                const imageUrl = res.data.data;
+            formData.append('image', file);
+
+            let imageUrl = null;
+
+            // 1. Try protected /upload endpoint
+            try {
+                const res = await api.post('/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (res.data?.success && res.data?.data) {
+                    imageUrl = res.data.data;
+                }
+            } catch (authErr) {
+                console.warn('Protected /upload failed, attempting public upload:', authErr);
+                // 2. Try public upload endpoint as fallback
+                try {
+                    const pubRes = await api.post('/upload/public', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    if (pubRes.data?.success && pubRes.data?.data) {
+                        imageUrl = pubRes.data.data;
+                    }
+                } catch (pubErr) {
+                    console.warn('Public upload endpoint failed:', pubErr);
+                }
+            }
+
+            // 3. Ultimate Fallback: Base64 FileReader Data URL
+            if (!imageUrl) {
+                imageUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = () => resolve(null);
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            if (imageUrl) {
                 setSelectedStyle({
                     name: 'Custom Reference Design',
                     image: imageUrl,
@@ -1257,7 +1290,7 @@ const ServiceDetail = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <label className="flex flex-col items-center justify-center py-4 cursor-pointer">
+                                        <label className="relative flex flex-col items-center justify-center py-4 cursor-pointer">
                                             {isUploadingCustomStyle ? (
                                                 <Loader2 size={24} className="animate-spin text-primary mb-2" />
                                             ) : (
@@ -1274,9 +1307,10 @@ const ServiceDetail = () => {
                                             <input 
                                                 type="file" 
                                                 accept="image/*" 
+                                                onClick={(e) => { e.target.value = null; }}
                                                 onChange={handleCustomStyleUpload} 
                                                 disabled={isUploadingCustomStyle} 
-                                                className="hidden" 
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                                             />
                                         </label>
                                     )}

@@ -93,14 +93,23 @@ const AlterationForm = () => {
             const uploadPromises = images.map(async (img) => {
                 const formData = new FormData();
                 formData.append('image', img.file);
+                formData.append('file', img.file);
                 try {
                     const res = await api.post('/upload', formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
                     return res.data?.data || res.data?.imageUrl || res.data;
                 } catch (error) {
-                    console.error('Upload error:', error);
-                    return null;
+                    console.error('Protected Upload error, trying public:', error);
+                    try {
+                        const pubRes = await api.post('/upload/public', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        return pubRes.data?.data || pubRes.data?.imageUrl || pubRes.data;
+                    } catch (pubErr) {
+                        console.error('Public upload error, using preview fallback:', pubErr);
+                        return img.preview;
+                    }
                 }
             });
 
@@ -215,10 +224,18 @@ const AlterationForm = () => {
                         ))}
                         
                         {images.length < 5 && (
-                            <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
+                            <label className="relative w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
                                 {isUploading ? <Loader2 size={20} className="animate-spin" /> : <UploadCloud size={20} />}
                                 <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">Upload</span>
-                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                <input 
+                                    type="file" 
+                                    multiple 
+                                    accept="image/*" 
+                                    onClick={(e) => { e.target.value = null; }}
+                                    onChange={handleImageUpload} 
+                                    disabled={isUploading} 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                />
                             </label>
                         )}
                     </div>

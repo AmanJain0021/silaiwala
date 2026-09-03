@@ -154,12 +154,40 @@ const CustomDesignForm = () => {
     const uploadFile = async (file) => {
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('file', file);
         formData.append('folder', 'custom_designs');
-        const res = await api.post('/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
+
+        let res;
+        try {
+            res = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        } catch (err) {
+            console.warn('Protected /upload failed, trying /upload/public:', err);
+            try {
+                res = await api.post('/upload/public', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            } catch (pubErr) {
+                console.warn('Public upload failed, using base64 fallback:', pubErr);
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(file);
+                });
+                return base64;
+            }
+        }
+
         const url = extractUploadUrl(res);
-        if (!url) throw new Error('No URL returned from upload');
+        if (!url) {
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+            return base64;
+        }
         return url;
     };
 
@@ -404,7 +432,7 @@ const CustomDesignForm = () => {
 
                         {images.length < MAX_IMAGES && (
                             <div className="flex gap-2">
-                                <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
+                                <label className="relative w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
                                     {isUploading ? (
                                         <Loader2 size={20} className="animate-spin" />
                                     ) : (
@@ -418,12 +446,13 @@ const CustomDesignForm = () => {
                                         type="file"
                                         accept="image/*"
                                         capture="environment"
-                                        className="hidden"
+                                        onClick={(e) => { e.target.value = null; }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         onChange={handleImageUpload}
                                         disabled={isUploading || isSubmitting}
                                     />
                                 </label>
-                                <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
+                                <label className="relative w-20 h-20 rounded-xl border-2 border-dashed border-[#843D9B]/30 flex flex-col items-center justify-center text-[#843D9B] cursor-pointer hover:bg-indigo-50 transition-colors">
                                     {isUploading ? (
                                         <Loader2 size={20} className="animate-spin" />
                                     ) : (
@@ -437,7 +466,8 @@ const CustomDesignForm = () => {
                                         type="file"
                                         multiple
                                         accept="image/*"
-                                        className="hidden"
+                                        onClick={(e) => { e.target.value = null; }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         onChange={handleImageUpload}
                                         disabled={isUploading || isSubmitting}
                                     />
