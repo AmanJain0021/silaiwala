@@ -19,7 +19,7 @@ export const validatePassword = (password) => {
     if (!/[a-z]/.test(password)) return "Password must contain a lowercase letter";
     if (!/[0-9]/.test(password)) return "Password must contain a number";
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain a special character";
-    return "";
+    return true;
 };
 
 export const validatePincode = (pincode) => {
