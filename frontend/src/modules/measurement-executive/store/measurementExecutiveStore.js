@@ -25,6 +25,7 @@ const useMeasurementStore = create((set, get) => ({
         set({ loading: true, error: null });
         try {
             const res = await api.post('/auth/register', { ...data, role: 'measurement_executive' });
+            set({ loading: false });
             return res.data;
         } catch (error) {
             set({ error: error.response?.data?.message || 'Registration failed', loading: false });

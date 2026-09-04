@@ -206,7 +206,7 @@ const Signup = () => {
                     className="w-full mb-4 p-3 rounded-2xl bg-red-50 border border-red-100 text-xs font-bold text-red-600 flex items-center gap-2"
                 >
                     <span className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0" />
-                    {error}
+                    {typeof error === 'string' ? error : 'Please check your input details'}
                 </motion.div>
             )}
 
