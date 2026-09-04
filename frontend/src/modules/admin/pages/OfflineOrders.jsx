@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, X, Plus, Package, User, Phone, Ruler, ChevronDown, ChevronUp,
-    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send, Trash2, Type
+    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send, Trash2, Type, RotateCcw
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -1199,12 +1199,26 @@ const AdminOfflineOrders = () => {
                         </button>
                     )}
                 </div>
-                <button
-                    onClick={openCreateModal}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all uppercase tracking-wider w-full sm:w-auto justify-center"
-                >
-                    <Plus size={16} /> New Offline Order
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            fetchOrders();
+                            fetchStats();
+                            toast.success('Orders refreshed');
+                        }}
+                        className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 shadow-sm transition-all uppercase tracking-wider cursor-pointer"
+                        title="Refresh Data"
+                    >
+                        <RotateCcw size={14} className={loading ? "animate-spin text-primary" : "text-gray-500"} /> Refresh
+                    </button>
+                    <button
+                        onClick={openCreateModal}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all uppercase tracking-wider w-full sm:w-auto justify-center cursor-pointer"
+                    >
+                        <Plus size={16} /> New Offline Order
+                    </button>
+                </div>
             </div>
 
             {stats && (
