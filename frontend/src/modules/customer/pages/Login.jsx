@@ -54,6 +54,12 @@ const Login = () => {
                 return;
             }
 
+            if (checkRes.data.role && checkRes.data.role !== 'customer') {
+                setError(`This number is registered as a ${checkRes.data.role.toUpperCase()}. Customer login is for Customers only.`);
+                setSendingOtp(false);
+                return;
+            }
+
             await sendOTP(mobileNumber);
             setOtpSent(true);
         } catch (err) {

@@ -44,6 +44,11 @@ const TailorLogin = () => {
                 return;
             }
 
+            if (checkRes.data.role && checkRes.data.role !== 'tailor') {
+                setFormError('root', { type: 'manual', message: `This number is registered as a ${checkRes.data.role.toUpperCase()}. Partner portal is for Tailors only.` });
+                return;
+            }
+
             await api.post('/auth/send-otp', { phoneNumber: mobileNumber });
             setOtpSent(true);
         } catch (error) {
@@ -86,6 +91,8 @@ const TailorLogin = () => {
         } catch (error) {
             if (error.response?.status === 404) {
                 setFormError('root', { type: 'manual', message: 'First you registered & then login' });
+            } else if (error.response?.status === 403) {
+                setFormError('root', { type: 'manual', message: error.response?.data?.message || 'Access denied. This portal is strictly for Tailors.' });
             } else {
                 const message = error.response?.data?.message || "Invalid OTP or server error";
                 setFormError('root', { type: 'manual', message });

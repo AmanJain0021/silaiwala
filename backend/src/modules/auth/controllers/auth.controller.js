@@ -37,11 +37,19 @@ exports.checkUserExists = asyncHandler(async (req, res, next) => {
   }
   
   if (phoneNumber) {
-    let finalPhoneNumber = String(phoneNumber).replace(/[^\d]/g, '');
-    if (finalPhoneNumber.length >= 10) {
-      finalPhoneNumber = `+91${finalPhoneNumber.slice(-10)}`;
+    const digitsOnly = String(phoneNumber).replace(/[^\d]/g, '');
+    if (digitsOnly.length >= 10) {
+      const last10Digits = digitsOnly.slice(-10);
+      const phoneIdentifier = `+91${last10Digits}`;
+      query.push(
+        { phoneNumber: phoneIdentifier },
+        { phoneNumber: last10Digits },
+        { phoneNumber: `0${last10Digits}` },
+        { phoneNumber: new RegExp(`${last10Digits}$`) }
+      );
+    } else {
+      query.push({ phoneNumber: String(phoneNumber).trim() });
     }
-    query.push({ phoneNumber: finalPhoneNumber });
   }
 
   if (query.length === 0) {
