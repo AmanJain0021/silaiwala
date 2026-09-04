@@ -1210,7 +1210,7 @@ const AdminOfflineOrders = () => {
                         className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 shadow-sm transition-all uppercase tracking-wider cursor-pointer"
                         title="Refresh Data"
                     >
-                        <RotateCcw size={14} className={loading ? "animate-spin text-primary" : "text-gray-500"} /> Refresh
+                        <RotateCcw size={14} className={isLoading ? "animate-spin text-primary" : "text-gray-500"} /> Refresh
                     </button>
                     <button
                         onClick={openCreateModal}
