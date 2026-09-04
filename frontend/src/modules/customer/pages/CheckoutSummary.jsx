@@ -336,7 +336,8 @@ const CheckoutSummary = () => {
                                 measurements: item.configuration?.isTailorAtHome ? { type: 'home' } : item.configuration?.measurements || {},
                                 isTailorAtHome: !!item.configuration?.isTailorAtHome,
                                 selectedStyle: item.configuration?.selectedStyle || null,
-                                addons: item.configuration?.addons || []
+                                addons: item.configuration?.addons || [],
+                                customizations: item.configuration?.customizations || item.customizations || {}
                             };
                         }),
                         totalAmount: finalTotal,

@@ -5,16 +5,17 @@ const StyleAddon = require("../../../models/StyleAddon.js");
 // @access  Admin
 exports.createStyleAddon = async (req, res) => {
     try {
-        const { name, description, price, image, category, referenceImages, addonType } = req.body;
+        const { name, description, price, image, category, referenceImages, addonType, customizationType } = req.body;
         
         const addon = await StyleAddon.create({
             name,
-            description,
-            price,
-            image,
-            category,
+            description: description || '',
+            price: price !== undefined ? Number(price) : 0,
+            image: image || '',
+            category: category || 'All',
             referenceImages,
-            addonType: addonType || 'embellishment'
+            addonType: addonType || 'embellishment',
+            customizationType: customizationType || 'neck'
         });
 
         res.status(201).json({
@@ -31,11 +32,13 @@ exports.createStyleAddon = async (req, res) => {
 // @access  Public
 exports.getStyleAddons = async (req, res) => {
     try {
-        const { category, isActive, addonType } = req.query;
+        const { category, isActive, addonType, customizationType } = req.query;
         let query = {};
         
         if (category) query.category = category;
         if (isActive !== undefined) query.isActive = isActive === 'true';
+        if (customizationType) query.customizationType = customizationType;
+
         if (addonType === 'embellishment') {
             query.$or = [
                 { addonType: 'embellishment' },
@@ -78,6 +81,7 @@ exports.updateStyleAddon = async (req, res) => {
             'referenceImages',
             'isActive',
             'addonType',
+            'customizationType'
         ];
         const updates = {};
         for (const key of allowed) {

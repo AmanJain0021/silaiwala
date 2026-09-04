@@ -264,6 +264,18 @@ async function enrichOrderItemsForPricing(items) {
       addonsTotal = Number(item.pricing.addons);
     }
 
+    // Include customization price additions
+    const custs = item.customizations || item.configuration?.customizations;
+    if (custs && typeof custs === 'object') {
+      for (const c of Object.values(custs)) {
+        if (c && c.enabled && Number(c.price) > 0) {
+          addonsTotal += Number(c.price);
+        }
+      }
+    } else if (Number(item.pricing?.customizations) > 0) {
+      addonsTotal += Number(item.pricing.customizations);
+    }
+
     const basePrice =
       Number(svc?.basePrice) ||
       Number(item.pricing?.base) ||

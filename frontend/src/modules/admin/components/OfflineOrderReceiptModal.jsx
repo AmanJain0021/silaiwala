@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Printer, MessageCircle, ExternalLink } from 'lucide-react';
+import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDisplay';
 import {
     getOfflineTrackUrl,
     getOfflineTrackQrUrl,
@@ -142,6 +143,15 @@ const OfflineOrderReceiptModal = ({ order, onClose }) => {
                                     </p>
                                 )}
                             </div>
+
+                            {order.measurements && Object.keys(order.measurements instanceof Map ? Object.fromEntries(order.measurements) : order.measurements).length > 0 && (
+                                <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                                        Garment Measurements ({order.measurementUnit || 'inches'})
+                                    </p>
+                                    <MeasurementDataDisplay measurements={order.measurements} />
+                                </div>
+                            )}
 
                             <div className="bg-gray-50 rounded-2xl p-4 space-y-2 text-sm">
                                 <div className="flex justify-between">

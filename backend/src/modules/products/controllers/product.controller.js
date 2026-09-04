@@ -183,7 +183,13 @@ exports.getCategories = asyncHandler(async (req, res, next) => {
       query.parentCategory = parent === 'null' ? null : parent;
     }
     if (type) {
-      query.type = type;
+      if (type === 'store_item' || type === 'product' || type === 'store' || type === 'fabric') {
+        query.type = { $in: ['product', 'fabric', 'store_item', 'store'], $ne: 'service' };
+      } else if (type === 'service') {
+        query.type = { $in: ['service', 'garment'] };
+      } else {
+        query.type = type;
+      }
     }
 
     return await Category.find(query).lean();

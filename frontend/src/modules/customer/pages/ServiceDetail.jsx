@@ -9,6 +9,7 @@ import ServiceHero from '../components/service-detail/ServiceHero';
 import DeliverySelector from '../components/service-detail/DeliverySelector';
 import MeasurementSelector from '../components/service-detail/MeasurementSelector';
 import FabricSelector from '../components/service-detail/FabricSelector';
+import CustomizationSelector from '../components/service-detail/CustomizationSelector';
 import DesignUpload from '../components/service-detail/DesignUpload';
 import PriceSummary from '../components/service-detail/PriceSummary';
 import StyleAddonModal from '../components/service-detail/StyleAddonModal';
@@ -172,6 +173,10 @@ const ServiceDetail = () => {
     const [selectedAddons, setSelectedAddons] = useState(
         restoreBasketItem?.configuration?.addons || restored.selectedAddons || []
     );
+    const [selectedCustomizations, setSelectedCustomizations] = useState(
+        restoreBasketItem?.configuration?.customizations || restored.selectedCustomizations || {}
+    );
+    const [catalogCustomizations, setCatalogCustomizations] = useState([]);
     const [isUploadingCustomStyle, setIsUploadingCustomStyle] = useState(false);
 
     const handleCustomStyleUpload = async (e) => {
@@ -280,6 +285,7 @@ const ServiceDetail = () => {
         setSelectedFabric(cfg.selectedFabric || null);
         setSelectedStyle(cfg.selectedStyle || null);
         setSelectedAddons(Array.isArray(cfg.addons) ? cfg.addons : []);
+        setSelectedCustomizations(cfg.customizations || {});
         setIsTailorAtHome(!!cfg.isTailorAtHome || m?.type === 'home');
         setSelectedSavedProfile(null);
 
@@ -346,6 +352,7 @@ const ServiceDetail = () => {
                 selectedStyle,
                 isTailorAtHome,
                 selectedAddons,
+                selectedCustomizations,
                 fabricSource,
                 selectedFabric,
                 selectedSavedProfile,
@@ -356,7 +363,7 @@ const ServiceDetail = () => {
         } catch (e) {
             console.error("Failed to save service draft:", e);
         }
-    }, [id, deliveryType, measurementType, selectedStyle, isTailorAtHome, selectedAddons, fabricSource, selectedFabric, selectedSavedProfile, measurements, currentStep]);
+    }, [id, deliveryType, measurementType, selectedStyle, isTailorAtHome, selectedAddons, selectedCustomizations, fabricSource, selectedFabric, selectedSavedProfile, measurements, currentStep]);
 
     // Sticky booking bar is always visible (was previously scroll-to-bottom only,
     // which hid "Add Another" / "Book Now" for most users).
@@ -395,10 +402,17 @@ const ServiceDetail = () => {
                     setSelectedFabric(location.state.selectedFabric);
                 }
 
-                // Fetch global settings
-                const settingsRes = await api.get('/cms/settings');
+                // Fetch global settings and customization catalog
+                const [settingsRes, addonsRes] = await Promise.all([
+                    api.get('/cms/settings'),
+                    api.get('/style-addons?isActive=true')
+                ]);
                 
                 if (!isMounted) return;
+
+                if (addonsRes.data?.success) {
+                    setCatalogCustomizations(addonsRes.data.data || []);
+                }
                 
                 if (settingsRes.data?.success) {
                     if (settingsRes.data.data?.visitFee) {
@@ -572,6 +586,12 @@ const ServiceDetail = () => {
     const deliveryPrice = deliveryType === 'express' ? 150 : (deliveryType === 'premium' ? 350 : 0);
     const fabricPrice = (fabricSource === 'platform' && selectedFabric) ? selectedFabric.price : 0;
     const addonsPrice = selectedAddons.reduce((sum, a) => sum + a.price, 0);
+    const customizationsPrice = Object.values(selectedCustomizations || {}).reduce((sum, item) => {
+        if (item && item.enabled && item.price) {
+            return sum + (Number(item.price) || 0);
+        }
+        return sum;
+    }, 0);
     
     const calculateVisitPrice = () => {
         if (!isTailorAtHome) return 0;
@@ -596,9 +616,9 @@ const ServiceDetail = () => {
 
     const tailorAtHomePrice = calculateVisitPrice();
     
-    // Match backend calculation: Platform fee on base + addons only
-    const platformFee = Math.round((basePrice + addonsPrice) * (platformFeePercentage / 100));
-    const taxableAmount = basePrice + addonsPrice + fabricPrice + tailorAtHomePrice + platformFee;
+    // Match backend calculation: Platform fee on base + addons + customizations
+    const platformFee = Math.round((basePrice + addonsPrice + customizationsPrice) * (platformFeePercentage / 100));
+    const taxableAmount = basePrice + addonsPrice + customizationsPrice + fabricPrice + tailorAtHomePrice + platformFee;
     const taxes = Math.round(taxableAmount * (gstPercentage / 100));
     
     // Delivery fee is outside GST calculation on backend
@@ -619,6 +639,7 @@ const ServiceDetail = () => {
         setMeasurements(null);
         setSelectedStyle(null);
         setSelectedAddons([]);
+        setSelectedCustomizations({});
         setSelectedSavedProfile(null);
         setIsTailorAtHome(false);
         setFabricSource('customer');
@@ -759,6 +780,7 @@ const ServiceDetail = () => {
                     name: a.name || a.title,
                     price: Number(a.price) || 0,
                 })),
+                customizations: selectedCustomizations,
                 pending: false,
             },
             pricing: { 
@@ -766,6 +788,7 @@ const ServiceDetail = () => {
                 delivery: deliveryPrice, 
                 fabric: fabricPrice, 
                 addons: addonsPrice,
+                customizations: customizationsPrice,
                 tailorAtHome: tailorAtHomePrice,
                 platformFee,
                 taxes, 
@@ -1367,6 +1390,18 @@ const ServiceDetail = () => {
                     </section>
                 )}
 
+                {/* 2.6 Garment Customizations Section */}
+                {!isAlteration && (
+                    <section className="animate-in fade-in slide-in-from-bottom-3.5 duration-450">
+                        <CustomizationSelector
+                            categoryName={serviceData?.category?.name || serviceData?.title}
+                            catalogAddons={catalogCustomizations}
+                            selectedCustomizations={selectedCustomizations}
+                            onChange={setSelectedCustomizations}
+                        />
+                    </section>
+                )}
+
                 {!isAlteration && (
                     <section id="measurement-section" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="mb-2 px-1 flex items-center justify-between gap-2">
@@ -1611,6 +1646,12 @@ const ServiceDetail = () => {
                                                 <div className="flex justify-between text-emerald-600">
                                                     <span>Style Addons</span>
                                                     <span>+₹{addonsPrice.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {customizationsPrice > 0 && (
+                                                <div className="flex justify-between text-purple-600">
+                                                    <span>Customizations</span>
+                                                    <span>+₹{customizationsPrice.toLocaleString()}</span>
                                                 </div>
                                             )}
                                             {tailorAtHomePrice > 0 && (

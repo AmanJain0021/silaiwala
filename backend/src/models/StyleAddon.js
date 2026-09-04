@@ -7,19 +7,19 @@ const styleAddonSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: [true, 'Please add a description']
+        default: ''
     },
     price: {
         type: Number,
-        required: [true, 'Please add a price']
+        default: 0
     },
     image: {
         type: String,
-        required: [true, 'Please add an image URL']
+        default: ''
     },
     category: {
         type: String,
-        required: [true, 'Please add the clothing category applicable (e.g., Kurta, Shirt, Suit)']
+        default: 'All'
     },
     referenceImages: {
         left: { type: String, default: '' },
@@ -33,9 +33,14 @@ const styleAddonSchema = new mongoose.Schema({
     },
     addonType: {
         type: String,
-        enum: ['embellishment', 'embroidery'],
         default: 'embellishment'
+    },
+    customizationType: {
+        type: String,
+        enum: ['neck', 'sleeve', 'bottom', 'embroidery', 'lacePiping', 'lining', 'other'],
+        default: 'neck'
     }
 }, { timestamps: true });
 
 module.exports = mongoose.model('StyleAddon', styleAddonSchema);
+

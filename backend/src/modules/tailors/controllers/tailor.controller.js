@@ -4,6 +4,8 @@ const Customer = require("../../../models/Customer.js");
 const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
 const User = require("../../../models/User.js");
 const Order = require("../../../models/Order.js");
+const OfflineOrder = require("../../../models/OfflineOrder.js");
+const Review = require("../../../models/Review.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const { sendNotification } = require("../../../utils/notification.js");
@@ -96,6 +98,49 @@ exports.getTailorDetails = asyncHandler(async (req, res, next) => {
   if (!tailor) {
     return next(new ErrorResponse("Tailor profile not found", 404));
   }
+
+  const tailorUserObjectId = tailor.user?._id || tailor.user;
+  const tailorDocObjectId = tailor._id;
+  const userAndDocIds = [tailorUserObjectId, tailorDocObjectId].filter(Boolean);
+
+  // 1. Online completed/active orders (Order.tailor stores User ObjectId)
+  const onlineCount = await Order.countDocuments({
+    tailor: { $in: userAndDocIds }
+  });
+
+  // 2. Offline shop orders
+  const offlineCount = await OfflineOrder.countDocuments({
+    $or: [
+      { shopTailor: { $in: userAndDocIds } },
+      { createdBy: { $in: userAndDocIds } }
+    ]
+  });
+
+  const totalOrders = onlineCount + offlineCount;
+
+  // 3. Ratings and Reviews from Review model
+  const reviewsAgg = await Review.aggregate([
+    {
+      $match: {
+        targetId: { $in: userAndDocIds },
+        targetType: "Tailor"
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        avgRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 }
+      }
+    }
+  ]);
+
+  if (reviewsAgg.length > 0) {
+    tailor.rating = Number(reviewsAgg[0].avgRating.toFixed(1)) || tailor.rating || 5.0;
+    tailor.totalReviews = reviewsAgg[0].reviewCount || 0;
+  }
+
+  tailor.ordersCompleted = totalOrders;
 
   res.status(200).json({
     success: true,

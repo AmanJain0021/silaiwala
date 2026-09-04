@@ -981,26 +981,43 @@ const OrderTracking = () => {
                                         (sum, a) => sum + (Number(a.price) || 0),
                                         0
                                     );
+                                    const custs = item.customizations || item.configuration?.customizations || {};
+                                    const activeCusts = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                    const custTotal = activeCusts.reduce((sum, [_, val]) => sum + (Number(val.price) || 0), 0);
+
                                     return (
-                                        <div key={item._id || idx} className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                                    <img src={itemImg} alt={label} className="w-full h-full object-cover" />
+                                        <div key={item._id || idx} className="space-y-2">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                                        <img src={itemImg} alt={label} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">
+                                                            {orderItems.length > 1 ? `${idx + 1}. ` : ''}{label}
+                                                        </h4>
+                                                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                                                            Qty: {item.quantity || 1}
+                                                            {item.measurements?.type ? ` · ${String(item.measurements.type).replace(/-/g, ' ')}` : ''}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">
-                                                        {orderItems.length > 1 ? `${idx + 1}. ` : ''}{label}
-                                                    </h4>
-                                                    <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
-                                                        Qty: {item.quantity || 1}
-                                                        {item.measurements?.type ? ` · ${String(item.measurements.type).replace(/-/g, ' ')}` : ''}
-                                                    </p>
-                                                </div>
+                                                {(linePrice > 0 || addonTotal > 0 || custTotal > 0) && (
+                                                    <span className="text-sm font-black text-gray-900 shrink-0">
+                                                        ₹{(linePrice + addonTotal + custTotal).toLocaleString('en-IN')}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {(linePrice > 0 || addonTotal > 0) && (
-                                                <span className="text-sm font-black text-gray-900 shrink-0">
-                                                    ₹{(linePrice + addonTotal).toLocaleString('en-IN')}
-                                                </span>
+                                            {activeCusts.length > 0 && (
+                                                <div className="ml-15 p-2.5 bg-purple-50/60 rounded-xl border border-purple-100 space-y-1">
+                                                    <p className="text-[9px] font-black text-primary uppercase tracking-wider">Garment Customizations:</p>
+                                                    {activeCusts.map(([key, val]) => (
+                                                        <div key={key} className="flex justify-between text-[10px] font-bold text-gray-700">
+                                                            <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}: {val.name}</span>
+                                                            {val.price > 0 && <span className="text-primary font-black">+₹{val.price}</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
                                     );

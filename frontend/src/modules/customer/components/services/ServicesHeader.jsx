@@ -80,9 +80,13 @@ const ServicesHeader = ({ searchQuery, setSearchQuery, activeFilter, setActiveFi
                         </p>
                     </div>
                 </div>
-                <button className="relative p-2 rounded-full hover:bg-gray-50 text-gray-600 transition-colors">
+                <button
+                    type="button"
+                    onClick={() => navigate('/user/notifications')}
+                    className="relative p-2 rounded-full hover:bg-gray-50 text-gray-600 active:scale-90 transition-all cursor-pointer"
+                    aria-label="Notifications"
+                >
                     <Bell size={20} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-white"></span>
                 </button>
             </div>
 

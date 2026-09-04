@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Package, Search, ListFilter, Ruler, Bell, Calendar, Clock, Truck, CheckCircle2, Scissors, PenTool, ShieldCheck, MessageCircle, ShoppingBag } from 'lucide-react';
 import useOrderStore from '../../../store/orderStore';
 import OrderCard from '../components/orders/OrderCard';
@@ -16,6 +16,7 @@ import api from '../../../utils/api';
 
 const OrdersPage = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { orders, fetchOrders, isLoading } = useOrderStore();
     const { user } = useAuthStore();
     const [alterations, setAlterations] = useState([]);
@@ -161,10 +162,6 @@ const OrdersPage = () => {
         };
     }, [activeData]);
 
-    // Derived counts across all orders for badge (if needed)
-    // You could wire up unread notifications here instead
-    const notifCount = 3; 
-
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-6 font-sans">
             {/* 1. Purple Header */}
@@ -178,13 +175,13 @@ const OrdersPage = () => {
                         <button className="text-white hover:text-gray-200 transition-colors">
                             <Search size={22} />
                         </button>
-                        <button className="relative text-white hover:text-gray-200 transition-colors">
+                        <button 
+                            type="button"
+                            onClick={() => navigate('/user/notifications')}
+                            className="relative text-white hover:text-gray-200 transition-colors cursor-pointer"
+                            aria-label="Notifications"
+                        >
                             <Bell size={22} />
-                            {notifCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-pink-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center border-2 border-[#6b2a80]">
-                                    {notifCount}
-                                </span>
-                            )}
                         </button>
                     </div>
                 </div>

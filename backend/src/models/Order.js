@@ -68,6 +68,7 @@ const orderSchema = new mongoose.Schema(
         measurements: { type: mongoose.Schema.Types.Mixed, default: {} },
         selectedStyle: Object,
         styleAddons: { type: Array, default: [] },
+        customizations: { type: mongoose.Schema.Types.Mixed, default: {} },
       },
     ],
     totalAmount: {

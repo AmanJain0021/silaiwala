@@ -131,6 +131,36 @@ const TailorProfile = () => {
         }
     };
 
+    const artisanBadge = (tailor?.experienceInYears || 0) >= 15 
+        ? 'Master Craftsman' 
+        : (tailor?.experienceInYears || 0) >= 5 
+            ? 'Expert Artisan' 
+            : (tailor?.experienceInYears || 0) >= 1
+                ? 'Skilled Artisan'
+                : 'Verified Partner';
+
+    const finishedOrdersCount = (tailor?.ordersCompleted !== undefined && tailor.ordersCompleted > 0) 
+        ? `${tailor.ordersCompleted}+` 
+        : (tailor?.totalReviews > 0 
+            ? `${tailor.totalReviews}+` 
+            : '0');
+
+    const experienceText = tailor?.experienceInYears && tailor.experienceInYears > 0
+        ? `${tailor.experienceInYears}y`
+        : 'New';
+
+    const deliveryTime = tailor?.avgDeliveryDays 
+        ? `${tailor.avgDeliveryDays}d` 
+        : '3-5d';
+
+    const bioText = tailor?.bio && tailor.bio.trim() !== ''
+        ? tailor.bio
+        : `Custom tailoring specialist at ${tailor?.shopName || 'SilaiWala'}. Specialized in ${tailor?.specializations?.join(', ') || 'quality stitching & alterations'}.`;
+
+    const addressText = tailor?.location?.address || tailor?.address || [tailor?.location?.city, tailor?.location?.state].filter(Boolean).join(', ') || 'Atelier address available upon order';
+
+    const mapQuery = encodeURIComponent(`${tailor?.shopName || ''} ${addressText}`);
+
     return (
         <div className="min-h-screen bg-[#F7F8FC] pb-32 font-sans overflow-x-hidden">
             {/* 1. Dynamic Header with Parallax-like feel */}
@@ -190,19 +220,23 @@ const TailorProfile = () => {
                                 <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{tailor.shopName || 'Tailor Partner'}</h2>
                             </div>
                             <div className="flex items-center gap-1.5 mb-3">
-                                <div className="bg-[#843D9B] text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Expert Artisan</div>
+                                <div className="bg-[#843D9B] text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">
+                                    {artisanBadge}
+                                </div>
                                 <div className="h-1 w-1 bg-gray-300 rounded-full"></div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{tailor.specializations?.[0] || 'Expert Tailor'}</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                    {tailor.specializations?.[0] || 'Expert Tailor'}
+                                </span>
                             </div>
                             <div className="flex items-center gap-4 text-xs">
                                 <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-1 rounded-lg">
                                     <Star size={12} className="fill-[#843D9B] text-[#843D9B]" />
-                                    <span className="font-black text-[#843D9B]">{tailor.rating || 0}</span>
+                                    <span className="font-black text-[#843D9B]">{tailor.rating || 5.0}</span>
                                     <span className="text-[#843D9B]/40 text-[10px] font-bold">({tailor.totalReviews || 0})</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-gray-400 font-bold">
                                     <MapPin size={12} className="text-[#843D9B]/30" />
-                                    <span>Near you</span>
+                                    <span>{tailor.location?.city || 'Near you'}</span>
                                 </div>
                             </div>
                         </div>
@@ -212,17 +246,17 @@ const TailorProfile = () => {
                     <div className="mt-5 grid grid-cols-3 gap-2">
                         <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-50 text-center">
                             <Award size={18} className="mx-auto mb-1 text-[#843D9B]" />
-                            <span className="block text-xs font-black text-gray-900 leading-none">{tailor.experienceInYears || 0}y</span>
+                            <span className="block text-xs font-black text-gray-900 leading-none">{experienceText}</span>
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-1 block">Experience</span>
                         </div>
                         <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100 text-center">
                             <CheckCircle2 size={18} className="mx-auto mb-1 text-green-600" />
-                            <span className="block text-xs font-black text-gray-900 leading-none">100+</span>
+                            <span className="block text-xs font-black text-gray-900 leading-none">{finishedOrdersCount}</span>
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-1 block">Finished</span>
                         </div>
                         <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100 text-center">
                             <Clock size={18} className="mx-auto mb-1 text-amber-600" />
-                            <span className="block text-xs font-black text-gray-900 leading-none">3-5d</span>
+                            <span className="block text-xs font-black text-gray-900 leading-none">{deliveryTime}</span>
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-1 block">Delivery</span>
                         </div>
                     </div>
@@ -231,24 +265,29 @@ const TailorProfile = () => {
                     <div className="mt-4 p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
                         <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-1.5 opacity-40">Artisan's Bio</h3>
                         <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
-                            {tailor.bio || "Crafting perfect fits with dedication and precision. Every stitch tells a story of elegance and comfort."}
+                            {bioText}
                         </p>
                     </div>
 
                     {/* Location Sneak Peek */}
                     <div className="mt-4">
                         <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-2 opacity-40 px-1">Artisan's Atelier</h3>
-                        <div className="bg-gray-100 h-24 rounded-2xl relative overflow-hidden active:scale-[0.99] transition-transform">
-                            <img src="https://images.unsplash.com/photo-1524613032530-449a5d94c285?w=600" className="w-full h-full object-cover blur-[1px] grayscale-[0.5]" alt="Map" />
+                        <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-gray-100 h-24 rounded-2xl relative overflow-hidden active:scale-[0.99] transition-transform group cursor-pointer"
+                        >
+                            <img src="https://images.unsplash.com/photo-1524613032530-449a5d94c285?w=600" className="w-full h-full object-cover blur-[1px] grayscale-[0.5] group-hover:scale-105 transition-transform" alt="Map" />
                             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                                 <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl border border-white shadow-xl flex items-center gap-2">
-                                    <MapPin size={14} className="text-error" />
+                                    <MapPin size={14} className="text-rose-600" />
                                     <span className="text-[10px] font-black text-gray-800 uppercase tracking-widest">Open in Maps</span>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                         <p className="text-[10px] text-gray-400 font-bold mt-2 px-1 flex items-center gap-1">
-                            <Info size={10} /> {tailor.location?.address}
+                            <Info size={10} /> {addressText}
                         </p>
                     </div>
 

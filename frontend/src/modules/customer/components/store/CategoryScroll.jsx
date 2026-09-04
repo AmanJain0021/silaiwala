@@ -15,8 +15,10 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
     const fetchCategories = async () => {
         setIsLoading(true);
         try {
-            // Removed type filter so ALL categories (Product, Garment, etc) added by admin show up
-            const response = await api.get('/products/categories').catch(() => null);
+            // Fetch store categories matching productType and exclude stitching services
+            const response = await api.get('/products/categories', {
+                params: { type: productType || 'product' }
+            }).catch(() => null);
 
             if (response?.data?.success && Array.isArray(response.data.data)) {
                 setCategories(response.data.data);
@@ -35,7 +37,13 @@ const CategoryScroll = ({ onSelectCategory, activeCategory, productType = 'store
         fetchCategories();
     }, [productType]);
 
-    const displayCategories = categories;
+    // Exclude stitching service categories from Store category scroll bar
+    const displayCategories = categories.filter(cat => {
+        if (!cat) return false;
+        const catType = typeof cat === 'string' ? '' : (cat.type || '').toLowerCase();
+        if (catType === 'service') return false;
+        return true;
+    });
 
     return (
         <div className="bg-white py-3 border-b border-slate-100 transition-all duration-300">

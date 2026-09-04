@@ -967,6 +967,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       }
     }
 
+    const rawCustomizations = item.customizations || item.configuration?.customizations || {};
+
     formattedItems.push({
       product: validProduct,
       service: validService,
@@ -978,6 +980,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       measurements: rawMeasurements,
       selectedStyle: item.selectedStyle || null,
       styleAddons,
+      customizations: rawCustomizations,
     });
   }
 

@@ -53,7 +53,7 @@ const offlineOrderSchema = new mongoose.Schema(
     /** Same Map shape as Order.items[].measurements / Measurement.measurements */
     measurements: {
       type: Map,
-      of: Number,
+      of: mongoose.Schema.Types.Mixed,
       default: {},
     },
     measurementUnit: {

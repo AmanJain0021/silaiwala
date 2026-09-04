@@ -47,7 +47,7 @@ const offlineCustomerSchema = new mongoose.Schema(
         },
         measurements: {
           type: Map,
-          of: Number,
+          of: mongoose.Schema.Types.Mixed,
           default: {},
         },
         unit: {

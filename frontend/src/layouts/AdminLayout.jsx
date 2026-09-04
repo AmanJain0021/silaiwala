@@ -130,6 +130,7 @@ const AdminLayout = () => {
         { icon: <Megaphone size={20} />, label: 'CMS', path: '/admin/cms' },
         { icon: <CreditCard size={20} />, label: 'Subscriptions', path: '/admin/subscriptions' },
         { icon: <BarChart3 size={20} />, label: 'Reports', path: '/admin/reports' },
+        { icon: <Sparkles size={20} />, label: 'Customizations', path: '/admin/customizations' },
         { icon: <Sparkles size={20} />, label: 'Style Addons', path: '/admin/style-addons' },
         { icon: <Feather size={20} />, label: 'Embroidery', path: '/admin/embroidery-addons' },
         { icon: <Mail size={20} />, label: 'Support', path: '/admin/support' },

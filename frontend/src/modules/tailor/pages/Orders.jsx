@@ -1144,6 +1144,56 @@ const Orders = () => {
                                             ))}
                                         </div>
                                     )}
+
+                                    {(() => {
+                                        const custs = item.customizations || item.configuration?.customizations || {};
+                                        const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                        if (activeCustEntries.length === 0) return null;
+
+                                        const slotLabels = {
+                                            neck: 'Neck Design',
+                                            sleeve: 'Sleeve Style',
+                                            bottom: 'Bottom Style',
+                                            embroidery: 'Embroidery Work',
+                                            lacePiping: 'Lace / Piping',
+                                            lining: 'Inner Lining',
+                                            other: 'Customization'
+                                        };
+
+                                        return (
+                                            <div className="mt-3 p-3 bg-purple-50/80 rounded-2xl border border-purple-200 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
+                                                        <Scissors size={12} /> Garment Customizations ({activeCustEntries.length})
+                                                    </p>
+                                                    <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-900 px-2 py-0.5 rounded-md">
+                                                        Tailor Specs
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    {activeCustEntries.map(([key, val]) => (
+                                                        <div key={key} className="p-2 bg-white rounded-xl border border-purple-100/80 flex flex-col gap-1">
+                                                            <div className="flex justify-between items-center text-[11px] font-bold">
+                                                                <span className="text-gray-500 uppercase tracking-wider text-[9px] font-black">{slotLabels[key] || key}:</span>
+                                                                <span className="text-gray-900 font-black">{val.name || 'Custom Option'}</span>
+                                                                {val.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{val.price}</span>}
+                                                            </div>
+                                                            {val.refImage && (
+                                                                <div className="mt-1">
+                                                                    <img
+                                                                        src={val.refImage}
+                                                                        alt={val.name || key}
+                                                                        className="h-20 w-auto rounded-lg object-cover border border-gray-200 cursor-pointer"
+                                                                        onClick={() => window.open(val.refImage, '_blank')}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         ))}

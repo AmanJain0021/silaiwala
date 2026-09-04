@@ -3,12 +3,15 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, X, Plus, Package, User, Phone, Ruler, ChevronDown, ChevronUp,
-    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send, Trash2
+    IndianRupee, StickyNote, CheckCircle2, Clock, Scissors, Upload, Image as ImageIcon, AlertTriangle, Receipt, Truck, MapPin, Star, Loader2, Navigation, Send, Trash2, Type
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import OfflineOrderReceiptModal from '../components/OfflineOrderReceiptModal';
 import OfflineProductionPipeline from '../components/OfflineProductionPipeline';
+import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDisplay';
+import MeasurementFieldsBuilder from '../components/MeasurementFieldsBuilder';
+import { isHeadingField, getFieldKey, sanitizeMeasurementFields } from '../../../utils/measurementFields';
 import {
     OFFLINE_STATUS_TABS,
     getOfflineStatusLabel,
@@ -16,16 +19,126 @@ import {
     normalizeOfflineStatus,
 } from '../constants/offlineOrderStatus';
 
-const MEASUREMENT_FIELDS = [
-    { key: 'chest', label: 'Chest / Bust' },
-    { key: 'waist', label: 'Waist' },
-    { key: 'hips', label: 'Hips' },
-    { key: 'shoulder', label: 'Shoulder' },
-    { key: 'length', label: 'Length' },
-    { key: 'neck', label: 'Neck' },
-    { key: 'sleeve', label: 'Sleeve' },
-    { key: 'inseam', label: 'Inseam' },
+const MEASUREMENT_PRESETS = [
+    {
+        key: 'kurta',
+        name: 'Kurta / Kurti',
+        fields: [
+            { type: 'heading', key: 'h_upper', label: 'Top / Kurta Details' },
+            { type: 'field', key: 'chest', label: 'Chest / Bust', placeholder: '34', isRequired: true },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
+            { type: 'field', key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+            { type: 'heading', key: 'h_lower', label: 'Length & Sleeves' },
+            { type: 'field', key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+            { type: 'field', key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16', isRequired: false },
+            { type: 'field', key: 'neck', label: 'Front Neck Depth', placeholder: '6', isRequired: false },
+        ]
+    },
+    {
+        key: 'blouse',
+        name: 'Blouse',
+        fields: [
+            { type: 'heading', key: 'h_blouse', label: 'Blouse Details' },
+            { type: 'field', key: 'chest', label: 'Bust / Chest', placeholder: '34', isRequired: true },
+            { type: 'field', key: 'underbust', label: 'Underbust', placeholder: '30', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
+            { type: 'field', key: 'length', label: 'Blouse Length', placeholder: '14', isRequired: true },
+            { type: 'field', key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7', isRequired: false },
+            { type: 'field', key: 'backNeck', label: 'Back Neck Depth', placeholder: '8', isRequired: false },
+            { type: 'field', key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10', isRequired: false },
+        ]
+    },
+    {
+        key: 'shirt',
+        name: 'Shirt',
+        fields: [
+            { type: 'heading', key: 'h_shirt', label: 'Shirt Details' },
+            { type: 'field', key: 'chest', label: 'Chest', placeholder: '38', isRequired: true },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '34', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '17', isRequired: true },
+            { type: 'field', key: 'length', label: 'Shirt Length', placeholder: '30', isRequired: true },
+            { type: 'field', key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24', isRequired: true },
+            { type: 'field', key: 'neck', label: 'Collar Size', placeholder: '15', isRequired: false },
+        ]
+    },
+    {
+        key: 'pant',
+        name: 'Pant / Trouser',
+        fields: [
+            { type: 'heading', key: 'h_pant', label: 'Pant / Trouser Details' },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
+            { type: 'field', key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+            { type: 'field', key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
+            { type: 'field', key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
+            { type: 'field', key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
+            { type: 'field', key: 'inseam', label: 'Inseam', placeholder: '29', isRequired: false },
+        ]
+    },
+    {
+        key: 'suit',
+        name: 'Suit / Lehenga',
+        fields: [
+            { type: 'heading', key: 'h_top', label: 'Top / Blouse' },
+            { type: 'field', key: 'chest', label: 'Bust / Chest', placeholder: '36', isRequired: true },
+            { type: 'field', key: 'waist', label: 'Waist', placeholder: '30', isRequired: true },
+            { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '14.5', isRequired: true },
+            { type: 'field', key: 'topLength', label: 'Top Length', placeholder: '24', isRequired: true },
+            { type: 'heading', key: 'h_bottom', label: 'Bottom / Lehenga' },
+            { type: 'field', key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+            { type: 'field', key: 'bottomLength', label: 'Bottom Length', placeholder: '42', isRequired: true },
+            { type: 'field', key: 'inseam', label: 'Inseam / Bottom Opening', placeholder: '14', isRequired: false },
+        ]
+    }
 ];
+
+const getFieldsForGarmentType = (garmentType = '', categoriesList = []) => {
+    const term = (garmentType || '').trim().toLowerCase();
+    if (!term) return MEASUREMENT_PRESETS[4].fields;
+
+    const matchedCategory = (categoriesList || []).find(
+        (c) => (c.name || '').trim().toLowerCase() === term
+    );
+    if (
+        matchedCategory &&
+        Array.isArray(matchedCategory.measurementFields) &&
+        matchedCategory.measurementFields.length > 0
+    ) {
+        return matchedCategory.measurementFields;
+    }
+
+    if (term.includes('blouse')) return MEASUREMENT_PRESETS[1].fields;
+    if (term.includes('shirt')) return MEASUREMENT_PRESETS[2].fields;
+    if (
+        term.includes('pant') ||
+        term.includes('trouser') ||
+        term.includes('salwar') ||
+        term.includes('pyjama')
+    )
+        return MEASUREMENT_PRESETS[3].fields;
+    if (term.includes('kurta') || term.includes('kurti') || term.includes('pheran'))
+        return MEASUREMENT_PRESETS[0].fields;
+    if (
+        term.includes('suit') ||
+        term.includes('lehenga') ||
+        term.includes('anarkali') ||
+        term.includes('sherwani')
+    )
+        return MEASUREMENT_PRESETS[4].fields;
+
+    return [
+        { type: 'heading', key: 'h_upper', label: 'Upper Body Measurements' },
+        { type: 'field', key: 'chest', label: 'Chest / Bust', placeholder: '36', isRequired: true },
+        { type: 'field', key: 'waist', label: 'Waist', placeholder: '30', isRequired: true },
+        { type: 'field', key: 'shoulder', label: 'Shoulder', placeholder: '15', isRequired: true },
+        { type: 'field', key: 'neck', label: 'Neck Depth', placeholder: '6', isRequired: false },
+        { type: 'heading', key: 'h_lower', label: 'Lower Body & Length' },
+        { type: 'field', key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
+        { type: 'field', key: 'length', label: 'Full Length', placeholder: '42', isRequired: true },
+        { type: 'field', key: 'sleeve', label: 'Sleeve Length', placeholder: '18', isRequired: false },
+        { type: 'field', key: 'inseam', label: 'Inseam / Bottom Opening', placeholder: '14', isRequired: false },
+    ];
+};
 
 const CUSTOMIZATION_SLOTS = [
     { key: 'neck', label: 'Neck Design', categoryMatch: 'Neck' },
@@ -35,9 +148,6 @@ const CUSTOMIZATION_SLOTS = [
     { key: 'lacePiping', label: 'Lace / Piping', categoryMatch: 'Lace', checkbox: true },
     { key: 'lining', label: 'Lining', checkboxOnly: true },
 ];
-
-const emptyMeasurements = () =>
-    Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, '']));
 
 const emptyCustomizations = () => ({
     neck: { name: '', price: 0, refImage: '', enabled: false, estimatedTime: '' },
@@ -59,7 +169,8 @@ const emptyForm = {
     priority: 'normal',
     notes: '',
     measurementUnit: 'inches',
-    measurements: emptyMeasurements(),
+    measurementFields: getFieldsForGarmentType('Suit'),
+    measurements: {},
     measurementPhotos: [],
     savedMeasurementLabel: '',
     selectedSavedMeasurementIdx: '',
@@ -128,6 +239,8 @@ const AdminOfflineOrders = () => {
     const [pendingFulfillmentOnly, setPendingFulfillmentOnly] = useState(false);
     const [packages, setPackages] = useState([]);
     const [garmentTypes, setGarmentTypes] = useState(['Suit', 'Pheran', 'Blouse', 'Kurti', 'Lehenga']);
+    const [categoriesList, setCategoriesList] = useState([]);
+    const [isCustomizingFields, setIsCustomizingFields] = useState(false);
     const [styleAddonsCatalog, setStyleAddonsCatalog] = useState([]);
     const [tailors, setTailors] = useState([]);
     const [deliveryPartners, setDeliveryPartners] = useState([]);
@@ -175,17 +288,19 @@ const AdminOfflineOrders = () => {
 
     const fetchMeta = useCallback(async () => {
         try {
-            const [metaRes, addonsRes, tailorsRes, deliveryRes] = await Promise.all([
+            const [metaRes, addonsRes, tailorsRes, deliveryRes, categoriesRes] = await Promise.all([
                 api.get('/admin/offline-orders/meta'),
                 api.get('/style-addons'),
                 api.get('/admin/users?role=tailor&limit=100'),
                 api.get('/admin/users?role=delivery&limit=100'),
+                api.get('/admin/categories?type=service').catch(() => ({ data: { data: [] } })),
             ]);
             if (metaRes.data?.data?.packages) setPackages(metaRes.data.data.packages);
             if (metaRes.data?.data?.garmentTypes) setGarmentTypes(metaRes.data.data.garmentTypes);
             setStyleAddonsCatalog((addonsRes.data?.data || []).filter((a) => a.isActive !== false));
             setTailors(tailorsRes.data?.data || []);
             setDeliveryPartners(deliveryRes.data?.data || []);
+            if (categoriesRes.data?.data) setCategoriesList(categoriesRes.data.data);
         } catch (error) {
             if (error?.name === 'CanceledError') return;
             console.error('Failed to load offline order meta:', error);
@@ -351,19 +466,33 @@ const AdminOfflineOrders = () => {
 
     const balanceDue = Math.max(0, computedTotal - (Number(formData.advancePaid) || 0));
 
+    const handleGarmentTypeChange = (newType) => {
+        const fields = getFieldsForGarmentType(newType, categoriesList);
+        setFormData((prev) => ({
+            ...prev,
+            garmentType: newType,
+            measurementFields: fields,
+        }));
+    };
+
     const openCreateModal = () => {
         const customerId = searchParams.get('customer');
         const pkg = packages.find((p) => p.id === 'basic') || packages[0];
+        const initialGarment = 'Suit';
+        const initialFields = getFieldsForGarmentType(initialGarment, categoriesList);
         setFormData({
             ...emptyForm,
             offlineCustomer: customerId || '',
+            garmentType: initialGarment,
             stitchingPackage: pkg?.id || 'basic',
             stitchingCharges: pkg?.defaultPrice || 800,
-            measurements: emptyMeasurements(),
+            measurementFields: initialFields,
+            measurements: {},
             customizations: emptyCustomizations(),
             measurementPhotos: [],
             styleAddons: [],
         });
+        setIsCustomizingFields(false);
         setShowMeasurements(true);
         setShowCustomizations(true);
         setCustomerSearch('');
@@ -398,10 +527,16 @@ const AdminOfflineOrders = () => {
         const profiles = selectedCustomerDetail?.savedMeasurements || [];
         const profile = profiles[idx];
         if (!profile) return;
-        const measurements = emptyMeasurements();
+        const measurements = {};
         Object.entries(profile.measurements || {}).forEach(([key, value]) => {
-            measurements[key] = value ?? '';
+            if (key !== 'measurementLayout') {
+                measurements[key] = value ?? '';
+            }
         });
+        let layoutFields = profile.measurementFields || profile.measurements?.measurementLayout || null;
+        if (!layoutFields || !layoutFields.length) {
+            layoutFields = getFieldsForGarmentType(profile.garmentType || formData.garmentType, categoriesList);
+        }
         setFormData((prev) => ({
             ...prev,
             selectedSavedMeasurementIdx: String(idx),
@@ -409,6 +544,7 @@ const AdminOfflineOrders = () => {
             garmentType: profile.garmentType || prev.garmentType,
             measurementUnit: profile.unit || 'inches',
             measurements,
+            measurementFields: layoutFields,
         }));
     };
 
@@ -492,14 +628,269 @@ const AdminOfflineOrders = () => {
 
     const buildMeasurementsPayload = () => {
         const out = {};
-        MEASUREMENT_FIELDS.forEach(({ key }) => {
-            const raw = formData.measurements[key];
-            if (raw !== '' && raw !== null && raw !== undefined) {
-                const n = Number(raw);
-                if (!Number.isNaN(n) && n > 0) out[key] = n;
+        const fields = Array.isArray(formData.measurementFields) && formData.measurementFields.length > 0
+            ? formData.measurementFields
+            : getFieldsForGarmentType(formData.garmentType, categoriesList);
+
+        Object.entries(formData.measurements || {}).forEach(([key, val]) => {
+            if (val !== '' && val !== null && val !== undefined) {
+                const n = Number(val);
+                if (!Number.isNaN(n) && n > 0) {
+                    out[key] = n;
+                } else if (typeof val === 'string' && val.trim() !== '') {
+                    out[key] = val.trim();
+                }
             }
         });
+
+        out.measurementLayout = sanitizeMeasurementFields(fields);
         return out;
+    };
+
+    const renderDynamicMeasurementInputs = () => {
+        const list = Array.isArray(formData.measurementFields) && formData.measurementFields.length > 0
+            ? formData.measurementFields
+            : getFieldsForGarmentType(formData.garmentType, categoriesList);
+
+        const sections = [];
+        let current = { headingItem: null, headingIdx: -1, fields: [] };
+
+        list.forEach((item, idx) => {
+            if (isHeadingField(item)) {
+                if (current.headingItem || current.fields.length > 0) {
+                    sections.push(current);
+                }
+                current = { headingItem: item, headingIdx: idx, fields: [] };
+            } else {
+                current.fields.push({ item, index: idx });
+            }
+        });
+        if (current.headingItem || current.fields.length > 0) {
+            sections.push(current);
+        }
+
+        const updateFields = (next) => {
+            setFormData((prev) => ({ ...prev, measurementFields: next }));
+        };
+
+        const removeFieldAt = (idx) => {
+            const copy = [...list];
+            const removed = copy[idx];
+            copy.splice(idx, 1);
+            updateFields(copy);
+            if (removed && removed.key && formData.measurements[removed.key] !== undefined) {
+                setFormData((prev) => {
+                    const nextM = { ...prev.measurements };
+                    delete nextM[removed.key];
+                    return { ...prev, measurements: nextM };
+                });
+            }
+        };
+
+        const updateHeadingLabel = (headingIdx, newLabel) => {
+            const copy = [...list];
+            if (copy[headingIdx]) {
+                copy[headingIdx] = { ...copy[headingIdx], label: newLabel };
+                updateFields(copy);
+            }
+        };
+
+        const updateFieldLabel = (fieldIdx, newLabel) => {
+            const copy = [...list];
+            if (copy[fieldIdx]) {
+                copy[fieldIdx] = { ...copy[fieldIdx], label: newLabel };
+                updateFields(copy);
+            }
+        };
+
+        const addFieldUnderHeading = (headingIdx) => {
+            const copy = [...list];
+            const stamp = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+            const newField = {
+                type: 'field',
+                key: `custom_${stamp}`,
+                label: 'Custom Field',
+                placeholder: '34',
+                isRequired: false,
+            };
+            let insertPos = headingIdx >= 0 ? headingIdx + 1 : copy.length;
+            while (insertPos < copy.length && !isHeadingField(copy[insertPos])) {
+                insertPos++;
+            }
+            copy.splice(insertPos, 0, newField);
+            updateFields(copy);
+        };
+
+        const addNewSectionHeading = () => {
+            const copy = [...list];
+            const stampHead = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+            const stampField = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+            const newHeading = {
+                type: 'heading',
+                key: `h_${stampHead}`,
+                label: 'New Section',
+                isRequired: false,
+            };
+            const defaultField = {
+                type: 'field',
+                key: `custom_${stampField}`,
+                label: 'Custom Field',
+                placeholder: '30',
+                isRequired: false,
+            };
+            copy.push(newHeading, defaultField);
+            updateFields(copy);
+        };
+
+        return (
+            <div className="space-y-4">
+                {/* 1-Click Templates Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <span className="text-[9px] font-black uppercase text-gray-400 tracking-wider">
+                        ⚡ 1-Click Field Templates:
+                    </span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                        {MEASUREMENT_PRESETS.map((p) => (
+                            <button
+                                key={p.key}
+                                type="button"
+                                onClick={() => {
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        measurementFields: [...p.fields],
+                                    }));
+                                    toast.success(`Loaded ${p.name} template`);
+                                }}
+                                className="px-2.5 py-1 bg-white hover:bg-primary/5 text-primary border border-primary/20 rounded-lg text-[10px] font-bold transition-all cursor-pointer shadow-2xs"
+                            >
+                                + {p.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Sections List */}
+                {sections.map((sec, secIdx) => {
+                    const headingLabel = sec.headingItem?.label || 'General Measurements';
+
+                    return (
+                        <div key={sec.headingItem?.key || `section-${secIdx}`} className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs overflow-hidden space-y-0">
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between px-3.5 py-2 bg-gray-50/90 border-b border-gray-100">
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Ruler size={13} className="text-primary shrink-0" />
+                                    {sec.headingItem ? (
+                                        <input
+                                            type="text"
+                                            value={sec.headingItem.label ?? ''}
+                                            onChange={(e) => updateHeadingLabel(sec.headingIdx, e.target.value)}
+                                            placeholder="Section Heading Name..."
+                                            className="text-xs font-black uppercase tracking-wider text-primary bg-transparent outline-none border-b border-gray-200 focus:border-primary py-0.5 px-1 font-sans w-full max-w-xs"
+                                        />
+                                    ) : (
+                                        <span className="text-xs font-black uppercase tracking-wider text-primary">
+                                            {headingLabel}
+                                        </span>
+                                    )}
+                                </div>
+                                {sec.headingItem && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFieldAt(sec.headingIdx)}
+                                        className="p-1 text-gray-400 hover:text-red-600 rounded-md transition-colors"
+                                        title="Delete Section Heading"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Section Fields Grid */}
+                            <div className="p-3.5 space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {sec.fields.map(({ item, index }) => {
+                                        const key = getFieldKey(item);
+                                        if (!key) return null;
+                                        const val = formData.measurements?.[key] ?? '';
+
+                                        return (
+                                            <div key={key} className="bg-gray-50/70 border border-gray-100 rounded-xl p-2.5 space-y-1 hover:border-gray-200 transition-all">
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <input
+                                                        type="text"
+                                                        value={item.label ?? ''}
+                                                        onChange={(e) => updateFieldLabel(index, e.target.value)}
+                                                        placeholder="Field Name"
+                                                        className="text-[10px] font-bold text-gray-700 uppercase tracking-wider bg-transparent border-b border-gray-200 focus:border-primary outline-none w-full py-0.5"
+                                                    />
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        {item.isRequired !== false && (
+                                                            <span className="text-[9px] text-red-500 font-bold">*</span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeFieldAt(index)}
+                                                            className="p-0.5 text-gray-300 hover:text-red-500 rounded transition-colors"
+                                                            title="Remove Field"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="relative flex items-center">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.1"
+                                                        value={val}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value;
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                measurements: {
+                                                                    ...prev.measurements,
+                                                                    [key]: value,
+                                                                },
+                                                            }));
+                                                        }}
+                                                        placeholder={item.placeholder ? `e.g. ${item.placeholder}` : '0.0'}
+                                                        className="w-full pl-3 pr-10 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-black text-gray-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                                                    />
+                                                    <span className="absolute right-2.5 text-[10px] font-bold text-gray-400 uppercase pointer-events-none">
+                                                        {formData.measurementUnit || 'in'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="pt-1 flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => addFieldUnderHeading(sec.headingIdx)}
+                                        className="text-[10px] font-bold text-primary hover:text-primary-dark bg-primary/5 hover:bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+                                    >
+                                        <Plus size={11} /> Add Field under {headingLabel}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* Add Section Heading Button */}
+                <div className="pt-1 flex justify-center">
+                    <button
+                        type="button"
+                        onClick={addNewSectionHeading}
+                        className="w-full py-2 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border border-dashed border-indigo-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                        <Plus size={13} /> + Add New Section Heading (e.g. Sleeve / Dupatta Details)
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     const openReceiptForOrder = async (order) => {
@@ -1275,14 +1666,7 @@ const AdminOfflineOrders = () => {
                                         <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
                                             <Ruler size={12} /> Measurements ({selectedOrder.measurementUnit || 'inches'})
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {Object.entries(measurementsMap).map(([key, val]) => (
-                                                <div key={key} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
-                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{key}</p>
-                                                    <p className="text-sm font-black text-gray-900">{val}</p>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <MeasurementDataDisplay measurements={selectedOrder.measurements} />
                                     </div>
                                 )}
 
@@ -1531,7 +1915,7 @@ const AdminOfflineOrders = () => {
                                                     type="text"
                                                     list="garment-options-list-modal"
                                                     value={formData.garmentType}
-                                                    onChange={(e) => setFormData({ ...formData, garmentType: e.target.value })}
+                                                    onChange={(e) => handleGarmentTypeChange(e.target.value)}
                                                     placeholder="Type or pick garment / service (e.g. Shirt, Suit)..."
                                                     className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary pr-28"
                                                     required
@@ -1540,7 +1924,7 @@ const AdminOfflineOrders = () => {
                                                     value={allGarmentTypes.includes(formData.garmentType) ? formData.garmentType : ''}
                                                     onChange={(e) => {
                                                         if (e.target.value) {
-                                                            setFormData({ ...formData, garmentType: e.target.value });
+                                                            handleGarmentTypeChange(e.target.value);
                                                         }
                                                     }}
                                                     className="absolute right-2 px-2 py-1.5 text-xs font-bold bg-gray-100 border border-gray-200 rounded-lg text-gray-700 outline-none cursor-pointer hover:bg-gray-200 transition-colors max-w-[105px]"
@@ -1648,47 +2032,27 @@ const AdminOfflineOrders = () => {
                                                     </select>
                                                 </div>
                                             )}
-                                            <div className="flex gap-2">
-                                                {['inches', 'cm'].map((u) => (
-                                                    <button
-                                                        key={u}
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, measurementUnit: u })}
-                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
-                                                            formData.measurementUnit === u
-                                                                ? 'bg-primary text-white border-primary'
-                                                                : 'bg-white text-gray-500 border-gray-200'
-                                                        }`}
-                                                    >
-                                                        {u}
-                                                    </button>
-                                                ))}
+                                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                <div className="flex gap-2">
+                                                    {['inches', 'cm'].map((u) => (
+                                                        <button
+                                                            key={u}
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, measurementUnit: u })}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                                                                formData.measurementUnit === u
+                                                                    ? 'bg-primary text-white border-primary'
+                                                                    : 'bg-white text-gray-500 border-gray-200'
+                                                            }`}
+                                                        >
+                                                            {u}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {MEASUREMENT_FIELDS.map((field) => (
-                                                    <div key={field.key}>
-                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                                            {field.label}
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            step="0.1"
-                                                            value={formData.measurements[field.key]}
-                                                            onChange={(e) =>
-                                                                setFormData({
-                                                                    ...formData,
-                                                                    measurements: {
-                                                                        ...formData.measurements,
-                                                                        [field.key]: e.target.value,
-                                                                    },
-                                                                })
-                                                            }
-                                                            placeholder="0.0"
-                                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-primary"
-                                                        />
-                                                    </div>
-                                                ))}
+
+                                            <div className="space-y-4">
+                                                {renderDynamicMeasurementInputs()}
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-semibold uppercase text-gray-500 tracking-wider mb-1.5">
