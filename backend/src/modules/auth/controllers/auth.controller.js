@@ -45,7 +45,8 @@ exports.checkUserExists = asyncHandler(async (req, res, next) => {
         { phoneNumber: phoneIdentifier },
         { phoneNumber: last10Digits },
         { phoneNumber: `0${last10Digits}` },
-        { phoneNumber: new RegExp(`${last10Digits}$`) }
+        { phoneNumber: new RegExp(`${last10Digits}$`) },
+        { phoneNumber: { $regex: last10Digits } }
       );
     } else {
       query.push({ phoneNumber: String(phoneNumber).trim() });
@@ -454,7 +455,8 @@ exports.login = asyncHandler(async (req, res, next) => {
     { phoneNumber: phoneIdentifier },
     { phoneNumber: last10Digits },
     { phoneNumber: `0${last10Digits}` },
-    { phoneNumber: new RegExp(`${last10Digits}$`) }
+    { phoneNumber: new RegExp(`${last10Digits}$`) },
+    { phoneNumber: { $regex: last10Digits } }
   ] : [];
 
   const searchOr = [
