@@ -156,7 +156,7 @@ const DeliveryRegister = () => {
     setFieldErrors((prev) => ({ ...prev, [name]: '' }));
 
     // File inputs with DataURL preview for network-loss persistence
-    if (['drivingLicense', 'drivingLicenseBack', 'aadharCard', 'aadharCardBack', 'profileImage'].includes(name)) {
+    if (['licenseFront', 'licenseBack', 'aadharFront', 'aadharBack', 'profileImage'].includes(name)) {
       const file = files?.[0] || null;
       if (file) {
         const reader = new FileReader();
@@ -329,18 +329,18 @@ const DeliveryRegister = () => {
         return isValid;
 
       case 2:
-        if (!previews.aadharCard && !formData.aadharCard) { toast.error('Aadhaar Card (Front) photo is required'); return false; }
-        if (!previews.aadharCardBack && !formData.aadharCardBack) { toast.error('Aadhaar Card (Back) photo is required'); return false; }
+        if (!previews.aadharFront && !formData.aadharFront) { toast.error('Aadhaar Card (Front) photo is required'); return false; }
+        if (!previews.aadharBack && !formData.aadharBack) { toast.error('Aadhaar Card (Back) photo is required'); return false; }
         
         // Driving License is required only if vehicle is NOT bicycle
-        if (formData.vehicleType !== 'cycle') {
-          if (!previews.drivingLicense && !formData.drivingLicense) { toast.error('Driving License (Front) photo is required for motorized vehicles'); return false; }
-          if (!previews.drivingLicenseBack && !formData.drivingLicenseBack) { toast.error('Driving License (Back) photo is required for motorized vehicles'); return false; }
+        if (formData.vehicleType !== 'Bicycle') {
+          if (!previews.licenseFront && !formData.licenseFront) { toast.error('Driving License (Front) photo is required for motorized vehicles'); return false; }
+          if (!previews.licenseBack && !formData.licenseBack) { toast.error('Driving License (Back) photo is required for motorized vehicles'); return false; }
         }
         return true;
 
       case 3:
-        if (formData.vehicleType !== 'cycle') {
+        if (formData.vehicleType !== 'Bicycle') {
           if (!formData.vehicleNumber.trim()) {
             errs.vehicleNumber = 'Vehicle registration number is required';
             toast.error(errs.vehicleNumber);
@@ -476,7 +476,7 @@ const DeliveryRegister = () => {
         aadharNumber: (formData.aadharNumber || '').replace(/\s/g, ''),
         address: (formData.address || '').trim(),
         vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
-        vehicleNumber: formData.vehicleType === 'cycle' ? 'BICYCLE' : (formData.vehicleNumber || '').trim(),
+        vehicleNumber: formData.vehicleType === 'Bicycle' ? 'BICYCLE' : (formData.vehicleNumber || '').trim(),
         accountName: (formData.accountHolderName || formData.accountName || '').trim(),
         accountNumber: (formData.accountNumber || '').trim(),
         bankName: (formData.bankName || '').trim(),

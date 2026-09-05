@@ -28,7 +28,9 @@ const useMeasurementStore = create((set, get) => ({
             set({ loading: false });
             return res.data;
         } catch (error) {
-            set({ error: error.response?.data?.message || 'Registration failed', loading: false });
+            const errData = error.response?.data;
+            const errorMsg = errData?.errors?.[0] || errData?.message || 'Registration failed';
+            set({ error: errorMsg, loading: false });
             throw error;
         }
     },

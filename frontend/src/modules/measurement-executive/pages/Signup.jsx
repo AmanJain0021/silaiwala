@@ -68,7 +68,9 @@ const Signup = () => {
             toast.success('Registration successful! Please wait for admin approval.');
             navigate('/executive/login');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Registration failed');
+            const errData = error.response?.data;
+            const errorMsg = errData?.errors?.[0] || errData?.message || 'Registration failed';
+            toast.error(errorMsg);
         }
     };
 
