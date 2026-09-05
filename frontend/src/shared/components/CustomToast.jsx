@@ -10,7 +10,7 @@ export const CustomToastCard = ({ t }) => {
   let body = '';
 
   if (typeof messageVal === 'object' && messageVal !== null && !React.isValidElement(messageVal)) {
-    title = messageVal.title || (isError ? 'Something went wrong' : 'Successful');
+    title = messageVal.title || (isError ? 'Error' : 'Successful');
     body = messageVal.body || messageVal.message || '';
   } else if (typeof messageVal === 'string') {
     if (messageVal.includes('\n')) {
@@ -23,12 +23,12 @@ export const CustomToastCard = ({ t }) => {
         title = messageVal;
         body = '';
       } else {
-        title = isError ? 'Something went wrong' : 'Action Successful';
+        title = isError ? 'Error' : 'Action Successful';
         body = messageVal;
       }
     }
   } else {
-    title = isError ? 'Something went wrong' : 'Successful';
+    title = isError ? 'Error' : 'Successful';
   }
 
   return (

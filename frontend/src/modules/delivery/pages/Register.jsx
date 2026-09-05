@@ -171,7 +171,7 @@ const DeliveryRegister = () => {
     }
 
     // 1. Full Name & Account Holder Name: ONLY letters and spaces
-    if (name === 'name' || name === 'accountName') {
+    if (name === 'name' || name === 'accountHolderName') {
       const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
       setFormData((prev) => ({ ...prev, [name]: lettersOnly }));
       return;
@@ -357,9 +357,9 @@ const DeliveryRegister = () => {
           isValid = false;
         }
         // Bank Details Validation
-        if (!formData.accountName || formData.accountName.trim().length < 3 || !/^[a-zA-Z\s]+$/.test(formData.accountName.trim())) {
-          errs.accountName = 'Account holder name must contain only letters (min 3 chars)';
-          toast.error(errs.accountName);
+        if (!formData.accountHolderName || formData.accountHolderName.trim().length < 3 || !/^[a-zA-Z\s]+$/.test(formData.accountHolderName.trim())) {
+          errs.accountHolderName = 'Account holder name must contain only letters (min 3 chars)';
+          toast.error(errs.accountHolderName);
           isValid = false;
         }
         if (!formData.accountNumber || !/^\d{9,18}$/.test(formData.accountNumber)) {
