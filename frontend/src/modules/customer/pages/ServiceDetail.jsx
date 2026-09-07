@@ -622,11 +622,20 @@ const ServiceDetail = () => {
     const taxes = Math.round(taxableAmount * (gstPercentage / 100));
     
     // Delivery fee is outside GST calculation on backend
+    // Current Total for active service configuration
     const currentTotal = taxableAmount + taxes + deliveryPrice;
 
-    // Grand Total (Basket + Current)
-    const basketTotal = serviceItems.reduce((sum, item) => sum + item.pricing.total, 0);
-    const grandTotal = basketTotal + currentTotal;
+    // Active item index in basket
+    const activeIndex = editBasketIndex != null && editBasketIndex >= 0
+        ? editBasketIndex
+        : serviceItems.findIndex((row) => String(row.serviceDetails?._id || row.serviceDetails?.id || '') === String(serviceData?._id || id));
+
+    // Other items in basket (excluding current item being edited)
+    const otherBasketItems = serviceItems.filter((_, idx) => idx !== activeIndex);
+    const otherBasketTotal = otherBasketItems.reduce((sum, item) => sum + (item.pricing?.total || 0), 0);
+
+    // Grand Total (Other Basket Items + Current Form Total)
+    const grandTotal = otherBasketTotal + currentTotal;
 
     const getDeliveryDays = () => {
         if (deliveryType === 'express') return 10;
@@ -1602,10 +1611,10 @@ const ServiceDetail = () => {
                                     <Scissors size={8} className="text-gray-400" />
                                     <span className="text-[9px] font-black text-gray-500 uppercase">Current: ₹{currentTotal}</span>
                                 </div>
-                                {serviceItems.length > 0 && (
+                                {otherBasketItems.length > 0 && (
                                     <div className="shrink-0 bg-indigo-50 px-2 py-1 rounded-md border border-primary/10 flex items-center gap-1.5">
                                         <ShoppingBag size={8} className="text-primary" />
-                                        <span className="text-[9px] font-black text-primary uppercase">Basket: ₹{basketTotal}</span>
+                                        <span className="text-[9px] font-black text-primary uppercase">Basket: ₹{otherBasketTotal}</span>
                                     </div>
                                 )}
                             </div>
@@ -1620,10 +1629,10 @@ const ServiceDetail = () => {
                                         className="overflow-hidden mb-3"
                                     >
                                         <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 space-y-1.5 text-xs text-gray-600">
-                                            {serviceItems.length > 0 && (
-                                                <div className="flex justify-between font-medium">
-                                                    <span>Previous Basket Items ({serviceItems.length})</span>
-                                                    <span>₹{basketTotal.toLocaleString()}</span>
+                                            {otherBasketItems.length > 0 && (
+                                                <div className="flex justify-between font-medium text-primary">
+                                                    <span>Other Basket Items ({otherBasketItems.length})</span>
+                                                    <span>₹{otherBasketTotal.toLocaleString()}</span>
                                                 </div>
                                             )}
                                             <div className="flex justify-between">
