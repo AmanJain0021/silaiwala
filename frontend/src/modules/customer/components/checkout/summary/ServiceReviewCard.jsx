@@ -162,34 +162,47 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
 
                         {/* Selected Style / Custom Reference Design */}
                         {config?.selectedStyle && (
-                            <div className="flex items-center gap-2 mt-1.5 p-1.5 bg-purple-50/70 border border-purple-100 rounded-xl">
+                            <div className="flex items-center gap-2 mt-2 p-2 bg-purple-50/70 border border-purple-100 rounded-xl">
                                 {config.selectedStyle.image && (
-                                    <img src={config.selectedStyle.image} alt="Style" className="w-8 h-8 rounded-lg object-cover border border-purple-200 shrink-0" />
+                                    <img 
+                                        src={config.selectedStyle.image} 
+                                        alt="Style" 
+                                        className="w-10 h-10 rounded-lg object-cover border border-purple-200 shrink-0 cursor-pointer shadow-2xs" 
+                                        onClick={() => window.open(config.selectedStyle.image, '_blank')}
+                                    />
                                 )}
-                                <div className="text-left min-w-0">
-                                    <p className="text-[10px] font-bold text-slate-900 truncate">{config.selectedStyle.name || 'Custom Style'}</p>
-                                    <p className="text-[8px] text-primary font-bold uppercase">{config.selectedStyle.isCustom ? 'Custom Reference Photo' : 'Selected Style'}</p>
+                                <div className="text-left min-w-0 flex-1">
+                                    <p className="text-[11px] font-bold text-slate-900 truncate">{config.selectedStyle.name || 'Custom Style'}</p>
+                                    <p className="text-[9px] text-primary font-bold uppercase">{config.selectedStyle.isCustom ? '📸 Custom Reference Photo' : '✂️ Selected Variant'}</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Addons */}
-                        {config?.addons && config.addons.length > 0 && (
-                            <div className="flex flex-col gap-1 mt-1.5 p-1.5 bg-indigo-50/60 border border-indigo-100 rounded-xl">
-                                <p className="text-[9px] font-black uppercase text-indigo-700">Style Add-ons ({config.addons.length})</p>
-                                {config.addons.map((addon, aIdx) => (
-                                    <div key={addon._id || aIdx} className="flex justify-between text-[10px] font-bold text-slate-700">
-                                        <span className="truncate pr-2">• {addon.name}</span>
-                                        <span className="text-[#843D9B] shrink-0">+₹{Number(addon.price || 0)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        {/* Style Addons */}
+                        {(() => {
+                            const addonsList = Array.isArray(config?.addons) && config.addons.length > 0 
+                                ? config.addons 
+                                : (Array.isArray(config?.styleAddons) ? config.styleAddons : []);
+                            if (!addonsList.length) return null;
+                            return (
+                                <div className="flex flex-col gap-1.5 mt-2 p-2.5 bg-indigo-50/60 border border-indigo-100 rounded-xl">
+                                    <p className="text-[10px] font-black uppercase text-indigo-700 tracking-wider flex items-center gap-1">
+                                        ✨ Style Add-ons ({addonsList.length})
+                                    </p>
+                                    {addonsList.map((addon, aIdx) => (
+                                        <div key={addon._id || aIdx} className="flex justify-between items-center text-[11px] font-bold text-slate-700">
+                                            <span className="truncate pr-2">• {addon.name || addon.title}</span>
+                                            <span className="text-[#843D9B] shrink-0 font-black">+₹{Number(addon.price || 0)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
 
                         {/* Customizations */}
                         {(() => {
                             const custs = config?.customizations || {};
-                            const activeCusts = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                            const activeCusts = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
                             if (activeCusts.length === 0) return null;
                             const slotLabels = {
                                 neck: 'Neck Design',
@@ -201,14 +214,28 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                                 other: 'Customization'
                             };
                             return (
-                                <div className="flex flex-col gap-1 mt-1.5 p-1.5 bg-purple-50/60 border border-purple-100 rounded-xl">
-                                    <p className="text-[9px] font-black uppercase text-purple-700">Customizations ({activeCusts.length})</p>
-                                    {activeCusts.map(([key, val]) => (
-                                        <div key={key} className="flex justify-between text-[10px] font-bold text-slate-700">
-                                            <span className="truncate pr-2 text-slate-500">{slotLabels[key] || key}: <span className="text-slate-900">{val.name || 'Custom'}</span></span>
-                                            {val.price > 0 && <span className="text-[#843D9B] shrink-0">+₹{val.price}</span>}
-                                        </div>
-                                    ))}
+                                <div className="flex flex-col gap-2 mt-2 p-2.5 bg-purple-50/70 border border-purple-100 rounded-xl">
+                                    <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1">
+                                        <Scissors size={12} /> Customizations ({activeCusts.length})
+                                    </p>
+                                    <div className="space-y-1.5">
+                                        {activeCusts.map(([key, val]) => (
+                                            <div key={key} className="flex flex-col gap-1 p-1.5 bg-white rounded-lg border border-purple-100/60">
+                                                <div className="flex justify-between items-center text-[11px] font-bold text-slate-700">
+                                                    <span className="text-slate-500 uppercase text-[9px] font-black">{slotLabels[key] || key}: <span className="text-slate-900 font-bold capitalize">{val.name || 'Custom Spec'}</span></span>
+                                                    {Number(val.price) > 0 && <span className="text-[#843D9B] font-black text-xs shrink-0">+₹{val.price}</span>}
+                                                </div>
+                                                {val.refImage && (
+                                                    <img
+                                                        src={val.refImage}
+                                                        alt={val.name || key}
+                                                        className="h-14 w-auto self-start rounded-md object-cover border border-purple-100 cursor-pointer"
+                                                        onClick={() => window.open(val.refImage, '_blank')}
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             );
                         })()}

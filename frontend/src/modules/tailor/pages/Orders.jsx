@@ -603,7 +603,7 @@ const Orders = () => {
 
                                     {(() => {
                                         const custs = item.customizations || item.configuration?.customizations || {};
-                                        const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                        const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
                                         if (activeCustEntries.length === 0) return null;
 
                                         const slotLabels = {
@@ -845,13 +845,13 @@ const Orders = () => {
                     {/* Garment Customizations */}
                     {order.items?.some((item) => {
                         const custs = item.customizations || item.configuration?.customizations || {};
-                        return Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage)).length > 0;
+                        return Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0)).length > 0;
                     }) && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3 mt-4">
                             <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5"><Scissors size={14} /> Garment Customizations</p>
                             {order.items.map((item, idx) => {
                                 const custs = item.customizations || item.configuration?.customizations || {};
-                                const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
                                 if (!activeCustEntries.length) return null;
                                 
                                 const slotLabels = {
