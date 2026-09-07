@@ -982,7 +982,7 @@ const OrderTracking = () => {
                                         0
                                     );
                                     const custs = item.customizations || item.configuration?.customizations || {};
-                                    const activeCusts = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                    const activeCusts = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
                                     const custTotal = activeCusts.reduce((sum, [_, val]) => sum + (Number(val.price) || 0), 0);
 
                                     return (

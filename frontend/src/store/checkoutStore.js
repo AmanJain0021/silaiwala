@@ -110,6 +110,23 @@ const leanAddons = (addons = []) =>
         price: Number(a.price) || 0,
     }));
 
+const leanCustomizations = (custs = {}) => {
+    if (!custs || typeof custs !== 'object') return {};
+    const out = {};
+    for (const [key, val] of Object.entries(custs)) {
+        if (val && (val.name || val.refImage || Number(val.price) > 0 || val.enabled)) {
+            out[key] = {
+                name: val.name || '',
+                price: Number(val.price) || 0,
+                refImage: val.refImage || '',
+                enabled: val.enabled !== false,
+                isCustom: !!val.isCustom,
+            };
+        }
+    }
+    return out;
+};
+
 const leanBasketItem = (item) => {
     if (!item) return item;
     const sd = item.serviceDetails || {};
@@ -131,7 +148,8 @@ const leanBasketItem = (item) => {
             measurements: item.configuration?.measurements || {},
             isTailorAtHome: !!item.configuration?.isTailorAtHome,
             selectedStyle: leanStyle(item.configuration?.selectedStyle),
-            addons: leanAddons(item.configuration?.addons),
+            addons: leanAddons(item.configuration?.addons || item.configuration?.styleAddons || item.addons || item.styleAddons),
+            customizations: leanCustomizations(item.configuration?.customizations || item.customizations),
             pending: !!item.configuration?.pending,
         },
         pricing: {
@@ -325,6 +343,7 @@ const useCheckoutStore = create(
                         isTailorAtHome: false,
                         selectedStyle: null,
                         addons: [],
+                        customizations: {},
                         pending: true,
                     },
                     pricing: {
