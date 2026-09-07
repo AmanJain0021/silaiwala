@@ -1,47 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../utils/api';
-import { resolveBannerImageUrl, BANNER_LOCATIONS, isUploadedBannerImage } from '../../../utils/bannerImage';
+import useBannerStore from '../../../store/bannerStore';
 
 const STITCHING_PAGE = '/user/services';
 
 const PromoBanner = () => {
     const navigate = useNavigate();
-    const [banners, setBanners] = useState([]);
+    const { homeBanners: banners, isHomeBannersLoading: isLoading, fetchHomeBanners } = useBannerStore();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [direction, setDirection] = useState(1);
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchBanners = async () => {
-            try {
-                const res = await api.get('/cms/banners/active', {
-                    params: { location: BANNER_LOCATIONS.HOME },
-                });
-                if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-                    const activeBanners = res.data.data
-                        .filter((b) => b.image && isUploadedBannerImage(b.image))
-                        .map((b) => ({
-                            id: b._id,
-                            image: resolveBannerImageUrl(b.image),
-                        }));
-                    setBanners(activeBanners);
-                } else {
-                    setBanners([]);
-                }
-            } catch (error) {
-                if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
-                    console.error('Failed to fetch banners:', error);
-                }
-                setBanners([]);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchBanners();
-    }, []);
+        fetchHomeBanners();
+    }, [fetchHomeBanners]);
 
     useEffect(() => {
         if (banners.length <= 1) return;

@@ -13,7 +13,8 @@ import api from '../../../utils/api';
 import { SOCKET_URL } from '../../../config/constants';
 import useCartStore from '../../../store/cartStore';
 import useWishlistStore from '../../../store/wishlistStore';
-import { resolveBannerImageUrl, BANNER_LOCATIONS } from '../../../utils/bannerImage';
+import useBannerStore from '../../../store/bannerStore';
+import { resolveBannerImageUrl } from '../../../utils/bannerImage';
 
 
 const StorePage = () => {
@@ -21,27 +22,11 @@ const StorePage = () => {
     const [filters, setFilters] = useState({});
     const [activeCategory, setActiveCategory] = useState({ name: "All", id: null });
     const [searchQuery, setSearchQuery] = useState("");
-    const [storeBanners, setStoreBanners] = useState([]);
+    const { storeBanners, fetchStoreBanners } = useBannerStore();
     const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
     useEffect(() => {
-        const fetchStoreData = async () => {
-            try {
-                const response = await api.get('/cms/banners/active', {
-                    params: { location: BANNER_LOCATIONS.STORE },
-                });
-                if (response.data.success && Array.isArray(response.data.data)) {
-                    setStoreBanners(response.data.data.filter((b) => b.image));
-                } else {
-                    setStoreBanners([]);
-                }
-            } catch (error) {
-                console.error('Error fetching store banners:', error);
-                setStoreBanners([]);
-            }
-        };
-
-        fetchStoreData();
+        fetchStoreBanners();
         // Sync Cart & Wishlist from Backend
         useCartStore.getState().fetchCart();
         useWishlistStore.getState().fetchWishlist();
