@@ -820,8 +820,8 @@ const Orders = () => {
                                                             className="w-12 h-12 rounded-xl object-cover border border-purple-100 bg-white"
                                                         />
                                                     ) : (
-                                                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center text-lg font-black">
-                                                            +
+                                                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center text-lg font-black uppercase">
+                                                            {addon.name?.charAt(0) || '✨'}
                                                         </div>
                                                     )}
                                                     <div className="flex-1 min-w-0">
@@ -833,6 +833,62 @@ const Orders = () => {
                                                     <p className="text-xs font-black text-[#843D9B] shrink-0">
                                                         ₹{Number(addon.price || 0).toLocaleString()}
                                                     </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Garment Customizations */}
+                    {order.items?.some((item) => {
+                        const custs = item.customizations || item.configuration?.customizations || {};
+                        return Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage)).length > 0;
+                    }) && (
+                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3 mt-4">
+                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5"><Scissors size={14} /> Garment Customizations</p>
+                            {order.items.map((item, idx) => {
+                                const custs = item.customizations || item.configuration?.customizations || {};
+                                const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                if (!activeCustEntries.length) return null;
+                                
+                                const slotLabels = {
+                                    neck: 'Neck Design',
+                                    sleeve: 'Sleeve Style',
+                                    bottom: 'Bottom Style',
+                                    embroidery: 'Embroidery Work',
+                                    lacePiping: 'Lace / Piping',
+                                    lining: 'Inner Lining',
+                                    other: 'Customization'
+                                };
+
+                                return (
+                                    <div key={`cust-${idx}`} className="space-y-2">
+                                        {order.items.length > 1 && (
+                                            <p className="text-[10px] text-gray-400 font-bold">
+                                                Item {idx + 1}: {item.service?.title || 'Garment'}
+                                            </p>
+                                        )}
+                                        <div className="space-y-1.5">
+                                            {activeCustEntries.map(([key, val]) => (
+                                                <div key={key} className="p-3 bg-purple-50/80 rounded-2xl border border-purple-200 flex flex-col gap-1">
+                                                    <div className="flex justify-between items-center text-sm font-bold">
+                                                        <span className="text-gray-500 uppercase tracking-wider text-[10px] font-black">{slotLabels[key] || key}:</span>
+                                                        <span className="text-gray-900 font-black">{val.name || 'Custom Option'}</span>
+                                                        {val.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{val.price}</span>}
+                                                    </div>
+                                                    {val.refImage && (
+                                                        <div className="mt-2">
+                                                            <img
+                                                                src={val.refImage}
+                                                                alt={val.name || key}
+                                                                className="h-24 w-auto rounded-xl object-cover border border-purple-100 cursor-pointer shadow-sm"
+                                                                onClick={() => window.open(val.refImage, '_blank')}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -2272,8 +2328,8 @@ const Orders = () => {
                                                             className="w-12 h-12 rounded-xl object-cover border border-purple-100 bg-white"
                                                         />
                                                     ) : (
-                                                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center text-lg font-black">
-                                                            +
+                                                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center text-lg font-black uppercase">
+                                                            {addon.name?.charAt(0) || '✨'}
                                                         </div>
                                                     )}
                                                     <div className="flex-1 min-w-0">
@@ -2285,6 +2341,62 @@ const Orders = () => {
                                                     <p className="text-xs font-black text-[#843D9B] shrink-0">
                                                         ₹{Number(addon.price || 0).toLocaleString()}
                                                     </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Garment Customizations */}
+                    {order.items?.some((item) => {
+                        const custs = item.customizations || item.configuration?.customizations || {};
+                        return Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage)).length > 0;
+                    }) && (
+                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3 mt-4">
+                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5"><Scissors size={14} /> Garment Customizations</p>
+                            {order.items.map((item, idx) => {
+                                const custs = item.customizations || item.configuration?.customizations || {};
+                                const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled && (val.name || val.refImage));
+                                if (!activeCustEntries.length) return null;
+                                
+                                const slotLabels = {
+                                    neck: 'Neck Design',
+                                    sleeve: 'Sleeve Style',
+                                    bottom: 'Bottom Style',
+                                    embroidery: 'Embroidery Work',
+                                    lacePiping: 'Lace / Piping',
+                                    lining: 'Inner Lining',
+                                    other: 'Customization'
+                                };
+
+                                return (
+                                    <div key={`cust-${idx}`} className="space-y-2">
+                                        {order.items.length > 1 && (
+                                            <p className="text-[10px] text-gray-400 font-bold">
+                                                Item {idx + 1}: {item.service?.title || 'Garment'}
+                                            </p>
+                                        )}
+                                        <div className="space-y-1.5">
+                                            {activeCustEntries.map(([key, val]) => (
+                                                <div key={key} className="p-3 bg-purple-50/80 rounded-2xl border border-purple-200 flex flex-col gap-1">
+                                                    <div className="flex justify-between items-center text-sm font-bold">
+                                                        <span className="text-gray-500 uppercase tracking-wider text-[10px] font-black">{slotLabels[key] || key}:</span>
+                                                        <span className="text-gray-900 font-black">{val.name || 'Custom Option'}</span>
+                                                        {val.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{val.price}</span>}
+                                                    </div>
+                                                    {val.refImage && (
+                                                        <div className="mt-2">
+                                                            <img
+                                                                src={val.refImage}
+                                                                alt={val.name || key}
+                                                                className="h-24 w-auto rounded-xl object-cover border border-purple-100 cursor-pointer shadow-sm"
+                                                                onClick={() => window.open(val.refImage, '_blank')}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
