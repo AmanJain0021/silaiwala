@@ -4,6 +4,9 @@ import deliveryLogoDefault from '../assets/deliveryLogo.png';
 
 export const BRANDING_DEFAULTS = {
     appName: 'SewZella',
+    supportEmail: 'support@silaiwala.com',
+    supportPhone: '+91 1800 123 4567',
+    emergencyPhone: '+91 9999999999',
     logos: {
         customer: '/sewzella_logo.jpeg',
         tailor: '/sewzella_logo-removebg-preview.png',
@@ -14,6 +17,9 @@ export const BRANDING_DEFAULTS = {
 
 const useBrandingStore = create((set, get) => ({
     appName: BRANDING_DEFAULTS.appName,
+    supportEmail: BRANDING_DEFAULTS.supportEmail,
+    supportPhone: BRANDING_DEFAULTS.supportPhone,
+    emergencyPhone: BRANDING_DEFAULTS.emergencyPhone,
     logos: { ...BRANDING_DEFAULTS.logos },
     isLoaded: false,
 
@@ -29,6 +35,9 @@ const useBrandingStore = create((set, get) => ({
 
                 set({
                     appName,
+                    supportEmail: general.supportEmail || BRANDING_DEFAULTS.supportEmail,
+                    supportPhone: general.supportPhone || BRANDING_DEFAULTS.supportPhone,
+                    emergencyPhone: general.emergencyPhone || BRANDING_DEFAULTS.emergencyPhone,
                     logos: {
                         customer: general.appLogos?.customer || BRANDING_DEFAULTS.logos.customer,
                         tailor: general.appLogos?.tailor || BRANDING_DEFAULTS.logos.tailor,

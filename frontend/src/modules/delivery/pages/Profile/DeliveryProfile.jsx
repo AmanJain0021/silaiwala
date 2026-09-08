@@ -22,17 +22,21 @@ import {
     Loader2,
     Globe,
     Camera,
-    Lock
+    Lock,
+    Phone,
+    Mail
 } from 'lucide-react';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import MenuOption from '../../../customer/components/profile/MenuOption';
 import deliveryService from '../../services/deliveryService';
 import { toast } from 'react-hot-toast';
+import useBrandingStore from '../../../../store/brandingStore';
 import api from '../../../../utils/api';
 
 const DeliveryProfile = () => {
     const navigate = useNavigate();
     const { user, updateUser } = useAuthStore();
+    const { supportEmail, supportPhone } = useBrandingStore();
     const logout = useAuthStore((state) => state.logout);
     const [isEditing, setIsEditing] = useState(null); // 'personal' | 'bank' | null
     const { isOnline, setIsOnline } = useOutletContext() || { isOnline: true, setIsOnline: () => { } };
@@ -607,6 +611,34 @@ const DeliveryProfile = () => {
                                 >
                                     <Send size={18} /> Submit Ticket
                                 </button>
+
+                                {/* Direct Helpline & Email Channels */}
+                                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <a 
+                                        href={`tel:${(supportPhone || '+91 1800 123 4567').replace(/[^+\d]/g, '')}`}
+                                        className="p-3 bg-purple-50 hover:bg-purple-100/70 border border-purple-100 rounded-xl flex items-center gap-2.5 transition-colors group"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-[#843D9B] text-white flex items-center justify-center shrink-0 shadow-sm">
+                                            <Phone size={14} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Helpline</p>
+                                            <p className="text-xs font-black text-slate-800 truncate font-mono">{supportPhone || '+91 1800 123 4567'}</p>
+                                        </div>
+                                    </a>
+                                    <a 
+                                        href={`mailto:${supportEmail || 'support@silaiwala.com'}?subject=Delivery Partner Support Request`}
+                                        className="p-3 bg-indigo-50 hover:bg-indigo-100/70 border border-indigo-100 rounded-xl flex items-center gap-2.5 transition-colors group"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                            <Mail size={14} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Support</p>
+                                            <p className="text-xs font-black text-slate-800 truncate">{supportEmail || 'support@silaiwala.com'}</p>
+                                        </div>
+                                    </a>
+                                </div>
                                 
                                 {myTickets.length > 0 && (
                                     <div className="mt-8 pt-6 border-t border-slate-100 max-h-[300px] overflow-y-auto pr-2">

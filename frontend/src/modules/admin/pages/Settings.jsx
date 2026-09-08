@@ -81,6 +81,9 @@ const AdminSettings = () => {
             const platformName = settings.general?.platformName || BRANDING_DEFAULTS.appName;
             useBrandingStore.setState({
                 appName: platformName,
+                supportEmail: settings.general?.supportEmail || BRANDING_DEFAULTS.supportEmail,
+                supportPhone: settings.general?.supportPhone || BRANDING_DEFAULTS.supportPhone,
+                emergencyPhone: settings.general?.emergencyPhone || BRANDING_DEFAULTS.emergencyPhone,
                 logos: {
                     customer: settings.general?.appLogos?.customer || BRANDING_DEFAULTS.logos.customer,
                     tailor: settings.general?.appLogos?.tailor || BRANDING_DEFAULTS.logos.tailor,

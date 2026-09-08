@@ -290,7 +290,10 @@ const OrdersPage = () => {
                             <p className="text-[10px] text-gray-500 font-medium mt-0.5 line-clamp-1">We care about every detail of your order.</p>
                         </div>
                     </div>
-                    <button className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-[#843D9B] bg-white px-3 py-2 rounded-full border border-[#843D9B]/20 hover:bg-[#843D9B]/5 transition-colors shadow-sm">
+                    <button 
+                        onClick={() => navigate('/user/support')}
+                        className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-[#843D9B] bg-white px-3.5 py-2 rounded-full border border-[#843D9B]/20 hover:bg-[#843D9B]/10 active:scale-95 transition-all shadow-sm"
+                    >
                         <MessageCircle size={12} /> Need Help?
                     </button>
                 </div>

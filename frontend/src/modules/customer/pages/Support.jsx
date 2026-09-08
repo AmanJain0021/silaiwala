@@ -29,23 +29,35 @@ const FAQItem = ({ item }) => {
 const Support = () => {
     const navigate = useNavigate();
     const [faqs, setFaqs] = useState([]);
+    const [settings, setSettings] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchFaqs = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get('/cms/content?type=faq');
-                if (res.data.success) {
-                    setFaqs(res.data.data);
+                const [faqRes, settingsRes] = await Promise.allSettled([
+                    api.get('/cms/content?type=faq'),
+                    api.get('/cms/settings')
+                ]);
+                
+                if (faqRes.status === 'fulfilled' && faqRes.value?.data?.success) {
+                    setFaqs(faqRes.value.data.data);
+                }
+                if (settingsRes.status === 'fulfilled' && settingsRes.value?.data?.data) {
+                    setSettings(settingsRes.value.data.data);
                 }
             } catch (error) {
-                console.error('Error fetching FAQs:', error);
+                console.error('Error fetching support data:', error);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchFaqs();
+        fetchData();
     }, []);
+
+    const supportEmail = settings?.general?.supportEmail || 'support@silaiwala.com';
+    const supportPhone = settings?.general?.supportPhone || '+91 1800 123 4567';
+    const cleanPhone = supportPhone.replace(/[^+\d]/g, '');
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
@@ -73,14 +85,14 @@ const Support = () => {
             <div className="max-w-md mx-auto px-5 -mt-6 space-y-8">
                 {/* Contact Options */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => window.open('https://wa.me/919876543210', '_blank')} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
+                    <button onClick={() => window.open(`https://wa.me/${cleanPhone.replace('+', '')}`, '_blank')} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
                         <div className="h-12 w-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:text-white transition-all transform group-hover:scale-110">
                             <MessageCircle size={24} />
                         </div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-white/60">WhatsApp</p>
                         <p className="text-sm font-black text-gray-900 mt-1 group-hover:text-white tracking-tight">Chat Now</p>
                     </button>
-                    <button onClick={() => window.location.href = 'tel:+919876543210'} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
+                    <button onClick={() => window.location.href = `tel:${cleanPhone}`} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center text-center group hover:bg-primary transition-all duration-500">
                         <div className="h-12 w-12 bg-indigo-50 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:text-white transition-all transform group-hover:scale-110">
                             <Phone size={24} />
                         </div>
@@ -118,8 +130,8 @@ const Support = () => {
                     </div>
                     <h4 className="text-base font-black text-gray-900 tracking-tight italic uppercase">Still have questions?</h4>
                     <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mt-2 mb-6">Email us and we'll get back<br />to you within 24 hours.</p>
-                    <a href="mailto:support@tailorapp.com" className="px-8 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-green-900/20 hover:scale-105 transition-transform">
-                        support@tailorapp.com
+                    <a href={`mailto:${supportEmail}`} className="px-8 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-green-900/20 hover:scale-105 transition-transform">
+                        {supportEmail}
                     </a>
                 </div>
             </div>

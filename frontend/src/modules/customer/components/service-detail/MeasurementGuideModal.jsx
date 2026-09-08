@@ -19,8 +19,11 @@ import {
     Check
 } from 'lucide-react';
 import api from '../../../../utils/api';
+import useBrandingStore from '../../../../store/brandingStore';
 
 const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBookHomeVisit }) => {
+    const { appName, supportPhone } = useBrandingStore();
+    const cleanPhone = (supportPhone || '').replace(/[^+\d]/g, '').replace('+', '');
     const [activeTab, setActiveTab] = useState('diagram'); // 'diagram' | 'photo' | 'tips'
     const [viewMode, setViewMode] = useState('front'); // 'front' | 'back'
     const [isVideoOpen, setIsVideoOpen] = useState(false);
@@ -561,7 +564,11 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                     </button>
 
                                     <button
-                                        onClick={() => window.open('https://wa.me/?text=Hi%20SewZella%20Support%2C%20I%20need%20help%20with%20body%20measurements', '_blank')}
+                                        onClick={() => {
+                                            const text = encodeURIComponent(`Hi ${appName || 'SewZella'} Support, I need help with body measurements`);
+                                            const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
+                                            window.open(url, '_blank');
+                                        }}
                                         className="p-3.5 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50/70 active:scale-95 transition-all text-left flex items-center sm:flex-col sm:items-start gap-2.5 cursor-pointer shadow-2xs group"
                                     >
                                         <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">

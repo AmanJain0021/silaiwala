@@ -15,6 +15,7 @@ import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
 import ExchangeRequestModal from '../components/orders/ExchangeRequestModal';
+import OrderHelpModal from '../components/orders/OrderHelpModal';
 import useBrandingStore from '../../../store/brandingStore';
 import {
     formatOrderItemsTitle,
@@ -34,6 +35,7 @@ const OrderTracking = () => {
     const [error, setError] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const [isReviewed, setIsReviewed] = useState(false);
     const [isBulk, setIsBulk] = useState(location.state?.isBulk || false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -158,8 +160,8 @@ const OrderTracking = () => {
             const fetchSettings = async () => {
                 try {
                     const res = await api.get('/cms/settings');
-                    if (res.data?.data?.loyaltyConfig) {
-                        setSettings(res.data.data.loyaltyConfig);
+                    if (res.data?.data) {
+                        setSettings(res.data.data);
                     }
                 } catch (err) {
                     if (err?.name !== 'CanceledError' && err?.message !== 'canceled' && !err?.message?.includes('Cancelled')) {
@@ -491,7 +493,8 @@ const OrderTracking = () => {
     };
 
     // Loyalty points check
-    const earnedPoints = Math.floor((order.totalAmount || 0) / 100) * (settings?.pointsPer100Spent || 1) + (settings?.flatPointsPerBooking || 0);
+    const loyaltyCfg = settings?.loyaltyConfig || settings;
+    const earnedPoints = Math.floor((order.totalAmount || 0) / 100) * (loyaltyCfg?.pointsPer100Spent || 1) + (loyaltyCfg?.flatPointsPerBooking || 0);
 
     // Active partner info
     const tailorInfo = order.tailor || null;
@@ -522,11 +525,9 @@ const OrderTracking = () => {
 
                     <div className="flex items-center gap-2">
                         <button 
-                            onClick={() => {
-                                const subject = encodeURIComponent(`Help with Order ${order.orderId}`);
-                                window.location.href = `mailto:support@sewzella.com?subject=${subject}`;
-                            }}
-                            className="h-8 px-3 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                            onClick={() => setIsHelpModalOpen(true)}
+                            className="h-8 px-3 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1.5 text-xs font-semibold transition-colors active:scale-95"
+                            title="Help & Support"
                         >
                             <Headphones size={14} />
                             <span>Help</span>
@@ -1277,6 +1278,14 @@ const OrderTracking = () => {
                         onSuccess={() => fetchOrderDetails()}
                     />
                 )}
+
+                {/* Help & Support Modal */}
+                <OrderHelpModal
+                    isOpen={isHelpModalOpen}
+                    onClose={() => setIsHelpModalOpen(false)}
+                    order={order}
+                    settings={settings}
+                />
             </div>
         </div>
     );

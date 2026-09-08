@@ -3,10 +3,13 @@ import { Clock, RefreshCcw, LogOut, CheckCircle2 } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import deliveryService from '../services/deliveryService';
 import { toast } from 'react-hot-toast';
+import useBrandingStore from '../../../store/brandingStore';
 
 const PendingApproval = () => {
     const { logout, updateUser } = useAuthStore();
+    const { supportEmail } = useBrandingStore();
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const emailDisplay = supportEmail || 'support@silaiwala.com';
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -82,7 +85,7 @@ const PendingApproval = () => {
             </div>
             
             <p className="text-slate-400 text-sm mt-8">
-                Need help? Contact support at <a href="mailto:support@sewzella.com" className="text-slate-600 hover:underline">support@sewzella.com</a>
+                Need help? Contact support at <a href={`mailto:${emailDisplay}`} className="text-slate-600 hover:underline">{emailDisplay}</a>
             </p>
         </div>
     );

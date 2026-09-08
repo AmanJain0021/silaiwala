@@ -4,10 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../shared/utils/api';
 import { removeToken } from '../../../utils/auth';
 import { toast } from 'react-hot-toast';
+import useBrandingStore from '../../../store/brandingStore';
 
 const PendingApproval = () => {
     const navigate = useNavigate();
+    const { supportEmail } = useBrandingStore();
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const emailDisplay = supportEmail || 'support@silaiwala.com';
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     const handleRefresh = async () => {
@@ -101,7 +104,7 @@ const PendingApproval = () => {
             </div>
             
             <p className="text-gray-400 text-xs mt-6 text-center">
-                Need assistance? Contact support at <a href="mailto:support@silaiwala.com" className="text-[#843D9B] font-bold hover:underline">support@silaiwala.com</a>
+                Need assistance? Contact support at <a href={`mailto:${emailDisplay}`} className="text-[#843D9B] font-bold hover:underline">{emailDisplay}</a>
             </p>
         </div>
     );

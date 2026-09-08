@@ -2,12 +2,14 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppContainer from '../../../components/Common/AppContainer';
 import { Button } from '../components/UIElements';
-import { Clock, ShieldAlert, LogOut, MessageCircle } from 'lucide-react';
+import { Clock, ShieldAlert, LogOut, MessageCircle, Mail } from 'lucide-react';
 import { useTailorAuth, TAILOR_STATUS } from '../context/AuthContext';
+import useBrandingStore from '../../../store/brandingStore';
 
 export const UnderReview = () => {
     const { logout, status } = useTailorAuth();
     const navigate = useNavigate();
+    const { supportEmail } = useBrandingStore();
 
     useEffect(() => {
         if (status === TAILOR_STATUS.APPROVED) {
@@ -30,7 +32,14 @@ export const UnderReview = () => {
                     <Button variant="secondary" className="border-gray-100 text-gray-600" onClick={async () => { await logout(); navigate('/partner/login'); }}>
                         <LogOut size={18} /> Sign Out
                     </Button>
-                    <Button variant="ghost" className="text-primary">
+                    <Button 
+                        variant="ghost" 
+                        className="text-primary"
+                        onClick={() => {
+                            const email = supportEmail || 'support@silaiwala.com';
+                            window.location.href = `mailto:${email}?subject=Partner Account Review Assistance`;
+                        }}
+                    >
                         <MessageCircle size={18} /> Contact Support
                     </Button>
                 </div>
@@ -42,6 +51,7 @@ export const UnderReview = () => {
 export const RejectedPage = () => {
     const { user, logout } = useTailorAuth();
     const navigate = useNavigate();
+    const { supportEmail } = useBrandingStore();
 
     return (
         <AppContainer>
@@ -60,6 +70,16 @@ export const RejectedPage = () => {
                 <div className="w-full space-y-4 mt-12">
                     <Button onClick={() => navigate('/partner/register')}>
                         Re-apply Now
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        className="text-primary"
+                        onClick={() => {
+                            const email = supportEmail || 'support@silaiwala.com';
+                            window.location.href = `mailto:${email}?subject=Partner Application Inquiry`;
+                        }}
+                    >
+                        <Mail size={18} /> Contact Support
                     </Button>
                     <Button variant="secondary" className="border-gray-100 text-gray-600" onClick={async () => { await logout(); navigate('/partner/login'); }}>
                         Sign Out

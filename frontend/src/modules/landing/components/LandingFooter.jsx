@@ -4,7 +4,10 @@ import { Instagram, Facebook, Twitter, Youtube, MapPin, Phone, Mail } from 'luci
 import useBrandingStore from '../../../store/brandingStore';
 
 const LandingFooter = () => {
-  const { appName, logos } = useBrandingStore();
+  const { appName, logos, supportEmail, supportPhone } = useBrandingStore();
+  const phoneDisplay = supportPhone || '+91 1800 123 4567';
+  const emailDisplay = supportEmail || 'support@silaiwala.com';
+  const cleanPhone = phoneDisplay.replace(/[^+\d]/g, '');
 
   return (
     <footer
@@ -123,11 +126,11 @@ const LandingFooter = () => {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <Phone size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
-                <span className="text-[#6B6575] text-[13px]">+91 98765 43210</span>
+                <a href={`tel:${cleanPhone}`} className="text-[#6B6575] hover:text-[#843D9B] text-[13px] transition-colors">{phoneDisplay}</a>
               </li>
               <li className="flex items-start gap-3">
                 <Mail size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
-                <span className="text-[#6B6575] text-[13px]">support@sewzella.com</span>
+                <a href={`mailto:${emailDisplay}`} className="text-[#6B6575] hover:text-[#843D9B] text-[13px] transition-colors">{emailDisplay}</a>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
