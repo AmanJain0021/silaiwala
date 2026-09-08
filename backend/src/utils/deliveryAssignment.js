@@ -378,6 +378,7 @@ exports.checkStuckDeliveryAssignments = async () => {
   try {
     const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout
     const thresholdTime = new Date(Date.now() - TIMEOUT_MS);
+    const MAX_SEARCH_RADIUS_M = 35000; // 35km max radius
 
     const stuckOrders = await Order.find({
       status: {
@@ -391,7 +392,7 @@ exports.checkStuckDeliveryAssignments = async () => {
           status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] },
         },
       ],
-    });
+    }).limit(10);
 
     if (stuckOrders.length === 0) return;
 
@@ -404,12 +405,19 @@ exports.checkStuckDeliveryAssignments = async () => {
       const cycle = isFabricPhase ? "pickup" : "dropoff";
 
       const currentRadius = order.currentSearchRadius || DEFAULT_SEARCH_RADIUS_M;
-      const nextRadius = currentRadius + 10000;
+      if (currentRadius >= MAX_SEARCH_RADIUS_M) {
+        // Max radius reached; defer re-check by updating requestSentAt without expanding
+        order.requestSentAt = new Date();
+        await order.save();
+        continue;
+      }
 
+      const nextRadius = Math.min(currentRadius + 10000, MAX_SEARCH_RADIUS_M);
       order.currentSearchRadius = nextRadius;
+      order.requestSentAt = new Date();
       order.trackingHistory.push({
         status: "searching-delivery-partner",
-        message: `No partner accepted within timeout. Expanding search radius from ${currentRadius / 1000}km to ${nextRadius / 1000}km and rebroadcasting.`,
+        message: `No partner accepted within timeout. Expanding search radius to ${nextRadius / 1000}km and rebroadcasting.`,
         timestamp: new Date(),
       });
       await order.save();

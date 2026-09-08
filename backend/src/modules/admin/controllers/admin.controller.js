@@ -23,139 +23,184 @@ const { createPickupLocation } = require("../../../utils/shiprocket.js");
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const data = await getCached("cache:admin:dashboard-stats", 60, async () => {
-    const totalUsers = await User.countDocuments();
-    const totalCustomers = await User.countDocuments({ role: "customer" });
-    const totalTailors = await User.countDocuments({ role: "tailor" });
-    const totalDeliveries = await User.countDocuments({ role: "delivery" });
-    const totalOrdersCount = await Order.countDocuments();
-    
-    // Calculate total revenue from completed orders
-    const completedOrders = await Order.find({ status: "delivered" });
-    const totalRevenue = completedOrders.reduce((acc, order) => acc + (order.totalAmount || 0), 0);
-    
-    // Active orders are any orders not delivered or cancelled
-    const activeOrdersCount = await Order.countDocuments({ status: { $nin: ["delivered", "cancelled"] } });
+    const timeframe = req.query.timeframe || 'this-week';
+    const cacheKey = `cache:admin:dashboard-stats:${timeframe}`;
 
-    // Pending Tailor applications
-    const pendingTailorsCount = await User.countDocuments({ role: "tailor", isVerified: false });
+    const data = await getCached(cacheKey, 30, async () => {
+      const totalUsers = await User.countDocuments();
+      const totalCustomers = await User.countDocuments({ role: "customer" });
+      const totalTailors = await User.countDocuments({ role: "tailor" });
+      const totalDeliveries = await User.countDocuments({ role: "delivery" });
+      const totalOrdersCount = await Order.countDocuments();
+      
+      // Calculate total revenue from valid non-cancelled orders
+      const validOrders = await Order.find({ status: { $nin: ["cancelled", "refunded"] } }).select("totalAmount advancePaymentAmount paymentStatus advancePaymentStatus status");
+      const totalRevenue = validOrders.reduce((acc, order) => {
+        const amt = (order.paymentStatus === 'paid' || order.status === 'delivered')
+          ? (order.totalAmount || 0)
+          : (order.advancePaymentStatus === 'paid' ? (order.advancePaymentAmount || 0) : (order.totalAmount || 0));
+        return acc + amt;
+      }, 0);
+      
+      // Active orders are any orders in progress
+      const activeOrdersCount = await Order.countDocuments({ status: { $nin: ["delivered", "cancelled", "completed"] } });
 
-    // Pending Payouts calculation
-    const pendingPayoutsData = await Payout.aggregate([
-      { $match: { status: { $in: ["pending", "processing"] } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
-    const pendingPayouts = pendingPayoutsData.length > 0 ? pendingPayoutsData[0].total : 0;
+      // Pending Tailor applications
+      const pendingTailorsCount = await User.countDocuments({ role: "tailor", isVerified: false });
 
-    // Recent 5 orders
-    const recentOrders = await Order.find()
-      .populate("customer", "name")
-      .populate("items.service", "title")
-      .populate("items.product", "name")
-      .populate("tailor", "name")
-      .sort("-createdAt")
-      .limit(5);
+      // Pending Payouts calculation
+      const pendingPayoutsData = await Payout.aggregate([
+        { $match: { status: { $in: ["pending", "processing"] } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]);
+      const pendingPayouts = pendingPayoutsData.length > 0 ? pendingPayoutsData[0].total : 0;
 
-    // Get Top 5 Tailors by completed orders
-    const topTailors = await Order.aggregate([
-      { $match: { status: "delivered" } },
-      { $group: { _id: "$tailor", completedOrders: { $sum: 1 } } },
-      { $sort: { completedOrders: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "userDetails"
+      // Recent 10 orders
+      const recentOrders = await Order.find()
+        .populate("customer", "name phoneNumber")
+        .populate("items.service", "title")
+        .populate("items.product", "name")
+        .populate("tailor", "name shopName")
+        .sort("-createdAt")
+        .limit(10);
+
+      // Top 5 Tailors by completed orders
+      const topTailors = await Order.aggregate([
+        { $match: { status: { $in: ["delivered", "completed"] } } },
+        { $group: { _id: "$tailor", completedOrders: { $sum: 1 }, totalRevenue: { $sum: "$totalAmount" } } },
+        { $sort: { completedOrders: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userDetails"
+          }
+        },
+        {
+          $lookup: {
+            from: "tailors",
+            localField: "_id",
+            foreignField: "user",
+            as: "tailorProfile"
+          }
+        },
+        {
+          $project: {
+            name: { $ifNull: [{ $arrayElemAt: ["$tailorProfile.shopName", 0] }, { $arrayElemAt: ["$userDetails.name", 0] }] },
+            completedOrders: 1,
+            totalRevenue: 1,
+            rating: { $ifNull: [{ $arrayElemAt: ["$tailorProfile.rating", 0] }, 5.0] }
+          }
         }
-      },
-      {
-        $lookup: {
-          from: "tailors",
-          localField: "_id",
-          foreignField: "user",
-          as: "tailorProfile"
+      ]);
+
+      // Financial stats for the chart based on timeframe
+      const formattedChartData = [];
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      let startDate = new Date();
+      let endDate = new Date();
+
+      if (timeframe === 'last-week') {
+        startDate.setDate(startDate.getDate() - 13);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setDate(endDate.getDate() - 7);
+        endDate.setHours(23, 59, 59, 999);
+
+        for (let i = 13; i >= 7; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          formattedChartData.push({
+            name: days[d.getDay()],
+            dateStr: d.toISOString().split('T')[0],
+            revenue: 0
+          });
         }
-      },
-      {
-        $project: {
-          name: { $arrayElemAt: ["$userDetails.name", 0] },
-          completedOrders: 1,
-          rating: { $ifNull: [{ $arrayElemAt: ["$tailorProfile.rating", 0] }, 5.0] }
+      } else if (timeframe === 'this-month') {
+        startDate.setDate(startDate.getDate() - 29);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Group into 6 periods of 5 days or weekly
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          formattedChartData.push({
+            name: `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`,
+            dateStr: d.toISOString().split('T')[0],
+            revenue: 0
+          });
+        }
+      } else {
+        // Default: this-week (last 7 days)
+        startDate.setDate(startDate.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          formattedChartData.push({
+            name: days[d.getDay()],
+            dateStr: d.toISOString().split('T')[0],
+            revenue: 0
+          });
         }
       }
-    ]);
 
-    // Financial stats for the chart (last 7 days)
-    const formattedChartData = [];
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      formattedChartData.push({
-        name: days[d.getDay()],
-        dateStr: d.toISOString().split('T')[0],
-        revenue: 0
+      const chartData = await Order.aggregate([
+        { 
+          $match: { 
+            status: { $nin: ["cancelled", "refunded"] },
+            createdAt: { $gte: startDate, $lte: endDate }
+          } 
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            revenue: { $sum: "$totalAmount" }
+          }
+        }
+      ]);
+
+      chartData.forEach(d => {
+        const match = formattedChartData.find(fc => fc.dateStr === d._id);
+        if (match) {
+          match.revenue = d.revenue;
+        }
       });
-    }
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      formattedChartData.forEach(d => delete d.dateStr);
 
-    const chartData = await Order.aggregate([
-      { 
-        $match: { 
-          status: "delivered",
-          createdAt: { $gte: sevenDaysAgo }
-        } 
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          revenue: { $sum: "$totalAmount" }
-        }
-      }
-    ]);
+      const systemHealth = {
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        databaseStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+      };
 
-    chartData.forEach(d => {
-      const match = formattedChartData.find(fc => fc.dateStr === d._id);
-      if (match) {
-        match.revenue = d.revenue;
-      }
-    });
-
-    formattedChartData.forEach(d => delete d.dateStr);
-
-    const systemHealth = {
-      uptime: process.uptime(),
-      memoryUsage: process.memoryUsage(),
-      databaseStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-    };
-
-    return {
-      stats: {
-        totalUsers,
-        totalCustomers,
-        totalTailors,
-        totalDeliveries,
-        totalOrdersCount,
-        activeOrdersCount,
-        totalRevenue,
-        pendingTailorsCount,
-        pendingPayouts
-      },
-      systemHealth,
-      recentOrders,
-      topTailors,
-      revenueChart: formattedChartData
-    };
+      return {
+        stats: {
+          totalUsers,
+          totalCustomers,
+          totalTailors,
+          totalDeliveries,
+          totalOrdersCount,
+          activeOrdersCount,
+          totalRevenue,
+          pendingTailorsCount,
+          pendingPayouts
+        },
+        systemHealth,
+        recentOrders,
+        topTailors,
+        revenueChart: formattedChartData
+      };
     }); // end getCached
 
     res.status(200).json({ success: true, ...data });
   } catch (error) {
-    console.error("Error in getAllUsers:", error);
+    console.error("Error in getDashboardStats:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -1327,3 +1327,109 @@ exports.cancelDeliveryRequest = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * @desc    Assign or reassign shop tailor to an offline order
+ * @route   PATCH /api/v1/admin/offline-orders/:id/assign-tailor
+ */
+exports.assignShopTailor = async (req, res) => {
+  try {
+    const { shopTailor } = req.body;
+    const User = require("../../../models/User.js");
+    const Tailor = require("../../../models/Tailor.js");
+
+    const order = await OfflineOrder.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Offline order not found" });
+    }
+
+    let resolvedTailorUserId = null;
+    let tailorUser = null;
+
+    if (shopTailor && shopTailor !== "unassigned" && shopTailor !== "") {
+      if (!mongoose.Types.ObjectId.isValid(shopTailor)) {
+        return res.status(400).json({ success: false, message: "Invalid tailor ID" });
+      }
+
+      // Check if it's a User id
+      tailorUser = await User.findOne({ _id: shopTailor, role: "tailor" });
+      if (tailorUser) {
+        resolvedTailorUserId = tailorUser._id;
+      } else {
+        // Check if it's a Tailor model id
+        const tailorDoc = await Tailor.findById(shopTailor);
+        if (tailorDoc && tailorDoc.user) {
+          resolvedTailorUserId = tailorDoc.user;
+          tailorUser = await User.findById(tailorDoc.user);
+        }
+      }
+
+      if (!tailorUser) {
+        return res.status(404).json({ success: false, message: "Tailor not found or invalid" });
+      }
+    }
+
+    order.shopTailor = resolvedTailorUserId || undefined;
+
+    const tailorLabel = tailorUser ? (tailorUser.name || tailorUser.phoneNumber || "Tailor") : "Unassigned";
+    order.history.push({
+      status: order.status,
+      message: resolvedTailorUserId ? `Assigned to tailor ${tailorLabel}` : "Tailor unassigned",
+      updatedBy: req.user._id,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    const updated = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address notes savedMeasurements")
+      .populate("deliveryPartner", "name phoneNumber email vehicleNumber")
+      .populate("createdBy", "name")
+      .populate("shopTailor", "name phoneNumber email shopName")
+      .populate("history.updatedBy", "name")
+      .populate("styleAddons.addon", "name category price image");
+
+    // Real-time notification to the newly assigned tailor
+    if (resolvedTailorUserId) {
+      try {
+        const { getIO } = require("../../../config/socket.js");
+        const io = getIO() || req.app?.get("io");
+        if (io) {
+          const targetRoom = `user_${resolvedTailorUserId.toString()}`;
+          io.to(targetRoom).emit("receive_new_offline_order", {
+            orderId: updated.orderId,
+            _id: updated._id,
+            garmentType: updated.garmentType,
+            status: updated.status,
+          });
+          io.to(targetRoom).emit("new_notification", {
+            type: "OFFLINE_ORDER_ASSIGNED",
+            title: "New Shop Order Assigned",
+            message: `You have been assigned offline order #${updated.orderId} (${updated.garmentType}).`,
+            data: { orderId: updated._id, isOffline: true, targetUrl: "/partner/shop-orders" },
+          });
+        }
+        await sendNotification({
+          recipient: resolvedTailorUserId,
+          type: "ORDER_CREATED",
+          title: "New Shop Order Assigned",
+          message: `You have been assigned offline order #${updated.orderId} (${updated.garmentType}).`,
+          data: { orderId: updated._id, isOffline: true, targetUrl: "/partner/shop-orders" },
+        }).catch(() => null);
+      } catch (err) {
+        console.warn("Socket/notification failed for tailor assignment:", err.message);
+      }
+    }
+
+    emitOfflineOrderStatusUpdate(updated);
+
+    res.status(200).json({
+      success: true,
+      message: resolvedTailorUserId ? `Order assigned to ${tailorLabel}` : "Tailor unassigned successfully",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Error in assignShopTailor:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

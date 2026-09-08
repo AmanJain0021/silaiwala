@@ -243,6 +243,8 @@ const AdminOfflineOrders = () => {
     const [isCustomizingFields, setIsCustomizingFields] = useState(false);
     const [styleAddonsCatalog, setStyleAddonsCatalog] = useState([]);
     const [tailors, setTailors] = useState([]);
+    const [selectedTailorId, setSelectedTailorId] = useState('');
+    const [isAssigningTailor, setIsAssigningTailor] = useState(false);
     const [deliveryPartners, setDeliveryPartners] = useState([]);
     const [selectedDeliveryPartnerId, setSelectedDeliveryPartnerId] = useState('');
     const [isAssigningPartner, setIsAssigningPartner] = useState(false);
@@ -978,6 +980,7 @@ const AdminOfflineOrders = () => {
             const res = await api.get(`/admin/offline-orders/${order._id}`);
             const data = res.data.data;
             setSelectedOrder(data);
+            setSelectedTailorId(data.shopTailor?._id || data.shopTailor || '');
             setAssignPickupAddress(data.pickupAddress || 'SewZella Central Store (Admin Workshop)');
             if (data.pickupLocation?.coordinates?.length >= 2) {
                 setAssignPickupCoords({
@@ -990,6 +993,27 @@ const AdminOfflineOrders = () => {
         } catch (error) {
             if (error?.name === 'CanceledError' || error?.message?.toLowerCase().includes('cancel')) return;
             toast.error('Failed to load order');
+        }
+    };
+
+    const handleAssignTailor = async () => {
+        if (!selectedOrder) return;
+        setIsAssigningTailor(true);
+        try {
+            const res = await api.patch(`/admin/offline-orders/${selectedOrder._id}/assign-tailor`, {
+                shopTailor: selectedTailorId || ''
+            });
+            if (res.data?.success) {
+                toast.success(res.data.message || 'Tailor assigned successfully');
+                setSelectedOrder(res.data.data);
+                setSelectedTailorId(res.data.data.shopTailor?._id || res.data.data.shopTailor || '');
+                setOrders((prev) => prev.map((o) => (o._id === res.data.data._id ? res.data.data : o)));
+                fetchStats();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to assign tailor');
+        } finally {
+            setIsAssigningTailor(false);
         }
     };
 
@@ -1559,6 +1583,57 @@ const AdminOfflineOrders = () => {
                                                 </span>
                                             )}
                                         </span>
+                                    </div>
+                                </div>
+
+                                {/* Assign / Reassign Tailor */}
+                                <div className="space-y-3 bg-purple-50/60 border border-purple-100 rounded-2xl p-4">
+                                    <h3 className="text-[10px] font-black uppercase text-purple-700 tracking-widest flex items-center gap-2">
+                                        <Scissors size={14} /> Assign / Reassign Tailor
+                                    </h3>
+
+                                    {selectedOrder.shopTailor ? (
+                                        <div className="bg-white p-3 rounded-xl border border-purple-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-900">
+                                                    {selectedOrder.shopTailor.shopName || selectedOrder.shopTailor.name || 'Assigned Tailor'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500 font-medium">
+                                                    {selectedOrder.shopTailor.phoneNumber || selectedOrder.shopTailor.email || ''}
+                                                </p>
+                                            </div>
+                                            <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-[9px] font-black rounded-lg uppercase tracking-wider">
+                                                Assigned
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-purple-700 font-medium">
+                                            No tailor assigned yet. Select a tailor to assign this job:
+                                        </p>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={selectedTailorId}
+                                            onChange={(e) => setSelectedTailorId(e.target.value)}
+                                            className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-purple-600"
+                                        >
+                                            <option value="">-- Unassigned / Select Tailor --</option>
+                                            {tailors.map((t) => (
+                                                <option key={t._id} value={t._id}>
+                                                    {t.shopName ? `${t.shopName} (${t.name})` : t.name} {t.phoneNumber ? `· ${t.phoneNumber}` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            disabled={isAssigningTailor}
+                                            onClick={handleAssignTailor}
+                                            className="px-3 py-2 bg-[#843D9B] text-white text-xs font-bold rounded-xl hover:bg-[#6B2F7E] transition-all uppercase tracking-wider disabled:opacity-50 shrink-0 flex items-center gap-1 shadow-sm"
+                                        >
+                                            {isAssigningTailor ? <Loader2 size={12} className="animate-spin" /> : <Scissors size={12} />}
+                                            {isAssigningTailor ? 'Assigning...' : selectedOrder.shopTailor ? 'Change Tailor' : 'Assign Tailor'}
+                                        </button>
                                     </div>
                                 </div>
 

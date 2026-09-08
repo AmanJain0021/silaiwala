@@ -1,4 +1,5 @@
 const OfflineOrder = require("../../../models/OfflineOrder.js");
+const Tailor = require("../../../models/Tailor.js");
 const {
   OFFLINE_PIPELINE_STEPS,
   statusFilterValues,
@@ -12,12 +13,17 @@ const { applyOfflineOrderStatusChange } = require("../../../services/offlineOrde
 exports.getTailorOfflineOrders = async (req, res) => {
   try {
     const { status, limit = 50, page = 1 } = req.query;
+
+    const tailorProfile = await Tailor.findOne({ user: req.user._id });
+    const possibleTailorIds = [req.user._id];
+    if (tailorProfile) possibleTailorIds.push(tailorProfile._id);
+
     const query = {
       source: "offline",
-      shopTailor: req.user._id,
+      shopTailor: { $in: possibleTailorIds },
     };
 
-    if (status) {
+    if (status && status !== "all") {
       const filterValues = statusFilterValues(status);
       if (filterValues?.$nin) {
         query.status = filterValues;
@@ -31,7 +37,10 @@ exports.getTailorOfflineOrders = async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
     const [orders, total] = await Promise.all([
       OfflineOrder.find(query)
-        .populate("offlineCustomer", "name phone")
+        .populate("offlineCustomer", "name phone address notes savedMeasurements")
+        .populate("styleAddons.addon", "name category price image")
+        .populate("createdBy", "name")
+        .populate("history.updatedBy", "name")
         .sort("-createdAt")
         .limit(Number(limit))
         .skip(skip),
@@ -60,10 +69,14 @@ exports.updateTailorOfflineOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "status is required" });
     }
 
+    const tailorProfile = await Tailor.findOne({ user: req.user._id });
+    const possibleTailorIds = [req.user._id];
+    if (tailorProfile) possibleTailorIds.push(tailorProfile._id);
+
     const order = await OfflineOrder.findOne({
       _id: req.params.id,
       source: "offline",
-      shopTailor: req.user._id,
+      shopTailor: { $in: possibleTailorIds },
     });
 
     if (!order) {
@@ -86,10 +99,11 @@ exports.updateTailorOfflineOrderStatus = async (req, res) => {
       throw err;
     }
 
-    const populated = await OfflineOrder.findById(order._id).populate(
-      "offlineCustomer",
-      "name phone"
-    );
+    const populated = await OfflineOrder.findById(order._id)
+      .populate("offlineCustomer", "name phone address notes savedMeasurements")
+      .populate("styleAddons.addon", "name category price image")
+      .populate("createdBy", "name")
+      .populate("history.updatedBy", "name");
 
     res.status(200).json({ success: true, data: populated });
   } catch (error) {

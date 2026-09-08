@@ -47,113 +47,119 @@ const AdminDashboard = () => {
     });
     const [liveOrders, setLiveOrders] = useState([]);
     const [topTailorsData, setTopTailorsData] = useState([]);
+    const [chartTimeframe, setChartTimeframe] = useState('this-week');
     const [revenueChartData, setRevenueChartData] = useState([]);
     const [systemHealthData, setSystemHealthData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [response, offlineRes] = await Promise.all([
-                    api.get('/admin/dashboard'),
-                    api.get('/admin/offline-orders/stats').catch(() => null),
-                ]);
-                const { stats, recentOrders: apiRecentOrders, topTailors: apiTopTailors, revenueChart, systemHealth } = response.data;
-                const { totalRevenue, activeOrdersCount, totalTailors, pendingTailorsCount, pendingPayouts } = stats;
+    const fetchDashboardData = async (timeframe = chartTimeframe) => {
+        try {
+            const [response, offlineRes] = await Promise.all([
+                api.get('/admin/dashboard', { params: { timeframe } }),
+                api.get('/admin/offline-orders/stats').catch(() => null),
+            ]);
+            const { stats, recentOrders: apiRecentOrders, topTailors: apiTopTailors, revenueChart, systemHealth } = response.data;
+            const { totalRevenue, activeOrdersCount, totalTailors, pendingTailorsCount, pendingPayouts } = stats;
 
-                setStatsData({
-                    totalRevenue: `₹${totalRevenue.toLocaleString()}`,
-                    activeOrders: activeOrdersCount,
-                    totalTailors: totalTailors,
-                    pendingTailorsCount: pendingTailorsCount || 0,
-                    pendingPayouts: `₹${(pendingPayouts || 0).toLocaleString()}`,
-                });
+            setStatsData({
+                totalRevenue: `₹${(totalRevenue || 0).toLocaleString()}`,
+                activeOrders: activeOrdersCount || 0,
+                totalTailors: totalTailors || 0,
+                pendingTailorsCount: pendingTailorsCount || 0,
+                pendingPayouts: `₹${(pendingPayouts || 0).toLocaleString()}`,
+            });
 
-                if (offlineRes?.data?.success && offlineRes.data.data) {
-                    setOfflineStats(offlineRes.data.data);
-                }
-
-                if (apiRecentOrders && apiRecentOrders.length > 0) {
-                    const formatted = apiRecentOrders.map(o => ({
-                        id: o.orderId || o._id.substring(0, 8),
-                        service: formatOrderItemsTitle(o.items, { fallback: 'Custom Job' }),
-                        customer: o.customer?.name || 'Customer',
-                        tailor: o.tailor?.shopName || o.tailor?.name || 'Unassigned',
-                        amount: `₹${(o.totalAmount || 0).toLocaleString()}`,
-                        status: o.status
-                    }));
-                    setLiveOrders(formatted);
-                }
-
-                if (apiTopTailors && apiTopTailors.length > 0) {
-                    setTopTailorsData(apiTopTailors);
-                }
-
-                if (revenueChart && revenueChart.length > 0) {
-                    setRevenueChartData(revenueChart);
-                }
-
-                if (systemHealth) {
-                    setSystemHealthData([
-                        { 
-                            label: 'Cloud DB', 
-                            status: systemHealth.databaseStatus === 'connected' ? 'Healthy' : 'Degraded', 
-                            color: systemHealth.databaseStatus === 'connected' ? 'bg-green-500' : 'bg-red-500' 
-                        },
-                        { 
-                            label: 'Server Uptime', 
-                            status: systemHealth.uptime > 0 ? 'Healthy' : 'Degraded', 
-                            color: 'bg-green-500' 
-                        },
-                        { 
-                            label: 'Memory Usage', 
-                            status: 'Healthy', 
-                            color: 'bg-green-500' 
-                        },
-                        { 
-                            label: 'Payment Gateway', 
-                            status: 'Healthy', 
-                            color: 'bg-green-500' 
-                        }
-                    ]);
-                }
-                setIsLoading(false);
-            } catch (error) {
-                if (error.name === 'CanceledError') return;
-                console.error('Error fetching dashboard stats:', error);
-                setIsLoading(false);
+            if (offlineRes?.data?.success && offlineRes.data.data) {
+                setOfflineStats(offlineRes.data.data);
             }
-        };
 
-        fetchDashboardData();
+            if (apiRecentOrders && apiRecentOrders.length > 0) {
+                const formatted = apiRecentOrders.map(o => ({
+                    id: o.orderId || o._id.substring(0, 8),
+                    service: formatOrderItemsTitle(o.items, { fallback: 'Custom Job' }),
+                    customer: o.customer?.name || 'Customer',
+                    tailor: o.tailor?.shopName || o.tailor?.name || 'Unassigned',
+                    amount: `₹${(o.totalAmount || 0).toLocaleString()}`,
+                    status: o.status
+                }));
+                setLiveOrders(formatted);
+            } else if (apiRecentOrders && apiRecentOrders.length === 0) {
+                setLiveOrders([]);
+            }
 
-        // Socket setup for real-time updates
+            if (apiTopTailors) {
+                setTopTailorsData(apiTopTailors);
+            }
+
+            if (revenueChart) {
+                setRevenueChartData(revenueChart);
+            }
+
+            if (systemHealth) {
+                setSystemHealthData([
+                    { 
+                        label: 'Cloud DB', 
+                        status: systemHealth.databaseStatus === 'connected' ? 'Healthy' : 'Degraded', 
+                        color: systemHealth.databaseStatus === 'connected' ? 'bg-green-500' : 'bg-red-500' 
+                    },
+                    { 
+                        label: 'Server Uptime', 
+                        status: systemHealth.uptime > 0 ? 'Healthy' : 'Degraded', 
+                        color: 'bg-green-500' 
+                    },
+                    { 
+                        label: 'Memory Usage', 
+                        status: 'Healthy', 
+                        color: 'bg-green-500' 
+                    },
+                    { 
+                        label: 'Payment Gateway', 
+                        status: 'Healthy', 
+                        color: 'bg-green-500' 
+                    }
+                ]);
+            }
+            setIsLoading(false);
+        } catch (error) {
+            if (error.name === 'CanceledError') return;
+            console.error('Error fetching dashboard stats:', error);
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData(chartTimeframe);
+    }, [chartTimeframe]);
+
+    useEffect(() => {
+        // Socket setup for real-time live tracking
         const socket = io(SOCKET_URL, {
             auth: {
                 token: getToken()
             }
         });
 
-        socket.on('new_order', () => {
-            fetchDashboardData();
-        });
+        const handleLiveUpdate = () => {
+            fetchDashboardData(chartTimeframe);
+        };
 
-        socket.on('order_status_updated', () => {
-            fetchDashboardData();
-        });
-
-        socket.on('task_claimed', () => {
-            fetchDashboardData();
-        });
+        socket.on('new_order', handleLiveUpdate);
+        socket.on('order_status_updated', handleLiveUpdate);
+        socket.on('task_claimed', handleLiveUpdate);
+        socket.on('payment_verified', handleLiveUpdate);
+        socket.on('order_notification', handleLiveUpdate);
 
         return () => {
-            socket.off('new_order');
-            socket.off('order_status_updated');
-            socket.off('task_claimed');
+            socket.off('new_order', handleLiveUpdate);
+            socket.off('order_status_updated', handleLiveUpdate);
+            socket.off('task_claimed', handleLiveUpdate);
+            socket.off('payment_verified', handleLiveUpdate);
+            socket.off('order_notification', handleLiveUpdate);
+            socket.disconnect();
         };
-    }, []);
+    }, [chartTimeframe]);
 
     const stats = [
         { label: 'Online Revenue', value: statsData.totalRevenue, icon: <TrendingUp size={20} />, link: '/admin/finance' },
@@ -372,44 +378,62 @@ const AdminDashboard = () => {
                         <div className="flex justify-between items-center mb-6">
                             <div>
                                 <h3 className="text-lg lg:text-xl font-black text-gray-900 tracking-tight">Revenue Overview</h3>
-                                <p className="text-[10px] lg:text-xs text-gray-400 mt-1 font-medium">Weekly transaction volume across marketplace</p>
+                                <p className="text-[10px] lg:text-xs text-gray-400 mt-1 font-medium">
+                                    {chartTimeframe === 'this-month' 
+                                        ? 'Monthly transaction volume & revenue across marketplace'
+                                        : chartTimeframe === 'last-week'
+                                        ? 'Previous week transaction volume & revenue'
+                                        : 'Weekly transaction volume & revenue across marketplace'}
+                                </p>
                             </div>
-                            <select className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold text-gray-600 outline-none">
-                                <option>This Week</option>
-                                <option>Last Week</option>
-                                <option>This Month</option>
+                            <select 
+                                value={chartTimeframe}
+                                onChange={(e) => setChartTimeframe(e.target.value)}
+                                className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 outline-none cursor-pointer hover:bg-gray-100 transition-colors"
+                            >
+                                <option value="this-week">This Week</option>
+                                <option value="last-week">Last Week</option>
+                                <option value="this-month">This Month</option>
                             </select>
                         </div>
 
                         {/* Custom Bar Chart built with Tailwind */}
-                        <div className="h-48 lg:h-64 flex items-end justify-between gap-2 lg:gap-4 mt-8 pb-4 border-b border-gray-50 relative">
+                        <div className="h-48 lg:h-64 flex items-end justify-between gap-2 lg:gap-4 mt-8 pb-4 border-b border-gray-100 relative">
                             {/* Grid lines */}
                             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
                                 {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="w-full border-b border-gray-50 flex items-end pb-1">
-                                        <span className="text-[8px] lg:text-[10px] text-gray-300 font-bold -translate-y-2">{(maxRevenue - (maxRevenue / 3) * i).toFixed(0)}</span>
+                                    <div key={i} className="w-full border-b border-gray-100 flex items-end pb-1">
+                                        <span className="text-[8px] lg:text-[10px] text-gray-400 font-bold -translate-y-2">₹{(maxRevenue - (maxRevenue / 3) * i).toFixed(0)}</span>
                                     </div>
                                 ))}
                             </div>
 
                             {revenueChartData.map((data, idx) => (
-                                <div key={idx} className="flex flex-col items-center flex-1 z-10 group">
-                                    <div className="relative w-full max-w-[40px] flex justify-center flex-1 items-end">
-                                        <div
-                                            className="w-full bg-indigo-100/50 rounded-t-lg group-hover:bg-[#843D9B] transition-all duration-300 relative"
-                                            style={{ height: `${(data.revenue / maxRevenue) * 100}%`, minHeight: '8px' }}
-                                        >
-                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap transition-all z-20">
-                                                ₹{data.revenue.toLocaleString()}
+                                <div key={idx} className="flex flex-col items-center flex-1 h-full z-10 group">
+                                    <div className="relative w-full max-w-[44px] h-full flex flex-col justify-end items-center">
+                                        {/* Background Track Column */}
+                                        <div className="w-full h-full bg-[#843D9B]/5 hover:bg-[#843D9B]/10 rounded-t-xl flex items-end justify-center p-1 transition-colors relative">
+                                            {/* Filled Bar in Theme Color */}
+                                            <div
+                                                className="w-full bg-gradient-to-t from-[#843D9B] via-[#9B4DB5] to-[#B868D2] rounded-t-lg transition-all duration-500 shadow-sm shadow-[#843D9B]/30 group-hover:from-[#6B2F7E] group-hover:to-[#843D9B] relative flex justify-center cursor-pointer"
+                                                style={{ 
+                                                    height: `${Math.max(data.revenue > 0 ? (data.revenue / maxRevenue) * 100 : 8, 8)}%`,
+                                                    minHeight: '12px' 
+                                                }}
+                                            >
+                                                {/* Tooltip on Hover */}
+                                                <div className="opacity-0 group-hover:opacity-100 absolute -top-11 left-1/2 -translate-x-1/2 bg-gray-900/95 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-xl pointer-events-none whitespace-nowrap transition-all z-30 border border-white/10">
+                                                    <span className="text-[#E2D9F3] mr-1">{data.name}:</span> ₹{data.revenue.toLocaleString()}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <span className="text-[10px] font-black text-gray-400 mt-3 uppercase tracking-tighter">{data.name}</span>
+                                    <span className="text-[10px] lg:text-[11px] font-bold text-gray-500 mt-2.5 uppercase tracking-wider group-hover:text-[#843D9B] transition-colors">{data.name}</span>
                                 </div>
                             ))}
                             {revenueChartData.length === 0 && (
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <p className="text-xs font-black text-gray-300 uppercase tracking-widest">No Revenue Data Yet</p>
+                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No Revenue Data Yet</p>
                                 </div>
                             )}
                         </div>

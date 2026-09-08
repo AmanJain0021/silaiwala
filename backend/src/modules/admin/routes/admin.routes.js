@@ -96,6 +96,7 @@ const {
   getOfflineOrderMeta,
   assignDeliveryPartner,
   cancelDeliveryRequest,
+  assignShopTailor,
 } = require("../controllers/offline.controller.js");
 
 const {
@@ -172,6 +173,7 @@ router.patch("/offline-orders/:id/status", updateOfflineOrderStatus);
 router.patch("/offline-orders/:id/out-for-delivery", markOfflineOrderOutForDelivery);
 router.patch("/offline-orders/:id/assign-delivery", assignDeliveryPartner);
 router.patch("/offline-orders/:id/cancel-delivery-request", cancelDeliveryRequest);
+router.patch("/offline-orders/:id/assign-tailor", assignShopTailor);
 router.post("/offline-orders/:id/complete", completeOfflineOrder);
 
 // Offline reports (separate from online Finance / System Reports)
