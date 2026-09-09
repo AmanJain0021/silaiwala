@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw, Navigation, XCircle } from 'lucide-react';
+import { Search, Filter, MoreVertical, Check, X, Scissors, Layers, CheckCircle2, Truck, Phone, MapPin, MessageSquare, Clock, ArrowLeft, Package, Calendar, User, Loader2, Heart, RefreshCcw, Navigation, XCircle, Sparkles, ChevronRight, Star, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
@@ -601,151 +601,219 @@ const Orders = () => {
                         )}
                         <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Order Items ({order.items?.length || 0})</p>
                         {order.items?.map((item, idx) => (
-                            <div key={idx} className="bg-white rounded-3xl p-4 border border-gray-100 flex items-center gap-3">
-                                <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
-                                    {item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0] ? (
-                                        <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0]} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Scissors size={24} className="text-gray-400" />
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="text-[15px] font-black text-gray-900 leading-snug">{item.service?.title || item.product?.name || 'Custom Garment'}</h4>
-                                        <p className="text-[15px] font-black text-gray-900">₹{order.totalAmount || '0.00'}</p>
+                            <div key={idx} className="bg-white rounded-3xl p-4 border border-gray-100 flex flex-col gap-3 shadow-2xs">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
+                                        {item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0] ? (
+                                            <img src={item.selectedFabric?.image || item.selectedFabric?.images?.[0] || item.product?.image || item.product?.images?.[0] || item.service?.image || item.service?.images?.[0]} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Scissors size={24} className="text-gray-400" />
+                                        )}
                                     </div>
-                                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">{item.fabricSource === 'platform' ? 'Platform Fabric' : 'Customer Fabric'}</p>
-                                    <div className="flex gap-2 mt-2">
-                                        <span className="text-[9px] font-black uppercase bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
-                                            Size: {item.measurements?.type === 'slip' ? 'Slip' : 'Custom'}
-                                        </span>
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${item.deliveryType === 'express' ? 'bg-red-50 text-[#843D9B] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                            {item.deliveryType || 'Standard'}
-                                        </span>
-                                    </div>
-
-                                    {(item.selectedStyle || item.configuration?.selectedStyle) && (
-                                        <div className="mt-3 p-3 bg-purple-50/70 rounded-2xl border border-purple-100 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
-                                                    <Scissors size={12} /> {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? '📸 Custom Reference Design Photo' : '✂️ Selected Style Variant'}
-                                                </p>
-                                                <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
-                                                    {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? 'Custom Upload' : 'Variant'}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs font-black text-gray-900">{(item.selectedStyle || item.configuration?.selectedStyle).name || 'Custom Design'}</p>
-                                            {(item.selectedStyle || item.configuration?.selectedStyle).image && (
-                                                <div className="relative group max-w-full overflow-hidden rounded-xl border border-purple-200 shadow-xs bg-white mt-1">
-                                                    <img 
-                                                        src={(item.selectedStyle || item.configuration?.selectedStyle).image} 
-                                                        alt="Style Reference" 
-                                                        className="w-full max-h-48 object-contain cursor-pointer transition-transform duration-300 hover:scale-105"
-                                                        onClick={() => window.open((item.selectedStyle || item.configuration?.selectedStyle).image, '_blank')}
-                                                    />
-                                                    <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
-                                                        Click to expand 🔍
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {(item.selectedStyle || item.configuration?.selectedStyle).description && (
-                                                <p className="text-[10px] text-gray-600 font-medium italic">"{(item.selectedStyle || item.configuration?.selectedStyle).description}"</p>
-                                            )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <h4 className="text-[15px] font-black text-gray-900 leading-snug truncate">{item.service?.title || item.product?.name || 'Custom Garment'}</h4>
+                                            <p className="text-[15px] font-black text-gray-900 shrink-0">₹{item.price || order.totalAmount || '0'}</p>
                                         </div>
-                                    )}
-
-                                    {/* Style Add-ons */}
-                                    {(() => {
-                                        const addons = getNormalizedAddons(item);
-                                        if (addons.length === 0) return null;
-                                        return (
-                                            <div className="mt-3 p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="text-[10px] font-black uppercase text-indigo-700 tracking-wider flex items-center gap-1.5">
-                                                        <span>✨</span> Style Add-ons ({addons.length})
-                                                    </p>
-                                                    <span className="text-[8px] font-black uppercase bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md">
-                                                        Add-ons
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    {addons.map((addon, aIdx) => (
-                                                        <div key={addon._id || aIdx} className="p-2 bg-white rounded-xl border border-indigo-100 flex items-center gap-2.5">
-                                                            {addon.image ? (
-                                                                <img
-                                                                    src={addon.image}
-                                                                    alt={addon.name}
-                                                                    className="w-10 h-10 rounded-lg object-cover border border-indigo-50 bg-gray-50 cursor-pointer shrink-0 hover:opacity-90"
-                                                                    onClick={() => window.open(addon.image, '_blank')}
-                                                                />
-                                                            ) : (
-                                                                <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-black shrink-0">
-                                                                    ✨
-                                                                </div>
-                                                            )}
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex justify-between items-center">
-                                                                    <p className="text-xs font-black text-gray-900 truncate">{addon.name}</p>
-                                                                    {addon.price > 0 && <span className="text-[#843D9B] font-black text-xs shrink-0 ml-1">+₹{addon.price}</span>}
-                                                                </div>
-                                                                {addon.description && (
-                                                                    <p className="text-[10px] text-gray-500 line-clamp-1">{addon.description}</p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-
-                                    {/* Garment Customizations */}
-                                    {(() => {
-                                        const custEntries = getNormalizedCustomizations(item);
-                                        if (custEntries.length === 0) return null;
-
-                                        return (
-                                            <div className="mt-3 p-3 bg-purple-50/80 rounded-2xl border border-purple-200 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
-                                                        <Scissors size={12} /> Garment Customizations ({custEntries.length})
-                                                    </p>
-                                                    <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-900 px-2 py-0.5 rounded-md">
-                                                        Tailor Specs
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    {custEntries.map((cust) => (
-                                                        <div key={cust.key} className="p-2.5 bg-white rounded-xl border border-purple-100/80 flex flex-col gap-1">
-                                                            <div className="flex justify-between items-center text-[11px] font-bold">
-                                                                <span className="text-gray-500 uppercase tracking-wider text-[9px] font-black">{cust.label}:</span>
-                                                                <span className="text-gray-900 font-black">{cust.name}</span>
-                                                                {cust.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{cust.price}</span>}
-                                                            </div>
-                                                            {cust.description && (
-                                                                <p className="text-[10px] text-gray-500 italic">{cust.description}</p>
-                                                            )}
-                                                            {cust.refImage && (
-                                                                <div className="mt-1 relative group">
-                                                                    <img
-                                                                        src={cust.refImage}
-                                                                        alt={cust.name}
-                                                                        className="h-20 w-auto rounded-lg object-cover border border-purple-200 cursor-pointer shadow-xs transition-transform hover:scale-105"
-                                                                        onClick={() => window.open(cust.refImage, '_blank')}
-                                                                    />
-                                                                    <span className="text-[8px] font-bold text-gray-400 block mt-0.5">Click photo to zoom</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
+                                        <p className="text-[11px] text-gray-400 mt-0.5 font-medium">{item.fabricSource === 'platform' ? 'Platform Fabric' : 'Customer Fabric'}</p>
+                                        <div className="flex gap-2 mt-2">
+                                            <span className="text-[9px] font-black uppercase bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
+                                                Size: {item.measurements?.type === 'slip' ? 'Slip' : 'Custom'}
+                                            </span>
+                                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${item.deliveryType === 'express' ? 'bg-red-50 text-[#843D9B] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                {item.deliveryType || 'Standard'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                {(item.selectedStyle || item.configuration?.selectedStyle) && (
+                                    <div className="p-3 bg-purple-50/70 rounded-2xl border border-purple-100 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
+                                                <Scissors size={12} /> {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? '📸 Custom Reference Design Photo' : '✂️ Selected Style Variant'}
+                                            </p>
+                                            <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                                                {(item.selectedStyle || item.configuration?.selectedStyle).isCustom ? 'Custom Upload' : 'Variant'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs font-black text-gray-900">{(item.selectedStyle || item.configuration?.selectedStyle).name || 'Custom Design'}</p>
+                                        {(item.selectedStyle || item.configuration?.selectedStyle).image && (
+                                            <div className="relative group max-w-full overflow-hidden rounded-xl border border-purple-200 shadow-xs bg-white mt-1">
+                                                <img 
+                                                    src={(item.selectedStyle || item.configuration?.selectedStyle).image} 
+                                                    alt="Style Reference" 
+                                                    className="w-full max-h-48 object-contain cursor-pointer transition-transform duration-300 hover:scale-105"
+                                                    onClick={() => window.open((item.selectedStyle || item.configuration?.selectedStyle).image, '_blank')}
+                                                />
+                                                <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                                                    Click to expand 🔍
+                                                </div>
+                                            </div>
+                                        )}
+                                        {(item.selectedStyle || item.configuration?.selectedStyle).description && (
+                                            <p className="text-[10px] text-gray-600 font-medium italic">"{(item.selectedStyle || item.configuration?.selectedStyle).description}"</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
+
+                    {/* Style Add-ons (Single Dedicated Section matching design) */}
+                    {order.items?.some((item) => getNormalizedAddons(item).length > 0) && (
+                        <div className="bg-white rounded-3xl p-5 border border-purple-100/60 shadow-xs space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-[#843D9B] shadow-2xs">
+                                        <Sparkles size={16} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-gray-900 leading-tight">Style Add-ons</h4>
+                                        <p className="text-[11px] text-gray-400 font-medium leading-tight mt-0.5">Add a little extra style to your outfit</p>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-black uppercase bg-purple-50 text-[#843D9B] px-3 py-1 rounded-full flex items-center gap-1 border border-purple-100/60">
+                                    Extra Add-ons <ChevronRight size={12} />
+                                </span>
+                            </div>
+
+                            <div className="space-y-2 pt-1">
+                                {order.items.flatMap((item, itemIdx) => 
+                                    getNormalizedAddons(item).map((addon, aIdx) => (
+                                        <div
+                                            key={`addon-${itemIdx}-${addon._id || aIdx}`}
+                                            className="bg-purple-50/20 hover:bg-purple-50/40 rounded-2xl p-3 border border-purple-100/70 flex items-center justify-between gap-3 transition-all"
+                                        >
+                                            {/* Left Image */}
+                                            <div className="relative shrink-0">
+                                                {addon.image ? (
+                                                    <img
+                                                        src={addon.image}
+                                                        alt={addon.name}
+                                                        className="w-16 h-16 rounded-2xl object-cover border border-purple-100 bg-white cursor-pointer shadow-2xs hover:opacity-95"
+                                                        onClick={() => window.open(addon.image, '_blank')}
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 rounded-2xl bg-purple-100/80 text-[#843D9B] flex items-center justify-center text-xl font-black">
+                                                        ✨
+                                                    </div>
+                                                )}
+                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#843D9B] text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-xs">
+                                                    +
+                                                </div>
+                                            </div>
+
+                                            {/* Middle Details */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 mb-1">
+                                                    <span className="text-[9px] font-black uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                        ★ {addon.category || 'Premium'}
+                                                    </span>
+                                                    {order.items.length > 1 && (
+                                                        <span className="text-[8px] font-bold text-gray-400">
+                                                            (Item {itemIdx + 1})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <h5 className="text-sm font-black text-gray-900 leading-tight truncate">{addon.name}</h5>
+                                                {addon.description && (
+                                                    <p className="text-[11px] text-gray-400 font-medium line-clamp-1 mt-0.5">{addon.description}</p>
+                                                )}
+                                                <p className="text-[10px] text-gray-600 font-bold flex items-center gap-1 mt-1">
+                                                    <span>👕</span> {addon.name}
+                                                </p>
+                                            </div>
+
+                                            {/* Right Price & Arrow */}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-xs font-black text-purple-900 bg-purple-100/80 px-3 py-1.5 rounded-full">
+                                                    +₹{Number(addon.price || 0).toLocaleString()}
+                                                </span>
+                                                <ChevronRight size={16} className="text-gray-300" />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Garment Customizations (Single Dedicated Section matching design) */}
+                    {order.items?.some((item) => getNormalizedCustomizations(item).length > 0) && (
+                        <div className="bg-white rounded-3xl p-5 border border-purple-100/60 shadow-xs space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-[#843D9B] shadow-2xs">
+                                        <Scissors size={16} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-gray-900 leading-tight">Garment Customizations</h4>
+                                        <p className="text-[11px] text-gray-400 font-medium leading-tight mt-0.5">Make it uniquely yours</p>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-black uppercase bg-purple-50 text-[#843D9B] px-3 py-1 rounded-full flex items-center gap-1 border border-purple-100/60">
+                                    Tailor Specs <ChevronRight size={12} />
+                                </span>
+                            </div>
+
+                            <div className="space-y-2 pt-1">
+                                {order.items.flatMap((item, itemIdx) => 
+                                    getNormalizedCustomizations(item).map((cust) => (
+                                        <div
+                                            key={`cust-${itemIdx}-${cust.key}`}
+                                            className="bg-purple-50/20 hover:bg-purple-50/40 rounded-2xl p-3 border border-purple-100/70 flex items-center justify-between gap-3 transition-all"
+                                        >
+                                            {/* Left Image */}
+                                            <div className="relative shrink-0">
+                                                {cust.refImage ? (
+                                                    <img
+                                                        src={cust.refImage}
+                                                        alt={cust.name}
+                                                        className="w-16 h-16 rounded-2xl object-cover border border-purple-100 bg-white cursor-pointer shadow-2xs hover:opacity-95"
+                                                        onClick={() => window.open(cust.refImage, '_blank')}
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 rounded-2xl bg-purple-100/80 text-[#843D9B] flex items-center justify-center text-xl font-black">
+                                                        ✂️
+                                                    </div>
+                                                )}
+                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#843D9B] text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-xs">
+                                                    +
+                                                </div>
+                                            </div>
+
+                                            {/* Middle Details */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 mb-1">
+                                                    <span className="text-[9px] font-black uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                                                        {cust.label || 'CUSTOM FIT'}
+                                                    </span>
+                                                    {order.items.length > 1 && (
+                                                        <span className="text-[8px] font-bold text-gray-400">
+                                                            (Item {itemIdx + 1})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <h5 className="text-sm font-black text-gray-900 leading-tight truncate">{cust.name}</h5>
+                                                <p className="text-[11px] text-gray-400 font-medium line-clamp-1 mt-0.5">
+                                                    {cust.description || 'Tailored to your style & comfort'}
+                                                </p>
+                                            </div>
+
+                                            {/* Right Price & Arrow */}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-xs font-black text-purple-900 bg-purple-100/80 px-3 py-1.5 rounded-full">
+                                                    {cust.price > 0 ? `+₹${Number(cust.price).toLocaleString()}` : 'Included'}
+                                                </span>
+                                                <ChevronRight size={16} className="text-gray-300" />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Customer Measurements Section */}
                     {(order.isMeasurementHome || order.measurementReport || order.items?.some(item => {
@@ -879,131 +947,6 @@ const Orders = () => {
                                                 <p className="text-[12px] text-gray-700 font-medium italic">"{mObj.notes}"</p>
                                             </div>
                                         )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Style Add-ons selected by customer */}
-                    {order.items?.some((item) => getNormalizedAddons(item).length > 0) && (
-                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
-                                    <span>✨</span> Style Add-ons
-                                </p>
-                                <span className="text-[9px] font-black uppercase bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100">
-                                    Extra Add-ons
-                                </span>
-                            </div>
-                            {order.items.map((item, idx) => {
-                                const addons = getNormalizedAddons(item);
-                                if (!addons.length) return null;
-                                return (
-                                    <div key={`addons-${idx}`} className="space-y-2">
-                                        {order.items.length > 1 && (
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                                Item {idx + 1}: {item.service?.title || 'Garment'}
-                                            </p>
-                                        )}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {addons.map((addon, aIdx) => (
-                                                <div
-                                                    key={addon._id || aIdx}
-                                                    className="flex items-center gap-3 p-3 rounded-2xl border border-indigo-100 bg-indigo-50/40"
-                                                >
-                                                    {addon.image ? (
-                                                        <img
-                                                            src={addon.image}
-                                                            alt={addon.name}
-                                                            className="w-14 h-14 rounded-xl object-cover border border-indigo-200 bg-white cursor-pointer hover:opacity-90 shadow-xs"
-                                                            onClick={() => window.open(addon.image, '_blank')}
-                                                        />
-                                                    ) : (
-                                                        <div className="w-14 h-14 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg font-black uppercase">
-                                                            {addon.name?.charAt(0) || '✨'}
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-start">
-                                                            <p className="text-xs font-black text-gray-900 truncate">{addon.name}</p>
-                                                            {addon.price > 0 && (
-                                                                <span className="text-xs font-black text-[#843D9B] ml-1">
-                                                                    +₹{Number(addon.price).toLocaleString()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {addon.category && (
-                                                            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-100/80 px-1.5 py-0.5 rounded capitalize inline-block mt-0.5">
-                                                                {addon.category}
-                                                            </span>
-                                                        )}
-                                                        {addon.description && (
-                                                            <p className="text-[10px] text-gray-500 line-clamp-2 mt-0.5">{addon.description}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Garment Customizations */}
-                    {order.items?.some((item) => getNormalizedCustomizations(item).length > 0) && (
-                        <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3 mt-4">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Scissors size={14} /> Garment Customizations
-                                </p>
-                                <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-100">
-                                    Tailor Specs
-                                </span>
-                            </div>
-                            {order.items.map((item, idx) => {
-                                const custEntries = getNormalizedCustomizations(item);
-                                if (!custEntries.length) return null;
-
-                                return (
-                                    <div key={`cust-${idx}`} className="space-y-2.5">
-                                        {order.items.length > 1 && (
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                                Item {idx + 1}: {item.service?.title || 'Garment'}
-                                            </p>
-                                        )}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                            {custEntries.map((cust) => (
-                                                <div key={cust.key} className="p-3.5 bg-purple-50/80 rounded-2xl border border-purple-200 flex flex-col justify-between gap-2 shadow-xs">
-                                                    <div>
-                                                        <div className="flex justify-between items-center text-sm font-bold">
-                                                            <span className="text-gray-500 uppercase tracking-wider text-[10px] font-black">{cust.label}:</span>
-                                                            <span className="text-gray-900 font-black">{cust.name}</span>
-                                                            {cust.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{cust.price}</span>}
-                                                        </div>
-                                                        {cust.description && (
-                                                            <p className="text-[10px] text-gray-500 mt-1 italic">{cust.description}</p>
-                                                        )}
-                                                    </div>
-                                                    {cust.refImage && (
-                                                        <div className="mt-1">
-                                                            <div className="relative group rounded-xl overflow-hidden border border-purple-200 bg-white inline-block">
-                                                                <img
-                                                                    src={cust.refImage}
-                                                                    alt={cust.name}
-                                                                    className="h-28 w-auto object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
-                                                                    onClick={() => window.open(cust.refImage, '_blank')}
-                                                                />
-                                                                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
-                                                                    Zoom 🔍
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
                                     </div>
                                 );
                             })}

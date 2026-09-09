@@ -298,6 +298,7 @@ const CustomDesignForm = () => {
                     orderNumber: createdDesign?.designId || 'DES-REQ',
                     pendingAcceptance: true,
                     isCustomDesign: true,
+                    isNewOrder: true,
                 },
             });
         } catch (error) {

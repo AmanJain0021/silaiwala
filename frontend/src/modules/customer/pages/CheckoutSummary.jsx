@@ -272,7 +272,8 @@ const CheckoutSummary = () => {
                             orderId: createdAlt?._id,
                             orderNumber: createdAlt?.alterationId || 'ALT-REQ',
                             pendingAcceptance: true,
-                            isAlteration: true
+                            isAlteration: true,
+                            isNewOrder: true
                         }
                     });
                     return;
@@ -283,12 +284,15 @@ const CheckoutSummary = () => {
                     setLoadingText('Submitting custom design request...');
                     const customDesignRes = await api.post('/custom-designs/request', {
                         tailorId: cartItems[0].tailor || cartItems[0].tailorId,
-                        description: cartItems[0].config?.customDesignDescription || '',
-                        images: cartItems[0].config?.customDesignImages || [],
+                        notes: cartItems[0].notes || '',
+                        designType: cartItems[0].designType || 'custom',
+                        fabricSource: cartItems[0].fabricSource || 'customer',
+                        referenceImages: cartItems[0].referenceImages || [],
+                        measurements: cartItems[0].measurements || {},
                         deliveryAddress: {
-                            street: selectedAddress.street,
+                            addressLine1: selectedAddress.addressLine1 || selectedAddress.address,
                             city: selectedAddress.city,
-                            state: selectedAddress.state || '',
+                            state: selectedAddress.state,
                             zipCode: selectedAddress.zipCode,
                             location: selectedAddress.location
                         }
@@ -304,7 +308,8 @@ const CheckoutSummary = () => {
                             orderId: createdDesign?._id,
                             orderNumber: createdDesign?.designId || 'DES-REQ',
                             pendingAcceptance: true,
-                            isCustomDesign: true
+                            isCustomDesign: true,
+                            isNewOrder: true
                         }
                     });
                     return;
@@ -434,7 +439,7 @@ const CheckoutSummary = () => {
 
                                     navigate('/user/checkout/success', {
                                         replace: true,
-                                        state: { orderId: targetOrderId, orderNumber: targetOrderNum, isFullyPaid: true }
+                                        state: { orderId: targetOrderId, orderNumber: targetOrderNum, isFullyPaid: true, isNewOrder: true }
                                     });
                                 }
                             } catch (err) {
@@ -475,7 +480,8 @@ const CheckoutSummary = () => {
                         orderId: targetOrderId, 
                         orderNumber: targetOrderNum, 
                         pendingAcceptance: true,
-                        isAlteration: isCartAlteration
+                        isAlteration: isCartAlteration,
+                        isNewOrder: true
                     }
                 });
                 return;
@@ -491,7 +497,7 @@ const CheckoutSummary = () => {
 
                 if (verifyRes.data.success) {
                     navigate('/user/checkout/success', {
-                        state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true }
+                        state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true, isNewOrder: true }
                     });
                 } else {
                     toast.error('Failed to update bulk order');
@@ -525,7 +531,7 @@ const CheckoutSummary = () => {
 
                         if (verifyRes.data.success) {
                             navigate('/user/checkout/success', {
-                                state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true }
+                                state: { orderId: bulkOrderId, orderNumber: bulkOrder.orderId, isBulk: true, isNewOrder: true }
                             });
                         }
                     } catch (err) {

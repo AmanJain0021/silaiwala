@@ -28,7 +28,7 @@ const OrderSuccess = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const state = location.state || {};
-    const { isAlteration = false, isCustomDesign = false, isFullyPaid = false, isBulk = false, pendingAcceptance = false } = state;
+    const { isAlteration = false, isCustomDesign = false, isFullyPaid = false, isBulk = false, pendingAcceptance = false, isNewOrder = false } = state;
     const savedOrderId = (() => {
         try { return sessionStorage.getItem('lastCreatedOrderId'); } catch(e) { return null; }
     })();
@@ -44,9 +44,25 @@ const OrderSuccess = () => {
     const clearCheckout = useCheckoutStore(state => state.clearCheckout);
     const clearCart = useCartStore(state => state.clearCart);
 
+    // Confetti effect ONLY triggers ONCE at the exact time of fresh order creation
     useEffect(() => {
+        const orderIdentifier = (typeof state.orderId === 'object' ? (state.orderId?._id || state.orderId?.id) : state.orderId) || state.orderNumber;
+        
+        // Strictly require isNewOrder flag and ensure we haven't already celebrated this order in this session
+        if (!isNewOrder || !orderIdentifier) {
+            return;
+        }
+
+        const storageKey = `confetti_fired_${orderIdentifier}`;
         try {
-            console.log("Confetti effect triggered!");
+            if (sessionStorage.getItem(storageKey)) {
+                return; // Already celebrated this order!
+            }
+            sessionStorage.setItem(storageKey, 'true');
+        } catch (e) {}
+
+        try {
+            console.log("Confetti effect triggered for new order:", orderIdentifier);
             const duration = 3 * 1000;
             const animationEnd = Date.now() + duration;
             const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
@@ -60,7 +76,7 @@ const OrderSuccess = () => {
                     startVelocity: 60,
                     origin: { x: 0, y: 0.5 },
                     colors: colors,
-                    zIndex: 9999, // Added high z-index to ensure it's on top
+                    zIndex: 9999,
                 });
                 confetti({
                     particleCount: 2,
@@ -69,7 +85,7 @@ const OrderSuccess = () => {
                     startVelocity: 60,
                     origin: { x: 1, y: 0.5 },
                     colors: colors,
-                    zIndex: 9999, // Added high z-index
+                    zIndex: 9999,
                 });
                 requestAnimationFrame(frame);
             };
@@ -77,7 +93,7 @@ const OrderSuccess = () => {
         } catch (error) {
             console.error("Confetti error:", error);
         }
-    }, []);
+    }, [isNewOrder, state.orderId, state.orderNumber]);
 
     useEffect(() => {
         clearCheckout();

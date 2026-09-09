@@ -143,7 +143,8 @@ const AlterationForm = () => {
                         orderId: createdAlt?._id,
                         orderNumber: createdAlt?.alterationId || 'ALT-REQ',
                         pendingAcceptance: true,
-                        isAlteration: true
+                        isAlteration: true,
+                        isNewOrder: true
                     }
                 });
             }
