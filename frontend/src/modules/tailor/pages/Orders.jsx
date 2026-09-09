@@ -16,6 +16,73 @@ import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDi
 import { isGarmentStoreOrder } from '../../../shared/utils/shiprocketEligibility';
 import { formatOrderItemsTitle, getItemImage } from '../../../utils/orderItems';
 
+const CUSTOMIZATION_SLOT_LABELS = {
+    neck: 'Neck Design',
+    sleeve: 'Sleeve Style',
+    bottom: 'Bottom Style',
+    embroidery: 'Embroidery Work',
+    lacePiping: 'Lace / Piping',
+    lining: 'Inner Lining',
+    other: 'Customization'
+};
+
+const getNormalizedCustomizations = (item) => {
+    const custs = item?.customizations || item?.configuration?.customizations || {};
+    if (!custs || typeof custs !== 'object') return [];
+
+    const entries = [];
+    for (const [key, val] of Object.entries(custs)) {
+        if (!val) continue;
+
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (trimmed) {
+                entries.push({
+                    key,
+                    label: CUSTOMIZATION_SLOT_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    name: trimmed,
+                    price: 0,
+                    refImage: '',
+                    description: '',
+                    isCustom: true
+                });
+            }
+        } else if (typeof val === 'object') {
+            if (val.enabled === false) continue;
+            const name = val.name || val.title || '';
+            const refImage = val.refImage || val.image || '';
+            const price = Number(val.price) || 0;
+            const description = val.description || '';
+
+            if (name || refImage || price > 0 || description) {
+                entries.push({
+                    key,
+                    label: CUSTOMIZATION_SLOT_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    name: name || 'Custom Selection',
+                    price,
+                    refImage,
+                    description,
+                    isCustom: !!val.isCustom
+                });
+            }
+        }
+    }
+    return entries;
+};
+
+const getNormalizedAddons = (item) => {
+    const rawAddons = item?.styleAddons || item?.addons || item?.configuration?.addons || item?.configuration?.styleAddons || [];
+    if (!Array.isArray(rawAddons)) return [];
+    return rawAddons.filter(a => a && (a.name || a.title || Number(a.price) > 0 || a.image || a.refImage)).map((a, idx) => ({
+        _id: a._id || a.id || idx,
+        name: a.name || a.title || 'Add-on Option',
+        price: Number(a.price) || 0,
+        image: a.image || a.refImage || '',
+        description: a.description || '',
+        category: a.category || ''
+    }));
+};
+
 const Orders = () => {
     const { user } = useTailorAuth();
     const location = useLocation();
@@ -587,61 +654,86 @@ const Orders = () => {
                                         </div>
                                     )}
 
-                                    {(item.styleAddons || item.addons || []).length > 0 && (
-                                        <div className="mt-3 p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100 space-y-1.5">
-                                            <p className="text-[10px] font-black uppercase text-indigo-700 tracking-wider">
-                                                Style Add-ons ({(item.styleAddons || item.addons).length})
-                                            </p>
-                                            {(item.styleAddons || item.addons).map((addon, aIdx) => (
-                                                <div key={addon._id || aIdx} className="flex justify-between text-[11px] font-bold text-gray-800">
-                                                    <span className="truncate pr-2">{addon.name}</span>
-                                                    <span className="text-[#843D9B] shrink-0">₹{Number(addon.price || 0).toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
+                                    {/* Style Add-ons */}
                                     {(() => {
-                                        const custs = item.customizations || item.configuration?.customizations || {};
-                                        const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
-                                        if (activeCustEntries.length === 0) return null;
+                                        const addons = getNormalizedAddons(item);
+                                        if (addons.length === 0) return null;
+                                        return (
+                                            <div className="mt-3 p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-[10px] font-black uppercase text-indigo-700 tracking-wider flex items-center gap-1.5">
+                                                        <span>✨</span> Style Add-ons ({addons.length})
+                                                    </p>
+                                                    <span className="text-[8px] font-black uppercase bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md">
+                                                        Add-ons
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    {addons.map((addon, aIdx) => (
+                                                        <div key={addon._id || aIdx} className="p-2 bg-white rounded-xl border border-indigo-100 flex items-center gap-2.5">
+                                                            {addon.image ? (
+                                                                <img
+                                                                    src={addon.image}
+                                                                    alt={addon.name}
+                                                                    className="w-10 h-10 rounded-lg object-cover border border-indigo-50 bg-gray-50 cursor-pointer shrink-0 hover:opacity-90"
+                                                                    onClick={() => window.open(addon.image, '_blank')}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-black shrink-0">
+                                                                    ✨
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex justify-between items-center">
+                                                                    <p className="text-xs font-black text-gray-900 truncate">{addon.name}</p>
+                                                                    {addon.price > 0 && <span className="text-[#843D9B] font-black text-xs shrink-0 ml-1">+₹{addon.price}</span>}
+                                                                </div>
+                                                                {addon.description && (
+                                                                    <p className="text-[10px] text-gray-500 line-clamp-1">{addon.description}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
-                                        const slotLabels = {
-                                            neck: 'Neck Design',
-                                            sleeve: 'Sleeve Style',
-                                            bottom: 'Bottom Style',
-                                            embroidery: 'Embroidery Work',
-                                            lacePiping: 'Lace / Piping',
-                                            lining: 'Inner Lining',
-                                            other: 'Customization'
-                                        };
+                                    {/* Garment Customizations */}
+                                    {(() => {
+                                        const custEntries = getNormalizedCustomizations(item);
+                                        if (custEntries.length === 0) return null;
 
                                         return (
                                             <div className="mt-3 p-3 bg-purple-50/80 rounded-2xl border border-purple-200 space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
-                                                        <Scissors size={12} /> Garment Customizations ({activeCustEntries.length})
+                                                        <Scissors size={12} /> Garment Customizations ({custEntries.length})
                                                     </p>
                                                     <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-900 px-2 py-0.5 rounded-md">
                                                         Tailor Specs
                                                     </span>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    {activeCustEntries.map(([key, val]) => (
-                                                        <div key={key} className="p-2 bg-white rounded-xl border border-purple-100/80 flex flex-col gap-1">
+                                                    {custEntries.map((cust) => (
+                                                        <div key={cust.key} className="p-2.5 bg-white rounded-xl border border-purple-100/80 flex flex-col gap-1">
                                                             <div className="flex justify-between items-center text-[11px] font-bold">
-                                                                <span className="text-gray-500 uppercase tracking-wider text-[9px] font-black">{slotLabels[key] || key}:</span>
-                                                                <span className="text-gray-900 font-black">{val.name || 'Custom Option'}</span>
-                                                                {val.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{val.price}</span>}
+                                                                <span className="text-gray-500 uppercase tracking-wider text-[9px] font-black">{cust.label}:</span>
+                                                                <span className="text-gray-900 font-black">{cust.name}</span>
+                                                                {cust.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{cust.price}</span>}
                                                             </div>
-                                                            {val.refImage && (
-                                                                <div className="mt-1">
+                                                            {cust.description && (
+                                                                <p className="text-[10px] text-gray-500 italic">{cust.description}</p>
+                                                            )}
+                                                            {cust.refImage && (
+                                                                <div className="mt-1 relative group">
                                                                     <img
-                                                                        src={val.refImage}
-                                                                        alt={val.name || key}
-                                                                        className="h-20 w-auto rounded-lg object-cover border border-gray-200 cursor-pointer"
-                                                                        onClick={() => window.open(val.refImage, '_blank')}
+                                                                        src={cust.refImage}
+                                                                        alt={cust.name}
+                                                                        className="h-20 w-auto rounded-lg object-cover border border-purple-200 cursor-pointer shadow-xs transition-transform hover:scale-105"
+                                                                        onClick={() => window.open(cust.refImage, '_blank')}
                                                                     />
+                                                                    <span className="text-[8px] font-bold text-gray-400 block mt-0.5">Click photo to zoom</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -794,45 +886,62 @@ const Orders = () => {
                     )}
 
                     {/* Style Add-ons selected by customer */}
-                    {order.items?.some((item) => (item.styleAddons || item.addons || []).length > 0) && (
+                    {order.items?.some((item) => getNormalizedAddons(item).length > 0) && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3">
-                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest">✨ Style Add-ons</p>
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
+                                    <span>✨</span> Style Add-ons
+                                </p>
+                                <span className="text-[9px] font-black uppercase bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100">
+                                    Extra Add-ons
+                                </span>
+                            </div>
                             {order.items.map((item, idx) => {
-                                const addons = item.styleAddons || item.addons || [];
+                                const addons = getNormalizedAddons(item);
                                 if (!addons.length) return null;
                                 return (
                                     <div key={`addons-${idx}`} className="space-y-2">
                                         {order.items.length > 1 && (
-                                            <p className="text-[10px] text-gray-400 font-bold">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                                                 Item {idx + 1}: {item.service?.title || 'Garment'}
                                             </p>
                                         )}
-                                        <div className="space-y-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             {addons.map((addon, aIdx) => (
                                                 <div
                                                     key={addon._id || aIdx}
-                                                    className="flex items-center gap-3 p-3 rounded-2xl border border-purple-100 bg-purple-50/40"
+                                                    className="flex items-center gap-3 p-3 rounded-2xl border border-indigo-100 bg-indigo-50/40"
                                                 >
                                                     {addon.image ? (
                                                         <img
                                                             src={addon.image}
                                                             alt={addon.name}
-                                                            className="w-12 h-12 rounded-xl object-cover border border-purple-100 bg-white"
+                                                            className="w-14 h-14 rounded-xl object-cover border border-indigo-200 bg-white cursor-pointer hover:opacity-90 shadow-xs"
+                                                            onClick={() => window.open(addon.image, '_blank')}
                                                         />
                                                     ) : (
-                                                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#843D9B] flex items-center justify-center text-lg font-black uppercase">
+                                                        <div className="w-14 h-14 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg font-black uppercase">
                                                             {addon.name?.charAt(0) || '✨'}
                                                         </div>
                                                     )}
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-black text-gray-900 truncate">{addon.name}</p>
+                                                        <div className="flex justify-between items-start">
+                                                            <p className="text-xs font-black text-gray-900 truncate">{addon.name}</p>
+                                                            {addon.price > 0 && (
+                                                                <span className="text-xs font-black text-[#843D9B] ml-1">
+                                                                    +₹{Number(addon.price).toLocaleString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {addon.category && (
+                                                            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-100/80 px-1.5 py-0.5 rounded capitalize inline-block mt-0.5">
+                                                                {addon.category}
+                                                            </span>
+                                                        )}
                                                         {addon.description && (
-                                                            <p className="text-[10px] text-gray-500 line-clamp-2">{addon.description}</p>
+                                                            <p className="text-[10px] text-gray-500 line-clamp-2 mt-0.5">{addon.description}</p>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs font-black text-[#843D9B] shrink-0">
-                                                        ₹{Number(addon.price || 0).toLocaleString()}
-                                                    </p>
                                                 </div>
                                             ))}
                                         </div>
@@ -843,50 +952,53 @@ const Orders = () => {
                     )}
 
                     {/* Garment Customizations */}
-                    {order.items?.some((item) => {
-                        const custs = item.customizations || item.configuration?.customizations || {};
-                        return Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0)).length > 0;
-                    }) && (
+                    {order.items?.some((item) => getNormalizedCustomizations(item).length > 0) && (
                         <div className="bg-white rounded-3xl p-5 border border-gray-100 space-y-3 mt-4">
-                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5"><Scissors size={14} /> Garment Customizations</p>
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Scissors size={14} /> Garment Customizations
+                                </p>
+                                <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-100">
+                                    Tailor Specs
+                                </span>
+                            </div>
                             {order.items.map((item, idx) => {
-                                const custs = item.customizations || item.configuration?.customizations || {};
-                                const activeCustEntries = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
-                                if (!activeCustEntries.length) return null;
-                                
-                                const slotLabels = {
-                                    neck: 'Neck Design',
-                                    sleeve: 'Sleeve Style',
-                                    bottom: 'Bottom Style',
-                                    embroidery: 'Embroidery Work',
-                                    lacePiping: 'Lace / Piping',
-                                    lining: 'Inner Lining',
-                                    other: 'Customization'
-                                };
+                                const custEntries = getNormalizedCustomizations(item);
+                                if (!custEntries.length) return null;
 
                                 return (
-                                    <div key={`cust-${idx}`} className="space-y-2">
+                                    <div key={`cust-${idx}`} className="space-y-2.5">
                                         {order.items.length > 1 && (
-                                            <p className="text-[10px] text-gray-400 font-bold">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                                                 Item {idx + 1}: {item.service?.title || 'Garment'}
                                             </p>
                                         )}
-                                        <div className="space-y-1.5">
-                                            {activeCustEntries.map(([key, val]) => (
-                                                <div key={key} className="p-3 bg-purple-50/80 rounded-2xl border border-purple-200 flex flex-col gap-1">
-                                                    <div className="flex justify-between items-center text-sm font-bold">
-                                                        <span className="text-gray-500 uppercase tracking-wider text-[10px] font-black">{slotLabels[key] || key}:</span>
-                                                        <span className="text-gray-900 font-black">{val.name || 'Custom Option'}</span>
-                                                        {val.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{val.price}</span>}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            {custEntries.map((cust) => (
+                                                <div key={cust.key} className="p-3.5 bg-purple-50/80 rounded-2xl border border-purple-200 flex flex-col justify-between gap-2 shadow-xs">
+                                                    <div>
+                                                        <div className="flex justify-between items-center text-sm font-bold">
+                                                            <span className="text-gray-500 uppercase tracking-wider text-[10px] font-black">{cust.label}:</span>
+                                                            <span className="text-gray-900 font-black">{cust.name}</span>
+                                                            {cust.price > 0 && <span className="text-[#843D9B] font-black text-xs">+₹{cust.price}</span>}
+                                                        </div>
+                                                        {cust.description && (
+                                                            <p className="text-[10px] text-gray-500 mt-1 italic">{cust.description}</p>
+                                                        )}
                                                     </div>
-                                                    {val.refImage && (
-                                                        <div className="mt-2">
-                                                            <img
-                                                                src={val.refImage}
-                                                                alt={val.name || key}
-                                                                className="h-24 w-auto rounded-xl object-cover border border-purple-100 cursor-pointer shadow-sm"
-                                                                onClick={() => window.open(val.refImage, '_blank')}
-                                                            />
+                                                    {cust.refImage && (
+                                                        <div className="mt-1">
+                                                            <div className="relative group rounded-xl overflow-hidden border border-purple-200 bg-white inline-block">
+                                                                <img
+                                                                    src={cust.refImage}
+                                                                    alt={cust.name}
+                                                                    className="h-28 w-auto object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                                                                    onClick={() => window.open(cust.refImage, '_blank')}
+                                                                />
+                                                                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                                                    Zoom 🔍
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

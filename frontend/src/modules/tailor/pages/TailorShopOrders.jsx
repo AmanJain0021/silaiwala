@@ -383,36 +383,142 @@ const TailorShopOrders = () => {
                             </div>
 
                             {/* Style Add-ons & Customizations */}
-                            {((selected.styleAddons && selected.styleAddons.length > 0) || (selected.customizations && Object.values(selected.customizations).some(c => c?.enabled || c?.name))) && (
-                                <div className="space-y-3 pt-2">
-                                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 flex items-center gap-1.5 border-b border-gray-100 pb-2">
-                                        <Sparkles size={15} className="text-primary" /> Style Add-ons & Details
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {selected.styleAddons?.map((addon, i) => (
-                                            <div key={i} className="p-2.5 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-2">
-                                                {addon.refImage && (
-                                                    <img src={addon.refImage} alt={addon.name} className="w-10 h-10 object-cover rounded-lg shrink-0 border" />
-                                                )}
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-900">{addon.name}</p>
-                                                    <p className="text-[10px] text-gray-500 capitalize">{addon.category}</p>
+                            {(() => {
+                                const slotLabels = {
+                                    neck: 'Neck Design',
+                                    sleeve: 'Sleeve Style',
+                                    bottom: 'Bottom Style',
+                                    embroidery: 'Embroidery Work',
+                                    lacePiping: 'Lace / Piping',
+                                    lining: 'Inner Lining',
+                                    other: 'Customization'
+                                };
+
+                                const rawAddons = selected.styleAddons || selected.addons || [];
+                                const addons = Array.isArray(rawAddons) ? rawAddons.filter(a => a && (a.name || a.title || Number(a.price) > 0)) : [];
+
+                                const rawCusts = selected.customizations || {};
+                                const custEntries = [];
+                                if (rawCusts && typeof rawCusts === 'object') {
+                                    for (const [key, val] of Object.entries(rawCusts)) {
+                                        if (!val) continue;
+                                        if (typeof val === 'string') {
+                                            const trimmed = val.trim();
+                                            if (trimmed) {
+                                                custEntries.push({
+                                                    key,
+                                                    label: slotLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                                                    name: trimmed,
+                                                    price: 0,
+                                                    refImage: '',
+                                                    description: ''
+                                                });
+                                            }
+                                        } else if (typeof val === 'object') {
+                                            if (val.enabled === false) continue;
+                                            const name = val.name || val.title || '';
+                                            const refImage = val.refImage || val.image || '';
+                                            const price = Number(val.price) || 0;
+                                            const description = val.description || '';
+                                            if (name || refImage || price > 0 || description) {
+                                                custEntries.push({
+                                                    key,
+                                                    label: slotLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                                                    name: name || 'Selected Option',
+                                                    price,
+                                                    refImage,
+                                                    description
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (addons.length === 0 && custEntries.length === 0) return null;
+
+                                return (
+                                    <div className="space-y-3 pt-2">
+                                        <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 flex items-center justify-between border-b border-gray-100 pb-2">
+                                            <span className="flex items-center gap-1.5">
+                                                <Sparkles size={15} className="text-primary" /> Style Add-ons & Customizations
+                                            </span>
+                                            <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md">
+                                                {addons.length + custEntries.length} Specs
+                                            </span>
+                                        </h3>
+
+                                        {addons.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                <p className="text-[10px] font-black text-indigo-700 uppercase tracking-wider">Style Add-ons</p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {addons.map((addon, i) => {
+                                                        const img = addon.image || addon.refImage;
+                                                        return (
+                                                            <div key={i} className="p-2.5 bg-indigo-50/40 rounded-xl border border-indigo-100 flex items-center gap-2.5">
+                                                                {img ? (
+                                                                    <img
+                                                                        src={img}
+                                                                        alt={addon.name}
+                                                                        className="w-12 h-12 object-cover rounded-lg shrink-0 border border-indigo-100 cursor-pointer shadow-xs"
+                                                                        onClick={() => window.open(img, '_blank')}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-black shrink-0">
+                                                                        ✨
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex justify-between items-center">
+                                                                        <p className="text-xs font-bold text-gray-900 truncate">{addon.name}</p>
+                                                                        {Number(addon.price) > 0 && (
+                                                                            <span className="text-xs font-black text-primary ml-1">+₹{addon.price}</span>
+                                                                        )}
+                                                                    </div>
+                                                                    {addon.category && (
+                                                                        <span className="text-[9px] text-gray-500 capitalize">{addon.category}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
-                                        ))}
+                                        )}
 
-                                        {selected.customizations && Object.entries(selected.customizations).map(([key, custom]) => {
-                                            if (!custom || (!custom.enabled && !custom.name)) return null;
-                                            return (
-                                                <div key={key} className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase">{key}</p>
-                                                    <p className="text-xs font-bold text-gray-900">{custom.name || 'Selected'}</p>
+                                        {custEntries.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                <p className="text-[10px] font-black text-purple-700 uppercase tracking-wider">Garment Customizations</p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {custEntries.map((cust) => (
+                                                        <div key={cust.key} className="p-3 bg-purple-50/60 rounded-xl border border-purple-100 flex flex-col justify-between gap-1.5">
+                                                            <div>
+                                                                <div className="flex justify-between items-center text-xs font-bold">
+                                                                    <span className="text-gray-500 uppercase text-[9px] font-black">{cust.label}:</span>
+                                                                    <span className="text-gray-900 font-black">{cust.name}</span>
+                                                                    {cust.price > 0 && <span className="text-primary font-black text-xs">+₹{cust.price}</span>}
+                                                                </div>
+                                                                {cust.description && (
+                                                                    <p className="text-[10px] text-gray-500 italic mt-0.5">{cust.description}</p>
+                                                                )}
+                                                            </div>
+                                                            {cust.refImage && (
+                                                                <div className="mt-1">
+                                                                    <img
+                                                                        src={cust.refImage}
+                                                                        alt={cust.name}
+                                                                        className="h-20 w-auto rounded-lg object-cover border border-purple-200 cursor-pointer shadow-xs"
+                                                                        onClick={() => window.open(cust.refImage, '_blank')}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            );
-                                        })}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* Modal Footer */}

@@ -16,6 +16,7 @@ const razorpay = require("../../../config/razorpay.js");
 const { invalidateCache } = require("../../../utils/cache.js");
 
 const PromoCode = require("../../../models/PromoCode.js");
+const StyleAddon = require("../../../models/StyleAddon.js");
 const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
 const axios = require("axios");
 
@@ -942,7 +943,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       };
     }
 
-    // Persist style addons with prices so tailor settlement includes them
+    // Persist style addons with prices & full metadata so tailor can view photos/descriptions
     const rawAddons = item.addons || item.styleAddons || item.configuration?.addons || [];
     const styleAddons = [];
     if (Array.isArray(rawAddons)) {
@@ -950,24 +951,84 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         const addonId = typeof a === "string" ? a : a?._id || a?.id || a?.addon;
         let price = typeof a === "object" && a !== null ? Number(a.price) || 0 : 0;
         let name = typeof a === "object" && a !== null ? a.name || a.title || "" : "";
-        if (addonId && mongoose.Types.ObjectId.isValid(addonId) && price <= 0) {
-          const doc = await StyleAddon.findById(addonId).lean();
-          if (doc) {
-            price = Number(doc.price) || 0;
-            name = name || doc.name || "";
+        let image = typeof a === "object" && a !== null ? a.image || a.refImage || "" : "";
+        let description = typeof a === "object" && a !== null ? a.description || "" : "";
+        let category = typeof a === "object" && a !== null ? a.category || "" : "";
+
+        if (addonId && mongoose.Types.ObjectId.isValid(addonId)) {
+          try {
+            const doc = await StyleAddon.findById(addonId).lean();
+            if (doc) {
+              if (price <= 0) price = Number(doc.price) || 0;
+              name = name || doc.name || "";
+              image = image || doc.image || doc.referenceImages?.front || "";
+              description = description || doc.description || "";
+              category = category || doc.category || "";
+            }
+          } catch (err) {
+            console.error("Error fetching StyleAddon doc:", err.message);
           }
         }
-        if (addonId || name || price > 0) {
+        if (addonId || name || price > 0 || image) {
           styleAddons.push({
             _id: addonId && mongoose.Types.ObjectId.isValid(addonId) ? addonId : undefined,
             name,
             price,
+            image,
+            description,
+            category,
           });
         }
       }
     }
 
+    // Enrich and normalize customizations
     const rawCustomizations = item.customizations || item.configuration?.customizations || {};
+    const normalizedCustomizations = {};
+    if (rawCustomizations && typeof rawCustomizations === "object") {
+      for (const [slotKey, val] of Object.entries(rawCustomizations)) {
+        if (!val) continue;
+        if (typeof val === "string") {
+          normalizedCustomizations[slotKey] = {
+            name: val,
+            price: 0,
+            refImage: "",
+            enabled: true,
+            isCustom: true,
+          };
+        } else if (typeof val === "object") {
+          let cName = val.name || val.title || "";
+          let cPrice = Number(val.price) || 0;
+          let cImage = val.refImage || val.image || "";
+          let cDesc = val.description || "";
+          let cAddonId = val.addonId || val._id || val.id;
+
+          if (cAddonId && mongoose.Types.ObjectId.isValid(cAddonId) && (!cImage || !cName || cPrice <= 0)) {
+            try {
+              const doc = await StyleAddon.findById(cAddonId).lean();
+              if (doc) {
+                cName = cName || doc.name || "";
+                if (cPrice <= 0) cPrice = Number(doc.price) || 0;
+                cImage = cImage || doc.image || doc.referenceImages?.front || "";
+                cDesc = cDesc || doc.description || "";
+              }
+            } catch (err) {
+              console.error("Error fetching customization StyleAddon doc:", err.message);
+            }
+          }
+
+          normalizedCustomizations[slotKey] = {
+            name: cName,
+            price: cPrice,
+            refImage: cImage,
+            description: cDesc,
+            addonId: cAddonId && mongoose.Types.ObjectId.isValid(cAddonId) ? cAddonId : undefined,
+            enabled: val.enabled !== false,
+            isCustom: !!val.isCustom,
+          };
+        }
+      }
+    }
 
     formattedItems.push({
       product: validProduct,
@@ -980,7 +1041,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       measurements: rawMeasurements,
       selectedStyle: item.selectedStyle || null,
       styleAddons,
-      customizations: rawCustomizations,
+      customizations: normalizedCustomizations,
     });
   }
 
