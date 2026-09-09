@@ -5,7 +5,8 @@ import {
     AlertCircle, Package, Truck,
     Calendar, ChevronRight, ShieldCheck,
     Loader2, CheckCircle2, Star, User, Scissors, Store,
-    MoreVertical, Headphones, Radio, Gift, Layers, Shirt, Box, ShoppingBag, Check, CreditCard, FileText, Ruler
+    MoreVertical, Headphones, Radio, Gift, Layers, Shirt, Box, ShoppingBag, Check, CreditCard, FileText, Ruler,
+    Sparkles, Plus
 } from 'lucide-react';
 import api from '../../../utils/api';
 import TrackingTimeline from '../components/orders/TrackingTimeline';
@@ -24,6 +25,73 @@ import {
     orderHasTailorAtHome,
 } from '../../../utils/orderItems';
 import { getImageUrl } from '../../../utils/imageUrl';
+
+const CUSTOMIZATION_SLOT_LABELS = {
+    neck: 'Neck Design',
+    sleeve: 'Sleeve Style',
+    bottom: 'Bottom Style',
+    embroidery: 'Embroidery Work',
+    lacePiping: 'Lace / Piping',
+    lining: 'Inner Lining',
+    other: 'Customization'
+};
+
+const getNormalizedCustomizations = (item) => {
+    const custs = item?.customizations || item?.configuration?.customizations || {};
+    if (!custs || typeof custs !== 'object') return [];
+
+    const entries = [];
+    for (const [key, val] of Object.entries(custs)) {
+        if (!val) continue;
+
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (trimmed) {
+                entries.push({
+                    key,
+                    label: CUSTOMIZATION_SLOT_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    name: trimmed,
+                    price: 0,
+                    refImage: '',
+                    description: '',
+                    isCustom: true
+                });
+            }
+        } else if (typeof val === 'object') {
+            if (val.enabled === false) continue;
+            const name = val.name || val.title || '';
+            const refImage = val.refImage || val.image || '';
+            const price = Number(val.price) || 0;
+            const description = val.description || '';
+
+            if (name || refImage || price > 0 || description) {
+                entries.push({
+                    key,
+                    label: CUSTOMIZATION_SLOT_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    name: name || 'Custom Selection',
+                    price,
+                    refImage,
+                    description,
+                    isCustom: !!val.isCustom
+                });
+            }
+        }
+    }
+    return entries;
+};
+
+const getNormalizedAddons = (item) => {
+    const rawAddons = item?.styleAddons || item?.addons || item?.configuration?.addons || item?.configuration?.styleAddons || [];
+    if (!Array.isArray(rawAddons)) return [];
+    return rawAddons.filter(a => a && (a.name || a.title || Number(a.price) > 0 || a.image || a.refImage)).map((a, idx) => ({
+        _id: a._id || a.id || idx,
+        name: a.name || a.title || 'Add-on Option',
+        price: Number(a.price) || 0,
+        image: a.image || a.refImage || '',
+        description: a.description || '',
+        category: a.category || ''
+    }));
+};
 
 const OrderTracking = () => {
     const { id } = useParams();
@@ -972,57 +1040,83 @@ const OrderTracking = () => {
                         </div>
 
                         {/* Items Breakdown */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {!isBulk && orderItems.length > 0 ? (
-                                orderItems.map((item, idx) => {
-                                    const itemImg = getImageUrl(getItemImage(item)) || '/logo.png';
-                                    const label = getItemLabel(item);
-                                    const linePrice = Number(item.price) || 0;
-                                    const addonTotal = (item.styleAddons || item.addons || []).reduce(
-                                        (sum, a) => sum + (Number(a.price) || 0),
-                                        0
-                                    );
-                                    const custs = item.customizations || item.configuration?.customizations || {};
-                                    const activeCusts = Object.entries(custs).filter(([_, val]) => val && val.enabled !== false && (val.name || val.refImage || Number(val.price) > 0));
-                                    const custTotal = activeCusts.reduce((sum, [_, val]) => sum + (Number(val.price) || 0), 0);
+                                <div className="space-y-3">
+                                    {orderItems.map((item, idx) => {
+                                        const itemImg = getImageUrl(getItemImage(item)) || '/logo.png';
+                                        const label = getItemLabel(item);
+                                        const linePrice = Number(item.price) || 0;
+                                        const selectedStyle = item.selectedStyle || item.configuration?.selectedStyle;
 
-                                    return (
-                                        <div key={item._id || idx} className="space-y-2">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                                        <img src={itemImg} alt={label} className="w-full h-full object-cover" />
+                                        return (
+                                            <div key={item._id || idx} className="bg-gray-50/50 rounded-2xl p-3.5 border border-gray-100 space-y-3">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-14 h-14 bg-white rounded-xl overflow-hidden border border-gray-100 shrink-0 shadow-2xs">
+                                                            <img src={itemImg} alt={label} className="w-full h-full object-cover" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">
+                                                                {orderItems.length > 1 ? `${idx + 1}. ` : ''}{label}
+                                                            </h4>
+                                                            <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                                                                {item.fabricSource === 'platform' ? 'Platform Fabric' : 'Customer Fabric'}
+                                                            </p>
+                                                            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                                                <span className="text-[9px] font-black uppercase bg-white text-gray-600 px-2 py-0.5 rounded-md border border-gray-200/60 shadow-2xs">
+                                                                    Size: {item.measurements?.type === 'slip' ? 'Slip' : 'Custom'}
+                                                                </span>
+                                                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border shadow-2xs ${item.deliveryType === 'express' ? 'bg-red-50 text-[#843D9B] border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                                    {item.deliveryType || 'Standard'}
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-gray-400 bg-white px-2 py-0.5 rounded-md border border-gray-200/60">
+                                                                    Qty: {item.quantity || 1}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight truncate">
-                                                            {orderItems.length > 1 ? `${idx + 1}. ` : ''}{label}
-                                                        </h4>
-                                                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
-                                                            Qty: {item.quantity || 1}
-                                                            {item.measurements?.type ? ` · ${String(item.measurements.type).replace(/-/g, ' ')}` : ''}
-                                                        </p>
-                                                    </div>
+                                                    {linePrice > 0 && (
+                                                        <span className="text-sm font-black text-gray-900 shrink-0 self-start mt-0.5">
+                                                            ₹{linePrice.toLocaleString('en-IN')}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                {(linePrice > 0 || addonTotal > 0 || custTotal > 0) && (
-                                                    <span className="text-sm font-black text-gray-900 shrink-0">
-                                                        ₹{(linePrice + addonTotal + custTotal).toLocaleString('en-IN')}
-                                                    </span>
+
+                                                {/* Selected Custom Reference Photo or Style Variant */}
+                                                {selectedStyle && (
+                                                    <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-100 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-[10px] font-black uppercase text-[#843D9B] tracking-wider flex items-center gap-1.5">
+                                                                <Scissors size={12} /> {selectedStyle.isCustom ? '📸 Custom Reference Design Photo' : '✂️ Selected Style Variant'}
+                                                            </p>
+                                                            <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                                                                {selectedStyle.isCustom ? 'Custom Upload' : 'Variant'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs font-black text-gray-900">{selectedStyle.name || 'Custom Design'}</p>
+                                                        {selectedStyle.image && (
+                                                            <div className="relative group max-w-full overflow-hidden rounded-xl border border-purple-200 shadow-xs bg-white mt-1">
+                                                                <img 
+                                                                    src={selectedStyle.image} 
+                                                                    alt="Style Reference" 
+                                                                    className="w-full max-h-48 object-contain cursor-pointer transition-transform duration-300 hover:scale-105"
+                                                                    onClick={() => window.open(selectedStyle.image, '_blank')}
+                                                                />
+                                                                <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                                                                    Click to expand 🔍
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {selectedStyle.description && (
+                                                            <p className="text-[10px] text-gray-600 font-medium italic">"{selectedStyle.description}"</p>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
-                                            {activeCusts.length > 0 && (
-                                                <div className="ml-15 p-2.5 bg-purple-50/60 rounded-xl border border-purple-100 space-y-1">
-                                                    <p className="text-[9px] font-black text-primary uppercase tracking-wider">Garment Customizations:</p>
-                                                    {activeCusts.map(([key, val]) => (
-                                                        <div key={key} className="flex justify-between text-[10px] font-bold text-gray-700">
-                                                            <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}: {val.name}</span>
-                                                            {val.price > 0 && <span className="text-primary font-black">+₹{val.price}</span>}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    })}
+                                </div>
                             ) : (
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0">
@@ -1035,7 +1129,158 @@ const OrderTracking = () => {
                                     </div>
                                 </div>
                             )}
-                            <div className="flex justify-between items-center pt-1 border-t border-gray-50">
+
+                            {/* ✨ Style Add-ons (Dedicated Section) */}
+                            {!isBulk && orderItems.some(item => getNormalizedAddons(item).length > 0) && (
+                                <div className="bg-purple-50/40 rounded-2xl p-4 border border-purple-100 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#843D9B] flex items-center justify-center">
+                                                <Sparkles size={14} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight">Style Add-ons</h4>
+                                                <p className="text-[10px] text-gray-400 font-medium leading-tight">Added styling options for your outfit</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase bg-purple-100/80 text-[#843D9B] px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-purple-200/50">
+                                            Extra Add-ons <ChevronRight size={10} />
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {orderItems.flatMap((item, itemIdx) => 
+                                            getNormalizedAddons(item).map((addon, aIdx) => (
+                                                <div
+                                                    key={`addon-${itemIdx}-${addon._id || aIdx}`}
+                                                    className="bg-white rounded-xl p-3 border border-purple-100/80 flex items-center justify-between gap-3 shadow-2xs"
+                                                >
+                                                    {/* Left Thumbnail */}
+                                                    <div className="relative shrink-0">
+                                                        {addon.image ? (
+                                                            <img
+                                                                src={addon.image}
+                                                                alt={addon.name}
+                                                                className="w-12 h-12 rounded-xl object-cover border border-purple-100 bg-white cursor-pointer shadow-2xs hover:opacity-95"
+                                                                onClick={() => window.open(addon.image, '_blank')}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-12 h-12 rounded-xl bg-purple-100/80 text-[#843D9B] flex items-center justify-center text-lg font-black">
+                                                                ✨
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#843D9B] text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-xs">
+                                                            +
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Middle Details */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-md">
+                                                                ★ {addon.category || 'Premium'}
+                                                            </span>
+                                                            {orderItems.length > 1 && (
+                                                                <span className="text-[8px] font-bold text-gray-400">
+                                                                    (Item {itemIdx + 1})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <h5 className="text-xs font-black text-gray-900 leading-tight truncate">{addon.name}</h5>
+                                                        {addon.description && (
+                                                            <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">{addon.description}</p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Right Price */}
+                                                    <div className="shrink-0 text-right">
+                                                        <span className="text-xs font-black text-purple-900 bg-purple-100/80 px-2.5 py-1 rounded-full">
+                                                            +₹{Number(addon.price || 0).toLocaleString('en-IN')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ✂️ Garment Customizations (Dedicated Section) */}
+                            {!isBulk && orderItems.some(item => getNormalizedCustomizations(item).length > 0) && (
+                                <div className="bg-purple-50/40 rounded-2xl p-4 border border-purple-100 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#843D9B] flex items-center justify-center">
+                                                <Scissors size={14} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xs sm:text-sm font-black text-gray-900 leading-tight">Garment Customizations</h4>
+                                                <p className="text-[10px] text-gray-400 font-medium leading-tight">Tailored design selections</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase bg-purple-100/80 text-[#843D9B] px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-purple-200/50">
+                                            Tailor Specs <ChevronRight size={10} />
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {orderItems.flatMap((item, itemIdx) => 
+                                            getNormalizedCustomizations(item).map((cust) => (
+                                                <div
+                                                    key={`cust-${itemIdx}-${cust.key}`}
+                                                    className="bg-white rounded-xl p-3 border border-purple-100/80 flex items-center justify-between gap-3 shadow-2xs"
+                                                >
+                                                    {/* Left Image */}
+                                                    <div className="relative shrink-0">
+                                                        {cust.refImage ? (
+                                                            <img
+                                                                src={cust.refImage}
+                                                                alt={cust.name}
+                                                                className="w-12 h-12 rounded-xl object-cover border border-purple-100 bg-white cursor-pointer shadow-2xs hover:opacity-95"
+                                                                onClick={() => window.open(cust.refImage, '_blank')}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-12 h-12 rounded-xl bg-purple-100/80 text-[#843D9B] flex items-center justify-center text-lg font-black">
+                                                                ✂️
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#843D9B] text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-xs">
+                                                            +
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Middle Details */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <span className="text-[8px] font-black uppercase bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-md">
+                                                                {cust.label || 'CUSTOM FIT'}
+                                                            </span>
+                                                            {orderItems.length > 1 && (
+                                                                <span className="text-[8px] font-bold text-gray-400">
+                                                                    (Item {itemIdx + 1})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <h5 className="text-xs font-black text-gray-900 leading-tight truncate">{cust.name}</h5>
+                                                        <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">
+                                                            {cust.description || 'Tailored to your style & comfort'}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Right Price */}
+                                                    <div className="shrink-0 text-right">
+                                                        <span className="text-xs font-black text-purple-900 bg-purple-100/80 px-2.5 py-1 rounded-full">
+                                                            {cust.price > 0 ? `+₹${Number(cust.price).toLocaleString('en-IN')}` : 'Included'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order total</span>
                                 <span className="text-sm font-black text-gray-900">₹{order.totalAmount?.toLocaleString('en-IN') || '0'}</span>
                             </div>

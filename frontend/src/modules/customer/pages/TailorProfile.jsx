@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, Award, Phone, ShieldCheck, Heart, Share2, Scissors, ChevronRight, Tag, CheckCircle2, Info, ShoppingBag, Calendar, X, Layers, Wand2 } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, Award, Phone, ShieldCheck, Heart, Share2, Scissors, ChevronRight, Tag, CheckCircle2, Info, ShoppingBag, Calendar, X, Layers, Wand2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '../components/store/ProductCard';
 import useCheckoutStore from '../../../store/checkoutStore';
@@ -219,12 +219,13 @@ const TailorProfile = () => {
                             <div className="flex justify-between items-start">
                                 <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{tailor.shopName || 'Tailor Partner'}</h2>
                             </div>
-                            <div className="flex items-center gap-1.5 mb-3">
-                                <div className="bg-[#843D9B] text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">
-                                    {artisanBadge}
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                                <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#843D9B] to-[#9b4cb5] text-white text-[9.5px] font-black px-2.5 py-1 rounded-full tracking-wider uppercase whitespace-nowrap shadow-xs">
+                                    <Sparkles size={11} className="fill-white/80" />
+                                    <span>{artisanBadge}</span>
                                 </div>
                                 <div className="h-1 w-1 bg-gray-300 rounded-full"></div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tight truncate">
                                     {tailor.specializations?.[0] || 'Expert Tailor'}
                                 </span>
                             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, ChevronRight, CheckCircle2, ShieldCheck, Tag, Info, Clock, Scissors } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, ChevronRight, CheckCircle2, ShieldCheck, Tag, Info, Clock, Scissors, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useCheckoutStore from '../../../store/checkoutStore';
 import api from '../../../utils/api';
@@ -153,12 +153,13 @@ const FabricDetail = () => {
                                     <h4 className="font-black text-gray-900 truncate group-hover:text-[#843D9B] transition-colors">{tailor.shopName || 'Tailor Partner'}</h4>
                                     <ShieldCheck size={14} className="text-[#843D9B]" />
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-1 text-[10px] font-black text-[#843D9B] bg-indigo-50 px-2 py-0.5 rounded-lg border border-[#843D9B]/5">
                                         {tailor.rating} <Star size={10} className="fill-current" />
                                     </div>
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                        Expert Artisan
+                                    <div className="inline-flex items-center gap-1 text-[9.5px] font-black text-[#843D9B] bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/60 uppercase tracking-wider whitespace-nowrap">
+                                        <Sparkles size={10} className="fill-[#843D9B]/40" />
+                                        <span>Expert Artisan</span>
                                     </div>
                                 </div>
                             </div>
