@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, User, Mail, Phone, MapPin, Navigation, Map, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { ArrowLeft, Save, User, Mail, Phone, MapPin, Navigation, Map, Loader2, X, Search, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useJsApiLoader } from '@react-google-maps/api';
 import useAuthStore from '../../../store/authStore';
 import ImageUploader from '../../../components/Common/ImageUploader';
 import { validateName, validateEmail, validatePhone } from '../../../utils/validation';
@@ -11,11 +12,19 @@ import LocationModal from '../components/LocationModal';
 import toast from 'react-hot-toast';
 import api from '../../../utils/api';
 
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
+
 const EditProfile = () => {
     const navigate = useNavigate();
     const { user: authUser } = useAuthStore(state => state);
     const { updateProfile, profile } = useUserStore();
     const storeAddress = useLocationStore((state) => state.address);
+
+    const { isLoaded: isGoogleLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+        libraries: GOOGLE_MAPS_LIBRARIES,
+    });
 
     const storedUser = React.useMemo(() => {
         try {
@@ -52,6 +61,13 @@ const EditProfile = () => {
     const [isLocating, setIsLocating] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
 
+    // Location Suggestions State
+    const [locationSuggestions, setLocationSuggestions] = useState([]);
+    const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const suggestionsRef = useRef(null);
+    const searchDebounceRef = useRef(null);
+
     // Sync selected address from LocationModal / LocationStore
     useEffect(() => {
         if (storeAddress) {
@@ -63,6 +79,136 @@ const EditProfile = () => {
             }
         }
     }, [storeAddress]);
+
+    // Close suggestions dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (suggestionsRef.current && !suggestionsRef.current.contains(e.target)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Search location suggestions (Google Places + OpenStreetMap fallback)
+    const fetchLocationSuggestions = useCallback(async (query) => {
+        if (!query || query.trim().length < 2) {
+            setLocationSuggestions([]);
+            setIsSearchingLocation(false);
+            return;
+        }
+
+        setIsSearchingLocation(true);
+
+        const tryNominatim = async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=6`);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const mapped = data.map((item) => {
+                        const parts = (item.display_name || '').split(', ');
+                        const mainText = parts[0] || item.name || item.display_name;
+                        const secondaryText = parts.slice(1, 4).join(', ');
+                        return {
+                            description: item.display_name,
+                            mainText,
+                            secondaryText,
+                            lat: item.lat ? parseFloat(item.lat) : undefined,
+                            lng: item.lon ? parseFloat(item.lon) : undefined,
+                        };
+                    });
+                    setLocationSuggestions(mapped);
+                    setShowSuggestions(true);
+                } else {
+                    setLocationSuggestions([]);
+                }
+            } catch (err) {
+                console.warn('Nominatim search failed:', err);
+                setLocationSuggestions([]);
+            } finally {
+                setIsSearchingLocation(false);
+            }
+        };
+
+        // Try Google Places Autocomplete first if loaded and available
+        if (window.google?.maps?.places?.AutocompleteService) {
+            try {
+                const service = new window.google.maps.places.AutocompleteService();
+                service.getPlacePredictions(
+                    {
+                        input: query,
+                        componentRestrictions: { country: 'in' },
+                    },
+                    (predictions, status) => {
+                        if (status === 'OK' && predictions && predictions.length > 0) {
+                            const mapped = predictions.map((p) => ({
+                                description: p.description,
+                                mainText: p.structured_formatting?.main_text || p.description,
+                                secondaryText: p.structured_formatting?.secondary_text || '',
+                                placeId: p.place_id
+                            }));
+                            setLocationSuggestions(mapped);
+                            setShowSuggestions(true);
+                            setIsSearchingLocation(false);
+                        } else {
+                            tryNominatim();
+                        }
+                    }
+                );
+                return;
+            } catch (e) {
+                tryNominatim();
+            }
+        } else {
+            tryNominatim();
+        }
+    }, []);
+
+    const handleLocationInputChange = (val) => {
+        setFormData(prev => ({ ...prev, location: val }));
+        setShowSuggestions(true);
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        if (!val || val.trim().length < 2) {
+            setLocationSuggestions([]);
+            setIsSearchingLocation(false);
+            return;
+        }
+
+        setIsSearchingLocation(true);
+        searchDebounceRef.current = setTimeout(() => {
+            fetchLocationSuggestions(val);
+        }, 200);
+    };
+
+    const handleSelectSuggestion = (suggestion) => {
+        const addressText = suggestion.description || suggestion.mainText;
+        setFormData(prev => ({ ...prev, location: addressText }));
+        setShowSuggestions(false);
+        setLocationSuggestions([]);
+
+        if (suggestion.placeId && window.google?.maps?.places?.PlacesService) {
+            try {
+                const dummyDiv = document.createElement('div');
+                const placesService = new window.google.maps.places.PlacesService(dummyDiv);
+                placesService.getDetails({ placeId: suggestion.placeId, fields: ['geometry', 'formatted_address'] }, (place, status) => {
+                    if (status === 'OK' && place?.geometry?.location) {
+                        const lat = place.geometry.location.lat();
+                        const lng = place.geometry.location.lng();
+                        useLocationStore.getState().setLocation(place.formatted_address || addressText, lat, lng);
+                    }
+                });
+            } catch (e) {}
+        } else if (suggestion.lat && suggestion.lng) {
+            try {
+                useLocationStore.getState().setLocation(addressText, suggestion.lat, suggestion.lng);
+            } catch (e) {}
+        }
+    };
 
     const handleDetectLocation = async () => {
         if (!navigator.geolocation) {
@@ -288,7 +434,7 @@ const EditProfile = () => {
                         {errors.phone && <p className="text-[10px] text-red-500 font-bold ml-2">{errors.phone}</p>}
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5" ref={suggestionsRef}>
                         <div className="flex justify-between items-center ml-1">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">City / Location</label>
                             <button
@@ -299,33 +445,87 @@ const EditProfile = () => {
                                 <Map size={11} /> Select on Map
                             </button>
                         </div>
-                        <div className="flex items-center gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:bg-white transition-all relative">
-                            <MapPin size={18} className="text-gray-400 shrink-0" />
-                            <input
-                                type="text"
-                                value={formData.location}
-                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                className="bg-transparent text-sm font-bold w-full focus:outline-none pr-28"
-                                placeholder="Enter location or use GPS"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleDetectLocation}
-                                disabled={isLocating}
-                                className="absolute right-2 px-3 py-1.5 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#6B2F7E] transition-colors shadow-sm disabled:opacity-50"
-                            >
-                                {isLocating ? (
-                                    <>
-                                        <Loader2 size={12} className="animate-spin" />
-                                        GPS...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Navigation size={12} />
-                                        Current
-                                    </>
+                        <div className="relative">
+                            <div className="flex items-center gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:bg-white transition-all">
+                                <MapPin size={18} className="text-gray-400 shrink-0" />
+                                <input
+                                    type="text"
+                                    value={formData.location}
+                                    onChange={(e) => handleLocationInputChange(e.target.value)}
+                                    onFocus={() => {
+                                        if (locationSuggestions.length > 0) setShowSuggestions(true);
+                                    }}
+                                    className="bg-transparent text-sm font-bold w-full focus:outline-none pr-28"
+                                    placeholder="Type city, area, or address..."
+                                />
+                                
+                                {formData.location && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData(prev => ({ ...prev, location: '' }));
+                                            setLocationSuggestions([]);
+                                            setShowSuggestions(false);
+                                        }}
+                                        className="absolute right-24 text-gray-400 hover:text-gray-600 p-1"
+                                    >
+                                        <X size={14} />
+                                    </button>
                                 )}
-                            </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDetectLocation}
+                                    disabled={isLocating}
+                                    className="absolute right-2 px-3 py-1.5 bg-[#843D9B] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#6B2F7E] transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                                >
+                                    {isLocating ? (
+                                        <>
+                                            <Loader2 size={12} className="animate-spin" />
+                                            GPS...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Navigation size={12} />
+                                            Current
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Floating Location Suggestions Dropdown */}
+                            {showSuggestions && (isSearchingLocation || locationSuggestions.length > 0) && (
+                                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl border border-purple-100 shadow-2xl overflow-hidden max-h-64 overflow-y-auto divide-y divide-gray-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {isSearchingLocation && (
+                                        <div className="p-3.5 flex items-center justify-center gap-2 text-xs font-bold text-gray-400">
+                                            <Loader2 size={14} className="animate-spin text-[#843D9B]" />
+                                            <span>Finding location suggestions...</span>
+                                        </div>
+                                    )}
+
+                                    {locationSuggestions.map((suggestion, idx) => (
+                                        <div
+                                            key={`loc-${idx}`}
+                                            onClick={() => handleSelectSuggestion(suggestion)}
+                                            className="p-3 hover:bg-purple-50/50 cursor-pointer transition-colors flex items-start gap-2.5 text-left group"
+                                        >
+                                            <div className="w-6 h-6 rounded-lg bg-purple-50 text-[#843D9B] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#843D9B] group-hover:text-white transition-colors">
+                                                <MapPin size={13} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black text-gray-900 group-hover:text-[#843D9B] transition-colors truncate">
+                                                    {suggestion.mainText}
+                                                </p>
+                                                {suggestion.secondaryText && (
+                                                    <p className="text-[10px] text-gray-400 font-medium truncate mt-0.5">
+                                                        {suggestion.secondaryText}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
