@@ -50,6 +50,7 @@ exports.calculateDistance = asyncHandler(async (req, res, next) => {
             params: {
                 origins: `${origLat},${origLng}`,
                 destinations: `${destLat},${destLng}`,
+                mode: 'driving',
                 key: apiKey
             }
         });

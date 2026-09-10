@@ -230,14 +230,8 @@ const CustomerLiveJourney = () => {
                             directions={directions}
                             options={{
                                 suppressMarkers: true,
-                                polylineOptions: { strokeColor: '#843D9B', strokeOpacity: 0.8, strokeWeight: 5 }
+                                polylineOptions: { strokeColor: '#843D9B', strokeOpacity: 0.9, strokeWeight: 5 }
                             }}
-                        />
-                    )}
-                    {directLine && !directions && (
-                        <Polyline 
-                            path={directLine} 
-                            options={{ strokeColor: '#843D9B', strokeOpacity: 0.8, strokeWeight: 4 }} 
                         />
                     )}
                     {currentLocation && (

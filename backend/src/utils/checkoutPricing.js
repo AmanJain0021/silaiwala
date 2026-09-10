@@ -1,5 +1,41 @@
 const mongoose = require("mongoose");
+const axios = require("axios");
 const { getDistanceFromLatLonInKm } = require("./haversine.js");
+
+/**
+ * Calculates road distance in km using Google Maps Distance Matrix API with automatic fallback to Haversine
+ */
+async function getRoadDistanceKm(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (apiKey && apiKey !== 'your_google_maps_api_key' && apiKey !== 'your_backend_google_maps_api_key_here') {
+    try {
+      const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+        params: {
+          origins: `${lat1},${lon1}`,
+          destinations: `${lat2},${lon2}`,
+          mode: 'driving',
+          key: apiKey
+        },
+        timeout: 3000 // fast timeout to keep checkout instant
+      });
+
+      const data = response.data;
+      if (data.status === 'OK' && data.rows?.[0]?.elements?.[0]?.status === 'OK') {
+        const distanceMeters = data.rows[0].elements[0].distance.value;
+        const km = Number((distanceMeters / 1000).toFixed(2));
+        console.log(`🗺️ [Google Distance Matrix] Road distance: ${km} km (${lat1},${lon1} -> ${lat2},${lon2})`);
+        return km;
+      }
+    } catch (err) {
+      console.warn(`⚠️ [Google Distance Matrix] Failed, falling back to Haversine:`, err.message);
+    }
+  }
+
+  // Fallback to Haversine formula
+  return getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2);
+}
 
 /**
  * Same formula customer is charged for home measurement visit (Admin → visitFee).
@@ -18,8 +54,9 @@ function computeVisitFee(distanceKm, visitSettings = {}) {
 
 /**
  * Single source of truth for checkout totals (matches Bill Details on customer app).
+ * Measurement visit fee is charged ONCE per order, scaled accurately with distance.
  */
-function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings) {
+async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings) {
   const visitSettings = settings.visitFee || { baseFee: 150, perKmFee: 20, freeKm: 3 };
   const deliveryRates = settings.deliveryRates || { baseFee: 20, perKmRate: 10 };
   const platformFeePercentage = settings.walletConfig?.platformFeePercentage ?? 5;
@@ -64,7 +101,7 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
 
     orderDeliveryFee = Number(deliveryRates.baseFee) || 0;
     if (uLat != null && uLng != null && tLat != null && tLng != null) {
-      distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
+      distanceKm = await getRoadDistanceKm(uLat, uLng, tLat, tLng);
       if (distanceKm > 0) {
         orderDeliveryFee = Math.round(
           Number(deliveryRates.baseFee) + distanceKm * Number(deliveryRates.perKmRate)
@@ -83,13 +120,13 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
     let pickupTrips = 0;
     let deliveryTrips = 0;
     let maxDistanceKm = 0;
+    let hasHomeMeasurement = false;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const itemBase = Number(item.pricing?.base) || 0;
       const itemAddons = Number(item.pricing?.addons) || 0;
       const itemFabric = Number(item.pricing?.fabric) || 0;
-      let dynamicTailorAtHome = Number(item.pricing?.tailorAtHome) || 0;
 
       let distanceKm = 0;
       let tLat = null;
@@ -101,26 +138,41 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
       }
 
       if (uLat != null && uLng != null && tLat != null && tLng != null) {
-        distanceKm = getDistanceFromLatLonInKm(uLat, uLng, tLat, tLng);
+        distanceKm = await getRoadDistanceKm(uLat, uLng, tLat, tLng);
         if (distanceKm > maxDistanceKm) maxDistanceKm = distanceKm;
+      }
 
-        if (item.configuration?.isTailorAtHome) {
-          dynamicTailorAtHome = computeVisitFee(distanceKm, visitSettings);
-        }
+      // Check if any service in the order requested home measurement
+      if (
+        item.configuration?.isTailorAtHome ||
+        item.isTailorAtHome ||
+        item.measurements?.type === "home" ||
+        item.configuration?.measurements?.option === "visit"
+      ) {
+        hasHomeMeasurement = true;
       }
 
       totalBase += itemBase;
       totalAddons += itemAddons;
       totalFabric += itemFabric;
-      totalTailorAtHome += dynamicTailorAtHome;
 
-      if (item.configuration?.fabricSource === "customer") {
+      if (item.configuration?.fabricSource === "customer" || item.fabricSource === "customer") {
         pickupTrips = 1;
       }
 
-      if (item.configuration?.deliveryType && item.configuration.deliveryType !== "self") {
+      if (
+        (item.configuration?.deliveryType && item.configuration.deliveryType !== "self") ||
+        (item.deliveryType && item.deliveryType !== "self")
+      ) {
         deliveryTrips = 1;
       }
+    }
+
+    // ═══ SINGLE VISIT FEE FOR THE ORDER (Distance Based) ═══
+    if (hasHomeMeasurement) {
+      totalTailorAtHome = computeVisitFee(maxDistanceKm, visitSettings);
+    } else {
+      totalTailorAtHome = 0;
     }
 
     const totalTrips = pickupTrips + deliveryTrips;
@@ -144,6 +196,8 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
       freeDeliveryApplied = true;
     }
   }
+
+  const finalDistanceKm = isCartCheckout ? (typeof distanceKm !== 'undefined' ? distanceKm : 0) : maxDistanceKm;
 
   // Platform fee on stitching + style addons only (not fabric / visit / delivery / GST)
   const platformFeeAmount = Math.round(
@@ -196,6 +250,7 @@ function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings
     subtotalBeforeTax: Math.round(taxableAmount),
     freeDeliveryApplied,
     freeDeliveryMinOrder,
+    distanceKm: Number((finalDistanceKm || 0).toFixed(2)),
   };
 }
 
@@ -334,4 +389,6 @@ module.exports = {
   enrichOrderItemsForPricing,
   splitAdvanceRemaining,
   computeVisitFee,
+  getRoadDistanceKm,
 };
+
