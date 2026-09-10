@@ -54,10 +54,18 @@ const sendSMS = async (phoneNumber, messageText) => {
       payloadObj.Account.User = username;
     }
 
+    const entityId = (process.env.SMS_INDIA_HUB_ENTITY_ID || process.env.SMS_INDIA_HUB_PE_ID || process.env.DLT_ENTITY_ID || "").replace(/['"]/g, "").trim();
+
     if (templateId) {
       payloadObj.Account.DLTTemplateId = templateId;
       payloadObj.Account.TemplateId = templateId;
       payloadObj.Messages[0].DLTTemplateId = templateId;
+    }
+
+    if (entityId) {
+      payloadObj.Account.EntityId = entityId;
+      payloadObj.Account.PEId = entityId;
+      payloadObj.Messages[0].EntityId = entityId;
     }
 
     console.log(`📱 [SMSIndiaHub] Dispatching SMS to ${cleanNumber} (SenderID: ${senderId}, TemplateID: ${templateId})...`);
@@ -110,12 +118,24 @@ const sendSMS = async (phoneNumber, messageText) => {
  * @param {string} otp - Generated OTP code
  */
 const sendOTP = async (phoneNumber, otp) => {
-  const defaultTemplate = "Welcome to the OyeChotuu powered by Appzeto.Your OTP for registration is {OTP}.BGADEC";
-  const rawTemplate = (process.env.SMS_INDIA_HUB_MESSAGE_TEMPLATE || process.env.INDIA_SMS_HUB_MESSAGE_TEMPLATE || defaultTemplate).replace(/^["']|["']$/g, "").trim();
-  
-  // Dynamically replace {OTP}, {otp}, or {#var#} placeholder with generated OTP code
-  const message = rawTemplate.replace(/\{OTP\}|\{otp\}|\{#var\#\}/g, otp);
-  return await sendSMS(phoneNumber, message);
+  const defaultTemplate = "Welcome to the sewzella powered by Appzeto.Your OTP for registration is {otp}.BGADEC";
+  let rawTemplate = (process.env.SMS_INDIA_HUB_MESSAGE_TEMPLATE || process.env.INDIA_SMS_HUB_MESSAGE_TEMPLATE || defaultTemplate).replace(/^["']|["']$/g, "").trim();
+  const appName = (process.env.APP_NAME || "sewzella").trim();
+
+  // If template contains multiple ##var## or {#var#} placeholders
+  const varMatches = rawTemplate.match(/##var##|\{#var#\}/gi);
+  if (varMatches && varMatches.length >= 2) {
+    let count = 0;
+    rawTemplate = rawTemplate.replace(/##var##|\{#var#\}/gi, () => {
+      count++;
+      return count === 1 ? appName : otp;
+    });
+  } else {
+    // Replace {OTP}, {otp}, {#var#}, or ##var## with the OTP code
+    rawTemplate = rawTemplate.replace(/\{OTP\}|\{otp\}|\{#var#\}|##var##/gi, otp);
+  }
+
+  return await sendSMS(phoneNumber, rawTemplate);
 };
 
 module.exports = {

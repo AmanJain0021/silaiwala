@@ -98,7 +98,7 @@ exports.register = asyncHandler(async (req, res, next) => {
   finalPhoneNumber = `+91${last10Digits}`;
 
   // 0. Verify OTP
-  const isBypass = otp === "123456" || otp === "000000";
+  const isBypass = isDefaultOtpEnabled() && (otp === "123456" || otp === "000000");
   let isValidOTP = isBypass;
 
   if (!isValidOTP && otp) {
@@ -341,7 +341,7 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
     ? [identifier, cleanPhone, `+91${cleanPhone}`]
     : [identifier];
 
-  const isBypass = otp === "123456" || otp === "000000";
+  const isBypass = isDefaultOtpEnabled() && (otp === "123456" || otp === "000000");
 
   let validRecord = null;
   if (!isBypass) {
@@ -361,7 +361,52 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
     await validRecord.save();
   }
 
-  res.status(200).json({ success: true, message: "OTP verified successfully" });
+  let token = undefined;
+  let user = null;
+  let profile = null;
+
+  if (req.body.expectedRole) {
+    const searchOr = [
+      { email: identifier.toLowerCase() },
+      ...(cleanPhone ? [
+        { phoneNumber: `+91${cleanPhone}` },
+        { phoneNumber: cleanPhone },
+        { phoneNumber: `0${cleanPhone}` }
+      ] : [])
+    ];
+    user = await User.findOne({
+      role: req.body.expectedRole,
+      $or: searchOr
+    });
+
+    if (user) {
+      token = generateToken(user._id);
+      if (user.role === "tailor") {
+        profile = await Tailor.findOne({ user: user._id });
+      } else if (user.role === "delivery") {
+        profile = await Delivery.findOne({ user: user._id });
+      } else if (user.role === "customer") {
+        profile = await Customer.findOne({ user: user._id });
+      } else if (user.role === "measurement_executive") {
+        profile = await MeasurementExecutive.findOne({ user: user._id });
+      }
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "OTP verified successfully",
+    token,
+    data: user ? {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      isActive: user.isActive,
+      profile
+    } : undefined
+  });
 });
 
 /**
@@ -495,7 +540,7 @@ exports.login = asyncHandler(async (req, res, next) => {
   if (password) {
     verified = await user.comparePassword(password);
   } else if (otp) {
-    const isBypass = otp === "123456" || otp === "000000";
+    const isBypass = isDefaultOtpEnabled() && (otp === "123456" || otp === "000000");
     if (isBypass) {
       verified = true;
     } else {

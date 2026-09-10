@@ -485,19 +485,7 @@ exports.generateOTP = asyncHandler(async (req, res, next) => {
   request.status = "otp_sent";
   await request.save();
 
-  // Send SMS to customer via SMSIndiaHub
-  try {
-    const User = require("../../../models/User.js");
-    const customerUser = await User.findById(request.customer);
-    if (customerUser && customerUser.phoneNumber) {
-      const smsService = require("../../../utils/smsService.js");
-      await smsService.sendOTP(customerUser.phoneNumber, otp);
-    }
-  } catch (smsErr) {
-    console.error("❌ Error sending Measurement OTP SMS:", smsErr.message);
-  }
-
-  // Notify customer with OTP
+  // Notify customer with OTP (In-App & Socket only - saving SMS credits for Auth)
   await sendNotification({
     recipient: request.customer,
     type: "MEASUREMENT_OTP",
