@@ -411,7 +411,8 @@ const TailorShopOrders = () => {
                                                     name: trimmed,
                                                     price: 0,
                                                     refImage: '',
-                                                    description: ''
+                                                    description: '',
+                                                    notes: ''
                                                 });
                                             }
                                         } else if (typeof val === 'object') {
@@ -420,14 +421,16 @@ const TailorShopOrders = () => {
                                             const refImage = val.refImage || val.image || '';
                                             const price = Number(val.price) || 0;
                                             const description = val.description || '';
-                                            if (name || refImage || price > 0 || description) {
+                                            const notes = val.notes || '';
+                                            if (name || refImage || price > 0 || description || notes) {
                                                 custEntries.push({
                                                     key,
                                                     label: slotLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-                                                    name: name || 'Selected Option',
+                                                    name: name || (notes ? 'Custom Instruction' : 'Selected Option'),
                                                     price,
                                                     refImage,
-                                                    description
+                                                    description,
+                                                    notes
                                                 });
                                             }
                                         }
@@ -499,6 +502,12 @@ const TailorShopOrders = () => {
                                                                 </div>
                                                                 {cust.description && (
                                                                     <p className="text-[10px] text-gray-500 italic mt-0.5">{cust.description}</p>
+                                                                )}
+                                                                {cust.notes && (
+                                                                    <div className="mt-1.5 px-2 py-1 bg-amber-50 border border-amber-200/70 rounded-lg text-amber-900 text-[10px] font-medium flex items-start gap-1">
+                                                                        <span className="font-bold text-amber-700 shrink-0">📌 Note:</span>
+                                                                        <span className="break-words">{cust.notes}</span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                             {cust.refImage && (

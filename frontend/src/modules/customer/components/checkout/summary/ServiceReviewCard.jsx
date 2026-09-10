@@ -225,6 +225,12 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                                                     <span className="text-slate-500 uppercase text-[9px] font-black">{slotLabels[key] || key}: <span className="text-slate-900 font-bold capitalize">{val.name || 'Custom Spec'}</span></span>
                                                     {Number(val.price) > 0 && <span className="text-[#843D9B] font-black text-xs shrink-0">+₹{val.price}</span>}
                                                 </div>
+                                                {val.notes && (
+                                                    <div className="text-[10px] text-amber-900 bg-amber-50/90 border border-amber-200/60 rounded px-1.5 py-0.5">
+                                                        <span className="font-bold text-amber-700">📌 Note: </span>
+                                                        <span>{val.notes}</span>
+                                                    </div>
+                                                )}
                                                 {val.refImage && (
                                                     <img
                                                         src={val.refImage}

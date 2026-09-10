@@ -114,11 +114,14 @@ const leanCustomizations = (custs = {}) => {
     if (!custs || typeof custs !== 'object') return {};
     const out = {};
     for (const [key, val] of Object.entries(custs)) {
-        if (val && (val.name || val.refImage || Number(val.price) > 0 || val.enabled)) {
+        if (val && (val.name || val.refImage || Number(val.price) > 0 || val.enabled || val.notes)) {
             out[key] = {
                 name: val.name || '',
                 price: Number(val.price) || 0,
                 refImage: val.refImage || '',
+                description: val.description || '',
+                notes: val.notes || '',
+                addonId: val.addonId || val._id || val.id || undefined,
                 enabled: val.enabled !== false,
                 isCustom: !!val.isCustom,
             };

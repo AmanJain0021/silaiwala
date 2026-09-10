@@ -54,6 +54,7 @@ const getNormalizedCustomizations = (item) => {
                     price: 0,
                     refImage: '',
                     description: '',
+                    notes: '',
                     isCustom: true
                 });
             }
@@ -63,15 +64,17 @@ const getNormalizedCustomizations = (item) => {
             const refImage = val.refImage || val.image || '';
             const price = Number(val.price) || 0;
             const description = val.description || '';
+            const notes = val.notes || '';
 
-            if (name || refImage || price > 0 || description) {
+            if (name || refImage || price > 0 || description || notes) {
                 entries.push({
                     key,
                     label: CUSTOMIZATION_SLOT_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-                    name: name || 'Custom Selection',
+                    name: name || (notes ? 'Custom Instruction' : 'Custom Selection'),
                     price,
                     refImage,
                     description,
+                    notes,
                     isCustom: !!val.isCustom
                 });
             }
@@ -1262,9 +1265,17 @@ const OrderTracking = () => {
                                                             )}
                                                         </div>
                                                         <h5 className="text-xs font-black text-gray-900 leading-tight truncate">{cust.name}</h5>
-                                                        <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">
-                                                            {cust.description || 'Tailored to your style & comfort'}
-                                                        </p>
+                                                        {cust.description && (
+                                                            <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">
+                                                                {cust.description}
+                                                            </p>
+                                                        )}
+                                                        {cust.notes && (
+                                                            <div className="mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200/60 rounded text-amber-900 text-[10px] font-medium flex items-start gap-1">
+                                                                <span className="font-bold text-amber-700 shrink-0">📌 Note:</span>
+                                                                <span className="break-words">{cust.notes}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {/* Right Price */}

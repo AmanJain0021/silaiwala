@@ -993,6 +993,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
             name: val,
             price: 0,
             refImage: "",
+            description: "",
+            notes: "",
             enabled: true,
             isCustom: true,
           };
@@ -1001,6 +1003,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
           let cPrice = Number(val.price) || 0;
           let cImage = val.refImage || val.image || "";
           let cDesc = val.description || "";
+          let cNotes = val.notes || "";
           let cAddonId = val.addonId || val._id || val.id;
 
           if (cAddonId && mongoose.Types.ObjectId.isValid(cAddonId) && (!cImage || !cName || cPrice <= 0)) {
@@ -1022,6 +1025,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
             price: cPrice,
             refImage: cImage,
             description: cDesc,
+            notes: cNotes,
             addonId: cAddonId && mongoose.Types.ObjectId.isValid(cAddonId) ? cAddonId : undefined,
             enabled: val.enabled !== false,
             isCustom: !!val.isCustom,
