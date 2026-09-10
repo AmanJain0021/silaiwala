@@ -1078,7 +1078,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }));
   }
 
-  const serverPricing = computeCheckoutPricing(
+  const serverPricing = await computeCheckoutPricing(
     pricingItems,
     deliveryAddress,
     isCartCheckout,
@@ -1148,6 +1148,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     items: formattedItems,
     totalAmount: finalAmount,
     deliveryFee: verifiedDeliveryFee,
+    deliveryDistance: serverPricing.distanceKm || 0,
+    deliveryEarnings: serverPricing.actualDeliveryCost || verifiedDeliveryFee,
     // Partner budget stays even when customer delivery is FREE (admin free-delivery threshold)
     deliveryPartnerEarning: serverPricing.actualDeliveryCost || verifiedDeliveryFee,
     actualDeliveryCost: serverPricing.actualDeliveryCost || 0,
@@ -1961,7 +1963,7 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
     pricingItems = await enrichOrderItemsForPricing(items);
   }
 
-  const data = computeCheckoutPricing(pricingItems, deliveryAddress, !!isCartCheckout, settings);
+  const data = await computeCheckoutPricing(pricingItems, deliveryAddress, !!isCartCheckout, settings);
 
   res.status(200).json({
     success: true,

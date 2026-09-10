@@ -125,28 +125,19 @@ const TrackingMap = ({
             label={{ text: '📍', fontSize: '20px' }}
           />
         )}
-        {directions ? (
+        {directions && (
           <DirectionsRenderer
             directions={directions}
             options={{
               suppressMarkers: true,
               polylineOptions: {
-                strokeColor: '#2563EB',
-                strokeWeight: 4,
-                strokeOpacity: 0.8,
+                strokeColor: '#843D9B',
+                strokeWeight: 5,
+                strokeOpacity: 0.9,
               },
             }}
           />
-        ) : path.length >= 2 ? (
-          <Polyline
-            path={path}
-            options={{
-              strokeColor: '#843D9B',
-              strokeWeight: 3,
-              strokeOpacity: 0.7,
-            }}
-          />
-        ) : null}
+        )}
       </GoogleMap>
     </div>
   );
