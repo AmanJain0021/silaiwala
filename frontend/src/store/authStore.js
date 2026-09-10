@@ -10,10 +10,12 @@ const getInitialUser = () => {
         if (path.startsWith('/delivery')) storageKey = 'delivery_user';
         else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
         else if (path.startsWith('/executive')) storageKey = 'executive_user';
+        else if (path.startsWith('/admin')) storageKey = 'admin_user';
 
         let userStr = localStorage.getItem(storageKey) || localStorage.getItem('user');
         if (!userStr || userStr === 'undefined') return null;
-        return JSON.parse(userStr);
+        const parsed = JSON.parse(userStr);
+        return parsed?.user ? { ...parsed.user, profile: parsed.profile } : parsed;
     } catch (e) {
         console.error('Error parsing user from localStorage:', e);
         return null;
@@ -35,21 +37,23 @@ const useAuthStore = create((set) => ({
             const response = await api.post('/auth/login', payload);
             console.log('Backend Login Raw Response:', response.data);
             
-            const user = response.data.data || response.data.user || response.data;
+            let rawData = response.data.data || response.data.user || response.data;
+            const user = (rawData && rawData.user) ? { ...rawData.user, profile: rawData.profile } : rawData;
             const token = response.data.token;
 
             if (!user) {
                 throw new Error('User data not found in response');
             }
 
-            setToken(token);
-            
             const path = window.location.pathname;
+            let roleForToken = user.role || null;
             let storageKey = 'user';
-            if (path.startsWith('/delivery')) storageKey = 'delivery_user';
-            else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
-            else if (path.startsWith('/executive')) storageKey = 'executive_user';
-            
+            if (path.startsWith('/delivery') || user.role === 'delivery') { storageKey = 'delivery_user'; roleForToken = 'delivery'; }
+            else if (path.startsWith('/tailor') || path.startsWith('/partner') || user.role === 'tailor') { storageKey = 'tailor_user'; roleForToken = 'tailor'; }
+            else if (path.startsWith('/executive') || user.role === 'measurement_executive') { storageKey = 'executive_user'; roleForToken = 'measurement_executive'; }
+            else if (path.startsWith('/admin') || user.role === 'admin' || user.role === 'super_admin') { storageKey = 'admin_user'; roleForToken = 'admin'; }
+
+            setToken(token, roleForToken);
             localStorage.setItem(storageKey, JSON.stringify(user));
             localStorage.setItem('user', JSON.stringify(user));
 
@@ -88,22 +92,23 @@ const useAuthStore = create((set) => ({
     otpLogin: async (phoneNumber, otp, expectedRole = null) => {
         set({ isLoading: true, error: null });
         try {
-            // Using /auth/login route which backend controller already supports for phoneNumber + otp
             const payload = { email: phoneNumber, otp };
             if (expectedRole) payload.expectedRole = expectedRole;
             const response = await api.post('/auth/login', payload);
             
-            const user = response.data.data || response.data.user || response.data;
+            let rawData = response.data.data || response.data.user || response.data;
+            const user = (rawData && rawData.user) ? { ...rawData.user, profile: rawData.profile } : rawData;
             const token = response.data.token;
 
-            setToken(token);
-            
             const path = window.location.pathname;
+            let roleForToken = user.role || null;
             let storageKey = 'user';
-            if (path.startsWith('/delivery')) storageKey = 'delivery_user';
-            else if (path.startsWith('/tailor') || path.startsWith('/partner')) storageKey = 'tailor_user';
-            else if (path.startsWith('/executive')) storageKey = 'executive_user';
-            
+            if (path.startsWith('/delivery') || user.role === 'delivery') { storageKey = 'delivery_user'; roleForToken = 'delivery'; }
+            else if (path.startsWith('/tailor') || path.startsWith('/partner') || user.role === 'tailor') { storageKey = 'tailor_user'; roleForToken = 'tailor'; }
+            else if (path.startsWith('/executive') || user.role === 'measurement_executive') { storageKey = 'executive_user'; roleForToken = 'measurement_executive'; }
+            else if (path.startsWith('/admin') || user.role === 'admin' || user.role === 'super_admin') { storageKey = 'admin_user'; roleForToken = 'admin'; }
+
+            setToken(token, roleForToken);
             localStorage.setItem(storageKey, JSON.stringify(user));
             localStorage.setItem('user', JSON.stringify(user));
 

@@ -1,35 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, RefreshCw, ArrowRight } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import useBrandingStore from '../../../store/brandingStore';
+
 const AdminLogin = () => {
     const navigate = useNavigate();
-    const { sendOTP, otpLogin, isLoading } = useAuthStore();
-    const [email, setEmail] = useState('');
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
-    const [step, setStep] = useState('identifier'); // 'identifier' | 'otp'
+    const { login, isLoading } = useAuthStore();
+    const [email, setEmail] = useState('admin@tailor.com');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const [timer, setTimer] = useState(0);
     const { appName, logos } = useBrandingStore();
 
-    const otpInputs = useRef([]);
-
-    // Resend Timer Logic
-    useEffect(() => {
-        let interval = null;
-        if (timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        } else {
-            clearInterval(interval);
-        }
-        return () => clearInterval(interval);
-    }, [timer]);
-
-    const handleSendOTP = async (e) => {
-        if (e) e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         setError('');
 
         if (!email || !email.includes('@')) {
@@ -37,65 +22,24 @@ const AdminLogin = () => {
             return;
         }
 
-        try {
-            await sendOTP(email);
-            setStep('otp');
-            setTimer(60); // 60 seconds reset
-        } catch (err) {
-            if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
-            setError(err.message || 'Failed to send OTP to this admin email.');
-        }
-    };
-
-    const handleVerifyOTP = async (e) => {
-        e.preventDefault();
-        setError('');
-
-        const otpValue = otp.join('');
-        if (otpValue.length !== 6) {
-            setError('Please enter the 6-digit verification code.');
+        if (!password) {
+            setError('Please enter your admin password.');
             return;
         }
 
         try {
-            const user = await otpLogin(email, otpValue);
+            const user = await login(email.trim().toLowerCase(), password);
 
             if (user.role !== 'admin' && user.role !== 'super_admin') {
                 setError('Access Denied. Internal Admin accounts only.');
                 useAuthStore.getState().logout();
                 return;
             }
+
             navigate('/admin');
         } catch (err) {
             if (err?.name === 'CanceledError' || err?.message?.toLowerCase().includes('cancel')) return;
-            setError(err.message || 'Invalid verification code');
-        }
-    };
-
-    const handleOtpChange = (value, index) => {
-        if (isNaN(value)) return;
-
-        const newOtp = [...otp];
-        newOtp[index] = value.slice(-1);
-        setOtp(newOtp);
-
-        // Move to next input
-        if (value && index < 5) {
-            otpInputs.current[index + 1].focus();
-        }
-    };
-
-    const handleKeyDown = (e, index) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            otpInputs.current[index - 1].focus();
-        }
-    };
-
-    const handlePaste = (e) => {
-        const data = e.clipboardData.getData('text').slice(0, 6).split('');
-        if (data.length === 6 && data.every(char => !isNaN(char))) {
-            setOtp(data);
-            otpInputs.current[5].focus();
+            setError(err.message || 'Invalid email or password. Please try again.');
         }
     };
 
@@ -113,7 +57,7 @@ const AdminLogin = () => {
                         <img src={logos.customer} alt={appName} className="w-full h-full object-contain" />
                     </div>
 
-                    <div className="text-center space-y-1 mb-10">
+                    <div className="text-center space-y-1 mb-8">
                         <h2 className="text-3xl font-black text-gray-900 tracking-tight">Admin Gate</h2>
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Authorized Personnel Only</p>
                     </div>
@@ -125,97 +69,65 @@ const AdminLogin = () => {
                             </div>
                         )}
 
-                        {step === 'identifier' ? (
-                            <form onSubmit={handleSendOTP} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Work Email Address</label>
-                                    <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#843D9B] transition-colors">
-                                            <Mail size={18} />
-                                        </span>
-                                        <input
-                                            type="email"
-                                            placeholder="admin@example.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold text-gray-900 outline-none focus:border-[#843D9B] focus:bg-white transition-all shadow-inner"
-                                            required
-                                        />
-                                    </div>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {/* Email Field */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Admin Email</label>
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#843D9B] transition-colors">
+                                        <Mail size={18} />
+                                    </span>
+                                    <input
+                                        type="email"
+                                        placeholder="admin@tailor.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold text-gray-900 outline-none focus:border-[#843D9B] focus:bg-white transition-all shadow-inner"
+                                        required
+                                        autoComplete="email"
+                                    />
                                 </div>
+                            </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full py-5 bg-[#843D9B] hover:bg-[#6B2F7E] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
-                                >
-                                    {isLoading ? (
-                                        <RefreshCw size={18} className="animate-spin" />
-                                    ) : (
-                                        <>Request Access Code <ArrowRight size={16} /></>
-                                    )}
-                                </button>
-                            </form>
-                        ) : (
-                            <form onSubmit={handleVerifyOTP} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="text-center space-y-2">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-[#843D9B] rounded-full text-[10px] font-black uppercase tracking-wider">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#843D9B] animate-ping"></div>
-                                        Safety Token Sent
-                                    </div>
-                                    <p className="text-[11px] text-gray-500 font-medium">Verify login for <span className="font-black text-gray-900">{email}</span></p>
-                                </div>
-
-                                <div className="flex justify-between gap-2" onPaste={handlePaste}>
-                                    {otp.map((data, index) => (
-                                        <input
-                                            key={index}
-                                            ref={el => otpInputs.current[index] = el}
-                                            className="w-12 h-14 text-center text-xl font-black bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-[#843D9B] focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all text-gray-900 shadow-sm"
-                                            type="text"
-                                            maxLength="1"
-                                            value={data}
-                                            onChange={e => handleOtpChange(e.target.value, index)}
-                                            onKeyDown={e => handleKeyDown(e, index)}
-                                            onFocus={e => e.target.select()}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div className="space-y-4">
+                            {/* Password Field */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Password</label>
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#843D9B] transition-colors">
+                                        <Lock size={18} />
+                                    </span>
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full pl-12 pr-12 py-4 bg-gray-50 border-2 border-transparent rounded-[1.25rem] text-sm font-bold text-gray-900 outline-none focus:border-[#843D9B] focus:bg-white transition-all shadow-inner"
+                                        required
+                                        autoComplete="current-password"
+                                    />
                                     <button
-                                        type="submit"
-                                        disabled={isLoading || otp.join('').length !== 6}
-                                        className="w-full py-5 bg-[#843D9B] hover:bg-[#6B2F7E] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#843D9B] transition-colors p-1"
                                     >
-                                        {isLoading ? (
-                                            <RefreshCw size={18} className="animate-spin" />
-                                        ) : (
-                                            <>Verify & Authorize <ShieldCheck size={18} /></>
-                                        )}
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
-
-                                    <div className="flex flex-col items-center gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setStep('identifier')}
-                                            className="text-[10px] text-gray-400 font-bold uppercase hover:text-[#843D9B] transition-colors"
-                                        >
-                                            Change Email Address
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={handleSendOTP}
-                                            disabled={timer > 0 || isLoading}
-                                            className="text-[10px] text-[#843D9B] font-black uppercase tracking-widest disabled:text-gray-300"
-                                        >
-                                            {timer > 0 ? `Resend Code in ${timer}s` : 'Resend Security Code'}
-                                        </button>
-                                    </div>
                                 </div>
-                            </form>
-                        )}
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full mt-2 py-5 bg-[#843D9B] hover:bg-[#6B2F7E] text-white text-[11px] font-black rounded-2xl shadow-xl shadow-indigo-500/40 transition-all uppercase tracking-[0.15em] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
+                                {isLoading ? (
+                                    <RefreshCw size={18} className="animate-spin" />
+                                ) : (
+                                    <>Sign In to Admin Console <ArrowRight size={16} /></>
+                                )}
+                            </button>
+                        </form>
                     </div>
                 </div>
 
