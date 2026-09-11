@@ -46,13 +46,9 @@ class ErrorBoundary extends React.Component {
     const errStr = (error && (error.toString() || error.message)) || '';
     return errStr.includes('Failed to fetch dynamically imported module') || 
            errStr.includes('Importing a module script failed') ||
-           errStr.includes('dynamically imported module') ||
+           errStr.includes('error loading dynamically imported module') ||
            errStr.includes('ChunkLoadError') ||
-           errStr.includes('Loading chunk') ||
-           errStr.includes('Failed to load resource') ||
-           errStr.includes('Cannot read properties of null') ||
-           errStr.includes('useRoutes') ||
-           errStr.includes('context of a <Router>');
+           errStr.includes('Loading chunk');
   }
 
   componentDidCatch(error, errorInfo) {

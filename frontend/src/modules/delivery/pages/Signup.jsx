@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX, FiNavigation,FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiLock, FiCheck, FiShield, FiFileText, FiTruck, FiMapPin, FiCamera, FiX, FiNavigation, FiAlertCircle } from 'react-icons/fi';
 import { Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import { validatePassword } from '../../../utils/validation';
@@ -11,7 +11,7 @@ import { compressImage } from '../../../utils/imageCompression';
 import DeliveryLegalModal from '../components/DeliveryLegalModal';
 import useBrandingStore from '../../../store/brandingStore';
 
-const libraries = ['places'];
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const DeliverySignup = () => {
     const navigate = useNavigate();
@@ -23,7 +23,7 @@ const DeliverySignup = () => {
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-        libraries,
+        libraries: GOOGLE_MAPS_LIBRARIES,
     });
     const [autocomplete, setAutocomplete] = useState(null);
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);

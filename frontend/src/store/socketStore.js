@@ -11,9 +11,9 @@ const useSocketStore = create((set, get) => ({
         const existing = get().socket;
         const currentToken = getToken();
 
-        // Reuse active socket connection if already connected
-        if (existing && existing.connected) {
-            if (userId) {
+        // Reuse active or connecting socket connection
+        if (existing && (existing.connected || !existing.disconnected)) {
+            if (userId && existing.connected) {
                 existing.emit('join_user_room', String(userId));
                 if (role === 'delivery') existing.emit('join', 'delivery_partners');
                 else if (role === 'admin') existing.emit('join_admin_room');

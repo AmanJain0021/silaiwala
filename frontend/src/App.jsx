@@ -71,27 +71,30 @@ function App() {
     useBannerStore.getState().fetchStoreBanners();
   }, []);
 
-  // Multi-tab socket sync
+  // Multi-tab and user-state socket sync
   useEffect(() => {
-    const checkAndConnectSocket = () => {
-      const activeUser = useAuthStore.getState().user;
-      if (activeUser && activeUser._id) {
-        connect(activeUser._id);
-      } else {
-        disconnect();
+    if (user && user._id) {
+      connect(user._id, user.role);
+    } else {
+      disconnect();
+    }
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'user' || e.key === 'token') {
+        const activeUser = useAuthStore.getState().user;
+        if (activeUser && activeUser._id) {
+          connect(activeUser._id, activeUser.role);
+        } else {
+          disconnect();
+        }
       }
     };
 
-    checkAndConnectSocket();
-
-    window.addEventListener('storage', checkAndConnectSocket);
-    const interval = setInterval(checkAndConnectSocket, 5000);
-
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-      window.removeEventListener('storage', checkAndConnectSocket);
-      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
     };
-  }, [connect, disconnect]);
+  }, [user?._id, user?.role, connect, disconnect]);
 
   // Global Event Listeners
   useEffect(() => {
