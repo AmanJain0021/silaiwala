@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Scissors, Building, Star, Mail, Phone, Clock, FileText, Ban, Truck, RefreshCw, ChevronDown } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { DocumentViewerModal, AdminDocumentGrid } from '../components/DocumentViewerModal';
 
 const AdminTailors = () => {
     const [selectedTab, setSelectedTab] = useState('All Tailors');
     const [selectedTailor, setSelectedTailor] = useState(null);
     const [selectedApp, setSelectedApp] = useState(null);
+    const [previewDoc, setPreviewDoc] = useState(null);
     const [tailorsData, setTailorsData] = useState([]);
     const [pendingData, setPendingData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -595,30 +597,13 @@ const AdminTailors = () => {
                                 </div>
 
                                 {/* Documents Section in Drawer */}
-                                {selectedTailor.documents && selectedTailor.documents.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
-                                            <FileText size={12} /> Verified Documents
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {selectedTailor.documents.map((doc, i) => (
-                                                <a 
-                                                    key={i}
-                                                    href={doc.url} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-primary transition-colors group"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <FileText size={14} className="text-gray-400 group-hover:text-primary" />
-                                                        <span className="text-xs font-bold text-gray-700">{doc.name}</span>
-                                                    </div>
-                                                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">View</span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="space-y-3">
+                                    <AdminDocumentGrid 
+                                        documents={selectedTailor.documents}
+                                        onPreview={(doc) => setPreviewDoc(doc)}
+                                        title="Tailor Verified Documents"
+                                    />
+                                </div>
                             </div>
 
                             {/* Actions */}
@@ -699,35 +684,12 @@ const AdminTailors = () => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">KYC Documents</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {selectedApp.documents && selectedApp.documents.length > 0 ? (
-                                                selectedApp.documents.map((doc, i) => (
-                                                    <div key={i} className="group relative">
-                                                        <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-xl">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="text-primary/70"><FileText size={16} /></div>
-                                                                <span className="text-sm font-bold text-gray-700">{doc.name}</span>
-                                                            </div>
-                                                        </div>
-                                                        <a 
-                                                            href={doc.url} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="absolute inset-0 flex items-center justify-center bg-primary/10 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] rounded-xl transition-all font-black text-[10px] text-primary uppercase tracking-widest"
-                                                        >
-                                                            View Document
-                                                        </a>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
-                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No documents uploaded</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    {/* Application KYC Documents */}
+                                    <AdminDocumentGrid
+                                        documents={selectedApp.documents}
+                                        onPreview={(doc) => setPreviewDoc(doc)}
+                                        title="Tailor KYC & Business Documents"
+                                    />
 
                                     {selectedApp.bio && (
                                         <div className="space-y-2">
@@ -960,6 +922,13 @@ const AdminTailors = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Document Lightbox / Viewer Modal */}
+            <DocumentViewerModal
+                doc={previewDoc}
+                isOpen={!!previewDoc}
+                onClose={() => setPreviewDoc(null)}
+            />
         </div>
     );
 };

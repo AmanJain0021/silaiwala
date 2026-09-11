@@ -355,8 +355,9 @@ exports.getPendingTailors = async (req, res) => {
   try {
     const { limit = 50, page = 1 } = req.query;
     const skip = (page - 1) * limit;
-    const total = await User.countDocuments({ role: "tailor", isActive: false });
-    const users = await User.find({ role: "tailor", isActive: false }).select("-password").limit(Number(limit)).skip(skip).lean();
+    const filter = { role: "tailor", $or: [{ isActive: false }, { isVerified: false }] };
+    const total = await User.countDocuments(filter);
+    const users = await User.find(filter).select("-password").limit(Number(limit)).skip(skip).lean();
     const userIds = users.map(u => u._id);
     const profiles = await Tailor.find({ user: { $in: userIds } }).lean();
 
@@ -364,7 +365,8 @@ exports.getPendingTailors = async (req, res) => {
       const profile = profiles.find(p => p.user?.toString() === user._id.toString());
       return {
         ...user,
-        profile: profile || null
+        profile: profile || null,
+        documents: profile?.documents || []
       };
     });
 
@@ -734,8 +736,9 @@ exports.getPendingDeliveryPartners = async (req, res) => {
   try {
     const { limit = 50, page = 1 } = req.query;
     const skip = (page - 1) * limit;
-    const total = await User.countDocuments({ role: "delivery", isActive: false });
-    const users = await User.find({ role: "delivery", isActive: false }).select("-password").limit(Number(limit)).skip(skip).lean();
+    const filter = { role: "delivery", $or: [{ isActive: false }, { isVerified: false }] };
+    const total = await User.countDocuments(filter);
+    const users = await User.find(filter).select("-password").limit(Number(limit)).skip(skip).lean();
     const userIds = users.map(u => u._id);
     const profiles = await Delivery.find({ user: { $in: userIds } }).lean();
 
@@ -743,7 +746,8 @@ exports.getPendingDeliveryPartners = async (req, res) => {
       const profile = profiles.find(p => p.user?.toString() === user._id.toString());
       return {
         ...user,
-        profile: profile || null
+        profile: profile || null,
+        documents: profile?.documents || []
       };
     });
 

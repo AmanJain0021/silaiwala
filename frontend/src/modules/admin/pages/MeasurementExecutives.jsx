@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, User, MapPin, CheckCircle2, Star, Mail, Phone, Clock, FileText, Ban, Ruler, CreditCard, Wallet, ShieldCheck, AlertCircle } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { DocumentViewerModal, AdminDocumentGrid } from '../components/DocumentViewerModal';
 
 const MeasurementExecutives = () => {
     const [selectedTab, setSelectedTab] = useState('All Executives');
     const [selectedExec, setSelectedExec] = useState(null);
     const [selectedApp, setSelectedApp] = useState(null);
+    const [previewDoc, setPreviewDoc] = useState(null);
     const [executivesData, setExecutivesData] = useState([]);
     const [pendingData, setPendingData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -310,7 +312,7 @@ const MeasurementExecutives = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-100"
+                            className="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-100"
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gradient-to-br from-primary to-primary-dark text-white">
                                 <div className="flex items-center gap-4">
@@ -450,31 +452,14 @@ const MeasurementExecutives = () => {
                                     </div>
                                 )}
 
-                                {/* Documents */}
-                                {selectedExec.documents && selectedExec.documents.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
-                                            <FileText size={12} /> Uploaded Documents
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {selectedExec.documents.map((doc, i) => (
-                                                <a
-                                                    key={i}
-                                                    href={doc.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-primary transition-colors group"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <FileText size={14} className="text-gray-400 group-hover:text-primary" />
-                                                        <span className="text-xs font-bold text-gray-700">{doc.name || `Document ${i+1}`}</span>
-                                                    </div>
-                                                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">View</span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Uploaded Documents Grid */}
+                                <div className="space-y-3">
+                                    <AdminDocumentGrid
+                                        documents={selectedExec.documents}
+                                        onPreview={(doc) => setPreviewDoc(doc)}
+                                        title="Executive Documents"
+                                    />
+                                </div>
                             </div>
 
                             {/* Actions */}
@@ -526,77 +511,78 @@ const MeasurementExecutives = () => {
                                 onClick={(e) => e.stopPropagation()}
                                 className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                             >
-                                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <h2 className="text-lg font-black tracking-tight text-gray-900">Review Executive Application</h2>
-                                    <button onClick={() => setSelectedApp(null)} className="p-2 bg-gray-50 text-gray-400 hover:text-gray-900 rounded-full transition-colors">
+                                    <button onClick={() => setSelectedApp(null)} className="p-2 bg-white border border-gray-100 text-gray-400 hover:text-gray-900 rounded-full transition-colors">
                                         <X size={20} />
                                     </button>
                                 </div>
 
-                                <div className="p-6 flex-1 overflow-y-auto space-y-8 custom-scrollbar">
-                                    <div className="flex items-center gap-6">
-                                        <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-3xl overflow-hidden">
+                                <div className="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+                                    <div className="flex items-center gap-5 p-4 bg-gray-50/50 border border-gray-100 rounded-2xl">
+                                        <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-2xl overflow-hidden shrink-0">
                                             {selectedApp.avatar && selectedApp.avatar !== 'default_profile.png' ? (
                                                 <img src={selectedApp.avatar} alt={selectedApp.name} className="h-full w-full object-cover" />
                                             ) : (
                                                 selectedApp.name.charAt(0).toUpperCase()
                                             )}
                                         </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-gray-900">{selectedApp.name}</h3>
-                                            <p className="text-sm font-bold text-primary">Service Radius: {selectedApp.serviceRadius} km</p>
-                                            <div className="flex flex-col gap-1 mt-2">
-                                                <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-xl font-black text-gray-900 truncate">{selectedApp.name}</h3>
+                                            <p className="text-xs font-bold text-primary mt-0.5">Service Radius: {selectedApp.serviceRadius} km</p>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
+                                                <div className="flex items-center gap-1.5 font-medium">
                                                     <Mail size={12} className="text-gray-400" /> {selectedApp.email}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                                                <div className="flex items-center gap-1.5 font-medium">
                                                     <Phone size={12} className="text-gray-400" /> {selectedApp.phone}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                                                <div className="flex items-center gap-1.5 font-medium">
                                                     <MapPin size={12} className="text-gray-400" /> {selectedApp.address}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Application Documents */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider">Submitted Documents & Info</h4>
-                                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2">
-                                            <div className="flex justify-between text-xs">
-                                                <span className="text-gray-500 font-medium">Aadhar Number</span>
-                                                <span className="font-bold text-gray-900">{selectedApp.aadharNumber}</span>
-                                            </div>
+                                    {/* Application KYC Information */}
+                                    <div className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 space-y-2.5">
+                                        <h4 className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2">Applicant KYC Details</h4>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-gray-500 font-medium">Aadhaar Number</span>
+                                            <span className="font-black text-gray-900 tracking-wider bg-white px-3 py-1 rounded-lg border border-gray-200">
+                                                {selectedApp.aadharNumber || 'Not Uploaded'}
+                                            </span>
                                         </div>
-
-                                        {selectedApp.documents && selectedApp.documents.length > 0 ? (
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {selectedApp.documents.map((doc, idx) => (
-                                                    <a
-                                                        key={idx}
-                                                        href={doc.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="p-4 border border-gray-100 bg-gray-50 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-md transition-all group"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <FileText className="text-primary" size={20} />
-                                                            <span className="text-xs font-bold text-gray-800">{doc.name || `Document ${idx+1}`}</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black text-primary uppercase">View</span>
-                                                    </a>
-                                                ))}
+                                        {selectedApp.bankDetails && selectedApp.bankDetails.accountNumber && (
+                                            <div className="flex justify-between items-center text-xs pt-1 border-t border-gray-200/60">
+                                                <span className="text-gray-500 font-medium">Bank Account</span>
+                                                <span className="font-bold text-gray-800">
+                                                    {selectedApp.bankDetails.bankName || ''} - {selectedApp.bankDetails.accountNumber} ({selectedApp.bankDetails.ifscCode || ''})
+                                                </span>
                                             </div>
-                                        ) : (
-                                            <p className="text-xs text-gray-400 italic">No document attachments uploaded.</p>
+                                        )}
+                                        {selectedApp.emergencyContact && selectedApp.emergencyContact.phone && (
+                                            <div className="flex justify-between items-center text-xs pt-1 border-t border-gray-200/60">
+                                                <span className="text-gray-500 font-medium">Emergency Contact</span>
+                                                <span className="font-bold text-gray-800">
+                                                    {selectedApp.emergencyContact.name || 'Contact'} ({selectedApp.emergencyContact.phone})
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
+
+                                    {/* Application Documents */}
+                                    <AdminDocumentGrid
+                                        documents={selectedApp.documents}
+                                        onPreview={(doc) => setPreviewDoc(doc)}
+                                        title="Submitted Attachments & Documents"
+                                    />
                                 </div>
 
-                                <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
+                                <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-4">
                                     <button
                                         onClick={() => handleUpdateStatus(selectedApp.id, 'rejected')}
-                                        className="flex-1 py-3 bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-all text-xs font-black uppercase tracking-widest rounded-xl"
+                                        className="flex-1 py-3 bg-white hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-200 transition-all text-xs font-black uppercase tracking-widest rounded-xl"
                                     >
                                         Reject Application
                                     </button>
@@ -612,8 +598,16 @@ const MeasurementExecutives = () => {
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Document Lightbox / Viewer Modal */}
+            <DocumentViewerModal
+                doc={previewDoc}
+                isOpen={!!previewDoc}
+                onClose={() => setPreviewDoc(null)}
+            />
         </div>
     );
 };
 
 export default MeasurementExecutives;
+

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Truck, Star, Phone, Clock, FileText, Ban, Power, Package, ShieldCheck, Banknote } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Truck, Star, Phone, Clock, FileText, Ban, Power, Package, ShieldCheck, Banknote, CreditCard, AlertCircle } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
+import { DocumentViewerModal, AdminDocumentGrid } from '../components/DocumentViewerModal';
 
 const AdminDelivery = () => {
     const [selectedTab, setSelectedTab] = useState('All Partners');
     const [selectedPartner, setSelectedPartner] = useState(null);
     const [selectedApp, setSelectedApp] = useState(null);
+    const [previewDoc, setPreviewDoc] = useState(null);
     const [deliveryData, setDeliveryData] = useState([]);
     const [pendingData, setPendingData] = useState([]);
     const [codDeposits, setCodDeposits] = useState([]);
@@ -35,6 +37,7 @@ const AdminDelivery = () => {
                 phone: p.phoneNumber || 'N/A',
                 isVerified: p.isVerified,
                 vehicle: p.profile?.vehicleType || 'Reg. Vehicle',
+                vehicleNumber: p.profile?.vehicleNumber || '',
                 rating: p.profile?.rating || 5.0,
                 totalDeliveries: p.profile?.totalDeliveries || 0,
                 activeTasks: 0,
@@ -42,7 +45,12 @@ const AdminDelivery = () => {
                 accountStatus: p.isActive ? 'Active' : 'Suspended',
                 joined: new Date(p.createdAt).toLocaleDateString(),
                 codWalletBalance: p.profile?.codWalletBalance || 0,
-                cashBlocked: p.profile?.cashBlocked || false
+                cashBlocked: p.profile?.cashBlocked || false,
+                documents: p.profile?.documents || [],
+                aadharNumber: p.profile?.aadharNumber || '',
+                bankDetails: p.profile?.bankDetails || {},
+                emergencyContact: p.profile?.emergencyContact || {},
+                address: p.profile?.address || ''
             })));
 
             setPendingData(pendingRes.data.data.map(p => ({
@@ -52,7 +60,11 @@ const AdminDelivery = () => {
                 status: 'Pending Review',
                 vehicle: p.profile?.vehicleType || 'Not Specified',
                 vehicleNumber: p.profile?.vehicleNumber,
-                documents: p.profile?.documents || [],
+                documents: p.profile?.documents || p.documents || [],
+                aadharNumber: p.profile?.aadharNumber || p.aadharNumber || '',
+                bankDetails: p.profile?.bankDetails || {},
+                emergencyContact: p.profile?.emergencyContact || {},
+                address: p.profile?.address || '',
                 submittedDate: new Date(p.createdAt).toLocaleDateString()
             })));
 
@@ -357,7 +369,7 @@ const AdminDelivery = () => {
                                     </div>
                                     <h3 className="text-base font-black text-gray-900 mt-4">{app.name}</h3>
                                     <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 font-medium">
-                                        <Truck size={12} className="text-gray-400" /> {app.vehicle}
+                                        <Truck size={12} className="text-gray-400" /> {app.vehicle} {app.vehicleNumber ? `(${app.vehicleNumber})` : ''}
                                     </div>
                                     <div className="flex gap-4 mt-4 text-[10px] text-gray-400 font-bold">
                                         <div className="flex items-center gap-1">
@@ -370,7 +382,7 @@ const AdminDelivery = () => {
                                 </div>
                                 <div className="mt-6">
                                     <button onClick={() => setSelectedApp(app)} className="w-full py-2.5 bg-gray-50 text-primary hover:bg-primary hover:text-white transition-colors text-xs font-black uppercase tracking-widest rounded-xl border border-gray-100">
-                                        Review KYC
+                                        Review KYC ({app.documents?.length || 0} Docs)
                                     </button>
                                 </div>
                             </div>
@@ -546,7 +558,7 @@ const AdminDelivery = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-100"
+                            className="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-100"
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gradient-to-br from-primary to-primary-dark text-white">
                                 <div className="flex items-center gap-4">
@@ -558,7 +570,7 @@ const AdminDelivery = () => {
                                         <h2 className="text-xl font-black tracking-tight">{selectedPartner.name}</h2>
                                         <p className="text-xs text-white/60 font-bold mt-1">ID: {selectedPartner.id}</p>
                                         <div className="mt-2 inline-block px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-white/10 text-white border border-white/20">
-                                            {selectedPartner.vehicle}
+                                            {selectedPartner.vehicle} {selectedPartner.vehicleNumber ? `• ${selectedPartner.vehicleNumber}` : ''}
                                         </div>
                                     </div>
                                 </div>
@@ -619,15 +631,67 @@ const AdminDelivery = () => {
                                     <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
                                         <User size={12} /> Contact & Info
                                     </h3>
-                                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
                                         <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
                                             <Phone size={16} className="text-primary opacity-70" /> {selectedPartner.phone}
                                         </div>
-                                        <div className="flex justify-between items-center pt-4 border-t border-gray-50">
+                                        {selectedPartner.address && (
+                                            <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                                                <MapPin size={16} className="text-primary opacity-70" /> {selectedPartner.address}
+                                            </div>
+                                        )}
+                                        {selectedPartner.aadharNumber && (
+                                            <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                                                <ShieldCheck size={16} className="text-primary opacity-70" /> Aadhaar: {selectedPartner.aadharNumber}
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center pt-3 border-t border-gray-50">
                                             <p className="text-xs font-bold text-gray-600">Joined Date</p>
                                             <span className="text-xs font-black text-gray-900">{selectedPartner.joined}</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Bank Details */}
+                                {selectedPartner.bankDetails && (selectedPartner.bankDetails.accountNumber || selectedPartner.bankDetails.upiId) && (
+                                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2">
+                                        <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2 border-b border-gray-50 pb-2">
+                                            <CreditCard size={12} /> Bank Information
+                                        </h3>
+                                        {selectedPartner.bankDetails.accountName && (
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-gray-400 font-medium">Account Name</span>
+                                                <span className="font-bold text-gray-800">{selectedPartner.bankDetails.accountName}</span>
+                                            </div>
+                                        )}
+                                        {selectedPartner.bankDetails.bankName && (
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-gray-400 font-medium">Bank</span>
+                                                <span className="font-bold text-gray-800">{selectedPartner.bankDetails.bankName}</span>
+                                            </div>
+                                        )}
+                                        {selectedPartner.bankDetails.accountNumber && (
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-gray-400 font-medium">Account Number</span>
+                                                <span className="font-bold text-gray-800">{selectedPartner.bankDetails.accountNumber}</span>
+                                            </div>
+                                        )}
+                                        {selectedPartner.bankDetails.ifscCode && (
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-gray-400 font-medium">IFSC Code</span>
+                                                <span className="font-bold text-gray-800">{selectedPartner.bankDetails.ifscCode}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Uploaded Documents Grid */}
+                                <div className="space-y-3">
+                                    <AdminDocumentGrid
+                                        documents={selectedPartner.documents}
+                                        onPreview={(doc) => setPreviewDoc(doc)}
+                                        title="Rider Documents & KYC"
+                                    />
                                 </div>
                             </div>
 
@@ -674,70 +738,74 @@ const AdminDelivery = () => {
                                 onClick={(e) => e.stopPropagation()}
                                 className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                             >
-                                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <h2 className="text-lg font-black tracking-tight text-gray-900">Review Rider Application</h2>
-                                    <button onClick={() => setSelectedApp(null)} className="p-2 bg-gray-50 text-gray-400 hover:text-gray-900 rounded-full transition-colors">
+                                    <button onClick={() => setSelectedApp(null)} className="p-2 bg-white border border-gray-100 text-gray-400 hover:text-gray-900 rounded-full transition-colors">
                                         <X size={20} />
                                     </button>
                                 </div>
 
-                                <div className="p-6 flex-1 overflow-y-auto space-y-8 custom-scrollbar">
-                                    <div className="flex items-center gap-6">
-                                        <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-3xl">
+                                <div className="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+                                    <div className="flex items-center gap-5 p-4 bg-gray-50/50 border border-gray-100 rounded-2xl">
+                                        <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-2xl shrink-0">
                                             {selectedApp.name.charAt(0)}
                                         </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-gray-900">{selectedApp.name}</h3>
-                                            <p className="text-sm font-bold text-primary uppercase tracking-widest">{selectedApp.vehicle} Driver</p>
-                                            <div className="flex gap-4 mt-2">
-                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                                    <Truck size={14} /> {selectedApp.vehicleNumber || 'No Number'}
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-xl font-black text-gray-900 truncate">{selectedApp.name}</h3>
+                                            <p className="text-xs font-bold text-primary uppercase tracking-wider">{selectedApp.vehicle} Driver {selectedApp.vehicleNumber ? `• ${selectedApp.vehicleNumber}` : ''}</p>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
+                                                <div className="flex items-center gap-1.5 font-medium">
+                                                    <Phone size={12} className="text-gray-400" /> {selectedApp.phone}
+                                                </div>
+                                                {selectedApp.address && (
+                                                    <div className="flex items-center gap-1.5 font-medium">
+                                                        <MapPin size={12} className="text-gray-400" /> {selectedApp.address}
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-1.5 font-medium text-gray-400">
+                                                    <Clock size={12} /> Applied {selectedApp.submittedDate}
                                                 </div>
                                             </div>
-                                            <p className="text-xs font-medium text-gray-400 mt-2">{selectedApp.phone}</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">KYC Documents</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {selectedApp.documents && selectedApp.documents.length > 0 ? (
-                                                selectedApp.documents.map((doc, i) => (
-                                                    <div key={i} className="group relative">
-                                                        <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-xl">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="text-primary/70"><FileText size={16} /></div>
-                                                                <span className="text-sm font-bold text-gray-700">{doc.name}</span>
-                                                            </div>
-                                                            <div className={`text-[10px] font-bold px-2 py-1 rounded ${
-                                                                doc.status === 'verified' ? 'bg-green-100 text-green-600' : 
-                                                                doc.status === 'rejected' ? 'bg-red-100 text-red-600' : 
-                                                                'bg-orange-100 text-orange-600'
-                                                            }`}>
-                                                                {doc.status}
-                                                            </div>
-                                                        </div>
-                                                        <a 
-                                                            href={doc.url} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="absolute inset-0 flex items-center justify-center bg-primary/10 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] rounded-xl transition-all font-black text-[10px] text-primary uppercase tracking-widest"
-                                                        >
-                                                            View Document
-                                                        </a>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
-                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No documents uploaded</p>
-                                                </div>
-                                            )}
+                                    {/* Application KYC Details */}
+                                    <div className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 space-y-2.5">
+                                        <h4 className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2">Rider KYC & Info</h4>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-gray-500 font-medium">Aadhaar Number</span>
+                                            <span className="font-black text-gray-900 tracking-wider bg-white px-3 py-1 rounded-lg border border-gray-200">
+                                                {selectedApp.aadharNumber || 'Not Uploaded'}
+                                            </span>
                                         </div>
+                                        {selectedApp.bankDetails && selectedApp.bankDetails.accountNumber && (
+                                            <div className="flex justify-between items-center text-xs pt-1 border-t border-gray-200/60">
+                                                <span className="text-gray-500 font-medium">Bank Account</span>
+                                                <span className="font-bold text-gray-800">
+                                                    {selectedApp.bankDetails.bankName || ''} - {selectedApp.bankDetails.accountNumber} ({selectedApp.bankDetails.ifscCode || ''})
+                                                </span>
+                                            </div>
+                                        )}
+                                        {selectedApp.emergencyContact && selectedApp.emergencyContact.phone && (
+                                            <div className="flex justify-between items-center text-xs pt-1 border-t border-gray-200/60">
+                                                <span className="text-gray-500 font-medium">Emergency Contact</span>
+                                                <span className="font-bold text-gray-800">
+                                                    {selectedApp.emergencyContact.name || 'Contact'} ({selectedApp.emergencyContact.phone})
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* KYC Documents */}
+                                    <AdminDocumentGrid
+                                        documents={selectedApp.documents}
+                                        onPreview={(doc) => setPreviewDoc(doc)}
+                                        title="Rider License & KYC Documents"
+                                    />
                                 </div>
 
-                                <div className="p-6 border-t border-gray-100 bg-gray-50 grid grid-cols-2 gap-4">
-                                    <button onClick={() => handleReject(selectedApp.id)} className="py-3 bg-white border border-gray-200 text-red-600 text-xs font-black rounded-xl hover:bg-red-50 hover:border-red-100 transition-colors uppercase tracking-widest">
+                                <div className="p-6 border-t border-gray-100 bg-gray-50/50 grid grid-cols-2 gap-4">
+                                    <button onClick={() => handleReject(selectedApp.id)} className="py-3 bg-white border border-gray-200 text-red-600 text-xs font-black rounded-xl hover:bg-red-50 hover:border-red-200 transition-colors uppercase tracking-widest">
                                         Reject Application
                                     </button>
                                     <button onClick={() => handleApprove(selectedApp.id)} className="py-3 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest">
@@ -749,8 +817,16 @@ const AdminDelivery = () => {
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Document Lightbox / Viewer Modal */}
+            <DocumentViewerModal
+                doc={previewDoc}
+                isOpen={!!previewDoc}
+                onClose={() => setPreviewDoc(null)}
+            />
         </div>
     );
 };
 
 export default AdminDelivery;
+
