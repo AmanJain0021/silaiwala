@@ -41,6 +41,8 @@ const AIMeasurementCard = () => {
                         <img 
                             src={mannequinGraphic} 
                             alt="AI Measurement Mannequin" 
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-contain relative z-10 drop-shadow-md scale-125 translate-x-1"
                         />
                     </div>

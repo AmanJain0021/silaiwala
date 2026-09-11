@@ -33,8 +33,9 @@ const ForgotPassword = React.lazy(() => import('./modules/customer/pages/ForgotP
 const TailorLogin = React.lazy(() => import('./modules/tailor/pages/Login'));
 const TailorRegistration = React.lazy(() => import('./modules/tailor/pages/Registration'));
 const TailorForgotPassword = React.lazy(() => import('./modules/tailor/pages/ForgotPassword'));
-import CustomerLiveJourney from './modules/customer/pages/CustomerLiveJourney';
-import { UnderReview, RejectedPage } from './modules/tailor/pages/StatusPages';
+const CustomerLiveJourney = React.lazy(() => import('./modules/customer/pages/CustomerLiveJourney'));
+const UnderReview = React.lazy(() => import('./modules/tailor/pages/StatusPages').then(m => ({ default: m.UnderReview })));
+const RejectedPage = React.lazy(() => import('./modules/tailor/pages/StatusPages').then(m => ({ default: m.RejectedPage })));
 import TailorProtectedRoute from './modules/tailor/components/ProtectedRoute';
 import TailorAuthLayout from './modules/tailor/layouts/TailorAuthLayout';
 import { TAILOR_STATUS } from './modules/tailor/context/AuthContext';

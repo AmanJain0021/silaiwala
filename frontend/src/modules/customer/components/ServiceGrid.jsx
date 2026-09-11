@@ -65,6 +65,10 @@ const ServiceGrid = () => {
                             <img 
                                 src={service.imgSrc} 
                                 alt={service.title} 
+                                loading="lazy"
+                                decoding="async"
+                                width="76"
+                                height="76"
                                 className="w-full h-full object-contain" 
                             />
                         </div>

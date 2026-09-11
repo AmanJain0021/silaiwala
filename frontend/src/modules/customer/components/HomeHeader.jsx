@@ -61,6 +61,7 @@ const HomeHeader = ({ user }) => {
                     <div className="flex items-center gap-2 shrink-0">
                         <button
                             onClick={handleBellClick}
+                            aria-label="Notifications"
                             className="w-10 h-10 bg-white/10 rounded-xl text-white border border-white/20 flex items-center justify-center relative active:scale-95 transition-transform"
                         >
                             <Bell size={18} />
@@ -72,6 +73,7 @@ const HomeHeader = ({ user }) => {
                         <Link
                             to={(serviceItems || []).length > 0 && (productCartItems || []).length === 0 ? "/user/checkout/summary" : "/user/cart"}
                             onClick={() => useCheckoutStore.getState().setBuyNowMode(false)}
+                            aria-label="Shopping Cart"
                             className="w-10 h-10 bg-white/10 rounded-xl text-white border border-white/20 flex items-center justify-center relative active:scale-95 transition-transform"
                         >
                             <ShoppingCart size={18} />

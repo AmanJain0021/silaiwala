@@ -47,6 +47,7 @@ const NavItem = ({ to, icon: Icon, label }) => {
     return (
         <Link
             to={to}
+            aria-label={label}
             className="flex flex-col items-center gap-0.5 relative min-w-[56px] py-0.5"
         >
             {isActive && (
