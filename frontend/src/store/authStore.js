@@ -45,13 +45,11 @@ const useAuthStore = create((set) => ({
                 throw new Error('User data not found in response');
             }
 
-            const path = window.location.pathname;
-            let roleForToken = user.role || null;
-            let storageKey = 'user';
+            const ADMIN_ROLES = ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'];
             if (path.startsWith('/delivery') || user.role === 'delivery') { storageKey = 'delivery_user'; roleForToken = 'delivery'; }
             else if (path.startsWith('/tailor') || path.startsWith('/partner') || user.role === 'tailor') { storageKey = 'tailor_user'; roleForToken = 'tailor'; }
             else if (path.startsWith('/executive') || user.role === 'measurement_executive') { storageKey = 'executive_user'; roleForToken = 'measurement_executive'; }
-            else if (path.startsWith('/admin') || user.role === 'admin' || user.role === 'super_admin') { storageKey = 'admin_user'; roleForToken = 'admin'; }
+            else if (path.startsWith('/admin') || ADMIN_ROLES.includes(user.role)) { storageKey = 'admin_user'; roleForToken = 'admin'; }
 
             setToken(token, roleForToken);
             localStorage.setItem(storageKey, JSON.stringify(user));
@@ -100,13 +98,11 @@ const useAuthStore = create((set) => ({
             const user = (rawData && rawData.user) ? { ...rawData.user, profile: rawData.profile } : rawData;
             const token = response.data.token;
 
-            const path = window.location.pathname;
-            let roleForToken = user.role || null;
-            let storageKey = 'user';
+            const ADMIN_ROLES = ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'];
             if (path.startsWith('/delivery') || user.role === 'delivery') { storageKey = 'delivery_user'; roleForToken = 'delivery'; }
             else if (path.startsWith('/tailor') || path.startsWith('/partner') || user.role === 'tailor') { storageKey = 'tailor_user'; roleForToken = 'tailor'; }
             else if (path.startsWith('/executive') || user.role === 'measurement_executive') { storageKey = 'executive_user'; roleForToken = 'measurement_executive'; }
-            else if (path.startsWith('/admin') || user.role === 'admin' || user.role === 'super_admin') { storageKey = 'admin_user'; roleForToken = 'admin'; }
+            else if (path.startsWith('/admin') || ADMIN_ROLES.includes(user.role)) { storageKey = 'admin_user'; roleForToken = 'admin'; }
 
             setToken(token, roleForToken);
             localStorage.setItem(storageKey, JSON.stringify(user));

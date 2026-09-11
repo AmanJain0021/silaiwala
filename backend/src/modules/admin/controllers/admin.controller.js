@@ -370,15 +370,11 @@ exports.createAdminUser = async (req, res) => {
       });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     const newUser = await User.create({
       name: name.trim(),
       email: cleanEmail,
       phoneNumber: cleanPhone,
-      password: hashedPassword,
+      password: password,
       role,
       isActive: true
     });
