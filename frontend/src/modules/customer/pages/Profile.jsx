@@ -66,36 +66,45 @@ const ProfilePage = () => {
     const [savedProfiles, setSavedProfiles] = useState([]);
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token && !authUser) return;
+
         fetchProfile();
         
+        let isMounted = true;
+
         // Fetch active order
         const fetchActiveOrder = async () => {
             try {
-                const res = await api.get('/orders/customer/my-orders');
-                if (res.data.success && res.data.data) {
+                const res = await api.get('/orders/my-orders');
+                if (isMounted && res.data?.success && res.data?.data) {
                     const active = res.data.data.find(o => !['delivered', 'cancelled', 'returned'].includes(o.orderStatus?.toLowerCase()));
                     if (active) setActiveOrder(active);
                 }
             } catch (e) {
-                // Ignore
+                // Ignore silent failure
             }
         };
         
         // Fetch saved measurements
         const fetchMeasurements = async () => {
             try {
-                const res = await api.get('/customers/measurements/profiles');
-                if (res.data.success && res.data.data) {
+                const res = await api.get('/measurements');
+                if (isMounted && res.data?.success && res.data?.data) {
                     setSavedProfiles(res.data.data.slice(0, 5)); // show up to 5
                 }
             } catch (e) {
-                // Ignore
+                // Ignore silent failure
             }
         };
         
         fetchActiveOrder();
         fetchMeasurements();
-    }, [fetchProfile]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [fetchProfile, authUser]);
 
     const handleLogout = async () => {
         if (window.confirm("Are you sure you want to logout?")) {
