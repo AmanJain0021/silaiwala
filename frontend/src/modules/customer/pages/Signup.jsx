@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import useAuthStore from '../../../store/authStore';
 import useBrandingStore from '../../../store/brandingStore';
 import { validateEmail, validatePhone, validateName, validatePassword } from '../../../utils/validation';
-import { GoogleLogin } from '@react-oauth/google';
 import { ArrowLeft, User, Mail, Phone, Lock, Eye, EyeOff, Gift, UserPlus, ShieldCheck, ChevronRight } from 'lucide-react';
 
 const Signup = () => {

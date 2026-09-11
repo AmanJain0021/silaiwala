@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import React from 'react'
 import { BrowserRouter } from 'react-router-dom'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import './utils/toastNotifier'
 import './styles/index.css'
 import App from './App.jsx'
@@ -41,19 +40,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Get client ID from env or use a placeholder
-const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder_client_id';
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <GoogleOAuthProvider clientId={clientId}>
-        <ErrorBoundary>
-          <OfflineDetector>
-            <App />
-          </OfflineDetector>
-        </ErrorBoundary>
-      </GoogleOAuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <OfflineDetector>
+          <App />
+        </OfflineDetector>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

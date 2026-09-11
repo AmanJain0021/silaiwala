@@ -6,7 +6,7 @@ import useBrandingStore from '../../../store/brandingStore';
 import { validatePhone } from '../../../utils/validation';
 import LocationSplashScreen from '../../../components/Common/LocationSplashScreen';
 import api from '../../../utils/api';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { ArrowLeft, Lock, Eye, EyeOff, KeyRound, User, Wifi, Battery, ChevronRight } from 'lucide-react';
 
 const Login = () => {
@@ -338,25 +338,33 @@ const Login = () => {
                 </div>
 
                 {/* Divider and Google Login matching mockup */}
-                {!otpSent && (
-                    <div className="space-y-4 pt-1 w-full">
-                        <div className="relative flex items-center justify-center my-3 w-full">
-                            <div className="w-full border-t border-gray-200/80"></div>
-                            <span className="shrink-0 mx-3 text-[#94A3B8] text-xs font-medium bg-white px-2">or continue with</span>
-                            <div className="w-full border-t border-gray-200/80"></div>
-                        </div>
+                {!otpSent && (() => {
+                    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                    const isGoogleAuthAvailable = googleClientId && googleClientId !== 'placeholder_client_id' && !googleClientId.includes('placeholder');
+                    if (!isGoogleAuthAvailable) return null;
 
-                        <div className="flex justify-center w-full min-h-[46px]">
-                            <GoogleLogin
-                                onSuccess={handleGoogleSuccess}
-                                onError={handleGoogleError}
-                                shape="pill"
-                                theme="outline"
-                                size="large"
-                            />
+                    return (
+                        <div className="space-y-4 pt-1 w-full">
+                            <div className="relative flex items-center justify-center my-3 w-full">
+                                <div className="w-full border-t border-gray-200/80"></div>
+                                <span className="shrink-0 mx-3 text-[#94A3B8] text-xs font-medium bg-white px-2">or continue with</span>
+                                <div className="w-full border-t border-gray-200/80"></div>
+                            </div>
+
+                            <div className="flex justify-center w-full min-h-[46px]">
+                                <GoogleOAuthProvider clientId={googleClientId}>
+                                    <GoogleLogin
+                                        onSuccess={handleGoogleSuccess}
+                                        onError={handleGoogleError}
+                                        shape="pill"
+                                        theme="outline"
+                                        size="large"
+                                    />
+                                </GoogleOAuthProvider>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
             </form>
 
             {/* Footer Sign Up Link matching mockup */}

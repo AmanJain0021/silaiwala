@@ -9,10 +9,10 @@ export default defineConfig({
     tailwindcss()
   ],
   resolve: {
-    dedupe: ['react', 'react-dom', 'react-router-dom']
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@react-oauth/google']
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'react-is', 'zustand', 'axios', 'lucide-react', 'react-hot-toast']
+    include: ['react', 'react-dom', 'react-router-dom', 'react-is', 'zustand', 'axios', 'lucide-react', 'react-hot-toast', '@react-oauth/google']
   },
   build: {
     target: 'es2020',
