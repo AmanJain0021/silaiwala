@@ -141,7 +141,7 @@ const NewMeasurementRequestAlert = () => {
     // Polling & Mount Fetch for Pending Measurement Requests
     useEffect(() => {
         const pollForRequests = async () => {
-            if (request || isAccepting) return;
+            if (request || isAccepting || document.visibilityState !== 'visible') return;
 
             try {
                 const res = await api.get('/measurement-executive/requests?status=pending');
@@ -171,12 +171,14 @@ const NewMeasurementRequestAlert = () => {
                     }
                 }
             } catch (err) {
-                console.error('Polling measurement requests error:', err);
+                if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+                    console.error('Polling measurement requests error:', err);
+                }
             }
         };
 
         pollForRequests();
-        const interval = setInterval(pollForRequests, 10000);
+        const interval = setInterval(pollForRequests, 15000);
         return () => clearInterval(interval);
     }, [request, isAccepting]);
 

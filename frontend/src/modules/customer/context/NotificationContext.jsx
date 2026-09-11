@@ -62,6 +62,7 @@ export const NotificationProvider = ({ children }) => {
 
             return () => {
                 socket.off('new_notification');
+                socket.disconnect();
             };
         }
     }, [isAuthenticated, user?._id, user?.id]);

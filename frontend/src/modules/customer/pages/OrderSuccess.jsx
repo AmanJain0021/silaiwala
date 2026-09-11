@@ -99,25 +99,22 @@ const OrderSuccess = () => {
         clearCheckout();
         clearCart();
 
-        if (activeOrderId && !isAlteration && !isCustomDesign) {
+        if (activeOrderId) {
             const fetchOrder = async () => {
                 try {
-                    let res;
-                    try {
-                        res = await api.get(`/orders/${activeOrderId}`);
-                    } catch (e1) {
-                        try {
-                            res = await api.get(`/alterations/${activeOrderId}`);
-                        } catch (e2) {
-                            try {
-                                res = await api.get(`/custom-designs/${activeOrderId}`);
-                            } catch (e3) {}
-                        }
+                    let endpoint = `/orders/${activeOrderId}`;
+                    if (isAlteration) {
+                        endpoint = `/alterations/${activeOrderId}`;
+                    } else if (isCustomDesign) {
+                        endpoint = `/custom-designs/${activeOrderId}`;
                     }
+
+                    const res = await api.get(endpoint);
                     if (res?.data?.success) {
                         setOrderDetails(res.data.data);
                     }
                 } catch (err) {
+                    // Silently fail or log if order is not immediately indexed
                     console.log('Order fetch info:', err?.message || err);
                 }
             };

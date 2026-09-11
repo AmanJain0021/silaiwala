@@ -68,12 +68,12 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 // ─── Unhandled Errors ─────────────────────────────────────────────────────────
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("🔴 Unhandled Promise Rejection:", reason);
-  // Gracefully exit so nodemon/pm2 can restart
-  server.close(() => process.exit(1));
+  console.error("🔴 Unhandled Promise Rejection at:", promise, "reason:", reason);
+  // Log the unhandled rejection without forcefully killing the server so background async tasks don't cause downtime
 });
 
 process.on("uncaughtException", (error) => {
-  console.error("🔴 Uncaught Exception:", error.message);
+  console.error("🔴 Uncaught Exception:", error);
+  // Uncaught synchronous exceptions corrupt runtime state, so exit gracefully
   server.close(() => process.exit(1));
 });

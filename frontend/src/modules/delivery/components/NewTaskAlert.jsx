@@ -281,7 +281,7 @@ const NewTaskAlert = ({ onTaskAccepted }) => {
     // Polling fallback mechanism
     useEffect(() => {
         const pollForTasks = async () => {
-            if (newTask || isAccepting || !user) return; // Don't interrupt or poll if not logged in
+            if (newTask || isAccepting || !user || document.visibilityState !== 'visible') return; // Don't interrupt or poll if not logged in or tab hidden
 
             try {
                 const [assignedRes, availableRes] = await Promise.all([

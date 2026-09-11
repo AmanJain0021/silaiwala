@@ -246,6 +246,10 @@ const OrderTracking = () => {
                 socket.off('connect', joinRooms);
                 socket.off('order_status_updated', refreshOrder);
                 socket.off('order_notification', refreshOrder);
+                socket.off('new_chat_message');
+                socket.off('measurement_otp_sent');
+                socket.off('new_notification');
+                socket.disconnect();
                 setSocketInstance(null);
             };
         }
