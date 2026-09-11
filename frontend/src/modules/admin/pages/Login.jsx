@@ -30,7 +30,8 @@ const AdminLogin = () => {
         try {
             const user = await login(email.trim().toLowerCase(), password);
 
-            if (user.role !== 'admin' && user.role !== 'super_admin') {
+            const ADMIN_ROLES = ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'];
+            if (!ADMIN_ROLES.includes(user.role)) {
                 setError('Access Denied. Internal Admin accounts only.');
                 useAuthStore.getState().logout();
                 return;

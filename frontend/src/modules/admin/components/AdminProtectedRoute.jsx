@@ -17,7 +17,8 @@ const AdminProtectedRoute = () => {
         );
     }
 
-    if (!isAuthenticated || (role !== 'admin' && role !== 'super_admin')) {
+    const ADMIN_ROLES = ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'];
+    if (!isAuthenticated || !ADMIN_ROLES.includes(role)) {
         return <Navigate to="/admin/login" replace />;
     }
 

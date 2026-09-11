@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 const User = require("../../../models/User.js");
 const Order = require("../../../models/Order.js");
 const Banner = require("../../../models/Banner.js");
@@ -318,6 +319,92 @@ exports.updateUserStatus = async (req, res) => {
   } catch (error) {
     console.error("Error in updateUserStatus:", error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.createAdminUser = async (req, res) => {
+  try {
+    const { name, email, phoneNumber, password, role = "admin" } = req.body;
+
+    if (!name || !email || !phoneNumber || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields: name, email, phoneNumber, and password"
+      });
+    }
+
+    const allowedRoles = ["admin", "super_admin", "support_agent", "finance_manager", "content_manager"];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid admin role selected"
+      });
+    }
+
+    // Clean phone and email
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanPhone = phoneNumber.replace(/[\s\-+]/g, "").slice(-10);
+
+    if (cleanPhone.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid 10-digit mobile number"
+      });
+    }
+
+    // Check existing user
+    const existingUser = await User.findOne({
+      $or: [
+        { email: cleanEmail },
+        { phoneNumber: cleanPhone },
+        { phoneNumber: `+91${cleanPhone}` }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: existingUser.email === cleanEmail
+          ? "User with this email already exists"
+          : "User with this phone number already exists"
+      });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await User.create({
+      name: name.trim(),
+      email: cleanEmail,
+      phoneNumber: cleanPhone,
+      password: hashedPassword,
+      role,
+      isActive: true
+    });
+
+    await invalidateCache("cache:admin:dashboard-stats");
+    await invalidateCache("cache:admin:crm-dashboard");
+
+    res.status(201).json({
+      success: true,
+      message: "Admin user created successfully",
+      data: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+        isActive: newUser.isActive,
+        createdAt: newUser.createdAt
+      }
+    });
+  } catch (error) {
+    console.error("Error in createAdminUser:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create admin user"
+    });
   }
 };
 

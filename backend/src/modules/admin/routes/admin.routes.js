@@ -5,6 +5,7 @@ const { uploadLimiter } = require("../../../middlewares/rateLimiter.middleware.j
 const {
   getDashboardStats,
   getAllUsers,
+  createAdminUser,
   updateUserStatus,
   getDeliveryPartners,
   getPendingTailors,
@@ -110,7 +111,7 @@ const crmRoutes = require("./crm.routes.js");
 
 // Apply auth middleware to ALL routes
 router.use(protect);
-router.use(authorize("admin", "super_admin"));
+router.use(authorize("admin", "super_admin", "support_agent", "finance_manager", "content_manager"));
 
 // Dashboard
 router.get("/dashboard", getDashboardStats);
@@ -119,10 +120,11 @@ router.get("/badge-counts", getSidebarBadgeCounts);
 // CRM Dashboard
 router.use("/crm", crmRoutes);
 
-// User Management
-router.get("/users", getAllUsers);
+// User Management (Staff creation and status restricted to Admin / Super Admin)
+router.get("/users", authorize("admin", "super_admin", "support_agent"), getAllUsers);
+router.post("/users", authorize("admin", "super_admin"), createAdminUser);
 router.get("/delivery-partners", getDeliveryPartners);
-router.put("/users/:id/status", updateUserStatus);
+router.put("/users/:id/status", authorize("admin", "super_admin"), updateUserStatus);
 
 // Tailor Approvals
 router.get("/tailors/pending", getPendingTailors);
@@ -235,10 +237,10 @@ router.get("/finance/ledger", getPaymentLedger);
 router.get("/finance/payouts", getAllPayouts);
 router.patch("/finance/payouts/:id", updatePayoutStatus);
 
-// System Settings
-router.get("/settings", getSettings);
-router.put("/settings", updateSettings);
-router.patch("/settings/cod-wallet", updateCodSettings);
+// System Settings (Restricted to Admin / Super Admin)
+router.get("/settings", authorize("admin", "super_admin"), getSettings);
+router.put("/settings", authorize("admin", "super_admin"), updateSettings);
+router.patch("/settings/cod-wallet", authorize("admin", "super_admin"), updateCodSettings);
 
 // Reports Management
 router.get("/reports/generate", generateReport);

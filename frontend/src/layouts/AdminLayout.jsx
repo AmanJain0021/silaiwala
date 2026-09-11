@@ -190,7 +190,24 @@ const AdminLayout = () => {
         };
     }, [adminUser, getSectionKey]);
 
-    const menuItems = [
+    const ROLE_PERMISSIONS = useMemo(() => ({
+        super_admin: ['*'],
+        admin: ['*'],
+        support_agent: [
+            'dashboard', 'orders', 'offline-orders', 'bulk-orders', 'tailors', 
+            'delivery', 'crm', 'customers', 'offline-customers', 'issues', 'support'
+        ],
+        finance_manager: [
+            'dashboard', 'orders', 'offline-orders', 'offline-reports', 'finance', 
+            'subscriptions', 'reports', 'delivery'
+        ],
+        content_manager: [
+            'dashboard', 'services', 'store', 'cms', 'customizations', 
+            'style-addons', 'embroidery-addons'
+        ]
+    }), []);
+
+    const allMenuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin', key: 'dashboard' },
         { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders', key: 'orders' },
         { icon: <ClipboardList size={20} />, label: 'Offline Orders', path: '/admin/offline-orders', key: 'offline-orders' },
@@ -217,12 +234,24 @@ const AdminLayout = () => {
         { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings', key: 'settings' },
     ];
 
+    const userRole = adminUser?.role || 'admin';
+    const allowedKeys = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS.admin;
+
+    const menuItems = useMemo(() => {
+        if (allowedKeys.includes('*')) return allMenuItems;
+        return allMenuItems.filter(item => allowedKeys.includes(item.key));
+    }, [allowedKeys, allMenuItems]);
+
     const currentPath = location.pathname;
     // Helper to check if a menu item is active
     const isActive = (path) => {
         if (path === '/admin') return currentPath === '/admin';
         return currentPath.startsWith(path);
     };
+
+    // Check if current route is authorized for this role
+    const currentMenuItem = allMenuItems.find(i => isActive(i.path));
+    const isRouteAuthorized = !currentMenuItem || allowedKeys.includes('*') || allowedKeys.includes(currentMenuItem.key);
 
     // Clear active dot when navigating to an item
     useEffect(() => {
@@ -237,7 +266,7 @@ const AdminLayout = () => {
                 return prev;
             });
         }
-    }, [location.pathname]);
+    }, [location.pathname, menuItems]);
 
     return (
         <div className="flex h-screen bg-gray-50 uppercase-none relative overflow-hidden">
@@ -373,13 +402,17 @@ const AdminLayout = () => {
                             )}
                         </button>
                         <div className="flex items-center gap-3 lg:gap-4 pl-3 lg:pl-6 border-l border-gray-100">
-                            <Link to="/admin/settings" title="Profile Settings" className="flex items-center gap-3 lg:gap-4 hover:opacity-80 transition-opacity cursor-pointer">
+                            <Link to={(allowedKeys.includes('*') || allowedKeys.includes('settings')) ? "/admin/settings" : "/admin"} title="Profile Info" className="flex items-center gap-3 lg:gap-4 hover:opacity-80 transition-opacity cursor-pointer">
                                 <div className="text-right hidden lg:block">
-                                    <p className="text-xs font-black text-gray-900 leading-none uppercase tracking-tighter">Super Admin</p>
-                                    <p className="text-[9px] text-[#843D9B] font-black uppercase mt-1 tracking-[0.1em]">Full Platform Access</p>
+                                    <p className="text-xs font-black text-gray-900 leading-none uppercase tracking-tighter">
+                                        {adminUser?.name || (userRole === 'support_agent' ? 'Support Agent' : userRole === 'finance_manager' ? 'Finance Manager' : userRole === 'content_manager' ? 'Content Manager' : userRole === 'super_admin' ? 'Super Admin' : 'Admin')}
+                                    </p>
+                                    <p className="text-[9px] text-[#843D9B] font-black uppercase mt-1 tracking-[0.1em]">
+                                        {userRole.replace('_', ' ')}
+                                    </p>
                                 </div>
-                                <div className="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-indigo-900/20 shrink-0 border-2 border-white">
-                                    SA
+                                <div className="h-10 w-10 lg:h-11 lg:w-11 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-purple-900/20 shrink-0 border-2 border-white uppercase">
+                                    {adminUser?.name ? adminUser.name.slice(0, 2).toUpperCase() : (userRole === 'support_agent' ? 'SA' : userRole === 'finance_manager' ? 'FM' : userRole === 'content_manager' ? 'CM' : 'AD')}
                                 </div>
                             </Link>
                             <button
@@ -399,7 +432,25 @@ const AdminLayout = () => {
                 {/* Scrollable Area */}
                 <div className="flex-1 overflow-y-auto bg-gray-50 custom-scrollbar">
                     <div className="p-4 lg:p-8 max-w-7xl mx-auto w-full">
-                        <Outlet />
+                        {!isRouteAuthorized ? (
+                            <div className="bg-white rounded-3xl p-10 text-center border border-gray-100 shadow-sm max-w-md mx-auto mt-12">
+                                <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <AlertTriangle size={28} />
+                                </div>
+                                <h3 className="text-lg font-black text-gray-900">Access Restricted</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-2 leading-relaxed">
+                                    Your account role (<strong className="capitalize text-gray-800">{userRole.replace('_', ' ')}</strong>) does not have permission to view this section.
+                                </p>
+                                <Link 
+                                    to="/admin" 
+                                    className="inline-block mt-6 px-6 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-[#682498] shadow-md shadow-purple-900/20 transition-all uppercase tracking-wider"
+                                >
+                                    Back to Dashboard
+                                </Link>
+                            </div>
+                        ) : (
+                            <Outlet />
+                        )}
                     </div>
                 </div>
             </main>

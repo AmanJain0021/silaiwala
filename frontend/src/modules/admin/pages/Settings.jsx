@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings as SettingsIcon, Shield, Bell, CreditCard,
-    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift, MapPin, Image as ImageIcon, Upload
+    Smartphone, Globe, Mail, Lock, User, CheckCircle2, Save, Loader2, RefreshCw, DollarSign, Gift, MapPin, Image as ImageIcon, Upload,
+    Plus, Eye, EyeOff, X
 } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
@@ -22,6 +23,18 @@ const AdminSettings = () => {
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState(null);
 
+    // Create Admin User Modal State
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [newAdmin, setNewAdmin] = useState({
+        name: '',
+        email: '',
+        phoneNumber: '',
+        password: '',
+        role: 'admin'
+    });
+
     const fetchAdmins = async () => {
         setIsFetchingAdmins(true);
         try {
@@ -32,6 +45,45 @@ const AdminSettings = () => {
             console.error('Failed to fetch admins:', error);
         } finally {
             setIsFetchingAdmins(false);
+        }
+    };
+
+    const handleCreateAdmin = async (e) => {
+        e.preventDefault();
+        if (!newAdmin.name || !newAdmin.email || !newAdmin.phoneNumber || !newAdmin.password) {
+            toast.error('Please fill in all required fields');
+            return;
+        }
+
+        const phoneDigits = newAdmin.phoneNumber.replace(/[\s\-+]/g, '').slice(-10);
+        if (phoneDigits.length !== 10) {
+            toast.error('Please enter a valid 10-digit mobile number');
+            return;
+        }
+
+        setIsCreatingAdmin(true);
+        try {
+            const res = await api.post('/admin/users', {
+                ...newAdmin,
+                phoneNumber: phoneDigits
+            });
+            if (res.data?.success) {
+                toast.success('Admin user created successfully');
+                setIsCreateModalOpen(false);
+                setNewAdmin({
+                    name: '',
+                    email: '',
+                    phoneNumber: '',
+                    password: '',
+                    role: 'admin'
+                });
+                fetchAdmins();
+            }
+        } catch (error) {
+            console.error('Failed to create admin:', error);
+            toast.error(error.response?.data?.message || 'Failed to create admin user');
+        } finally {
+            setIsCreatingAdmin(false);
         }
     };
 
@@ -793,8 +845,11 @@ const AdminSettings = () => {
                                     </div>
                                 ))}
 
-                                <button className="w-full py-4 border-2 border-dashed border-gray-100 text-gray-400 font-black text-[10px] rounded-2xl hover:bg-gray-50 hover:border-gray-200 hover:text-gray-600 transition-all uppercase tracking-[0.2em] mt-4">
-                                    + Add New Admin User
+                                <button 
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="w-full py-4 border-2 border-dashed border-gray-200 text-primary font-black text-xs rounded-2xl hover:bg-purple-50/50 hover:border-primary/40 transition-all uppercase tracking-[0.2em] mt-4 flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99]"
+                                >
+                                    <Plus size={16} /> Add New Admin User
                                 </button>
                             </div>
                         </div>
@@ -814,6 +869,148 @@ const AdminSettings = () => {
                     )}
                 </div>
             </div>
+
+            {/* Create Admin User Modal */}
+            <AnimatePresence>
+                {isCreateModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={() => !isCreatingAdmin && setIsCreateModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col my-8"
+                        >
+                            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50/70 to-pink-50/70 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-black tracking-tight text-gray-900">Create New Admin User</h2>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Add staff or manager account</p>
+                                </div>
+                                <button 
+                                    onClick={() => !isCreatingAdmin && setIsCreateModalOpen(false)}
+                                    className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-gray-400 hover:text-gray-700 flex items-center justify-center border border-gray-100 transition-all cursor-pointer"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleCreateAdmin} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                                        Full Name <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        required
+                                        placeholder="e.g. Rahul Sharma"
+                                        value={newAdmin.name} 
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors" 
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                                        Email Address <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="email" 
+                                        required
+                                        placeholder="admin@sewzella.com"
+                                        value={newAdmin.email} 
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors" 
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                                        Mobile Number <span className="text-rose-500">*</span>
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <span className="absolute left-3.5 text-xs font-bold text-gray-400 select-none">+91</span>
+                                        <input 
+                                            type="tel" 
+                                            required
+                                            maxLength={10}
+                                            placeholder="9876543210"
+                                            value={newAdmin.phoneNumber} 
+                                            onChange={(e) => setNewAdmin({ ...newAdmin, phoneNumber: e.target.value.replace(/\D/g, '') })}
+                                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                                        Password <span className="text-rose-500">*</span>
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <input 
+                                            type={showPassword ? 'text' : 'password'} 
+                                            required
+                                            minLength={6}
+                                            placeholder="Minimum 6 characters"
+                                            value={newAdmin.password} 
+                                            onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                                            className="w-full pl-4 pr-11 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors" 
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                                        Role <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select 
+                                        value={newAdmin.role} 
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, role: e.target.value })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors cursor-pointer"
+                                    >
+                                        <option value="admin">Admin</option>
+                                        <option value="super_admin">Super Admin (Full Access)</option>
+                                        <option value="support_agent">Support Agent</option>
+                                        <option value="finance_manager">Finance Manager</option>
+                                        <option value="content_manager">Content Manager</option>
+                                    </select>
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                                    <button 
+                                        type="button"
+                                        disabled={isCreatingAdmin}
+                                        onClick={() => setIsCreateModalOpen(false)} 
+                                        className="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-xl hover:bg-gray-50 transition-colors uppercase tracking-widest cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        disabled={isCreatingAdmin}
+                                        className="px-6 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-[#682498] shadow-lg shadow-purple-900/20 transition-all uppercase tracking-widest flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                                    >
+                                        {isCreatingAdmin ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                                        Create User
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Manage Admin Modal */}
             <AnimatePresence>
