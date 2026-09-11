@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { WifiOff, RefreshCw } from 'lucide-react';
+import React, { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 // Helper function to test real internet connectivity
 export const checkRealConnectivity = async () => {
-  if (!navigator.onLine) return false;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -23,33 +22,29 @@ export const checkRealConnectivity = async () => {
 export const OfflineScreen = () => null;
 
 export default function OfflineDetector({ children }) {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-
-  const handleOnline = useCallback(() => {
-    setIsOnline(true);
-    toast.success('Internet connection restored!', {
-      id: 'online-toast',
-      icon: '🌐',
-      duration: 4000,
-    });
-  }, []);
-
-  const handleOffline = useCallback(() => {
-    setIsOnline(false);
-    toast.error('You are currently offline', {
-      id: 'offline-toast',
-      icon: '📡',
-      duration: 5000,
-    });
-  }, []);
-
   useEffect(() => {
+    const handleOnline = () => {
+      toast.success('Internet connection restored!', {
+        id: 'online-toast',
+        icon: '🌐',
+        duration: 4000,
+      });
+    };
+
+    const handleOffline = () => {
+      toast.error('You are currently offline', {
+        id: 'offline-toast',
+        icon: '📡',
+        duration: 5000,
+      });
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     const handleNetworkError = () => {
-      if (!navigator.onLine) {
-        setIsOnline(false);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        handleOffline();
       }
     };
     window.addEventListener('app_network_offline', handleNetworkError);
@@ -59,7 +54,7 @@ export default function OfflineDetector({ children }) {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('app_network_offline', handleNetworkError);
     };
-  }, [handleOnline, handleOffline]);
+  }, []);
 
   return children;
 }
