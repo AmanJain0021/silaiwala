@@ -57,6 +57,7 @@ const {
   getPendingProducts,
   approveProductStatus,
   rejectProductStatus,
+  getSidebarBadgeCounts,
 } = require("../controllers/admin.controller.js");
 
 const {
@@ -113,6 +114,7 @@ router.use(authorize("admin", "super_admin"));
 
 // Dashboard
 router.get("/dashboard", getDashboardStats);
+router.get("/badge-counts", getSidebarBadgeCounts);
 
 // CRM Dashboard
 router.use("/crm", crmRoutes);

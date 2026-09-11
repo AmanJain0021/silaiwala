@@ -2353,3 +2353,76 @@ exports.getShiprocketShipments = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// --- SIDEBAR BADGE COUNTS ---
+exports.getSidebarBadgeCounts = async (req, res) => {
+  try {
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const BulkOrder = require("../../../models/BulkOrder.js");
+    const CashDeposit = require("../../../models/CashDeposit.js");
+    const Issue = require("../../../models/Issue.js");
+    const SupportTicket = require("../../../models/SupportTicket.js");
+
+    const [
+      ordersCount,
+      offlineOrdersCount,
+      bulkOrdersCount,
+      tailorsCount,
+      measurementExecsCount,
+      deliveryCount,
+      servicesCount,
+      productsCount,
+      issuesCount,
+      supportCount,
+      financeCount
+    ] = await Promise.all([
+      // Orders needing admin action (pending/placed)
+      Order.countDocuments({ status: { $in: ["pending", "placed"] } }),
+      // Offline orders with pending status
+      OfflineOrder ? OfflineOrder.countDocuments({ status: "pending" }).catch(() => 0) : 0,
+      // Bulk orders needing admin quote/review
+      BulkOrder ? BulkOrder.countDocuments({ status: { $in: ["pending", "reviewing"] } }).catch(() => 0) : 0,
+      // Tailor registrations pending admin approval
+      User.countDocuments({ role: "tailor", isActive: false }),
+      // Measurement exec registrations pending approval
+      User.countDocuments({ role: "measurement_executive", isActive: false }),
+      // Delivery partners pending approval + pending COD cash deposits
+      (async () => {
+        const unapprovedDP = await User.countDocuments({ role: "delivery", isActive: false });
+        const pendingDeposits = CashDeposit ? await CashDeposit.countDocuments({ status: "pending" }).catch(() => 0) : 0;
+        return unapprovedDP + pendingDeposits;
+      })(),
+      // Custom services created by tailors pending admin approval
+      Service ? Service.countDocuments({ isCustom: true, status: "pending" }).catch(() => 0) : 0,
+      // Tailor store products pending approval
+      Product ? Product.countDocuments({ isApproved: false, status: "pending" }).catch(() => 0) : 0,
+      // Customer/tailor/partner issues needing admin resolution
+      Issue ? Issue.countDocuments({ status: { $in: ["pending", "under_review", "open"] } }).catch(() => 0) : 0,
+      // Open support tickets
+      SupportTicket ? SupportTicket.countDocuments({ status: { $in: ["Pending", "In Progress"] } }).catch(() => 0) : 0,
+      // Pending payouts
+      Payout ? Payout.countDocuments({ status: { $in: ["pending", "processing"] } }).catch(() => 0) : 0
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        orders: ordersCount,
+        "offline-orders": offlineOrdersCount,
+        "bulk-orders": bulkOrdersCount,
+        tailors: tailorsCount,
+        "measurement-executives": measurementExecsCount,
+        delivery: deliveryCount,
+        services: servicesCount,
+        store: productsCount,
+        issues: issuesCount,
+        support: supportCount,
+        finance: financeCount
+      }
+    });
+  } catch (error) {
+    console.error("Error in getSidebarBadgeCounts:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

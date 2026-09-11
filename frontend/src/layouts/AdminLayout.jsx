@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -35,11 +35,14 @@ import { getToken } from '../utils/auth';
 import { toast } from 'react-hot-toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { playNotificationSound } from '../utils/audio';
+import api from '../utils/api';
 
 const AdminLayout = () => {
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
+    const [badgeCounts, setBadgeCounts] = useState({});
+    const [activeDots, setActiveDots] = useState(new Set());
     const { appName, logos } = useBrandingStore();
 
     // Read Admin user for FCM registration
@@ -54,6 +57,65 @@ const AdminLayout = () => {
 
     // Register FCM Push Token for Admin Web Browser
     usePushNotifications(adminUser);
+
+    // Fetch initial badge counts
+    const fetchBadgeCounts = useCallback(async () => {
+        try {
+            const res = await api.get('/admin/badge-counts');
+            if (res.data?.success && res.data.data) {
+                setBadgeCounts(res.data.data);
+            }
+        } catch (err) {
+            // Silently handle if cancelled or network glitch
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBadgeCounts();
+    }, [fetchBadgeCounts]);
+
+    // Map notification types or URLs to sidebar section keys
+    const getSectionKey = useCallback((data = {}) => {
+        const type = (data.type || '').toUpperCase();
+        const url = (data.targetUrl || data.url || '').toLowerCase();
+        const title = (data.title || '').toLowerCase();
+        const message = (data.message || '').toLowerCase();
+
+        if (type.includes('OFFLINE') || url.includes('offline-orders') || title.includes('offline') || message.includes('offline')) {
+            return 'offline-orders';
+        }
+        if (type.includes('BULK') || url.includes('bulk') || title.includes('bulk') || message.includes('bulk')) {
+            return 'bulk-orders';
+        }
+        if (type.includes('ORDER') || url.includes('/admin/orders') || title.includes('order') || message.includes('order')) {
+            return 'orders';
+        }
+        if (type.includes('TAILOR') || url.includes('tailor') || title.includes('tailor') || message.includes('tailor')) {
+            return 'tailors';
+        }
+        if (type.includes('EXECUTIVE') || type.includes('MEASUREMENT') || url.includes('measurement') || title.includes('measurement')) {
+            return 'measurement-executives';
+        }
+        if (type.includes('DELIVERY') || type.includes('DEPOSIT') || url.includes('delivery') || title.includes('delivery')) {
+            return 'delivery';
+        }
+        if (type.includes('SERVICE') || url.includes('services') || title.includes('service')) {
+            return 'services';
+        }
+        if (type.includes('PRODUCT') || url.includes('store') || title.includes('product') || message.includes('product')) {
+            return 'store';
+        }
+        if (type.includes('ISSUE') || url.includes('issues') || title.includes('issue')) {
+            return 'issues';
+        }
+        if (type.includes('SUPPORT') || type.includes('TICKET') || url.includes('support') || title.includes('support')) {
+            return 'support';
+        }
+        if (type.includes('WITHDRAW') || type.includes('PAYOUT') || type.includes('FINANCE') || url.includes('finance')) {
+            return 'finance';
+        }
+        return null;
+    }, []);
 
     useEffect(() => {
         const socket = io(SOCKET_URL, {
@@ -70,8 +132,21 @@ const AdminLayout = () => {
             }
         });
 
+        const triggerBadgeUpdate = (data, defaultKey = 'orders') => {
+            const section = getSectionKey(data) || defaultKey;
+            if (section) {
+                setBadgeCounts(prev => ({
+                    ...prev,
+                    [section]: (prev[section] || 0) + 1
+                }));
+                setActiveDots(prev => new Set(prev).add(section));
+            }
+        };
+
         socket.on('new_notification', (data = {}) => {
             setHasUnread(true);
+            triggerBadgeUpdate(data);
+
             try { playNotificationSound('admin'); } catch (e) {}
 
             let icon = '🔔';
@@ -87,6 +162,8 @@ const AdminLayout = () => {
 
         socket.on('new_order', (data = {}) => {
             setHasUnread(true);
+            triggerBadgeUpdate(data, 'orders');
+
             try { playNotificationSound('admin'); } catch (e) {}
             toast.success(data.message || `New Order Received: ${data.orderId || 'Check dashboard'}`, {
                 icon: '🛍️',
@@ -97,6 +174,8 @@ const AdminLayout = () => {
 
         socket.on('order_status_updated', (data) => {
             setHasUnread(true);
+            triggerBadgeUpdate(data, 'orders');
+
             toast.success(`Order ${data.orderId} updated to ${data.status}`, {
                 icon: '🔄',
                 position: 'top-right'
@@ -107,42 +186,58 @@ const AdminLayout = () => {
             socket.off('new_notification');
             socket.off('new_order');
             socket.off('order_status_updated');
+            socket.disconnect();
         };
-    }, [adminUser]);
+    }, [adminUser, getSectionKey]);
 
     const menuItems = [
-        { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
-        { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders' },
-        { icon: <ClipboardList size={20} />, label: 'Offline Orders', path: '/admin/offline-orders' },
-        { icon: <BarChart3 size={20} />, label: 'Offline Reports', path: '/admin/offline-reports' },
-        { icon: <Package size={20} />, label: 'Bulk Orders', path: '/admin/bulk-orders' },
-        { icon: <Scissors size={20} />, label: 'Tailors', path: '/admin/tailors' },
-        { icon: <Ruler size={20} />, label: 'Measurement Execs', path: '/admin/measurement-executives' },
-        { icon: <Truck size={20} />, label: 'Delivery', path: '/admin/delivery' },
-        { icon: <Package size={20} />, label: 'Shiprocket', path: '/admin/shiprocket' },
-        { icon: <Users size={20} />, label: 'CRM', path: '/admin/crm' },
-        { icon: <Users size={20} />, label: 'Customers', path: '/admin/customers' },
-        { icon: <UserPlus size={20} />, label: 'Offline Customers', path: '/admin/offline-customers' },
-        { icon: <Layers size={20} />, label: 'Services', path: '/admin/services' },
-        { icon: <Store size={20} />, label: 'Store', path: '/admin/store' },
-        { icon: <AlertTriangle size={20} />, label: 'Issues', path: '/admin/issues' },
-        { icon: <Wallet size={20} />, label: 'Finance', path: '/admin/finance' },
-        { icon: <Megaphone size={20} />, label: 'CMS', path: '/admin/cms' },
-        { icon: <CreditCard size={20} />, label: 'Subscriptions', path: '/admin/subscriptions' },
-        { icon: <BarChart3 size={20} />, label: 'Reports', path: '/admin/reports' },
-        { icon: <Sparkles size={20} />, label: 'Customizations', path: '/admin/customizations' },
-        { icon: <Sparkles size={20} />, label: 'Style Addons', path: '/admin/style-addons' },
-        { icon: <Feather size={20} />, label: 'Embroidery', path: '/admin/embroidery-addons' },
-        { icon: <Mail size={20} />, label: 'Support', path: '/admin/support' },
-        { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
+        { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin', key: 'dashboard' },
+        { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders', key: 'orders' },
+        { icon: <ClipboardList size={20} />, label: 'Offline Orders', path: '/admin/offline-orders', key: 'offline-orders' },
+        { icon: <BarChart3 size={20} />, label: 'Offline Reports', path: '/admin/offline-reports', key: 'offline-reports' },
+        { icon: <Package size={20} />, label: 'Bulk Orders', path: '/admin/bulk-orders', key: 'bulk-orders' },
+        { icon: <Scissors size={20} />, label: 'Tailors', path: '/admin/tailors', key: 'tailors' },
+        { icon: <Ruler size={20} />, label: 'Measurement Execs', path: '/admin/measurement-executives', key: 'measurement-executives' },
+        { icon: <Truck size={20} />, label: 'Delivery', path: '/admin/delivery', key: 'delivery' },
+        { icon: <Package size={20} />, label: 'Shiprocket', path: '/admin/shiprocket', key: 'shiprocket' },
+        { icon: <Users size={20} />, label: 'CRM', path: '/admin/crm', key: 'crm' },
+        { icon: <Users size={20} />, label: 'Customers', path: '/admin/customers', key: 'customers' },
+        { icon: <UserPlus size={20} />, label: 'Offline Customers', path: '/admin/offline-customers', key: 'offline-customers' },
+        { icon: <Layers size={20} />, label: 'Services', path: '/admin/services', key: 'services' },
+        { icon: <Store size={20} />, label: 'Store', path: '/admin/store', key: 'store' },
+        { icon: <AlertTriangle size={20} />, label: 'Issues', path: '/admin/issues', key: 'issues' },
+        { icon: <Wallet size={20} />, label: 'Finance', path: '/admin/finance', key: 'finance' },
+        { icon: <Megaphone size={20} />, label: 'CMS', path: '/admin/cms', key: 'cms' },
+        { icon: <CreditCard size={20} />, label: 'Subscriptions', path: '/admin/subscriptions', key: 'subscriptions' },
+        { icon: <BarChart3 size={20} />, label: 'Reports', path: '/admin/reports', key: 'reports' },
+        { icon: <Sparkles size={20} />, label: 'Customizations', path: '/admin/customizations', key: 'customizations' },
+        { icon: <Sparkles size={20} />, label: 'Style Addons', path: '/admin/style-addons', key: 'style-addons' },
+        { icon: <Feather size={20} />, label: 'Embroidery', path: '/admin/embroidery-addons', key: 'embroidery-addons' },
+        { icon: <Mail size={20} />, label: 'Support', path: '/admin/support', key: 'support' },
+        { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings', key: 'settings' },
     ];
 
     const currentPath = location.pathname;
-    // Helper to check if a menu item is active (handling exact for dashboard, and prefix for others)
+    // Helper to check if a menu item is active
     const isActive = (path) => {
         if (path === '/admin') return currentPath === '/admin';
         return currentPath.startsWith(path);
     };
+
+    // Clear active dot when navigating to an item
+    useEffect(() => {
+        const matchedItem = menuItems.find(i => isActive(i.path));
+        if (matchedItem && matchedItem.key) {
+            setActiveDots(prev => {
+                if (prev.has(matchedItem.key)) {
+                    const next = new Set(prev);
+                    next.delete(matchedItem.key);
+                    return next;
+                }
+                return prev;
+            });
+        }
+    }, [location.pathname]);
 
     return (
         <div className="flex h-screen bg-gray-50 uppercase-none relative overflow-hidden">
@@ -172,22 +267,62 @@ const AdminLayout = () => {
                 </div>
 
                 <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto no-scrollbar">
-                    {menuItems.map((item) => (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={() => setIsSidebarOpen(false)}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive(item.path)
-                                ? 'bg-white text-primary shadow-[0_10px_20px_rgba(0,0,0,0.1)] translate-x-1'
-                                : 'text-white/80 hover:text-white hover:bg-black/80'
-                                }`}
-                        >
-                            <span className={`${isActive(item.path) ? 'text-primary' : 'text-white/60 group-hover:text-white'} transition-colors`}>
-                                {item.icon}
-                            </span>
-                            <span className={`font-black tracking-tight text-xs uppercase ${isActive(item.path) ? 'text-primary' : 'group-hover:text-white'}`}>{item.label}</span>
-                        </Link>
-                    ))}
+                    {menuItems.map((item) => {
+                        const count = badgeCounts[item.key] || 0;
+                        const hasDot = activeDots.has(item.key) || count > 0;
+                        const active = isActive(item.path);
+
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => {
+                                    setIsSidebarOpen(false);
+                                    if (item.key) {
+                                        setActiveDots(prev => {
+                                            const next = new Set(prev);
+                                            next.delete(item.key);
+                                            return next;
+                                        });
+                                    }
+                                }}
+                                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${active
+                                    ? 'bg-white text-primary shadow-[0_10px_20px_rgba(0,0,0,0.1)] translate-x-1 font-black'
+                                    : 'text-white/80 hover:text-white hover:bg-black/40'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <span className={`${active ? 'text-primary' : 'text-white/60 group-hover:text-white'} transition-colors shrink-0`}>
+                                        {item.icon}
+                                    </span>
+                                    <span className={`font-black tracking-tight text-xs uppercase truncate ${active ? 'text-primary' : 'group-hover:text-white'}`}>
+                                        {item.label}
+                                    </span>
+                                </div>
+
+                                {/* Notification Badges / Pulsating Red Dots */}
+                                {(count > 0 || hasDot) && (
+                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                        {count > 0 && (
+                                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black tracking-tight leading-none shadow-sm ${
+                                                active
+                                                    ? 'bg-red-500 text-white'
+                                                    : 'bg-red-500 text-white'
+                                            }`}>
+                                                {count > 99 ? '99+' : count}
+                                            </span>
+                                        )}
+                                        {hasDot && (
+                                            <span className="relative flex h-2.5 w-2.5">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white/20 shadow-sm"></span>
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </Link>
+                        );
+                    })}
                 </nav>
 
                 <div className="p-4 border-t border-white/5 bg-black">
@@ -196,7 +331,7 @@ const AdminLayout = () => {
                             await useAuthStore.getState().logout();
                             window.location.href = '/admin/login';
                         }}
-                        className="flex items-center gap-3 px-4 py-3 w-full text-gray-500 hover:text-red-400 transition-all rounded-lg hover:bg-red-400/5">
+                        className="flex items-center gap-3 px-4 py-3 w-full text-gray-500 hover:text-red-400 transition-all rounded-lg hover:bg-red-400/5 cursor-pointer">
                         <LogOut size={20} />
                         <span className="font-bold text-sm">Sign Out</span>
                     </button>
@@ -253,7 +388,7 @@ const AdminLayout = () => {
                                     window.location.href = '/admin/login';
                                 }}
                                 title="Sign Out"
-                                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all ml-1"
+                                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all ml-1 cursor-pointer"
                             >
                                 <LogOut size={20} />
                             </button>
