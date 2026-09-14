@@ -2,22 +2,35 @@
 const getBackendBase = () => {
     if (typeof window !== 'undefined') {
         const host = window.location.hostname;
-        // Local development
         if (host === 'localhost' || host === '127.0.0.1') {
             return 'http://localhost:5000';
         }
-        // If we are on a Vercel/Production domain, we should NOT append :5000
-        // and we should probably use HTTPS.
-        // However, it's best to rely on VITE_API_URL for production.
+        if (!host.includes('vercel.app') && !host.includes('sewzella') && !host.includes('silaiwala')) {
+            return `http://${host}:5000`;
+        }
     }
     return ''; // Fallback for env var prioritization
 };
 
 let envApiUrl = import.meta.env.VITE_API_URL;
+let envSocketUrl = import.meta.env.VITE_SOCKET_URL;
+
+if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    // If accessing from a phone over LAN IP (e.g. 192.168.x.x), route to that host instead of localhost
+    if (host !== 'localhost' && host !== '127.0.0.1' && !host.includes('vercel.app') && !host.includes('sewzella') && !host.includes('silaiwala')) {
+        if (envApiUrl && envApiUrl.includes('localhost')) {
+            envApiUrl = envApiUrl.replace('localhost', host);
+        }
+        if (envSocketUrl && envSocketUrl.includes('localhost')) {
+            envSocketUrl = envSocketUrl.replace('localhost', host);
+        }
+    }
+}
+
 if (envApiUrl && !envApiUrl.startsWith('http')) {
     envApiUrl = `https://${envApiUrl}`;
 }
-let envSocketUrl = import.meta.env.VITE_SOCKET_URL;
 if (envSocketUrl && !envSocketUrl.startsWith('http')) {
     envSocketUrl = `https://${envSocketUrl}`;
 }

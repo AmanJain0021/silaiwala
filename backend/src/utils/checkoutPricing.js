@@ -75,6 +75,8 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
   let actualDeliveryCost = 0; // what delivery partners should earn (never zeroed by free-delivery promo)
   let pickupDeliveryCost = 0;
   let dropoffDeliveryCost = 0;
+  let distanceKm = 0;
+  let maxDistanceKm = 0;
 
   let uLat = null;
   let uLng = null;
@@ -90,7 +92,6 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     );
 
     const firstItem = items[0];
-    let distanceKm = 0;
     let tLat = null;
     let tLng = null;
 
@@ -119,7 +120,6 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
   } else {
     let pickupTrips = 0;
     let deliveryTrips = 0;
-    let maxDistanceKm = 0;
     let hasHomeMeasurement = false;
 
     for (let i = 0; i < items.length; i++) {
@@ -197,7 +197,7 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     }
   }
 
-  const finalDistanceKm = isCartCheckout ? (typeof distanceKm !== 'undefined' ? distanceKm : 0) : maxDistanceKm;
+  const finalDistanceKm = isCartCheckout ? distanceKm : maxDistanceKm;
 
   // Platform fee on stitching + style addons only (not fabric / visit / delivery / GST)
   const platformFeeAmount = Math.round(
@@ -272,11 +272,14 @@ async function enrichOrderItemsForPricing(items) {
     const serviceId = item.service || item.serviceDetails?.id || item.serviceDetails?._id;
     if (!serviceId) continue;
 
-    const svc = await Service.findById(serviceId).lean();
+    let svc = null;
+    if (mongoose.Types.ObjectId.isValid(serviceId)) {
+      svc = await Service.findById(serviceId).lean();
+    }
     // Service.tailor is a ref to the Tailor profile model _id (not User._id)
     const tailorProfileId = svc?.tailor || item.serviceDetails?.tailorId || item.serviceDetails?.tailor;
     let tailorProfile = null;
-    if (tailorProfileId) {
+    if (tailorProfileId && mongoose.Types.ObjectId.isValid(tailorProfileId)) {
       // First try as Tailor profile _id
       tailorProfile = await Tailor.findById(tailorProfileId).lean();
       // Fallback: maybe it's a User._id
@@ -292,7 +295,7 @@ async function enrichOrderItemsForPricing(items) {
         typeof selectedFabric === "object"
           ? selectedFabric._id || selectedFabric.id
           : selectedFabric;
-      if (fabricId) {
+      if (fabricId && mongoose.Types.ObjectId.isValid(fabricId)) {
         const fabric = await Product.findById(fabricId).lean();
         fabricPrice = Number(fabric?.price) || Number(selectedFabric?.price) || 0;
       } else if (typeof selectedFabric === "object" && Number(selectedFabric.price) > 0) {
