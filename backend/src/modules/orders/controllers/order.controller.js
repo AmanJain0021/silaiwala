@@ -438,6 +438,9 @@ ledgerId,
                 customer: orderDoc.customer,
                 tailor: orderDoc.tailor,
                 status: "pending",
+                scheduledDate: orderDoc.scheduledDate || null,
+                scheduledTimeSlot: orderDoc.scheduledTimeSlot || null,
+                scheduledTime: orderDoc.scheduledTime || null,
                 customerAddress: orderDoc.deliveryAddress ? {
                     street: orderDoc.deliveryAddress.street,
                     city: orderDoc.deliveryAddress.city,
@@ -462,6 +465,25 @@ ledgerId,
                 await orderDoc.save();
             }
             existing = mRequest;
+        } else {
+            // Update scheduling info if order has it and existing was missing it
+            let needsSave = false;
+            if (!existing.scheduledDate && orderDoc.scheduledDate) {
+                existing.scheduledDate = orderDoc.scheduledDate;
+                needsSave = true;
+            }
+            if (!existing.scheduledTimeSlot && orderDoc.scheduledTimeSlot) {
+                existing.scheduledTimeSlot = orderDoc.scheduledTimeSlot;
+                needsSave = true;
+            }
+            if (!existing.scheduledTime && orderDoc.scheduledTime) {
+                existing.scheduledTime = orderDoc.scheduledTime;
+                needsSave = true;
+            }
+            if (needsSave) {
+                if (session) await existing.save({ session });
+                else await existing.save();
+            }
         }
 
         // Trigger auto-assignment if not assigned yet
@@ -709,7 +731,23 @@ exports.razorpayWebhook = asyncHandler(async (req, res, next) => {
  * @access  Private (Customer)
  */
 exports.createOrder = asyncHandler(async (req, res, next) => {
-  let { tailorId, items, totalAmount, deliveryAddress, promoCode, customerId, deliveryFee, isBridalConsultation, isMeasurementHome, bridalNotes, bridalDate, bridalTime } = req.body;
+  let { 
+    tailorId, 
+    items, 
+    totalAmount, 
+    deliveryAddress, 
+    promoCode, 
+    customerId, 
+    deliveryFee, 
+    isBridalConsultation, 
+    isMeasurementHome, 
+    bridalNotes, 
+    bridalDate, 
+    bridalTime,
+    scheduledDate,
+    scheduledTimeSlot,
+    scheduledTime
+  } = req.body;
 
   // Single Service-Type Validation for Order Creation
   if (items && items.length > 0) {
@@ -1137,8 +1175,27 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   const { splitAdvanceRemaining } = require("../../../utils/checkoutPricing.js");
   const { advanceAmount, remainingAmount } = splitAdvanceRemaining(finalAmount, advancePctForOrder);
 
-  // 7. Generate transaction ID
+  // 7. Generate transaction ID & compute scheduled visit time if provided
   const transactionId = `TXN-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+
+  let computedScheduledTime = null;
+  if (scheduledTime) {
+    computedScheduledTime = new Date(scheduledTime);
+  } else if (scheduledDate && scheduledTimeSlot && scheduledTimeSlot.toLowerCase() !== 'asap') {
+    try {
+      const startTimeStr = scheduledTimeSlot.split('-')[0].trim();
+      const [timePart, modifier] = startTimeStr.split(' ');
+      let [hours, minutes] = timePart.split(':').map(Number);
+      if (modifier && modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
+      if (modifier && modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+      
+      const parsedDate = new Date(scheduledDate);
+      parsedDate.setHours(hours, minutes || 0, 0, 0);
+      if (!isNaN(parsedDate.getTime())) {
+        computedScheduledTime = parsedDate;
+      }
+    } catch (_) {}
+  }
 
   // 8. Create Order with optimized object
   const order = await Order.create({
@@ -1172,6 +1229,9 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     status: initialStatus,
     fabricPickupRequired,
     isMeasurementHome: isMeasurementHome || formattedItems.some(item => item.measurements?.type === 'home' || item.isTailorAtHome),
+    scheduledDate: scheduledDate || null,
+    scheduledTimeSlot: scheduledTimeSlot || null,
+    scheduledTime: computedScheduledTime,
     isBridalConsultation: isBridalConsultation || false,
     bridalNotes,
     bridalDate,
@@ -1192,8 +1252,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Create MeasurementRequest and trigger auto-assignment ONLY if advance payment is completed
-  if (order.isMeasurementHome && order.advancePaymentStatus === 'paid') {
+  // Create MeasurementRequest and trigger auto-assignment if home measurement is selected
+  if (order.isMeasurementHome) {
       try {
           const MeasurementRequest = require("../../../models/MeasurementRequest.js");
           const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
@@ -1206,6 +1266,9 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
                   customer: order.customer,
                   tailor: order.tailor,
                   status: "pending",
+                  scheduledDate: order.scheduledDate || null,
+                  scheduledTimeSlot: order.scheduledTimeSlot || null,
+                  scheduledTime: order.scheduledTime || null,
                   customerAddress: order.deliveryAddress ? {
                       street: order.deliveryAddress.street,
                       city: order.deliveryAddress.city,
@@ -1250,12 +1313,23 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
         data: { orderId: order._id, targetUrl: "/partner/orders" }
     });
 
+    const adminMsg = order.isMeasurementHome && (order.scheduledDate || order.scheduledTimeSlot)
+        ? `New Order #${order.orderId} (₹${order.totalAmount}). Measurement Scheduled: ${order.scheduledDate || ''} (${order.scheduledTimeSlot || 'ASAP'}).`
+        : `New Order #${order.orderId} of ₹${order.totalAmount} placed.`;
+
     await sendNotification({
         recipient: "admins",
         type: "NEW_ORDER",
-        title: "New Order Placed! 🛍️",
-        message: `New Order #${order.orderId} of ₹${order.totalAmount} placed.`,
-        data: { orderId: order._id, targetUrl: "/admin/orders" }
+        title: order.isMeasurementHome ? "New Home Measurement Order! 📐" : "New Order Placed! 🛍️",
+        message: adminMsg,
+        data: { 
+            orderId: order._id, 
+            targetUrl: "/admin/orders",
+            isMeasurementHome: !!order.isMeasurementHome,
+            scheduledDate: order.scheduledDate,
+            scheduledTimeSlot: order.scheduledTimeSlot,
+            scheduledTime: order.scheduledTime
+        }
     });
   } catch (err) {
     console.error("Socket/Notification emission failed in createOrder:", err.message);

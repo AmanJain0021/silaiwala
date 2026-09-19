@@ -46,6 +46,14 @@ const measurementRequestSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    scheduledDate: {
+      type: String,
+      default: null,
+    },
+    scheduledTimeSlot: {
+      type: String,
+      default: null,
+    },
     status: {
       type: String,
       enum: [

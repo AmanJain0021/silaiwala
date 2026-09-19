@@ -6,7 +6,7 @@ import UploadSlip from './measurement-forms/UploadSlip';
 import MeasurementGuideModal from './MeasurementGuideModal';
 import useMeasurementStore from '../../../../store/measurementStore';
 
-const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, categoryId = null, disableHomeVisit = false, completedSelfData = null, completedSlipData = null }) => {
+const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete, selectedSavedProfile, onSelectSavedProfile, visitPrice, isDistanceBased, measurementFields, categoryName, categoryId = null, disableHomeVisit = false, completedSelfData = null, completedSlipData = null, isVisitCoveredInOrder = false }) => {
     const { measurements, fetchMeasurements, isLoading } = useMeasurementStore();
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     
@@ -348,20 +348,30 @@ const MeasurementSelector = ({ selectedType, onSelectType, onMeasurementComplete
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
                             <h4 className="text-sm font-bold text-gray-900">Tailor at Home</h4>
-                            <span className="text-[8px] bg-primary-soft text-primary px-1.5 py-0.5 rounded font-black uppercase tracking-widest">Premium</span>
+                            <span className="text-[8px] bg-primary-soft text-primary px-1.5 py-0.5 rounded font-black uppercase tracking-widest">
+                                {isVisitCoveredInOrder ? 'Covered' : 'Premium'}
+                            </span>
                         </div>
                         <p className="text-[10px] text-gray-400 font-medium leading-none mt-1">
                             {disableHomeVisit
                                 ? 'Not needed — measurements already provided'
-                                : isDistanceBased
-                                    ? 'Expert will visit your location'
-                                    : 'Expert visits start at base price'}
+                                : isVisitCoveredInOrder
+                                    ? 'Covered in your order visit (no extra fee)'
+                                    : isDistanceBased
+                                        ? 'Expert will visit your location'
+                                        : 'Expert visits start at base price'}
                         </p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs font-black text-primary flex flex-col items-end">
-                            <span className="text-[8px] text-gray-400 mb-0.5">{!isDistanceBased && !disableHomeVisit && 'starts @'}</span>
-                            {disableHomeVisit ? '—' : `₹${visitPrice || 250}`}
+                            <span className="text-[8px] text-gray-400 mb-0.5">
+                                {!isDistanceBased && !disableHomeVisit && !isVisitCoveredInOrder && 'starts @'}
+                            </span>
+                            {disableHomeVisit 
+                                ? '—' 
+                                : isVisitCoveredInOrder 
+                                    ? <span className="text-emerald-600 font-bold uppercase text-[10px]">Free (Shared)</span> 
+                                    : `₹${visitPrice || 250}`}
                         </p>
                     </div>
                     {selectedType === 'home' && (

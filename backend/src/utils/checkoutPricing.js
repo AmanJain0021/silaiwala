@@ -45,11 +45,13 @@ function computeVisitFee(distanceKm, visitSettings = {}) {
   const baseFee = Number(visitSettings.baseFee) || 0;
   const perKmFee = Number(visitSettings.perKmFee) || 0;
   const freeKm = Number(visitSettings.freeKm) || 0;
+  const maxFee = Number(visitSettings.maxFee) || 299;
   const km = Math.max(0, Number(distanceKm) || 0);
 
   if (baseFee <= 0 && perKmFee <= 0) return 0;
   if (km <= freeKm) return Math.round(baseFee);
-  return Math.round(baseFee + (km - freeKm) * perKmFee);
+  const calculated = Math.round(baseFee + (km - freeKm) * perKmFee);
+  return maxFee > 0 ? Math.min(calculated, maxFee) : calculated;
 }
 
 /**

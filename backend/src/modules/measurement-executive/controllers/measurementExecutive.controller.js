@@ -1019,14 +1019,23 @@ exports.adminAssignExecutive = asyncHandler(async (req, res, next) => {
 
   // Notify the executive
   const customer = await User.findById(request.customer).lean();
+  const scheduleLabel = request.scheduledDate 
+    ? `${request.scheduledDate}${request.scheduledTimeSlot ? ' (' + request.scheduledTimeSlot + ')' : ''}`
+    : (request.scheduledTime ? new Date(request.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'As soon as possible');
+
   await sendNotification({
     recipient: executiveUserId,
     type: "NEW_MEASUREMENT_REQUEST",
     title: "New Measurement Assignment 📐",
-    message: `You have been assigned a measurement request for order ${order?.orderId || "N/A"}. Customer: ${customer?.name || "N/A"}.`,
+    message: `You have been assigned a measurement request for order ${order?.orderId || "N/A"} (${scheduleLabel}). Customer: ${customer?.name || "N/A"}.`,
     data: {
       requestId: request._id,
+      requestIdStr: request.requestId,
       orderId: order?._id,
+      orderIdStr: order?.orderId,
+      scheduledDate: request.scheduledDate,
+      scheduledTimeSlot: request.scheduledTimeSlot,
+      scheduledTime: request.scheduledTime,
       targetUrl: "/executive/requests",
     },
   });
@@ -1039,6 +1048,11 @@ exports.adminAssignExecutive = asyncHandler(async (req, res, next) => {
       orderId: order?._id,
       orderIdStr: order?.orderId,
       customerName: customer?.name || "N/A",
+      customerPhone: customer?.phoneNumber || "N/A",
+      address: request.customerAddress,
+      scheduledDate: request.scheduledDate,
+      scheduledTimeSlot: request.scheduledTimeSlot,
+      scheduledTime: request.scheduledTime,
       status: "assigned",
     });
   }

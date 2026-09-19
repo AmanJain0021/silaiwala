@@ -8,6 +8,7 @@ import { cn } from '../../../utils/cn';
 import ServiceHero from '../components/service-detail/ServiceHero';
 import DeliverySelector from '../components/service-detail/DeliverySelector';
 import MeasurementSelector from '../components/service-detail/MeasurementSelector';
+import MeasurementSchedulePicker from '../components/checkout/summary/MeasurementSchedulePicker';
 import FabricSelector from '../components/service-detail/FabricSelector';
 import CustomizationSelector from '../components/service-detail/CustomizationSelector';
 import DesignUpload from '../components/service-detail/DesignUpload';
@@ -106,55 +107,37 @@ const ServiceDetail = () => {
         return unsub;
     }, []);
 
-    // Opening a service = it must appear in basket on this page (pending until measurements done)
+    // Arriving to edit a specific item from basket
     useEffect(() => {
-        if (!storeHydrated || !serviceData?._id) return;
-
-        const tailorId =
-            location.state?.tailorId ||
-            preSelectedTailor?._id ||
-            preSelectedTailor?.id ||
-            useCheckoutStore.getState().lockedTailorId ||
-            (typeof serviceData.tailor === 'object'
-                ? serviceData.tailor?._id || serviceData.tailor?.id
-                : serviceData.tailor) ||
-            null;
-        const tailorName =
-            location.state?.tailorName ||
-            preSelectedTailor?.shopName ||
-            useCheckoutStore.getState().lockedTailorName ||
-            serviceData.tailor?.shopName ||
-            'Tailor Partner';
-
         if (typeof location.state?.editBasketIndex === 'number') {
             setActiveBasketIndex(location.state.editBasketIndex);
-            return;
         }
+    }, [location.state?.editBasketIndex]);
 
-        const sid = String(serviceData._id);
-        const items = useCheckoutStore.getState().serviceItems;
-        const pendingIdx = items.findIndex((row) => {
-            const id = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
-            return id === sid && row.configuration?.pending;
-        });
-        if (pendingIdx >= 0) {
-            setActiveBasketIndex(pendingIdx);
-            return;
+    // Clean up any stale unconfirmed pending items or duplicate items from previous visits
+    useEffect(() => {
+        if (!storeHydrated) return;
+        const currentItems = useCheckoutStore.getState().serviceItems;
+        const seen = new Set();
+        const deduplicated = [];
+        let hadDuplicates = false;
+        for (const it of currentItems) {
+            const sid = String(it.serviceDetails?._id || it.serviceDetails?.id || '');
+            if (it.configuration?.pending) {
+                hadDuplicates = true;
+                continue;
+            }
+            if (sid && seen.has(sid)) {
+                hadDuplicates = true;
+                continue; // Deduplicate accidental double adds
+            }
+            if (sid) seen.add(sid);
+            deduplicated.push(it);
         }
-
-        // Already have a completed row for this service — don't auto-overwrite it
-        const completedIdx = items.findIndex((row) => {
-            const id = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
-            return id === sid && !row.configuration?.pending;
-        });
-        if (completedIdx >= 0) {
-            return;
+        if (hadDuplicates) {
+            useCheckoutStore.setState({ serviceItems: deduplicated });
         }
-
-        const { index, item, blocked } = selectServiceIntoBasket(serviceData, { tailorId, tailorName });
-        if (blocked || index < 0 || !item) return;
-        setActiveBasketIndex(index);
-    }, [storeHydrated, serviceData?._id, preSelectedTailor, location.state?.tailorId, location.state?.editBasketIndex, selectServiceIntoBasket]);
+    }, [storeHydrated]);
 
     const [currentStep, setCurrentStep] = useState(restored.currentStep || 'fabric'); // fabric -> details -> review
 
@@ -170,6 +153,12 @@ const ServiceDetail = () => {
     const [isTailorAtHome, setIsTailorAtHome] = useState(
         restoreBasketItem?.configuration?.isTailorAtHome || restored.isTailorAtHome || false
     );
+    const [measurementSchedule, setMeasurementSchedule] = useState(() => ({
+        scheduledDate: restoreBasketItem?.configuration?.scheduledDate || restored.measurementSchedule?.scheduledDate || restored.scheduledDate || '',
+        scheduledTimeSlot: restoreBasketItem?.configuration?.scheduledTimeSlot || restored.measurementSchedule?.scheduledTimeSlot || restored.scheduledTimeSlot || 'ASAP',
+        scheduledTime: restoreBasketItem?.configuration?.scheduledTime || restored.measurementSchedule?.scheduledTime || restored.scheduledTime || null,
+        isAsap: restoreBasketItem?.configuration?.isAsap ?? (restored.measurementSchedule?.isAsap ?? (restored.isAsap ?? true)),
+    }));
     const [selectedAddons, setSelectedAddons] = useState(
         restoreBasketItem?.configuration?.addons || restored.selectedAddons || []
     );
@@ -287,6 +276,14 @@ const ServiceDetail = () => {
         setSelectedAddons(Array.isArray(cfg.addons) ? cfg.addons : []);
         setSelectedCustomizations(cfg.customizations || {});
         setIsTailorAtHome(!!cfg.isTailorAtHome || m?.type === 'home');
+        if (cfg.scheduledDate || cfg.scheduledTimeSlot || cfg.measurementSchedule) {
+            setMeasurementSchedule({
+                scheduledDate: cfg.scheduledDate || cfg.measurementSchedule?.scheduledDate || '',
+                scheduledTimeSlot: cfg.scheduledTimeSlot || cfg.measurementSchedule?.scheduledTimeSlot || 'ASAP',
+                scheduledTime: cfg.scheduledTime || cfg.measurementSchedule?.scheduledTime || null,
+                isAsap: cfg.isAsap ?? (cfg.measurementSchedule?.isAsap ?? true),
+            });
+        }
         setSelectedSavedProfile(null);
 
         if (!m || Object.keys(m).length === 0 || cfg.pending) {
@@ -351,6 +348,7 @@ const ServiceDetail = () => {
                 measurementType,
                 selectedStyle,
                 isTailorAtHome,
+                measurementSchedule,
                 selectedAddons,
                 selectedCustomizations,
                 fabricSource,
@@ -363,7 +361,7 @@ const ServiceDetail = () => {
         } catch (e) {
             console.error("Failed to save service draft:", e);
         }
-    }, [id, deliveryType, measurementType, selectedStyle, isTailorAtHome, selectedAddons, selectedCustomizations, fabricSource, selectedFabric, selectedSavedProfile, measurements, currentStep]);
+    }, [id, deliveryType, measurementType, selectedStyle, isTailorAtHome, measurementSchedule, selectedAddons, selectedCustomizations, fabricSource, selectedFabric, selectedSavedProfile, measurements, currentStep]);
 
     // Sticky booking bar is always visible (was previously scroll-to-bottom only,
     // which hid "Add Another" / "Book Now" for most users).
@@ -609,39 +607,77 @@ const ServiceDetail = () => {
             }
         }
         
-        if (distance <= visitSettings.freeKm) return visitSettings.baseFee;
+        if (distance <= visitSettings.freeKm) return visitSettings.baseFee || 99;
         
-        return Math.round(visitSettings.baseFee + (distance - visitSettings.freeKm) * visitSettings.perKmFee);
+        const calculated = Math.round((visitSettings.baseFee || 99) + (distance - visitSettings.freeKm) * (visitSettings.perKmFee || 8));
+        const maxFee = visitSettings.maxFee || 299;
+        return Math.min(calculated, maxFee);
     };
 
     const tailorAtHomePrice = calculateVisitPrice();
+
+    // Check if this service is already present in the basket
+    const existingIndex = serviceItems.findIndex((row) => {
+        const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+        return sid === String(serviceData?._id || id);
+    });
+
+    // Active item index in basket
+    const activeIndex = editBasketIndex != null && editBasketIndex >= 0
+        ? editBasketIndex
+        : existingIndex;
+
+    // Other items in basket (excluding current item being edited/viewed)
+    const otherBasketItems = activeIndex >= 0
+        ? serviceItems.filter((_, idx) => idx !== activeIndex)
+        : serviceItems;
+
+    // Check if another basket item already covers the Home Visit fee for this order
+    const isVisitCoveredInOrder = otherBasketItems.some(
+        i => i.configuration?.isTailorAtHome || i.isTailorAtHome || (Number(i.pricing?.tailorAtHome) > 0)
+    );
+    const activeItemVisitFee = (isTailorAtHome && !isVisitCoveredInOrder) ? tailorAtHomePrice : 0;
     
     // Match backend calculation: Platform fee on base + addons + customizations
     const platformFee = Math.round((basePrice + addonsPrice + customizationsPrice) * (platformFeePercentage / 100));
-    const taxableAmount = basePrice + addonsPrice + customizationsPrice + fabricPrice + tailorAtHomePrice + platformFee;
+    const taxableAmount = basePrice + addonsPrice + customizationsPrice + fabricPrice + activeItemVisitFee + platformFee;
     const taxes = Math.round(taxableAmount * (gstPercentage / 100));
     
     // Delivery fee is outside GST calculation on backend
     // Current Total for active service configuration
     const currentTotal = taxableAmount + taxes + deliveryPrice;
 
-    // Active item index in basket
-    const activeIndex = editBasketIndex != null && editBasketIndex >= 0
-        ? editBasketIndex
-        : serviceItems.findIndex((row) => String(row.serviceDetails?._id || row.serviceDetails?.id || '') === String(serviceData?._id || id));
+    // Accurately compute order totals matching backend checkoutPricing.js exactly:
+    const otherBase = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.base) || 0), 0);
+    const otherAddons = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.addons) || 0), 0);
+    const otherCustomizations = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.customizations) || 0), 0);
+    const otherFabric = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.fabric) || 0), 0);
 
-    // Other items in basket (excluding current item being edited)
-    const otherBasketItems = serviceItems.filter((_, idx) => idx !== activeIndex);
-    const otherBasketTotal = otherBasketItems.reduce((sum, item) => sum + (item.pricing?.total || 0), 0);
+    const totalOrderBase = otherBase + basePrice;
+    const totalOrderAddons = otherAddons + addonsPrice;
+    const totalOrderCusts = otherCustomizations + customizationsPrice;
+    const totalOrderFabric = otherFabric + fabricPrice;
 
-    // Grand Total (Other Basket Items + Current Form Total)
-    const grandTotal = otherBasketTotal + currentTotal;
+    // Visit fee is charged once if any item in basket (or current form) has tailor at home
+    const hasOrderHomeVisit = isTailorAtHome || otherBasketItems.some(i => i.configuration?.isTailorAtHome || i.isTailorAtHome || (Number(i.pricing?.tailorAtHome) > 0));
+    const effectiveVisitFee = hasOrderHomeVisit ? tailorAtHomePrice : 0;
+
+    // Delivery fee is charged once if any item needs delivery
+    const hasOrderDelivery = (deliveryPrice > 0) || otherBasketItems.some(i => i.configuration?.deliveryType && i.configuration.deliveryType !== 'self');
+    const effectiveDeliveryFee = hasOrderDelivery ? deliveryPrice : 0;
+
+    const totalOrderPlatformFee = Math.round((totalOrderBase + totalOrderAddons + totalOrderCusts) * (platformFeePercentage / 100));
+    const totalOrderTaxable = totalOrderBase + totalOrderAddons + totalOrderCusts + totalOrderFabric + effectiveVisitFee + totalOrderPlatformFee;
+    const totalOrderTaxes = Math.round(totalOrderTaxable * (gstPercentage / 100));
+
+    // Grand Total (Accurate across all basket items without double-counting shared fees)
+    const grandTotal = Math.round(totalOrderTaxable + totalOrderTaxes + effectiveDeliveryFee);
 
     const getDeliveryDays = () => {
         if (deliveryType === 'express') return 10;
         if (deliveryType === 'premium') return 7;
         return 15;
-    }
+    };
 
     const resetDraftForm = () => {
         setMeasurementType(null);
@@ -654,6 +690,12 @@ const ServiceDetail = () => {
         setFabricSource('customer');
         setSelectedFabric(null);
         setDeliveryType('standard');
+        setMeasurementSchedule({
+            scheduledDate: '',
+            scheduledTimeSlot: 'ASAP',
+            scheduledTime: null,
+            isAsap: true,
+        });
         try {
             sessionStorage.removeItem(`service_draft_${id}`);
         } catch (e) {}
@@ -776,6 +818,11 @@ const ServiceDetail = () => {
                     : null,
                 measurements: finalMeasurements,
                 isTailorAtHome,
+                scheduledDate: isTailorAtHome ? (measurementSchedule.scheduledDate || formatYYYYMMDD(new Date())) : null,
+                scheduledTimeSlot: isTailorAtHome ? (measurementSchedule.isAsap ? 'ASAP' : (measurementSchedule.scheduledTimeSlot || 'ASAP')) : null,
+                scheduledTime: isTailorAtHome ? (measurementSchedule.isAsap ? null : measurementSchedule.scheduledTime) : null,
+                isAsap: isTailorAtHome ? !!measurementSchedule.isAsap : true,
+                measurementSchedule: isTailorAtHome ? measurementSchedule : null,
                 selectedStyle: selectedStyle
                     ? {
                         name: selectedStyle.name,
@@ -798,12 +845,12 @@ const ServiceDetail = () => {
                 fabric: fabricPrice, 
                 addons: addonsPrice,
                 customizations: customizationsPrice,
-                tailorAtHome: tailorAtHomePrice,
+                tailorAtHome: activeItemVisitFee,
                 platformFee,
                 taxes, 
                 gstPercentage,
                 platformFeePercentage,
-                total: currentTotal, 
+                total: basePrice + addonsPrice + customizationsPrice + fabricPrice, 
                 deliveryDays: getDeliveryDays() 
             },
             basketId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -915,15 +962,9 @@ const ServiceDetail = () => {
         }
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
-        const idx =
-            editBasketIndex != null && editBasketIndex >= 0
-                ? editBasketIndex
-                : serviceItems.findIndex((row) => {
-                    const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
-                    return sid === String(serviceData?._id || id) && row.configuration?.pending;
-                });
+        const idx = editBasketIndex != null && editBasketIndex >= 0 ? editBasketIndex : -1;
 
-        if (idx != null && idx >= 0 && idx < serviceItems.length) {
+        if (idx >= 0 && idx < serviceItems.length) {
             updateServiceItem(idx, item);
         } else {
             addServiceItem(item);
@@ -946,8 +987,6 @@ const ServiceDetail = () => {
             serviceItems[0]?.serviceDetails?.tailorId;
         if (!targetTailor) {
             navigate('/user/checkout/tailor');
-        } else if (isTailorAtHome && selectedAddressId) {
-            navigate('/user/checkout/summary');
         } else {
             navigate('/user/checkout/address');
         }
@@ -965,15 +1004,13 @@ const ServiceDetail = () => {
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
 
-        const idx =
-            editBasketIndex != null && editBasketIndex >= 0
-                ? editBasketIndex
-                : serviceItems.findIndex((row) => {
-                    const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
-                    return sid === String(serviceData?._id || id) && row.configuration?.pending;
-                });
+        const existingIdx = serviceItems.findIndex((row) => {
+            const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+            return sid === String(serviceData?._id || id);
+        });
+        const idx = editBasketIndex != null && editBasketIndex >= 0 ? editBasketIndex : existingIdx;
 
-        if (idx != null && idx >= 0 && idx < serviceItems.length) {
+        if (idx >= 0 && idx < serviceItems.length) {
             updateServiceItem(idx, item);
             setBuyNowMode(false, null);
             setActiveBasketIndex(null);
@@ -1003,17 +1040,6 @@ const ServiceDetail = () => {
 
     const handleCheckoutBasket = () => {
         if (!serviceItems.length) return;
-        const pending = serviceItems.filter((i) => i.configuration?.pending);
-        if (pending.length) {
-            import('react-hot-toast').then(({ toast }) => {
-                toast.error(`Please complete pending garments first: ${pending.map((p) => p.serviceDetails?.title).join(', ')}`);
-            });
-            const first = pending[0];
-            const sid = first.serviceDetails?._id || first.serviceDetails?.id;
-            const idx = serviceItems.findIndex((i) => i.basketId === first.basketId);
-            if (sid) openBasketItem(first, idx >= 0 ? idx : 0);
-            return;
-        }
         if (!requireAuth('Please login to book these services')) return;
         setBuyNowMode(false, null);
         goToCheckoutAfterItemsReady();
@@ -1032,23 +1058,22 @@ const ServiceDetail = () => {
         if (checkCartConflict()) return;
         const item = await prepareDraftItem();
 
-        const idx =
-            editBasketIndex != null && editBasketIndex >= 0
-                ? editBasketIndex
-                : serviceItems.findIndex((row) => {
-                    const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
-                    return sid === String(serviceData?._id || id) && row.configuration?.pending;
-                });
+        const existingIdx = serviceItems.findIndex((row) => {
+            const sid = String(row.serviceDetails?._id || row.serviceDetails?.id || '');
+            return sid === String(serviceData?._id || id);
+        });
+        const idx = editBasketIndex != null && editBasketIndex >= 0 ? editBasketIndex : existingIdx;
 
-        if (idx != null && idx >= 0 && idx < serviceItems.length) {
+        if (idx >= 0 && idx < serviceItems.length) {
             updateServiceItem(idx, item);
             setBuyNowMode(false, null);
-            goToCheckoutAfterItemsReady();
-            return;
+        } else if (serviceItems.length > 0) {
+            addServiceItem(item);
+            setBuyNowMode(false, null);
+        } else {
+            // Direct single service checkout: use buyNowMode so if user presses Back, basket remains clean!
+            setBuyNowMode(true, item);
         }
-
-        addServiceItem(item);
-        setBuyNowMode(false, null);
         goToCheckoutAfterItemsReady();
     };
 
@@ -1431,6 +1456,7 @@ const ServiceDetail = () => {
                             measurementFields={serviceData?.category?.measurementFields || []}
                             categoryName={serviceData?.category?.name || serviceData?.title}
                             categoryId={serviceData?.category?._id || serviceData?.category || null}
+                            isVisitCoveredInOrder={isVisitCoveredInOrder}
                             onSelectType={(type) => {
                                 if (type === 'home') {
                                     if (hasSelfMeasurements) return;
@@ -1478,6 +1504,16 @@ const ServiceDetail = () => {
                                     : null
                             }
                         />
+
+                        {/* Measurement Schedule Picker when Tailor at Home is chosen */}
+                        {isTailorAtHome && (
+                            <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <MeasurementSchedulePicker
+                                    value={measurementSchedule}
+                                    onChange={setMeasurementSchedule}
+                                />
+                            </div>
+                        )}
                     </section>
                 )}
 
@@ -1663,10 +1699,16 @@ const ServiceDetail = () => {
                                                     <span>+₹{customizationsPrice.toLocaleString()}</span>
                                                 </div>
                                             )}
-                                            {tailorAtHomePrice > 0 && (
+                                            {isTailorAtHome && (
                                                 <div className="flex justify-between text-sky-600">
-                                                    <span>Tailor At Home Fee</span>
-                                                    <span>+₹{tailorAtHomePrice.toLocaleString()}</span>
+                                                    <span>Tailor At Home Visit</span>
+                                                    <span>
+                                                        {isVisitCoveredInOrder ? (
+                                                            <span className="text-emerald-600 font-bold">Covered in Order (₹0)</span>
+                                                        ) : (
+                                                            `+₹${tailorAtHomePrice.toLocaleString()}`
+                                                        )}
+                                                    </span>
                                                 </div>
                                             )}
                                             {platformFee > 0 && (
@@ -1701,8 +1743,8 @@ const ServiceDetail = () => {
                                     {isMeasurementValid ? (
                                         editBasketIndex != null ? (
                                             <>Save Changes <ChevronRight size={16} /></>
-                                        ) : serviceItems.length > 0 ? (
-                                            <>Book All ({serviceItems.length + 1}) <ChevronRight size={16} /></>
+                                        ) : (activeIndex >= 0 ? serviceItems.length : serviceItems.length + 1) > 1 ? (
+                                            <>Book All ({activeIndex >= 0 ? serviceItems.length : serviceItems.length + 1}) <ChevronRight size={16} /></>
                                         ) : (
                                             <>Book Now <ChevronRight size={16} /></>
                                         )

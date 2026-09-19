@@ -70,15 +70,21 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
             )}
 
             {/* Section Title & Price */}
-            <div className="flex items-center justify-between mb-3.5 pr-6">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    <Shirt size={16} className="text-[#843D9B]" />
-                    <span>Service & Details</span>
-                </h3>
-                <span className="text-sm sm:text-base font-extrabold text-slate-900">
-                    ₹{pricing?.total ? Math.round(pricing.total).toLocaleString('en-IN') : '1,221'}
-                </span>
-            </div>
+            {(() => {
+                const garmentPrice = (Number(pricing?.base) || 0) + (Number(pricing?.addons) || 0) + (Number(pricing?.fabric) || 0) + (Number(pricing?.customizations) || 0);
+                const displayGarmentPrice = garmentPrice > 0 ? garmentPrice : (Number(pricing?.total) || 0);
+                return (
+                    <div className="flex items-center justify-between mb-3.5 pr-6">
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                            <Shirt size={16} className="text-[#843D9B]" />
+                            <span>Service & Details</span>
+                        </h3>
+                        <span className="text-sm sm:text-base font-extrabold text-slate-900">
+                            ₹{Math.round(displayGarmentPrice).toLocaleString('en-IN')}
+                        </span>
+                    </div>
+                );
+            })()}
 
             {/* Main Item Layout */}
             <div className="flex flex-col sm:flex-row items-start justify-between gap-3.5">
@@ -329,11 +335,15 @@ const ServiceReviewCard = ({ service, config, pricing, onRemove }) => {
                 )}
             </div>
 
-            {/* Bottom Row: Measurement Executive Visit Fee (ONLY if home visit selected) */}
+            {/* Bottom Row: Measurement Executive Visit Status */}
             {isHomeVisitSelected && (
-                <div className="pt-2 mt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
-                    <span>Measurement Executive Fee</span>
-                    <span className="text-[#843D9B] font-bold">+₹{pricing?.tailorAtHome || 150}</span>
+                <div className="pt-2.5 mt-2.5 border-t border-purple-100 flex items-center justify-between text-xs font-semibold text-slate-600">
+                    <span className="flex items-center gap-1.5 text-[#843D9B] font-bold">
+                        <Ruler size={13} className="text-[#843D9B]" /> Measurement Executive Visit
+                    </span>
+                    <span className="text-[10px] font-bold text-[#843D9B] bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                        Shared for this Order
+                    </span>
                 </div>
             )}
 

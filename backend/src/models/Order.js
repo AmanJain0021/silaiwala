@@ -395,6 +395,18 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "MeasurementReport",
     },
+    scheduledDate: {
+      type: String,
+      default: null,
+    },
+    scheduledTimeSlot: {
+      type: String,
+      default: null,
+    },
+    scheduledTime: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

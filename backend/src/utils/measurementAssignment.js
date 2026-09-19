@@ -148,9 +148,14 @@ exports.autoAssignMeasurementExecutive = async (order) => {
         ? `https://www.google.com/maps?q=${customerCoords[1]},${customerCoords[0]}`
         : "";
 
+      // Determine formatted schedule label
+      const scheduleLabel = request.scheduledDate 
+        ? `${request.scheduledDate}${request.scheduledTimeSlot ? ' (' + request.scheduledTimeSlot + ')' : ''}`
+        : (request.scheduledTime ? new Date(request.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'As soon as possible');
+
       // Notify the assigned executive
       const notifTitle = "New Measurement Request! 📐";
-      const notifMessage = `New measurement visit for order ${order.orderId}. Customer: ${customer?.name || "N/A"}. Please accept or reject.`;
+      const notifMessage = `Visit scheduled for ${scheduleLabel} for order #${order.orderId}. Customer: ${customer?.name || "N/A"}.`;
 
       await sendNotification({
         recipient: execUserId,
@@ -162,6 +167,9 @@ exports.autoAssignMeasurementExecutive = async (order) => {
           requestIdStr: request.requestId,
           orderId: order._id,
           orderIdStr: order.orderId,
+          scheduledDate: request.scheduledDate,
+          scheduledTimeSlot: request.scheduledTimeSlot,
+          scheduledTime: request.scheduledTime,
           targetUrl: "/executive/requests",
         },
       });
@@ -181,6 +189,8 @@ exports.autoAssignMeasurementExecutive = async (order) => {
           distance: distanceKm,
           mapsUrl,
           scheduledTime: request.scheduledTime,
+          scheduledDate: request.scheduledDate,
+          scheduledTimeSlot: request.scheduledTimeSlot,
           status: "assigned",
         });
 
@@ -201,19 +211,44 @@ exports.autoAssignMeasurementExecutive = async (order) => {
         });
       }
 
+      // Notify Admin that an executive has been assigned
+      await sendNotification({
+        recipient: "admins",
+        type: "MEASUREMENT_EXECUTIVE_ASSIGNED",
+        title: "Measurement Executive Assigned 📐",
+        message: `Executive ${nearestExec.user.name} assigned to Order #${order.orderId}. Scheduled visit: ${scheduleLabel}.`,
+        data: {
+          requestId: request._id,
+          orderId: order._id,
+          executiveId: execUserId,
+          executiveName: nearestExec.user.name,
+          scheduledDate: request.scheduledDate,
+          scheduledTimeSlot: request.scheduledTimeSlot,
+          scheduledTime: request.scheduledTime,
+          targetUrl: "/admin/orders",
+        },
+      });
+
       return true;
     } else {
       // No executive found — keep as pending, notify admin
       console.log(`⚠️ No measurement executive available for request ${request.requestId}`);
 
+      const scheduleLabel = request.scheduledDate 
+        ? `${request.scheduledDate}${request.scheduledTimeSlot ? ' (' + request.scheduledTimeSlot + ')' : ''}`
+        : (request.scheduledTime ? new Date(request.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'As soon as possible');
+
       await sendNotification({
         recipient: "admins",
         type: "MEASUREMENT_NO_EXECUTIVE",
         title: "⚠️ No Measurement Executive Available",
-        message: `No measurement executive is available for request ${request.requestId} (Order: ${order.orderId}). Manual assignment required.`,
+        message: `No measurement executive is available nearby for request ${request.requestId} (Order: #${order.orderId}, Scheduled: ${scheduleLabel}). Manual assignment required.`,
         data: {
           requestId: request._id,
           orderId: order._id,
+          scheduledDate: request.scheduledDate,
+          scheduledTimeSlot: request.scheduledTimeSlot,
+          scheduledTime: request.scheduledTime,
           targetUrl: "/admin/measurement-executives",
         },
       });

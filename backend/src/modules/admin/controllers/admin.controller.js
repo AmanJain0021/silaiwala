@@ -1106,6 +1106,9 @@ exports.updateOrderStatus = async (req, res) => {
           tailor: oldOrder.tailor,
           executive: measurementExecutive,
           status: "assigned",
+          scheduledDate: oldOrder.scheduledDate || null,
+          scheduledTimeSlot: oldOrder.scheduledTimeSlot || null,
+          scheduledTime: oldOrder.scheduledTime || null,
           customerAddress: oldOrder.deliveryAddress ? {
             street: oldOrder.deliveryAddress.street,
             city: oldOrder.deliveryAddress.city,
@@ -1118,6 +1121,9 @@ exports.updateOrderStatus = async (req, res) => {
       } else {
         mRequest.executive = measurementExecutive;
         mRequest.status = "assigned";
+        if (oldOrder.scheduledDate && !mRequest.scheduledDate) mRequest.scheduledDate = oldOrder.scheduledDate;
+        if (oldOrder.scheduledTimeSlot && !mRequest.scheduledTimeSlot) mRequest.scheduledTimeSlot = oldOrder.scheduledTimeSlot;
+        if (oldOrder.scheduledTime && !mRequest.scheduledTime) mRequest.scheduledTime = oldOrder.scheduledTime;
         await mRequest.save();
       }
       
@@ -1197,13 +1203,21 @@ exports.updateOrderStatus = async (req, res) => {
 
     if (measurementExecutive) {
       const execProfile = await User.findById(measurementExecutive);
+      const scheduleLabel = order.scheduledDate 
+        ? `${order.scheduledDate}${order.scheduledTimeSlot ? ' (' + order.scheduledTimeSlot + ')' : ''}`
+        : (order.scheduledTime ? new Date(order.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'As soon as possible');
+
       await sendNotification({
         recipient: measurementExecutive,
         type: "NEW_MEASUREMENT_REQUEST",
         title: "New Measurement Request! 📐",
-        message: `A measurement visit for order ${order.orderId} has been manually assigned to you by admin.`,
+        message: `A measurement visit for order ${order.orderId} (${scheduleLabel}) has been assigned to you by admin.`,
         data: { 
           orderId: order._id,
+          orderIdStr: order.orderId,
+          scheduledDate: order.scheduledDate,
+          scheduledTimeSlot: order.scheduledTimeSlot,
+          scheduledTime: order.scheduledTime,
           targetUrl: "/executive/requests" 
         }
       });
@@ -1214,6 +1228,12 @@ exports.updateOrderStatus = async (req, res) => {
         io.to(`user_${measurementExecutive}`).emit("new_measurement_request", {
           orderId: order._id,
           orderIdStr: order.orderId,
+          customerName: order.customer?.name || "Customer",
+          customerPhone: order.customer?.phoneNumber || "",
+          address: order.deliveryAddress,
+          scheduledDate: order.scheduledDate,
+          scheduledTimeSlot: order.scheduledTimeSlot,
+          scheduledTime: order.scheduledTime,
           status: "assigned"
         });
       }

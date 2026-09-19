@@ -132,14 +132,16 @@ const Requests = () => {
                                         </div>
                                     )}
 
-                                    {req.scheduledTime && (
+                                    {(req.scheduledDate || req.scheduledTime) && (
                                         <div className="flex items-start gap-1.5 sm:gap-3">
                                             <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                                                 <Clock className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-amber-500" />
                                             </div>
                                             <div className="pt-0.5 min-w-0">
-                                                <p className="text-[8px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest mb-0 sm:mb-1">Time</p>
-                                                <p className="text-[9px] sm:text-sm font-medium text-gray-900 leading-tight truncate">{new Date(req.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                <p className="text-[8px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest mb-0 sm:mb-1">Scheduled</p>
+                                                <p className="text-[9px] sm:text-sm font-medium text-gray-900 leading-tight truncate">
+                                                    {req.scheduledDate ? `${req.scheduledDate}${req.scheduledTimeSlot ? ' (' + req.scheduledTimeSlot + ')' : ''}` : new Date(req.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                </p>
                                             </div>
                                         </div>
                                     )}

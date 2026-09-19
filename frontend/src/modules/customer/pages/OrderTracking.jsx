@@ -910,6 +910,17 @@ const OrderTracking = () => {
                                         Your advance payment is verified! We are requesting the nearest measurement executive to accept your home visit.
                                     </p>
                                 </div>
+                                {(order.scheduledDate || order.scheduledTimeSlot) && (
+                                    <div className="flex items-center gap-2 p-2.5 bg-purple-50/70 border border-purple-100 rounded-2xl text-xs font-semibold text-gray-800">
+                                        <Calendar size={14} className="text-[#843D9B] shrink-0" />
+                                        <span>
+                                            Visit Scheduled: <strong className="text-[#843D9B] font-bold">{order.scheduledDate || 'Today'}</strong>
+                                            {order.scheduledTimeSlot && order.scheduledTimeSlot !== 'ASAP' && ` at `}
+                                            {order.scheduledTimeSlot && order.scheduledTimeSlot !== 'ASAP' && <strong className="text-[#843D9B] font-bold">{order.scheduledTimeSlot}</strong>}
+                                            {order.scheduledTimeSlot === 'ASAP' && <strong className="text-[#843D9B] font-bold"> (ASAP)</strong>}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-2 text-[10px] font-black uppercase text-[#843D9B] tracking-widest bg-purple-50 px-3 py-1.5 rounded-full border border-purple-100 mt-1">
                                     <Loader2 size={12} className="animate-spin" /> Waiting for Executive Acceptance
                                 </div>
@@ -928,6 +939,17 @@ const OrderTracking = () => {
                                         Home Visit
                                     </span>
                                 </div>
+
+                                {(order.scheduledDate || order.scheduledTimeSlot) && (
+                                    <div className="flex items-center gap-2 p-2.5 bg-purple-50/70 border border-purple-100 rounded-2xl text-xs font-semibold text-gray-800">
+                                        <Calendar size={14} className="text-[#843D9B] shrink-0" />
+                                        <span>
+                                            Scheduled Slot: <strong className="text-[#843D9B] font-bold">{order.scheduledDate || 'Today'}</strong>
+                                            {order.scheduledTimeSlot && order.scheduledTimeSlot !== 'ASAP' && ` (${order.scheduledTimeSlot})`}
+                                            {order.scheduledTimeSlot === 'ASAP' && ' (ASAP)'}
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="flex items-center gap-4">
                                     <div className="w-14 h-14 rounded-2xl bg-purple-100 border border-purple-200 flex items-center justify-center text-[#843D9B] font-black text-xl overflow-hidden shrink-0 shadow-sm">

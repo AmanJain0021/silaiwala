@@ -9,6 +9,7 @@ import useCartStore from '../../../store/cartStore';
 import BillDetails from '../components/checkout/summary/BillDetails';
 import CouponOfferSection from '../components/checkout/summary/CouponOfferSection';
 import ServiceReviewCard from '../components/checkout/summary/ServiceReviewCard';
+import MeasurementSchedulePicker from '../components/checkout/summary/MeasurementSchedulePicker';
 import { cn } from '../../../utils/cn';
 import { formatCheckoutAddress, splitAdvanceRemaining } from '../../../utils/checkoutBilling';
 
@@ -47,17 +48,18 @@ const CheckoutSummary = () => {
         }
     }, [addresses.length, fetchAddresses]);
 
-    // Normalize: if buy-now was started while a basket already existed, fold into basket once.
-    useEffect(() => {
-        if (isBuyNowMode && buyNowItem && serviceItems.length > 0) {
-            addServiceItem(buyNowItem);
-            setBuyNowMode(false, null);
-        }
-    }, [isBuyNowMode, buyNowItem, serviceItems.length, addServiceItem, setBuyNowMode]);
+
 
     const currentCheckoutItems = React.useMemo(() => {
         if (isBuyNowMode && buyNowItem) return [buyNowItem];
-        return serviceItems;
+        const valid = serviceItems.filter((item) => !item.configuration?.pending);
+        const seen = new Set();
+        return valid.filter((item) => {
+            const sid = String(item.serviceDetails?._id || item.serviceDetails?.id || item.basketId || '');
+            if (!sid || seen.has(sid)) return false;
+            seen.add(sid);
+            return true;
+        });
     }, [isBuyNowMode, buyNowItem, serviceItems]);
     const isServiceCheckout = checkoutType === 'service' || (!checkoutType && currentCheckoutItems.length > 0);
     const isCartCheckout = checkoutType === 'cart' || (!checkoutType && cartItems.length > 0 && currentCheckoutItems.length === 0);
@@ -66,8 +68,35 @@ const CheckoutSummary = () => {
         return currentCheckoutItems.some(item => 
             item.configuration?.isTailorAtHome || 
             item.configuration?.measurements?.option === 'visit' || 
+            item.configuration?.measurements?.type === 'home' ||
             (item.pricing?.tailorAtHome && item.pricing.tailorAtHome > 0)
         );
+    }, [currentCheckoutItems]);
+
+    const existingScheduleItem = currentCheckoutItems.find(item => 
+        item.configuration?.scheduledDate || item.configuration?.scheduledTimeSlot || item.configuration?.measurementSchedule
+    );
+    const [measurementSchedule, setMeasurementSchedule] = useState(() => ({
+        scheduledDate: existingScheduleItem?.configuration?.scheduledDate || existingScheduleItem?.configuration?.measurementSchedule?.scheduledDate || '',
+        scheduledTimeSlot: existingScheduleItem?.configuration?.scheduledTimeSlot || existingScheduleItem?.configuration?.measurementSchedule?.scheduledTimeSlot || 'ASAP',
+        scheduledTime: existingScheduleItem?.configuration?.scheduledTime || existingScheduleItem?.configuration?.measurementSchedule?.scheduledTime || null,
+        isAsap: existingScheduleItem?.configuration?.isAsap ?? (existingScheduleItem?.configuration?.measurementSchedule?.isAsap ?? true)
+    }));
+
+    useEffect(() => {
+        const itemWithSchedule = currentCheckoutItems.find(item => 
+            item.configuration?.scheduledDate || item.configuration?.scheduledTimeSlot || item.configuration?.measurementSchedule
+        );
+        if (itemWithSchedule?.configuration) {
+            const cfg = itemWithSchedule.configuration;
+            const sched = cfg.measurementSchedule || cfg;
+            setMeasurementSchedule(prev => ({
+                scheduledDate: prev.scheduledDate || sched.scheduledDate || '',
+                scheduledTimeSlot: prev.scheduledTimeSlot && prev.scheduledTimeSlot !== 'ASAP' ? prev.scheduledTimeSlot : (sched.scheduledTimeSlot || 'ASAP'),
+                scheduledTime: prev.scheduledTime || sched.scheduledTime || null,
+                isAsap: sched.isAsap ?? prev.isAsap
+            }));
+        }
     }, [currentCheckoutItems]);
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -350,6 +379,9 @@ const CheckoutSummary = () => {
                         deliveryFee: currentPricing.delivery || 0,
                         platformFee: currentPricing.platformFee || 0,
                         gstAmount: currentPricing.taxes || 0,
+                        scheduledDate: measurementSchedule.scheduledDate || new Date().toISOString().split('T')[0],
+                        scheduledTimeSlot: measurementSchedule.isAsap ? 'ASAP' : (measurementSchedule.scheduledTimeSlot || 'ASAP'),
+                        scheduledTime: measurementSchedule.isAsap ? null : measurementSchedule.scheduledTime,
                         deliveryAddress: {
                             street: selectedAddress.street,
                             city: selectedAddress.city,
@@ -840,6 +872,14 @@ const CheckoutSummary = () => {
                         </div>
                     )}
                 </div>
+
+                {/* 3.5. Measurement Visit Schedule Picker */}
+                {hasTailorAtHome && (
+                    <MeasurementSchedulePicker
+                        value={measurementSchedule}
+                        onChange={setMeasurementSchedule}
+                    />
+                )}
 
                 {/* 4. Coupon / Offers + Bill Details */}
                 {!isCartAlteration && !isLoadingPricing && (

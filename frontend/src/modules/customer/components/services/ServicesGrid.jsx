@@ -20,38 +20,16 @@ const ServiceCard = ({ service }) => {
             tailorId: location.state?.tailorId,
             tailorName: location.state?.tailorName,
         });
-        const hasBasket = (serviceItems?.length || 0) > 0;
         const tailorId = lock.tailorId || location.state?.tailorId;
         const tailorName = lock.tailorName || location.state?.tailorName;
 
-        // Multi-item flow: selecting a service must appear in basket immediately
-        if (hasBasket) {
-            const { index, item, created, blocked } = selectServiceIntoBasket(service, { tailorId, tailorName });
-            if (blocked) {
-                import('react-hot-toast').then(({ toast }) => {
-                    toast.error('Only services from the same tailor can be added to this order');
-                });
-                return;
-            }
-            if (created) {
-                import('react-hot-toast').then(({ toast }) => {
-                    toast.success(`Added to basket: ${service.title}`);
-                });
-            }
-            navigate(`/user/services/${service._id}`, {
-                state: {
-                    tailorId,
-                    tailorName,
-                    fromMultiItemBasket: true,
-                    editBasketIndex: index,
-                    restoreBasketItem: item,
-                    fromBasket: true,
-                },
-            });
-            return;
-        }
-
-        navigate(`/user/services/${service._id}`, { state: location.state });
+        navigate(`/user/services/${service._id}`, {
+            state: {
+                ...location.state,
+                tailorId,
+                tailorName,
+            },
+        });
     };
 
     return (

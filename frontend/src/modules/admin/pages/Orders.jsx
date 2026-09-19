@@ -75,6 +75,9 @@ const AdminOrders = () => {
                 paymentStatus: o.paymentStatus || 'pending',
                 measurements: o.isMeasurementHome ? 'Tailor at Home' : 'Standard Profile',
                 isMeasurementHome: o.isMeasurementHome || false,
+                scheduledDate: o.scheduledDate || o.measurementRequest?.scheduledDate || null,
+                scheduledTimeSlot: o.scheduledTimeSlot || o.measurementRequest?.scheduledTimeSlot || null,
+                scheduledTime: o.scheduledTime || o.measurementRequest?.scheduledTime || null,
                 measurementExecutive: o.measurementRequest?.executive?.name || 'Unassigned',
                 itemMeasurements: o.items?.[0]?.measurements || null,
                 items: o.items || [],
@@ -431,6 +434,11 @@ const AdminOrders = () => {
                                                 {order.type}
                                                 {order.itemCount > 1 ? ` · ${order.itemCount} items` : ''}
                                             </span>
+                                            {order.isMeasurementHome && (
+                                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#843D9B] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 mt-1 w-fit">
+                                                    📐 {order.scheduledDate ? `${order.scheduledDate}${order.scheduledTimeSlot ? ' (' + order.scheduledTimeSlot + ')' : ''}` : 'Home Visit (ASAP)'}
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 flex items-center gap-2">
@@ -570,6 +578,20 @@ const AdminOrders = () => {
                                                 </p>
                                             </div>
                                         </div>
+
+                                        {selectedOrder.isMeasurementHome && (
+                                            <div className="mt-3 pt-3 border-t border-purple-100 bg-purple-50/50 p-3 rounded-xl">
+                                                <p className="text-[10px] font-bold text-[#843D9B] uppercase flex items-center gap-1.5">
+                                                    <Scissors size={12} /> Scheduled Measurement Visit
+                                                </p>
+                                                <p className="text-xs font-bold text-gray-800 mt-1">
+                                                    📅 {selectedOrder.scheduledDate ? `${selectedOrder.scheduledDate}${selectedOrder.scheduledTimeSlot ? ' (' + selectedOrder.scheduledTimeSlot + ')' : ''}` : 'As soon as possible (ASAP)'}
+                                                </p>
+                                                <p className="text-[11px] text-gray-600 mt-0.5">
+                                                    Assigned Executive: <span className="font-bold text-[#843D9B]">{selectedOrder.measurementExecutive || 'Unassigned'}</span>
+                                                </p>
+                                            </div>
+                                        )}
                                         
                                         {/* Dynamic Measurements preview in side drawer */}
                                         {(selectedOrder.itemMeasurements || selectedOrder.executiveReport) && (

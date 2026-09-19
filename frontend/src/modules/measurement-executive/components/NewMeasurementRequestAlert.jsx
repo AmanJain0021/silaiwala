@@ -113,7 +113,9 @@ const NewMeasurementRequestAlert = () => {
                 customerPhone: extractCustomerPhone(data),
                 address: formatAddress(rawAddr),
                 distance: data.distance ? `${Number(data.distance).toFixed(1)} km` : null,
-                scheduledTime: data.scheduledTime ? new Date(data.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'As soon as possible',
+                scheduledTime: data.scheduledDate 
+                    ? `${data.scheduledDate}${data.scheduledTimeSlot ? ' (' + data.scheduledTimeSlot + ')' : ''}`
+                    : (data.scheduledTime ? new Date(data.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'As soon as possible'),
                 earnings: data.earnings || data.payout || 150,
             });
         };
@@ -165,7 +167,9 @@ const NewMeasurementRequestAlert = () => {
                             customerPhone: extractCustomerPhone(reqToShow),
                             address: formatAddress(rawAddr),
                             distance: reqToShow.distance ? `${Number(reqToShow.distance).toFixed(1)} km` : null,
-                            scheduledTime: reqToShow.scheduledTime ? new Date(reqToShow.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'As soon as possible',
+                            scheduledTime: reqToShow.scheduledDate 
+                                ? `${reqToShow.scheduledDate}${reqToShow.scheduledTimeSlot ? ' (' + reqToShow.scheduledTimeSlot + ')' : ''}`
+                                : (reqToShow.scheduledTime ? new Date(reqToShow.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'As soon as possible'),
                             earnings: reqToShow.payout || 150,
                         });
                     }
