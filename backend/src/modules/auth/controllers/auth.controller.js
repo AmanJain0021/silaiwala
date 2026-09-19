@@ -579,6 +579,10 @@ exports.login = asyncHandler(async (req, res, next) => {
   if (fcmToken) {
     const isMobile = platform === 'mobile' || platform === 'android' || platform === 'ios' || platform === 'react-native';
     const updateField = isMobile ? 'fcmTokenMobile' : 'fcmToken';
+    await User.updateMany(
+      { _id: { $ne: user._id }, $or: [{ fcmToken }, { fcmTokenMobile: fcmToken }] },
+      { $pull: { fcmToken, fcmTokenMobile: fcmToken } }
+    ).catch(() => {});
     await User.findByIdAndUpdate(user._id, {
       $addToSet: { [updateField]: fcmToken }
     }).catch(e => console.error('[FCM-TOKEN] Save error during login:', e.message));

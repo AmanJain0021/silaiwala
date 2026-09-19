@@ -45,6 +45,9 @@ const useAuthStore = create((set) => ({
                 throw new Error('User data not found in response');
             }
 
+            const path = typeof window !== 'undefined' ? window.location.pathname : '';
+            let storageKey = 'user';
+            let roleForToken = null;
             const ADMIN_ROLES = ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'];
             if (path.startsWith('/delivery') || user.role === 'delivery') { storageKey = 'delivery_user'; roleForToken = 'delivery'; }
             else if (path.startsWith('/tailor') || path.startsWith('/partner') || user.role === 'tailor') { storageKey = 'tailor_user'; roleForToken = 'tailor'; }
@@ -98,6 +101,9 @@ const useAuthStore = create((set) => ({
             const user = (rawData && rawData.user) ? { ...rawData.user, profile: rawData.profile } : rawData;
             const token = response.data.token;
 
+            const path = typeof window !== 'undefined' ? window.location.pathname : '';
+            let storageKey = 'user';
+            let roleForToken = null;
             const ADMIN_ROLES = ['admin', 'super_admin', 'support_agent', 'finance_manager', 'content_manager'];
             if (path.startsWith('/delivery') || user.role === 'delivery') { storageKey = 'delivery_user'; roleForToken = 'delivery'; }
             else if (path.startsWith('/tailor') || path.startsWith('/partner') || user.role === 'tailor') { storageKey = 'tailor_user'; roleForToken = 'tailor'; }

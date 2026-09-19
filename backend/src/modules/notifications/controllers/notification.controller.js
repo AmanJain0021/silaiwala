@@ -119,6 +119,13 @@ exports.registerFcmToken = asyncHandler(async (req, res, next) => {
     if (!user.fcmToken.includes(targetToken)) user.fcmToken.push(targetToken);
   }
 
+  const User = require("../../../models/User.js");
+  // Clean up this device token from other users so only the currently logged in user owns it
+  await User.updateMany(
+    { _id: { $ne: user._id }, $or: [{ fcmToken: targetToken }, { fcmTokenMobile: targetToken }] },
+    { $pull: { fcmToken: targetToken, fcmTokenMobile: targetToken } }
+  ).catch(e => console.error('[FCM-TOKEN] Error removing token from old users:', e.message));
+
   await user.save();
   console.log(`[FCM-TOKEN] Saved for user ${user._id} (${user.role}). Web tokens: ${user.fcmToken.length}, Mobile tokens: ${user.fcmTokenMobile.length}`);
 
@@ -204,7 +211,7 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.removeFcmToken = asyncHandler(async (req, res, next) => {
-  const { token } = req.body || {};
+  const token = req.body?.token || req.body?.fcmToken;
 
   if (!token) {
     return res.status(200).json({ success: true, message: "No token to remove" });
