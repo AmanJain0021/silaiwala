@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, Marker, DirectionsRenderer, Polyline } from '@react-google-maps/api';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 28.6139, lng: 77.2090 };
@@ -185,6 +185,21 @@ const DeliveryBoyLiveMap = ({
                 strokeWeight: 5,
                 strokeOpacity: 0.85,
               },
+            }}
+          />
+        )}
+
+        {!directions && !previewDirections && activeLocation?.lat && markerDest?.lat && (
+          <Polyline
+            path={[
+              { lat: Number(activeLocation.lat), lng: Number(activeLocation.lng) },
+              { lat: Number(markerDest.lat), lng: Number(markerDest.lng) }
+            ]}
+            options={{
+              strokeColor: '#2563EB',
+              strokeOpacity: 0.7,
+              strokeWeight: 4,
+              geodesic: true,
             }}
           />
         )}

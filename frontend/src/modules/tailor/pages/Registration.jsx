@@ -317,7 +317,7 @@ const TailorRegistration = () => {
     const renderStep = () => {
         switch (step) {
             case 1: return <Step1Basic register={register} errors={errors} watch={watch} setValue={setValue} setError={setError} clearErrors={clearErrors} />;
-            case 2: return <Step2Business register={register} errors={errors} setValue={setValue} clearErrors={clearErrors} />;
+            case 2: return <Step2Business register={register} errors={errors} setValue={setValue} clearErrors={clearErrors} watch={watch} />;
             case 3: return <Step3Docs register={register} errors={errors} watch={watch} setValue={setValue} clearErrors={clearErrors} />;
             case 4: return <Step4Portfolio register={register} errors={errors} watch={watch} setValue={setValue} clearErrors={clearErrors} />;
             default: return null;

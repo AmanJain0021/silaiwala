@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { Navigation, Lock, Eye, EyeOff, Camera, CheckCircle2 } from 'lucide-react';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
 import { validatePassword } from '../../../../utils/validation';
+import { useJsApiLoader } from '@react-google-maps/api';
+import PlacesAutocompleteField from '../../../../shared/components/PlacesAutocompleteField';
+import { GOOGLE_MAPS_LIBRARIES } from '../../../../config/maps';
 
 export const Step1Basic = ({ register, errors, setValue, watch, setError, clearErrors }) => {
     const profileImage = watch('profileImage');
@@ -254,8 +257,17 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError, clearE
     );
 };
 
-export const Step2Business = ({ register, errors, setValue, clearErrors }) => {
+export const Step2Business = ({ register, errors, setValue, clearErrors, watch }) => {
     const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+        libraries: GOOGLE_MAPS_LIBRARIES,
+    });
+
+    const currentAddress = watch ? watch('address') : '';
+    const currentLat = watch ? watch('latitude') : null;
+    const currentLng = watch ? watch('longitude') : null;
 
     const handleAutoLocation = async () => {
         try {
@@ -267,11 +279,21 @@ export const Step2Business = ({ register, errors, setValue, clearErrors }) => {
                 setValue('latitude', data.latitude);
                 setValue('longitude', data.longitude);
                 if (clearErrors) clearErrors(['address', 'city', 'pincode']);
+                toast.success('Current shop location detected!');
             }
         } catch (error) {
             console.error(error);
             toast.error(error.message || "Could not fetch address details automatically.");
         }
+    };
+
+    const handlePlaceSelect = (placeData) => {
+        setValue('address', placeData.address, { shouldValidate: true });
+        if (placeData.city) setValue('city', placeData.city, { shouldValidate: true });
+        if (placeData.pincode) setValue('pincode', placeData.pincode, { shouldValidate: true });
+        setValue('latitude', placeData.latitude);
+        setValue('longitude', placeData.longitude);
+        if (clearErrors) clearErrors(['address', 'city', 'pincode']);
     };
 
     return (
@@ -282,7 +304,7 @@ export const Step2Business = ({ register, errors, setValue, clearErrors }) => {
                     type="button"
                     onClick={handleAutoLocation}
                     disabled={isLocating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-primary/20 text-primary text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-primary/20 text-primary text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
                     {isLocating ? (
                         <div className="w-3 h-3 border-2 border-primary border-t-transparent animate-spin rounded-full" />
@@ -305,19 +327,44 @@ export const Step2Business = ({ register, errors, setValue, clearErrors }) => {
                 })}
                 error={errors.shopName?.message}
             />
-            <Input
-                label="Shop Address"
-                placeholder="Street, Landmark, Area"
-                {...register('address', { 
-                    required: 'Address is required',
-                    validate: (v) => (v && v.trim().length >= 5) || 'Shop address cannot be empty or spaces only',
-                    onChange: (e) => {
-                        setValue('address', e.target.value, { shouldValidate: true });
-                        if (clearErrors && e.target.value.trim().length >= 5) clearErrors('address');
-                    }
-                })}
-                error={errors.address?.message}
-            />
+
+            {/* Shop Address with Google Places Autocomplete */}
+            {isLoaded ? (
+                <div>
+                    <PlacesAutocompleteField
+                        label="Shop Address"
+                        placeholder="Start typing shop address, market, street..."
+                        required
+                        value={currentAddress || ''}
+                        error={errors.address?.message}
+                        onChange={(val) => {
+                            setValue('address', val, { shouldValidate: true });
+                            if (clearErrors && val.trim().length >= 5) clearErrors('address');
+                        }}
+                        onClear={() => setValue('address', '', { shouldValidate: true })}
+                        onPlaceSelect={handlePlaceSelect}
+                    />
+                    {currentLat && currentLng && (
+                        <p className="text-[10px] text-emerald-600 font-semibold -mt-1 mb-2 flex items-center gap-1">
+                            ✓ Pinned on Map: {Number(currentLat).toFixed(4)}, {Number(currentLng).toFixed(4)}
+                        </p>
+                    )}
+                </div>
+            ) : (
+                <Input
+                    label="Shop Address"
+                    placeholder="Street, Landmark, Area"
+                    {...register('address', { 
+                        required: 'Address is required',
+                        validate: (v) => (v && v.trim().length >= 5) || 'Shop address cannot be empty or spaces only',
+                        onChange: (e) => {
+                            setValue('address', e.target.value, { shouldValidate: true });
+                            if (clearErrors && e.target.value.trim().length >= 5) clearErrors('address');
+                        }
+                    })}
+                    error={errors.address?.message}
+                />
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                     label="City"

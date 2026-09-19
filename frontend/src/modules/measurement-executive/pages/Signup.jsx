@@ -3,10 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Phone, MapPin, CreditCard, Eye, EyeOff, Ruler } from 'lucide-react';
+import { Mail, Lock, User, Phone, MapPin, CreditCard, Eye, EyeOff, Ruler, Navigation } from 'lucide-react';
+import { useJsApiLoader } from '@react-google-maps/api';
+import PlacesAutocompleteField from '../../../shared/components/PlacesAutocompleteField';
+import { GOOGLE_MAPS_LIBRARIES } from '../../../config/maps';
+import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 
 const Signup = () => {
     const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const { detectLocation, isLocating } = useUnifiedLocation({ fetchAddress: true });
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+        libraries: GOOGLE_MAPS_LIBRARIES,
+    });
+
     const [formData, setFormData] = useState(() => {
         const savedData = localStorage.getItem('execSignupData');
         if (savedData) {
@@ -24,6 +35,7 @@ const Signup = () => {
             address: '',
             aadharNumber: '',
             serviceRadius: 10,
+            coordinates: [77.2090, 28.6139],
         };
     });
 
@@ -33,6 +45,31 @@ const Signup = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { register, loading } = useMeasurementStore();
     const navigate = useNavigate();
+
+    const handleAutoLocation = async () => {
+        try {
+            const data = await detectLocation();
+            if (data) {
+                setFormData(prev => ({
+                    ...prev,
+                    address: data.address,
+                    coordinates: [data.longitude, data.latitude]
+                }));
+                toast.success('Current location detected!');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not fetch location automatically. Please type your address.");
+        }
+    };
+
+    const handlePlaceSelect = (placeData) => {
+        setFormData(prev => ({
+            ...prev,
+            address: placeData.address,
+            coordinates: [placeData.longitude, placeData.latitude]
+        }));
+    };
 
     const handleChange = (e) => {
         let { name, value } = e.target;
@@ -58,7 +95,7 @@ const Signup = () => {
         try {
             const registerData = {
                 ...formData,
-                coordinates: [77.2090, 28.6139], // Default coordinates (lng, lat)
+                coordinates: formData.coordinates || [77.2090, 28.6139],
                 otp: '123456'
             };
             
@@ -177,21 +214,49 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Address */}
-                    <div className="w-full text-left">
-                        <label className="text-xs font-semibold text-[#0F172A] block mb-1">Full Address *</label>
-                        <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 gap-2.5 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
-                            <MapPin size={16} className="text-[#94A3B8] shrink-0" />
-                            <input
+                    {/* Address with Google Places Autocomplete & GPS */}
+                    <div className="w-full text-left sm:col-span-2">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-semibold text-[#0F172A]">Full Address (Area / Colony) *</label>
+                            <button
+                                type="button"
+                                onClick={handleAutoLocation}
+                                disabled={isLocating}
+                                className="flex items-center gap-1.5 px-2.5 py-1 bg-[#F4EFFF] border border-[#E9DFFE] text-[#843D9B] text-[10px] font-bold rounded-lg hover:bg-[#ebdcfb] transition-all disabled:opacity-50 cursor-pointer"
+                            >
+                                <Navigation size={11} className={isLocating ? "animate-spin" : ""} />
+                                {isLocating ? "Detecting..." : "Detect Location"}
+                            </button>
+                        </div>
+                        {isLoaded ? (
+                            <PlacesAutocompleteField
                                 name="address"
-                                type="text"
-                                placeholder="Complete residential address"
+                                placeholder="Start typing address, area, or landmark..."
                                 required
                                 value={formData.address}
-                                onChange={handleChange}
-                                className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
+                                onChange={(val) => setFormData(prev => ({ ...prev, address: val }))}
+                                onClear={() => setFormData(prev => ({ ...prev, address: '' }))}
+                                onPlaceSelect={handlePlaceSelect}
                             />
-                        </div>
+                        ) : (
+                            <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 gap-2.5 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                                <MapPin size={16} className="text-[#94A3B8] shrink-0" />
+                                <input
+                                    name="address"
+                                    type="text"
+                                    placeholder="Complete residential address"
+                                    required
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]"
+                                />
+                            </div>
+                        )}
+                        {formData.coordinates && formData.coordinates[0] !== 77.2090 && (
+                            <p className="text-[10px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                                ✓ Location pinned: {formData.coordinates[1]?.toFixed(4)}, {formData.coordinates[0]?.toFixed(4)}
+                            </p>
+                        )}
                     </div>
 
                     {/* Aadhaar Number */}

@@ -2,14 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiTruck, FiCamera, 
-  FiChevronRight, FiChevronLeft, FiCheck, FiFileText, FiShield, FiCreditCard, FiTrash2 
+  FiChevronRight, FiChevronLeft, FiCheck, FiFileText, FiShield, FiCreditCard, FiTrash2,
+  FiNavigation
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { useDeliveryAuthStore } from '../store/deliveryStore';
 import api from '../../../shared/utils/api';
 import DeliveryLegalModal from '../components/DeliveryLegalModal';
 import useBrandingStore from '../../../store/brandingStore';
+import PlacesAutocompleteField from '../../../shared/components/PlacesAutocompleteField';
+import { useUnifiedLocation } from '../../../shared/hooks/useUnifiedLocation';
+
+const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 
 const STEPS = [
   { id: 1, title: 'Personal Info', icon: FiUser },
@@ -43,6 +49,14 @@ const DeliveryRegister = () => {
   const { register, sendRegistrationOtp, verifyRegistrationOtp, isLoading } = useDeliveryAuthStore();
   const { appName, logos } = useBrandingStore();
   const fileInputRefs = useRef({});
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+  });
+
+  const { detectLocation, isLocating } = useUnifiedLocation();
 
   // Restore draft state from localStorage on page refresh
   const getInitialState = () => {
@@ -78,6 +92,8 @@ const DeliveryRegister = () => {
     email: '',
     password: '',
     address: '',
+    latitude: '',
+    longitude: '',
     vehicleType: 'Bike (Motorcycle)',
     vehicleNumber: '',
     accountHolderName: '',
@@ -109,6 +125,8 @@ const DeliveryRegister = () => {
           emergencyContact: formData.emergencyContact,
           aadharNumber: formData.aadharNumber,
           address: formData.address,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
           vehicleType: formData.vehicleType,
           vehicleNumber: formData.vehicleNumber,
           accountName: formData.accountName,
@@ -124,6 +142,44 @@ const DeliveryRegister = () => {
       console.warn("Draft save failed:", e);
     }
   }, [formData, previews, currentStep, isPhoneVerified]);
+
+  const handlePlaceSelect = (place) => {
+    if (!place) return;
+    const addr = place.formatted_address || place.name || '';
+    const lat = place.geometry?.location
+      ? (typeof place.geometry.location.lat === 'function' ? place.geometry.location.lat() : place.geometry.location.lat)
+      : null;
+    const lng = place.geometry?.location
+      ? (typeof place.geometry.location.lng === 'function' ? place.geometry.location.lng() : place.geometry.location.lng)
+      : null;
+
+    setFormData(prev => ({
+      ...prev,
+      address: addr,
+      latitude: lat ? String(lat) : prev.latitude,
+      longitude: lng ? String(lng) : prev.longitude,
+    }));
+    setFieldErrors(prev => ({ ...prev, address: '' }));
+  };
+
+  const handleDetectLocation = async () => {
+    try {
+      const loc = await detectLocation();
+      if (loc) {
+        setFormData(prev => ({
+          ...prev,
+          address: loc.address || loc.formattedAddress || prev.address,
+          latitude: loc.latitude ? String(loc.latitude) : prev.latitude,
+          longitude: loc.longitude ? String(loc.longitude) : prev.longitude,
+        }));
+        setFieldErrors(prev => ({ ...prev, address: '' }));
+        toast.success("Location detected!");
+      }
+    } catch (err) {
+      console.error("Detect location failed:", err);
+      toast.error("Could not detect location. Please type manually.");
+    }
+  };
 
   const checkUserExistsInBackend = async (emailVal, phoneVal) => {
     try {
@@ -475,6 +531,7 @@ const DeliveryRegister = () => {
         emergencyContact: (formData.emergencyContact || '').trim(),
         aadharNumber: (formData.aadharNumber || '').replace(/\s/g, ''),
         address: (formData.address || '').trim(),
+        coordinates: [Number(formData.longitude) || 0, Number(formData.latitude) || 0],
         vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
         vehicleNumber: formData.vehicleType === 'Bicycle' ? 'BICYCLE' : (formData.vehicleNumber || '').trim(),
         accountName: (formData.accountHolderName || formData.accountName || '').trim(),
@@ -894,18 +951,56 @@ const DeliveryRegister = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0F172A] mb-1">Residential Address *</label>
-                  <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
-                    <input 
-                      type="text" 
-                      name="address" 
-                      value={formData.address} 
-                      onChange={handleChange} 
-                      placeholder="Complete residential address" 
-                      required 
-                      className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
-                    />
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-semibold text-[#0F172A]">Residential Address *</label>
+                    <button
+                      type="button"
+                      onClick={handleDetectLocation}
+                      disabled={isLocating}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 border border-[#843D9B]/20 text-[#843D9B] text-[10px] font-bold rounded-lg hover:bg-purple-100 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                    >
+                      {isLocating ? (
+                        <div className="w-3 h-3 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" />
+                      ) : (
+                        <FiNavigation size={11} className="text-[#843D9B]" />
+                      )}
+                      {isLocating ? 'Detecting...' : 'Detect Location'}
+                    </button>
                   </div>
+                  {isLoaded ? (
+                    <div>
+                      <PlacesAutocompleteField
+                        placeholder="Search residential area, street, landmark..."
+                        value={formData.address || ''}
+                        error={fieldErrors.address}
+                        onChange={(val) => {
+                          setFormData(prev => ({ ...prev, address: val }));
+                          if (fieldErrors.address && val.trim().length >= 5) {
+                            setFieldErrors(prev => ({ ...prev, address: '' }));
+                          }
+                        }}
+                        onClear={() => setFormData(prev => ({ ...prev, address: '', latitude: '', longitude: '' }))}
+                        onPlaceSelect={handlePlaceSelect}
+                      />
+                      {formData.latitude && formData.longitude && (
+                        <p className="text-[10px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                          ✓ Pinned on Map: {Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-3.5 py-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                      <input 
+                        type="text" 
+                        name="address" 
+                        value={formData.address} 
+                        onChange={handleChange} 
+                        placeholder="Complete residential address" 
+                        required 
+                        className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" 
+                      />
+                    </div>
+                  )}
                   {fieldErrors.address && <p className="text-[11px] text-red-500 font-semibold mt-1">{fieldErrors.address}</p>}
                 </div>
 

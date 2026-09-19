@@ -113,7 +113,14 @@ const DeliverySignup = () => {
         if (autocomplete !== null) {
             const place = autocomplete.getPlace();
             if (place && place.formatted_address) {
-                setFormData(prev => ({ ...prev, address: place.formatted_address }));
+                const lat = place.geometry?.location ? (typeof place.geometry.location.lat === 'function' ? place.geometry.location.lat() : place.geometry.location.lat) : null;
+                const lng = place.geometry?.location ? (typeof place.geometry.location.lng === 'function' ? place.geometry.location.lng() : place.geometry.location.lng) : null;
+                setFormData(prev => ({
+                    ...prev,
+                    address: place.formatted_address,
+                    latitude: lat ? String(lat) : prev.latitude,
+                    longitude: lng ? String(lng) : prev.longitude,
+                }));
             }
         }
     };
@@ -122,18 +129,28 @@ const DeliverySignup = () => {
         if (navigator.geolocation) {
             setIsFetchingLocation(true);
             navigator.geolocation.getCurrentPosition(
-                async (position) => {
+                (position) => {
                     const { latitude, longitude } = position.coords;
-                    try {
-                        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
-                        const data = await response.json();
-                        if (data.results && data.results.length > 0) {
-                            setFormData(prev => ({ ...prev, address: data.results[0].formatted_address }));
-                        }
-                    } catch (error) {
-                        console.error('Error fetching location:', error);
-                    } finally {
+                    if (window.google?.maps?.Geocoder) {
+                        const geocoder = new window.google.maps.Geocoder();
+                        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+                            setIsFetchingLocation(false);
+                            if (status === 'OK' && results?.[0]) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    address: results[0].formatted_address,
+                                    latitude: String(latitude),
+                                    longitude: String(longitude),
+                                }));
+                            }
+                        });
+                    } else {
                         setIsFetchingLocation(false);
+                        setFormData(prev => ({
+                            ...prev,
+                            latitude: String(latitude),
+                            longitude: String(longitude),
+                        }));
                     }
                 },
                 (error) => {
@@ -349,6 +366,7 @@ const DeliverySignup = () => {
                 phoneNumber: formData.phone,
                 role: 'delivery',
                 documents,
+                coordinates: [Number(formData.longitude) || 0, Number(formData.latitude) || 0],
                 ...(profileImageUrl && { profileImage: profileImageUrl })
             };
             
