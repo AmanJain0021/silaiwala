@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import axios from 'axios';
 import api from '../../../shared/utils/api';
 
 const useMeasurementStore = create((set, get) => ({
@@ -35,19 +36,32 @@ const useMeasurementStore = create((set, get) => ({
         }
     },
 
+    logout: () => {
+        try {
+            localStorage.removeItem('executive_token');
+            localStorage.removeItem('executive_user');
+        } catch (e) {}
+        set({ profile: null, stats: null, requests: [], error: null, loading: false });
+    },
+
     // Profile & Dashboard
     fetchDashboard: async () => {
         set({ loading: true, error: null });
         try {
             const res = await api.get('/measurement-executive/dashboard');
-            set({ 
-                profile: res.data.data.profile, 
-                stats: res.data.data.stats, 
-                loading: false 
-            });
+            if (res.data?.data) {
+                set({ 
+                    profile: res.data.data.profile, 
+                    stats: res.data.data.stats, 
+                    loading: false,
+                    error: null
+                });
+            } else {
+                set({ loading: false });
+            }
         } catch (error) {
-            if (error.name === 'CanceledError') return;
-            set({ error: error.response?.data?.message || 'Failed to load dashboard', loading: false });
+            if (axios.isCancel(error) || error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
+            set({ error: error.response?.data?.message || error.message || 'Failed to load dashboard', loading: false });
         }
     },
 

@@ -13,7 +13,7 @@ export const getToken = (forcedRole = null) => {
             if (forcedRole === 'tailor' || path.startsWith('/partner')) {
                 return localStorage.getItem("tailor_token") || null;
             }
-            if (forcedRole === 'measurement_executive' || path.startsWith('/executive')) {
+            if (forcedRole === 'measurement_executive' || forcedRole === 'executive' || path.startsWith('/executive')) {
                 return localStorage.getItem("executive_token") || null;
             }
             if (forcedRole === 'admin' || path.startsWith('/admin')) {
@@ -46,7 +46,7 @@ export const setToken = (token, role = null) => {
                 localStorage.setItem("tailor_token", token);
                 return;
             }
-            if (role === 'measurement_executive' || path.startsWith('/executive')) {
+            if (role === 'measurement_executive' || role === 'executive' || path.startsWith('/executive')) {
                 localStorage.setItem("executive_token", token);
                 return;
             }
@@ -79,7 +79,7 @@ export const removeToken = (role = null) => {
                 localStorage.removeItem("tailor_status");
                 return;
             }
-            if (role === 'measurement_executive' || path.startsWith('/executive')) {
+            if (role === 'measurement_executive' || role === 'executive' || path.startsWith('/executive')) {
                 localStorage.removeItem("executive_token");
                 localStorage.removeItem("executive_user");
                 return;

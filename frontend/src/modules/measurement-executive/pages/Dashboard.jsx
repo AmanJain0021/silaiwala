@@ -26,7 +26,7 @@ const formatAddress = (addr) => {
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { profile, stats, loading, fetchDashboard, toggleAvailability } = useMeasurementStore();
+    const { profile, stats, loading, error, fetchDashboard, toggleAvailability } = useMeasurementStore();
     const { isSocketConnected } = useMeasurementAuth();
     const { detectLocation } = useUnifiedLocation({ fetchAddress: false });
 
@@ -125,15 +125,45 @@ const Dashboard = () => {
     };
 
     if (loading) {
-        return <div className="p-4 flex justify-center">Loading dashboard...</div>;
+        return (
+            <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] text-slate-500">
+                <Loader2 className="w-8 h-8 animate-spin text-[#843D9B] mb-3" />
+                <p className="text-sm font-medium">Loading dashboard...</p>
+            </div>
+        );
     }
 
     if (!profile) {
         return (
-            <div className="p-4 flex flex-col items-center justify-center text-red-500 mt-10">
-                <AlertCircle size={48} className="mb-4 text-red-400" />
-                <h3 className="text-lg font-bold mb-2">Error Loading Dashboard</h3>
-                <p className="text-sm">Please refresh the page or try again later.</p>
+            <div className="p-6 flex flex-col items-center justify-center text-center mt-12 max-w-sm mx-auto">
+                <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mb-4">
+                    <AlertCircle size={36} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-1.5">Error Loading Dashboard</h3>
+                <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                    {error || 'Unable to fetch dashboard data. Please check your network connection and try again.'}
+                </p>
+                <div className="flex flex-col w-full gap-2.5">
+                    <button
+                        onClick={() => {
+                            fetchDashboard();
+                            fetchActiveTask();
+                            fetchNotifications();
+                        }}
+                        className="w-full py-3 px-4 bg-[#843D9B] text-white rounded-xl text-xs font-semibold hover:bg-[#722f87] active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        Retry Now
+                    </button>
+                    <button
+                        onClick={() => {
+                            useMeasurementStore.getState().logout?.();
+                            navigate('/executive/login');
+                        }}
+                        className="w-full py-2.5 px-4 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-all cursor-pointer"
+                    >
+                        Sign In Again
+                    </button>
+                </div>
             </div>
         );
     }

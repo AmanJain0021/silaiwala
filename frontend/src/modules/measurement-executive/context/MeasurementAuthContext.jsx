@@ -15,15 +15,21 @@ export const MeasurementAuthProvider = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = getToken();
-        const userStr = localStorage.getItem('user');
+        const token = getToken('executive');
+        const userStr = localStorage.getItem('executive_user') || localStorage.getItem('user');
         
         if (token && userStr) {
-            const user = JSON.parse(userStr);
-            if (user.role === 'measurement_executive') {
-                fetchDashboard();
-                const userId = user._id || user.id;
-                setupSocket(userId);
+            try {
+                const user = JSON.parse(userStr);
+                if (user.role === 'measurement_executive') {
+                    if (!useMeasurementStore.getState().profile) {
+                        fetchDashboard();
+                    }
+                    const userId = user._id || user.id;
+                    setupSocket(userId);
+                }
+            } catch (e) {
+                console.error("Failed to parse user in MeasurementAuthContext", e);
             }
         }
 

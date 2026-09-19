@@ -37,7 +37,20 @@ if (process.env.CLIENT_URL) {
 app.use(
   cors({
     origin: function(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        process.env.NODE_ENV !== "production" ||
+        allowedOrigins.includes(origin) ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
+        /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||
+        /^https?:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(:\d+)?$/.test(origin) ||
+        origin.endsWith(".vercel.app") ||
+        origin.endsWith(".ngrok-free.app") ||
+        origin.endsWith(".ngrok.io") ||
+        origin.endsWith(".loca.lt")
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
