@@ -105,13 +105,25 @@ exports.register = asyncHandler(async (req, res, next) => {
   const isBypass = (isDefaultOtpEnabled() || finalRole === "measurement_executive") && (otp === "123456" || otp === "000000");
   let isValidOTP = isBypass;
 
-  if (!isValidOTP && otp) {
+  if (!isValidOTP) {
     const phoneKeys = [finalPhoneNumber, last10Digits, `+91${last10Digits}`];
-    const validRecord = await OTP.findOne({
-      phoneNumber: { $in: phoneKeys },
-      otp: String(otp).trim(),
-      expiresAt: { $gt: new Date() }
-    }).sort("-createdAt");
+    let validRecord = null;
+    if (otp) {
+      validRecord = await OTP.findOne({
+        phoneNumber: { $in: phoneKeys },
+        otp: String(otp).trim(),
+        expiresAt: { $gt: new Date() }
+      }).sort("-createdAt");
+    }
+
+    // Fallback: If phone was already verified via /verify-otp in Step 1 within expiry
+    if (!validRecord) {
+      validRecord = await OTP.findOne({
+        phoneNumber: { $in: phoneKeys },
+        isVerified: true,
+        expiresAt: { $gt: new Date() }
+      }).sort("-createdAt");
+    }
 
     if (validRecord) {
       isValidOTP = true;
