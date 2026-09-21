@@ -114,6 +114,9 @@ const CustomerLiveJourney = () => {
                 if (status === window.google.maps.DirectionsStatus.OK) {
                     setDirections(result);
                     setDirectLine(null);
+                    if (result.routes?.[0]?.bounds && mapRef.current) {
+                        mapRef.current.fitBounds(result.routes[0].bounds, 40);
+                    }
                     const leg = result.routes[0].legs[0];
                     setDistance(leg.distance.text);
                     setEta(leg.duration.text);
@@ -135,29 +138,13 @@ const CustomerLiveJourney = () => {
                         console.error("Failed to broadcast location", err);
                     }
                 } else {
-                    // Fallback to TWO_WHEELER if DRIVING fails
-                    directionsService.route(
-                        {
-                            origin: currentLoc,
-                            destination: destination,
-                            travelMode: window.google.maps.TravelMode.TWO_WHEELER || 'TWO_WHEELER',
-                        },
-                        async (result2, status2) => {
-                            if (status2 === window.google.maps.DirectionsStatus.OK) {
-                                setDirections(result2);
-                                setDirectLine(null);
-                                const leg = result2.routes[0].legs[0];
-                                setDistance(leg.distance.text);
-                                setEta(leg.duration.text);
-                            } else {
-                                console.error("Directions API failed:", status2);
-                                // Fallback to a straight direct line if Directions API is unavailable/restricted
-                                setDirectLine([currentLoc, destination]);
-                                setDistance('Direct Route');
-                                setEta('Calculating...');
-                            }
-                        }
-                    );
+                    console.warn("Directions API status:", status);
+                    if (currentLoc && destination && mapRef.current) {
+                        const bounds = new window.google.maps.LatLngBounds();
+                        bounds.extend(currentLoc);
+                        bounds.extend(destination);
+                        mapRef.current.fitBounds(bounds, 50);
+                    }
                 }
             }
         );
@@ -225,12 +212,24 @@ const CustomerLiveJourney = () => {
                     options={{ disableDefaultUI: true, zoomControl: false, styles: [] }}
                     onLoad={map => { mapRef.current = map; }}
                 >
+                    {directions?.routes?.[0]?.overview_path && (
+                        <Polyline
+                            path={directions.routes[0].overview_path}
+                            options={{
+                                strokeColor: '#3B0764',
+                                strokeOpacity: 0.22,
+                                strokeWeight: 9,
+                                zIndex: 1,
+                            }}
+                        />
+                    )}
                     {directions && (
                         <DirectionsRenderer
                             directions={directions}
                             options={{
                                 suppressMarkers: true,
-                                polylineOptions: { strokeColor: '#843D9B', strokeOpacity: 0.9, strokeWeight: 5 }
+                                preserveViewport: false,
+                                polylineOptions: { strokeColor: '#843D9B', strokeOpacity: 1, strokeWeight: 5.5, zIndex: 2 }
                             }}
                         />
                     )}

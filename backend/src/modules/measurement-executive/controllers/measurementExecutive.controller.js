@@ -87,6 +87,36 @@ exports.updateLocation = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Executive profile not found", 404));
   }
 
+  // Broadcast location update to active measurement order rooms
+  try {
+    const { getIO } = require("../../../config/socket.js");
+    const MeasurementRequest = require("../../../models/MeasurementRequest.js");
+    const io = getIO();
+    if (io) {
+      const activeRequests = await MeasurementRequest.find({
+        executive: req.user.id,
+        status: { $in: ['accepted', 'otp_sent', 'reached'] }
+      }).select('order _id');
+
+      for (const mReq of activeRequests) {
+        if (mReq.order) {
+          io.to(`order_${mReq.order}`).emit('locationUpdated', {
+            orderId: mReq.order,
+            requestId: mReq._id,
+            isMeasurementExecutive: true,
+            currentLocation: {
+              latitude: coordinates[1],
+              longitude: coordinates[0],
+            },
+            timestamp: new Date()
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to broadcast executive location socket:", err.message);
+  }
+
   res.status(200).json({
     success: true,
     data: profile,

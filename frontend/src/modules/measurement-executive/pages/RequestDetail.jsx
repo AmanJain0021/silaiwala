@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText, Activity, X } from 'lucide-react';
@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import api from '../../../shared/utils/api';
 import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
 import { useJsApiLoader } from '@react-google-maps/api';
+import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../../../config/constants';
 import {
     isHeadingField,
     getInputFields,
@@ -162,27 +164,66 @@ const RequestDetail = () => {
         });
     }, [itemSchemas]);
 
+    const socketRef = useRef(null);
+    const lastBroadcastTimeRef = useRef(0);
+
+    useEffect(() => {
+        const token = localStorage.getItem('executive_token') || localStorage.getItem('token');
+        const socket = io(SOCKET_URL, {
+            auth: { token },
+            transports: ['websocket', 'polling']
+        });
+        socketRef.current = socket;
+
+        const orderId = request?.order?._id || request?.order;
+        if (orderId) {
+            socket.emit('join_order_room', orderId);
+        }
+
+        return () => {
+            if (socket) socket.disconnect();
+        };
+    }, [request?.order]);
+
     useEffect(() => {
         if (!navigator.geolocation) {
             toast.error('Geolocation not supported by your browser');
             return;
         }
 
+        const handlePosition = (position) => {
+            const { latitude, longitude } = position.coords;
+            const newLoc = { lat: latitude, lng: longitude };
+            setCurrentLocation(newLoc);
+
+            const now = Date.now();
+            if (now - lastBroadcastTimeRef.current > 7000) {
+                lastBroadcastTimeRef.current = now;
+                const orderId = request?.order?._id || request?.order;
+                if (socketRef.current && socketRef.current.connected) {
+                    socketRef.current.emit('executive_location_update', {
+                        orderId,
+                        requestId: id,
+                        latitude,
+                        longitude,
+                        distanceRemaining: routeData?.distance,
+                        eta: routeData?.duration,
+                    });
+                }
+                api.put('/measurement-executive/location', { coordinates: [longitude, latitude] }).catch(() => {});
+            }
+        };
+
         const watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                setCurrentLocation({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-            },
+            handlePosition,
             (error) => {
-                console.error('Location error:', error);
+                console.warn('Geolocation error:', error);
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
         );
 
         return () => navigator.geolocation.clearWatch(watchId);
-    }, []);
+    }, [id, request?.order, routeData]);
 
     const loadDetail = async () => {
         try {
@@ -529,13 +570,19 @@ const RequestDetail = () => {
                         <div className="rounded-2xl overflow-hidden shadow-inner border border-gray-200">
                             <DeliveryBoyLiveMap 
                                 currentLocation={currentLocation}
-                                destination={request.customerLocation?.coordinates ? {
-                                    lat: request.customerLocation.coordinates[1],
-                                    lng: request.customerLocation.coordinates[0]
-                                } : null}
-                                destinationAddress={`${request.customerAddress?.street}, ${request.customerAddress?.city}`}
+                                destination={
+                                    request.customerLocation?.coordinates?.length === 2 &&
+                                    (request.customerLocation.coordinates[0] !== 0 || request.customerLocation.coordinates[1] !== 0)
+                                        ? {
+                                            lat: Number(request.customerLocation.coordinates[1]),
+                                            lng: Number(request.customerLocation.coordinates[0])
+                                        }
+                                        : null
+                                }
+                                destinationAddress={`${request.customerAddress?.street || ''}, ${request.customerAddress?.city || ''}`}
                                 isLoaded={isLoaded}
-                                height="300px"
+                                height="320px"
+                                trackingType="measurement"
                                 onRouteCalculated={(data) => setRouteData(data)}
                             />
                         </div>

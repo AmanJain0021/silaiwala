@@ -182,6 +182,51 @@ const initSocket = (httpServer) => {
       }
     });
 
+    // ── Measurement Executive location update via Socket.IO ───────────────────
+    socket.on("executive_location_update", async (data) => {
+      try {
+        const { orderId, requestId, latitude, longitude, distanceRemaining, eta } = data;
+        if (latitude === undefined || longitude === undefined) return;
+
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        // Update MeasurementExecutive model in background
+        if (socket.user?.id) {
+          const MeasurementExecutive = require("../models/MeasurementExecutive.js");
+          await MeasurementExecutive.findOneAndUpdate(
+            { user: socket.user.id },
+            {
+              currentLocation: {
+                type: "Point",
+                coordinates: [lng, lat],
+              },
+            }
+          ).catch(() => {});
+        }
+
+        const payload = {
+          orderId,
+          requestId,
+          isMeasurementExecutive: true,
+          currentLocation: { latitude: lat, longitude: lng },
+          distanceRemaining,
+          eta,
+          timestamp: new Date(),
+        };
+
+        if (orderId) {
+          io.to(`order_${orderId}`).emit('locationUpdated', payload);
+        }
+        if (requestId) {
+          io.to(`measurement_${requestId}`).emit('locationUpdated', payload);
+        }
+      } catch (err) {
+        console.error("executive_location_update socket error:", err);
+      }
+    });
+
     // ── Issue chat rooms ─────────────────────────────────────────────────────
     socket.on("join_issue_room", (issueId) => {
       socket.join(`issue_${issueId}`);

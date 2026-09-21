@@ -15,6 +15,7 @@ import { SOCKET_URL } from '../../../config/constants';
 import { getToken } from '../../../utils/auth';
 import ReviewModal from '../components/orders/ReviewModal';
 import LiveDeliveryTracker from '../../../shared/components/LiveDeliveryTracker';
+import LiveMeasurementTracker from '../../../shared/components/LiveMeasurementTracker';
 import ExchangeRequestModal from '../components/orders/ExchangeRequestModal';
 import OrderHelpModal from '../components/orders/OrderHelpModal';
 import useBrandingStore from '../../../store/brandingStore';
@@ -930,60 +931,10 @@ const OrderTracking = () => {
 
                     if (order.isMeasurementHome && isAccepted && execUser && !['completed', 'cancelled'].includes(order.status)) {
                         return (
-                            <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm space-y-4 animate-in fade-in duration-300">
-                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Measurement Executive Assigned
-                                    </span>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                        Home Visit
-                                    </span>
-                                </div>
-
-                                {(order.scheduledDate || order.scheduledTimeSlot) && (
-                                    <div className="flex items-center gap-2 p-2.5 bg-purple-50/70 border border-purple-100 rounded-2xl text-xs font-semibold text-gray-800">
-                                        <Calendar size={14} className="text-[#843D9B] shrink-0" />
-                                        <span>
-                                            Scheduled Slot: <strong className="text-[#843D9B] font-bold">{order.scheduledDate || 'Today'}</strong>
-                                            {order.scheduledTimeSlot && order.scheduledTimeSlot !== 'ASAP' && ` (${order.scheduledTimeSlot})`}
-                                            {order.scheduledTimeSlot === 'ASAP' && ' (ASAP)'}
-                                        </span>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-purple-100 border border-purple-200 flex items-center justify-center text-[#843D9B] font-black text-xl overflow-hidden shrink-0 shadow-sm">
-                                        {execUser?.profileImage ? (
-                                            <img
-                                                src={
-                                                    execUser.profileImage.startsWith('http')
-                                                        ? execUser.profileImage
-                                                        : `${import.meta.env.VITE_API_URL}${execUser.profileImage}`
-                                                }
-                                                alt="Executive"
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
-                                            />
-                                        ) : null}
-                                        <User size={26} className="text-[#843D9B]" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-base font-black text-gray-900 truncate">
-                                            {execUser?.name || 'Measurement Executive'}
-                                        </h4>
-                                        <p className="text-xs text-gray-500 font-medium">Accepted and on the way for your measurement visit</p>
-                                        {execUser?.phoneNumber && (
-                                            <a
-                                                href={`tel:${execUser.phoneNumber}`}
-                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#843D9B] bg-purple-50 hover:bg-purple-100 px-3 py-1 rounded-lg border border-purple-100 mt-2 transition-colors"
-                                            >
-                                                <Phone size={12} /> Call Executive
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                            <LiveMeasurementTracker 
+                                order={order} 
+                                socket={socketInstance} 
+                            />
                         );
                     }
 

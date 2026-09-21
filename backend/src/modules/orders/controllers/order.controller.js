@@ -1518,6 +1518,18 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
           measurementRequestInfo = mReq;
           if (mReq.executive) {
               measurementExecutive = mReq.executive;
+              try {
+                const MeasurementExecutive = require("../../../models/MeasurementExecutive.js");
+                const execProfile = await MeasurementExecutive.findOne({ user: mReq.executive._id || mReq.executive }).select('currentLocation');
+                if (execProfile?.currentLocation?.coordinates?.length === 2) {
+                  measurementRequestInfo.executiveLocation = {
+                    latitude: execProfile.currentLocation.coordinates[1],
+                    longitude: execProfile.currentLocation.coordinates[0],
+                  };
+                }
+              } catch (e) {
+                console.error("Error fetching executive location:", e);
+              }
           }
           if (order.customer?._id?.toString() === req.user.id && ['otp_sent', 'accepted'].includes(mReq.status) && mReq.otp) {
               measurementOtp = mReq.otp;

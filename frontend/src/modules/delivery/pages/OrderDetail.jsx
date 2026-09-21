@@ -275,8 +275,8 @@ const DeliveryOrderDetail = () => {
 
           const routeWithFallback = (req, onOk, label) => {
             const modes = [
-              window.google.maps.TravelMode.TWO_WHEELER,
               window.google.maps.TravelMode.DRIVING,
+              window.google.maps.TravelMode.TWO_WHEELER,
             ].filter(Boolean);
             const tryMode = (i) => {
               if (i >= modes.length) {

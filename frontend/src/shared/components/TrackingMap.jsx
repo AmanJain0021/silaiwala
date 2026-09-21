@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, MarkerF, Polyline, DirectionsRenderer } from '@react-google-maps/api';
 
 const containerStyle = { width: '100%', height: '100%' };
@@ -18,6 +18,7 @@ const TrackingMap = ({
   status,
 }) => {
   const [directions, setDirections] = useState(null);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     if (isLoaded && window.google) {
@@ -46,25 +47,45 @@ const TrackingMap = ({
             if (reqStatus === window.google.maps.DirectionsStatus.OK) {
               setDirections(result);
             } else {
-              // Fallback to TWO_WHEELER if DRIVING fails
-              directionsService.route(
-                {
-                  origin: { lat: Number(origin.lat), lng: Number(origin.lng) },
-                  destination: { lat: Number(destination.lat), lng: Number(destination.lng) },
-                  travelMode: window.google.maps.TravelMode.TWO_WHEELER || 'TWO_WHEELER',
-                },
-                (res2, status2) => {
-                  if (status2 === window.google.maps.DirectionsStatus.OK) {
-                    setDirections(res2);
-                  }
-                }
-              );
+              console.warn('TrackingMap Directions error:', reqStatus);
+              setDirections(null);
             }
           }
         );
       }
     }
   }, [riderLocation?.lat, riderLocation?.lng, vendorLocation?.lat, customerLocation?.lat, status, isLoaded]);
+
+  useEffect(() => {
+    if (!mapRef.current || !window.google) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    let hasPoints = false;
+
+    if (directions?.routes?.[0]?.bounds) {
+      mapRef.current.fitBounds(directions.routes[0].bounds, {
+        top: 50,
+        bottom: 50,
+        left: 50,
+        right: 50,
+      });
+      return;
+    }
+
+    [riderLocation, vendorLocation, customerLocation].forEach((loc) => {
+      if (loc?.lat && loc?.lng) {
+        bounds.extend({ lat: Number(loc.lat), lng: Number(loc.lng) });
+        hasPoints = true;
+      }
+    });
+
+    if (hasPoints) {
+      try {
+        mapRef.current.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
+      } catch {
+        mapRef.current.fitBounds(bounds);
+      }
+    }
+  }, [directions, riderLocation?.lat, riderLocation?.lng, vendorLocation?.lat, customerLocation?.lat]);
 
   if (!isLoaded) {
     return (
@@ -94,6 +115,7 @@ const TrackingMap = ({
         mapContainerStyle={containerStyle}
         center={center}
         zoom={zoom}
+        onLoad={(map) => { mapRef.current = map; }}
         options={{
           disableDefaultUI: true,
           zoomControl: true,
@@ -125,29 +147,32 @@ const TrackingMap = ({
             label={{ text: '📍', fontSize: '20px' }}
           />
         )}
-        {directions ? (
+        {directions?.routes?.[0]?.overview_path && (
+          <Polyline
+            path={directions.routes[0].overview_path}
+            options={{
+              strokeColor: '#3B0764',
+              strokeOpacity: 0.2,
+              strokeWeight: 9,
+              zIndex: 1,
+            }}
+          />
+        )}
+        {directions && (
           <DirectionsRenderer
             directions={directions}
             options={{
               suppressMarkers: true,
+              preserveViewport: false,
               polylineOptions: {
                 strokeColor: '#843D9B',
-                strokeWeight: 5,
-                strokeOpacity: 0.9,
+                strokeWeight: 5.5,
+                strokeOpacity: 1,
+                zIndex: 2,
               },
             }}
           />
-        ) : path.length >= 2 ? (
-          <Polyline
-            path={path}
-            options={{
-              strokeColor: '#843D9B',
-              strokeOpacity: 0.7,
-              strokeWeight: 4,
-              geodesic: true,
-            }}
-          />
-        ) : null}
+        )}
       </GoogleMap>
     </div>
   );

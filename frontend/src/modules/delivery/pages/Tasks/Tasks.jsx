@@ -48,29 +48,46 @@ const Tasks = () => {
     const fetchTasks = async () => {
         setLoading(true);
         try {
-            const [assignedRes, availableRes, completedRes] = await Promise.all([
+            const results = await Promise.allSettled([
                 deliveryService.getAssignedOrders(null, true),
                 deliveryService.getAvailableOrders(true),
                 deliveryService.getAssignedOrders('completed', true)
             ]);
 
-            if (assignedRes.success) {
-                setTasks(assignedRes.data);
-                // We no longer use the inline active dispatch view to avoid process duplication.
-                // The user is expected to click "View Dispatch Details" to manage the dispatch.
+            const [assignedResult, availableResult, completedResult] = results;
+
+            if (assignedResult.status === 'fulfilled' && assignedResult.value?.success) {
+                setTasks(assignedResult.value.data || []);
                 setActiveTaskId(null);
             }
-            if (availableRes.success) {
-                setAvailableTasks(availableRes.data);
+            if (availableResult.status === 'fulfilled' && availableResult.value?.success) {
+                setAvailableTasks(availableResult.value.data || []);
             }
-            if (completedRes?.success) {
-                setCompletedTasks(completedRes.data);
+            if (completedResult.status === 'fulfilled' && completedResult.value?.success) {
+                setCompletedTasks(completedResult.value.data || []);
+            }
+
+            const allRejected = results.every(r => r.status === 'rejected');
+            if (allRejected) {
+                const firstError = results[0]?.reason;
+                const isCancel = firstError?.name === 'CanceledError' || 
+                                 firstError?.code === 'ERR_CANCELED' || 
+                                 firstError?.name === 'AbortError' ||
+                                 firstError?.message?.toLowerCase().includes('cancel');
+                if (!isCancel && isOnline) {
+                    toast.error('Failed to load tasks');
+                }
             }
             setLoading(false);
         } catch (error) {
-            if (error?.name === 'CanceledError') return;
-            console.error('Error fetching tasks:', error);
-            toast.error('Failed to load tasks');
+            const isCancel = error?.name === 'CanceledError' || 
+                             error?.code === 'ERR_CANCELED' || 
+                             error?.name === 'AbortError' ||
+                             error?.message?.toLowerCase().includes('cancel');
+            if (!isCancel && isOnline) {
+                console.error('Error fetching tasks:', error);
+                toast.error('Failed to load tasks');
+            }
             setLoading(false);
         }
     };
