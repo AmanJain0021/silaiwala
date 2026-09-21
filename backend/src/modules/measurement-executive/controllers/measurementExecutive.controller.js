@@ -298,15 +298,29 @@ exports.getRequestDetail = asyncHandler(async (req, res, next) => {
     .populate("executive", "name phoneNumber profileImage")
     .populate({
       path: "order",
-      select: "orderId totalAmount status items deliveryAddress",
-      populate: {
-        path: "items.service",
-        select: "title category",
-        populate: {
-          path: "category",
-          select: "name measurementFields"
+      select: "orderId totalAmount status items deliveryAddress exchangeDetails",
+      populate: [
+        {
+          path: "items.service",
+          select: "title name image images category measurementFields",
+          populate: {
+            path: "category",
+            select: "name measurementFields"
+          }
+        },
+        {
+          path: "items.product",
+          select: "name image images"
+        },
+        {
+          path: "items.selectedFabric",
+          select: "name image images"
+        },
+        {
+          path: "items.customDesignRef",
+          select: "name image images referenceImages"
         }
-      }
+      ]
     })
     .lean();
 

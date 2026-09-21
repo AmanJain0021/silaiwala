@@ -1,172 +1,266 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
-import { MapPin, Phone, User, CheckCircle, Upload, Navigation, Clock, Landmark, Scissors, FileText, Activity, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../shared/utils/api';
-import DeliveryBoyLiveMap from '../../../shared/components/DeliveryBoyLiveMap';
-import { useJsApiLoader } from '@react-google-maps/api';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../../config/constants';
-import {
-    isHeadingField,
-    getInputFields,
-    getFieldKey,
-    sanitizeMeasurementFields,
-} from '../../../utils/measurementFields';
-import MeasurementDataDisplay from '../../../components/Common/MeasurementDataDisplay';
+import { 
+    CheckCircle, 
+    Plus, 
+    Check, 
+    AlertCircle, 
+    Sparkles, 
+    Navigation, 
+    RotateCw,
+    X,
+    ClipboardList
+} from 'lucide-react';
 
-const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
+// Reusable components for pixel-perfect recreation
+import Header from '../components/measurement-sheet/Header';
+import CustomerCard from '../components/measurement-sheet/CustomerCard';
+import ProgressStepper from '../components/measurement-sheet/ProgressStepper';
+import ItemTabs from '../components/measurement-sheet/ItemTabs';
+import MeasurementRow from '../components/measurement-sheet/MeasurementRow';
+import MeasurementGuide from '../components/measurement-sheet/MeasurementGuide';
+import ReferenceImages from '../components/measurement-sheet/ReferenceImages';
+import BottomActions from '../components/measurement-sheet/BottomActions';
+import CustomMeasurementModal from '../components/measurement-sheet/CustomMeasurementModal';
+import AddItemModal from '../components/measurement-sheet/AddItemModal';
+import CustomerDetailsModal from '../components/measurement-sheet/CustomerDetailsModal';
+import OTPModal from '../components/measurement-sheet/OTPModal';
 
-const CATEGORY_FIELDS_FALLBACK = {
-    kurta: [
-        { key: 'chest', label: 'Chest / Bust', placeholder: '34', isRequired: true },
-        { key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
-        { key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
-        { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
-        { key: 'length', label: 'Full Length', placeholder: '40', isRequired: true },
-        { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '16', isRequired: false },
-        { key: 'neck', label: 'Neck Depth', placeholder: '6', isRequired: false },
-    ],
-    shirt: [
-        { key: 'chest', label: 'Chest / Bust', placeholder: '38', isRequired: true },
-        { key: 'waist', label: 'Waist', placeholder: '34', isRequired: true },
-        { key: 'shoulder', label: 'Shoulder', placeholder: '17', isRequired: true },
-        { key: 'length', label: 'Full Length', placeholder: '30', isRequired: true },
-        { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '24', isRequired: true },
-        { key: 'neck', label: 'Collar Size', placeholder: '15', isRequired: false },
-    ],
-    blouse: [
-        { key: 'chest', label: 'Bust / Chest', placeholder: '34', isRequired: true },
-        { key: 'underbust', label: 'Underbust', placeholder: '30', isRequired: true },
-        { key: 'shoulder', label: 'Shoulder', placeholder: '14', isRequired: true },
-        { key: 'length', label: 'Blouse Length', placeholder: '14', isRequired: true },
-        { key: 'frontNeck', label: 'Front Neck Depth', placeholder: '7', isRequired: false },
-        { key: 'backNeck', label: 'Back Neck Depth', placeholder: '8', isRequired: false },
-        { key: 'sleeveLength', label: 'Sleeve Length', placeholder: '10', isRequired: false },
-    ],
-    pant: [
-        { key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
-        { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
-        { key: 'length', label: 'Full Length / Inseam', placeholder: '40', isRequired: true },
-        { key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
-        { key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
-    ],
-    trouser: [
-        { key: 'waist', label: 'Waist', placeholder: '32', isRequired: true },
-        { key: 'hips', label: 'Hips', placeholder: '38', isRequired: true },
-        { key: 'length', label: 'Full Length / Inseam', placeholder: '40', isRequired: true },
-        { key: 'thigh', label: 'Thigh Width', placeholder: '22', isRequired: false },
-        { key: 'bottom', label: 'Bottom Opening', placeholder: '14', isRequired: false },
-    ],
-    skirt: [
-        { key: 'waist', label: 'Waist', placeholder: '28', isRequired: true },
-        { key: 'hips', label: 'Hips', placeholder: '36', isRequired: true },
-        { key: 'length', label: 'Full Length', placeholder: '38', isRequired: true },
-    ],
-};
+// Standard 10 Kameez measurements matching the screenshot
+const STANDARD_KAMEEZ_FIELDS = [
+    { key: 'shoulder', label: 'Shoulder', defaultValue: '14.5', guideNumber: 1, instruction: 'Measure straight across the back from shoulder tip to shoulder tip.' },
+    { key: 'chest', label: 'Chest', defaultValue: '36.0', guideNumber: 2, instruction: 'Measure around the fullest part of the chest keeping tape horizontal.' },
+    { key: 'bust', label: 'Bust', defaultValue: '38.0', guideNumber: null, instruction: 'Measure around the fullest part of the bustline with arms down.' },
+    { key: 'waist', label: 'Waist', defaultValue: '32.0', guideNumber: 4, instruction: 'Measure around the narrowest part of the natural waist.' },
+    { key: 'hip', label: 'Hip', defaultValue: '40.0', guideNumber: 5, instruction: 'Measure around the widest part of the hips and buttocks.' },
+    { key: 'armhole', label: 'Armhole', defaultValue: '17.0', guideNumber: null, instruction: 'Measure around the shoulder joint and armpit comfortably.' },
+    { key: 'sleeveLength', label: 'Sleeve Length', defaultValue: '22.0', guideNumber: 6, instruction: 'Measure from shoulder bone along slightly bent arm to wrist.' },
+    { key: 'kameezLength', label: 'Kameez Length', defaultValue: '46.0', guideNumber: 7, instruction: 'Measure from shoulder neck intersection down to desired hemline.' },
+    { key: 'neckWidth', label: 'Neck Width', defaultValue: '3.0', guideNumber: 9, instruction: 'Measure horizontally across the base of the neck.' },
+    { key: 'neckDepth', label: 'Neck Depth', defaultValue: '7.0', guideNumber: 10, instruction: 'Measure vertically from shoulder seam down to front neck point.' },
+];
 
-const DEFAULT_FALLBACK_FIELDS = ['chest', 'waist', 'hips', 'shoulder', 'length', 'neck', 'sleeve', 'inseam'].map(
-    (f) => ({ key: f, label: f, placeholder: '0.0', isRequired: true })
-);
-
-const resolveFieldsForService = (item) => {
-    const custom = item?.service?.category?.measurementFields;
-    if (Array.isArray(custom) && custom.length > 0) return custom;
-    const name = (
-        item?.service?.category?.name ||
-        item?.service?.title ||
-        item?.service?.name ||
-        ''
-    ).toLowerCase();
-    const matchKey = Object.keys(CATEGORY_FIELDS_FALLBACK).find((k) => name.includes(k));
-    if (matchKey) return CATEGORY_FIELDS_FALLBACK[matchKey];
-    return DEFAULT_FALLBACK_FIELDS;
-};
+const STANDARD_BOTTOM_FIELDS = [
+    { key: 'waist', label: 'Waist', defaultValue: '32.0', instruction: 'Measure around natural waistline where trousers sit.' },
+    { key: 'hip', label: 'Hips', defaultValue: '40.0', instruction: 'Measure around fullest circumference of hips.' },
+    { key: 'length', label: 'Full Length', defaultValue: '39.0', instruction: 'Measure from waistline down to ankle or floor.' },
+    { key: 'inseam', label: 'Inseam', defaultValue: '28.0', instruction: 'Measure from crotch seam down to inner ankle hem.' },
+    { key: 'thigh', label: 'Thigh Width', defaultValue: '22.0', instruction: 'Measure around the fullest part of the upper thigh.' },
+    { key: 'bottom', label: 'Bottom Opening', defaultValue: '14.0', instruction: 'Measure circumference of bottom pant cuff opening.' },
+];
 
 const RequestDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getRequestDetail, generateOTP, verifyOTP, uploadMeasurements, completeMeasurement, rejectRequest } = useMeasurementStore();
-    
+    const { 
+        getRequestDetail, 
+        acceptRequest, 
+        rejectRequest, 
+        generateOTP, 
+        verifyOTP, 
+        uploadMeasurements, 
+        completeMeasurement 
+    } = useMeasurementStore();
+
+    // Core data state
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [otp, setOtp] = useState('');
-    const [verifying, setVerifying] = useState(false);
-    
-    const [currentLocation, setCurrentLocation] = useState(null);
-    const [routeData, setRouteData] = useState(null);
-    const [settings, setSettings] = useState(null);
-
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-        libraries: GOOGLE_MAPS_LIBRARIES
-    });
-    
-    // Per booked-service measurement values: { [itemIndex]: { fieldKey: value } }
-    const [itemForms, setItemForms] = useState({});
-    const [notes, setNotes] = useState('');
-    const [pdfFile, setPdfFile] = useState(null);
-    const [photos, setPhotos] = useState([]);
+    const [accepting, setAccepting] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+    const [resendingOtp, setResendingOtp] = useState(false);
 
-    const serviceItems = useMemo(() => {
-        const items = request?.order?.items || [];
-        const withService = items
-            .map((item, index) => ({ item, index }))
-            .filter(({ item }) => item?.service);
-        if (withService.length > 0) return withService;
-        return items.length ? [{ item: items[0], index: 0 }] : [];
-    }, [request]);
+    // Active flow step: 'arrived' | 'measuring' | 'confirm' | 'complete'
+    const [currentStep, setCurrentStep] = useState('measuring');
 
-    const itemSchemas = useMemo(
-        () =>
-            serviceItems.map(({ item, index }) => {
-                const fields = resolveFieldsForService(item);
-                const layout = sanitizeMeasurementFields(fields);
-                const title =
-                    item?.service?.title ||
-                    item?.service?.name ||
-                    item?.service?.category?.name ||
-                    `Item ${index + 1}`;
-                const hasCustom =
-                    Array.isArray(item?.service?.category?.measurementFields) &&
-                    item.service.category.measurementFields.length > 0;
-                return { index, item, title, fields, layout, hasCustom };
-            }),
-        [serviceItems]
-    );
+    // Modals
+    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+    const [isCustomMeasurementModalOpen, setIsCustomMeasurementModalOpen] = useState(false);
+    const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+
+    // Garment items & active tab
+    const [items, setItems] = useState([
+        { id: 'suit_1', name: 'Suit 1', type: 'top' },
+        { id: 'suit_2', name: 'Suit 2', type: 'top' },
+        { id: 'bottom', name: 'Bottom', type: 'bottom' },
+    ]);
+    const [activeTabId, setActiveTabId] = useState('suit_1');
+
+    // Per-item measurements: { [itemId]: { [key]: value } }
+    const [measurementsByItem, setMeasurementsByItem] = useState({});
+    
+    // Per-item custom fields: { [itemId]: [ { key, label, unit } ] }
+    const [customFieldsByItem, setCustomFieldsByItem] = useState({});
+
+    // Highlighted measurement from guide click
+    const [highlightedFieldKey, setHighlightedFieldKey] = useState(null);
+    const [activeGuideNumber, setActiveGuideNumber] = useState(null);
+
+    // Notes
+    const [notes, setNotes] = useState('');
+
+    // Reference images (URLs or File objects)
+    const [referenceImages, setReferenceImages] = useState([
+        '/assets/images/fabric_ref.jpg',
+        '/assets/images/kameez_ref.jpg'
+    ]);
+
+    // Socket reference for live sync
+    const socketRef = useRef(null);
+
+    // ── Load request detail ──
+    const loadDetail = async () => {
+        try {
+            const data = await getRequestDetail(id);
+            setRequest(data);
+
+            // Determine stepper status based on request status
+            if (data.status === 'completed') {
+                setCurrentStep('complete');
+            } else if (data.status === 'otp_verified') {
+                setCurrentStep('complete');
+            } else if (data.status === 'otp_sent' || data.status === 'measurements_uploaded') {
+                setCurrentStep('confirm');
+            } else {
+                setCurrentStep('measuring');
+            }
+
+            // Populate items strictly from order
+            if (data.order?.items?.length > 0) {
+                const orderItems = data.order.items.map((it, idx) => {
+                    const title = it.service?.title || it.service?.name || it.product?.name || `Item ${idx + 1}`;
+                    const categoryName = (it.service?.category?.name || title).toLowerCase();
+                    const isBot = /pajama|pant|trouser|salwar|bottom|plazo|palazzo|skirt/i.test(title) || 
+                                  /pajama|pant|trouser|salwar|bottom|plazo|palazzo|skirt/i.test(categoryName);
+                    
+                    // Parse category measurement fields if available
+                    let customCategoryFields = null;
+                    if (Array.isArray(it.service?.category?.measurementFields) && it.service.category.measurementFields.length > 0) {
+                        customCategoryFields = it.service.category.measurementFields
+                            .filter(f => f && (f.key || f.label))
+                            .map(f => ({
+                                key: f.key || f.label.toLowerCase().replace(/\s+/g, '_'),
+                                label: f.label || f.key,
+                                defaultValue: f.defaultValue || f.placeholder || '0.0',
+                                instruction: f.instruction || f.placeholder || ''
+                            }));
+                    }
+
+                    return {
+                        id: `order_item_${idx}`,
+                        name: title,
+                        type: isBot ? 'bottom' : 'top',
+                        categoryName: it.service?.category?.name || (isBot ? 'Pajama' : 'Kameez'),
+                        categoryFields: customCategoryFields,
+                        rawItem: it
+                    };
+                });
+                
+                setItems(orderItems);
+                setActiveTabId(orderItems[0].id);
+            }
+
+            // Extract all real order images
+            const orderImages = [];
+            if (data.order?.items) {
+                data.order.items.forEach((it) => {
+                    const primaryImg = it.service?.image || 
+                                       it.product?.image || 
+                                       it.product?.images?.[0] || 
+                                       it.selectedFabric?.image || 
+                                       it.selectedFabric?.images?.[0] || 
+                                       it.image;
+                    if (primaryImg && !orderImages.includes(primaryImg)) {
+                        orderImages.push(primaryImg);
+                    }
+                    if (Array.isArray(it.service?.images)) {
+                        it.service.images.forEach((img) => {
+                            if (img && !orderImages.includes(img)) orderImages.push(img);
+                        });
+                    }
+                    if (Array.isArray(it.customDesignRef?.referenceImages)) {
+                        it.customDesignRef.referenceImages.forEach((img) => {
+                            if (img && !orderImages.includes(img)) orderImages.push(img);
+                        });
+                    }
+                });
+            }
+            if (Array.isArray(data.order?.exchangeDetails?.images)) {
+                data.order.exchangeDetails.images.forEach((img) => {
+                    if (img && !orderImages.includes(img)) orderImages.push(img);
+                });
+            }
+            if (Array.isArray(data.report?.photos) && data.report.photos.length > 0) {
+                data.report.photos.forEach((img) => {
+                    if (img && !orderImages.includes(img)) orderImages.push(img);
+                });
+            }
+
+            if (orderImages.length > 0) {
+                setReferenceImages(orderImages);
+            } else {
+                setReferenceImages([
+                    '/assets/images/fabric_ref.jpg',
+                    '/assets/images/kameez_ref.jpg'
+                ]);
+            }
+
+            // Restore from report notes if existing
+            if (data.report?.notes) {
+                setNotes(data.report.notes);
+            }
+
+            // Restore from localStorage draft if present
+            const draftKey = `sewzella_draft_${id}`;
+            const savedDraft = localStorage.getItem(draftKey);
+            if (savedDraft) {
+                try {
+                    const parsed = JSON.parse(savedDraft);
+                    if (parsed.measurementsByItem) setMeasurementsByItem(parsed.measurementsByItem);
+                    if (parsed.customFieldsByItem) setCustomFieldsByItem(parsed.customFieldsByItem);
+                    if (parsed.notes) setNotes(parsed.notes);
+                } catch (e) {
+                    console.error('Failed to parse draft', e);
+                }
+            }
+        } catch (error) {
+            if (error.name === 'CanceledError') return;
+            console.error('Failed to load request detail:', error);
+            toast.error(`Failed to load request: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         loadDetail();
-        api.get('/cms/settings')
-            .then(res => {
-                if(res.data.success) setSettings(res.data.data);
-            })
-            .catch(err => console.error('Failed to load settings:', err));
     }, [id]);
 
+    // Initialize default measurements for active items if empty
     useEffect(() => {
-        if (!itemSchemas.length) return;
-        setItemForms((prev) => {
-            const next = {};
-            itemSchemas.forEach(({ index, fields }) => {
-                const prevVals = prev[index] || {};
-                const empty = {};
-                getInputFields(fields).forEach((f) => {
-                    const key = getFieldKey(f);
-                    empty[key] = prevVals[key] ?? '';
-                });
-                next[index] = empty;
+        setMeasurementsByItem((prev) => {
+            const next = { ...prev };
+            items.forEach((item) => {
+                if (!next[item.id]) {
+                    const initial = {};
+                    const fields = item.type === 'bottom' ? STANDARD_BOTTOM_FIELDS : STANDARD_KAMEEZ_FIELDS;
+                    fields.forEach((f) => {
+                        initial[f.key] = f.defaultValue;
+                    });
+                    next[item.id] = initial;
+                }
             });
             return next;
         });
-    }, [itemSchemas]);
+    }, [items]);
 
-    const socketRef = useRef(null);
-    const lastBroadcastTimeRef = useRef(0);
-
+    // Socket connection
     useEffect(() => {
         const token = localStorage.getItem('executive_token') || localStorage.getItem('token');
         const socket = io(SOCKET_URL, {
@@ -180,753 +274,527 @@ const RequestDetail = () => {
             socket.emit('join_order_room', orderId);
         }
 
+        socket.on('measurement_otp_verified', () => {
+            toast.success('Customer OTP Verified!');
+            setCurrentStep('complete');
+            setIsOtpModalOpen(false);
+            loadDetail();
+        });
+
         return () => {
             if (socket) socket.disconnect();
         };
     }, [request?.order]);
 
-    useEffect(() => {
-        if (!navigator.geolocation) {
-            toast.error('Geolocation not supported by your browser');
-            return;
-        }
-
-        const handlePosition = (position) => {
-            const { latitude, longitude } = position.coords;
-            const newLoc = { lat: latitude, lng: longitude };
-            setCurrentLocation(newLoc);
-
-            const now = Date.now();
-            if (now - lastBroadcastTimeRef.current > 7000) {
-                lastBroadcastTimeRef.current = now;
-                const orderId = request?.order?._id || request?.order;
-                if (socketRef.current && socketRef.current.connected) {
-                    socketRef.current.emit('executive_location_update', {
-                        orderId,
-                        requestId: id,
-                        latitude,
-                        longitude,
-                        distanceRemaining: routeData?.distance,
-                        eta: routeData?.duration,
-                    });
-                }
-                api.put('/measurement-executive/location', { coordinates: [longitude, latitude] }).catch(() => {});
-            }
-        };
-
-        const watchId = navigator.geolocation.watchPosition(
-            handlePosition,
-            (error) => {
-                console.warn('Geolocation error:', error);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-        );
-
-        return () => navigator.geolocation.clearWatch(watchId);
-    }, [id, request?.order, routeData]);
-
-    const loadDetail = async () => {
+    // Handle accepting request
+    const handleAccept = async () => {
+        setAccepting(true);
         try {
-            const data = await getRequestDetail(id);
-            setRequest(data);
+            await acceptRequest(id);
+            toast.success('Request Accepted! You can now take measurements.');
+            await loadDetail();
+            setCurrentStep('measuring');
         } catch (error) {
-            if (error.name === 'CanceledError') return;
-            console.error("GET REQUEST DETAIL ERROR:", error);
-            toast.error(`Failed: ${error.response?.data?.message || error.message}`);
-            navigate('/executive/requests');
+            toast.error(error.response?.data?.message || 'Failed to accept request');
         } finally {
-            setLoading(false);
+            setAccepting(false);
         }
     };
 
-    const handleGenerateOTP = async () => {
-        try {
-            await generateOTP(id);
-            toast.success('OTP sent to customer');
-            loadDetail();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send OTP');
-        }
-    };
-
-    const handleVerifyOTP = async (e) => {
-        e.preventDefault();
-        setVerifying(true);
-        try {
-            await verifyOTP(id, otp);
-            toast.success('OTP Verified!');
-            loadDetail();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Invalid OTP');
-        } finally {
-            setVerifying(false);
-        }
-    };
-
-    const updateItemField = (itemIndex, fieldKey, value) => {
-        setItemForms((prev) => ({
+    // Update single measurement value
+    const handleMeasurementChange = (key, value) => {
+        setMeasurementsByItem((prev) => ({
             ...prev,
-            [itemIndex]: {
-                ...(prev[itemIndex] || {}),
-                [fieldKey]: value,
-            },
+            [activeTabId]: {
+                ...(prev[activeTabId] || {}),
+                [key]: value
+            }
         }));
     };
 
-    const validateForms = () => {
-        for (const schema of itemSchemas) {
-            const values = itemForms[schema.index] || {};
-            for (const field of getInputFields(schema.fields)) {
-                if (field.isRequired === false) continue;
-                const key = getFieldKey(field);
-                const val = values[key];
-                if (val === undefined || val === null || String(val).trim() === '') {
-                    toast.error(`Please fill ${field.label || key} (${schema.title})`);
-                    return false;
-                }
+    // Add custom measurement row
+    const handleAddCustomMeasurement = (newField) => {
+        setCustomFieldsByItem((prev) => ({
+            ...prev,
+            [activeTabId]: [...(prev[activeTabId] || []), newField]
+        }));
+        handleMeasurementChange(newField.key, newField.value);
+        toast.success(`Added ${newField.label}`);
+    };
+
+    // Add new garment tab
+    const handleAddItem = (newItem) => {
+        setItems((prev) => [...prev, newItem]);
+        setActiveTabId(newItem.id);
+        toast.success(`Added ${newItem.name}`);
+    };
+
+    // Add reference photos
+    const handleAddPhotos = (newFiles) => {
+        setReferenceImages((prev) => [...prev, ...newFiles]);
+        toast.success(`Added ${newFiles.length} photo(s)`);
+    };
+
+    // Remove reference photo
+    const handleRemovePhoto = (idxToRemove) => {
+        setReferenceImages((prev) => prev.filter((_, idx) => idx !== idxToRemove));
+    };
+
+    // Highlight from guide hotspot
+    const handleSelectGuideNumber = (num) => {
+        setActiveGuideNumber(num);
+        if (!num) {
+            setHighlightedFieldKey(null);
+            return;
+        }
+        const matched = STANDARD_KAMEEZ_FIELDS.find((f) => f.guideNumber === num);
+        if (matched) {
+            setHighlightedFieldKey(matched.key);
+            const el = document.getElementById(`m-row-${num}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
-        return true;
     };
 
-    const buildSubmitFormData = () => {
-        const multi = itemSchemas.length > 1;
-        const itemsPayload = itemSchemas.map((schema) => {
-            const raw = itemForms[schema.index] || {};
-            const values = {};
-            getInputFields(schema.fields).forEach((f) => {
-                const key = getFieldKey(f);
-                if (raw[key] !== undefined && raw[key] !== '') values[key] = raw[key];
-            });
-            return {
-                index: schema.index,
-                title: schema.title,
-                categoryName: schema.item?.service?.category?.name || '',
-                measurementLayout: schema.layout,
-                values,
+    // Save draft locally
+    const handleSaveDraft = () => {
+        try {
+            const draftData = {
+                measurementsByItem,
+                customFieldsByItem,
+                notes,
+                updatedAt: new Date().toISOString()
             };
-        });
-
-        const primary = itemsPayload[0] || { values: {}, measurementLayout: [] };
-        const formData = {
-            ...primary.values,
-            measurementLayout: primary.measurementLayout,
-        };
-
-        if (multi) {
-            formData.__multi = true;
-            formData.items = itemsPayload;
-            itemsPayload.forEach((entry, i) => {
-                Object.entries(entry.values).forEach(([k, v]) => {
-                    formData[`item${i}_${k}`] = v;
-                });
+            localStorage.setItem(`sewzella_draft_${id}`, JSON.stringify(draftData));
+            toast.success('Draft saved successfully!', {
+                icon: '💾',
+                style: {
+                    borderRadius: '16px',
+                    background: '#2B0E4C',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    fontSize: '13px'
+                }
             });
+        } catch (e) {
+            toast.error('Failed to save draft');
         }
-
-        return formData;
     };
 
-    const handleUpload = async (e) => {
-        e.preventDefault();
-        if (!validateForms()) return;
+    // Save & Continue (upload measurements & generate OTP)
+    const handleSaveAndContinue = async () => {
         setUploading(true);
         try {
-            // Upload PDF if exists
-            let pdfUrl = '';
-            if (pdfFile) {
-                const pdfData = new FormData();
-                pdfData.append('image', pdfFile);
-                pdfData.append('folder', 'measurements/pdfs');
-                const pdfRes = await api.post('/upload', pdfData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                if(pdfRes.data.success) pdfUrl = pdfRes.data.data;
-            }
+            // Upload newly selected photos if any are File objects
+            const newFiles = referenceImages.filter((img) => img instanceof File);
+            const existingUrls = referenceImages.filter((img) => typeof img === 'string');
+            let uploadedUrls = [];
 
-            // Upload Photos if exist
-            let photoUrls = [];
-            if (photos.length > 0) {
+            if (newFiles.length > 0) {
                 const photoData = new FormData();
-                photos.forEach(p => photoData.append('images', p));
+                newFiles.forEach((p) => photoData.append('images', p));
                 photoData.append('folder', 'measurements/photos');
                 const photoRes = await api.post('/upload/bulk', photoData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                if(photoRes.data.success) photoUrls = photoRes.data.data;
+                if (photoRes.data.success) {
+                    uploadedUrls = photoRes.data.data;
+                }
             }
 
+            const allPhotoUrls = [...existingUrls, ...uploadedUrls];
+
+            // Build payload
+            const primaryValues = measurementsByItem[items[0]?.id] || {};
+            const itemsPayload = items.map((item, idx) => ({
+                index: idx,
+                title: item.name,
+                categoryName: item.type,
+                values: measurementsByItem[item.id] || {}
+            }));
+
+            const formData = {
+                ...primaryValues,
+                __multi: items.length > 1,
+                items: itemsPayload
+            };
+
+            // Call API to upload measurements
             await uploadMeasurements(id, {
-                formData: buildSubmitFormData(),
+                formData,
                 notes,
-                pdfUrl,
-                photos: photoUrls,
+                photos: allPhotoUrls,
                 unit: 'inches'
             });
 
-            toast.success('Measurements uploaded successfully!');
-            loadDetail();
+            // Generate OTP for customer confirmation
+            try {
+                await generateOTP(id);
+                toast.success('Measurements recorded! OTP sent to customer.');
+            } catch (otpErr) {
+                console.warn('OTP generation notice:', otpErr);
+                toast.success('Measurements saved!');
+            }
+
+            // Transition stepper to Confirm stage & open modal
+            setCurrentStep('confirm');
+            setIsOtpModalOpen(true);
+            await loadDetail();
         } catch (error) {
-            toast.error('Failed to upload measurements');
-            console.error(error);
+            console.error('Save & Continue error:', error);
+            toast.error(error.response?.data?.message || 'Failed to submit measurements');
         } finally {
             setUploading(false);
         }
     };
 
-    const handleComplete = async () => {
+    // Verify OTP
+    const handleVerifyOtp = async (enteredOtp) => {
+        setVerifying(true);
+        try {
+            await verifyOTP(id, enteredOtp);
+            toast.success('Customer OTP Verified Successfully!');
+            setIsOtpModalOpen(false);
+            setCurrentStep('complete');
+            await loadDetail();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Invalid OTP. Please try again.');
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    // Resend OTP
+    const handleResendOtp = async () => {
+        setResendingOtp(true);
+        try {
+            await generateOTP(id);
+            toast.success('New OTP sent to customer');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to resend OTP');
+        } finally {
+            setResendingOtp(false);
+        }
+    };
+
+    // Complete entire task
+    const handleCompleteTask = async () => {
         try {
             await completeMeasurement(id);
-            toast.success('Measurement task completed!');
+            toast.success('Measurement task completed successfully!');
             navigate('/executive/requests');
         } catch (error) {
-            toast.error('Failed to complete');
+            toast.error(error.response?.data?.message || 'Failed to complete task');
         }
     };
 
+    // Cancel task
     const handleCancelTask = async () => {
-        if (!window.confirm('Are you sure you want to cancel this measurement task? It will be automatically reassigned to another available executive.')) {
+        if (!window.confirm('Are you sure you want to cancel this measurement task? It will be re-assigned to another available executive.')) {
             return;
         }
-
         try {
-            toast.loading('Cancelling and reassigning task...', { id: 'cancel-detail-task' });
             await rejectRequest(id);
-            toast.success('Task cancelled. Reassigned to another executive.', { id: 'cancel-detail-task' });
+            toast.success('Task cancelled and returned to pool.');
             navigate('/executive/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to cancel task', { id: 'cancel-detail-task' });
+            toast.error(error.response?.data?.message || 'Failed to cancel task');
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Loading...</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#FAF8FC] flex flex-col items-center justify-center p-6">
+                <div className="w-16 h-16 rounded-3xl bg-[#581C87] flex items-center justify-center text-white shadow-xl shadow-purple-900/20 animate-pulse mb-4">
+                    <Sparkles size={28} />
+                </div>
+                <h3 className="text-base font-serif font-bold text-gray-900">SewZella</h3>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Loading Tailoring Measurement...</p>
+            </div>
+        );
+    }
+
     if (!request) return null;
 
-    const mapsUrl = request.customerLocation?.coordinates 
-        ? `https://www.google.com/maps/dir/?api=1&destination=${request.customerLocation.coordinates[1]},${request.customerLocation.coordinates[0]}`
-        : null;
+    const activeItem = items.find((it) => it.id === activeTabId) || items[0];
+    const isBottomActive = activeItem?.type === 'bottom' || /pajama|pant|trouser|salwar|bottom|plazo|palazzo|skirt/i.test(activeItem?.name || '');
+    const activeFields = isBottomActive ? STANDARD_BOTTOM_FIELDS : STANDARD_KAMEEZ_FIELDS;
+    const activeCustomFields = customFieldsByItem[activeTabId] || [];
+    const activeValues = measurementsByItem[activeTabId] || {};
 
-    const baseFee = settings?.executiveRates?.baseFee || 50;
-    const perKmRate = settings?.executiveRates?.perKmRate || 15;
-    const distanceKm = (routeData?.distanceValue || 0) / 1000;
-    const estimatedEarnings = Math.round(baseFee + (distanceKm * perKmRate));
+    const itemHeading = (() => {
+        if (!activeItem) return 'Top (Kameez)';
+        const raw = activeItem.name || 'Garment';
+        if (/kameez|kurta|shirt|blouse|suit|pajama|pant|trouser|salwar|bottom|plazo|palazzo/i.test(raw)) {
+            return raw;
+        }
+        return `${raw} (${isBottomActive ? 'Bottom' : 'Top'})`;
+    })();
+
+    const isAssignedPending = ['assigned', 'pending'].includes(request.status);
 
     return (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-8 pb-32 md:pb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#843D9B] flex items-center justify-center text-white shadow-lg shadow-purple-200">
-                        <Navigation size={24} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Request Details</h1>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Manage active task</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                    {['assigned', 'accepted', 'otp_sent'].includes(request.status) && (
+        <div className="min-h-screen bg-[#FDFCFE] text-gray-900 pb-28 md:pb-12 flex flex-col items-center">
+            {/* Top mobile width constraint for pixel-accurate mobile presentation */}
+            <div className="w-full max-w-xl mx-auto flex flex-col min-h-screen bg-[#FDFCFE] shadow-[0_0_50px_rgba(0,0,0,0.03)] border-x border-gray-100/60">
+                
+                {/* 1. TOP APP BAR */}
+                <Header 
+                    customerPhone={request.customer?.phoneNumber}
+                    onCancelTask={['assigned', 'accepted'].includes(request.status) ? handleCancelTask : null}
+                />
+
+                {/* Accept Task Banner if not accepted yet */}
+                {isAssignedPending && (
+                    <div className="mx-4 mt-3 p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 flex items-center justify-between gap-3 shadow-sm">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-[#581C87] text-white flex items-center justify-center flex-shrink-0">
+                                <AlertCircle size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold text-gray-900">New Assigned Task</p>
+                                <p className="text-[11px] text-gray-500 truncate">Accept to begin customer measurement</p>
+                            </div>
+                        </div>
                         <button
-                            onClick={handleCancelTask}
-                            className="px-4 py-2 rounded-xl flex items-center gap-1.5 font-black text-xs uppercase tracking-widest bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 transition-colors shadow-sm cursor-pointer"
+                            type="button"
+                            onClick={handleAccept}
+                            disabled={accepting}
+                            className="px-4 py-2 bg-[#581C87] hover:bg-[#4A154B] text-white rounded-xl text-xs font-bold shadow-md shadow-purple-900/20 active:scale-95 transition-all cursor-pointer flex-shrink-0"
                         >
-                            <X size={14} /> Cancel Task
-                        </button>
-                    )}
-                    <div className="px-4 py-2 rounded-xl flex items-center gap-2 border font-black text-xs uppercase tracking-widest shadow-sm bg-blue-50 text-blue-600 border-blue-100">
-                        {request.status.replace('_', ' ')}
-                    </div>
-                </div>
-            </div>
-
-            {/* Customer Info Card */}
-            <div className="bg-white shadow-xl shadow-gray-200/40 rounded-[2rem] border border-gray-100 mb-8 overflow-hidden">
-                <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-br from-purple-50/50 to-white">
-                    <h3 className="text-lg font-black text-gray-900">Customer Details</h3>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4 transition-all hover:bg-gray-50 hover:shadow-md">
-                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-[#843D9B]">
-                            <User size={20} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Customer Name</p>
-                            <p className="text-sm font-black text-gray-900">{request.customer?.name}</p>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Order: {request.order?.orderId}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4 transition-all hover:bg-gray-50 hover:shadow-md">
-                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-sky-500">
-                            <Phone size={20} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Contact Number</p>
-                            <p className="text-sm font-medium text-gray-900">{request.customer?.phoneNumber}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4 transition-all hover:bg-gray-50 hover:shadow-md md:col-span-2">
-                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-emerald-500">
-                            <MapPin size={20} />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Address</p>
-                            <p className="text-sm font-medium text-gray-900 leading-relaxed mb-3">
-                                {request.customerAddress?.street}, {request.customerAddress?.city}, {request.customerAddress?.state} {request.customerAddress?.zipCode}
-                            </p>
-                            {mapsUrl && (
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <div className="flex items-center gap-1.5 text-xs font-black text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
-                                        <Navigation className="h-3.5 w-3.5 text-sky-500" />
-                                        {request.distance ? `${request.distance} km` : 'N/A'}
-                                    </div>
-                                    <a 
-                                        href={mapsUrl} 
-                                        target="_blank" 
-                                        rel="noreferrer" 
-                                        className="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-sm"
-                                    >
-                                        <Navigation className="h-3.5 w-3.5" />
-                                        Navigate
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tailor Info Card */}
-            {request.tailor && (
-                <div className="bg-white shadow-xl shadow-gray-200/40 rounded-[2rem] border border-gray-100 mb-8 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-br from-indigo-50/50 to-white">
-                        <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                            <Scissors className="h-5 w-5 text-indigo-500" />
-                            Assigned Tailor
-                        </h3>
-                        <p className="mt-1 text-xs font-bold text-gray-400 uppercase tracking-widest">Measurements {request.status === 'completed' ? 'have been sent' : 'will be sent'} to this tailor</p>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50">
-                        <div className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4 shadow-sm">
-                            {request.tailor?.profileImage ? (
-                                <img src={request.tailor.profileImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
-                            ) : (
-                                <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                                    <User className="h-6 w-6 text-indigo-600" />
-                                </div>
-                            )}
-                            <div>
-                                <p className="text-sm font-black text-gray-900">{request.tailor?.shopName || 'Tailor Partner'}</p>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Tailor Partner</p>
-                            </div>
-                        </div>
-                        <div className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4 shadow-sm">
-                            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center">
-                                <Phone className="h-6 w-6 text-slate-500" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-black text-gray-900">{request.tailor?.phoneNumber}</p>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Contact Number</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Live Map & Stats */}
-            {request.status !== 'measurements_uploaded' && (
-                <div className="bg-white shadow-xl shadow-gray-200/40 rounded-[2rem] border border-gray-100 mb-8 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-100 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <h3 className="text-base font-black text-gray-900 flex items-center gap-2 uppercase tracking-widest">
-                            <Navigation className="h-5 w-5 text-indigo-600" />
-                            Live Navigation
-                        </h3>
-                        {routeData && (
-                            <div className="flex flex-wrap gap-3">
-                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
-                                    <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500"><Navigation size={12} /></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none">Distance</span>
-                                        <span className="text-xs font-black text-slate-800 leading-none mt-1">{routeData.distance}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
-                                    <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500"><Clock size={12} /></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none">Time</span>
-                                        <span className="text-xs font-black text-slate-800 leading-none mt-1">{routeData.duration}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
-                                    <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><Landmark size={12} /></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none">Earning</span>
-                                        <span className="text-xs font-black text-emerald-600 leading-none mt-1">₹{estimatedEarnings}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    <div className="p-4 bg-gray-50/50">
-                        <div className="rounded-2xl overflow-hidden shadow-inner border border-gray-200">
-                            <DeliveryBoyLiveMap 
-                                currentLocation={currentLocation}
-                                destination={
-                                    request.customerLocation?.coordinates?.length === 2 &&
-                                    (request.customerLocation.coordinates[0] !== 0 || request.customerLocation.coordinates[1] !== 0)
-                                        ? {
-                                            lat: Number(request.customerLocation.coordinates[1]),
-                                            lng: Number(request.customerLocation.coordinates[0])
-                                        }
-                                        : null
-                                }
-                                destinationAddress={`${request.customerAddress?.street || ''}, ${request.customerAddress?.city || ''}`}
-                                isLoaded={isLoaded}
-                                height="320px"
-                                trackingType="measurement"
-                                onRouteCalculated={(data) => setRouteData(data)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Steps Container */}
-            <div className="space-y-8">
-                {/* STEP 1: Take Measurements */}
-                {request.status === 'accepted' && (
-                    <div className="bg-white shadow-xl shadow-purple-200/40 rounded-[2rem] p-6 sm:p-8 border-2 border-purple-100 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-[#843D9B]"></div>
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="bg-[#843D9B] text-white h-10 w-10 rounded-xl flex items-center justify-center font-black shadow-lg shadow-purple-200">1</div>
-                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Take Measurements</h3>
-                        </div>
-                        
-                        {itemSchemas.length === 0 ? (
-                            <p className="text-sm text-gray-500 mb-6">No service found on this order — cannot load measurement form.</p>
-                        ) : (
-                            <div className="space-y-8 mb-6">
-                                {itemSchemas.map((schema) => (
-                                    <div key={schema.index} className="space-y-3">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-100 rounded-full text-xs font-extrabold text-[#843D9B]">
-                                                <Scissors size={12} />
-                                                {schema.title}
-                                                {schema.item?.service?.category?.name &&
-                                                    schema.item.service.category.name !== schema.title && (
-                                                        <span className="text-[10px] font-bold text-purple-400">
-                                                            · {schema.item.service.category.name}
-                                                        </span>
-                                                    )}
-                                            </div>
-                                            {schema.hasCustom && (
-                                                <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.5 rounded-full font-bold">
-                                                    Service form
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {schema.fields.map((field, fIdx) => {
-                                                if (isHeadingField(field)) {
-                                                    return (
-                                                        <div
-                                                            key={`h-${schema.index}-${fIdx}-${field.label}`}
-                                                            className="col-span-2 md:col-span-4 pt-2 first:pt-0"
-                                                        >
-                                                            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#843D9B] border-b border-[#843D9B]/15 pb-1.5">
-                                                                {field.label}
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                }
-                                                const key = getFieldKey(field);
-                                                return (
-                                                    <div
-                                                        key={`${schema.index}-${key}-${fIdx}`}
-                                                        className="bg-gray-50 p-3 rounded-2xl border border-gray-100 focus-within:border-[#843D9B] focus-within:ring-2 focus-within:ring-purple-100 transition-all"
-                                                    >
-                                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                                                            {field.label || key}
-                                                            {field.isRequired === false ? (
-                                                                <span className="normal-case text-gray-400 font-medium"> (optional)</span>
-                                                            ) : null}
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            step="0.1"
-                                                            placeholder={field.placeholder || '0.0'}
-                                                            className="block w-full bg-transparent border-0 p-0 text-sm font-black text-gray-900 focus:ring-0"
-                                                            value={itemForms[schema.index]?.[key] ?? ''}
-                                                            onChange={(e) =>
-                                                                updateItemField(schema.index, key, e.target.value)
-                                                            }
-                                                        />
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="mb-8">
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Notes</label>
-                            <textarea
-                                rows="3"
-                                className="block w-full text-sm font-medium text-gray-900 bg-gray-50 border border-gray-200 rounded-2xl p-4 focus:ring-4 focus:ring-purple-100 focus:border-[#843D9B] transition-all resize-none shadow-inner"
-                                placeholder="Any specific requirements from customer..."
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Upload Report (PDF)</label>
-                                {pdfFile ? (
-                                    <div className="flex items-center justify-between p-4 border-2 border-indigo-100 rounded-2xl bg-indigo-50/50 shadow-sm">
-                                        <div className="flex items-center space-x-3 overflow-hidden">
-                                            <div className="p-2.5 bg-white rounded-xl text-indigo-600 shadow-sm border border-indigo-100">
-                                                <FileText className="w-6 h-6" />
-                                            </div>
-                                            <span className="text-sm font-bold text-indigo-900 truncate">{pdfFile.name}</span>
-                                        </div>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setPdfFile(null)}
-                                            className="p-2 bg-white text-gray-500 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-100 rounded-xl transition-all shadow-sm"
-                                        >
-                                            <span className="sr-only">Remove</span>
-                                            ✕
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 border-dashed rounded-2xl hover:border-[#843D9B] transition-colors bg-gray-50 hover:bg-purple-50/30">
-                                        <div className="space-y-1 text-center">
-                                            <div className="mx-auto h-12 w-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-3">
-                                                <Upload className="h-6 w-6 text-gray-400" />
-                                            </div>
-                                            <div className="flex text-sm text-gray-600 justify-center">
-                                                <label className="relative cursor-pointer rounded-md font-black text-[#843D9B] hover:text-[#6b2f81] focus-within:outline-none uppercase tracking-widest text-[11px]">
-                                                    <span>Upload a file</span>
-                                                    <input type="file" accept=".pdf" className="sr-only" onChange={(e) => setPdfFile(e.target.files[0])} />
-                                                </label>
-                                            </div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PDF up to 10MB</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-1">Reference Photos</label>
-                                {photos.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {photos.map((photo, index) => (
-                                            <div key={index} className="relative group rounded-2xl overflow-hidden border border-gray-200 shadow-sm aspect-square bg-gray-100">
-                                                <img 
-                                                    src={URL.createObjectURL(photo)} 
-                                                    alt="Preview" 
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
-                                                        className="p-3 bg-white text-red-500 rounded-xl hover:bg-red-50 shadow-lg transform scale-90 group-hover:scale-100 transition-all font-black text-xs"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {photos.length < 4 && (
-                                            <label className="relative cursor-pointer border-2 border-gray-200 border-dashed rounded-2xl flex flex-col items-center justify-center aspect-square hover:border-[#843D9B] bg-gray-50 hover:bg-purple-50/30 transition-colors">
-                                                <div className="h-10 w-10 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center mb-2">
-                                                    <Upload className="h-5 w-5 text-gray-400" />
-                                                </div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#843D9B]">Add Photo</span>
-                                                <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => setPhotos([...photos, ...Array.from(e.target.files)])} />
-                                            </label>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 border-dashed rounded-2xl hover:border-[#843D9B] transition-colors bg-gray-50 hover:bg-purple-50/30">
-                                        <div className="space-y-1 text-center">
-                                            <div className="mx-auto h-12 w-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-3">
-                                                <Upload className="h-6 w-6 text-gray-400" />
-                                            </div>
-                                            <div className="flex text-sm text-gray-600 justify-center">
-                                                <label className="relative cursor-pointer rounded-md font-black text-[#843D9B] hover:text-[#6b2f81] focus-within:outline-none uppercase tracking-widest text-[11px]">
-                                                    <span>Upload photos</span>
-                                                    <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => setPhotos(Array.from(e.target.files))} />
-                                                </label>
-                                            </div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PNG, JPG up to 10MB</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleUpload}
-                            disabled={uploading}
-                            className="w-full flex justify-center py-4 px-4 rounded-xl shadow-lg shadow-purple-200 text-xs uppercase tracking-widest font-black text-white bg-[#843D9B] hover:bg-[#6b2f81] transition-all disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            {uploading ? 'Uploading...' : 'Submit Measurements'}
+                            {accepting ? 'Accepting...' : 'Accept Task'}
                         </button>
                     </div>
                 )}
 
-                {/* STEP 2: Verify Customer */}
-                {(request.status === 'measurements_uploaded' || request.status === 'otp_sent') && (
-                    <div className="bg-white shadow-xl shadow-indigo-200/40 rounded-[2rem] p-6 sm:p-8 border-2 border-indigo-100 relative overflow-hidden mt-6">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="bg-indigo-500 text-white h-10 w-10 rounded-xl flex items-center justify-center font-black shadow-lg shadow-indigo-200">2</div>
-                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Customer Confirmation</h3>
-                        </div>
-                        
-                        {request.status === 'measurements_uploaded' ? (
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 mb-6 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">Measurements saved! Generate an OTP to have the customer confirm and sign-off on these measurements.</p>
+                <div className="px-4 pt-3 pb-6 flex flex-col gap-4 flex-1">
+                    {/* 2. CUSTOMER ORDER CARD */}
+                    <CustomerCard 
+                        customer={request.customer}
+                        customerAddress={request.customerAddress}
+                        order={request.order}
+                        onCardClick={() => setIsCustomerModalOpen(true)}
+                    />
+
+                    {/* 3. ORDER PROGRESS STEPPER */}
+                    <ProgressStepper 
+                        currentStep={currentStep}
+                        onStepClick={(stepId) => {
+                            if (stepId === 'confirm' && (request.status === 'otp_sent' || request.status === 'measurements_uploaded')) {
+                                setIsOtpModalOpen(true);
+                            }
+                            setCurrentStep(stepId);
+                        }}
+                    />
+
+                    {/* STEPPER STEP: CONFIRM (OTP VERIFICATION) VIEW */}
+                    {currentStep === 'confirm' && (
+                        <div className="w-full bg-white rounded-[26px] p-6 border border-purple-200/80 shadow-lg shadow-purple-900/5 text-center my-2 animate-in fade-in zoom-in-95">
+                            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#F3E8FF] text-[#581C87] flex items-center justify-center mb-3">
+                                <ClipboardList size={26} strokeWidth={2.2} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Customer Sign-Off</h3>
+                            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                                Measurements have been uploaded. Enter the 6-digit OTP provided by {request.customer?.name || 'the customer'} to confirm.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsOtpModalOpen(true)}
+                                className="mt-5 w-full py-3.5 px-6 bg-[#581C87] hover:bg-[#4A154B] text-white font-bold text-sm rounded-2xl shadow-lg shadow-purple-900/20 transition-all cursor-pointer active:scale-[0.98]"
+                            >
+                                Enter OTP Code
+                            </button>
+
+                            <div className="mt-3 flex items-center justify-center gap-4 text-xs font-semibold">
                                 <button
-                                    onClick={handleGenerateOTP}
-                                    className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all font-black text-xs uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0"
+                                    type="button"
+                                    onClick={() => setCurrentStep('measuring')}
+                                    className="text-gray-500 hover:text-[#581C87] underline cursor-pointer"
                                 >
-                                    Generate OTP
+                                    ← Review Measurements
+                                </button>
+                                <span className="text-gray-300">•</span>
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    disabled={resendingOtp}
+                                    className="text-[#581C87] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                >
+                                    <RotateCw size={12} className={resendingOtp ? 'animate-spin' : ''} />
+                                    <span>Resend OTP</span>
                                 </button>
                             </div>
-                        ) : (
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 mb-6 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">OTP has been sent to the customer's app. Please ask and enter it below.</p>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <div className="flex-1 bg-gray-50 p-2 rounded-xl border border-gray-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 transition-all shadow-inner">
-                                        <input
-                                            type="text"
-                                            placeholder="Enter 6-digit OTP"
-                                            className="w-full bg-transparent border-0 px-2 py-1 text-base font-black text-center tracking-[0.5em] focus:ring-0"
-                                            value={otp}
-                                            onChange={(e) => setOtp(e.target.value)}
-                                        />
+                        </div>
+                    )}
+
+                    {/* STEPPER STEP: COMPLETE VIEW */}
+                    {currentStep === 'complete' && (
+                        <div className="w-full bg-white rounded-[26px] p-6 border border-emerald-200 shadow-lg shadow-emerald-900/5 text-center my-2 animate-in fade-in zoom-in-95">
+                            <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                                <CheckCircle size={32} strokeWidth={2.5} />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Measurements Confirmed!</h3>
+                            <p className="text-xs text-gray-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                                The customer has verified their tailoring measurements. You can now finalize and close this task.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={handleCompleteTask}
+                                className="mt-6 w-full py-3.5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-emerald-900/20 transition-all cursor-pointer active:scale-[0.98]"
+                            >
+                                Mark Task as Complete
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStep('measuring')}
+                                className="mt-3 text-xs font-semibold text-gray-500 hover:text-gray-800 underline cursor-pointer"
+                            >
+                                View Measurement Sheet
+                            </button>
+                        </div>
+                    )}
+
+                    {/* MEASURING SCREEN (PRIMARY) */}
+                    {(currentStep === 'measuring' || currentStep === 'arrived' || currentStep === 'confirm') && (
+                        <>
+                            {/* 4. ITEM TABS */}
+                            <ItemTabs 
+                                items={items}
+                                activeTabId={activeTabId}
+                                onSelectTab={(id) => setActiveTabId(id)}
+                                onAddItem={() => setIsAddItemModalOpen(true)}
+                            />
+
+                            {/* 5 & 6. MAIN MEASUREMENT SECTION: 2-COLUMN LAYOUT */}
+                            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
+                                
+                                {/* LEFT: Measurement Form */}
+                                <div className="bg-white rounded-[26px] p-3.5 border border-gray-100/90 shadow-[0_4px_24px_rgba(74,21,75,0.04)] flex flex-col">
+                                    {/* Heading */}
+                                    <div className="px-2 pt-1 pb-2">
+                                        <h3 className="text-sm font-bold text-gray-900 tracking-tight">
+                                            {itemHeading}
+                                        </h3>
                                     </div>
+
+                                    {/* Measurements List */}
+                                    <div className="space-y-0.5">
+                                        {activeFields.map((field) => (
+                                            <MeasurementRow 
+                                                key={field.key}
+                                                itemKey={field.key}
+                                                label={field.label}
+                                                value={activeValues[field.key]}
+                                                guideNumber={field.guideNumber}
+                                                instruction={field.instruction}
+                                                isHighlighted={highlightedFieldKey === field.key}
+                                                onChange={(val) => handleMeasurementChange(field.key, val)}
+                                            />
+                                        ))}
+
+                                        {/* Dynamic Custom Fields for this tab */}
+                                        {activeCustomFields.map((field) => (
+                                            <MeasurementRow 
+                                                key={field.key}
+                                                itemKey={field.key}
+                                                label={field.label}
+                                                value={activeValues[field.key]}
+                                                unit={field.unit || 'in'}
+                                                onChange={(val) => handleMeasurementChange(field.key, val)}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {/* "+ Add Custom Measurement" Outlined Button */}
                                     <button
-                                        onClick={handleVerifyOTP}
-                                        disabled={verifying || !otp}
-                                        className="sm:w-32 py-3 px-4 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50 disabled:shadow-none"
+                                        type="button"
+                                        onClick={() => setIsCustomMeasurementModalOpen(true)}
+                                        className="mt-3 w-full py-2.5 px-3 rounded-2xl border border-[#6C2E9C] text-[#6C2E9C] hover:bg-purple-50/60 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]"
                                     >
-                                        {verifying ? 'Verifying' : 'Verify'}
+                                        <Plus size={14} strokeWidth={2.5} />
+                                        <span>Add Custom Measurement</span>
                                     </button>
                                 </div>
+
+                                {/* RIGHT: Measurement Guide Panel */}
+                                <MeasurementGuide 
+                                    onSelectGuideNumber={handleSelectGuideNumber}
+                                    activeGuideNumber={activeGuideNumber}
+                                />
                             </div>
-                        )}
-                    </div>
-                )}
 
-                {/* STEP 3: Complete */}
-                {request.status === 'otp_verified' && (
-                    <div className="bg-white shadow-xl shadow-emerald-200/40 rounded-[2rem] p-8 sm:p-12 border-2 border-emerald-100 text-center mt-6">
-                        <div className="w-20 h-20 mx-auto bg-emerald-100 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
-                            <CheckCircle className="h-10 w-10 text-emerald-500" />
-                        </div>
-                        <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-3">Customer Verified!</h3>
-                        <p className="text-sm font-medium text-gray-500 mb-8 max-w-md mx-auto">The tailor has been notified of the confirmed measurements. You can now close this request and proceed to your next task.</p>
-                        <button onClick={handleComplete} className="w-full sm:w-auto px-8 py-4 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                            Mark Task as Complete
-                        </button>
-                    </div>
-                )}
+                            {/* 7. NOTES SECTION */}
+                            <div className="w-full bg-white rounded-[26px] p-4 border border-gray-100/90 shadow-[0_4px_24px_rgba(74,21,75,0.04)]">
+                                <h3 className="text-xs font-bold text-gray-800 tracking-tight mb-2">
+                                    Notes <span className="text-gray-400 font-normal">(Optional)</span>
+                                </h3>
 
-                {/* COMPLETED STATE */}
-                {request.status === 'completed' && request.report && (
-                    <div className="bg-white shadow-xl shadow-emerald-200/40 rounded-[2rem] overflow-hidden border-2 border-emerald-100 mt-6 relative">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
-                        <div className="px-6 py-6 border-b border-gray-100 bg-gradient-to-br from-emerald-50/50 to-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-200">
-                                    <CheckCircle className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Task Completed</h3>
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Measurements processed</p>
+                                <div className="relative">
+                                    <textarea
+                                        rows={3}
+                                        maxLength={200}
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Add any notes about fitting, style or customer preferences..."
+                                        className="w-full p-3.5 rounded-2xl border border-gray-200/90 text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#6C2E9C] focus:ring-2 focus:ring-purple-100 resize-none transition-all"
+                                    />
+                                    <span className="absolute bottom-2.5 right-3 text-[10px] font-semibold text-gray-400 select-none">
+                                        {notes.length}/200
+                                    </span>
                                 </div>
                             </div>
-                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[10px] uppercase tracking-widest border border-emerald-100 shadow-sm">
-                                Successfully Sent
-                            </span>
-                        </div>
-                        <div className="p-6 sm:p-8">
-                            <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <FileText className="h-4 w-4" /> Submitted Measurements
-                            </h4>
-                            {(() => {
-                                const raw = request.report.formData || {};
-                                const fd =
-                                    raw instanceof Map ? Object.fromEntries(raw) : raw;
-                                const multiItems = Array.isArray(fd.items) ? fd.items : null;
 
-                                if (multiItems?.length) {
-                                    return (
-                                        <div className="space-y-6 mb-8">
-                                            {multiItems.map((entry, i) => (
-                                                <div key={i} className="space-y-2">
-                                                    <p className="text-xs font-black text-[#843D9B]">
-                                                        {entry.title || `Item ${i + 1}`}
-                                                    </p>
-                                                    <MeasurementDataDisplay
-                                                        measurements={entry.values || {}}
-                                                        layoutFields={entry.measurementLayout}
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    );
-                                }
+                            {/* 8. REFERENCE IMAGES SECTION */}
+                            <div className="w-full bg-white rounded-[26px] p-4 border border-gray-100/90 shadow-[0_4px_24px_rgba(74,21,75,0.04)]">
+                                <ReferenceImages 
+                                    images={referenceImages}
+                                    onAddPhotos={handleAddPhotos}
+                                    onRemovePhoto={handleRemovePhoto}
+                                />
+                            </div>
 
-                                return (
-                                    <div className="mb-8">
-                                        <MeasurementDataDisplay
-                                            measurements={fd}
-                                            layoutFields={fd.measurementLayout}
-                                        />
-                                    </div>
-                                );
-                            })()}
-                            
-                            {request.report.notes && (
-                                <div className="mb-8">
-                                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-3">Notes</h4>
-                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 relative">
-                                        <div className="absolute top-4 left-4 text-amber-200 font-serif text-4xl leading-none">"</div>
-                                        <p className="text-sm font-medium text-amber-900 italic relative z-10 pl-6 pr-2 py-1">{request.report.notes}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {(request.report.photos?.length > 0 || request.report.pdfUrl) && (
-                                <div>
-                                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4">Attachments</h4>
-                                    <div className="flex flex-wrap gap-4">
-                                        {request.report.photos?.map((photo, i) => (
-                                            <a key={i} href={photo} target="_blank" rel="noopener noreferrer" className="block relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-gray-100 shadow-sm hover:border-[#843D9B] hover:shadow-md transition-all group">
-                                                <img src={photo} alt="Measurement" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            </a>
-                                        ))}
-                                        {request.report.pdfUrl && (
-                                            <a href={request.report.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl bg-red-50 text-red-500 border-2 border-red-100 shadow-sm hover:border-red-400 hover:shadow-md hover:bg-red-100 transition-all gap-2 group">
-                                                <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-300">
-                                                    <FileText className="h-6 w-6" />
-                                                </div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest">PDF</span>
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                            {/* 9. BOTTOM ACTION BAR */}
+                            <BottomActions 
+                                onSaveDraft={handleSaveDraft}
+                                onSaveAndContinue={handleSaveAndContinue}
+                                loading={uploading}
+                            />
+                        </>
+                    )}
+                </div>
             </div>
+
+            {/* MODALS */}
+            <CustomerDetailsModal 
+                isOpen={isCustomerModalOpen}
+                onClose={() => setIsCustomerModalOpen(false)}
+                request={request}
+            />
+
+            <CustomMeasurementModal 
+                isOpen={isCustomMeasurementModalOpen}
+                onClose={() => setIsCustomMeasurementModalOpen(false)}
+                onAdd={handleAddCustomMeasurement}
+            />
+
+            <AddItemModal 
+                isOpen={isAddItemModalOpen}
+                onClose={() => setIsAddItemModalOpen(false)}
+                onAdd={handleAddItem}
+            />
+
+            <OTPModal 
+                isOpen={isOtpModalOpen}
+                onClose={() => setIsOtpModalOpen(false)}
+                onVerify={handleVerifyOtp}
+                onResend={handleResendOtp}
+                verifying={verifying}
+                resending={resendingOtp}
+            />
         </div>
     );
 };
