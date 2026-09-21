@@ -14,7 +14,7 @@ import { Bell } from 'lucide-react';
 import useSocketStore from '../../../store/socketStore';
 
 const DeliveryDashboard = () => {
-  const { isLoaded } = useOutletContext();
+  const { isLoaded, isOnline: outletIsOnline, toggleAvailability } = useOutletContext() || {};
   const navigate = useNavigate();
   const {
     deliveryBoy, updateStatus, fetchProfile, fetchDashboardSummary, fetchOrders,
@@ -23,7 +23,9 @@ const DeliveryDashboard = () => {
 
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const { socket } = useSocketStore();
-  const isOnline = deliveryBoy?.status === 'available';
+  const isOnline = outletIsOnline !== undefined
+    ? outletIsOnline
+    : Boolean(deliveryBoy?.isAvailable ?? (deliveryBoy?.status === 'active' || deliveryBoy?.status === 'available'));
 
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -84,6 +86,11 @@ const DeliveryDashboard = () => {
 
   const handleToggleOnline = async () => {
     if (isUpdatingStatus) return;
+    if (toggleAvailability) {
+      await toggleAvailability();
+      loadDashboardData();
+      return;
+    }
     const wasOnline = isOnline;
     const newStatus = wasOnline ? 'offline' : 'available';
     try {
@@ -149,10 +156,17 @@ const DeliveryDashboard = () => {
                   {isOnline && <div className="w-full h-full rounded-full bg-emerald-500 animate-ping opacity-40" />}
                 </div>
               </div>
-              <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg relative group overflow-hidden">
+              <div 
+                onClick={handleToggleOnline}
+                role="button"
+                tabIndex={0}
+                title="Tap to toggle online/offline"
+                className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg relative group overflow-hidden cursor-pointer hover:bg-white active:scale-95 transition-all select-none"
+              >
                 <div className="relative z-10">
                   <h1 className="text-[14px] font-black text-slate-800 leading-none">Hi, {deliveryBoy?.name?.split(' ')[0] || 'Partner'}</h1>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isOnline ? 'text-emerald-600' : 'text-slate-500'}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 flex items-center gap-1 ${isOnline ? 'text-emerald-600' : 'text-slate-500'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                     {isOnline ? 'System Online' : 'Currently Offline'}
                   </p>
                 </div>

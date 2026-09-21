@@ -43,8 +43,18 @@ const DeliveryLayout = () => {
         const fetchProfileStatus = async () => {
             try {
                 const res = await deliveryService.getProfile();
-                if (res.success) {
-                    setIsOnline(res.data.isAvailable);
+                if (res.success && res.data) {
+                    const online = typeof res.data.isAvailable === 'boolean'
+                        ? res.data.isAvailable
+                        : (res.data.status === 'active' || res.data.status === 'available');
+                    setIsOnline(Boolean(online));
+                    try {
+                        const store = useDeliveryAuthStore.getState();
+                        if (store.deliveryBoy) {
+                            store.deliveryBoy.isAvailable = Boolean(online);
+                            store.deliveryBoy.status = online ? 'available' : 'offline';
+                        }
+                    } catch (_) {}
                 }
             } catch (error) {
                 import('axios').then(({ default: axios }) => {
@@ -78,7 +88,17 @@ const DeliveryLayout = () => {
         const newStatus = !isOnline;
         setIsOnline(newStatus);
         try {
-            await deliveryService.updateStatus({ isAvailable: newStatus });
+            await deliveryService.updateStatus({ 
+                isAvailable: newStatus,
+                status: newStatus ? 'active' : 'inactive'
+            });
+            try {
+                const store = useDeliveryAuthStore.getState();
+                if (store.deliveryBoy) {
+                    store.deliveryBoy.isAvailable = newStatus;
+                    store.deliveryBoy.status = newStatus ? 'available' : 'offline';
+                }
+            } catch (_) {}
             toast.success(`You are now ${newStatus ? 'Online' : 'Offline'}`);
         } catch (error) {
             console.error('Failed to update status:', error);
@@ -455,15 +475,17 @@ const DeliveryLayout = () => {
                     {/* Status Pill Toggle */}
                     <button
                         onClick={toggleAvailability}
-                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-full border transition-all duration-300 shrink-0 ${isOnline
-                            ? 'bg-indigo-50 border-indigo-100 text-primary'
-                            : 'bg-slate-50 border-slate-200 text-slate-400'
+                        title={isOnline ? 'Tap to go Offline' : 'Tap to go Online'}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 shrink-0 cursor-pointer active:scale-95 shadow-sm select-none ${isOnline
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-emerald-50'
+                            : 'bg-slate-100 border-slate-200 text-slate-500'
                             }`}
                     >
-                        <span className="text-[8px] font-black uppercase tracking-widest leading-none">
+                        <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none">
                             {isOnline ? 'Online' : 'Offline'}
                         </span>
-                        <Power size={10} strokeWidth={3} className={isOnline ? 'text-primary' : 'text-slate-300'} />
+                        <Power size={11} strokeWidth={2.5} className={isOnline ? 'text-emerald-600' : 'text-slate-400'} />
                     </button>
 
                     {/* SOS Emergency Button */}
@@ -499,7 +521,7 @@ const DeliveryLayout = () => {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                     >
-                        <Outlet context={{ isOnline, setIsOnline, isLoaded, layoutLocationStr: currentLocationStr, layoutLocationCoords: headerLocationCoords }} />
+                        <Outlet context={{ isOnline, setIsOnline, toggleAvailability, isLoaded, layoutLocationStr: currentLocationStr, layoutLocationCoords: headerLocationCoords }} />
                     </motion.div>
                 </AnimatePresence>
             </main>

@@ -9,16 +9,23 @@ const normalizeDeliveryBoy = (input) => {
   const raw = (input.data && (typeof input.success !== 'undefined' || typeof input.statusCode !== 'undefined')) ? input.data : input;
 
   const id = raw.id || raw._id;
+  const isAvailable = typeof raw.isAvailable === 'boolean'
+    ? raw.isAvailable
+    : (raw.status === 'active' || raw.status === 'available');
+
   let status = raw.status;
   if (status === 'active') status = 'available';
   if (status === 'inactive') status = 'offline';
-  if (!status) status = raw.isAvailable === false ? 'offline' : 'available';
+  if (!status) status = isAvailable ? 'available' : 'offline';
+  if (!isAvailable) status = 'offline';
+  if (isAvailable && status === 'offline') status = 'available';
 
   return {
     ...raw,
     id,
     _id: id,
     status,
+    isAvailable,
     bankDetails: raw.bankDetails || {},
     upiId: raw.upiId || '',
     kycStatus: raw.kycStatus || 'none'
@@ -257,25 +264,32 @@ export const useDeliveryAuthStore = create(
         const current = get().deliveryBoy;
         if (!current) return false;
 
+        const isOnline = status === 'available' || status === 'active' || status === true;
+        const normalizedStatus = isOnline ? 'available' : 'offline';
         const previousStatus = current.status;
+        const previousIsAvailable = current.isAvailable;
+
         // 🚀 Optimistic Update: Change status instantly in store
-        set({ isUpdatingStatus: true, deliveryBoy: normalizeDeliveryBoy({ ...current, status }) });
+        set({ 
+          isUpdatingStatus: true, 
+          deliveryBoy: normalizeDeliveryBoy({ ...current, status: normalizedStatus, isAvailable: isOnline }) 
+        });
 
         try {
           const res = await api.patch('/deliveries/status', {
-            isAvailable: status === 'available',
-            status: status === 'available' ? 'active' : (status === 'offline' ? 'inactive' : status)
+            isAvailable: isOnline,
+            status: isOnline ? 'active' : 'inactive'
           });
-          const payload = res.data || res;
+          const payload = res.data?.data || res.data || res;
           set({
-            deliveryBoy: normalizeDeliveryBoy({ ...current, ...payload, status }),
+            deliveryBoy: normalizeDeliveryBoy({ ...current, ...payload, status: normalizedStatus, isAvailable: isOnline }),
             isUpdatingStatus: false
           });
           return true;
         } catch (e) {
           // ⚠️ Rollback on failure
           set({
-            deliveryBoy: normalizeDeliveryBoy({ ...current, status: previousStatus }),
+            deliveryBoy: normalizeDeliveryBoy({ ...current, status: previousStatus, isAvailable: previousIsAvailable }),
             isUpdatingStatus: false
           });
           throw e;

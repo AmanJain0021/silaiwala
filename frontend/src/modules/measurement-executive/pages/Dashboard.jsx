@@ -103,24 +103,23 @@ const Dashboard = () => {
             const newStatus = profile?.availabilityStatus === 'online' ? 'offline' : 'online';
             
             if (newStatus === 'online') {
-                toast.loading('Fetching location...', { id: 'loc-toast' });
+                toast.loading('Going online...', { id: 'status-toast' });
                 try {
                     const data = await detectLocation();
                     if (data && data.latitude && data.longitude) {
                         await useMeasurementStore.getState().updateLocation([data.longitude, data.latitude]);
-                        await toggleAvailability(newStatus);
-                        toast.success(`You are now online`, { id: 'loc-toast' });
                     }
-                } catch (error) {
-                    console.error('Location error:', error);
-                    toast.error('Location required to go online.', { id: 'loc-toast' });
+                } catch (locErr) {
+                    console.warn('Location detection skipped or unavailable:', locErr?.message);
                 }
+                await toggleAvailability(newStatus);
+                toast.success('You are now online', { id: 'status-toast' });
             } else {
                 await toggleAvailability(newStatus);
-                toast.success(`You are now offline`);
+                toast.success('You are now offline');
             }
         } catch {
-            toast.error('Failed to update status');
+            toast.error('Failed to update status', { id: 'status-toast' });
         }
     };
 

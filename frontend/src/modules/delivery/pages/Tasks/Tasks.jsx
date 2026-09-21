@@ -33,7 +33,7 @@ const Tasks = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
     const { socket } = useSocketStore();
-    const { isOnline } = useOutletContext() || { isOnline: true };
+    const { isOnline, toggleAvailability } = useOutletContext() || { isOnline: true };
     const [activeTab, setActiveTab] = useState('assigned'); // 'assigned' or 'available'
     const [loading, setLoading] = useState(true);
     const [tasks, setTasks] = useState([]);
@@ -502,12 +502,21 @@ const Tasks = () => {
                         <h3 className="text-base font-black text-slate-900 tracking-tight">Currently Offline</h3>
                         <p className="text-slate-500 text-[10px] font-medium tracking-wide leading-relaxed">You must be online to receive new <br/> delivery requests and manage your tasks.</p>
                     </div>
-                    <button 
-                        onClick={() => window.location.href = '/delivery/profile'}
-                        className="text-[9px] font-black text-primary uppercase tracking-[0.2em] bg-indigo-50 px-5 py-2.5 rounded-lg hover:bg-indigo-100 transition-all active:scale-95"
-                    >
-                        Go To Availability Settings
-                    </button>
+                    <div className="flex flex-col gap-2 pt-1 max-w-xs mx-auto">
+                        <button 
+                            onClick={toggleAvailability}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Power size={14} className="text-emerald-200" />
+                            Go Online Now
+                        </button>
+                        <button 
+                            onClick={() => navigate('/delivery/profile')}
+                            className="text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest py-1 transition-colors cursor-pointer"
+                        >
+                            Open Profile Settings
+                        </button>
+                    </div>
                 </div>
             )}
 

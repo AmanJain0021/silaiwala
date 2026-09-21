@@ -39,7 +39,7 @@ const DeliveryProfile = () => {
     const { supportEmail, supportPhone } = useBrandingStore();
     const logout = useAuthStore((state) => state.logout);
     const [isEditing, setIsEditing] = useState(null); // 'personal' | 'bank' | null
-    const { isOnline, setIsOnline } = useOutletContext() || { isOnline: true, setIsOnline: () => { } };
+    const { isOnline, setIsOnline, toggleAvailability } = useOutletContext() || { isOnline: true, setIsOnline: () => { } };
     const [showRules, setShowRules] = useState(false);
     const [showSupport, setShowSupport] = useState(false);
     const [showKYCModal, setShowKYCModal] = useState(false);
@@ -134,10 +134,24 @@ const DeliveryProfile = () => {
     }, [showSupport]);
 
     const handleToggleDuty = async () => {
+        if (toggleAvailability) {
+            await toggleAvailability();
+            return;
+        }
         const newStatus = !isOnline;
         setIsOnline(newStatus);
         try {
-            await deliveryService.updateStatus({ isAvailable: newStatus });
+            await deliveryService.updateStatus({ 
+                isAvailable: newStatus,
+                status: newStatus ? 'active' : 'inactive'
+            });
+            try {
+                const store = useDeliveryAuthStore.getState();
+                if (store.deliveryBoy) {
+                    store.deliveryBoy.isAvailable = newStatus;
+                    store.deliveryBoy.status = newStatus ? 'available' : 'offline';
+                }
+            } catch (_) {}
             toast.success(`You are now ${newStatus ? 'Online' : 'Offline'}`);
         } catch (error) {
             console.error('Failed to update status:', error);

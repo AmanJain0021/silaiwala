@@ -15,7 +15,7 @@ import {
   FiActivity,
   FiTruck
 } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import PageTransition from '../../../shared/components/PageTransition';
 import { formatPrice } from '../../../shared/utils/helpers';
 import toast from 'react-hot-toast';
@@ -36,8 +36,10 @@ const DeliveryOrders = () => {
     completeOrder,
     deliveryBoy,
   } = useDeliveryAuthStore();
-  
-  const isOnline = deliveryBoy?.status === 'available';
+  const { isOnline: outletIsOnline } = useOutletContext() || {};
+  const isOnline = outletIsOnline !== undefined 
+    ? outletIsOnline 
+    : Boolean(deliveryBoy?.isAvailable ?? (deliveryBoy?.status === 'active' || deliveryBoy?.status === 'available'));
   const [filter, setFilter] = useState(isOnline ? 'available' : 'delivered');
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 20;

@@ -95,14 +95,20 @@ exports.updateStatus = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Delivery profile not found", 404));
   }
 
-  if (isAvailable !== undefined) delivery.isAvailable = isAvailable;
-  if (address) delivery.currentAddress = address;
-  if (status) {
+  if (isAvailable !== undefined) {
+    delivery.isAvailable = Boolean(isAvailable);
+    delivery.status = delivery.isAvailable ? 'active' : 'inactive';
+  }
+
+  if (status !== undefined) {
     let finalStatus = status;
-    if (status === 'available') finalStatus = 'active';
+    if (status === 'available' || status === 'online') finalStatus = 'active';
     if (status === 'offline') finalStatus = 'inactive';
     delivery.status = finalStatus;
+    delivery.isAvailable = finalStatus === 'active';
   }
+
+  if (address) delivery.currentAddress = address;
 
   if (lat && lng) {
     delivery.currentLocation = {
