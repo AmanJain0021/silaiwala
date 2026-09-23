@@ -180,6 +180,141 @@ router.post("/bulk", uploadLimiter, protect, upload.any(), handleMulterError, (r
   return processUpload(req, res, true);
 });
 
+// ---------------- CHUNKED UPLOAD ROUTES (For large videos & files) ---------------- //
+
+const CHUNKS_DIR = path.join(UPLOAD_DIR, "chunks");
+if (!fs.existsSync(CHUNKS_DIR)) {
+  try {
+    fs.mkdirSync(CHUNKS_DIR, { recursive: true });
+  } catch (err) {
+    console.error("Failed to create chunks directory:", err);
+  }
+}
+
+// Handler for single chunk
+const handleChunkUpload = async (req, res) => {
+  try {
+    const safeUploadId = (req.body.uploadId || "").replace(/[^a-zA-Z0-9_-]/g, "");
+    if (!safeUploadId) {
+      return res.status(400).json({ success: false, message: "Valid uploadId is required" });
+    }
+
+    const chunkIndex = parseInt(req.body.chunkIndex, 10);
+    if (isNaN(chunkIndex)) {
+      return res.status(400).json({ success: false, message: "Valid chunkIndex is required" });
+    }
+
+    const chunkFile = req.file || (req.files && req.files.length > 0 ? req.files[0] : null);
+    if (!chunkFile || !chunkFile.buffer) {
+      return res.status(400).json({ success: false, message: "No chunk file data received" });
+    }
+
+    const targetChunkDir = path.join(CHUNKS_DIR, safeUploadId);
+    if (!fs.existsSync(targetChunkDir)) {
+      fs.mkdirSync(targetChunkDir, { recursive: true });
+    }
+
+    const chunkFilePath = path.join(targetChunkDir, `chunk-${chunkIndex}`);
+    await fs.promises.writeFile(chunkFilePath, chunkFile.buffer);
+
+    return res.status(200).json({
+      success: true,
+      message: `Chunk ${chunkIndex} uploaded successfully`,
+      chunkIndex,
+    });
+  } catch (err) {
+    console.error("Error in chunk upload:", err);
+    return res.status(500).json({ success: false, message: "Chunk upload failed: " + err.message });
+  }
+};
+
+// Handler for merging chunks after upload completes
+const handleChunkComplete = async (req, res) => {
+  try {
+    const safeUploadId = (req.body.uploadId || "").replace(/[^a-zA-Z0-9_-]/g, "");
+    const totalChunks = parseInt(req.body.totalChunks, 10);
+    const rawFileName = req.body.fileName || "video.mp4";
+
+    if (!safeUploadId || isNaN(totalChunks) || totalChunks <= 0) {
+      return res.status(400).json({ success: false, message: "Valid uploadId and totalChunks are required" });
+    }
+
+    const targetChunkDir = path.join(CHUNKS_DIR, safeUploadId);
+    if (!fs.existsSync(targetChunkDir)) {
+      return res.status(404).json({ success: false, message: "Upload session chunks not found or expired" });
+    }
+
+    // 1. Verify all chunk files 0 .. totalChunks - 1 exist
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkPath = path.join(targetChunkDir, `chunk-${i}`);
+      if (!fs.existsSync(chunkPath)) {
+        return res.status(400).json({
+          success: false,
+          message: `Chunk ${i} is missing. Please retry uploading chunk ${i}.`,
+        });
+      }
+    }
+
+    // 2. Prepare final file destination
+    let ext = path.extname(rawFileName).toLowerCase();
+    if (!ext) ext = ".mp4";
+    const isVideo = [".mp4", ".webm", ".mov", ".avi", ".mkv", ".3gp", ".wmv", ".m4v"].includes(ext);
+    const prefix = isVideo ? "video" : "file";
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const finalFileName = `${prefix}-${uniqueSuffix}${ext}`;
+    const finalFilePath = path.join(UPLOAD_DIR, finalFileName);
+
+    // 3. Stream-merge chunks sequentially to keep RAM minimal
+    const writeStream = fs.createWriteStream(finalFilePath);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkPath = path.join(targetChunkDir, `chunk-${i}`);
+      await new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(chunkPath);
+        readStream.pipe(writeStream, { end: false });
+        readStream.on("end", resolve);
+        readStream.on("error", reject);
+      });
+    }
+
+    writeStream.end();
+
+    await new Promise((resolve, reject) => {
+      writeStream.on("finish", resolve);
+      writeStream.on("error", reject);
+    });
+
+    // 4. Clean up temporary chunks folder in background
+    try {
+      if (fs.promises.rm) {
+        await fs.promises.rm(targetChunkDir, { recursive: true, force: true });
+      } else {
+        fs.rmdirSync(targetChunkDir, { recursive: true });
+      }
+    } catch (cleanupErr) {
+      console.warn("Non-fatal: failed to clean up chunk dir:", cleanupErr.message);
+    }
+
+    // 5. Generate public file URL
+    const fileUrl = getPublicFileUrl(req, finalFileName);
+
+    return res.status(200).json({
+      success: true,
+      message: "File chunks merged successfully",
+      data: fileUrl,
+    });
+  } catch (err) {
+    console.error("Error in chunk complete:", err);
+    return res.status(500).json({ success: false, message: "Failed to merge chunks: " + err.message });
+  }
+};
+
+// Chunk routes (Both public and protected paths supported)
+router.post("/chunk", uploadLimiter, upload.any(), handleMulterError, handleChunkUpload);
+router.post("/public/chunk", uploadLimiter, upload.any(), handleMulterError, handleChunkUpload);
+router.post("/chunk/complete", uploadLimiter, handleChunkComplete);
+router.post("/public/chunk/complete", uploadLimiter, handleChunkComplete);
+
 // ---------------- PUBLIC ROUTES ---------------- //
 
 // Single upload (Public - useful for registration)
@@ -194,4 +329,6 @@ router.post("/public/bulk", uploadLimiter, upload.any(), handleMulterError, (req
 });
 
 module.exports = router;
+
+
 

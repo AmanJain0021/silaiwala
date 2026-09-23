@@ -7,3 +7,13 @@ coverage/
 firebase-service-account.json
 
 latest_order.json
+
+# Uploads and temporary chunks
+uploads/chunks/
+uploads/video-*
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv
+

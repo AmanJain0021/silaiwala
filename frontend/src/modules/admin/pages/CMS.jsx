@@ -4,6 +4,7 @@ import { Image as ImageIcon, Send, FileText, Bell, Plus, Edit2, Trash2, Smartpho
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { isUploadedBannerImage } from '../../../utils/bannerImage';
+import { uploadVideoInChunks } from '../../../utils/videoChunkUploader';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 const AdminCMS = () => {
@@ -254,36 +255,38 @@ const AdminCMS = () => {
     };
 
     const [isVideoUploading, setIsVideoUploading] = useState(false);
+    const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+    const [videoUploadStatus, setVideoUploadStatus] = useState('');
 
     const handleVideoFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (file.size > 500 * 1024 * 1024) {
-            return toast.error('Video size exceeds 500MB limit. Please select a smaller video.');
-        }
-
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('folder', 'videos');
+        // Reset file input so user can pick the same file again if needed
+        e.target.value = '';
 
         setIsVideoUploading(true);
+        setVideoUploadProgress(0);
+        setVideoUploadStatus('Starting chunked upload...');
+
         try {
-            const res = await api.post('/upload/public', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            const uploadedUrl = await uploadVideoInChunks(file, {
+                chunkSize: 2 * 1024 * 1024, // 2MB safe chunks (bypasses Nginx body size limits)
+                onProgress: ({ percent, status }) => {
+                    setVideoUploadProgress(percent);
+                    setVideoUploadStatus(status);
+                }
             });
-            const uploadedUrl = res.data.data;
+
             setNewContent(prev => ({ ...prev, content: uploadedUrl }));
-            toast.success('Video file uploaded successfully!');
+            toast.success('Video file uploaded successfully! 🎉');
         } catch (error) {
-            console.error('Video upload failed:', error);
-            if (error.response?.status === 413) {
-                toast.error('File size too large (413). Please configure Nginx client_max_body_size on the server.');
-            } else {
-                toast.error(error.response?.data?.message || 'Video upload failed');
-            }
+            console.error('Video chunk upload failed:', error);
+            toast.error(error.message || 'Video upload failed. Please try again.');
         } finally {
             setIsVideoUploading(false);
+            setVideoUploadProgress(0);
+            setVideoUploadStatus('');
         }
     };
 
@@ -866,9 +869,9 @@ const AdminCMS = () => {
                                                     </label>
                                                     <label className="cursor-pointer text-xs font-bold text-primary bg-purple-100 hover:bg-purple-200 border border-purple-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs">
                                                         {isVideoUploading ? (
-                                                            <span className="flex items-center gap-1.5">
+                                                            <span className="flex items-center gap-1.5 text-purple-700">
                                                                 <span className="w-3 h-3 border-2 border-purple-700 border-t-transparent animate-spin rounded-full"></span>
-                                                                Uploading Video...
+                                                                Uploading {videoUploadProgress}%
                                                             </span>
                                                         ) : (
                                                             <>
@@ -884,6 +887,36 @@ const AdminCMS = () => {
                                                         )}
                                                     </label>
                                                 </div>
+
+                                                {/* Chunked Upload Real-Time Progress Bar */}
+                                                {isVideoUploading && (
+                                                    <div className="mb-3.5 p-3.5 bg-gradient-to-br from-purple-50 via-pink-50/50 to-purple-50/30 border border-purple-200/90 rounded-2xl shadow-xs">
+                                                        <div className="flex justify-between items-center text-xs font-bold mb-2">
+                                                            <span className="text-purple-900 flex items-center gap-2">
+                                                                <span className="relative flex h-2 w-2">
+                                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-600"></span>
+                                                                </span>
+                                                                {videoUploadStatus || 'Uploading chunks...'}
+                                                            </span>
+                                                            <span className="text-purple-800 font-extrabold text-xs px-2 py-0.5 bg-purple-100/90 rounded-full border border-purple-200">
+                                                                {videoUploadProgress}%
+                                                            </span>
+                                                        </div>
+                                                        {/* Progress Track & Bar */}
+                                                        <div className="w-full bg-purple-200/60 h-2.5 rounded-full overflow-hidden p-0.5 shadow-inner">
+                                                            <div 
+                                                                className="bg-gradient-to-r from-purple-600 via-pink-500 to-[#FD0053] h-full rounded-full transition-all duration-300 ease-out shadow-xs"
+                                                                style={{ width: `${Math.max(3, videoUploadProgress)}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-[10px] text-purple-600/80 mt-1.5 font-semibold">
+                                                            <span>Chunked Transfer: 2MB per piece</span>
+                                                            <span>Please keep window open</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 <input 
                                                     type="text" 
                                                     value={newContent.content} 
@@ -892,7 +925,7 @@ const AdminCMS = () => {
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" 
                                                 />
                                                 <p className="text-[10px] text-gray-400 mt-1.5 font-medium leading-relaxed">
-                                                    💡 <b>Option 1:</b> Click <b>Upload Video File</b> to pick a downloaded MP4/WEBM/MOV video from your PC.<br />
+                                                    💡 <b>Option 1:</b> Click <b>Upload Video File</b> to pick any video (1 min, 2 min, 5 min+) from your PC. It will automatically upload in smooth 2MB chunks.<br />
                                                     💡 <b>Option 2:</b> Or paste a YouTube video link (e.g. https://www.youtube.com/watch?v=...) directly into the field above.
                                                 </p>
                                             </div>
