@@ -54,7 +54,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-const CACHE_NAME = 'sewzella-v2';
+const CACHE_NAME = 'sewzella-v3';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -132,6 +132,18 @@ self.addEventListener('fetch', (event) => {
   
   // Ignore non-GET requests or WebSockets
   if (request.method !== 'GET' || request.url.startsWith('ws://') || request.url.startsWith('wss://')) {
+    return;
+  }
+
+  // Bypass Service Worker for Range requests, video/audio media, and /uploads/
+  // Service Workers cannot cache HTTP 206 Partial Content streams and fail with net::ERR_...
+  if (
+    request.headers.get('range') ||
+    request.destination === 'video' ||
+    request.destination === 'audio' ||
+    request.url.includes('/uploads/') ||
+    /\.(mp4|webm|ogg|mov|m4v|mp3|wav)($|\?)/i.test(request.url)
+  ) {
     return;
   }
 

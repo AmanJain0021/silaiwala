@@ -757,8 +757,12 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         key={primaryUrl}
                                         controls 
                                         playsInline
-                                        preload="auto"
+                                        webkit-playsinline="true"
+                                        x5-playsinline="true"
+                                        preload="metadata"
                                         autoPlay 
+                                        muted
+                                        controlsList="nodownload"
                                         onError={(e) => {
                                             console.error("Video load error for:", primaryUrl, e);
                                             setHasVideoError(true);
