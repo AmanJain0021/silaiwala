@@ -12,7 +12,7 @@ import api from './api';
  */
 export async function uploadVideoInChunks(file, options = {}) {
     const {
-        chunkSize = 2 * 1024 * 1024, // 2MB safe chunk size
+        chunkSize = 512 * 1024, // 512KB safe chunk size (fits under default Nginx 1MB limit)
         onProgress = () => {}
     } = options;
 

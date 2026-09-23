@@ -37,7 +37,7 @@ const isVideoFile = (file) => {
 const getPublicFileUrl = (req, filename) => {
   const host = req.headers["x-forwarded-host"] || req.get("host") || "";
   if (process.env.NODE_ENV === "production" || host.includes("sewzella.com")) {
-    return `https://sewzella.com/uploads/${filename}`;
+    return `https://sewzella.com/api/v1/uploads/${filename}`;
   }
   const protoHeader = req.headers["x-forwarded-proto"];
   const protocol = protoHeader ? protoHeader.split(",")[0].trim() : req.protocol;

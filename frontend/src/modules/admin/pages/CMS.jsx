@@ -271,7 +271,7 @@ const AdminCMS = () => {
 
         try {
             const uploadedUrl = await uploadVideoInChunks(file, {
-                chunkSize: 2 * 1024 * 1024, // 2MB safe chunks (bypasses Nginx body size limits)
+                chunkSize: 512 * 1024, // 512KB safe chunks (fits under default Nginx 1MB limit)
                 onProgress: ({ percent, status }) => {
                     setVideoUploadProgress(percent);
                     setVideoUploadStatus(status);
@@ -911,7 +911,7 @@ const AdminCMS = () => {
                                                             />
                                                         </div>
                                                         <div className="flex justify-between items-center text-[10px] text-purple-600/80 mt-1.5 font-semibold">
-                                                            <span>Chunked Transfer: 2MB per piece</span>
+                                                            <span>Chunked Transfer: 512KB per piece</span>
                                                             <span>Please keep window open</span>
                                                         </div>
                                                     </div>
@@ -925,7 +925,7 @@ const AdminCMS = () => {
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-primary transition-colors" 
                                                 />
                                                 <p className="text-[10px] text-gray-400 mt-1.5 font-medium leading-relaxed">
-                                                    💡 <b>Option 1:</b> Click <b>Upload Video File</b> to pick any video (1 min, 2 min, 5 min+) from your PC. It will automatically upload in smooth 2MB chunks.<br />
+                                                    💡 <b>Option 1:</b> Click <b>Upload Video File</b> to pick any video (1 min, 2 min, 5 min+) from your PC. It will automatically upload in smooth 512KB chunks.<br />
                                                     💡 <b>Option 2:</b> Or paste a YouTube video link (e.g. https://www.youtube.com/watch?v=...) directly into the field above.
                                                 </p>
                                             </div>
