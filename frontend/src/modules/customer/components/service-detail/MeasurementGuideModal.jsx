@@ -687,19 +687,56 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                         <div className="aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center relative shadow-inner">
                             {(() => {
                                 const rawUrl = videoData?.content?.trim() || '';
-                                let resolvedUrl = rawUrl;
-
-                                if (typeof window !== 'undefined' && resolvedUrl) {
-                                    const host = window.location.hostname;
-                                    if (resolvedUrl.startsWith('/uploads')) {
-                                        const base = host.includes('sewzella') ? 'https://sewzella.com' : (window.location.origin || 'http://localhost:5000');
-                                        resolvedUrl = `${base}${resolvedUrl}`;
-                                    } else if ((host.includes('sewzella') || host !== 'localhost') && (resolvedUrl.includes('localhost') || resolvedUrl.includes('127.0.0.1'))) {
-                                        resolvedUrl = resolvedUrl.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, 'https://sewzella.com');
-                                    }
+                                if (!rawUrl) {
+                                    return (
+                                        <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                                            No measurement guide video uploaded yet.
+                                        </div>
+                                    );
                                 }
 
-                                const youtubeEmbed = formatVideoEmbedUrl(resolvedUrl);
+                                const youtubeEmbed = formatVideoEmbedUrl(rawUrl);
+                                if (youtubeEmbed) {
+                                    return (
+                                        <iframe 
+                                            className="w-full h-full"
+                                            src={youtubeEmbed} 
+                                            title={videoData?.title || "Measurement Guide Video"}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowFullScreen
+                                        />
+                                    );
+                                }
+
+                                // Extract the clean upload path e.g. /uploads/video-xxxx.mp4
+                                let uploadPath = rawUrl;
+                                if (rawUrl.includes('/uploads/')) {
+                                    uploadPath = '/uploads/' + rawUrl.split('/uploads/')[1];
+                                } else if (rawUrl.includes('/api/v1/uploads/')) {
+                                    uploadPath = '/uploads/' + rawUrl.split('/api/v1/uploads/')[1];
+                                } else if (!rawUrl.startsWith('http')) {
+                                    uploadPath = '/uploads/' + rawUrl.replace(/^\/+/, '');
+                                }
+
+                                let primaryUrl = rawUrl;
+                                let secondaryUrl = '';
+
+                                if (typeof window !== 'undefined') {
+                                    const host = window.location.hostname;
+                                    if (host === 'localhost' || host === '127.0.0.1') {
+                                        // On local dev, stream directly from local backend port 5000
+                                        primaryUrl = `http://localhost:5000${uploadPath}`;
+                                        secondaryUrl = `http://localhost:5000/api/v1${uploadPath}`;
+                                    } else if (host.includes('sewzella')) {
+                                        // On sewzella.com, stream via /api/v1/uploads to bypass frontend routing
+                                        primaryUrl = `https://sewzella.com/api/v1${uploadPath}`;
+                                        secondaryUrl = `https://sewzella.com${uploadPath}`;
+                                    } else {
+                                        // Mobile device on LAN IP
+                                        primaryUrl = `http://${host}:5000${uploadPath}`;
+                                        secondaryUrl = `http://${host}:5000/api/v1${uploadPath}`;
+                                    }
+                                }
 
                                 if (hasVideoError) {
                                     return (
@@ -715,40 +752,21 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                     );
                                 }
 
-                                if (!resolvedUrl) {
-                                    return (
-                                        <div className="p-6 text-center text-slate-400 text-xs font-medium">
-                                            No measurement guide video uploaded yet.
-                                        </div>
-                                    );
-                                }
-
-                                if (youtubeEmbed) {
-                                    return (
-                                        <iframe 
-                                            className="w-full h-full"
-                                            src={youtubeEmbed} 
-                                            title={videoData?.title || "Measurement Guide Video"}
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                            allowFullScreen
-                                        />
-                                    );
-                                }
-
                                 return (
                                     <video 
-                                        key={resolvedUrl}
-                                        src={resolvedUrl} 
+                                        key={primaryUrl}
                                         controls 
                                         playsInline
-                                        preload="metadata"
+                                        preload="auto"
                                         autoPlay 
                                         onError={(e) => {
-                                            console.error("Video load error:", e);
+                                            console.error("Video load error for:", primaryUrl, e);
                                             setHasVideoError(true);
                                         }}
                                         className="w-full h-full object-contain"
                                     >
+                                        <source src={primaryUrl} type="video/mp4" />
+                                        {secondaryUrl && <source src={secondaryUrl} type="video/mp4" />}
                                         Your browser does not support playing this video.
                                     </video>
                                 );

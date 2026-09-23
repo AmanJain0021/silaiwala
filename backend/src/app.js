@@ -83,6 +83,8 @@ app.use(sanitizeRequest);
 
 // ─── Static Files ────────────────────────────────────────────────────────────
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/api/v1/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/api/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ─── HTTP Request Logger ─────────────────────────────────────────────────────
 
