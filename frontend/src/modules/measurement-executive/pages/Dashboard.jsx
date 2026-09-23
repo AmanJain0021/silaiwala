@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMeasurementStore from '../store/measurementExecutiveStore';
 import { useMeasurementAuth } from '../context/MeasurementAuthContext';
-import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation, Phone, ArrowRight, X, Loader2, Ruler, ShieldCheck } from 'lucide-react';
+import { ClipboardList, CheckCircle, TrendingUp, MapPin, User, ChevronRight, AlertCircle, Power, Bell, Navigation, Phone, ArrowRight, X, Loader2, Ruler, ShieldCheck, Play, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useUnifiedLocation from '../../../shared/hooks/useUnifiedLocation';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import api from '../../../shared/utils/api';
+import ExecutiveMeasurementGuideModal from '../components/ExecutiveMeasurementGuideModal';
 
 const formatAddress = (addr) => {
     if (!addr) return 'Address details pending';
@@ -43,6 +44,9 @@ const Dashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    // Measurement Guide Video Modal State
+    const [showGuideModal, setShowGuideModal] = useState(false);
 
     const fetchActiveTask = async () => {
         try {
@@ -340,6 +344,37 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                {/* ── MEASUREMENT VIDEO GUIDE BANNER CARD ── */}
+                <div 
+                    onClick={() => setShowGuideModal(true)}
+                    className="bg-gradient-to-r from-purple-50 via-indigo-50/40 to-pink-50 border border-purple-100/90 rounded-[24px] p-4 mb-6 flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.99]"
+                >
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#843D9B] to-[#6B2F7E] text-white flex items-center justify-center shadow-md shadow-[#843D9B]/25 group-hover:scale-105 transition-transform shrink-0 relative">
+                            <Ruler size={20} />
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 border-2 border-white rounded-full flex items-center justify-center">
+                                <Play size={7} className="text-yellow-900 fill-yellow-900 ml-0.5" />
+                            </span>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-black text-[#843D9B] uppercase tracking-wider bg-purple-100/80 px-2 py-0.5 rounded-md">
+                                    Training Video
+                                </span>
+                            </div>
+                            <h4 className="text-sm font-black text-gray-900 mt-1 leading-tight group-hover:text-[#843D9B] transition-colors">
+                                Measurement Guide
+                            </h4>
+                            <p className="text-[10px] font-medium text-gray-500 mt-0.5">
+                                Watch standard body measurement techniques
+                            </p>
+                        </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-white border border-purple-100 text-[#843D9B] flex items-center justify-center shrink-0 shadow-sm group-hover:bg-[#843D9B] group-hover:text-white transition-all ml-2">
+                        <Play size={12} className="fill-current ml-0.5" />
+                    </div>
+                </div>
+
                 {/* ── WHITE CLEAN ACTIVE TASK CARD (WHEN TASK IS ACCEPTED) ── */}
                 {activeTask ? (
                     <div className="bg-white rounded-[24px] p-6 shadow-md border border-purple-100 text-gray-900 mb-6 space-y-4 animate-in fade-in duration-300">
@@ -513,6 +548,12 @@ const Dashboard = () => {
                 </div>
             </div>
         )}
+
+        {/* Executive Measurement Guide Modal */}
+        <ExecutiveMeasurementGuideModal
+            isOpen={showGuideModal}
+            onClose={() => setShowGuideModal(false)}
+        />
         </>
     );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BookOpen, RotateCw, Hand } from 'lucide-react';
+import { BookOpen, RotateCw, Hand, Play } from 'lucide-react';
+import ExecutiveMeasurementGuideModal from '../ExecutiveMeasurementGuideModal';
 
 const GUIDE_INSTRUCTIONS = {
     1: { title: "Shoulder", desc: "Measure straight across the back from the tip of one shoulder bone to the tip of the other." },
@@ -14,6 +15,7 @@ const GUIDE_INSTRUCTIONS = {
 
 const MeasurementGuide = ({ onSelectGuideNumber, activeGuideNumber }) => {
     const [selectedTip, setSelectedTip] = useState(null);
+    const [showVideoModal, setShowVideoModal] = useState(false);
 
     const handleNumberClick = (num) => {
         setSelectedTip(GUIDE_INSTRUCTIONS[num] || { title: `Step ${num}`, desc: "Follow standard tailoring measurement practice." });
@@ -37,7 +39,17 @@ const MeasurementGuide = ({ onSelectGuideNumber, activeGuideNumber }) => {
                     className="flex-1 flex items-center justify-center gap-2 bg-[#581C87] hover:bg-[#4A154B] text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                 >
                     <BookOpen size={15} strokeWidth={2.2} />
-                    <span>Measurement Guide</span>
+                    <span>Diagram Guide</span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => setShowVideoModal(true)}
+                    className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#843D9B] to-[#6B2F7E] hover:opacity-95 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                    title="Watch Official Video Guide"
+                >
+                    <Play size={13} className="fill-current" />
+                    <span>Video Guide</span>
                 </button>
 
                 <button
@@ -150,6 +162,12 @@ const MeasurementGuide = ({ onSelectGuideNumber, activeGuideNumber }) => {
                 <Hand size={13} className="text-[#6C2E9C]" />
                 <span>Tap on number to see how to measure</span>
             </div>
+
+            {/* Executive Video Guide Modal */}
+            <ExecutiveMeasurementGuideModal
+                isOpen={showVideoModal}
+                onClose={() => setShowVideoModal(false)}
+            />
         </div>
     );
 };
