@@ -708,35 +708,28 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                     );
                                 }
 
-                                // Extract the clean upload path e.g. /uploads/video-xxxx.mp4
-                                let uploadPath = rawUrl;
-                                if (rawUrl.includes('/uploads/')) {
-                                    uploadPath = '/uploads/' + rawUrl.split('/uploads/')[1];
-                                } else if (rawUrl.includes('/api/v1/uploads/')) {
-                                    uploadPath = '/uploads/' + rawUrl.split('/api/v1/uploads/')[1];
-                                } else if (!rawUrl.startsWith('http')) {
-                                    uploadPath = '/uploads/' + rawUrl.replace(/^\/+/, '');
+                                // Build candidate URLs
+                                const candidateUrls = [];
+                                if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+                                    candidateUrls.push(rawUrl);
                                 }
-
-                                let primaryUrl = rawUrl;
-                                let secondaryUrl = '';
-
+                                let filename = rawUrl;
+                                if (rawUrl.includes('/uploads/')) {
+                                    filename = rawUrl.split('/uploads/')[1];
+                                } else if (!rawUrl.startsWith('http')) {
+                                    filename = rawUrl.replace(/^\/+/, '');
+                                }
+                                candidateUrls.push(`https://sewzella.com/api/v1/uploads/${filename}`);
                                 if (typeof window !== 'undefined') {
                                     const host = window.location.hostname;
-                                    if (host === 'localhost' || host === '127.0.0.1') {
-                                        // On local dev, stream directly from local backend port 5000
-                                        primaryUrl = `http://localhost:5000${uploadPath}`;
-                                        secondaryUrl = `http://localhost:5000/api/v1${uploadPath}`;
-                                    } else if (host.includes('sewzella')) {
-                                        // On sewzella.com, stream via /api/v1/uploads to bypass frontend routing
-                                        primaryUrl = `https://sewzella.com/api/v1${uploadPath}`;
-                                        secondaryUrl = `https://sewzella.com${uploadPath}`;
-                                    } else {
-                                        // Mobile device on LAN IP
-                                        primaryUrl = `http://${host}:5000${uploadPath}`;
-                                        secondaryUrl = `http://${host}:5000/api/v1${uploadPath}`;
-                                    }
+                                    candidateUrls.push(`http://${host}:5000/api/v1/uploads/${filename}`);
+                                    candidateUrls.push(`http://${host}:5000/uploads/${filename}`);
                                 }
+                                candidateUrls.push(`http://localhost:5000/api/v1/uploads/${filename}`);
+                                candidateUrls.push(`http://localhost:5000/uploads/${filename}`);
+
+                                const cleanCandidateUrls = Array.from(new Set(candidateUrls));
+                                const activeVideoUrl = cleanCandidateUrls[0] || rawUrl;
 
                                 if (hasVideoError) {
                                     return (
@@ -754,7 +747,8 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
 
                                 return (
                                     <video 
-                                        key={primaryUrl}
+                                        key={activeVideoUrl}
+                                        src={activeVideoUrl}
                                         controls 
                                         playsInline
                                         webkit-playsinline="true"
@@ -764,13 +758,11 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                                         muted
                                         controlsList="nodownload"
                                         onError={(e) => {
-                                            console.error("Video load error for:", primaryUrl, e);
+                                            console.error("Video load error for:", activeVideoUrl, e);
                                             setHasVideoError(true);
                                         }}
                                         className="w-full h-full object-contain"
                                     >
-                                        <source src={primaryUrl} type="video/mp4" />
-                                        {secondaryUrl && <source src={secondaryUrl} type="video/mp4" />}
                                         Your browser does not support playing this video.
                                     </video>
                                 );

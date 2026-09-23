@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Play, Ruler, RotateCcw, ShieldCheck, CheckCircle2, Video, AlertCircle, Sparkles } from 'lucide-react';
 import api from '../../../shared/utils/api';
 
@@ -6,12 +6,14 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
     const [videoData, setVideoData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [hasVideoError, setHasVideoError] = useState(false);
+    const [urlIndex, setUrlIndex] = useState(0);
 
     const fetchGuideVideo = async () => {
         setLoading(true);
         setHasVideoError(false);
+        setUrlIndex(0);
         try {
-            // Add timestamp query to bust browser/redis caches so admin changes reflect immediately
+            // Bust browser/redis caches so admin changes reflect immediately
             const res = await api.get(`/cms/content/measurement-guide-video?t=${Date.now()}`).catch(() => null);
             if (res?.data?.data && res.data.data.content) {
                 setVideoData(res.data.data);
@@ -33,8 +35,6 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
             fetchGuideVideo();
         }
     }, [isOpen]);
-
-    if (!isOpen) return null;
 
     const formatVideoEmbedUrl = (rawUrl) => {
         if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -59,32 +59,51 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
     const rawUrl = videoData?.content?.trim() || '';
     const youtubeEmbed = formatVideoEmbedUrl(rawUrl);
 
-    // Format clean upload stream URLs for local vs production
-    let uploadPath = rawUrl;
-    if (rawUrl.includes('/uploads/')) {
-        uploadPath = '/uploads/' + rawUrl.split('/uploads/')[1];
-    } else if (rawUrl.includes('/api/v1/uploads/')) {
-        uploadPath = '/uploads/' + rawUrl.split('/api/v1/uploads/')[1];
-    } else if (!rawUrl.startsWith('http') && rawUrl) {
-        uploadPath = '/uploads/' + rawUrl.replace(/^\/+/, '');
-    }
-
-    let primaryUrl = rawUrl;
-    let secondaryUrl = '';
-
-    if (typeof window !== 'undefined' && !youtubeEmbed && uploadPath) {
-        const host = window.location.hostname;
-        if (host === 'localhost' || host === '127.0.0.1') {
-            primaryUrl = `http://localhost:5000${uploadPath}`;
-            secondaryUrl = `http://localhost:5000/api/v1${uploadPath}`;
-        } else if (host.includes('sewzella')) {
-            primaryUrl = `https://sewzella.com/api/v1${uploadPath}`;
-            secondaryUrl = `https://sewzella.com${uploadPath}`;
-        } else {
-            primaryUrl = `http://${host}:5000${uploadPath}`;
-            secondaryUrl = `http://${host}:5000/api/v1${uploadPath}`;
+    // Build intelligent candidate URL list (tries live production URL, local backend, and relative)
+    const candidateUrls = useMemo(() => {
+        if (!rawUrl || youtubeEmbed) return [];
+        const list = [];
+        
+        let filename = rawUrl;
+        if (rawUrl.includes('/uploads/')) {
+            filename = rawUrl.split('/uploads/')[1];
+        } else if (!rawUrl.startsWith('http')) {
+            filename = rawUrl.replace(/^\/+/, '');
         }
-    }
+
+        // 1. If rawUrl is full URL (e.g. https://sewzella.com/api/v1/uploads/...), use it first
+        if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+            list.push(rawUrl);
+        }
+
+        // 2. Production URL
+        list.push(`https://sewzella.com/api/v1/uploads/${filename}`);
+
+        // 3. Localhost endpoints
+        if (typeof window !== 'undefined') {
+            const host = window.location.hostname;
+            list.push(`http://${host}:5000/api/v1/uploads/${filename}`);
+            list.push(`http://${host}:5000/uploads/${filename}`);
+        }
+        list.push(`http://localhost:5000/api/v1/uploads/${filename}`);
+        list.push(`http://localhost:5000/uploads/${filename}`);
+
+        return Array.from(new Set(list));
+    }, [rawUrl, youtubeEmbed]);
+
+    const currentUrl = candidateUrls[urlIndex] || rawUrl;
+
+    const handleVideoError = (e) => {
+        console.warn("Video failed from:", currentUrl);
+        if (urlIndex + 1 < candidateUrls.length) {
+            console.log("Trying fallback video URL:", candidateUrls[urlIndex + 1]);
+            setUrlIndex(prev => prev + 1);
+        } else {
+            setHasVideoError(true);
+        }
+    };
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -97,7 +116,7 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
                         </div>
                         <div>
                             <h3 className="text-sm font-black text-gray-900 leading-tight">
-                                {videoData?.title || "Measurement Guide Video"}
+                                {videoData?.title || "How to Measure Body Guide"}
                             </h3>
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                 Standard Executive Training
@@ -140,6 +159,7 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
                                 <button
                                     onClick={() => {
                                         setHasVideoError(false);
+                                        setUrlIndex(0);
                                         fetchGuideVideo();
                                     }}
                                     className="px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5"
@@ -149,7 +169,8 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
                             </div>
                         ) : (
                             <video
-                                key={primaryUrl}
+                                key={currentUrl}
+                                src={currentUrl}
                                 controls
                                 playsInline
                                 webkit-playsinline="true"
@@ -158,14 +179,9 @@ const ExecutiveMeasurementGuideModal = ({ isOpen, onClose }) => {
                                 autoPlay
                                 muted
                                 controlsList="nodownload"
-                                onError={(e) => {
-                                    console.error("Video load error for:", primaryUrl, e);
-                                    setHasVideoError(true);
-                                }}
+                                onError={handleVideoError}
                                 className="w-full h-full object-contain"
                             >
-                                <source src={primaryUrl} type="video/mp4" />
-                                {secondaryUrl && <source src={secondaryUrl} type="video/mp4" />}
                                 Your device does not support playing this video.
                             </video>
                         )}
