@@ -686,22 +686,41 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
                         </h3>
                         <div className="aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center relative shadow-inner">
                             {(() => {
-                                const videoUrl = videoData?.content?.trim();
-                                const youtubeEmbed = formatVideoEmbedUrl(videoUrl);
+                                const rawUrl = videoData?.content?.trim() || '';
+                                let resolvedUrl = rawUrl;
 
-                                // Fallback iframe if video fails to load or no video content set
-                                const renderFallback = () => (
-                                    <iframe 
-                                        className="w-full h-full"
-                                        src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1" 
-                                        title="Measurement Guide Video"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowFullScreen
-                                    />
-                                );
+                                if (typeof window !== 'undefined' && resolvedUrl) {
+                                    const host = window.location.hostname;
+                                    if (resolvedUrl.startsWith('/uploads')) {
+                                        const base = host.includes('sewzella') ? 'https://sewzella.com' : (window.location.origin || 'http://localhost:5000');
+                                        resolvedUrl = `${base}${resolvedUrl}`;
+                                    } else if ((host.includes('sewzella') || host !== 'localhost') && (resolvedUrl.includes('localhost') || resolvedUrl.includes('127.0.0.1'))) {
+                                        resolvedUrl = resolvedUrl.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, 'https://sewzella.com');
+                                    }
+                                }
 
-                                if (hasVideoError || !videoUrl) {
-                                    return renderFallback();
+                                const youtubeEmbed = formatVideoEmbedUrl(resolvedUrl);
+
+                                if (hasVideoError) {
+                                    return (
+                                        <div className="p-6 text-center text-white space-y-3">
+                                            <p className="text-xs text-red-300 font-medium">Video could not be played. Please check your network connection.</p>
+                                            <button 
+                                                onClick={() => setHasVideoError(false)} 
+                                                className="px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5"
+                                            >
+                                                🔄 Retry Video
+                                            </button>
+                                        </div>
+                                    );
+                                }
+
+                                if (!resolvedUrl) {
+                                    return (
+                                        <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                                            No measurement guide video uploaded yet.
+                                        </div>
+                                    );
                                 }
 
                                 if (youtubeEmbed) {
@@ -718,10 +737,16 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
 
                                 return (
                                     <video 
-                                        src={videoUrl} 
+                                        key={resolvedUrl}
+                                        src={resolvedUrl} 
                                         controls 
+                                        playsInline
+                                        preload="metadata"
                                         autoPlay 
-                                        onError={() => setHasVideoError(true)}
+                                        onError={(e) => {
+                                            console.error("Video load error:", e);
+                                            setHasVideoError(true);
+                                        }}
                                         className="w-full h-full object-contain"
                                     >
                                         Your browser does not support playing this video.

@@ -35,9 +35,12 @@ const isVideoFile = (file) => {
 
 // Generate public URL for a file stored in /uploads
 const getPublicFileUrl = (req, filename) => {
+  const host = req.headers["x-forwarded-host"] || req.get("host") || "";
+  if (process.env.NODE_ENV === "production" || host.includes("sewzella.com")) {
+    return `https://sewzella.com/uploads/${filename}`;
+  }
   const protoHeader = req.headers["x-forwarded-proto"];
   const protocol = protoHeader ? protoHeader.split(",")[0].trim() : req.protocol;
-  const host = req.headers["x-forwarded-host"] || req.get("host");
   return `${protocol}://${host}/uploads/${filename}`;
 };
 

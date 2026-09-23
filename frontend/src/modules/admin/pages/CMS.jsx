@@ -350,7 +350,7 @@ const AdminCMS = () => {
                                 setEditId(null);
                                 setNewContent({
                                     title: 'How to Measure Body Guide',
-                                    content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    content: '',
                                     type: 'video',
                                     slug: 'measurement-guide-video',
                                     category: 'customer'
@@ -663,7 +663,7 @@ const AdminCMS = () => {
                                         setEditId(null);
                                         setNewContent({
                                             title: 'How to Measure Body Guide',
-                                            content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                            content: '',
                                             type: 'video',
                                             slug: 'measurement-guide-video',
                                             category: 'customer'
