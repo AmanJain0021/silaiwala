@@ -652,6 +652,11 @@ const ServiceDetail = () => {
     const otherAddons = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.addons) || 0), 0);
     const otherCustomizations = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.customizations) || 0), 0);
     const otherFabric = otherBasketItems.reduce((sum, item) => sum + (Number(item.pricing?.fabric) || 0), 0);
+    const otherBasketTotal = otherBasketItems.reduce((sum, item) => {
+        const itemTotal = Number(item.pricing?.total) || Number(item.totalPrice) || 
+            ((Number(item.pricing?.base) || 0) + (Number(item.pricing?.addons) || 0) + (Number(item.pricing?.customizations) || 0) + (Number(item.pricing?.fabric) || 0));
+        return sum + itemTotal;
+    }, 0);
 
     const totalOrderBase = otherBase + basePrice;
     const totalOrderAddons = otherAddons + addonsPrice;
