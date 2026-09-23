@@ -1583,9 +1583,26 @@ exports.uploadImage = async (req, res) => {
       return res.status(400).json({ success: false, message: "Please upload a file" });
     }
 
-    const host = req.get("host");
-    const protocol = req.protocol;
-    const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    const fs = require("fs");
+    const path = require("path");
+    const uploadDir = path.join(__dirname, "../../../../uploads");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    let filename = req.file.filename;
+    if (!filename && req.file.buffer) {
+      const ext = path.extname(req.file.originalname || "").toLowerCase() || ".jpg";
+      const isVideo = (req.file.mimetype || "").startsWith("video/");
+      const prefix = isVideo ? "video" : "image";
+      filename = `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      await fs.promises.writeFile(path.join(uploadDir, filename), req.file.buffer);
+    }
+
+    const host = req.headers["x-forwarded-host"] || req.get("host");
+    const protoHeader = req.headers["x-forwarded-proto"];
+    const protocol = protoHeader ? protoHeader.split(",")[0].trim() : req.protocol;
+    const imageUrl = `${protocol}://${host}/uploads/${filename}`;
 
     res.status(200).json({
       success: true,

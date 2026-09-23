@@ -259,8 +259,13 @@ const AdminCMS = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        if (file.size > 500 * 1024 * 1024) {
+            return toast.error('Video size exceeds 500MB limit. Please select a smaller video.');
+        }
+
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('folder', 'videos');
 
         setIsVideoUploading(true);
         try {
@@ -272,7 +277,11 @@ const AdminCMS = () => {
             toast.success('Video file uploaded successfully!');
         } catch (error) {
             console.error('Video upload failed:', error);
-            toast.error(error.response?.data?.message || 'Video upload failed');
+            if (error.response?.status === 413) {
+                toast.error('File size too large (413). Please configure Nginx client_max_body_size on the server.');
+            } else {
+                toast.error(error.response?.data?.message || 'Video upload failed');
+            }
         } finally {
             setIsVideoUploading(false);
         }

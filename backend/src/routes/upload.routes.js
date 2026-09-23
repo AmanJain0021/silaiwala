@@ -6,10 +6,61 @@ const upload = require("../middlewares/upload.middleware.js");
 const { protect } = require("../middlewares/auth.middleware.js");
 const { uploadLimiter } = require("../middlewares/rateLimiter.middleware.js");
 
+const fs = require("fs");
+const path = require("path");
+
+const UPLOAD_DIR = path.join(__dirname, "../../uploads");
+if (!fs.existsSync(UPLOAD_DIR)) {
+  try {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  } catch (err) {
+    console.error("Failed to create upload directory:", err);
+  }
+}
+
 // Helper to determine the target folder
 const getFolder = (req, defaultFolder) => {
-  // Try to use the folder provided by the client in the formData
   return req.body.folder || defaultFolder;
+};
+
+// Check if a file is a video
+const isVideoFile = (file) => {
+  const mime = (file.mimetype || "").toLowerCase();
+  const ext = path.extname(file.originalname || "").toLowerCase();
+  return (
+    mime.startsWith("video/") ||
+    [".mp4", ".webm", ".mov", ".avi", ".mkv", ".3gp", ".wmv", ".m4v"].includes(ext)
+  );
+};
+
+// Generate public URL for a file stored in /uploads
+const getPublicFileUrl = (req, filename) => {
+  const protoHeader = req.headers["x-forwarded-proto"];
+  const protocol = protoHeader ? protoHeader.split(",")[0].trim() : req.protocol;
+  const host = req.headers["x-forwarded-host"] || req.get("host");
+  return `${protocol}://${host}/uploads/${filename}`;
+};
+
+// Save buffer to backend/uploads
+const saveFileToDisk = async (file, req) => {
+  const isVideo = isVideoFile(file);
+  const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+  let ext = path.extname(file.originalname || "").toLowerCase();
+  if (!ext) {
+    if (file.mimetype?.includes("mp4")) ext = ".mp4";
+    else if (file.mimetype?.includes("webm")) ext = ".webm";
+    else if (file.mimetype?.includes("quicktime")) ext = ".mov";
+    else if (isVideo) ext = ".mp4";
+    else if (file.mimetype?.includes("png")) ext = ".png";
+    else ext = ".jpg";
+  }
+
+  const prefix = isVideo ? "video" : "file";
+  const filename = `${prefix}-${uniqueSuffix}${ext}`;
+  const filePath = path.join(UPLOAD_DIR, filename);
+
+  await fs.promises.writeFile(filePath, file.buffer);
+  return getPublicFileUrl(req, filename);
 };
 
 // Multer error handler wrapper — catches file size/type errors before they crash the request
@@ -18,7 +69,7 @@ const handleMulterError = (err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({ 
         success: false, 
-        message: "File size exceeds the 5MB limit. Please compress your images and try again." 
+        message: "File size exceeds the 500MB limit. Please upload a smaller file or compress it." 
       });
     }
     if (err.code === 'LIMIT_UNEXPECTED_FILE') {
@@ -53,11 +104,25 @@ const processUpload = async (req, res, isMultiple) => {
     const folderName = getFolder(req, "tailor_platform");
     const urls = [];
 
-    // Try Cloudinary if keys look real
-    if (process.env.CLOUDINARY_API_KEY && !process.env.CLOUDINARY_API_KEY.includes('your_')) {
-      try {
-        const uploadPromises = files.map(file => {
-          return new Promise((resolve, reject) => {
+    for (const file of files) {
+      const isVideo = isVideoFile(file) || folderName === "videos";
+
+      // 1. VIDEOS: Save directly to backend/uploads folder so they stream smoothly without 3rd-party limits
+      if (isVideo) {
+        try {
+          const videoUrl = await saveFileToDisk(file, req);
+          urls.push(videoUrl);
+          continue;
+        } catch (diskErr) {
+          console.error("Local video disk save error:", diskErr);
+        }
+      }
+
+      // 2. IMAGES / DOCUMENTS: Try Cloudinary if keys are valid
+      let uploadedToCloudinary = false;
+      if (process.env.CLOUDINARY_API_KEY && !process.env.CLOUDINARY_API_KEY.includes('your_')) {
+        try {
+          const result = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
               { folder: folderName, resource_type: "auto" },
               (error, result) => {
@@ -67,36 +132,33 @@ const processUpload = async (req, res, isMultiple) => {
             );
             stream.end(file.buffer);
           });
-        });
-        
-        const results = await Promise.all(uploadPromises);
-        
-        results.forEach(result => {
-           if (result && result.secure_url) urls.push(result.secure_url);
-        });
-        
-        // Return Cloudinary URLs if successful
-        if (urls.length > 0) {
-          return res.status(200).json({ 
-             success: true, 
-             data: isMultiple ? urls : urls[0] 
-          });
+
+          if (result && result.secure_url) {
+            urls.push(result.secure_url);
+            uploadedToCloudinary = true;
+          }
+        } catch (cloudErr) {
+          console.warn("Cloudinary upload failed, falling back to local uploads folder:", cloudErr.message);
         }
-      } catch (cloudErr) {
-        console.warn("Cloudinary upload failed, falling back to local:", cloudErr.message);
+      }
+
+      // 3. Fallback: Save directly to backend/uploads folder
+      if (!uploadedToCloudinary) {
+        try {
+          const localUrl = await saveFileToDisk(file, req);
+          urls.push(localUrl);
+        } catch (diskErr) {
+          console.warn("Local disk write failed, fallback to base64:", diskErr.message);
+          const base64 = file.buffer.toString("base64");
+          const mime = (!file.mimetype || file.mimetype === 'application/octet-stream') ? 'image/jpeg' : file.mimetype;
+          urls.push(`data:${mime};base64,${base64}`);
+        }
       }
     }
 
-    // Local Fallback (using Base64 since we are in memory and Vercel disk is read-only)
-    const localUrls = files.map(file => {
-      const base64 = file.buffer.toString("base64");
-      const mime = (!file.mimetype || file.mimetype === 'application/octet-stream') ? 'image/jpeg' : file.mimetype;
-      return `data:${mime};base64,${base64}`;
-    });
-    
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      data: isMultiple ? localUrls : localUrls[0],
+      data: isMultiple ? urls : urls[0],
     });
     
   } catch (error) {
