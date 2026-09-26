@@ -544,11 +544,11 @@ const AdminOrders = () => {
                                         <User size={12} /> Customer Details
                                     </h3>
                                     <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2">
-                                        <p className="text-sm font-bold text-gray-900">{selectedOrder.customer}</p>
+                                        <p className="text-sm font-bold text-gray-900">{typeof selectedOrder.customer === 'object' ? (selectedOrder.customer?.name || selectedOrder.customer?.email || 'Customer') : String(selectedOrder.customer || '')}</p>
                                         <p className="text-xs text-gray-600 font-medium">{selectedOrder.phone} • {selectedOrder.email}</p>
                                         <div className="flex items-start gap-2 pt-2 mt-2 border-t border-gray-200">
                                             <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
-                                            <p className="text-[11px] text-gray-500 font-medium">{selectedOrder.address}</p>
+                                            <p className="text-[11px] text-gray-500 font-medium">{typeof selectedOrder.address === 'object' ? `${selectedOrder.address.street || ''}, ${selectedOrder.address.city || ''}` : String(selectedOrder.address || '')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -561,7 +561,7 @@ const AdminOrders = () => {
                                     <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="text-sm font-black text-gray-900">{selectedOrder.service}</p>
+                                                <p className="text-sm font-black text-gray-900">{typeof selectedOrder.service === 'object' ? 'Custom Garment' : String(selectedOrder.service || '')}</p>
                                                 <p className="text-[10px] font-bold text-primary uppercase mt-1">{selectedOrder.type}</p>
                                             </div>
                                             <p className="text-sm font-black text-primary">{selectedOrder.amount}</p>
@@ -588,7 +588,7 @@ const AdminOrders = () => {
                                                     📅 {selectedOrder.scheduledDate ? `${selectedOrder.scheduledDate}${selectedOrder.scheduledTimeSlot ? ' (' + selectedOrder.scheduledTimeSlot + ')' : ''}` : 'As soon as possible (ASAP)'}
                                                 </p>
                                                 <p className="text-[11px] text-gray-600 mt-0.5">
-                                                    Assigned Executive: <span className="font-bold text-[#843D9B]">{selectedOrder.measurementExecutive || 'Unassigned'}</span>
+                                                    Assigned Executive: <span className="font-bold text-[#843D9B]">{typeof selectedOrder.measurementExecutive === 'object' ? (selectedOrder.measurementExecutive?.name || 'Unassigned') : String(selectedOrder.measurementExecutive || 'Unassigned')}</span>
                                                 </p>
                                             </div>
                                         )}
@@ -608,13 +608,36 @@ const AdminOrders = () => {
                                                 )}
                                                 
                                                 {selectedOrder.executiveReport?.formData && (
-                                                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
-                                                        {Object.entries(selectedOrder.executiveReport.formData).map(([key, val]) => (
-                                                            <span key={key} className="text-[10px] text-gray-600 bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-50">
-                                                                <span className="text-indigo-400 capitalize">{key}:</span> {val} {selectedOrder.executiveReport.unit || 'in'}
-                                                            </span>
-                                                        ))}
-                                                    </div>
+                                                    (() => {
+                                                        const raw = selectedOrder.executiveReport.formData;
+                                                        const fd = raw instanceof Map ? Object.fromEntries(raw) : raw;
+                                                        const multiItems = Array.isArray(fd.items) ? fd.items : null;
+                                                        if (multiItems?.length) {
+                                                            return (
+                                                                <div className="space-y-3 mb-2">
+                                                                    {multiItems.map((entry, i) => (
+                                                                        <div key={i}>
+                                                                            <p className="text-[10px] font-bold text-indigo-600 mb-1">
+                                                                                {entry.title || `Item ${i + 1}`}
+                                                                            </p>
+                                                                            <MeasurementDataDisplay
+                                                                                measurements={entry.values || {}}
+                                                                                layoutFields={entry.measurementLayout}
+                                                                            />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <div className="mb-2">
+                                                                <MeasurementDataDisplay
+                                                                    measurements={fd}
+                                                                    layoutFields={fd.measurementLayout}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })()
                                                 )}
                                                 
                                                 <p 
@@ -637,14 +660,14 @@ const AdminOrders = () => {
                                         <div className="flex justify-between items-center">
                                             <div>
                                                 <p className="text-[10px] text-gray-400 font-bold">Tailor</p>
-                                                <p className="text-xs font-bold text-primary">{selectedOrder.tailor}</p>
+                                                <p className="text-xs font-bold text-primary">{typeof selectedOrder.tailor === 'object' ? (selectedOrder.tailor?.shopName || selectedOrder.tailor?.name || 'Unassigned') : String(selectedOrder.tailor || 'Unassigned')}</p>
                                             </div>
                                             <button onClick={() => { setAssignRole('tailor'); setIsAssignModalOpen(true); }} className="text-[10px] font-bold text-primary hover:underline">Reassign</button>
                                         </div>
                                         <div className="flex justify-between items-center pt-2 border-t border-gray-50">
                                             <div>
                                                 <p className="text-[10px] text-gray-400 font-bold">Delivery Partner</p>
-                                                <p className="text-xs font-bold text-primary">{selectedOrder.deliveryPartner}</p>
+                                                <p className="text-xs font-bold text-primary">{typeof selectedOrder.deliveryPartner === 'object' ? (selectedOrder.deliveryPartner?.name || 'Unassigned') : String(selectedOrder.deliveryPartner || 'Unassigned')}</p>
                                             </div>
                                             <button onClick={() => { setAssignRole('deliveryPartner'); setIsAssignModalOpen(true); }} className="text-[10px] font-bold text-primary hover:underline">Reassign</button>
                                         </div>
@@ -652,7 +675,7 @@ const AdminOrders = () => {
                                             <div className="flex justify-between items-center pt-2 border-t border-gray-50">
                                                 <div>
                                                     <p className="text-[10px] text-gray-400 font-bold">Measurement Executive</p>
-                                                    <p className="text-xs font-bold text-primary">{selectedOrder.measurementExecutive || 'Unassigned'}</p>
+                                                    <p className="text-xs font-bold text-primary">{typeof selectedOrder.measurementExecutive === 'object' ? (selectedOrder.measurementExecutive?.name || 'Unassigned') : String(selectedOrder.measurementExecutive || 'Unassigned')}</p>
                                                 </div>
                                                 <button onClick={() => { setAssignRole('measurementExecutive'); setIsAssignModalOpen(true); }} className="text-[10px] font-bold text-primary hover:underline">Reassign</button>
                                             </div>
