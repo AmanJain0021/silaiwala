@@ -102,8 +102,8 @@ exports.register = asyncHandler(async (req, res, next) => {
   const finalRole = allowedRoles.includes(role?.toLowerCase()) ? role.toLowerCase() : "customer";
 
   // 0. Verify OTP
-  // Delivery and Measurement Executive partners register their profile & documents and remain inactive (pending) until Admin approves.
-  const isBypass = isPartnerRole || isDefaultOtpEnabled() || (otp === "123456" || otp === "000000");
+  const isPartnerRole = ["delivery", "measurement_executive"].includes(finalRole);
+  const isBypass = isPartnerRole || (isDefaultOtpEnabled() && (otp === "123456" || otp === "000000"));
   let isValidOTP = isBypass;
 
   const parseCoordinates = (coords) => {
@@ -369,7 +369,7 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
     ? [identifier, cleanPhone, `+91${cleanPhone}`]
     : [identifier];
 
-  const isBypass = isDefaultOtpEnabled() || (otp === "123456" || otp === "000000");
+  const isBypass = isDefaultOtpEnabled() && (otp === "123456" || otp === "000000");
 
   let validRecord = null;
   if (!isBypass) {
@@ -494,8 +494,8 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
   }
 
   const responseData = { success: true, message: "OTP sent successfully" };
-  if (process.env.NODE_ENV !== "production") {
-    responseData.otp = otpCode; // Include OTP in dev response for instant testing
+  if (isDefaultOtpEnabled()) {
+    responseData.otp = otpCode;
   }
 
   res.status(200).json(responseData);
@@ -577,7 +577,7 @@ exports.login = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Incorrect password. Please check and try again.", 401));
     }
   } else if (otp) {
-    const isBypass = isDefaultOtpEnabled() || user.role === "admin" || user.role === "super_admin" || otp === "123456" || otp === "000000";
+    const isBypass = (isDefaultOtpEnabled() || user.role === "admin" || user.role === "super_admin") && (otp === "123456" || otp === "000000");
     if (isBypass) {
       verified = true;
     } else {
@@ -798,7 +798,7 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
     ? [identifier, cleanPhone, `+91${cleanPhone}`]
     : [identifier];
 
-  const isBypass = otp === "123456" || otp === "000000";
+  const isBypass = isDefaultOtpEnabled() && (otp === "123456" || otp === "000000");
 
   let validRecord = null;
   if (!isBypass) {

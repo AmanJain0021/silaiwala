@@ -297,11 +297,8 @@ const DeliveryRegister = () => {
         return;
       }
 
-      const res = await sendRegistrationOtp(formData.phone, formData.email);
+      await sendRegistrationOtp(formData.phone, formData.email);
       setShowOtpField(true);
-      if (res?.otp) {
-        setPhoneOtp(res.otp);
-      }
       toast.success('OTP sent successfully!');
     } catch (error) {
       toast.error(error.message || 'Failed to send OTP');
@@ -531,7 +528,7 @@ const DeliveryRegister = () => {
         phone: (formData.phone || '').trim(),
         phoneNumber: (formData.phone || '').trim(),
         password: formData.password || '',
-        otp: phoneOtp || '123456',
+        otp: phoneOtp || '',
         role: 'delivery',
         emergencyContact: (formData.emergencyContact || '').trim(),
         aadharNumber: (formData.aadharNumber || '').replace(/\s/g, ''),

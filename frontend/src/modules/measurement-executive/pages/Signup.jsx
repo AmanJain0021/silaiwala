@@ -136,8 +136,7 @@ const Signup = () => {
                 phone: phone,
                 address,
                 aadharNumber: cleanAadhar,
-                coordinates: validCoords,
-                otp: '123456'
+                coordinates: validCoords
             };
             
             await register(registerData);
