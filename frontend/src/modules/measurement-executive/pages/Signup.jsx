@@ -92,10 +92,51 @@ const Signup = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const name = (formData.name || '').trim();
+        if (name.length < 2) {
+            return toast.error("Please enter a valid full name (minimum 2 letters)");
+        }
+
+        const phone = (formData.phoneNumber || '').replace(/\D/g, '');
+        if (!/^[6-9]\d{9}$/.test(phone)) {
+            return toast.error("Please enter a valid 10-digit mobile number starting with 6-9");
+        }
+
+        const email = (formData.email || '').trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return toast.error("Please enter a valid email address");
+        }
+
+        if (!formData.password || formData.password.length < 6) {
+            return toast.error("Password must be at least 6 characters long");
+        }
+
+        const address = (formData.address || '').trim();
+        if (address.length < 5) {
+            return toast.error("Please provide your full address / colony (minimum 5 characters)");
+        }
+
+        const cleanAadhar = (formData.aadharNumber || '').replace(/\D/g, '');
+        if (cleanAadhar.length !== 12) {
+            return toast.error("Please enter a valid 12-digit Aadhaar number");
+        }
+
         try {
+            const rawCoords = formData.coordinates;
+            const validCoords = (Array.isArray(rawCoords) && Number.isFinite(Number(rawCoords[0])) && Number.isFinite(Number(rawCoords[1])))
+                ? [Number(rawCoords[0]), Number(rawCoords[1])]
+                : [77.2090, 28.6139];
+
             const registerData = {
                 ...formData,
-                coordinates: formData.coordinates || [77.2090, 28.6139],
+                name,
+                email,
+                phoneNumber: phone,
+                phone: phone,
+                address,
+                aadharNumber: cleanAadhar,
+                coordinates: validCoords,
                 otp: '123456'
             };
             
@@ -106,7 +147,7 @@ const Signup = () => {
             navigate('/executive/login');
         } catch (error) {
             const errData = error.response?.data;
-            const errorMsg = errData?.errors?.[0] || errData?.message || 'Registration failed';
+            const errorMsg = errData?.errors?.[0] || errData?.message || error.message || 'Registration failed';
             toast.error(errorMsg);
         }
     };

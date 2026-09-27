@@ -202,7 +202,9 @@ const useAuthStore = create((set) => ({
     signup: async (userData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await api.post('/auth/register-customer', userData);
+            const role = userData.role || 'customer';
+            const endpoint = (role === 'customer') ? '/auth/register-customer' : '/auth/register';
+            const response = await api.post(endpoint, userData);
             console.log('Backend Signup Raw Response:', response.data);
             
             // Handle different potential response structures robustly
@@ -219,7 +221,36 @@ const useAuthStore = create((set) => ({
                 throw new Error('User object not found in the response');
             }
 
-            setToken(token);
+            const path = typeof window !== 'undefined' ? window.location.pathname : '';
+            let storageKey = 'user';
+            let roleForToken = null;
+
+            if (path.startsWith('/delivery') || role === 'delivery') {
+                storageKey = 'delivery_user';
+                roleForToken = 'delivery';
+                try {
+                    localStorage.setItem('delivery_token', token);
+                    localStorage.setItem('delivery-refresh-token', token);
+                    localStorage.setItem('delivery-auth-storage', JSON.stringify({
+                        state: {
+                            token,
+                            refreshToken: token,
+                            deliveryBoy: user,
+                            isAuthenticated: true
+                        },
+                        version: 0
+                    }));
+                } catch (_) {}
+            } else if (path.startsWith('/executive') || role === 'measurement_executive') {
+                storageKey = 'executive_user';
+                roleForToken = 'measurement_executive';
+                try {
+                    localStorage.setItem('executive_token', token);
+                } catch (_) {}
+            }
+
+            setToken(token, roleForToken);
+            localStorage.setItem(storageKey, JSON.stringify(user));
             localStorage.setItem('user', JSON.stringify(user));
 
             set({

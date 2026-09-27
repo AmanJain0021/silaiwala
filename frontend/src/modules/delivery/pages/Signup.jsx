@@ -187,7 +187,7 @@ const DeliverySignup = () => {
     const validateStep = (step) => {
         const newErrors = {};
         if (step === 1) {
-            if (!formData.profileImage) newErrors.profileImage = 'Profile photo is required';
+            // Profile photo is optional on signup
             if (!formData.name || formData.name.trim().length < 3) newErrors.name = 'Name must be at least 3 characters long';
             if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Enter a valid email address';
             if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) newErrors.phone = 'Enter a valid 10-digit mobile number';
@@ -198,16 +198,17 @@ const DeliverySignup = () => {
             if (!formData.aadharNumber || !/^\d{12}$/.test(formData.aadharNumber.replace(/\s/g, ''))) newErrors.aadharNumber = 'Enter a valid 12-digit Aadhaar Number';
         }
         if (step === 2) {
-            if (!formData.drivingLicense) newErrors.drivingLicense = 'Required';
-            if (!formData.drivingLicenseBack) newErrors.drivingLicenseBack = 'Required';
-            if (!formData.aadharCard) newErrors.aadharCard = 'Required';
-            if (!formData.aadharCardBack) newErrors.aadharCardBack = 'Required';
+            if (!formData.drivingLicense) newErrors.drivingLicense = 'Driving license front photo is required';
+            if (!formData.aadharCard) newErrors.aadharCard = 'Aadhaar front photo is required';
         }
         if (step === 3) {
-             if (!formData.vehicleNumber || !/^[A-Za-z]{2}\s?\d{1,2}\s?[A-Za-z]{0,3}\s?\d{1,4}$/.test(formData.vehicleNumber.replace(/-/g, ' '))) {
-                newErrors.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
+            if (formData.vehicleType !== 'cycle') {
+                const cleanVehicle = (formData.vehicleNumber || '').replace(/[\s-]/g, '').toUpperCase();
+                if (!cleanVehicle || cleanVehicle.length < 5) {
+                    newErrors.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
+                }
             }
-            if (!formData.address || formData.address.trim().length < 10) {
+            if (!formData.address || formData.address.trim().length < 5) {
                 newErrors.address = 'Please provide a complete residential address';
             }
         }
@@ -366,7 +367,7 @@ const DeliverySignup = () => {
                 phoneNumber: formData.phone,
                 role: 'delivery',
                 documents,
-                coordinates: [Number(formData.longitude) || 0, Number(formData.latitude) || 0],
+                coordinates: [Number(formData.longitude) || 77.2090, Number(formData.latitude) || 28.6139],
                 ...(profileImageUrl && { profileImage: profileImageUrl })
             };
             

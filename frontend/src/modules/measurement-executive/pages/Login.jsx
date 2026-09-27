@@ -80,16 +80,16 @@ const MELogin = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="w-full space-y-4">
-                {/* Email Address Input Field */}
+                {/* Email or Mobile Number Input Field */}
                 <div className="w-full text-left">
                     <label className="text-xs font-semibold text-[#0F172A] block mb-1.5">
-                        Email Address
+                        Email Address or Mobile Number
                     </label>
                     <div className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                         <Mail size={18} className="text-[#94A3B8] shrink-0" />
                         <input
-                            type="email"
-                            placeholder="you@example.com"
+                            type="text"
+                            placeholder="you@example.com or 10-digit mobile"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}

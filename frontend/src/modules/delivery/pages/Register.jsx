@@ -297,8 +297,11 @@ const DeliveryRegister = () => {
         return;
       }
 
-      await sendRegistrationOtp(formData.phone, formData.email);
+      const res = await sendRegistrationOtp(formData.phone, formData.email);
       setShowOtpField(true);
+      if (res?.otp) {
+        setPhoneOtp(res.otp);
+      }
       toast.success('OTP sent successfully!');
     } catch (error) {
       toast.error(error.message || 'Failed to send OTP');
@@ -331,10 +334,6 @@ const DeliveryRegister = () => {
 
     switch (step) {
       case 1:
-        if (!previews.profileImage && !formData.profileImage) {
-          toast.error('Profile photo is required');
-          isValid = false;
-        }
         if (!formData.name.trim() || formData.name.trim().length < 3 || !/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
           errs.name = 'Full name must contain only letters (min 3 chars)';
           toast.error(errs.name);
@@ -385,30 +384,35 @@ const DeliveryRegister = () => {
         return isValid;
 
       case 2:
-        if (!previews.aadharFront && !formData.aadharFront) { toast.error('Aadhaar Card (Front) photo is required'); return false; }
-        if (!previews.aadharBack && !formData.aadharBack) { toast.error('Aadhaar Card (Back) photo is required'); return false; }
+        if (!previews.aadharFront && !formData.aadharFront) { 
+          toast.error('Aadhaar Card (Front) photo is required'); 
+          return false; 
+        }
         
         // Driving License is required only if vehicle is NOT bicycle
         if (formData.vehicleType !== 'Bicycle') {
-          if (!previews.licenseFront && !formData.licenseFront) { toast.error('Driving License (Front) photo is required for motorized vehicles'); return false; }
-          if (!previews.licenseBack && !formData.licenseBack) { toast.error('Driving License (Back) photo is required for motorized vehicles'); return false; }
+          if (!previews.licenseFront && !formData.licenseFront) { 
+            toast.error('Driving License (Front) photo is required for motorized vehicles'); 
+            return false; 
+          }
         }
         return true;
 
       case 3:
         if (formData.vehicleType !== 'Bicycle') {
-          if (!formData.vehicleNumber.trim()) {
+          const cleanPlate = (formData.vehicleNumber || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+          if (!cleanPlate) {
             errs.vehicleNumber = 'Vehicle registration number is required';
             toast.error(errs.vehicleNumber);
             isValid = false;
-          } else if (!/^[A-Z]{2}\s?[0-9]{1,2}\s?[A-Z]{0,3}\s?[0-9]{4}$/.test(formData.vehicleNumber.replace(/-/g, ' ').trim())) {
-            errs.vehicleNumber = 'Enter a valid vehicle number (e.g. MH 12 AB 1234)';
+          } else if (cleanPlate.length < 5 || cleanPlate.length > 12) {
+            errs.vehicleNumber = 'Enter a valid vehicle plate number (e.g. DL 01 AB 1234)';
             toast.error(errs.vehicleNumber);
             isValid = false;
           }
         }
-        if (!formData.address.trim() || formData.address.trim().length < 10) {
-          errs.address = 'Please provide a complete residential address (min 10 chars)';
+        if (!formData.address.trim() || formData.address.trim().length < 5) {
+          errs.address = 'Please provide a complete residential address (min 5 chars)';
           toast.error(errs.address);
           isValid = false;
         }
@@ -428,7 +432,8 @@ const DeliveryRegister = () => {
           toast.error(errs.bankName);
           isValid = false;
         }
-        if (!formData.ifscCode || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.trim())) {
+        const cleanIfsc = (formData.ifscCode || '').trim().toUpperCase();
+        if (!cleanIfsc || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
           errs.ifscCode = 'Enter a valid 11-character IFSC code (e.g. SBIN0001234)';
           toast.error(errs.ifscCode);
           isValid = false;
@@ -531,9 +536,9 @@ const DeliveryRegister = () => {
         emergencyContact: (formData.emergencyContact || '').trim(),
         aadharNumber: (formData.aadharNumber || '').replace(/\s/g, ''),
         address: (formData.address || '').trim(),
-        coordinates: [Number(formData.longitude) || 0, Number(formData.latitude) || 0],
+        coordinates: [Number(formData.longitude) || 77.2090, Number(formData.latitude) || 28.6139],
         vehicleType: (formData.vehicleType || 'bike').toLowerCase(),
-        vehicleNumber: formData.vehicleType === 'Bicycle' ? 'BICYCLE' : (formData.vehicleNumber || '').trim(),
+        vehicleNumber: formData.vehicleType === 'Bicycle' ? 'BICYCLE' : (formData.vehicleNumber || '').trim().toUpperCase(),
         accountName: (formData.accountHolderName || formData.accountName || '').trim(),
         accountNumber: (formData.accountNumber || '').trim(),
         bankName: (formData.bankName || '').trim(),
@@ -696,7 +701,7 @@ const DeliveryRegister = () => {
                       </div>
                     )}
                   </div>
-                  <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1.5">Profile Photo *</p>
+                  <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mt-1.5">Profile Photo (Optional)</p>
                 </div>
 
                 {/* 2-Column Responsive Grid */}
