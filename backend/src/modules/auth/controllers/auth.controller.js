@@ -116,12 +116,15 @@ exports.register = asyncHandler(async (req, res, next) => {
       }).sort("-createdAt");
     }
 
-    // Fallback: If phone was already verified via /verify-otp in Step 1 within expiry
+    // Fallback: If phone was already verified via /verify-otp in Step 1 within 2 hours
     if (!validRecord) {
       validRecord = await OTP.findOne({
         phoneNumber: { $in: phoneKeys },
         isVerified: true,
-        expiresAt: { $gt: new Date() }
+        $or: [
+          { expiresAt: { $gt: new Date() } },
+          { updatedAt: { $gt: new Date(Date.now() - 2 * 60 * 60 * 1000) } }
+        ]
       }).sort("-createdAt");
     }
 
@@ -370,6 +373,7 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
 
   if (validRecord) {
     validRecord.isVerified = true;
+    validRecord.expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours to finish registration
     await validRecord.save();
   }
 

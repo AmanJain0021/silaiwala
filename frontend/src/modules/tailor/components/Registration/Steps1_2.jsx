@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '../UIElements';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -112,7 +112,7 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError, clearE
                         </div>
                     )}
                 </div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Profile Picture *</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Profile Picture (Optional)</p>
                 {errors.profileImage && <p className="text-[10px] text-red-500 font-bold mt-1">{errors.profileImage.message}</p>}
             </div>
 
@@ -232,10 +232,18 @@ export const Step1Basic = ({ register, errors, setValue, watch, setError, clearE
                     <Lock className={`w-4 h-4 mr-3 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400 group-focus-within:text-[#843D9B]'}`} />
                     <input
                         type={showPassword ? "text" : "password"}
-                        placeholder="Password"
+                        placeholder="Password (min. 6 characters)"
                         {...register('password', {
                             required: 'Password is required',
-                            validate: validatePassword,
+                            minLength: {
+                                value: 6,
+                                message: 'Password must be at least 6 characters long'
+                            },
+                            validate: (v) => {
+                                if (!v || !v.trim()) return 'Password is required';
+                                if (v.length < 6) return 'Password must be at least 6 characters long';
+                                return true;
+                            },
                             onChange: (e) => {
                                 setValue('password', e.target.value, { shouldValidate: true });
                                 if (clearErrors && e.target.value.length >= 6) clearErrors('password');
@@ -268,6 +276,13 @@ export const Step2Business = ({ register, errors, setValue, clearErrors, watch }
     const currentAddress = watch ? watch('address') : '';
     const currentLat = watch ? watch('latitude') : null;
     const currentLng = watch ? watch('longitude') : null;
+
+    useEffect(() => {
+        register('address', {
+            required: 'Shop address is required',
+            validate: (v) => (v && v.trim().length >= 5) || 'Shop address must be at least 5 characters'
+        });
+    }, [register]);
 
     const handleAutoLocation = async () => {
         try {

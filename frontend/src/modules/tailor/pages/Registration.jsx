@@ -90,14 +90,6 @@ const TailorRegistration = () => {
         }
 
         if (step === 1) {
-            // Profile image is REQUIRED
-            if (!watch('profileImage')) {
-                setError('profileImage', { type: 'manual', message: 'Profile picture is required' });
-                toast.error("Profile picture is required to proceed.");
-                setIsValidating(false);
-                return;
-            }
-
             // Check phone verification status
             if (!watch('isPhoneVerified')) {
                 if (!watch('otp') || watch('otp').length < 6) {
@@ -152,9 +144,21 @@ const TailorRegistration = () => {
                 setIsLoading(false);
             }
             
-            // Process Profile Image upload for Step 1
-            const uploadsSuccess = await processStepUploads(['profileImage']);
-            if (!uploadsSuccess) {
+            // Process Profile Image upload for Step 1 if user selected a file
+            if (watch('profileImage') instanceof File) {
+                const uploadsSuccess = await processStepUploads(['profileImage']);
+                if (!uploadsSuccess) {
+                    setIsValidating(false);
+                    return;
+                }
+            }
+        }
+
+        if (step === 2) {
+            const addr = watch('address');
+            if (!addr || addr.trim().length < 5) {
+                setError('address', { type: 'manual', message: 'Shop address must be at least 5 characters' });
+                toast.error("Please enter a valid shop address.");
                 setIsValidating(false);
                 return;
             }
@@ -304,7 +308,7 @@ const TailorRegistration = () => {
                 localStorage.removeItem('tailorSignupData');
                 localStorage.removeItem('tailorSignupStep');
                 setIsSubmitted(true);
-                login(result.user, token);
+                login(result.user ? { ...result.user, profile: result.profile } : result, token);
             }
         } catch (error) {
             const message = error.response?.data?.message || "Registration failed. Try again.";
