@@ -110,7 +110,7 @@ const AuthLayout = () => {
     // NEW CUSTOMER 1:1 FULL-PAGE CLEAN LAYOUT
     if (isCustomerAuth) {
         return (
-            <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center p-4 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-[#843D9B]/20 relative">
+            <div className="min-h-[100dvh] w-full bg-white flex flex-col items-center justify-start sm:justify-center px-4 py-6 sm:p-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] font-['Plus_Jakarta_Sans',sans-serif] selection:bg-[#843D9B]/20 relative">
                 {/* Top Header Skip Button */}
                 <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-[100]">
                     <Link
@@ -121,7 +121,7 @@ const AuthLayout = () => {
                         <ChevronRight size={16} className="stroke-[2.5]" />
                     </Link>
                 </div>
-                <div className="w-full max-w-[400px] mx-auto flex flex-col items-center py-4">
+                <div className="w-full max-w-[400px] mx-auto flex flex-col items-center my-0 sm:my-auto py-4">
                     <Outlet />
                 </div>
             </div>
