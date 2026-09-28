@@ -1,5 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit3, Search, Scissors, Layers, ShoppingBag, Package, ChevronRight, X, Clock, Star, Camera } from 'lucide-react';
+import { 
+    Plus, 
+    Trash2, 
+    Edit3, 
+    Search, 
+    Scissors, 
+    Layers, 
+    ShoppingBag, 
+    Package, 
+    ChevronRight, 
+    X, 
+    Clock, 
+    Star, 
+    Camera,
+    CheckCircle2,
+    PauseCircle,
+    PlayCircle,
+    ShieldCheck,
+    Check,
+    AlertCircle,
+    RotateCcw
+} from 'lucide-react';
 import { Button } from '../components/UIElements';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -8,15 +29,17 @@ import GarmentForm from '../components/GarmentForm';
 import { compressImage } from '../../../utils/imageCompression';
 
 const Products = () => {
-    const [activeTab, setActiveTab] = useState('samples'); // 'samples' | 'fabrics'
+    const [activeTab, setActiveTab] = useState('samples'); // 'samples' | 'fabrics' | 'garments'
     const [samples, setSamples] = useState([]);
     const [fabrics, setFabrics] = useState([]);
     const [garments, setGarments] = useState([]);
-    const [categories, setCategories] = useState([]); // These will be top-level categories
-    const [subcategories, setSubcategories] = useState([]); // Tracks subcategories for selected parent
-    const [selectedParent, setSelectedParent] = useState(''); // Tracking parent category for Fabrics
+    const [categories, setCategories] = useState([]); // All categories from backend
+    const [subcategories, setSubcategories] = useState([]); // Subcategories for fabrics
+    const [selectedParent, setSelectedParent] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    // Modal state for Fabrics (and legacy products)
     const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImageUploading, setIsImageUploading] = useState(false);
@@ -39,6 +62,18 @@ const Products = () => {
         colors: ''
     });
 
+    // ── STITCHING SERVICES SPECIFIC STATE ──
+    // Tailors select from Admin-created categories. Photo & Title are official Admin data.
+    const [serviceFilter, setServiceFilter] = useState('all'); // 'all' | 'offered' | 'available'
+    const [serviceModalOpen, setServiceModalOpen] = useState(false);
+    const [selectedAdminCategory, setSelectedAdminCategory] = useState(null);
+    const [editServiceId, setEditServiceId] = useState(null);
+    const [serviceForm, setServiceForm] = useState({
+        basePrice: '',
+        deliveryTime: '3-5 DAYS',
+        selectedStyles: []
+    });
+
     const fetchData = async () => {
         setIsLoading(true);
         try {
@@ -52,23 +87,26 @@ const Products = () => {
             setSamples(sRaw);
 
             const pRaw = productsRes.data.data || (Array.isArray(productsRes.data) ? productsRes.data : []);
-            setFabrics(pRaw.filter(p => p.productType === 'fabric' || !p.productType)); // fallback for old data
+            setFabrics(pRaw.filter(p => p.productType === 'fabric' || !p.productType));
             setGarments(pRaw.filter(p => p.productType === 'store_item'));
 
-            // Fetch top-level categories
             if (catsRes.data.success) {
-                // Set categories directly from the first fetch, avoiding an extra API call that might fail
-                setCategories(catsRes.data.data);
+                setCategories(catsRes.data.data || []);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
+            toast.error('Failed to load services and products.');
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        if (showModal) {
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        if (showModal || serviceModalOpen) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
@@ -76,8 +114,145 @@ const Products = () => {
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [showModal]);
+    }, [showModal, serviceModalOpen]);
 
+    // Fetch subcategories for Fabric selection
+    useEffect(() => {
+        const fetchSubcats = async () => {
+            if (!selectedParent || activeTab !== 'fabrics') {
+                setSubcategories([]);
+                return;
+            }
+            try {
+                const res = await api.get('/products/categories', {
+                    params: { parent: selectedParent, type: 'fabric' }
+                });
+                if (res.data.success) {
+                    setSubcategories(res.data.data || []);
+                }
+            } catch (err) {
+                console.error('Error fetching subcategories:', err);
+            }
+        };
+        fetchSubcats();
+    }, [selectedParent, activeTab]);
+
+    // ── STITCHING SERVICES HANDLERS ──
+    const handleOpenServiceModal = (adminCat, existingService = null) => {
+        setSelectedAdminCategory(adminCat);
+        setEditServiceId(existingService?._id || null);
+
+        // Pre-fill styles: if existing service has selectedStyles, use them; otherwise select all admin styles by default
+        let initialStyles = [];
+        if (existingService?.selectedStyles && existingService.selectedStyles.length > 0) {
+            initialStyles = existingService.selectedStyles;
+        } else if (adminCat.styles && adminCat.styles.length > 0) {
+            initialStyles = adminCat.styles.map(s => ({
+                name: s.name,
+                image: s.image,
+                description: s.description
+            }));
+        }
+
+        setServiceForm({
+            basePrice: existingService?.basePrice != null 
+                ? String(existingService.basePrice) 
+                : (adminCat.basePrice != null ? String(adminCat.basePrice) : (adminCat.minPrice != null ? String(adminCat.minPrice) : '')),
+            deliveryTime: existingService?.deliveryTime || adminCat.deliveryTime || '3-5 DAYS',
+            selectedStyles: initialStyles
+        });
+        setServiceModalOpen(true);
+    };
+
+    const handleCloseServiceModal = () => {
+        setServiceModalOpen(false);
+        setSelectedAdminCategory(null);
+        setEditServiceId(null);
+        setServiceForm({
+            basePrice: '',
+            deliveryTime: '3-5 DAYS',
+            selectedStyles: []
+        });
+    };
+
+    const handleSaveService = async (e) => {
+        e.preventDefault();
+        if (!selectedAdminCategory) return;
+
+        const price = Number(serviceForm.basePrice);
+        if (isNaN(price) || price <= 0) {
+            toast.error("Please enter a valid stitching price greater than 0");
+            return;
+        }
+
+        if (selectedAdminCategory.minPrice != null && price < selectedAdminCategory.minPrice) {
+            toast.error(`Price cannot be less than minimum allowed price of ₹${selectedAdminCategory.minPrice} for ${selectedAdminCategory.name}`);
+            return;
+        }
+
+        if (selectedAdminCategory.maxPrice != null && price > selectedAdminCategory.maxPrice) {
+            toast.error(`Price cannot be more than maximum allowed price of ₹${selectedAdminCategory.maxPrice} for ${selectedAdminCategory.name}`);
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const payload = {
+                category: selectedAdminCategory._id,
+                basePrice: price,
+                deliveryTime: serviceForm.deliveryTime || '3-5 DAYS',
+                selectedStyles: serviceForm.selectedStyles || []
+            };
+
+            let res;
+            if (editServiceId) {
+                res = await api.patch(`/tailors/services/${editServiceId}`, payload);
+            } else {
+                res = await api.post('/tailors/services', payload);
+            }
+
+            if (res.data?.success) {
+                toast.success(res.data.message || `"${selectedAdminCategory.name}" submitted for Admin approval!`);
+                handleCloseServiceModal();
+                fetchData();
+            }
+        } catch (err) {
+            console.error('Error saving service:', err);
+            toast.error(err.response?.data?.message || 'Failed to save service');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleToggleService = async (serviceId, serviceTitle, e) => {
+        if (e) e.stopPropagation();
+        try {
+            const res = await api.patch(`/tailors/services/${serviceId}/toggle`);
+            if (res.data?.success) {
+                toast.success(res.data.message || `Updated status for "${serviceTitle}"`);
+                fetchData();
+            }
+        } catch (err) {
+            console.error('Toggle error:', err);
+            toast.error(err.response?.data?.message || 'Failed to update service status');
+        }
+    };
+
+    const handleDeleteService = async (serviceId, serviceTitle, e) => {
+        if (e) e.stopPropagation();
+        if (window.confirm(`Are you sure you want to stop offering "${serviceTitle}" in your shop?`)) {
+            try {
+                await api.delete(`/tailors/services/${serviceId}`);
+                toast.success(`Removed "${serviceTitle}" from your shop`);
+                fetchData();
+            } catch (err) {
+                console.error('Delete error:', err);
+                toast.error(err.response?.data?.message || 'Failed to delete service');
+            }
+        }
+    };
+
+    // ── FABRICS & GARMENTS HANDLERS (Unchanged) ──
     const handleImageUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -85,7 +260,6 @@ const Products = () => {
         setIsImageUploading(true);
         try {
             const compressedFile = await compressImage(file, 1200, 0.8);
-
             const formData = new FormData();
             formData.append('image', compressedFile);
 
@@ -97,130 +271,53 @@ const Products = () => {
                 const rawData = res.data?.data;
                 imageUrl = rawData?.url || (Array.isArray(rawData) ? rawData[0] : rawData) || res.data?.url;
             } catch (err) {
-                console.warn('Backend /upload failed, attempting public endpoint:', err);
-                try {
-                    const resPub = await api.post('/upload/public', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
-                    });
-                    const rawData = resPub.data?.data;
-                    imageUrl = rawData?.url || (Array.isArray(rawData) ? rawData[0] : rawData) || resPub.data?.url;
-                } catch (pubErr) {
-                    console.warn('Public upload failed, using compressed Base64 fallback:', pubErr);
-                    imageUrl = await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result || '');
-                        reader.onerror = () => resolve('');
-                        reader.readAsDataURL(compressedFile);
-                    });
-                }
+                const res = await api.post('/upload/public', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                imageUrl = res.data?.data?.url || res.data?.url;
             }
 
             if (imageUrl) {
                 setNewItem(prev => ({ ...prev, image: imageUrl }));
-                toast.success('Product photo uploaded successfully');
-            } else {
-                toast.error('Could not process photo upload. Please try another image.');
+                toast.success('Image uploaded successfully!');
             }
-        } catch (error) {
-            console.error('Upload failed:', error);
-            toast.error('Image upload failed');
+        } catch (err) {
+            console.error('Upload error:', err);
+            toast.error('Image upload failed. Try again.');
         } finally {
             setIsImageUploading(false);
-            if (e.target) e.target.value = '';
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    // Fetch subcategories when parent selection changes (only for Fabrics)
-    useEffect(() => {
-        const fetchSubcats = async () => {
-            if (activeTab === 'fabrics' && selectedParent) {
-                try {
-                    const res = await api.get(`/products/categories?parent=${selectedParent}`);
-                    setSubcategories(res.data.data);
-                } catch (error) {
-                    console.error('Error fetching subcategories:', error);
-                }
-            } else {
-                setSubcategories([]);
-            }
-        };
-        fetchSubcats();
-    }, [selectedParent, activeTab]);
-
-    const handleSubmit = async (e) => {
+    const handleFabricSubmit = async (e) => {
         e.preventDefault();
 
-        // Enforce Admin Category Selection First
-        if (!newItem.category && (activeTab === 'samples' || activeTab === 'garments' || (activeTab === 'fabrics' && !selectedParent))) {
+        if (!newItem.category && (activeTab === 'garments' || (activeTab === 'fabrics' && !selectedParent))) {
             toast.error('Please select an Admin-created Category first!');
             return;
         }
 
-        // Client-side price range validation for service (samples) tab
-        if (activeTab === 'samples' && newItem.category && newItem.basePrice) {
-            const selectedCat = categories.find(c => c._id === newItem.category);
-            if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
-                const price = Number(newItem.basePrice);
-                if (price < selectedCat.minPrice || price > selectedCat.maxPrice) {
-                    toast.error(`Price must be between ₹${selectedCat.minPrice} and ₹${selectedCat.maxPrice} for ${selectedCat.name}.`);
-                    return;
-                }
-            }
-        }
-
         if (!newItem.image) {
-            toast.error(`Please upload an image for your ${activeTab === 'samples' ? 'service' : 'product'}!`);
+            toast.error(`Please upload an image for your ${activeTab === 'fabrics' ? 'fabric' : 'product'}!`);
             return;
         }
 
         setIsSubmitting(true);
         try {
-            let endpoint = '';
-            let payload = {};
-
-            if (activeTab === 'samples') {
-                endpoint = isEditing ? `/tailors/services/${editId}` : '/tailors/services';
-                payload = {
-                    title: newItem.title,
-                    description: newItem.description,
-                    image: newItem.image,
-                    basePrice: newItem.basePrice,
-                    deliveryTime: newItem.deliveryTime,
-                    selectedStyles: newItem.selectedStyles || [],
-                    ...(newItem.category ? { category: newItem.category } : {}),
-                    tags: typeof newItem.tags === 'string'
-                        ? newItem.tags.split(',').map(t => t.trim()).filter(t => t !== '')
-                        : newItem.tags,
-                };
-            } else if (activeTab === 'fabrics') {
-                endpoint = isEditing ? `/tailors/products/${editId}` : '/tailors/products';
-                const finalName = newItem.name || newItem.title || '';
-                payload = { 
-                    ...newItem, 
-                    title: finalName,
-                    name: finalName,
-                    ...(newItem.category || selectedParent ? { category: newItem.category || selectedParent } : {}),
-                    stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
-                    productType: 'fabric'
-                };
-            } else if (activeTab === 'garments') {
-                endpoint = isEditing ? `/tailors/products/${editId}` : '/tailors/products';
-                const finalName = newItem.name || newItem.title || '';
-                payload = { 
-                    ...newItem, 
-                    title: finalName,
-                    name: finalName,
-                    ...(newItem.category ? { category: newItem.category } : {}),
-                    stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
-                    productType: 'store_item',
+            const endpoint = isEditing ? `/tailors/products/${editId}` : '/tailors/products';
+            const finalName = newItem.name || newItem.title || '';
+            const payload = { 
+                ...newItem, 
+                title: finalName,
+                name: finalName,
+                ...(newItem.category || selectedParent ? { category: newItem.category || selectedParent } : {}),
+                stock: parseInt(String(newItem.stock).replace(/\D/g, ''), 10) || 0,
+                productType: activeTab === 'garments' ? 'store_item' : 'fabric',
+                ...(activeTab === 'garments' ? {
                     sizes: typeof newItem.sizes === 'string' ? newItem.sizes.split(',').map(s => s.trim()).filter(Boolean) : newItem.sizes,
                     colors: typeof newItem.colors === 'string' ? newItem.colors.split(',').map(c => ({ name: c.trim(), hex: '#000000' })).filter(c => c.name) : newItem.colors
-                };
-            }
+                } : {})
+            };
 
             const res = isEditing
                 ? await api.patch(endpoint, payload)
@@ -229,60 +326,48 @@ const Products = () => {
             if (res.data.success) {
                 closeModal();
                 fetchData();
-                const approvalMsg = res.data.message;
-                if (approvalMsg) {
-                    toast.success(approvalMsg);
-                } else if (!isEditing) {
-                    toast.success('Submitted for admin approval. It will appear to customers after approval.');
-                } else {
-                    toast.success('Updated. Changes may require admin approval before customers see them.');
-                }
+                toast.success(res.data.message || (isEditing ? 'Updated successfully!' : 'Published product!'));
             }
         } catch (error) {
-            alert(error.response?.data?.message || 'Something went wrong');
+            toast.error(error.response?.data?.message || 'Something went wrong');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleEdit = (item) => {
+    const handleEditFabric = (item) => {
         setIsEditing(true);
         setEditId(item._id);
+        setNewItem({
+            ...newItem,
+            name: item.name || item.title,
+            description: item.description,
+            image: item.image || (item.images && item.images[0]),
+            price: item.price,
+            stock: item.stock,
+            category: item.category?._id || item.category,
+            sizes: item.sizes ? item.sizes.join(', ') : '',
+            colors: item.colors ? item.colors.map(c => c.name).join(', ') : ''
+        });
 
-        if (activeTab === 'samples') {
-            setNewItem({
-                ...newItem,
-                title: item.title,
-                description: item.description,
-                image: item.image,
-                basePrice: item.basePrice,
-                deliveryTime: item.deliveryTime,
-                category: item.category?._id || item.category,
-                selectedStyles: item.selectedStyles || [],
-                tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
-            });
-        } else {
-            setNewItem({
-                ...newItem,
-                name: item.name || item.title,
-                description: item.description,
-                image: item.image || (item.images && item.images[0]),
-                price: item.price,
-                stock: item.stock,
-                category: item.category?._id || item.category,
-                sizes: item.sizes ? item.sizes.join(', ') : '',
-                colors: item.colors ? item.colors.map(c => c.name).join(', ') : ''
-            });
-
-            // If it's a subcategory, we try to set the parent
-            if (item.category?.parentCategory) {
-                setSelectedParent(item.category.parentCategory);
-            } else if (item.category && typeof item.category === 'object' && item.category._id) {
-                // If the populated category has a parent, set it
-                // Note: We might need to fetch the category details if not fully populated
-            }
+        if (item.category?.parentCategory) {
+            setSelectedParent(item.category.parentCategory);
         }
         setShowModal(true);
+    };
+
+    const handleDeleteProduct = async (id, type) => {
+        const typeLabel = type === 'fabrics' ? 'fabric' : 'garment';
+        if (window.confirm(`Are you sure you want to delete this ${typeLabel}?`)) {
+            try {
+                await api.delete(`/tailors/products/${id}`);
+                toast.success(`${typeLabel} deleted successfully!`);
+                fetchData();
+            } catch (error) {
+                console.error('Delete error:', error);
+                toast.error(`Failed to delete ${typeLabel}`);
+            }
+        }
     };
 
     const closeModal = () => {
@@ -299,236 +384,835 @@ const Products = () => {
         setSubcategories([]);
     };
 
-    const handleDelete = async (id, type) => {
-        const typeLabels = {
-            samples: 'service',
-            fabrics: 'fabric',
-            garments: 'garment'
-        };
-        if (window.confirm(`Are you sure you want to delete this ${typeLabels[type]}?`)) {
-            try {
-                let endpoint = '';
-                if (type === 'samples') endpoint = `/tailors/services/${id}`;
-                else endpoint = `/tailors/products/${id}`;
+    // ── ADMIN SERVICE CATEGORIES FILTERING ──
+    // Admin defines official categories with type 'service' (or 'garment' / default)
+    const adminServiceCategories = categories.filter(c => c.type === 'service' || c.type === 'garment' || !c.type);
 
-                await api.delete(endpoint);
-                toast.success(`${typeLabels[type]} deleted successfully!`);
-                fetchData();
-            } catch (error) {
-                console.error('Delete error:', error);
-                toast.error(`Failed to delete ${typeLabels[type]}`);
-            }
-        }
-    };
+    const filteredAdminServices = adminServiceCategories.filter(cat => {
+        const matchesSearch = cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (cat.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+        if (!matchesSearch) return false;
 
-    const itemsToShow = activeTab === 'samples' ? samples : activeTab === 'fabrics' ? fabrics : garments;
-    const filteredItems = itemsToShow.filter(item =>
+        const myService = samples.find(s => (s.category?._id || s.category) === cat._id);
+        if (serviceFilter === 'offered') return Boolean(myService);
+        if (serviceFilter === 'active') return myService && myService.status === 'approved' && myService.isActive !== false;
+        if (serviceFilter === 'pending') return myService && myService.status === 'pending';
+        if (serviceFilter === 'available') return !myService;
+        return true;
+    });
+
+    const offeredServicesCount = adminServiceCategories.filter(cat => 
+        samples.some(s => (s.category?._id || s.category) === cat._id)
+    ).length;
+
+    const activeServicesCount = adminServiceCategories.filter(cat => {
+        const s = samples.find(x => (x.category?._id || x.category) === cat._id);
+        return s && s.status === 'approved' && s.isActive !== false;
+    }).length;
+
+    const pendingServicesCount = adminServiceCategories.filter(cat => {
+        const s = samples.find(x => (x.category?._id || x.category) === cat._id);
+        return s && s.status === 'pending';
+    }).length;
+
+    // Filters for Fabrics & Garments
+    const productsToShow = activeTab === 'fabrics' ? fabrics : garments;
+    const filteredProducts = productsToShow.filter(item =>
         (item.title || item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.category?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
-        <div className="space-y-8 px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto font-['Plus_Jakarta_Sans',sans-serif]">
+            
+            {/* Top Heading */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h3 className="text-[24px] font-black text-[#843D9B] tracking-tight leading-none">
+                    <h3 className="text-2xl sm:text-3xl font-black text-[#843D9B] tracking-tight leading-none">
                         {activeTab === 'samples' ? 'Stitching Services' : activeTab === 'fabrics' ? 'Fabric Inventory' : 'Ready-made Garments'}
                     </h3>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">
-                        {activeTab === 'samples' ? 'Manage your bookable services' : activeTab === 'fabrics' ? 'Manage your fabric materials' : 'Manage your ready-made store items'}
+                    <p className="text-xs font-semibold text-gray-500 mt-2">
+                        {activeTab === 'samples' 
+                            ? 'Select the stitching services you provide. Official photos and titles are provided by SewZella.' 
+                            : activeTab === 'fabrics' 
+                                ? 'Manage fabric materials available at your shop' 
+                                : 'Manage ready-made store garments'}
                     </p>
                 </div>
+
+                {activeTab !== 'samples' && (
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            setShowModal(true);
+                        }}
+                        className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#843D9B] to-[#B35BCB] text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-[#843D9B]/15 hover:shadow-xl hover:shadow-[#843D9B]/20 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
+                    >
+                        <Plus size={16} strokeWidth={3} />
+                        <span>Add {activeTab === 'fabrics' ? 'Fabric' : 'Garment'}</span>
+                    </button>
+                )}
+            </div>
+
+            {/* Main Tabs */}
+            <div className="flex p-1 bg-white border border-gray-100 rounded-2xl gap-1 shadow-xs">
                 <button
-                    onClick={() => {
-                        setIsEditing(false);
-                        setShowModal(true);
-                    }}
-                    className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#843D9B] to-[#B35BCB] text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-[#843D9B]/15 hover:shadow-xl hover:shadow-[#843D9B]/20 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
+                    onClick={() => { setActiveTab('samples'); setSearchQuery(''); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer ${
+                        activeTab === 'samples' 
+                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/20' 
+                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
                 >
-                    <Plus size={16} strokeWidth={3} />
-                    <span>Add {activeTab === 'samples' ? 'Service' : activeTab === 'fabrics' ? 'Fabric' : 'Garment'}</span>
+                    <Scissors size={15} /> 
+                    <span>Services</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 ${
+                        activeTab === 'samples' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                        {offeredServicesCount}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => { setActiveTab('fabrics'); setSearchQuery(''); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer ${
+                        activeTab === 'fabrics' 
+                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/20' 
+                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                >
+                    <ShoppingBag size={15} /> 
+                    <span>Fabrics</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 ${
+                        activeTab === 'fabrics' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                        {fabrics.length}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => { setActiveTab('garments'); setSearchQuery(''); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer ${
+                        activeTab === 'garments' 
+                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/20' 
+                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                >
+                    <Package size={15} /> 
+                    <span>Garments</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 ${
+                        activeTab === 'garments' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                        {garments.length}
+                    </span>
                 </button>
             </div>
 
-            {/* Toggle Tabs */}
-            <div className="flex p-1 bg-white border border-gray-100/80 rounded-2xl gap-1 shadow-sm">
-                <button
-                    onClick={() => setActiveTab('samples')}
-                    className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-300 cursor-pointer ${activeTab === 'samples' ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/15' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/50'}`}
-                >
-                    <Layers size={14} /> Services
-                </button>
-                <button
-                    onClick={() => setActiveTab('fabrics')}
-                    className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-300 cursor-pointer ${activeTab === 'fabrics' ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/15' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/50'}`}
-                >
-                    <ShoppingBag size={14} /> Fabrics
-                </button>
-                <button
-                    onClick={() => setActiveTab('garments')}
-                    className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-300 cursor-pointer ${activeTab === 'garments' ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/15' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/50'}`}
-                >
-                    <Package size={14} /> Garments
-                </button>
-            </div>
+            {/* Search & Sub-filters */}
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                <div className="relative flex-1 max-w-md">
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder={activeTab === 'samples' ? "Search services (e.g. Kurti, Blouse)..." : "Search products..."}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200/90 rounded-xl text-xs font-semibold placeholder:text-gray-400 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 shadow-xs transition-all"
+                    />
+                </div>
 
-            <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                    type="text"
-                    placeholder={`Search in ${activeTab === 'samples' ? 'services' : activeTab === 'fabrics' ? 'fabrics' : 'garments'}...`}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#843D9B]/10 focus:border-[#843D9B] shadow-sm text-xs font-semibold transition-all duration-300 placeholder:text-gray-400 text-gray-900"
-                />
-            </div>
-
-            <div className="mt-8">
-                {isLoading ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="aspect-[4/5] bg-white rounded-3xl animate-pulse border border-gray-50" />
-                        ))}
-                    </div>
-                ) : filteredItems.length === 0 ? (
-                    <div className="text-center py-24 bg-white rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center w-full">
-                        <div className="h-24 w-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-200">
-                            {activeTab === 'samples' ? <Scissors size={40} /> : <Package size={40} />}
-                        </div>
-                        <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-xs">No {activeTab} found</p>
-                        <button onClick={() => { setIsEditing(false); setShowModal(true); }} className="mt-6 text-[#843D9B] text-[11px] font-black underline uppercase tracking-widest hover:text-[#4E2460] transition-colors">
-                            Add your first {activeTab.slice(0, -1)}
+                {/* Service Filter Tabs (All / Active / Pending / Available) */}
+                {activeTab === 'samples' && (
+                    <div className="flex bg-gray-100/80 p-1 rounded-xl gap-1 shrink-0 text-xs font-bold overflow-x-auto">
+                        <button
+                            onClick={() => setServiceFilter('all')}
+                            className={`px-3 py-1.5 rounded-lg transition-all shrink-0 ${
+                                serviceFilter === 'all' ? 'bg-white text-[#843D9B] shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            All ({adminServiceCategories.length})
                         </button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                        {filteredItems.map((item) => {
-                            const currentPrice = item.price || item.basePrice || item.laborPrice || 0;
-                            const originalPrice = item.discountPrice || item.originalPrice || 0;
-                            const discount = originalPrice && originalPrice > currentPrice ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0;
-                            const isOutOfStock = activeTab !== 'samples' && item.stock <= 0;
-
-                            return (
-                                <div 
-                                    key={item._id} 
-                                    onClick={() => handleEdit(item)}
-                                    className="group relative bg-white border border-gray-100/60 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.015)] cursor-pointer"
-                                >
-                                    {/* Image Container */}
-                                    <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden">
-                                        <SafeImage
-                                            src={item.image || item.images?.[0]}
-                                            alt={item.title || item.name}
-                                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                        />
-                                        
-                                        {/* Status / Discount Badges */}
-                                        <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
-                                            {item.status === 'pending' && (
-                                                <div className="bg-amber-500/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
-                                                    Pending approval
-                                                </div>
-                                            )}
-                                            {item.status === 'approved' && (
-                                                <div className="bg-emerald-500/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
-                                                    Approved
-                                                </div>
-                                            )}
-                                            {item.status === 'rejected' && (
-                                                <div className="bg-rose-600/95 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase" title={item.rejectionReason || ''}>
-                                                    Rejected
-                                                </div>
-                                            )}
-                                            {discount > 0 && (
-                                                <div className="bg-[#FFBC00] text-[#843D9B] text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md">
-                                                    -{discount}%
-                                                </div>
-                                            )}
-                                            {isOutOfStock ? (
-                                                <div className="bg-rose-500/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
-                                                    Out of Stock
-                                                </div>
-                                            ) : activeTab !== 'samples' && (
-                                                <div className="bg-emerald-500/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase">
-                                                    In Stock
-                                                </div>
-                                            )}
-                                        </div>
-
-
-                                    </div>
-
-                                    {/* Compact details matching E-commerce style */}
-                                    <div className="p-4 flex-1 flex flex-col justify-between">
-                                        <div>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-[9px] text-[#843D9B]/60 uppercase tracking-widest font-black truncate max-w-[65%]">
-                                                    {item.category?.name || 'General'}
-                                                </span>
-                                                <div className="flex items-center gap-0.5 bg-indigo-50 px-1.5 py-0.5 rounded text-[9px] font-black text-[#843D9B]">
-                                                    4.8 <Star className="h-2.5 w-2.5 fill-current" />
-                                                </div>
-                                            </div>
-
-                                            <h4 className="text-[13px] font-black text-gray-900 line-clamp-1 mb-1 tracking-tight group-hover:text-[#843D9B] transition-colors leading-tight">
-                                                {item.title || item.name}
-                                            </h4>
-
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                                                    {activeTab === 'samples' ? (
-                                                        <><Clock size={11} className="text-[#843D9B]/70" /> {item.deliveryTime || '2-4 DAYS'}</>
-                                                    ) : activeTab === 'garments' ? (
-                                                        <><Package size={11} className="text-[#843D9B]/70" /> {item.stock || 0} IN STOCK</>
-                                                    ) : (
-                                                        <><Package size={11} className="text-[#843D9B]/70" /> {item.stock || 0}M AVAILABLE</>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-end justify-between">
-                                            <div className="flex flex-col">
-                                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">
-                                                    {activeTab === 'samples' ? 'Starting Price' : activeTab === 'garments' ? 'Price' : 'Price Per Meter'}
-                                                </span>
-                                                <div className="flex items-baseline gap-1.5">
-                                                    <span className="text-[16px] font-black text-[#843D9B] tracking-tight leading-none">
-                                                        ₹{currentPrice.toLocaleString()}
-                                                    </span>
-                                                    {originalPrice > currentPrice && (
-                                                        <span className="text-[11px] text-gray-400 font-bold line-through opacity-60">
-                                                            ₹{originalPrice.toLocaleString()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
-                                                    className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-[#843D9B] hover:text-white transition-colors border border-gray-100 shadow-sm active:scale-95"
-                                                    title="Edit"
-                                                >
-                                                    <Edit3 size={13} strokeWidth={2.5} />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item._id, activeTab); }}
-                                                    className="h-8 w-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors border border-rose-100 shadow-sm active:scale-95"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={13} strokeWidth={2.5} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                        <button
+                            onClick={() => setServiceFilter('active')}
+                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
+                                serviceFilter === 'active' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            <span>Active in Shop</span>
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded-full">
+                                {activeServicesCount}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setServiceFilter('pending')}
+                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
+                                serviceFilter === 'pending' ? 'bg-white text-amber-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            <span>Pending Approval</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                                pendingServicesCount > 0 ? 'bg-amber-200 text-amber-900 font-black' : 'bg-gray-200 text-gray-600'
+                            }`}>
+                                {pendingServicesCount}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setServiceFilter('available')}
+                            className={`px-3 py-1.5 rounded-lg transition-all shrink-0 ${
+                                serviceFilter === 'available' ? 'bg-white text-[#843D9B] shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            Available to Add ({Math.max(0, adminServiceCategories.length - offeredServicesCount)})
+                        </button>
                     </div>
                 )}
             </div>
 
-            {/* Modal */}
+            {/* ═══ TAB 1: STITCHING SERVICES (Official Admin Catalog) ═══ */}
+            {activeTab === 'samples' && (
+                <div>
+                    {isLoading ? (
+                        <div className="py-20 text-center">
+                            <div className="h-8 w-8 border-3 border-[#843D9B] border-t-transparent animate-spin rounded-full mx-auto mb-3" />
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading Platform Services...</p>
+                        </div>
+                    ) : filteredAdminServices.length === 0 ? (
+                        <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 p-8">
+                            <Scissors size={32} className="mx-auto text-gray-300 mb-3" />
+                            <h4 className="text-sm font-bold text-gray-700">No Services Found</h4>
+                            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                                {searchQuery 
+                                    ? `No services match "${searchQuery}". Try a different keyword.` 
+                                    : 'No service categories configured yet by Admin.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                            {filteredAdminServices.map((cat) => {
+                                const myService = samples.find(s => (s.category?._id || s.category) === cat._id);
+                                const isOffered = Boolean(myService);
+                                const isActive = myService?.isActive !== false;
+
+                                const isPending = isOffered && myService?.status === 'pending';
+                                const isRejected = isOffered && myService?.status === 'rejected';
+                                const isApproved = isOffered && myService?.status === 'approved';
+
+                                return (
+                                    <div 
+                                        key={cat._id}
+                                        className={`group bg-white rounded-3xl border transition-all duration-300 flex flex-col overflow-hidden relative ${
+                                            isOffered 
+                                                ? (isPending 
+                                                    ? 'border-amber-300 bg-amber-50/15 ring-1 ring-amber-400/40 shadow-sm'
+                                                    : isRejected
+                                                        ? 'border-red-300 bg-red-50/20 shadow-sm'
+                                                        : isActive 
+                                                            ? 'border-emerald-200/80 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/20' 
+                                                            : 'border-gray-200 bg-gray-50/40') 
+                                                : 'border-gray-200/80 hover:border-[#843D9B]/50 hover:shadow-xl hover:-translate-y-1'
+                                        }`}
+                                    >
+                                        {/* Top Image: Official Admin Photo */}
+                                        <div className="aspect-[16/11] bg-gray-100 relative overflow-hidden">
+                                            <SafeImage
+                                                src={cat.image || myService?.image}
+                                                alt={cat.name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
+
+                                            {/* Status Badge */}
+                                            <div className="absolute top-3 left-3 z-10">
+                                                {isOffered ? (
+                                                    isPending ? (
+                                                        <span className="inline-flex items-center gap-1 bg-amber-500/95 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md animate-pulse">
+                                                            <Clock size={12} strokeWidth={2.5} />
+                                                            Pending Approval
+                                                        </span>
+                                                    ) : isRejected ? (
+                                                        <span className="inline-flex items-center gap-1 bg-red-600/95 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                                                            <X size={12} strokeWidth={2.5} />
+                                                            Rejected
+                                                        </span>
+                                                    ) : isActive ? (
+                                                        <span className="inline-flex items-center gap-1 bg-emerald-600/95 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                                                            <CheckCircle2 size={12} strokeWidth={3} />
+                                                            Active in Shop
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 bg-slate-700/95 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                                                            <PauseCircle size={12} strokeWidth={2.5} />
+                                                            Paused
+                                                        </span>
+                                                    )
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md">
+                                                        Not Offered
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Verified platform service icon */}
+                                            <div className="absolute top-3 right-3 z-10">
+                                                <span className="h-7 w-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-[#843D9B] shadow-sm" title="Official SewZella Service">
+                                                    <ShieldCheck size={16} />
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Card Body */}
+                                        <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                                            <div>
+                                                <div className="flex items-center justify-between gap-2 mb-1">
+                                                    <span className="text-[9px] font-black text-[#843D9B] uppercase tracking-wider">
+                                                        {cat.gender ? `${cat.gender.toUpperCase()} WEAR` : 'CUSTOM STITCHING'}
+                                                    </span>
+                                                    {cat.styles && cat.styles.length > 0 && (
+                                                        <span className="text-[9px] font-bold text-gray-400">
+                                                            {cat.styles.length} Styles
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <h4 className="text-base font-extrabold text-gray-900 tracking-tight leading-snug line-clamp-1 group-hover:text-[#843D9B] transition-colors">
+                                                    {cat.name}
+                                                </h4>
+
+                                                {cat.description && (
+                                                    <p className="text-[11px] text-gray-500 font-medium line-clamp-2 mt-1 leading-relaxed">
+                                                        {cat.description}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Pending / Rejection Banner */}
+                                            {isPending && (
+                                                <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-2.5 text-[11px] text-amber-900 font-medium space-y-1">
+                                                    <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                                                        <Clock size={13} className="text-amber-600 shrink-0" />
+                                                        <span>Pending Admin Approval</span>
+                                                    </div>
+                                                    <p className="text-[10px] text-amber-700 leading-snug">
+                                                        Admin is reviewing your price & turnaround. Once approved, it will be visible on customer app.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {isRejected && (
+                                                <div className="bg-red-50 border border-red-200 rounded-2xl p-2.5 text-[11px] text-red-900 font-medium space-y-1">
+                                                    <div className="flex items-center gap-1.5 font-bold text-red-800">
+                                                        <AlertCircle size={13} className="text-red-600 shrink-0" />
+                                                        <span>Service Not Approved</span>
+                                                    </div>
+                                                    <p className="text-[10px] text-red-700 leading-snug">
+                                                        {myService.rejectionReason || "Please adjust your price or turnaround to meet platform requirements."}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Pricing & Turnaround Section */}
+                                            <div className="pt-3 border-t border-gray-100 space-y-2.5">
+                                                {isOffered ? (
+                                                    <div>
+                                                        <div className="flex items-baseline justify-between">
+                                                            <div>
+                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">Your Price</span>
+                                                                <span className="text-xl font-black text-[#843D9B] tracking-tight">
+                                                                    ₹{myService.basePrice}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">Turnaround</span>
+                                                                <span className="text-xs font-bold text-gray-700 flex items-center gap-1 justify-end">
+                                                                    <Clock size={11} className="text-[#843D9B]" />
+                                                                    {myService.deliveryTime || '3-5 DAYS'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {cat.minPrice != null && cat.maxPrice != null && (
+                                                            <p className="text-[9px] font-semibold text-gray-400 mt-1">
+                                                                Allowed Band: ₹{cat.minPrice} – ₹{cat.maxPrice}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <div className="flex items-baseline justify-between">
+                                                            <div>
+                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">Suggested Price</span>
+                                                                <span className="text-lg font-black text-gray-900 tracking-tight">
+                                                                    ₹{cat.basePrice || cat.minPrice || 499}
+                                                                </span>
+                                                            </div>
+                                                            {cat.minPrice != null && cat.maxPrice != null && (
+                                                                <div className="text-right">
+                                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">Price Range</span>
+                                                                    <span className="text-xs font-bold text-gray-600">
+                                                                        ₹{cat.minPrice} – ₹{cat.maxPrice}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Action Buttons */}
+                                                {isOffered ? (
+                                                    <div className="flex items-center gap-2 pt-1">
+                                                        {isPending ? (
+                                                            /* Pending: Show In-Review disabled badge + Edit & Delete */
+                                                            <>
+                                                                <div className="flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 bg-amber-100 text-amber-800 border border-amber-200">
+                                                                    <Clock size={13} className="text-amber-700 animate-spin" />
+                                                                    <span>Under Review</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleOpenServiceModal(cat, myService)}
+                                                                    className="p-2 rounded-xl bg-gray-50 hover:bg-[#843D9B] hover:text-white text-gray-600 transition-colors border border-gray-200 cursor-pointer shadow-xs"
+                                                                    title="Edit price or styles"
+                                                                >
+                                                                    <Edit3 size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => handleDeleteService(myService._id, cat.name, e)}
+                                                                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 transition-colors border border-rose-100 cursor-pointer shadow-xs"
+                                                                    title="Cancel approval request"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </>
+                                                        ) : isRejected ? (
+                                                            /* Rejected: Show Edit & Re-submit button + Delete */
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleOpenServiceModal(cat, myService)}
+                                                                    className="flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white transition-all cursor-pointer shadow-sm shadow-red-600/20 active:scale-95"
+                                                                >
+                                                                    <RotateCcw size={13} />
+                                                                    <span>Edit & Re-submit</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => handleDeleteService(myService._id, cat.name, e)}
+                                                                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 transition-colors border border-rose-100 cursor-pointer shadow-xs"
+                                                                    title="Remove service"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            /* Approved: Toggle Pause / Resume + Edit + Delete */
+                                                            <>
+                                                                <button
+                                                                    onClick={(e) => handleToggleService(myService._id, cat.name, e)}
+                                                                    className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                                                        isActive 
+                                                                            ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200' 
+                                                                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                                    }`}
+                                                                    title={isActive ? 'Pause offering this service' : 'Resume offering this service'}
+                                                                >
+                                                                    {isActive ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
+                                                                    <span>{isActive ? 'Pause' : 'Resume'}</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleOpenServiceModal(cat, myService)}
+                                                                    className="p-2 rounded-xl bg-gray-50 hover:bg-[#843D9B] hover:text-white text-gray-600 transition-colors border border-gray-200 cursor-pointer shadow-xs"
+                                                                    title="Edit your price and styles"
+                                                                >
+                                                                    <Edit3 size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => handleDeleteService(myService._id, cat.name, e)}
+                                                                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 transition-colors border border-rose-100 cursor-pointer shadow-xs"
+                                                                    title="Remove service from your shop"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleOpenServiceModal(cat)}
+                                                        className="w-full py-2.5 px-4 bg-gradient-to-r from-[#843D9B] to-[#9E47BA] hover:from-[#732F87] hover:to-[#843D9B] text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md shadow-[#843D9B]/15 hover:shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                                    >
+                                                        <Plus size={15} strokeWidth={3} />
+                                                        <span>Offer This Service</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ═══ TAB 2 & 3: FABRICS & GARMENTS ═══ */}
+            {activeTab !== 'samples' && (
+                <div>
+                    {isLoading ? (
+                        <div className="py-20 text-center">
+                            <div className="h-8 w-8 border-3 border-[#843D9B] border-t-transparent animate-spin rounded-full mx-auto mb-3" />
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading inventory...</p>
+                        </div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 p-8">
+                            <ShoppingBag size={32} className="mx-auto text-gray-300 mb-3" />
+                            <h4 className="text-sm font-bold text-gray-700">No {activeTab === 'fabrics' ? 'Fabrics' : 'Garments'} Found</h4>
+                            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                                You haven't added any {activeTab === 'fabrics' ? 'fabrics' : 'garments'} to your shop yet.
+                            </p>
+                            <button
+                                onClick={() => { setIsEditing(false); setShowModal(true); }}
+                                className="mt-4 px-5 py-2.5 bg-[#843D9B] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer hover:bg-[#6E3082] transition-colors"
+                            >
+                                + Add {activeTab === 'fabrics' ? 'Fabric' : 'Garment'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                            {filteredProducts.map((item) => {
+                                const currentPrice = item.price || item.basePrice || 0;
+                                const originalPrice = item.discountPrice || item.originalPrice || 0;
+                                const isOutOfStock = item.stock <= 0;
+
+                                return (
+                                    <div 
+                                        key={item._id} 
+                                        onClick={() => handleEditFabric(item)}
+                                        className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 shadow-xs cursor-pointer"
+                                    >
+                                        <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden">
+                                            <SafeImage
+                                                src={item.image || item.images?.[0]}
+                                                alt={item.name || item.title}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
+                                            <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+                                                {isOutOfStock ? (
+                                                    <span className="bg-rose-500/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md uppercase">
+                                                        Out of Stock
+                                                    </span>
+                                                ) : (
+                                                    <span className="bg-emerald-500/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md uppercase">
+                                                        In Stock
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 flex-1 flex flex-col justify-between">
+                                            <div>
+                                                <span className="text-[9px] text-[#843D9B] uppercase tracking-wider font-extrabold truncate block mb-1">
+                                                    {item.category?.name || 'General'}
+                                                </span>
+                                                <h4 className="text-sm font-extrabold text-gray-900 line-clamp-1 tracking-tight group-hover:text-[#843D9B] transition-colors">
+                                                    {item.name || item.title}
+                                                </h4>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1">
+                                                    <Package size={11} className="text-[#843D9B]" /> 
+                                                    {item.stock || 0} {activeTab === 'fabrics' ? 'M Available' : 'In Stock'}
+                                                </p>
+                                            </div>
+
+                                            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block">Price</span>
+                                                    <span className="text-base font-black text-[#843D9B]">
+                                                        ₹{currentPrice.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleEditFabric(item); }}
+                                                        className="h-7 w-7 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-[#843D9B] hover:text-white transition-colors border border-gray-200"
+                                                    >
+                                                        <Edit3 size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteProduct(item._id, activeTab); }}
+                                                        className="h-7 w-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors border border-rose-100"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ═══ DIALOG: OFFER / CONFIGURE STITCHING SERVICE ═══ */}
+            {/* Tailor sets ONLY price and delivery days. Photo & Title are from Admin Category. */}
+            {serviceModalOpen && selectedAdminCategory && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                        
+                        {/* Header Banner with Admin Official Photo & Title */}
+                        <div className="relative bg-gradient-to-br from-[#843D9B] to-[#5C236E] text-white p-6">
+                            <button
+                                onClick={handleCloseServiceModal}
+                                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                <X size={18} />
+                            </button>
+
+                            <div className="flex items-center gap-4">
+                                <div className="h-16 w-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shrink-0 shadow-inner">
+                                    <SafeImage
+                                        src={selectedAdminCategory.image}
+                                        alt={selectedAdminCategory.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0 pr-6">
+                                    <div className="inline-flex items-center gap-1 bg-white/20 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1">
+                                        <ShieldCheck size={11} />
+                                        Official Platform Service
+                                    </div>
+                                    <h3 className="text-xl font-black text-white tracking-tight leading-snug truncate">
+                                        {selectedAdminCategory.name}
+                                    </h3>
+                                    <p className="text-xs text-white/80 line-clamp-1 mt-0.5">
+                                        {selectedAdminCategory.description || 'Custom tailoring service for your shop'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Notice for Tailor */}
+                        <div className="px-6 py-2.5 bg-[#F4EFFF] border-b border-[#E9DFFE] flex items-center gap-2">
+                            <span className="text-xs">🛡️</span>
+                            <p className="text-[11px] font-semibold text-[#843D9B]">
+                                Admin Approval Workflow: Once you submit your price, the request goes to Admin for review. Once approved, it will be visible to customers.
+                            </p>
+                        </div>
+
+                        {/* Form Body */}
+                        <form id="service-form" onSubmit={handleSaveService} className="p-6 overflow-y-auto space-y-5 custom-scrollbar flex-1">
+                            
+                            {/* 1. Stitching Price Input with Strict Admin Min-Max Bounds */}
+                            {(() => {
+                                const price = Number(serviceForm.basePrice);
+                                const isBelowMin = selectedAdminCategory.minPrice != null && price && price < selectedAdminCategory.minPrice;
+                                const isAboveMax = selectedAdminCategory.maxPrice != null && price && price > selectedAdminCategory.maxPrice;
+                                const isOutOfRange = isBelowMin || isAboveMax;
+
+                                return (
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-xs font-black text-gray-800 uppercase tracking-wide">
+                                                Your Stitching Price (₹) *
+                                            </label>
+                                            {selectedAdminCategory.minPrice != null && selectedAdminCategory.maxPrice != null && (
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                                    isOutOfRange ? 'bg-red-50 text-red-600 border border-red-200' : 'text-[#843D9B] bg-[#843D9B]/10'
+                                                }`}>
+                                                    Allowed: ₹{selectedAdminCategory.minPrice} – ₹{selectedAdminCategory.maxPrice}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-base">₹</span>
+                                            <input
+                                                type="number"
+                                                required
+                                                min={selectedAdminCategory.minPrice || 1}
+                                                max={selectedAdminCategory.maxPrice || 50000}
+                                                value={serviceForm.basePrice}
+                                                onChange={(e) => setServiceForm({ ...serviceForm, basePrice: e.target.value })}
+                                                placeholder={String(selectedAdminCategory.basePrice || selectedAdminCategory.minPrice || '499')}
+                                                className={`w-full pl-9 pr-4 py-3 bg-gray-50 border rounded-2xl text-base font-extrabold text-gray-900 focus:bg-white focus:outline-none transition-all shadow-xs ${
+                                                    isOutOfRange 
+                                                        ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/15' 
+                                                        : 'border-gray-200 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/15'
+                                                }`}
+                                            />
+                                        </div>
+
+                                        {/* Real-time Range Status Banner */}
+                                        {isBelowMin && (
+                                            <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl border border-red-100 flex items-center gap-1.5 mt-1">
+                                                <span>⚠️</span>
+                                                <span>Price cannot be lower than ₹{selectedAdminCategory.minPrice} (Admin minimum limit).</span>
+                                            </p>
+                                        )}
+                                        {isAboveMax && (
+                                            <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl border border-red-100 flex items-center gap-1.5 mt-1">
+                                                <span>⚠️</span>
+                                                <span>Price cannot exceed ₹{selectedAdminCategory.maxPrice} (Admin maximum limit).</span>
+                                            </p>
+                                        )}
+                                        {!isOutOfRange && price > 0 && selectedAdminCategory.minPrice != null && selectedAdminCategory.maxPrice != null && (
+                                            <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-100 flex items-center gap-1.5 mt-1">
+                                                <span>✓</span>
+                                                <span>Valid Price: ₹{price} is within the Admin allowed range (₹{selectedAdminCategory.minPrice} – ₹{selectedAdminCategory.maxPrice}).</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* 2. Estimated Turnaround / Delivery Days */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-800 uppercase tracking-wide">
+                                    Estimated Stitching & Delivery Time *
+                                </label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['2-3 DAYS', '3-5 DAYS', '5-7 DAYS'].map((preset) => (
+                                        <button
+                                            type="button"
+                                            key={preset}
+                                            onClick={() => setServiceForm({ ...serviceForm, deliveryTime: preset })}
+                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                                serviceForm.deliveryTime === preset
+                                                    ? 'bg-[#843D9B] text-white border-[#843D9B] shadow-sm'
+                                                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            {preset}
+                                        </button>
+                                    ))}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={serviceForm.deliveryTime}
+                                    onChange={(e) => setServiceForm({ ...serviceForm, deliveryTime: e.target.value })}
+                                    placeholder="Or enter custom time (e.g. 4 DAYS)"
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#843D9B] transition-all"
+                                />
+                            </div>
+
+                            {/* 3. Style Variants (If Category has Styles) */}
+                            {selectedAdminCategory.styles && selectedAdminCategory.styles.length > 0 && (
+                                <div className="space-y-2.5 pt-2 border-t border-gray-100">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-xs font-black text-gray-800 uppercase tracking-wide">
+                                            Styles You Can Stitch
+                                        </label>
+                                        <span className="text-[10px] font-bold text-gray-400">
+                                            {serviceForm.selectedStyles.length} of {selectedAdminCategory.styles.length} Selected
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-500 font-medium">
+                                        Uncheck any styles that you do not support for this garment:
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                        {selectedAdminCategory.styles.map((style, idx) => {
+                                            const isSelected = serviceForm.selectedStyles.some(s => (s.name || s) === style.name);
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        let newSel;
+                                                        if (isSelected) {
+                                                            newSel = serviceForm.selectedStyles.filter(s => (s.name || s) !== style.name);
+                                                        } else {
+                                                            newSel = [...serviceForm.selectedStyles, { 
+                                                                name: style.name, 
+                                                                image: style.image, 
+                                                                description: style.description 
+                                                            }];
+                                                        }
+                                                        setServiceForm({ ...serviceForm, selectedStyles: newSel });
+                                                    }}
+                                                    className={`p-2.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${
+                                                        isSelected 
+                                                            ? 'border-[#843D9B] bg-[#843D9B]/5 ring-1 ring-[#843D9B]/20 shadow-xs' 
+                                                            : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    {style.image ? (
+                                                        <img src={style.image} alt={style.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                                                    ) : (
+                                                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#843D9B] flex items-center justify-center font-bold text-sm shrink-0">
+                                                            ✂️
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-xs font-bold truncate ${isSelected ? 'text-[#843D9B]' : 'text-gray-900'}`}>
+                                                            {style.name}
+                                                        </p>
+                                                        {style.description && (
+                                                            <p className="text-[10px] text-gray-400 truncate">{style.description}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs shrink-0 ${
+                                                        isSelected ? 'bg-[#843D9B] border-[#843D9B] text-white' : 'border-gray-300 bg-white'
+                                                    }`}>
+                                                        {isSelected && <Check size={12} strokeWidth={3} />}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </form>
+
+                        {/* Modal Footer with Strict Admin Price Range Guard */}
+                        {(() => {
+                            const curPrice = Number(serviceForm.basePrice);
+                            const hasPrice = serviceForm.basePrice !== '' && !isNaN(curPrice) && curPrice > 0;
+                            const isBelowMin = selectedAdminCategory?.minPrice != null && hasPrice && curPrice < selectedAdminCategory.minPrice;
+                            const isAboveMax = selectedAdminCategory?.maxPrice != null && hasPrice && curPrice > selectedAdminCategory.maxPrice;
+                            const isPriceInvalid = !hasPrice || isBelowMin || isAboveMax;
+
+                            return (
+                                <div className="p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3">
+                                    <div className="text-[11px] font-bold">
+                                        {isBelowMin ? (
+                                            <span className="text-red-600 flex items-center gap-1.5">
+                                                <span>⚠️</span> Below Min limit (Min: ₹{selectedAdminCategory.minPrice})
+                                            </span>
+                                        ) : isAboveMax ? (
+                                            <span className="text-red-600 flex items-center gap-1.5">
+                                                <span>⚠️</span> Exceeds Max limit (Max: ₹{selectedAdminCategory.maxPrice})
+                                            </span>
+                                        ) : !hasPrice ? (
+                                            <span className="text-gray-400">
+                                                Enter price {selectedAdminCategory?.minPrice != null ? `(₹${selectedAdminCategory.minPrice} - ₹${selectedAdminCategory.maxPrice || '∞'})` : ''}
+                                            </span>
+                                        ) : (
+                                            <span className="text-emerald-700 flex items-center gap-1.5">
+                                                <span>✓</span> Price is within Admin allowed range
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={handleCloseServiceModal}
+                                            className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            form="service-form"
+                                            disabled={isSubmitting || isPriceInvalid}
+                                            className="px-6 py-2.5 bg-[#843D9B] hover:bg-[#6D2883] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-[#843D9B]/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                        >
+                                            {isSubmitting ? 'Submitting...' : editServiceId ? 'Submit Changes for Approval' : 'Submit for Admin Approval'}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ MODAL: FABRIC / READYMADE GARMENTS (Unchanged) ═══ */}
             {showModal && activeTab === 'garments' ? (
                 <GarmentForm 
                     initialData={isEditing ? garments.find(g => g._id === editId) : null}
@@ -540,361 +1224,121 @@ const Products = () => {
                     }}
                 />
             ) : showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A0A0A]/40 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-500 max-h-[90vh]">
-                        
-                        {/* Modal Header */}
-                        <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-gray-100/60">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                             <div>
-                                <h4 className="text-2xl font-black text-[#843D9B] tracking-tight leading-none">
-                                    {isEditing ? 'Update' : 'Add New'} {activeTab === 'samples' ? 'Service' : activeTab === 'fabrics' ? 'Fabric' : 'Garment'}
+                                <h4 className="text-xl font-black text-[#843D9B]">
+                                    {isEditing ? 'Update' : 'Add New'} Fabric
                                 </h4>
-                                <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
-                                    Fill in the details to list your product
-                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">List your available fabric materials</p>
                             </div>
-                            <button
-                                onClick={closeModal}
-                                className="h-10 w-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm cursor-pointer"
-                            >
-                                <X size={20} />
+                            <button onClick={closeModal} className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                                <X size={16} />
                             </button>
                         </div>
 
-                        {/* Modal Content */}
-                        <form id="product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 pt-6 space-y-6 custom-scrollbar">
-                            
-                            {/* Product Category Selection Card */}
-                            <div className="bg-white border border-gray-100/90 rounded-2xl p-4 shadow-sm space-y-2.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest flex items-center gap-1.5 ml-0.5">
-                                        <Layers size={14} />
-                                        Category *
-                                    </label>
-                                    {newItem.category && (
-                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
-                                            ✓ Selected
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="relative">
-                                    <select
-                                        required
-                                        className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-xs"
-                                        value={activeTab === 'fabrics' ? selectedParent : newItem.category}
-                                        onChange={(e) => {
-                                            if (activeTab === 'fabrics') {
-                                                setSelectedParent(e.target.value);
-                                                setNewItem({ ...newItem, category: '' });
-                                            } else {
-                                                setNewItem({ ...newItem, category: e.target.value });
-                                            }
-                                        }}
-                                    >
-                                        <option value="">Select Category</option>
-                                        {categories
-                                            .filter(cat => activeTab === 'samples' ? cat.type === 'service' : (cat.type === 'product' && !cat.parentCategory))
-                                            .map(cat => (
-                                                <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                            ))}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                        <ChevronRight size={14} className="rotate-90" />
-                                    </div>
-                                </div>
-
-                                {activeTab === 'fabrics' && selectedParent && (
-                                    <div className="space-y-1.5 pt-1 animate-in slide-in-from-top-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-0.5">Select Sub-Material *</label>
-                                        <div className="relative">
-                                            <select
-                                                required
-                                                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 appearance-none cursor-pointer shadow-xs"
-                                                value={newItem.category}
-                                                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                            >
-                                                <option value="">Select Material</option>
-                                                {subcategories.map(cat => (
-                                                    <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                <ChevronRight size={14} className="rotate-90" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Allowed Price Band Hint */}
-                                {(() => {
-                                    const selectedCat = newItem.category ? categories.find(c => c._id === newItem.category) : null;
-                                    if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
-                                        return (
-                                            <div className="pt-0.5 flex items-center justify-between text-[10px] font-bold text-gray-500">
-                                                <span className="text-[#843D9B] font-black bg-[#843D9B]/5 px-2 py-0.5 rounded-md">
-                                                    ₹{selectedCat.minPrice} – ₹{selectedCat.maxPrice}
-                                                </span>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-
-                                {/* Style Variants Selection for Tailors */}
-                                {activeTab === 'samples' && (() => {
-                                    const selectedCat = newItem.category ? categories.find(c => c._id === newItem.category) : null;
-                                    if (selectedCat && selectedCat.styles && selectedCat.styles.length > 0) {
-                                        const currentSelected = newItem.selectedStyles || [];
-                                        return (
-                                            <div className="pt-3 border-t border-gray-100 space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest">
-                                                        Styles You Can Stitch *
-                                                    </label>
-                                                    <span className="text-[9px] text-gray-400 font-bold">
-                                                        {currentSelected.length} of {selectedCat.styles.length} Selected
-                                                    </span>
-                                                </div>
-                                                <p className="text-[10px] text-gray-500 font-medium">Select which style variants you offer under this service:</p>
-                                                <div className="grid grid-cols-2 gap-2 mt-1">
-                                                    {selectedCat.styles.map((style, idx) => {
-                                                        const isSelected = currentSelected.some(s => (s.name || s) === style.name);
-                                                        return (
-                                                            <div
-                                                                key={idx}
-                                                                onClick={() => {
-                                                                    let newSel;
-                                                                    if (isSelected) {
-                                                                        newSel = currentSelected.filter(s => (s.name || s) !== style.name);
-                                                                    } else {
-                                                                        newSel = [...currentSelected, { name: style.name, image: style.image, description: style.description }];
-                                                                    }
-                                                                    setNewItem({ ...newItem, selectedStyles: newSel });
-                                                                }}
-                                                                className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
-                                                                    isSelected 
-                                                                        ? 'border-[#843D9B] bg-[#843D9B]/5 shadow-xs ring-1 ring-[#843D9B]/20' 
-                                                                        : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
-                                                                }`}
-                                                            >
-                                                                {style.image ? (
-                                                                    <img src={style.image} alt={style.name} className="w-9 h-9 rounded-lg object-cover shrink-0" />
-                                                                ) : (
-                                                                    <div className="w-9 h-9 rounded-lg bg-indigo-50 text-[#843D9B] flex items-center justify-center font-bold text-xs shrink-0">
-                                                                        ✂️
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className={`text-xs font-bold truncate ${isSelected ? 'text-[#843D9B]' : 'text-gray-900'}`}>{style.name}</p>
-                                                                    {style.description && <p className="text-[9px] text-gray-400 truncate">{style.description}</p>}
-                                                                </div>
-                                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
-                                                                    isSelected ? 'bg-[#843D9B] border-[#843D9B] text-white' : 'border-gray-300'
-                                                                }`}>
-                                                                    {isSelected && '✓'}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
+                        <form id="fabric-form" onSubmit={handleFabricSubmit} className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+                            <div>
+                                <label className="text-xs font-bold text-gray-700 block mb-1">Fabric Category *</label>
+                                <select
+                                    required
+                                    value={selectedParent}
+                                    onChange={(e) => { setSelectedParent(e.target.value); setNewItem({ ...newItem, category: '' }); }}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#843D9B]"
+                                >
+                                    <option value="">Select Fabric Type</option>
+                                    {categories.filter(c => c.type === 'product' && !c.parentCategory).map(c => (
+                                        <option key={c._id} value={c._id}>{c.name}</option>
+                                    ))}
+                                </select>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Left Side: Details */}
-                                <div className="space-y-5">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">
-                                            Title / Service Name (According to your shop) *
-                                        </label>
-                                        <input
-                                            required
-                                            className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 placeholder:text-gray-300 shadow-sm"
-                                            placeholder={activeTab === 'samples' ? "e.g. Rimjhim Kurti - Special Shop Design" : "e.g. Premium Linen Cotton"}
-                                            value={activeTab === 'samples' ? newItem.title : newItem.name}
-                                            onChange={(e) => activeTab === 'samples'
-                                                ? setNewItem({ ...newItem, title: e.target.value })
-                                                : setNewItem({ ...newItem, name: e.target.value })
-                                            }
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">
-                                                {activeTab === 'samples' ? 'Base Price' : 'Price / Mtr'}
-                                            </label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
-                                                <input
-                                                    required
-                                                    type="number"
-                                                    className="w-full pl-8 pr-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
-                                                    value={activeTab === 'samples' ? newItem.basePrice : newItem.price}
-                                                    onChange={(e) => activeTab === 'samples'
-                                                        ? setNewItem({ ...newItem, basePrice: e.target.value })
-                                                        : setNewItem({ ...newItem, price: e.target.value })
-                                                    }
-                                                />
-                                            </div>
-                                            {activeTab === 'samples' && (() => {
-                                                const selectedCat = newItem.category ? categories.find(c => c._id === newItem.category) : null;
-                                                if (selectedCat && selectedCat.minPrice != null && selectedCat.maxPrice != null) {
-                                                    const price = newItem.basePrice ? Number(newItem.basePrice) : null;
-                                                    const isOutOfRange = price != null && (price < selectedCat.minPrice || price > selectedCat.maxPrice);
-                                                    return (
-                                                        <div className={`mt-1.5 px-3 py-2 rounded-xl text-[10px] font-bold flex items-center gap-1.5 ${
-                                                            isOutOfRange 
-                                                                ? 'bg-red-50 text-red-600 border border-red-100' 
-                                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                                        }`}>
-                                                            <span>{isOutOfRange ? '⚠' : '✓'}</span>
-                                                            <span>Allowed: ₹{selectedCat.minPrice} – ₹{selectedCat.maxPrice}</span>
-                                                        </div>
-                                                    );
-                                                }
-                                                if (selectedCat && selectedCat.basePrice != null) {
-                                                    return (
-                                                        <p className="mt-1 text-[10px] text-gray-400 font-medium ml-1">
-                                                            Suggested: ₹{selectedCat.basePrice}
-                                                        </p>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">
-                                                {activeTab === 'samples' ? 'Delivery Time' : 'Total Stock'}
-                                            </label>
-                                            <input
-                                                required
-                                                type={activeTab === 'fabrics' ? "number" : "text"}
-                                                className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
-                                                placeholder={activeTab === 'samples' ? "3-5 DAYS" : "100"}
-                                                value={activeTab === 'samples' ? newItem.deliveryTime : newItem.stock}
-                                                onChange={(e) => activeTab === 'samples'
-                                                    ? setNewItem({ ...newItem, deliveryTime: e.target.value })
-                                                    : setNewItem({ ...newItem, stock: e.target.value })
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Product Description</label>
-                                        <textarea
-                                            required
-                                            rows="3"
-                                            className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 resize-none placeholder:text-gray-300 shadow-sm"
-                                            placeholder="Tell customers about quality and features..."
-                                            value={newItem.description}
-                                            onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                                        />
-                                    </div>
-
-                                    {activeTab === 'garments' && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Sizes (comma separated)</label>
-                                                <input
-                                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
-                                                    placeholder="e.g. S, M, L, XL"
-                                                    value={newItem.sizes}
-                                                    onChange={(e) => setNewItem({ ...newItem, sizes: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Colors (comma separated)</label>
-                                                <input
-                                                    className="w-full px-5 py-3.5 bg-gray-50/60 border border-gray-100/80 focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 rounded-2xl focus:outline-none focus:bg-white transition-all text-xs font-semibold text-gray-900 shadow-sm"
-                                                    placeholder="e.g. Red, Blue, Black"
-                                                    value={newItem.colors}
-                                                    onChange={(e) => setNewItem({ ...newItem, colors: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
+                            {selectedParent && subcategories.length > 0 && (
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">Sub-Material *</label>
+                                    <select
+                                        required
+                                        value={newItem.category}
+                                        onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#843D9B]"
+                                    >
+                                        <option value="">Select Material</option>
+                                        {subcategories.map(c => (
+                                            <option key={c._id} value={c._id}>{c.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
+                            )}
 
-                                {/* Right Side: Media */}
-                                <div className="space-y-5">
+                            <div>
+                                <label className="text-xs font-bold text-gray-700 block mb-1">Fabric Name *</label>
+                                <input
+                                    required
+                                    placeholder="e.g. Pure Chanderi Silk"
+                                    value={newItem.name}
+                                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#843D9B]"
+                                />
+                            </div>
 
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[#843D9B]/80 uppercase tracking-widest ml-1">Product Image</label>
-                                        <div className="flex gap-4 p-4 bg-gray-50/60 rounded-[2rem] border border-gray-100/80">
-                                            <div className="h-24 w-24 rounded-2xl bg-white border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                                {newItem.image ? (
-                                                    <img src={newItem.image} alt="Preview" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <ShoppingBag size={24} className="text-gray-200" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 flex flex-col justify-center gap-2">
-                                                <div className="flex gap-2">
-                                                    <div className="relative flex-1">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={handleImageUpload}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                            disabled={isImageUploading}
-                                                        />
-                                                        <button type="button" className="w-full h-[38px] bg-white rounded-xl text-[10px] font-black text-[#843D9B] border border-gray-100 shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-widest cursor-pointer hover:bg-gray-50 active:scale-95 transition-all">
-                                                            {isImageUploading ? <div className="h-3 w-3 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" /> : <Plus size={14} />}
-                                                            <span className="hidden sm:inline">{isImageUploading ? 'Uploading...' : 'Upload Image'}</span>
-                                                            <span className="sm:hidden">{isImageUploading ? '...' : 'Gallery'}</span>
-                                                        </button>
-                                                    </div>
-                                                    <div className="relative flex-1">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            capture="environment"
-                                                            onChange={handleImageUpload}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                            disabled={isImageUploading}
-                                                        />
-                                                        <button type="button" className="w-full h-[38px] bg-white rounded-xl text-[10px] font-black text-[#843D9B] border border-gray-100 shadow-sm flex items-center justify-center gap-1.5 uppercase tracking-widest cursor-pointer hover:bg-gray-50 active:scale-95 transition-all">
-                                                            {isImageUploading ? <div className="h-3 w-3 border-2 border-[#843D9B] border-t-transparent animate-spin rounded-full" /> : <Camera size={14} />}
-                                                            <span className="hidden sm:inline">{isImageUploading ? 'Uploading...' : 'Take Photo'}</span>
-                                                            <span className="sm:hidden">{isImageUploading ? '...' : 'Camera'}</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <input
-                                                    className="w-full px-4 py-2 bg-transparent border-b border-gray-200 text-[10px] font-black text-gray-400 focus:text-gray-900 focus:border-[#843D9B] outline-none transition-all"
-                                                    placeholder="Or paste URL"
-                                                    value={newItem.image}
-                                                    onChange={(e) => setNewItem({ ...newItem, image: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">Price / Meter (₹) *</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        value={newItem.price}
+                                        onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#843D9B]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">Available Stock (Meters) *</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        value={newItem.stock}
+                                        onChange={(e) => setNewItem({ ...newItem, stock: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#843D9B]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-700 block mb-1">Fabric Photo *</label>
+                                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-200">
+                                    <div className="h-16 w-16 rounded-xl bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                                        {newItem.image ? (
+                                            <img src={newItem.image} alt="Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <ShoppingBag size={20} className="text-gray-300" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={isImageUploading}
+                                            className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#843D9B] file:text-white hover:file:bg-[#6D2883] cursor-pointer"
+                                        />
                                     </div>
                                 </div>
                             </div>
                         </form>
 
-                        {/* Modal Footer */}
-                        <div className="p-8 border-t border-gray-100 bg-gray-50/50 flex gap-4">
-                            <button
-                                onClick={closeModal}
-                                className="px-8 py-4 bg-white border border-gray-200 rounded-2xl text-xs font-black text-gray-500 uppercase tracking-widest hover:bg-gray-50 transition-all cursor-pointer"
-                            >
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                            <button onClick={closeModal} className="px-5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                form="product-form"
+                                form="fabric-form"
                                 disabled={isSubmitting}
-                                className="flex-1 bg-[#843D9B] hover:bg-[#4E2460] text-white rounded-2xl py-4 font-black text-xs uppercase tracking-widest shadow-xl shadow-[#843D9B]/10 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+                                className="px-6 py-2 bg-[#843D9B] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-[#6D2883]"
                             >
-                                {isSubmitting ? 'Processing...' : (isEditing ? 'Save Changes' : 'Publish Product')}
+                                {isSubmitting ? 'Saving...' : 'Save Fabric'}
                             </button>
                         </div>
                     </div>
@@ -905,5 +1349,3 @@ const Products = () => {
 };
 
 export default Products;
-
-

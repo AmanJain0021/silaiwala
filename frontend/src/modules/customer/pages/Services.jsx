@@ -20,6 +20,7 @@ const Services = () => {
     const serviceItems = useCheckoutStore((s) => s.serviceItems);
     const removeServiceItem = useCheckoutStore((s) => s.removeServiceItem);
     const setBuyNowMode = useCheckoutStore((s) => s.setBuyNowMode);
+    const clearCheckout = useCheckoutStore((s) => s.clearCheckout);
     const lockedTailorId = useCheckoutStore((s) => s.lockedTailorId);
     const lockedTailorName = useCheckoutStore((s) => s.lockedTailorName);
     const basketCount = serviceItems?.length || 0;
@@ -35,47 +36,43 @@ const Services = () => {
         }
     }, [location.state, location.search]);
 
-    // Tailor lock applies only while an active stitching basket exists
+    // Drop stale multi-item navigation flag when basket is empty
     useEffect(() => {
-        if (basketCount > 0) return;
-
-        const store = useCheckoutStore.getState();
-        if (store.lockedTailorId || store.lockedTailorName) {
-            useCheckoutStore.setState({ lockedTailorId: null, lockedTailorName: null });
-        }
-
-        // Drop stale multi-item navigation flag when basket is empty
-        if (location.state?.fromMultiItemBasket && !location.state?.tailorId) {
-            navigate('/user/services', {
-                replace: true,
-                state: location.state?.filter ? { filter: location.state.filter } : {},
-            });
+        if (basketCount === 0) {
+            const store = useCheckoutStore.getState();
+            if (store.lockedTailorId || store.lockedTailorName) {
+                useCheckoutStore.setState({ lockedTailorId: null, lockedTailorName: null });
+            }
+            if (location.state?.fromMultiItemBasket && !location.state?.tailorId) {
+                navigate('/user/services', {
+                    replace: true,
+                    state: location.state?.filter ? { filter: location.state.filter } : {},
+                });
+            }
         }
     }, [basketCount, location.state?.fromMultiItemBasket, location.state?.tailorId, location.state?.filter, navigate]);
 
-    // While basket has items, keep catalog locked to that tailor
+    // Only lock to tailor if user explicitly arrived via "+ Add another service" multi-item flow
     useEffect(() => {
-        if (!basketCount) return;
+        if (!basketCount || !location.state?.fromMultiItemBasket) return;
         const { tailorId, tailorName } = useCheckoutStore.getState().ensureLockedTailor({
             tailorId: lockedTailorId,
             tailorName: lockedTailorName,
         });
         if (!tailorId) return;
-        if (
-            String(location.state?.tailorId || '') === String(tailorId) &&
-            location.state?.fromMultiItemBasket
-        ) {
+        if (String(location.state?.tailorId || '') === String(tailorId)) {
             return;
         }
         navigate('/user/services', {
             replace: true,
             state: {
+                ...location.state,
                 tailorId,
                 tailorName: tailorName || 'Selected Tailor',
                 fromMultiItemBasket: true,
             },
         });
-    }, [basketCount, lockedTailorId, lockedTailorName, location.state?.tailorId, location.state?.fromMultiItemBasket, navigate]);
+    }, [basketCount, lockedTailorId, lockedTailorName, location.state, navigate]);
 
     return (
         <div className="min-h-screen bg-white pb-28 md:pb-8 font-sans" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
@@ -103,16 +100,31 @@ const Services = () => {
                                     </p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setBuyNowMode(false, null);
-                                    navigate('/user/checkout/summary');
-                                }}
-                                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white text-primary px-3 py-2 rounded-xl shrink-0 active:scale-95"
-                            >
-                                Checkout <ChevronRight size={14} />
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        clearCheckout();
+                                        navigate('/user/services', { replace: true, state: {} });
+                                        import('react-hot-toast').then(({ toast }) => {
+                                            toast.success('Basket cleared');
+                                        });
+                                    }}
+                                    className="text-[10px] font-black uppercase tracking-wider bg-white/20 hover:bg-white/30 text-white px-2.5 py-2 rounded-xl active:scale-95 cursor-pointer"
+                                >
+                                    Clear
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setBuyNowMode(false, null);
+                                        navigate('/user/checkout/summary');
+                                    }}
+                                    className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white text-primary px-3 py-2 rounded-xl shrink-0 active:scale-95 cursor-pointer"
+                                >
+                                    Checkout <ChevronRight size={14} />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">

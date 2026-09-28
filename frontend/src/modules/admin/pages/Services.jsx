@@ -393,7 +393,7 @@ const AdminServices = () => {
         if (!newService.title || newService.price === '' || newService.price === null || newService.price === undefined) {
             return toast.error('Please fill all required fields');
         }
-        if (!newService.image || newService.image === 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png') {
+        if (!newService.image) {
             return toast.error('Please upload an image for the category');
         }
         if (Number(newService.price) < 0) {
@@ -439,7 +439,7 @@ const AdminServices = () => {
         if (!editingCategory || !editingCategory.name || editingCategory.basePrice === '' || editingCategory.basePrice === null || editingCategory.basePrice === undefined) {
             return toast.error('Please fill all required fields');
         }
-        if (!editingCategory.image || editingCategory.image === 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png') {
+        if (!editingCategory.image) {
             return toast.error('Please upload an image for the category');
         }
         if (Number(editingCategory.basePrice) < 0) {
@@ -627,7 +627,12 @@ const AdminServices = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-12 w-12 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center relative">
-                                                    <img src={service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'} alt={service.name} className="w-full h-full object-cover" />
+                                                    <img 
+                                                        src={service.image || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'} 
+                                                        alt={service.name} 
+                                                        className="w-full h-full object-cover" 
+                                                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'; }}
+                                                    />
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-black text-gray-900">{service.name}</span>
@@ -727,10 +732,10 @@ const AdminServices = () => {
                                                     <div className="flex gap-4">
                                                         <div className="h-16 w-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
                                                             <img 
-                                                                src={service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'} 
+                                                                src={service.category?.image || service.image || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'} 
                                                                 alt={service.title} 
                                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                                                                onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                                onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                                             />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
@@ -806,10 +811,10 @@ const AdminServices = () => {
                                         <div className="flex gap-4 mb-4">
                                             <div className="h-16 w-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
                                                 <img 
-                                                    src={service.image || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'} 
+                                                    src={service.category?.image || service.image || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'} 
                                                     alt={service.title} 
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                                                    onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                    onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                                 />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -864,9 +869,10 @@ const AdminServices = () => {
                                                     <div className="flex gap-4 mb-4">
                                                         <div className="h-16 w-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
                                                             <img
-                                                                src={product.image || product.images?.[0] || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                                src={product.image || product.images?.[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                                                 alt={product.name}
                                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                                             />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
@@ -1745,10 +1751,10 @@ const AdminServices = () => {
                                     <div className="space-y-4">
                                         <div className="aspect-square rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden relative shadow-sm">
                                             <img
-                                                src={viewingDetailItem.item?.image || viewingDetailItem.item?.images?.[0] || 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                src={viewingDetailItem.item?.category?.image || viewingDetailItem.item?.image || viewingDetailItem.item?.images?.[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                                 alt=""
                                                 className="w-full h-full object-cover"
-                                                onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'}
+                                                onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                             />
                                         </div>
 

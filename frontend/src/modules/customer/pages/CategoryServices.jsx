@@ -149,7 +149,7 @@ const CategoryServices = () => {
                                     src={category.image}
                                     alt={category.name}
                                     className="w-full h-full object-cover"
-                                    onError={(e) => { e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'; }}
+                                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'; }}
                                 />
                             </div>
                         )}
@@ -188,7 +188,16 @@ const CategoryServices = () => {
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.04, duration: 0.3 }}
-                                onClick={() => navigate(`/user/services/${service._id}`)}
+                                onClick={() => {
+                                    const tId = service.tailor?._id || service.tailorId || (typeof service.tailor === 'string' ? service.tailor : null);
+                                    const tName = service.tailor?.shopName || service.tailorName || 'Tailor Partner';
+                                    navigate(`/user/services/${service._id}`, {
+                                        state: {
+                                            tailorId: tId,
+                                            tailorName: tName,
+                                        },
+                                    });
+                                }}
                                 className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md hover:border-primary/20 transition-all cursor-pointer"
                             >
                                 <div className="flex">
@@ -198,7 +207,7 @@ const CategoryServices = () => {
                                             src={service.image || 'https://images.unsplash.com/photo-1556760544-74c6974b89e0?w=400'}
                                             alt={service.title}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            onError={(e) => { e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'; }}
+                                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'; }}
                                         />
                                         {index === 0 && sortBy === 'price_low' && (
                                             <div className="absolute top-2 left-2 bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">

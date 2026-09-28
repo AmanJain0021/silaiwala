@@ -33,6 +33,7 @@ const {
   getMyServices,
   createService: createTailorService,
   updateService: updateTailorService,
+  toggleServiceStatus: toggleTailorService,
   deleteService: deleteTailorService,
   getTailorServices
 } = require("../controllers/tailorService.controller.js");
@@ -106,6 +107,7 @@ router.delete("/products/:id", deleteProduct);
 
 // Tailor Services Actions
 router.post("/services", createTailorService);
+router.patch("/services/:id/toggle", toggleTailorService);
 router.patch("/services/:id", updateTailorService);
 router.delete("/services/:id", deleteTailorService);
 

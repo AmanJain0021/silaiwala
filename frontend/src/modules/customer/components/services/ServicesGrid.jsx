@@ -15,19 +15,15 @@ const ServiceCard = ({ service }) => {
     const serviceItems = useCheckoutStore((s) => s.serviceItems);
 
     const handleBookNow = () => {
-        const store = useCheckoutStore.getState();
-        const lock = store.ensureLockedTailor({
-            tailorId: location.state?.tailorId,
-            tailorName: location.state?.tailorName,
-        });
-        const tailorId = lock.tailorId || location.state?.tailorId;
-        const tailorName = lock.tailorName || location.state?.tailorName;
+        // Resolve this specific service's tailor directly
+        const serviceTailorId = resolveTailorId(service.tailor, service.tailorId, service) || location.state?.tailorId || null;
+        const serviceTailorName = resolveTailorName(service.tailor, service.tailorName, service) || location.state?.tailorName || 'Tailor Partner';
 
         navigate(`/user/services/${service._id}`, {
             state: {
                 ...location.state,
-                tailorId,
-                tailorName,
+                tailorId: serviceTailorId,
+                tailorName: serviceTailorName,
             },
         });
     };
@@ -231,14 +227,22 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         }
     }, [routeLocation.state, lockedTailorId, lockedTailorName, isMultiItemLock, effectiveTailorId, effectiveTailorName, basketCount]);
 
-    const handleClearTailorFilter = () => {
-        // Locked multi-item basket: cannot browse other tailors
-        if (isMultiItemLock && (lockedTailorId || activeTailorId || effectiveTailorId)) {
-            import('react-hot-toast').then(({ toast }) => {
-                toast.error('Only this tailor’s services are available for this order');
-            });
-            return;
+    const clearCheckout = useCheckoutStore((s) => s.clearCheckout);
+
+    const handleResetBasketAndBrowseAll = () => {
+        clearCheckout();
+        setActiveTailorId(null);
+        setTailorName('');
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title);
         }
+        navigate('/user/services', { replace: true, state: {} });
+        import('react-hot-toast').then(({ toast }) => {
+            toast.success('Basket reset. Browsing all tailor services.');
+        });
+    };
+
+    const handleClearTailorFilter = () => {
         if (window.history.replaceState) {
             window.history.replaceState({}, document.title);
         }
@@ -378,9 +382,27 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
                                 Services by <span className="text-primary">{tailorName || effectiveTailorName || 'Selected Tailor'}</span>
                             </h3>
                             {isMultiItemLock ? (
-                                <p className="text-[9px] text-gray-500 font-medium mt-0.5">
-                                    Showing only this tailor — same as your first basket item
-                                </p>
+                                <div className="mt-2">
+                                    <p className="text-[9px] text-gray-500 font-medium">
+                                        Showing only this tailor — matching your basket
+                                    </p>
+                                    <div className="flex items-center gap-1.5 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleResetBasketAndBrowseAll}
+                                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
+                                        >
+                                            Clear Basket & Browse All
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/user/checkout/summary')}
+                                            className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                        >
+                                            View Basket <ArrowRight size={11} />
+                                        </button>
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="flex items-center gap-1.5 mt-2">
                                     <button

@@ -2173,7 +2173,7 @@ exports.getPendingServices = asyncHandler(async (req, res, next) => {
       select: "shopName user rating location specializations",
       populate: { path: "user", select: "name email phone profileImage" }
     })
-    .populate("category", "name minPrice maxPrice basePrice description")
+    .populate("category", "name minPrice maxPrice basePrice description image")
     .sort("-createdAt");
 
   res.status(200).json({

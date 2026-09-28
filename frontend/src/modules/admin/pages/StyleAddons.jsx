@@ -353,7 +353,7 @@ const AdminStyleAddons = () => {
                                                                         src={addon.image} 
                                                                         alt={addon.name} 
                                                                         className="w-full h-full object-cover"
-                                                                        onError={(e) => { e.target.src = 'https://cdn-icons-png.flaticon.com/128/9284/9284227.png'; }}
+                                                                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'; }}
                                                                     />
                                                                 ) : (
                                                                     <div className="w-full h-full flex items-center justify-center text-gray-300">

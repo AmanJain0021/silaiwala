@@ -74,9 +74,14 @@ const ServiceDetail = () => {
         typeof location.state?.editBasketIndex === 'number' ? location.state.editBasketIndex : null
     );
 
-    // SessionStorage Draft Persistence across page refreshes
+    // Only restore draft if explicitly editing a basket item or navigating back with restoredState
+    const isExplicitBasketRestore = Boolean(
+        location.state?.restoreBasketItem ||
+        typeof location.state?.editBasketIndex === 'number' ||
+        location.state?.restoredState
+    );
     const getSavedDraft = () => {
-        if (!id) return {};
+        if (!id || !isExplicitBasketRestore) return {};
         try {
             const saved = sessionStorage.getItem(`service_draft_${id}`);
             return saved ? JSON.parse(saved) : {};
@@ -373,25 +378,25 @@ const ServiceDetail = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
+                const targetTailorId = location.state?.tailorId || null;
                 const results = await Promise.allSettled([
                     api.get(`/services/${id}`),
-                    (location.state?.tailorId || storedDetails?.tailorId) ? 
-                        api.get(`/tailors/${location.state?.tailorId || storedDetails?.tailorId}`) : 
-                        Promise.resolve(null)
+                    targetTailorId ? api.get(`/tailors/${targetTailorId}`) : Promise.resolve(null)
                 ]);
 
                 if (!isMounted) return;
 
                 if (results[0].status === 'fulfilled') {
                     const service = results[0].value?.data?.data;
-                    if (service) setServiceData(service);
-                    
-                    // Pre-select tailor if it came directly with the service
-                    if (service?.tailor && !results[1].value) {
-                        setPreSelectedTailor(service.tailor);
+                    if (service) {
+                        setServiceData(service);
+                        // Default to the service's own tailor
+                        if (service.tailor) {
+                            setPreSelectedTailor(service.tailor);
+                        }
                     }
                 }
-                if (results[1].status === 'fulfilled' && results[1].value) {
+                if (results[1]?.status === 'fulfilled' && results[1].value?.data?.data) {
                     setPreSelectedTailor(results[1].value.data.data);
                 }
                 
@@ -1148,28 +1153,31 @@ const ServiceDetail = () => {
 
             <div className="max-w-2xl mx-auto px-4 mt-4 space-y-3.5 pb-44">
 
-                {/* Selected service — only when basket empty (otherwise basket already shows the same item) */}
-                {!(storeHydrated && serviceItems.length > 0) && (
+                {/* Current Service Header - Always clearly visible */}
                 <section className="bg-white rounded-[1.5rem] p-3.5 border border-primary/15 shadow-sm space-y-3">
                     <div className="flex items-center gap-3">
                         <div className="w-16 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 shrink-0">
                             <img
-                                src={getImageUrl(serviceData.image) || 'https://placehold.co/128x160/e6e8f0/843d9b?text=Service'}
+                                src={getImageUrl(serviceData.image) || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'}
                                 alt={serviceData.title}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                    e.currentTarget.src = 'https://placehold.co/128x160/e6e8f0/843d9b?text=Service';
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800';
                                 }}
                             />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[9px] font-black uppercase tracking-wider text-primary">Selected service</p>
-                            <h2 className="text-sm font-black text-gray-900 truncate">{serviceData.title}</h2>
-                            <p className="text-[11px] font-bold text-gray-500 mt-0.5">
-                                ₹{(serviceData.basePrice || 0).toLocaleString()}
-                                {fabricSource === 'platform' ? ' · Buy fabric' : ' · Your fabric'}
+                            <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-primary">
+                                    {preSelectedTailor?.shopName ? `By ${preSelectedTailor.shopName}` : 'Selected Service'}
+                                </span>
+                                <span className="text-sm font-black text-primary">₹{(serviceData.basePrice || 0).toLocaleString()}</span>
+                            </div>
+                            <h2 className="text-sm font-black text-gray-900 truncate mt-0.5">{serviceData.title}</h2>
+                            <p className="text-[11px] font-medium text-gray-500 mt-0.5">
+                                {fabricSource === 'platform' ? 'Tailor Fabric' : 'Customer Fabric'}
                                 {selectedStyle?.name ? ` · ${selectedStyle.name}` : ''}
-                                {isMeasurementValid ? ' · Measurements ✓' : ' · Measurements pending'}
+                                {isMeasurementValid ? ' · Measurements ✓' : ' · Measurements required'}
                             </p>
                         </div>
                     </div>
@@ -1177,13 +1185,12 @@ const ServiceDetail = () => {
                     <button
                         type="button"
                         onClick={handleSaveAndAddAnother}
-                        className="w-full py-3 rounded-xl bg-primary text-white font-black text-[11px] uppercase tracking-wider active:scale-[0.98] hover:bg-primary-dark transition-all flex items-center justify-center gap-2"
+                        className="w-full py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-black text-[11px] uppercase tracking-wider active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <ShoppingBag size={14} />
-                        + Add another service
+                        + Add another service to order
                     </button>
                 </section>
-                )}
 
                 {/* Basket — visible as soon as items exist (incl. auto-pending on open) */}
                 {storeHydrated && serviceItems.length > 0 && (
@@ -1748,8 +1755,8 @@ const ServiceDetail = () => {
                                     {isMeasurementValid ? (
                                         editBasketIndex != null ? (
                                             <>Save Changes <ChevronRight size={16} /></>
-                                        ) : (activeIndex >= 0 ? serviceItems.length : serviceItems.length + 1) > 1 ? (
-                                            <>Book All ({activeIndex >= 0 ? serviceItems.length : serviceItems.length + 1}) <ChevronRight size={16} /></>
+                                        ) : location.state?.fromMultiItemBasket && serviceItems.length > 0 ? (
+                                            <>Book All ({serviceItems.length + 1}) <ChevronRight size={16} /></>
                                         ) : (
                                             <>Book Now <ChevronRight size={16} /></>
                                         )
