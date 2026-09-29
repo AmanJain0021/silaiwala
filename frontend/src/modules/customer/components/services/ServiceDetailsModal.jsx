@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Star, Clock, CheckCircle2, Tag, Scissors, Loader2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../utils/api';
 import { getImageUrl } from '../../../../utils/imageUrl';
 
 const ServiceDetailsModal = ({ service, isOpen, onClose, onBookNow }) => {
+    const navigate = useNavigate();
     const [details, setDetails] = useState(service || null);
     const [loading, setLoading] = useState(false);
 
@@ -99,11 +101,22 @@ const ServiceDetailsModal = ({ service, isOpen, onClose, onBookNow }) => {
                                     {categoryName && (
                                         <p className="text-[11px] font-bold text-gray-500 mt-1">{categoryName}</p>
                                     )}
-                                    <p className="text-[11px] text-[#843D9B] font-bold mt-1">by {tailorName}</p>
+                                    {data.tailors && data.tailors.length > 1 ? (
+                                        <p className="text-[11px] text-[#843D9B] font-bold mt-1">
+                                            {data.tailors.length} Verified Tailors offering this service
+                                        </p>
+                                    ) : (
+                                        <p className="text-[11px] text-[#843D9B] font-bold mt-1">by {tailorName}</p>
+                                    )}
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">From</p>
-                                    <p className="text-xl font-black text-primary">₹{data.basePrice}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">
+                                        {data.minPrice && data.maxPrice && data.minPrice !== data.maxPrice ? 'Starting from' : 'Price'}
+                                    </p>
+                                    <p className="text-xl font-black text-primary">
+                                        ₹{data.minPrice || data.basePrice}
+                                        {data.minPrice && data.maxPrice && data.minPrice !== data.maxPrice ? ` - ₹${data.maxPrice}` : ''}
+                                    </p>
                                 </div>
                             </div>
 
@@ -124,6 +137,59 @@ const ServiceDetailsModal = ({ service, isOpen, onClose, onBookNow }) => {
                                     </span>
                                 )}
                             </div>
+
+                            {data.tailors && data.tailors.length > 0 && (
+                                <div>
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                        <span>Tailors Offering This Service ({data.tailors.length})</span>
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {data.tailors.map((tailor) => (
+                                            <div
+                                                key={tailor.serviceId || tailor.tailorId}
+                                                className="flex items-center justify-between gap-3 p-3 bg-gray-50 hover:bg-gray-100/80 rounded-2xl border border-gray-100 transition-colors"
+                                            >
+                                                <div className="min-w-0 flex items-center gap-2.5">
+                                                    <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 text-xs">
+                                                        {tailor.tailorName?.[0] || 'T'}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold text-gray-900 truncate">
+                                                            {tailor.tailorName}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                                            <span className="flex items-center gap-0.5 text-amber-600 font-bold">
+                                                                <Star size={10} className="fill-amber-400 text-amber-400" />
+                                                                {tailor.rating ? Number(tailor.rating).toFixed(1) : '4.8'}
+                                                            </span>
+                                                            <span>•</span>
+                                                            <span>{tailor.deliveryTime || '2-4 Days'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <span className="text-sm font-black text-primary">₹{tailor.basePrice}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            onClose();
+                                                            navigate(`/user/services/${tailor.serviceId}`, {
+                                                                state: {
+                                                                    tailorId: tailor.tailorId,
+                                                                    tailorName: tailor.tailorName,
+                                                                },
+                                                            });
+                                                        }}
+                                                        className="px-2.5 py-1 bg-primary text-white rounded-lg text-[10px] font-bold hover:bg-primary-dark transition-all cursor-pointer"
+                                                    >
+                                                        Select
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {data.description && (
                                 <div>
@@ -192,7 +258,11 @@ const ServiceDetailsModal = ({ service, isOpen, onClose, onBookNow }) => {
                                 }}
                                 className="flex-[1.4] py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-dark shadow-sm flex items-center justify-center gap-1 cursor-pointer"
                             >
-                                Book Now <ArrowRight size={16} />
+                                {data.tailors && data.tailors.length > 1 ? (
+                                    <>Choose Tailor <ArrowRight size={16} /></>
+                                ) : (
+                                    <>Book Now <ArrowRight size={16} /></>
+                                )}
                             </button>
                         </div>
                     </motion.div>

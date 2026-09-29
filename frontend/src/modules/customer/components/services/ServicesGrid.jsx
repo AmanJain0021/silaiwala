@@ -3,35 +3,46 @@ import { Clock, CheckCircle2, Star, Loader2, Users, ArrowRight, X, Heart, Info, 
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom';
 import api from '../../../../utils/api';
 import useUnifiedLocation from '../../../../shared/hooks/useUnifiedLocation';
-import useCheckoutStore, { resolveTailorId } from '../../../../store/checkoutStore';
+import useCheckoutStore, { resolveTailorId, resolveTailorName } from '../../../../store/checkoutStore';
 import ServiceDetailsModal from './ServiceDetailsModal';
+import SelectTailorModal from './SelectTailorModal';
 
-const ServiceCard = ({ service }) => {
+const ServiceCard = ({ service, onSelectTailor, isGrouped = false }) => {
     const navigate = useNavigate();
     const location = useRouteLocation();
     const [showDetails, setShowDetails] = useState(false);
     const isPopular = (service.rating || 0) >= 4.5;
-    const selectServiceIntoBasket = useCheckoutStore((s) => s.selectServiceIntoBasket);
-    const serviceItems = useCheckoutStore((s) => s.serviceItems);
 
-    const handleBookNow = () => {
-        // Resolve this specific service's tailor directly
-        const serviceTailorId = resolveTailorId(service.tailor, service.tailorId, service) || location.state?.tailorId || null;
-        const serviceTailorName = resolveTailorName(service.tailor, service.tailorName, service) || location.state?.tailorName || 'Tailor Partner';
+    const handleAction = () => {
+        if (isGrouped) {
+            onSelectTailor?.(service);
+        } else {
+            // Specific single tailor service
+            const serviceTailorId = resolveTailorId(service.tailor, service.tailorId, service) || location.state?.tailorId || null;
+            const serviceTailorName = resolveTailorName(service.tailor, service.tailorName, service) || location.state?.tailorName || 'Tailor Partner';
 
-        navigate(`/user/services/${service._id}`, {
-            state: {
-                ...location.state,
-                tailorId: serviceTailorId,
-                tailorName: serviceTailorName,
-            },
-        });
+            navigate(`/user/services/${service._id}`, {
+                state: {
+                    ...location.state,
+                    tailorId: serviceTailorId,
+                    tailorName: serviceTailorName,
+                },
+            });
+        }
     };
+
+    const tailorsCount = service.tailors?.length || 0;
+    const priceDisplay = isGrouped
+        ? (service.minPrice === service.maxPrice || !service.maxPrice
+            ? `₹${service.minPrice}`
+            : `₹${service.minPrice} - ₹${service.maxPrice}`)
+        : `₹${service.basePrice || service.price || 0}`;
 
     return (
         <>
         <div
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-row sm:flex-col h-full"
+            onClick={handleAction}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md hover:border-primary/30 transition-all duration-300 flex flex-row sm:flex-col h-full cursor-pointer"
         >
             <div className="relative w-2/5 sm:w-full aspect-[4/5] sm:aspect-[4/3] overflow-hidden bg-gray-100 shrink-0">
                 <img
@@ -40,46 +51,76 @@ const ServiceCard = ({ service }) => {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x500/e6e8f0/843d9b?text=Service'; }}
                 />
-                <button className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10" onClick={(e) => e.stopPropagation()}>
+                <button
+                    className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm text-gray-400 hover:text-red-500 transition-colors z-10"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                >
                     <Heart size={14} />
                 </button>
-                <div className="absolute bottom-2 left-2 bg-white px-2 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1 z-10">
+                <div className="absolute bottom-2 left-2 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1 z-10">
                     <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                    {service.rating || '4.8'}
+                    {service.rating ? Number(service.rating).toFixed(1) : '4.8'}
                 </div>
+
+                {isGrouped && tailorsCount > 0 && (
+                    <div className="absolute top-2 left-2 bg-black/65 backdrop-blur-md text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 z-10 shadow-sm">
+                        <Users size={10} />
+                        <span>{tailorsCount} {tailorsCount === 1 ? 'Tailor' : 'Tailors'}</span>
+                    </div>
+                )}
             </div>
 
             {/* Content Section */}
-            <div className="p-3 sm:p-4 flex flex-col flex-1 min-w-0">
+            <div className="p-3 sm:p-4 flex flex-col flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                 {isPopular && (
                     <span className="self-start px-2 py-0.5 bg-primary text-white text-[8px] sm:text-[10px] uppercase font-bold tracking-wider rounded mb-1.5">
                         POPULAR
                     </span>
                 )}
                 <div className="flex justify-between items-start mb-0.5 gap-2">
-                    <h3 className="font-bold text-gray-900 text-sm sm:text-base group-hover:text-primary transition-colors line-clamp-1 flex-1">{service.title}</h3>
-                    <span className="font-black text-primary text-sm sm:text-base shrink-0">₹{service.basePrice}</span>
+                    <h3
+                        onClick={handleAction}
+                        className="font-bold text-gray-900 text-sm sm:text-base group-hover:text-primary transition-colors line-clamp-1 flex-1 cursor-pointer"
+                    >
+                        {service.title}
+                    </h3>
+                    <div className="text-right shrink-0">
+                        {isGrouped && service.minPrice !== service.maxPrice && (
+                            <span className="text-[8px] text-gray-400 font-bold block uppercase leading-none">Starts from</span>
+                        )}
+                        <span className="font-black text-primary text-sm sm:text-base">{priceDisplay}</span>
+                    </div>
                 </div>
 
                 <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 flex-1">{service.description}</p>
 
-                <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-gray-500 mb-2">
+                <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-gray-500 mb-2 flex-wrap">
                     <div className="flex items-center gap-1">
                         <Clock size={10} />
                         <span>Est. {service.deliveryTime || '2-4 Days'}</span>
                     </div>
-                    <span className="text-green-600 font-bold flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded">
-                        <CheckCircle2 size={10} /> Pickup Available
-                    </span>
+                    {isGrouped ? (
+                        <span className="text-primary font-bold flex items-center gap-1 bg-primary/10 px-1.5 py-0.5 rounded">
+                            <Users size={10} /> {tailorsCount} {tailorsCount === 1 ? 'Tailor' : 'Tailors'}
+                        </span>
+                    ) : (
+                        <span className="text-green-600 font-bold flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded">
+                            <CheckCircle2 size={10} /> Pickup Available
+                        </span>
+                    )}
                 </div>
 
-                <div className="flex gap-1 flex-wrap mb-3">
-                    {service.tags?.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-medium rounded-full">
-                            {tag}
-                        </span>
-                    ))}
-                </div>
+                {service.tags && service.tags.length > 0 && (
+                    <div className="flex gap-1 flex-wrap mb-3">
+                        {service.tags.slice(0, 3).map(tag => (
+                            <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-medium rounded-full">
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
 
                 <div className="flex gap-2 mt-auto">
                     <button
@@ -91,10 +132,14 @@ const ServiceCard = ({ service }) => {
                     </button>
                     <button
                         type="button"
-                        onClick={handleBookNow}
-                        className="flex-[1.5] py-1.5 sm:py-2 px-3 rounded-xl bg-primary text-white text-[10px] sm:text-xs font-bold hover:bg-primary-dark shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        onClick={handleAction}
+                        className="flex-[1.5] py-1.5 sm:py-2 px-3 rounded-xl bg-primary text-white text-[10px] sm:text-xs font-bold hover:bg-primary-dark shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                     >
-                        Book Now <ArrowRight size={12} />
+                        {isGrouped ? (
+                            <>Select Tailor <ArrowRight size={12} /></>
+                        ) : (
+                            <>Book Now <ArrowRight size={12} /></>
+                        )}
                     </button>
                 </div>
             </div>
@@ -104,7 +149,7 @@ const ServiceCard = ({ service }) => {
             service={service}
             isOpen={showDetails}
             onClose={() => setShowDetails(false)}
-            onBookNow={handleBookNow}
+            onBookNow={handleAction}
         />
         </>
     );
@@ -200,6 +245,10 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
     const [tailorName, setTailorName] = useState(effectiveTailorName);
     const [sortBy, setSortBy] = useState('Popular');
     const [isSortOpen, setIsSortOpen] = useState(false);
+
+    // Tailor selection modal state
+    const [selectedServiceForTailor, setSelectedServiceForTailor] = useState(null);
+    const [isTailorModalOpen, setIsTailorModalOpen] = useState(false);
     
     const sortOptions = ['Popular', 'Price: Low to High', 'Price: High to Low'];
 
@@ -279,8 +328,183 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         fetchServices();
     }, [activeTailorId, effectiveTailorId, isMultiItemLock]);
 
+    // Canonical normalizer to ensure services are grouped strictly once and never duplicate
+    const getServiceCanonicalInfo = (s) => {
+        const rawTitle = (s.title || '').trim();
+        const rawCat = (s.category?.name || (typeof s.category === 'string' ? s.category : '')).trim();
+        const titleLower = rawTitle.toLowerCase();
+        const catLower = rawCat.toLowerCase();
+
+        // Specific garment type matches so identical services across different categories never duplicate
+        if (titleLower.includes('shalwar') || catLower.includes('shalwar')) {
+            return {
+                key: 'canonical_suit_with_shalwar',
+                title: 'Suit with Shalwar',
+                gender: 'women',
+                defaultDelivery: '2-4 Days',
+                description: 'Custom tailored salwar suit with perfect fit & stitching.',
+            };
+        }
+        if (titleLower.includes('pant') || catLower.includes('pant')) {
+            return {
+                key: 'canonical_suit_with_pants',
+                title: 'Suit with Pants',
+                gender: 'women',
+                defaultDelivery: '2-4 Days',
+                description: 'Tailored suit paired with comfortable straight or cigarette pants.',
+            };
+        }
+        if (titleLower.includes('kurti') || catLower.includes('kurti')) {
+            return {
+                key: 'canonical_kurti',
+                title: 'Kurti',
+                gender: 'women',
+                defaultDelivery: '2-3 Days',
+                description: 'Designer daily & festive kurti stitching with modern cuts.',
+            };
+        }
+        if (titleLower.includes('kurta') || catLower.includes('kurta')) {
+            return {
+                key: 'canonical_kurta',
+                title: 'Kurta',
+                gender: 'men',
+                defaultDelivery: '2-4 Days',
+                description: 'Classic & modern fit custom stitched kurta.',
+            };
+        }
+        if (titleLower.includes('pajama') || catLower.includes('pajama')) {
+            return {
+                key: 'canonical_pajama',
+                title: 'Pajama',
+                gender: 'all',
+                defaultDelivery: '2-3 Days',
+                description: 'Custom stitched comfort pajama & churidar.',
+            };
+        }
+        if (titleLower.includes('blouse') || catLower.includes('blouse')) {
+            return {
+                key: 'canonical_blouse',
+                title: 'Blouse',
+                gender: 'women',
+                defaultDelivery: '2-4 Days',
+                description: 'Expert saree & lehenga blouse stitching with customized necklines.',
+            };
+        }
+        if (titleLower.includes('lehenga') || catLower.includes('lehenga')) {
+            return {
+                key: 'canonical_bridal_lehenga',
+                title: 'Bridal Lehenga',
+                gender: 'bridal',
+                defaultDelivery: '5-7 Days',
+                description: 'Luxurious bridal & festive lehenga choli custom stitching.',
+            };
+        }
+        if (titleLower.includes('suit') || catLower.includes('suit')) {
+            return {
+                key: 'canonical_simple_suit',
+                title: 'Simple Suit',
+                gender: 'all',
+                defaultDelivery: '3-5 Days',
+                description: 'Daily wear tailored suit with precision measurements.',
+            };
+        }
+
+        // Fallback: group by category._id if available, or normalized title
+        if (s.category?._id) {
+            return {
+                key: `cat_${s.category._id}`,
+                title: rawCat || rawTitle,
+                gender: s.category.gender || 'all',
+                defaultDelivery: '2-4 Days',
+                description: s.category.description || s.description,
+            };
+        }
+
+        return {
+            key: `title_${titleLower || 'other'}`,
+            title: rawTitle || rawCat || 'Custom Tailoring',
+            gender: 'all',
+            defaultDelivery: '2-4 Days',
+            description: s.description || 'Custom tailoring service.',
+        };
+    };
+
+    // Group services into unique service items when browsing all tailors
+    const groupedServices = useMemo(() => {
+        // If viewing services of a specific tailor, do NOT group
+        if (activeTailorId) return services;
+
+        const map = new Map();
+        for (const s of services) {
+            const canonical = getServiceCanonicalInfo(s);
+            const groupKey = canonical.key;
+
+            if (!map.has(groupKey)) {
+                map.set(groupKey, {
+                    _id: s._id,
+                    key: groupKey,
+                    categoryId: s.category?._id || null,
+                    title: canonical.title,
+                    description: canonical.description || s.category?.description || s.description,
+                    image: s.category?.image && s.category.image !== 'no-photo.jpg' && !s.category.image.includes('placehold') ? s.category.image : s.image,
+                    tags: Array.from(new Set([...(s.tags || []), ...(s.category?.tags || [])])),
+                    category: s.category,
+                    gender: canonical.gender || s.category?.gender || 'all',
+                    minPrice: s.basePrice || s.price || 0,
+                    maxPrice: s.basePrice || s.price || 0,
+                    deliveryTime: s.deliveryTime || canonical.defaultDelivery,
+                    rating: s.rating || 4.8,
+                    reviewsCount: s.reviewsCount || 0,
+                    tailors: [],
+                    services: [],
+                });
+            }
+
+            const group = map.get(groupKey);
+            const price = s.basePrice || s.price || 0;
+            if (group.minPrice === 0 || price < group.minPrice) group.minPrice = price;
+            if (price > group.maxPrice) group.maxPrice = price;
+
+            // Prefer valid real image over placeholder
+            if ((!group.image || group.image.includes('placehold') || group.image === 'no-photo.jpg') && s.image && !s.image.includes('placehold') && s.image !== 'no-photo.jpg') {
+                group.image = s.image;
+            }
+
+            const tailorId = s.tailor?._id || s.tailor;
+            if (tailorId) {
+                const tidStr = String(tailorId);
+                const existingIdx = group.tailors.findIndex(t => String(t.tailorId) === tidStr);
+                const tailorEntry = {
+                    serviceId: s._id,
+                    tailorId: tidStr,
+                    tailorName: s.tailor?.shopName || s.tailor?.user?.name || s.tailorName || 'Tailor Partner',
+                    tailorImage: s.tailor?.user?.profileImage || s.tailor?.shopImage || '',
+                    rating: s.tailor?.rating || s.rating || 4.8,
+                    reviewsCount: s.tailor?.reviewsCount || s.reviewsCount || 0,
+                    basePrice: price,
+                    deliveryTime: s.deliveryTime || canonical.defaultDelivery,
+                    isPickupAvailable: s.isPickupAvailable !== false,
+                    location: s.tailor?.location,
+                    rawService: s,
+                };
+
+                if (existingIdx >= 0) {
+                    if (price < group.tailors[existingIdx].basePrice) {
+                        group.tailors[existingIdx] = tailorEntry;
+                    }
+                } else {
+                    group.tailors.push(tailorEntry);
+                }
+            }
+
+            group.services.push(s);
+        }
+
+        return Array.from(map.values());
+    }, [services, activeTailorId]);
+
     const filteredServices = useMemo(() => {
-        let result = services;
+        let result = groupedServices;
 
         // Hard client filter: multi-item order → only first item's tailor
         const lockId = isMultiItemLock ? (activeTailorId || effectiveTailorId) : null;
@@ -299,6 +523,7 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
         };
 
         const getCategoryGender = (s) => {
+            if (s.gender) return s.gender.toLowerCase();
             if (!s.category || typeof s.category === 'string') return 'all';
             return (s.category.gender || 'all').toLowerCase();
         };
@@ -319,9 +544,9 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             } else if (activeFilter === 'Popular') {
                 result = result.filter(s => (s.rating || 0) >= 4.5);
             } else if (activeFilter === 'Under ₹500') {
-                result = result.filter(s => (s.basePrice || s.price || 0) < 500);
+                result = result.filter(s => (s.minPrice || s.basePrice || s.price || 0) < 500);
             } else if (activeFilter === 'Express Delivery') {
-                result = result.filter(s => (s.deliveryTime || '').includes('2-4'));
+                result = result.filter(s => (s.deliveryTime || '').includes('2-4') || (s.deliveryTime || '').includes('1-2'));
             } else {
                 // Dynamic Admin Category or keyword match
                 const filterLower = activeFilter.toLowerCase();
@@ -340,21 +565,22 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             result = result.filter(s => 
                 getTitleStr(s).includes(query) || 
                 getDescStr(s).includes(query) ||
-                (s.tags || []).some(tag => (tag || '').toLowerCase().includes(query))
+                (s.tags || []).some(tag => (tag || '').toLowerCase().includes(query)) ||
+                (s.tailors || []).some(t => (t.tailorName || '').toLowerCase().includes(query))
             );
         }
 
         // Apply Sort
         if (sortBy === 'Price: Low to High') {
-            result = [...result].sort((a, b) => (a.basePrice || a.price || 0) - (b.basePrice || b.price || 0));
+            result = [...result].sort((a, b) => (a.minPrice || a.basePrice || a.price || 0) - (b.minPrice || b.basePrice || b.price || 0));
         } else if (sortBy === 'Price: High to Low') {
-            result = [...result].sort((a, b) => (b.basePrice || b.price || 0) - (a.basePrice || a.price || 0));
+            result = [...result].sort((a, b) => (b.maxPrice || b.basePrice || b.price || 0) - (a.maxPrice || a.basePrice || a.price || 0));
         } else if (sortBy === 'Popular') {
             result = [...result].sort((a, b) => (b.rating || 0) - (a.rating || 0));
         }
 
         return result;
-    }, [services, activeFilter, searchQuery, sortBy, isMultiItemLock, activeTailorId, effectiveTailorId]);
+    }, [groupedServices, activeFilter, searchQuery, sortBy, isMultiItemLock, activeTailorId, effectiveTailorId]);
 
     if (isLoading) {
         return (
@@ -467,6 +693,7 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
                     </div>
                 )}
             </div>
+
             {filteredServices.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                     <p className="text-gray-400 font-bold text-sm">No services found.</p>
@@ -474,10 +701,29 @@ const ServicesGrid = ({ searchQuery = '', activeFilter = 'All' }) => {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {filteredServices.map(service => (
-                        <ServiceCard key={service._id} service={service} />
+                        <ServiceCard
+                            key={service.key || service._id}
+                            service={service}
+                            isGrouped={!activeTailorId}
+                            onSelectTailor={(srv) => {
+                                setSelectedServiceForTailor(srv);
+                                setIsTailorModalOpen(true);
+                            }}
+                        />
                     ))}
                 </div>
             )}
+
+            {/* Select Tailor Modal */}
+            <SelectTailorModal
+                isOpen={isTailorModalOpen}
+                onClose={() => {
+                    setIsTailorModalOpen(false);
+                    setSelectedServiceForTailor(null);
+                }}
+                serviceGroup={selectedServiceForTailor}
+                userLocation={{ lat, lng }}
+            />
         </div>
     );
 };
