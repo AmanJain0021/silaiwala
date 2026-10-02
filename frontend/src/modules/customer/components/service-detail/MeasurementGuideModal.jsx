@@ -20,10 +20,10 @@ import {
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import useBrandingStore from '../../../../store/brandingStore';
+import { openAdminWhatsApp } from '../../../../utils/whatsapp';
 
 const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBookHomeVisit }) => {
-    const { appName, supportPhone } = useBrandingStore();
-    const cleanPhone = (supportPhone || '').replace(/[^+\d]/g, '').replace('+', '');
+    const { appName } = useBrandingStore();
     const [activeTab, setActiveTab] = useState('diagram'); // 'diagram' | 'photo' | 'tips'
     const [viewMode, setViewMode] = useState('front'); // 'front' | 'back'
     const [isVideoOpen, setIsVideoOpen] = useState(false);
@@ -565,9 +565,7 @@ const MeasurementGuideModal = ({ isOpen, onClose, onSelectAddMeasurements, onBoo
 
                                     <button
                                         onClick={() => {
-                                            const text = encodeURIComponent(`Hi ${appName || 'SewZella'} Support, I need help with body measurements`);
-                                            const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
-                                            window.open(url, '_blank');
+                                            openAdminWhatsApp(`Hi ${appName || 'SewZella'} Admin, I need help with body measurements.`);
                                         }}
                                         className="p-3.5 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50/70 active:scale-95 transition-all text-left flex items-center sm:flex-col sm:items-start gap-2.5 cursor-pointer shadow-2xs group"
                                     >

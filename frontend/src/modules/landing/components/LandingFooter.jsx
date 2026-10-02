@@ -5,7 +5,7 @@ import useBrandingStore from '../../../store/brandingStore';
 
 const LandingFooter = () => {
   const { appName, logos, supportEmail, supportPhone } = useBrandingStore();
-  const phoneDisplay = supportPhone || '+91 1800 123 4567';
+  const phoneDisplay = supportPhone || '+91 9429692921';
   const emailDisplay = supportEmail || 'support@silaiwala.com';
   const cleanPhone = phoneDisplay.replace(/[^+\d]/g, '');
 

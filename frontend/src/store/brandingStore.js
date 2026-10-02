@@ -5,7 +5,7 @@ import deliveryLogoDefault from '../assets/deliveryLogo.png';
 export const BRANDING_DEFAULTS = {
     appName: 'SewZella',
     supportEmail: 'support@silaiwala.com',
-    supportPhone: '+91 1800 123 4567',
+    supportPhone: '+91 9429692921',
     emergencyPhone: '+91 9999999999',
     logos: {
         customer: '/sewzella_logo.jpeg',

@@ -629,7 +629,7 @@ const DeliveryProfile = () => {
                                 {/* Direct Helpline & Email Channels */}
                                 <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <a 
-                                        href={`tel:${(supportPhone || '+91 1800 123 4567').replace(/[^+\d]/g, '')}`}
+                                        href={`tel:${(supportPhone || '+91 9429692921').replace(/[^+\d]/g, '')}`}
                                         className="p-3 bg-purple-50 hover:bg-purple-100/70 border border-purple-100 rounded-xl flex items-center gap-2.5 transition-colors group"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-[#843D9B] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -637,7 +637,7 @@ const DeliveryProfile = () => {
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Helpline</p>
-                                            <p className="text-xs font-black text-slate-800 truncate font-mono">{supportPhone || '+91 1800 123 4567'}</p>
+                                            <p className="text-xs font-black text-slate-800 truncate font-mono">{supportPhone || '+91 9429692921'}</p>
                                         </div>
                                     </a>
                                     <a 

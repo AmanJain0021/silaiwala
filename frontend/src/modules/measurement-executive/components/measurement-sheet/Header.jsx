@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MessageSquare, MoreVertical, PhoneCall, HelpCircle, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useBrandingStore from '../../../../store/brandingStore';
+import { openAdminWhatsApp } from '../../../../utils/whatsapp';
 
 const Header = ({ customerPhone, onCancelTask }) => {
     const navigate = useNavigate();
@@ -89,7 +90,7 @@ const Header = ({ customerPhone, onCancelTask }) => {
                                 type="button"
                                 onClick={() => {
                                     setMenuOpen(false);
-                                    window.open('https://wa.me/919999999999', '_blank');
+                                    openAdminWhatsApp('Hi SewZella Admin, I need help with a measurement request.');
                                 }}
                                 className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-purple-50 hover:text-[#5B21B6] transition-colors cursor-pointer"
                             >

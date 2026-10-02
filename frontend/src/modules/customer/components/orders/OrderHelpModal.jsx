@@ -5,7 +5,8 @@ import {
     Headphones, 
     Mail, 
     Phone, 
-    MessageSquare, 
+    MessageSquare,
+    MessageCircle,
     Copy, 
     Check, 
     Clock, 
@@ -13,6 +14,7 @@ import {
     AlertCircle,
     ChevronRight
 } from 'lucide-react';
+import { openAdminWhatsApp } from '../../../../utils/whatsapp';
 
 const OrderHelpModal = ({ isOpen, onClose, order, settings }) => {
     const navigate = useNavigate();
@@ -21,7 +23,7 @@ const OrderHelpModal = ({ isOpen, onClose, order, settings }) => {
     if (!isOpen) return null;
 
     const supportEmail = settings?.general?.supportEmail || 'support@silaiwala.com';
-    const supportPhone = settings?.general?.supportPhone || '+91 1800 123 4567';
+    const supportPhone = settings?.general?.supportPhone || '+91 9429692921';
     const emergencyPhone = settings?.general?.emergencyPhone;
     const orderIdDisplay = order?.orderId || order?._id || 'Order';
 
@@ -58,6 +60,15 @@ const OrderHelpModal = ({ isOpen, onClose, order, settings }) => {
         if (!phoneNumber) return;
         const cleanNumber = phoneNumber.replace(/[^+\d]/g, '');
         window.location.href = `tel:${cleanNumber}`;
+    };
+
+    const handleWhatsAppClick = () => {
+        const bodyLines = [
+            `Hi SewZella Admin, I need help with my order.`,
+            `Order ID: ${orderIdDisplay}`,
+            `Order Status: ${order?.status || 'In Progress'}`
+        ].join('\n');
+        openAdminWhatsApp(bodyLines);
     };
 
     return (
@@ -129,11 +140,19 @@ const OrderHelpModal = ({ isOpen, onClose, order, settings }) => {
 
                             <div className="mt-3 pt-3 border-t border-purple-100 flex items-center gap-2">
                                 <button
-                                    onClick={() => handleCallClick(supportPhone)}
-                                    className="flex-1 py-2.5 px-4 bg-[#843D9B] hover:bg-[#722f87] active:scale-[0.98] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                                    onClick={handleWhatsAppClick}
+                                    className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
                                 >
-                                    <PhoneCall size={14} />
-                                    <span>Call Support</span>
+                                    <MessageCircle size={14} />
+                                    <span>WhatsApp Admin</span>
+                                </button>
+                                <button
+                                    onClick={() => handleCallClick(supportPhone)}
+                                    className="py-2.5 px-3.5 bg-white border border-purple-200 hover:bg-purple-100/50 active:scale-95 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shrink-0"
+                                    title="Call Support"
+                                >
+                                    <PhoneCall size={14} className="text-gray-500" />
+                                    <span>Call</span>
                                 </button>
                                 <button
                                     onClick={() => handleCopy(supportPhone, 'phone')}

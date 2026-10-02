@@ -8,7 +8,8 @@ import {
     Copy, 
     Check, 
     Clock, 
-    PhoneCall, 
+    PhoneCall,
+    MessageCircle,
     ShieldCheck, 
     Sparkles, 
     Search, 
@@ -26,6 +27,7 @@ import BottomNav from '../components/BottomNav';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
 import useBrandingStore from '../../../store/brandingStore';
+import { openAdminWhatsApp } from '../../../utils/whatsapp';
 
 // Static categorized FAQs as fallback & instant render
 const FALLBACK_FAQS = [
@@ -264,7 +266,7 @@ const Support = () => {
 
     // Support Contact Credentials
     const supportEmail = settings?.general?.supportEmail || 'support@sewzella.com';
-    const supportPhone = settings?.general?.supportPhone || '+91 98765 43210';
+    const supportPhone = settings?.general?.supportPhone || '+91 9429692921';
     const cleanPhone = supportPhone.replace(/[^+\d]/g, '');
 
     const handleCopy = (text, fieldName) => {
@@ -292,6 +294,10 @@ const Support = () => {
     const handleCallClick = () => {
         if (!cleanPhone) return;
         window.location.href = `tel:${cleanPhone}`;
+    };
+
+    const handleWhatsAppClick = () => {
+        openAdminWhatsApp(`Hi ${appName || 'SewZella'} Admin, I need help with your service.`);
     };
 
     // Filter FAQs by Category and Search Query
@@ -403,11 +409,20 @@ const Support = () => {
                         <div className="mt-3 pt-3 border-t border-purple-100 flex items-center gap-2">
                             <button
                                 type="button"
-                                onClick={handleCallClick}
-                                className="flex-1 py-2.5 px-4 bg-[#843D9B] hover:bg-[#722f87] active:scale-[0.98] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                                onClick={handleWhatsAppClick}
+                                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                             >
-                                <PhoneCall size={14} />
-                                <span>Call Support</span>
+                                <MessageCircle size={14} />
+                                <span>WhatsApp Admin</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCallClick}
+                                className="py-2.5 px-3.5 bg-white border border-purple-200 hover:bg-purple-100/50 active:scale-95 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+                                title="Call Support"
+                            >
+                                <PhoneCall size={14} className="text-gray-500" />
+                                <span>Call</span>
                             </button>
                             <button
                                 type="button"
