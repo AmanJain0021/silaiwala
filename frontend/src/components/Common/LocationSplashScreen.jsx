@@ -51,21 +51,10 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                     let address = "Current Location";
 
                     try {
-                        if (isLoaded && window.google) {
-                            const geocoder = new window.google.maps.Geocoder();
-                            const response = await geocoder.geocode({ location: { lat: latitude, lng: longitude } });
-                            if (response.results && response.results[0]) {
-                                address = response.results[0].formatted_address;
-                            }
-                        } else {
-                            const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-                            if (apiKey) {
-                                const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`);
-                                const result = await res.json();
-                                if (result.status === 'OK' && result.results[0]) {
-                                    address = result.results[0].formatted_address;
-                                }
-                            }
+                        const { reverseGeocode } = await import('../../utils/reverseGeocode');
+                        const geoResult = await reverseGeocode(latitude, longitude);
+                        if (geoResult?.formattedAddress) {
+                            address = geoResult.formattedAddress;
                         }
                     } catch (e) {
                         console.log("Reverse geocoding failed, using placeholder", e);

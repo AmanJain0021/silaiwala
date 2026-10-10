@@ -58,7 +58,23 @@ export const useUnifiedLocation = ({
                 throw new Error("No address found from Backend Geocoding API.");
             }
         } catch (err) {
-            console.error("Google Geocoding failed:", err);
+            console.error("Backend geocoding failed, trying fallback reverse geocoding:", err);
+            try {
+                const { reverseGeocode } = await import('../../utils/reverseGeocode');
+                const geo = await reverseGeocode(latitude, longitude);
+                if (geo && geo.formattedAddress) {
+                    return {
+                        address: geo.formattedAddress,
+                        city: geo.city,
+                        state: geo.state,
+                        pincode: geo.pincode,
+                        street: geo.area,
+                        raw: geo
+                    };
+                }
+            } catch (fallbackErr) {
+                console.error("Fallback reverse geocoding failed:", fallbackErr);
+            }
             return null;
         }
     };

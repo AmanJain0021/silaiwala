@@ -4,10 +4,11 @@ import { GoogleMap, MarkerF, Autocomplete, useJsApiLoader } from '@react-google-
 import { MapPin, Navigation, Search, X, ChevronLeft, Map, Home, Briefcase, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useLocationStore from '../../../store/locationStore';
+import { reverseGeocode } from '../../../utils/reverseGeocode';
 
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry', 'drawing'];
 const mapContainerStyle = { width: '100%', height: '100%' };
-const defaultCenter = { lat: 28.6139, lng: 77.2090 }; // New Delhi
+const DEFAULT_COORDS = { lat: 34.0837, lng: 74.7973 }; // Srinagar / Kashmir default
 
 const LocationModal = ({ isOpen, onClose }) => {
     const { isLoaded, loadError } = useJsApiLoader({
@@ -18,14 +19,16 @@ const LocationModal = ({ isOpen, onClose }) => {
 
     const setStoreLocation = useLocationStore((state) => state.setLocation);
     const storeAddress = useLocationStore((state) => state.address);
+    const storeCoordinates = useLocationStore((state) => state.coordinates);
     
     // View state: 'list' | 'pre-location' | 'map' | 'form'
     const [view, setView] = useState('list');
     
     // Data states
-    const [mapCenter, setMapCenter] = useState(defaultCenter);
-    const [markerPosition, setMarkerPosition] = useState(defaultCenter);
-    const [formattedAddress, setFormattedAddress] = useState('');
+    const initialCoords = (storeCoordinates?.lat && storeCoordinates?.lng) ? storeCoordinates : DEFAULT_COORDS;
+    const [mapCenter, setMapCenter] = useState(initialCoords);
+    const [markerPosition, setMarkerPosition] = useState(initialCoords);
+    const [formattedAddress, setFormattedAddress] = useState(storeAddress || '');
     const [addressDetails, setAddressDetails] = useState({
         flat: '',
         area: '',
@@ -45,8 +48,18 @@ const LocationModal = ({ isOpen, onClose }) => {
     useEffect(() => {
         if (isOpen) {
             setView('list');
+            const coords = (storeCoordinates?.lat && storeCoordinates?.lng) ? storeCoordinates : DEFAULT_COORDS;
+            setMapCenter(coords);
+            setMarkerPosition(coords);
+            if (storeAddress) {
+                setFormattedAddress(storeAddress);
+                setAddressDetails(prev => ({
+                    ...prev,
+                    area: storeAddress.split(',')[0] || ''
+                }));
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, storeCoordinates, storeAddress]);
 
     const handleClose = () => {
         onClose();
@@ -56,28 +69,15 @@ const LocationModal = ({ isOpen, onClose }) => {
     const getAddressFromCoords = async (lat, lng) => {
         setIsGeocoding(true);
         try {
-            const geocoder = new window.google.maps.Geocoder();
-            const response = await geocoder.geocode({ location: { lat, lng } });
-            
-            if (response.results[0]) {
-                const result = response.results[0];
-                setFormattedAddress(result.formatted_address);
-                
-                let city = '', state = '', pincode = '', locality = '';
-                
-                result.address_components.forEach(comp => {
-                    if (comp.types.includes('locality')) city = comp.long_name;
-                    if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
-                    if (comp.types.includes('postal_code')) pincode = comp.long_name;
-                    if (comp.types.includes('sublocality_level_1') || comp.types.includes('route')) locality = comp.long_name;
-                });
-                
+            const result = await reverseGeocode(lat, lng);
+            if (result && (result.formattedAddress || result.area)) {
+                setFormattedAddress(result.formattedAddress);
                 setAddressDetails(prev => ({
                     ...prev,
-                    area: locality || result.formatted_address.split(',')[0],
-                    city,
-                    state,
-                    pincode
+                    area: result.area || result.formattedAddress.split(',')[0],
+                    city: result.city || prev.city,
+                    state: result.state || prev.state,
+                    pincode: result.pincode || prev.pincode
                 }));
             }
         } catch (error) {
@@ -137,7 +137,14 @@ const LocationModal = ({ isOpen, onClose }) => {
         getAddressFromCoords(newLat, newLng);
     };
 
-    const onPlaceChanged = () => {
+    const openMapView = () => {
+        setView('map');
+        if (!formattedAddress || addressDetails.area === '') {
+            getAddressFromCoords(mapCenter.lat, mapCenter.lng);
+        }
+    };
+
+    const onPlaceChanged = async () => {
         if (autocompleteRef.current !== null) {
             const place = autocompleteRef.current.getPlace();
             if (place.geometry && place.geometry.location) {
@@ -147,29 +154,32 @@ const LocationModal = ({ isOpen, onClose }) => {
                 setMapCenter(newPos);
                 setMarkerPosition(newPos);
                 
-                setFormattedAddress(place.formatted_address);
-                
-                let city = '', state = '', pincode = '', locality = '';
-                place.address_components?.forEach(comp => {
-                    if (comp.types.includes('locality')) city = comp.long_name;
-                    if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
-                    if (comp.types.includes('postal_code')) pincode = comp.long_name;
-                    if (comp.types.includes('sublocality_level_1') || comp.types.includes('route')) locality = comp.long_name;
-                });
-                
-                setAddressDetails(prev => ({
-                    ...prev,
-                    area: locality || place.name,
-                    city,
-                    state,
-                    pincode
-                }));
+                if (place.formatted_address) {
+                    setFormattedAddress(place.formatted_address);
+                    let city = '', state = '', pincode = '', locality = '';
+                    place.address_components?.forEach(comp => {
+                        if (comp.types.includes('locality')) city = comp.long_name;
+                        if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
+                        if (comp.types.includes('postal_code')) pincode = comp.long_name;
+                        if (comp.types.includes('sublocality_level_1') || comp.types.includes('route')) locality = comp.long_name;
+                    });
+                    
+                    setAddressDetails(prev => ({
+                        ...prev,
+                        area: locality || place.name || place.formatted_address.split(',')[0],
+                        city,
+                        state,
+                        pincode
+                    }));
+                } else {
+                    getAddressFromCoords(newLat, newLng);
+                }
             }
         }
     };
 
     const handleConfirmLocation = () => {
-        if (!formattedAddress) {
+        if (!formattedAddress && !addressDetails.area) {
             toast.error('Please select a valid location');
             return;
         }
@@ -182,7 +192,7 @@ const LocationModal = ({ isOpen, onClose }) => {
             return;
         }
         
-        const finalAddress = `${addressDetails.flat}, ${formattedAddress}`;
+        const finalAddress = `${addressDetails.flat}, ${formattedAddress || addressDetails.area}`;
         
         // Save to store
         setStoreLocation(finalAddress, markerPosition.lat, markerPosition.lng);
@@ -254,7 +264,7 @@ const LocationModal = ({ isOpen, onClose }) => {
                                     </button>
 
                                     <button 
-                                        onClick={() => setView('map')}
+                                        onClick={openMapView}
                                         className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 border border-gray-200 rounded-2xl transition-all group text-left shadow-sm hover:shadow-md"
                                     >
                                         <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 shadow-sm group-hover:scale-110 transition-transform border border-gray-100">
@@ -407,7 +417,7 @@ const LocationModal = ({ isOpen, onClose }) => {
                                     
                                     <button 
                                         onClick={handleConfirmLocation}
-                                        disabled={!formattedAddress || isGeocoding}
+                                        disabled={(!formattedAddress && !addressDetails.area) || isGeocoding}
                                         className="w-full py-3.5 bg-[#843D9B] text-white text-xs font-black rounded-xl hover:bg-[#6B2F7E] shadow-lg shadow-indigo-900/20 transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Confirm Location
