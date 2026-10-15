@@ -28,6 +28,7 @@ import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
 import useBrandingStore from '../../../store/brandingStore';
 import { openAdminWhatsApp } from '../../../utils/whatsapp';
+import { sanitizeCmsHtml } from '../../../utils/formatHtml';
 
 // Static categorized FAQs as fallback & instant render
 const FALLBACK_FAQS = [
@@ -169,8 +170,8 @@ const FAQAccordion = ({ item, isExpanded, onToggle, searchQuery }) => {
             {isExpanded && (
                 <div className="px-5 pb-5 pt-3 text-xs sm:text-sm text-gray-600 leading-relaxed border-t border-purple-50/80 bg-white animate-in fade-in slide-in-from-top-2 duration-200">
                     <div 
-                        className="space-y-2.5 break-words font-medium text-gray-700" 
-                        dangerouslySetInnerHTML={{ __html: item.content }} 
+                        className="space-y-2.5 break-words font-medium text-gray-700 [overflow-wrap:anywhere]" 
+                        dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(item.content) }} 
                     />
 
                     {/* Feedback Prompt */}

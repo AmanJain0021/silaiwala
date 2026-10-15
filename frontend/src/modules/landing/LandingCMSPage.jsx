@@ -18,6 +18,7 @@ import {
 import api from '../../utils/api';
 import LandingNavbar from './components/LandingNavbar';
 import LandingFooter from './components/LandingFooter';
+import { sanitizeCmsHtml } from '../../utils/formatHtml';
 
 const DEFAULT_TERMS = {
   title: "Terms of Service",
@@ -195,20 +196,20 @@ const LandingCMSPage = ({ forcedSlug }) => {
         <div className="absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-purple-300/20 blur-3xl pointer-events-none" />
 
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-black uppercase tracking-widest text-purple-100 shadow-xs">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-semibold text-purple-100 shadow-xs">
             <Scale size={13} className="text-pink-300" />
             <span>Official Policy & Guidelines</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight font-['Outfit',sans-serif] text-white drop-shadow-xs">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">
             {content?.title || fallback?.title || 'Terms & Policy'}
           </h1>
 
-          <p className="text-xs sm:text-sm text-purple-100/90 font-medium max-w-lg mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-purple-100/90 font-normal max-w-lg mx-auto leading-relaxed">
             {fallback?.subtitle || 'Please review our guidelines, rights, and service agreements carefully.'}
           </p>
 
-          <div className="flex items-center justify-center gap-3 pt-2 text-[11px] font-semibold text-purple-200 flex-wrap">
+          <div className="flex items-center justify-center gap-2.5 pt-1 text-[11px] font-medium text-purple-200 flex-wrap">
             <span className="flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-full border border-white/10">
               <Clock size={12} className="text-pink-300" />
               Effective: {fallback?.effectiveDate || 'January 2026'}
@@ -229,13 +230,13 @@ const LandingCMSPage = ({ forcedSlug }) => {
       </section>
 
       {/* ═══ Quick Switcher Tabs (Terms vs Privacy) ═══ */}
-      <div className="max-w-md mx-auto -mt-6 px-4 relative z-20">
-        <div className="bg-white p-1.5 rounded-2xl shadow-xl shadow-purple-900/10 border border-purple-100 flex items-center gap-1">
+      <div className="max-w-md mx-auto -mt-6 px-4 relative z-20 w-full">
+        <div className="bg-white p-1.5 rounded-2xl shadow-lg shadow-purple-900/5 border border-purple-100 flex items-center gap-1">
           <Link
             to="/page/terms-of-service"
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center no-underline flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all text-center no-underline flex items-center justify-center gap-1.5 ${
               isTerms
-                ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/30'
+                ? 'bg-[#843D9B] text-white shadow-xs'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
@@ -245,9 +246,9 @@ const LandingCMSPage = ({ forcedSlug }) => {
 
           <Link
             to="/page/privacy-policy"
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center no-underline flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all text-center no-underline flex items-center justify-center gap-1.5 ${
               isPrivacy
-                ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/30'
+                ? 'bg-[#843D9B] text-white shadow-xs'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
@@ -258,26 +259,26 @@ const LandingCMSPage = ({ forcedSlug }) => {
       </div>
 
       {/* ═══ Main Content Body ═══ */}
-      <main className="flex-grow pt-8 pb-20 px-4 sm:px-6 md:px-12 max-w-4xl mx-auto w-full space-y-8">
+      <main className="flex-grow pt-8 pb-20 px-3.5 sm:px-6 md:px-8 max-w-4xl mx-auto w-full space-y-6 overflow-hidden">
         
         {/* Highlight Chips */}
         {fallback?.summaryChips && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {fallback.summaryChips.map((chip, idx) => {
               const Icon = chip.icon;
               return (
                 <div 
                   key={idx} 
-                  className="bg-white p-4 rounded-2xl border border-purple-100/80 shadow-xs hover:border-[#843D9B]/30 hover:shadow-md transition-all flex flex-col justify-between"
+                  className="bg-white p-4 rounded-2xl border border-purple-100/70 shadow-xs hover:border-[#843D9B]/30 hover:shadow-sm transition-all flex flex-col justify-between"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#843D9B] flex items-center justify-center mb-3">
-                    <Icon size={20} />
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-[#843D9B] flex items-center justify-center mb-2.5">
+                    <Icon size={18} />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-[13px] font-black text-gray-900 font-['Outfit',sans-serif] tracking-tight">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-gray-900 tracking-tight">
                       {chip.title}
                     </h4>
-                    <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">
+                    <p className="text-[11px] text-gray-500 font-normal mt-1 leading-snug">
                       {chip.desc}
                     </p>
                   </div>
@@ -293,54 +294,57 @@ const LandingCMSPage = ({ forcedSlug }) => {
             <div className="w-10 h-10 border-4 border-purple-100 border-t-[#843D9B] rounded-full animate-spin"></div>
           </div>
         ) : content ? (
-          <article className="bg-white p-6 sm:p-10 rounded-3xl shadow-sm border border-purple-100/80">
+          <article className="bg-white p-4 sm:p-7 md:p-9 rounded-2xl sm:rounded-3xl shadow-xs border border-purple-100/70 w-full max-w-full overflow-hidden">
             <div 
-              className="prose prose-purple max-w-none text-[14px] sm:text-[15px] leading-relaxed text-gray-700
-                         [&_h1]:text-2xl [&_h1]:font-black [&_h1]:font-['Outfit',sans-serif] [&_h1]:text-gray-900 [&_h1]:mb-4
-                         [&_h2]:text-xl [&_h2]:font-bold [&_h2]:font-['Outfit',sans-serif] [&_h2]:text-[#843D9B] [&_h2]:mt-8 [&_h2]:mb-3
-                         [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mt-6 [&_h3]:mb-2
-                         [&_p]:mb-4 [&_p]:leading-relaxed
-                         [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-5 [&_ul]:space-y-1.5
-                         [&_li]:text-gray-700
-                         [&_strong]:text-gray-900 [&_strong]:font-bold"
-              dangerouslySetInnerHTML={{ __html: content.content }}
+              className="w-full max-w-full overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word]
+                         text-[13.5px] sm:text-[14.5px] leading-[1.75] text-slate-700
+                         [&_h1]:text-xl sm:[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-slate-900 [&_h1]:tracking-tight [&_h1]:mb-3 [&_h1]:mt-6 [&_h1:first-child]:mt-0
+                         [&_h2]:text-base sm:[&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[#843D9B] [&_h2]:tracking-tight [&_h2]:mt-6 [&_h2]:mb-2.5
+                         [&_h3]:text-sm sm:[&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 [&_h3]:mt-5 [&_h3]:mb-2
+                         [&_p]:mb-3.5 [&_p]:leading-[1.75]
+                         [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_ul]:space-y-1.5 [&_ul]:marker:text-[#843D9B]
+                         [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4 [&_ol]:space-y-1.5 [&_ol]:marker:text-[#843D9B]
+                         [&_li]:text-slate-700 [&_li]:leading-relaxed
+                         [&_strong]:text-slate-900 [&_strong]:font-semibold"
+              dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(content.content) }}
             />
           </article>
         ) : fallback?.clauses ? (
-          <div className="space-y-4">
+          <div className="space-y-3.5 w-full max-w-full overflow-hidden">
             {fallback.clauses.map((clause, idx) => (
               <article 
                 key={idx}
-                className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-100/70 shadow-xs hover:shadow-md hover:border-purple-200 transition-all group"
+                className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-purple-100/60 shadow-xs hover:border-purple-200 transition-all group w-full max-w-full overflow-hidden"
               >
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-50 text-[#843D9B] font-black text-sm flex items-center justify-center shrink-0 border border-purple-100 font-['Outfit',sans-serif]">
+                <div className="flex items-start gap-3.5 mb-3.5">
+                  <div className="w-8 h-8 rounded-xl bg-purple-50 text-[#843D9B] font-bold text-xs flex items-center justify-center shrink-0 border border-purple-100">
                     {clause.num}
                   </div>
                   <div>
-                    <h2 className="text-lg sm:text-xl font-black text-gray-900 font-['Outfit',sans-serif] tracking-tight group-hover:text-[#843D9B] transition-colors">
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight group-hover:text-[#843D9B] transition-colors">
                       {clause.title}
                     </h2>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                       Clause Section
                     </span>
                   </div>
                 </div>
 
                 <div 
-                  className="text-[13px] sm:text-[14px] leading-relaxed text-gray-600 space-y-3.5 pl-0 sm:pl-14
+                  className="w-full max-w-full overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word]
+                             text-[13px] sm:text-[14px] leading-relaxed text-slate-600 space-y-3 pl-0 sm:pl-11
                              [&_p]:leading-relaxed
-                             [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ul]:my-3
-                             [&_li]:text-gray-700 [&_li]:leading-relaxed
-                             [&_strong]:text-gray-900 [&_strong]:font-bold"
-                  dangerouslySetInnerHTML={{ __html: clause.body }}
+                             [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_ul]:my-2.5 [&_ul]:marker:text-[#843D9B]
+                             [&_li]:text-slate-700 [&_li]:leading-relaxed
+                             [&_strong]:text-slate-900 [&_strong]:font-semibold"
+                  dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(clause.body) }}
                 />
               </article>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 p-8">
-            <h2 className="text-3xl font-black text-gray-900 mb-3 font-['Outfit',sans-serif]">
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               Document Not Found
             </h2>
             <p className="text-gray-500 mb-6 text-sm">The document you requested is not available.</p>

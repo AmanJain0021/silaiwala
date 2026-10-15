@@ -117,27 +117,27 @@ const LandingSupportPage = () => {
         <div className="absolute -top-16 -right-16 w-80 h-80 rounded-full bg-pink-400/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-purple-300/20 blur-3xl pointer-events-none" />
 
-        <div className="max-w-4xl mx-auto relative z-10 text-center space-y-3.5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-black uppercase tracking-widest text-purple-100 shadow-xs">
+        <div className="max-w-4xl mx-auto relative z-10 text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-semibold text-purple-100 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>Dedicated Customer Concierge</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight font-['Outfit',sans-serif] text-white drop-shadow-xs">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">
             Contact Our Artisan Concierge
           </h1>
 
-          <p className="text-xs sm:text-sm md:text-base text-purple-100/90 font-medium max-w-xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-purple-100/90 font-normal max-w-xl mx-auto leading-relaxed">
             Have questions about custom bridal wear, doorstep measurements, or an ongoing tailoring order? We are here to assist you at every step.
           </p>
 
-          <div className="flex items-center justify-center gap-4 pt-2 text-[11px] font-semibold text-purple-200 flex-wrap">
-            <span className="flex items-center gap-1.5 bg-black/20 px-3.5 py-1.2 rounded-full border border-white/10">
-              <Clock size={13} className="text-pink-300" />
+          <div className="flex items-center justify-center gap-3 pt-1 text-[11px] font-medium text-purple-200 flex-wrap">
+            <span className="flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-full border border-white/10">
+              <Clock size={12} className="text-pink-300" />
               Hours: Mon - Sat, 9:00 AM - 8:30 PM IST
             </span>
-            <span className="flex items-center gap-1.5 bg-black/20 px-3.5 py-1.2 rounded-full border border-white/10">
-              <CheckCircle2 size={13} className="text-emerald-400" />
+            <span className="flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-full border border-white/10">
+              <CheckCircle2 size={12} className="text-emerald-400" />
               Average Response &lt; 15 Mins
             </span>
           </div>
@@ -145,61 +145,61 @@ const LandingSupportPage = () => {
       </section>
 
       {/* ═══ 4 Quick Connect Action Cards ═══ */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-20 w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <section className="max-w-5xl mx-auto px-3.5 sm:px-6 -mt-10 relative z-20 w-full overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           
           {/* Card 1: WhatsApp Chat */}
           <div 
             onClick={handleWhatsApp}
-            className="bg-white p-5 rounded-3xl border border-purple-100/80 shadow-md hover:shadow-xl hover:border-emerald-300 transition-all cursor-pointer group flex flex-col justify-between"
+            className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-purple-100/70 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
           >
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <MessageCircle size={22} />
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <MessageCircle size={20} />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100/60 text-emerald-800 px-2.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-100/60 text-emerald-800 px-2.5 py-0.5 rounded-full">
                   Fast Reply
                 </span>
               </div>
-              <h3 className="text-sm font-black text-gray-900 font-['Outfit',sans-serif]">
+              <h3 className="text-sm font-bold text-gray-900">
                 WhatsApp Concierge
               </h3>
-              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">
+              <p className="text-[11px] text-gray-500 font-normal mt-1 leading-snug">
                 Instant chat with our styling and measurement experts.
               </p>
             </div>
-            <div className="pt-4 flex items-center text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+            <div className="pt-3.5 flex items-center text-xs font-semibold text-emerald-600 group-hover:translate-x-1 transition-transform">
               <span>Start Live Chat</span>
               <ArrowRight size={14} className="ml-1" />
             </div>
           </div>
 
           {/* Card 2: Phone Call */}
-          <div className="bg-white p-5 rounded-3xl border border-purple-100/80 shadow-md hover:shadow-xl hover:border-[#843D9B]/40 transition-all flex flex-col justify-between group">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-purple-100/70 shadow-xs hover:border-[#843D9B]/40 hover:shadow-sm transition-all flex flex-col justify-between group">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-purple-50 text-[#843D9B] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Phone size={22} />
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#843D9B] flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Phone size={20} />
                 </div>
                 <button 
                   onClick={() => handleCopy("+919776506660", "phone")}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
                   title="Copy Phone Number"
                 >
                   {copiedField === 'phone' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                 </button>
               </div>
-              <h3 className="text-sm font-black text-gray-900 font-['Outfit',sans-serif]">
+              <h3 className="text-sm font-bold text-gray-900">
                 Direct Call Helpline
               </h3>
-              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">
+              <p className="text-[11px] text-gray-500 font-normal mt-1 leading-snug">
                 Speak directly with an artisan manager.
               </p>
             </div>
             <a 
               href="tel:+919776506660" 
-              className="pt-4 flex items-center text-xs font-bold text-[#843D9B] no-underline group-hover:translate-x-1 transition-transform"
+              className="pt-3.5 flex items-center text-xs font-semibold text-[#843D9B] no-underline group-hover:translate-x-1 transition-transform"
             >
               <span>+91 97765 06660</span>
               <ArrowRight size={14} className="ml-1" />
@@ -207,30 +207,30 @@ const LandingSupportPage = () => {
           </div>
 
           {/* Card 3: Email Concierge */}
-          <div className="bg-white p-5 rounded-3xl border border-purple-100/80 shadow-md hover:shadow-xl hover:border-pink-300 transition-all flex flex-col justify-between group">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-purple-100/70 shadow-xs hover:border-pink-300 hover:shadow-sm transition-all flex flex-col justify-between group">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Mail size={22} />
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Mail size={20} />
                 </div>
                 <button 
                   onClick={() => handleCopy("concierge@sewzella.com", "email")}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
                   title="Copy Email"
                 >
                   {copiedField === 'email' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                 </button>
               </div>
-              <h3 className="text-sm font-black text-gray-900 font-['Outfit',sans-serif]">
+              <h3 className="text-sm font-bold text-gray-900">
                 Email Inquiries
               </h3>
-              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">
+              <p className="text-[11px] text-gray-500 font-normal mt-1 leading-snug">
                 Detailed design briefs and commercial requests.
               </p>
             </div>
             <a 
               href="mailto:concierge@sewzella.com" 
-              className="pt-4 flex items-center text-xs font-bold text-pink-600 no-underline group-hover:translate-x-1 transition-transform"
+              className="pt-3.5 flex items-center text-xs font-semibold text-pink-600 no-underline group-hover:translate-x-1 transition-transform"
             >
               <span>concierge@sewzella.com</span>
               <ArrowRight size={14} className="ml-1" />
@@ -238,24 +238,24 @@ const LandingSupportPage = () => {
           </div>
 
           {/* Card 4: Atelier Studio */}
-          <div className="bg-white p-5 rounded-3xl border border-purple-100/80 shadow-md hover:shadow-xl hover:border-indigo-300 transition-all flex flex-col justify-between group">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-purple-100/70 shadow-xs hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between group">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <MapPin size={22} />
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <MapPin size={20} />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-semibold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
                   Atelier
                 </span>
               </div>
-              <h3 className="text-sm font-black text-gray-900 font-['Outfit',sans-serif]">
+              <h3 className="text-sm font-bold text-gray-900">
                 Studio & Atelier
               </h3>
-              <p className="text-[11px] text-gray-500 font-medium mt-1 leading-snug">
+              <p className="text-[11px] text-gray-500 font-normal mt-1 leading-snug">
                 Fashion District, Vijay Nagar, Indore, Madhya Pradesh 452010.
               </p>
             </div>
-            <span className="pt-4 flex items-center text-xs font-bold text-indigo-600">
+            <span className="pt-3.5 flex items-center text-xs font-semibold text-indigo-600">
               <span>Visit by Appointment</span>
             </span>
           </div>
@@ -264,18 +264,18 @@ const LandingSupportPage = () => {
       </section>
 
       {/* ═══ Main Section: Form & FAQs ═══ */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16 w-full space-y-16">
+      <main className="max-w-5xl mx-auto px-3.5 sm:px-6 py-12 w-full space-y-12 overflow-hidden">
         
         {/* Form Container */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 md:p-12 border border-purple-100/80 shadow-lg shadow-purple-900/5">
-          <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#843D9B] bg-purple-50 px-3 py-1 rounded-full inline-block">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-10 border border-purple-100/70 shadow-xs w-full max-w-full overflow-hidden">
+          <div className="text-center max-w-xl mx-auto mb-7 space-y-1.5">
+            <span className="text-[11px] font-semibold text-[#843D9B] bg-purple-50 px-3 py-1 rounded-full inline-block">
               Send a Direct Message
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 font-['Outfit',sans-serif] tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               Tell Us How We Can Help
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium">
+            <p className="text-xs sm:text-sm text-gray-500 font-normal">
               Fill out this form and our support executive will respond via WhatsApp or call within a few hours.
             </p>
           </div>
@@ -285,7 +285,7 @@ const LandingSupportPage = () => {
               <div className="w-16 h-16 rounded-3xl bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30">
                 <CheckCircle2 size={32} />
               </div>
-              <h3 className="text-xl font-black text-gray-900 font-['Outfit',sans-serif]">
+              <h3 className="text-xl font-bold text-gray-900">
                 Inquiry Received Successfully!
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
@@ -437,7 +437,7 @@ const LandingSupportPage = () => {
         {/* ═══ Common Support FAQs ═══ */}
         <div className="space-y-6 max-w-3xl mx-auto">
           <div className="text-center space-y-1">
-            <h3 className="text-xl sm:text-2xl font-black text-gray-900 font-['Outfit',sans-serif]">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               Frequently Asked Questions
             </h3>
             <p className="text-xs sm:text-sm text-gray-500 font-medium">
