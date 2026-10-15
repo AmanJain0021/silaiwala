@@ -20,6 +20,12 @@ const CustomerMainLayout = () => {
         { to: '/user/profile', icon: User, label: 'Profile' },
     ];
 
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo(0, 0);
+        }
+    }, [location.pathname]);
+
     return (
         <div className="min-h-screen bg-[#F7F8FC] flex flex-col font-sans">
             {/* Desktop Navbar - Only visible on md and up */}

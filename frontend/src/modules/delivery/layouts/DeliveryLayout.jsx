@@ -40,6 +40,12 @@ const DeliveryLayout = () => {
     const { appName } = useBrandingStore();
 
     React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo(0, 0);
+        }
+    }, [location.pathname]);
+
+    React.useEffect(() => {
         const fetchProfileStatus = async () => {
             try {
                 const res = await deliveryService.getProfile();
