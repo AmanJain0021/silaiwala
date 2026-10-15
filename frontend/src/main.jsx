@@ -40,6 +40,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Ensure window scroll is always at top-left and prevent browser scroll restoration shifting
+if (typeof window !== 'undefined') {
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

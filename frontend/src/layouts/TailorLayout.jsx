@@ -120,14 +120,23 @@ const TailorLayout = () => {
 
         if (pullDistance >= 60 && !isRefreshing) {
             setIsRefreshing(true);
-            setPullDistance(60);
+            setPullDistance(0);
             setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                    window.scrollTo(0, 0);
+                }
                 window.location.reload();
             }, 300);
         } else {
             setPullDistance(0);
         }
     };
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo(0, 0);
+        }
+    }, [location.pathname]);
 
     useEffect(() => {
         const userId = user?._id || user?.id;
@@ -182,7 +191,7 @@ const TailorLayout = () => {
     ];
 
     return (
-        <div className="h-screen w-full bg-[#F5F5F5] flex font-sans selection:bg-[#843D9B] selection:text-white overflow-hidden">
+        <div className="h-full h-[100dvh] w-full bg-[#F5F5F5] flex flex-col md:flex-row font-sans selection:bg-[#843D9B] selection:text-white overflow-hidden overscroll-none">
             {/* ── SIDEBAR (DESKTOP ONLY) ── */}
             <aside className="hidden md:flex flex-col w-72 bg-[#0A0A0A] border-r border-[#1C1C1C] h-screen shrink-0 z-50">
                 <div className="p-8">
@@ -253,9 +262,9 @@ const TailorLayout = () => {
             </aside>
 
             {/* ── MAIN CONTENT AREA ── */}
-            <div className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden relative">
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative overscroll-none">
                 {/* ── MOBILE TOP HEADER ── */}
-                <header className="md:hidden bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-sm">
+                <header className="md:hidden w-full bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between shrink-0 z-40 shadow-sm top-0 left-0">
                     <Link to="/partner" className="flex items-center gap-2.5">
                         <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm shrink-0">
                             <img src={logos.tailor} alt={appName} className="w-full h-full object-contain p-0.5" />
@@ -318,7 +327,7 @@ const TailorLayout = () => {
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-500 flex flex-col min-h-0 ${
+                    className={`flex-1 overflow-y-auto overscroll-none custom-scrollbar transition-all duration-500 flex flex-col min-h-0 ${
                     (isOverview || location.pathname === '/partner/settings' || location.pathname === '/partner/wallet' || location.pathname === '/partner/earnings') 
                         ? 'p-0' 
                         : 'p-0 md:p-8 lg:p-10'
