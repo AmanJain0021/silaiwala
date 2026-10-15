@@ -423,15 +423,15 @@ const Products = () => {
     );
 
     return (
-        <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto font-['Plus_Jakarta_Sans',sans-serif]">
+        <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6 px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 md:pb-12 font-['Plus_Jakarta_Sans',sans-serif] min-w-0 overflow-x-hidden">
             
             {/* Top Heading */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h3 className="text-2xl sm:text-3xl font-black text-[#843D9B] tracking-tight leading-none">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight">
                         {activeTab === 'samples' ? 'Stitching Services' : activeTab === 'fabrics' ? 'Fabric Inventory' : 'Ready-made Garments'}
                     </h3>
-                    <p className="text-xs font-semibold text-gray-500 mt-2">
+                    <p className="text-xs font-medium text-gray-500 mt-1 max-w-2xl leading-relaxed">
                         {activeTab === 'samples' 
                             ? 'Select the stitching services you provide. Official photos and titles are provided by SewZella.' 
                             : activeTab === 'fabrics' 
@@ -446,28 +446,28 @@ const Products = () => {
                             setIsEditing(false);
                             setShowModal(true);
                         }}
-                        className="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#843D9B] to-[#B35BCB] text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-[#843D9B]/15 hover:shadow-xl hover:shadow-[#843D9B]/20 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
+                        className="w-full sm:w-auto shrink-0 justify-center flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-[#843D9B] to-[#9E47BA] hover:from-[#732F87] hover:to-[#843D9B] text-white text-xs font-bold rounded-xl sm:rounded-2xl shadow-md shadow-[#843D9B]/15 hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer"
                     >
-                        <Plus size={16} strokeWidth={3} />
+                        <Plus size={16} strokeWidth={2.5} />
                         <span>Add {activeTab === 'fabrics' ? 'Fabric' : 'Garment'}</span>
                     </button>
                 )}
             </div>
 
-            {/* Main Tabs */}
-            <div className="flex p-1 bg-white border border-gray-100 rounded-2xl gap-1 shadow-xs">
+            {/* Main Tabs - 3 Equal Columns, zero overflow on mobile */}
+            <div className="grid grid-cols-3 p-1 sm:p-1.5 bg-gray-100/90 border border-gray-200/60 rounded-2xl gap-1 shadow-xs">
                 <button
                     onClick={() => { setActiveTab('samples'); setSearchQuery(''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer min-w-0 ${
                         activeTab === 'samples' 
-                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/20' 
-                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/25 font-black' 
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                     }`}
                 >
-                    <Scissors size={15} /> 
-                    <span>Services</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 ${
-                        activeTab === 'samples' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    <Scissors size={14} className="shrink-0" /> 
+                    <span className="truncate">Services</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black shrink-0 ${
+                        activeTab === 'samples' ? 'bg-white/20 text-white' : 'bg-white text-gray-700 shadow-2xs'
                     }`}>
                         {offeredServicesCount}
                     </span>
@@ -475,16 +475,16 @@ const Products = () => {
 
                 <button
                     onClick={() => { setActiveTab('fabrics'); setSearchQuery(''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer min-w-0 ${
                         activeTab === 'fabrics' 
-                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/20' 
-                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/25 font-black' 
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                     }`}
                 >
-                    <ShoppingBag size={15} /> 
-                    <span>Fabrics</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 ${
-                        activeTab === 'fabrics' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    <ShoppingBag size={14} className="shrink-0" /> 
+                    <span className="truncate">Fabrics</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black shrink-0 ${
+                        activeTab === 'fabrics' ? 'bg-white/20 text-white' : 'bg-white text-gray-700 shadow-2xs'
                     }`}>
                         {fabrics.length}
                     </span>
@@ -492,16 +492,16 @@ const Products = () => {
 
                 <button
                     onClick={() => { setActiveTab('garments'); setSearchQuery(''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-1 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer min-w-0 ${
                         activeTab === 'garments' 
-                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/20' 
-                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                            ? 'bg-[#843D9B] text-white shadow-md shadow-[#843D9B]/25 font-black' 
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                     }`}
                 >
-                    <Package size={15} /> 
-                    <span>Garments</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 ${
-                        activeTab === 'garments' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    <Package size={14} className="shrink-0" /> 
+                    <span className="truncate">Garments</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black shrink-0 ${
+                        activeTab === 'garments' ? 'bg-white/20 text-white' : 'bg-white text-gray-700 shadow-2xs'
                     }`}>
                         {garments.length}
                     </span>
@@ -509,24 +509,24 @@ const Products = () => {
             </div>
 
             {/* Search & Sub-filters */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                <div className="relative flex-1 max-w-md">
-                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center justify-between min-w-0">
+                <div className="relative flex-1 max-w-md w-full">
+                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
                         placeholder={activeTab === 'samples' ? "Search services (e.g. Kurti, Blouse)..." : "Search products..."}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200/90 rounded-xl text-xs font-semibold placeholder:text-gray-400 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 shadow-xs transition-all"
+                        className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-white border border-gray-200/90 rounded-xl text-xs font-medium placeholder:text-gray-400 focus:outline-none focus:border-[#843D9B] focus:ring-2 focus:ring-[#843D9B]/10 shadow-xs transition-all"
                     />
                 </div>
 
                 {/* Service Filter Tabs (All / Active / Pending / Available) */}
                 {activeTab === 'samples' && (
-                    <div className="flex bg-gray-100/80 p-1 rounded-xl gap-1 shrink-0 text-xs font-bold overflow-x-auto">
+                    <div className="flex bg-gray-100/90 p-1 rounded-xl gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 max-w-full">
                         <button
                             onClick={() => setServiceFilter('all')}
-                            className={`px-3 py-1.5 rounded-lg transition-all shrink-0 ${
+                            className={`px-3 py-1.5 rounded-lg transition-all shrink-0 text-xs font-bold cursor-pointer whitespace-nowrap ${
                                 serviceFilter === 'all' ? 'bg-white text-[#843D9B] shadow-xs' : 'text-gray-600 hover:text-gray-900'
                             }`}
                         >
@@ -534,31 +534,31 @@ const Products = () => {
                         </button>
                         <button
                             onClick={() => setServiceFilter('active')}
-                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
+                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 text-xs font-bold cursor-pointer whitespace-nowrap ${
                                 serviceFilter === 'active' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
                             }`}
                         >
                             <span>Active in Shop</span>
-                            <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded-full">
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                                 {activeServicesCount}
                             </span>
                         </button>
                         <button
                             onClick={() => setServiceFilter('pending')}
-                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${
+                            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shrink-0 text-xs font-bold cursor-pointer whitespace-nowrap ${
                                 serviceFilter === 'pending' ? 'bg-white text-amber-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
                             }`}
                         >
-                            <span>Pending Approval</span>
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                pendingServicesCount > 0 ? 'bg-amber-200 text-amber-900 font-black' : 'bg-gray-200 text-gray-600'
+                            <span>Pending</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                pendingServicesCount > 0 ? 'bg-amber-200 text-amber-900' : 'bg-gray-200 text-gray-600'
                             }`}>
                                 {pendingServicesCount}
                             </span>
                         </button>
                         <button
                             onClick={() => setServiceFilter('available')}
-                            className={`px-3 py-1.5 rounded-lg transition-all shrink-0 ${
+                            className={`px-3 py-1.5 rounded-lg transition-all shrink-0 text-xs font-bold cursor-pointer whitespace-nowrap ${
                                 serviceFilter === 'available' ? 'bg-white text-[#843D9B] shadow-xs' : 'text-gray-600 hover:text-gray-900'
                             }`}
                         >
@@ -587,7 +587,7 @@ const Products = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
                             {filteredAdminServices.map((cat) => {
                                 const myService = samples.find(s => (s.category?._id || s.category) === cat._id);
                                 const isOffered = Boolean(myService);
@@ -600,7 +600,7 @@ const Products = () => {
                                 return (
                                     <div 
                                         key={cat._id}
-                                        className={`group bg-white rounded-3xl border transition-all duration-300 flex flex-col overflow-hidden relative ${
+                                        className={`group bg-white rounded-2xl sm:rounded-3xl border transition-all duration-300 flex flex-col overflow-hidden relative ${
                                             isOffered 
                                                 ? (isPending 
                                                     ? 'border-amber-300 bg-amber-50/15 ring-1 ring-amber-400/40 shadow-sm'
@@ -613,7 +613,7 @@ const Products = () => {
                                         }`}
                                     >
                                         {/* Top Image: Official Admin Photo */}
-                                        <div className="aspect-[16/11] bg-gray-100 relative overflow-hidden">
+                                        <div className="aspect-[16/10] bg-gray-100 relative overflow-hidden">
                                             <SafeImage
                                                 src={cat.image || myService?.image}
                                                 alt={cat.name}
@@ -873,7 +873,7 @@ const Products = () => {
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 md:gap-6">
                             {filteredProducts.map((item) => {
                                 const currentPrice = item.price || item.basePrice || 0;
                                 const originalPrice = item.discountPrice || item.originalPrice || 0;
@@ -883,7 +883,7 @@ const Products = () => {
                                     <div 
                                         key={item._id} 
                                         onClick={() => handleEditFabric(item)}
-                                        className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 shadow-xs cursor-pointer"
+                                        className="group relative bg-white border border-gray-100/90 rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 shadow-2xs cursor-pointer"
                                     >
                                         <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden">
                                             <SafeImage
@@ -891,50 +891,52 @@ const Products = () => {
                                                 alt={item.name || item.title}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             />
-                                            <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+                                            <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1">
                                                 {isOutOfStock ? (
-                                                    <span className="bg-rose-500/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md uppercase">
+                                                    <span className="bg-rose-500/90 text-white text-[8px] font-black px-1.5 sm:px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
                                                         Out of Stock
                                                     </span>
                                                 ) : (
-                                                    <span className="bg-emerald-500/90 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md uppercase">
+                                                    <span className="bg-emerald-500/90 text-white text-[8px] font-black px-1.5 sm:px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
                                                         In Stock
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="p-4 flex-1 flex flex-col justify-between">
+                                        <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
                                             <div>
-                                                <span className="text-[9px] text-[#843D9B] uppercase tracking-wider font-extrabold truncate block mb-1">
+                                                <span className="text-[9px] text-[#843D9B] uppercase tracking-wider font-extrabold truncate block mb-0.5">
                                                     {item.category?.name || 'General'}
                                                 </span>
-                                                <h4 className="text-sm font-extrabold text-gray-900 line-clamp-1 tracking-tight group-hover:text-[#843D9B] transition-colors">
+                                                <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 line-clamp-1 tracking-tight group-hover:text-[#843D9B] transition-colors">
                                                     {item.name || item.title}
                                                 </h4>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1">
-                                                    <Package size={11} className="text-[#843D9B]" /> 
-                                                    {item.stock || 0} {activeTab === 'fabrics' ? 'M Available' : 'In Stock'}
+                                                    <Package size={11} className="text-[#843D9B] shrink-0" /> 
+                                                    <span>{item.stock || 0} {activeTab === 'fabrics' ? 'M Available' : 'In Stock'}</span>
                                                 </p>
                                             </div>
 
-                                            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                                                <div>
+                                            <div className="mt-2.5 pt-2.5 sm:mt-3 sm:pt-3 border-t border-gray-100 flex items-center justify-between gap-1">
+                                                <div className="min-w-0">
                                                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block">Price</span>
-                                                    <span className="text-base font-black text-[#843D9B]">
+                                                    <span className="text-sm sm:text-base font-black text-[#843D9B] truncate block">
                                                         ₹{currentPrice.toLocaleString()}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex items-center gap-1 shrink-0">
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleEditFabric(item); }}
-                                                        className="h-7 w-7 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-[#843D9B] hover:text-white transition-colors border border-gray-200"
+                                                        className="h-7 w-7 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-[#843D9B] hover:text-white transition-colors border border-gray-200 cursor-pointer"
+                                                        title="Edit"
                                                     >
                                                         <Edit3 size={12} />
                                                     </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDeleteProduct(item._id, activeTab); }}
-                                                        className="h-7 w-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors border border-rose-100"
+                                                        className="h-7 w-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-colors border border-rose-100 cursor-pointer"
+                                                        title="Delete"
                                                     >
                                                         <Trash2 size={12} />
                                                     </button>
@@ -952,20 +954,20 @@ const Products = () => {
             {/* ═══ DIALOG: OFFER / CONFIGURE STITCHING SERVICE ═══ */}
             {/* Tailor sets ONLY price and delivery days. Photo & Title are from Admin Category. */}
             {serviceModalOpen && selectedAdminCategory && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200">
                         
                         {/* Header Banner with Admin Official Photo & Title */}
-                        <div className="relative bg-gradient-to-br from-[#843D9B] to-[#5C236E] text-white p-6">
+                        <div className="relative bg-gradient-to-br from-[#843D9B] to-[#5C236E] text-white p-4 sm:p-6">
                             <button
                                 onClick={handleCloseServiceModal}
-                                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                                className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
                             >
                                 <X size={18} />
                             </button>
 
-                            <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shrink-0 shadow-inner">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 overflow-hidden shrink-0 shadow-inner">
                                     <SafeImage
                                         src={selectedAdminCategory.image}
                                         alt={selectedAdminCategory.name}
@@ -977,7 +979,7 @@ const Products = () => {
                                         <ShieldCheck size={11} />
                                         Official Platform Service
                                     </div>
-                                    <h3 className="text-xl font-black text-white tracking-tight leading-snug truncate">
+                                    <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug truncate">
                                         {selectedAdminCategory.name}
                                     </h3>
                                     <p className="text-xs text-white/80 line-clamp-1 mt-0.5">
@@ -988,15 +990,15 @@ const Products = () => {
                         </div>
 
                         {/* Notice for Tailor */}
-                        <div className="px-6 py-2.5 bg-[#F4EFFF] border-b border-[#E9DFFE] flex items-center gap-2">
+                        <div className="px-4 sm:px-6 py-2.5 bg-[#F4EFFF] border-b border-[#E9DFFE] flex items-center gap-2">
                             <span className="text-xs">🛡️</span>
-                            <p className="text-[11px] font-semibold text-[#843D9B]">
+                            <p className="text-[11px] font-semibold text-[#843D9B] leading-tight">
                                 Admin Approval Workflow: Once you submit your price, the request goes to Admin for review. Once approved, it will be visible to customers.
                             </p>
                         </div>
 
                         {/* Form Body */}
-                        <form id="service-form" onSubmit={handleSaveService} className="p-6 overflow-y-auto space-y-5 custom-scrollbar flex-1">
+                        <form id="service-form" onSubmit={handleSaveService} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 custom-scrollbar flex-1">
                             
                             {/* 1. Stitching Price Input with Strict Admin Min-Max Bounds */}
                             {(() => {
@@ -1168,7 +1170,7 @@ const Products = () => {
                             const isPriceInvalid = !hasPrice || isBelowMin || isAboveMax;
 
                             return (
-                                <div className="p-5 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3">
+                                <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                                     <div className="text-[11px] font-bold">
                                         {isBelowMin ? (
                                             <span className="text-red-600 flex items-center gap-1.5">
@@ -1188,11 +1190,11 @@ const Products = () => {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 justify-end">
                                         <button
                                             type="button"
                                             onClick={handleCloseServiceModal}
-                                            className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                                            className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer text-center"
                                         >
                                             Cancel
                                         </button>
@@ -1200,9 +1202,9 @@ const Products = () => {
                                             type="submit"
                                             form="service-form"
                                             disabled={isSubmitting || isPriceInvalid}
-                                            className="px-6 py-2.5 bg-[#843D9B] hover:bg-[#6D2883] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-[#843D9B]/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                            className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 bg-[#843D9B] hover:bg-[#6D2883] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-[#843D9B]/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer text-center"
                                         >
-                                            {isSubmitting ? 'Submitting...' : editServiceId ? 'Submit Changes for Approval' : 'Submit for Admin Approval'}
+                                            {isSubmitting ? 'Submitting...' : editServiceId ? 'Save Changes' : 'Submit for Approval'}
                                         </button>
                                     </div>
                                 </div>
@@ -1224,21 +1226,21 @@ const Products = () => {
                     }}
                 />
             ) : showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh] sm:max-h-[90vh]">
+                        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
                             <div>
-                                <h4 className="text-xl font-black text-[#843D9B]">
+                                <h4 className="text-lg sm:text-xl font-black text-[#843D9B]">
                                     {isEditing ? 'Update' : 'Add New'} Fabric
                                 </h4>
                                 <p className="text-xs text-gray-400 mt-0.5">List your available fabric materials</p>
                             </div>
-                            <button onClick={closeModal} className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                            <button onClick={closeModal} className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer">
                                 <X size={16} />
                             </button>
                         </div>
 
-                        <form id="fabric-form" onSubmit={handleFabricSubmit} className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+                        <form id="fabric-form" onSubmit={handleFabricSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
                             <div>
                                 <label className="text-xs font-bold text-gray-700 block mb-1">Fabric Category *</label>
                                 <select
