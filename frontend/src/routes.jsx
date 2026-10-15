@@ -201,6 +201,12 @@ const AppRoutes = () => {
             {/* Landing Route */}
             <Route path="/" element={<SewZellaLanding />} />
             <Route path="/page/support" element={<LandingSupportPage />} />
+            <Route path="/contact" element={<LandingSupportPage />} />
+            <Route path="/contact-us" element={<LandingSupportPage />} />
+            <Route path="/terms" element={<LandingCMSPage forcedSlug="terms-of-service" />} />
+            <Route path="/terms-and-conditions" element={<LandingCMSPage forcedSlug="terms-of-service" />} />
+            <Route path="/privacy" element={<LandingCMSPage forcedSlug="privacy-policy" />} />
+            <Route path="/privacy-policy" element={<LandingCMSPage forcedSlug="privacy-policy" />} />
             <Route path="/page/:slug" element={<LandingCMSPage />} />
             <Route path="/track/offline/:token" element={<OfflineOrderTrack />} />
 
