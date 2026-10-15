@@ -2180,12 +2180,26 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   const { getIO } = require("../../../config/socket.js");
   const io = getIO();
   if (io) {
+    const statusPayload = {
+      orderId: order.orderId,
+      _id: order._id,
+      status: order.status,
+      pickupDeliveryStatus: order.pickupDeliveryStatus,
+      dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+      deliveryStatus: order.deliveryStatus,
+      pickupDeliveryOtp: order.pickupDeliveryOtp,
+      dropoffDeliveryOtp: order.dropoffDeliveryOtp,
+      pickupOtpVerified: order.pickupOtpVerified,
+      dropoffOtpVerified: order.dropoffOtpVerified,
+    };
     if (cycle === 'pickup') {
-      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
+      io.to(`user_${order.tailor}`).emit('order_status_updated', statusPayload);
+      io.to(`user_${order.customer}`).emit('order_status_updated', statusPayload);
+      io.to(`order_${order._id}`).emit('order_status_updated', statusPayload);
     } else {
-      io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
-      // Also notify tailor that final delivery is complete
-      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, status: order.status });
+      io.to(`user_${order.customer}`).emit('order_status_updated', statusPayload);
+      io.to(`user_${order.tailor}`).emit('order_status_updated', statusPayload);
+      io.to(`order_${order._id}`).emit('order_status_updated', statusPayload);
       
       // Emit delivery_completed to stop live tracking maps
       io.to(`order_${order._id}`).emit('delivery_completed', { orderId: order._id });

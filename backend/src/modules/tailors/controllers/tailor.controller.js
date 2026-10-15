@@ -606,17 +606,59 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
     .limit(Number(limit));
 
   const Issue = require('../../../models/Issue');
+  const Tailor = require('../../../models/Tailor');
+  const DeliveryTracking = require('../../../models/DeliveryTracking');
+
   const orderIds = orders.map(o => o._id);
-  const issues = await Issue.find({ originalOrder: { $in: orderIds } }).populate('reworkOrder', '+pickupDeliveryOtp +dropoffDeliveryOtp');
+  const [issues, tailorProfile, trackings] = await Promise.all([
+    Issue.find({ originalOrder: { $in: orderIds } }).populate('reworkOrder', '+pickupDeliveryOtp +dropoffDeliveryOtp'),
+    Tailor.findOne({ user: req.user.id }).lean(),
+    DeliveryTracking.find({ orderId: { $in: orderIds } }).lean(),
+  ]);
   
   const issueMap = {};
   issues.forEach(issue => {
     issueMap[issue.originalOrder.toString()] = issue;
   });
 
+  const trackingMap = {};
+  trackings.forEach(t => {
+    trackingMap[t.orderId.toString()] = t;
+  });
+
+  let vendorLatitude = null;
+  let vendorLongitude = null;
+  if (tailorProfile?.location?.coordinates?.length >= 2) {
+    vendorLongitude = tailorProfile.location.coordinates[0];
+    vendorLatitude = tailorProfile.location.coordinates[1];
+  }
+
   const modifiedOrders = orders.map(order => {
     const o = order.toObject ? order.toObject({ virtuals: true }) : order;
     o.reportedIssue = issueMap[o._id.toString()] || null;
+    o.vendorLatitude = vendorLatitude;
+    o.vendorLongitude = vendorLongitude;
+    if (tailorProfile) {
+      o.tailor = {
+        _id: req.user.id,
+        shopName: tailorProfile.shopName || 'Tailor Shop',
+        location: tailorProfile.location || null,
+        phoneNumber: req.user.phoneNumber,
+        experienceInYears: tailorProfile.experienceInYears,
+        rating: tailorProfile.rating
+      };
+    }
+    if (trackingMap[o._id.toString()]) {
+      const dt = trackingMap[o._id.toString()];
+      if (dt.currentLocation?.latitude && dt.currentLocation?.longitude) {
+        o.deliveryTracking = {
+          currentLocation: dt.currentLocation,
+          eta: dt.eta || null,
+          distanceRemaining: dt.distanceRemaining ?? null,
+          lastUpdated: dt.lastUpdated || null
+        };
+      }
+    }
     return o;
   });
 

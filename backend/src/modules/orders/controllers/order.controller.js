@@ -1565,6 +1565,23 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
     order.dropoffDeliveryOtp = undefined;
   }
 
+  // Fetch delivery tracking location if available
+  let deliveryTracking = null;
+  try {
+    const DeliveryTracking = require("../../../models/DeliveryTracking.js");
+    const dTrack = await DeliveryTracking.findOne({ orderId: order._id }).lean();
+    if (dTrack && dTrack.currentLocation?.latitude && dTrack.currentLocation?.longitude) {
+      deliveryTracking = {
+        currentLocation: dTrack.currentLocation,
+        eta: dTrack.eta || null,
+        distanceRemaining: dTrack.distanceRemaining ?? null,
+        lastUpdated: dTrack.lastUpdated || null
+      };
+    }
+  } catch (trackErr) {
+    console.error("Error fetching delivery tracking:", trackErr.message);
+  }
+
   res.status(200).json({
     success: true,
     data: {
@@ -1577,6 +1594,7 @@ exports.getOrderDetails = asyncHandler(async (req, res, next) => {
       measurementExecutive,
       measurementRequestInfo,
       reportedIssue,
+      deliveryTracking,
       existingIssueId: reportedIssue?._id // Keep this for backward compatibility with the button
     },
   });
@@ -2155,10 +2173,24 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
     if (io) {
-      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: order.status });
-      io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: order.status });
+      const statusPayload = {
+        orderId: order.orderId,
+        _id: order._id,
+        status: order.status,
+        acceptedAt: order.acceptedAt,
+        pickupDeliveryStatus: order.pickupDeliveryStatus,
+        dropoffDeliveryStatus: order.dropoffDeliveryStatus,
+        deliveryStatus: order.deliveryStatus,
+        pickupDeliveryOtp: order.pickupDeliveryOtp,
+        dropoffDeliveryOtp: order.dropoffDeliveryOtp,
+        pickupOtpVerified: order.pickupOtpVerified,
+        dropoffOtpVerified: order.dropoffOtpVerified,
+      };
+      io.to(`user_${order.tailor}`).emit('order_status_updated', statusPayload);
+      io.to(`user_${order.customer}`).emit('order_status_updated', statusPayload);
+      io.to(`order_${order._id}`).emit('order_status_updated', statusPayload);
       
-      if (status === 'product-delivered') {
+      if (status === 'product-delivered' || status === 'delivered') {
         io.to(`order_${order._id}`).emit('delivery_completed', { orderId: order._id });
         const orderRoom = `order_${order._id}`;
         setTimeout(() => {
@@ -2322,9 +2354,16 @@ exports.completeTailorSelfDelivery = asyncHandler(async (req, res, next) => {
   try {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
-    if (io) {
-      io.to(`user_${order.customer}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: 'delivered' });
-      io.to(`user_${order.tailor}`).emit('order_status_updated', { orderId: order.orderId, _id: order._id, status: 'delivered' });
+      const selfDeliveryPayload = {
+        orderId: order.orderId,
+        _id: order._id,
+        status: 'delivered',
+        deliveryStatus: 'delivered',
+        dropoffDeliveryStatus: 'delivered',
+      };
+      io.to(`user_${order.customer}`).emit('order_status_updated', selfDeliveryPayload);
+      io.to(`user_${order.tailor}`).emit('order_status_updated', selfDeliveryPayload);
+      io.to(`order_${order._id}`).emit('order_status_updated', selfDeliveryPayload);
       // Signal to stop live tracking on both sides
       io.to(`order_${order._id}`).emit('delivery_completed', { orderId: order._id });
       

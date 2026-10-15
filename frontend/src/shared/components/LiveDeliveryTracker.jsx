@@ -13,10 +13,18 @@ const toCoord = (lat, lng) => {
 };
 
 const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
-  const [riderLocation, setRiderLocation] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [eta, setEta] = useState(null);
-  const [distance, setDistance] = useState(null);
+  const [riderLocation, setRiderLocation] = useState(() => {
+    if (order?.deliveryTracking?.currentLocation?.latitude && order?.deliveryTracking?.currentLocation?.longitude) {
+      return {
+        lat: order.deliveryTracking.currentLocation.latitude,
+        lng: order.deliveryTracking.currentLocation.longitude,
+      };
+    }
+    return null;
+  });
+  const [lastUpdated, setLastUpdated] = useState(() => order?.deliveryTracking?.lastUpdated || null);
+  const [eta, setEta] = useState(() => order?.deliveryTracking?.eta || null);
+  const [distance, setDistance] = useState(() => order?.deliveryTracking?.distanceRemaining ?? null);
   const [isCompleted, setIsCompleted] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
@@ -25,11 +33,28 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
+  // Sync initial or updated deliveryTracking from props
+  useEffect(() => {
+    if (order?.deliveryTracking?.currentLocation?.latitude && order?.deliveryTracking?.currentLocation?.longitude) {
+      setRiderLocation({
+        lat: order.deliveryTracking.currentLocation.latitude,
+        lng: order.deliveryTracking.currentLocation.longitude,
+      });
+      if (order.deliveryTracking.eta) setEta(order.deliveryTracking.eta);
+      if (order.deliveryTracking.distanceRemaining != null) setDistance(order.deliveryTracking.distanceRemaining);
+      if (order.deliveryTracking.lastUpdated) setLastUpdated(order.deliveryTracking.lastUpdated);
+    }
+  }, [order?.deliveryTracking]);
+
   useEffect(() => {
     if (!socket || !order) return;
 
+    const oid = order._id || order.id;
+    if (oid) {
+      socket.emit('join_order_room', String(oid));
+    }
+
     const handleLocationUpdate = (data) => {
-      const oid = order._id || order.id;
       if (String(data.orderId) === String(oid)) {
         setRiderLocation({
           lat: data.currentLocation.latitude,
@@ -42,7 +67,6 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     };
 
     const handleDeliveryCompleted = (data) => {
-      const oid = order._id || order.id;
       if (String(data.orderId) === String(oid)) setIsCompleted(true);
     };
 
@@ -50,10 +74,13 @@ const LiveDeliveryTracker = ({ order, socket, forceSearching = false }) => {
     socket.on('delivery_completed', handleDeliveryCompleted);
 
     return () => {
+      if (oid) {
+        socket.emit('leave_order_room', String(oid));
+      }
       socket.off('locationUpdated', handleLocationUpdate);
       socket.off('delivery_completed', handleDeliveryCompleted);
     };
-  }, [socket, order]);
+  }, [socket, order?._id, order?.id]);
 
   const { customer, tailor, destination, fallbackOrigin, destinationAddress, journeyLabel } = useMemo(() => {
     const customerCoords =

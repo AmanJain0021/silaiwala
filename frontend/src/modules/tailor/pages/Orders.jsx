@@ -86,6 +86,38 @@ const getNormalizedAddons = (item) => {
     }));
 };
 
+const getOrderStatusBadge = (status) => {
+    const s = String(status || '').toLowerCase().replace(/_/g, '-');
+    if (!s || s === 'pending') {
+        return { label: 'Pending Accept', className: 'bg-amber-50 text-amber-700 border border-amber-200' };
+    }
+    if (s === 'accepted') {
+        return { label: 'Accepted', className: 'bg-blue-50 text-blue-700 border border-blue-200' };
+    }
+    if (['fabric-ready-for-pickup', 'waiting-for-customer-dropoff', 'fabric-picked-up'].includes(s)) {
+        return { label: s.replace(/-/g, ' '), className: 'bg-indigo-50 text-indigo-700 border border-indigo-200' };
+    }
+    if (['fabric-delivered', 'fabric-received', 'order-received'].includes(s)) {
+        return { label: s.replace(/-/g, ' '), className: 'bg-teal-50 text-teal-700 border border-teal-200' };
+    }
+    if (['cutting', 'stitching', 'finishing', 'quality-check', 'in-progress'].includes(s)) {
+        return { label: s.replace(/-/g, ' '), className: 'bg-purple-50 text-[#843D9B] border border-purple-200' };
+    }
+    if (['ready', 'ready-for-delivery', 'ready-for-pickup'].includes(s)) {
+        return { label: s.replace(/-/g, ' '), className: 'bg-cyan-50 text-cyan-800 border border-cyan-200' };
+    }
+    if (s === 'out-for-delivery') {
+        return { label: 'Out for Delivery', className: 'bg-orange-50 text-orange-700 border border-orange-200' };
+    }
+    if (['delivered', 'product-delivered', 'order-completed'].includes(s)) {
+        return { label: 'Delivered', className: 'bg-emerald-50 text-emerald-700 border border-emerald-200' };
+    }
+    if (s === 'cancelled') {
+        return { label: 'Cancelled', className: 'bg-rose-50 text-rose-700 border border-rose-200' };
+    }
+    return { label: s.replace(/-/g, ' '), className: 'bg-gray-100 text-gray-800 border border-gray-200' };
+};
+
 const Orders = () => {
     const { user } = useTailorAuth();
     const location = useLocation();
@@ -387,6 +419,38 @@ const Orders = () => {
         // to always fetch with the current tab without needing to disconnect/reconnect
     }, [user?._id, fetchOrders]);
 
+    // Join order room when modal is opened so tailor receives live tracking / locationUpdated
+    useEffect(() => {
+        if (!socketInstance || !selectedOrder?._id) return;
+        const oid = String(selectedOrder._id);
+        socketInstance.emit('join_order_room', oid);
+
+        const handleLocationUpdate = (data) => {
+            if (String(data.orderId) === oid && data.currentLocation) {
+                setSelectedOrder(prev => {
+                    if (!prev || String(prev._id) !== oid) return prev;
+                    return {
+                        ...prev,
+                        deliveryTracking: {
+                            ...(prev.deliveryTracking || {}),
+                            currentLocation: data.currentLocation,
+                            eta: data.eta || prev.deliveryTracking?.eta,
+                            distanceRemaining: data.distanceRemaining ?? prev.deliveryTracking?.distanceRemaining,
+                            lastUpdated: data.timestamp || new Date()
+                        }
+                    };
+                });
+            }
+        };
+
+        socketInstance.on('locationUpdated', handleLocationUpdate);
+
+        return () => {
+            socketInstance.emit('leave_order_room', oid);
+            socketInstance.off('locationUpdated', handleLocationUpdate);
+        };
+    }, [socketInstance, selectedOrder?._id]);
+
     useEffect(() => {
         fetchOrders();
     }, [activeTab]);
@@ -572,9 +636,14 @@ const Orders = () => {
                                 <Clock size={12} /> {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                         </div>
-                        <span className={`text-[11px] font-black uppercase px-3 py-1 rounded-full ${isPending ? 'bg-red-50 text-[#843D9B]' : 'bg-green-50 text-green-600'}`}>
-                            {isPending ? 'Pending Accept' : 'In Progress'}
-                        </span>
+                        {(() => {
+                            const badge = getOrderStatusBadge(order.status);
+                            return (
+                                <span className={`text-[11px] font-black uppercase px-3 py-1 rounded-full ${badge.className}`}>
+                                    {badge.label}
+                                </span>
+                            );
+                        })()}
                     </div>
                     {/* Order Items Section */}
                     <div className="space-y-3 pt-2">
