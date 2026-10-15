@@ -255,8 +255,8 @@ const TailorLayout = () => {
             {/* ── MAIN CONTENT AREA ── */}
             <div className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden relative">
                 {/* ── MOBILE TOP HEADER ── */}
-                <header className="md:hidden bg-white border-b border-gray-100 px-4 pt-[env(safe-area-inset-top,0px)] min-h-[3.5rem] flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-sm">
-                    <Link to="/partner" className="flex items-center gap-2.5 py-2">
+                <header className="md:hidden bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-sm">
+                    <Link to="/partner" className="flex items-center gap-2.5">
                         <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm shrink-0">
                             <img src={logos.tailor} alt={appName} className="w-full h-full object-contain p-0.5" />
                         </div>
