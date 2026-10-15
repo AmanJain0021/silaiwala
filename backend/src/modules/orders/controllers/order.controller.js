@@ -2354,6 +2354,7 @@ exports.completeTailorSelfDelivery = asyncHandler(async (req, res, next) => {
   try {
     const { getIO } = require("../../../config/socket.js");
     const io = getIO();
+    if (io) {
       const selfDeliveryPayload = {
         orderId: order.orderId,
         _id: order._id,
