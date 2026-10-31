@@ -9,7 +9,8 @@ const ErrorResponse = require("../../../utils/errorResponse.js");
  */
 exports.getMeasurements = asyncHandler(async (req, res, next) => {
   // Strict POV: only this customer's profiles
-  const measurements = await Measurement.find({ user: req.user.id }).sort({ updatedAt: -1 });
+  const targetUser = (req.user.role === 'admin' && req.query.user) ? req.query.user : req.user.id;
+  const measurements = await Measurement.find({ user: targetUser }).sort({ updatedAt: -1 });
 
   res.status(200).json({
     success: true,

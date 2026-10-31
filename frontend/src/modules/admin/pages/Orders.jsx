@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Package, Scissors, CreditCard, ChevronRight, Truck, Clock } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, X, User, MapPin, CheckCircle2, Package, Scissors, CreditCard, ChevronRight, Truck, Clock, Plus } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
@@ -312,7 +313,16 @@ const AdminOrders = () => {
         <div className="h-full flex flex-col space-y-6 relative">
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h1>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h1>
+                        <Link
+                            to="/admin/orders/create"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:bg-[#682498] shadow-md shadow-purple-900/20 transition-all shrink-0 cursor-pointer w-fit"
+                        >
+                            <Plus size={16} strokeWidth={2.5} />
+                            <span>Create Order for User</span>
+                        </Link>
+                    </div>
                     <p className="text-xs text-gray-500 font-medium mt-1">Manage and track all customer orders from end to end</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">

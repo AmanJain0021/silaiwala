@@ -61,6 +61,7 @@ exports.getDashboardStats = async (req, res) => {
         .populate("customer", "name phoneNumber")
         .populate("items.service", "title")
         .populate("items.product", "name")
+      .populate("adminCreator", "name email phoneNumber role")
         .populate("tailor", "name shopName")
         .sort("-createdAt")
         .limit(10);
@@ -220,8 +221,17 @@ exports.getAllUsers = async (req, res) => {
     }
 
     if (role === 'customer') {
-      const total = await User.countDocuments({ role: 'customer' });
-      const users = await User.find({ role: 'customer' }).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip).lean();
+      const customerQuery = { role: 'customer' };
+      if (req.query.search) {
+        const s = req.query.search.trim();
+        customerQuery.$or = [
+          { name: { $regex: s, $options: 'i' } },
+          { email: { $regex: s, $options: 'i' } },
+          { phoneNumber: { $regex: s, $options: 'i' } }
+        ];
+      }
+      const total = await User.countDocuments(customerQuery);
+      const users = await User.find(customerQuery).select("-password").sort("-createdAt").limit(Number(limit)).skip(skip).lean();
       const userIds = users.map(u => u._id);
       
       const [profiles, orders, alterations] = await Promise.all([
@@ -902,7 +912,7 @@ exports.rejectDeliveryPartner = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const { status, type, customer, tailor, deliveryPartner, deliveryMethod, search, limit = 50, page = 1 } = req.query;
+    const { status, type, customer, tailor, deliveryPartner, deliveryMethod, search, createdByAdmin, limit = 50, page = 1 } = req.query;
     
     let query = {};
     if (deliveryMethod !== "manual") {
@@ -912,6 +922,9 @@ exports.getAllOrders = async (req, res) => {
     if (customer) query.customer = customer;
     if (tailor) query.tailor = tailor;
     if (deliveryMethod) query.deliveryMethod = deliveryMethod;
+    if (createdByAdmin !== undefined && createdByAdmin !== '') {
+      query.createdByAdmin = createdByAdmin === 'true';
+    }
     
     // Handle unassigned orders specifically
     if (deliveryPartner === 'unassigned') {
@@ -944,6 +957,7 @@ exports.getAllOrders = async (req, res) => {
       .populate("deliveryPartner", "name phoneNumber")
       .populate("items.service", "title")
       .populate("items.product", "name")
+      .populate("adminCreator", "name email phoneNumber role")
       .populate({
         path: "measurementRequest",
         populate: { path: "executive", select: "name phoneNumber" }

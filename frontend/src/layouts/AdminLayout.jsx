@@ -24,6 +24,7 @@ import {
     AlertTriangle,
     Feather,
     UserPlus,
+    PlusCircle,
     ClipboardList
 } from 'lucide-react';
 
@@ -194,11 +195,11 @@ const AdminLayout = () => {
         super_admin: ['*'],
         admin: ['*'],
         support_agent: [
-            'dashboard', 'orders', 'offline-orders', 'bulk-orders', 'tailors', 
+            'dashboard', 'orders', 'admin-orders', 'create-order', 'offline-orders', 'bulk-orders', 'tailors', 
             'delivery', 'crm', 'customers', 'offline-customers', 'issues', 'support'
         ],
         finance_manager: [
-            'dashboard', 'orders', 'offline-orders', 'offline-reports', 'finance', 
+            'dashboard', 'orders', 'admin-orders', 'offline-orders', 'offline-reports', 'finance', 
             'subscriptions', 'reports', 'delivery'
         ],
         content_manager: [
@@ -210,6 +211,8 @@ const AdminLayout = () => {
     const allMenuItems = [
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin', key: 'dashboard' },
         { icon: <ShoppingBag size={20} />, label: 'Orders', path: '/admin/orders', key: 'orders' },
+        { icon: <Sparkles size={20} />, label: 'Admin Orders', path: '/admin/orders/assisted', key: 'admin-orders' },
+        { icon: <PlusCircle size={20} />, label: 'Create Order', path: '/admin/orders/create', key: 'create-order' },
         { icon: <ClipboardList size={20} />, label: 'Offline Orders', path: '/admin/offline-orders', key: 'offline-orders' },
         { icon: <BarChart3 size={20} />, label: 'Offline Reports', path: '/admin/offline-reports', key: 'offline-reports' },
         { icon: <Package size={20} />, label: 'Bulk Orders', path: '/admin/bulk-orders', key: 'bulk-orders' },
@@ -246,6 +249,9 @@ const AdminLayout = () => {
     // Helper to check if a menu item is active
     const isActive = (path) => {
         if (path === '/admin') return currentPath === '/admin';
+        if (path === '/admin/orders') return currentPath === '/admin/orders';
+        if (path === '/admin/orders/assisted') return currentPath === '/admin/orders/assisted' || currentPath === '/admin/admin-created-orders';
+        if (path === '/admin/orders/create') return currentPath === '/admin/orders/create' || currentPath === '/admin/create-order';
         return currentPath.startsWith(path);
     };
 

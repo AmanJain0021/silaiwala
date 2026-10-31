@@ -518,6 +518,24 @@ ledgerId,
         data: { orderId: order._id, targetUrl: "/profile/orders" }
     });
 
+    if (isAdminUser && finalCustomerId) {
+      if (io) {
+        io.to(`user_${String(finalCustomerId)}`).emit('receive_new_order', {
+          orderId: order.orderId,
+          _id: order._id,
+          totalAmount: order.totalAmount,
+          status: order.status,
+        });
+      }
+      await sendNotification({
+        recipient: finalCustomerId,
+        type: "ORDER_CREATED",
+        title: "New Order Created by Sewzella",
+        message: `An order #${order.orderId} of ₹${order.totalAmount} has been booked for you.`,
+        data: { orderId: order._id, targetUrl: `/orders/${order._id}` }
+      });
+    }
+
     await sendNotification({
         recipient: "admins",
         type: "NEW_ORDER",
@@ -783,7 +801,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   deliveryAddress = await autoGeocode(deliveryAddress);
 
   // Determine correct customer ID
-  const finalCustomerId = (req.user.role === 'admin' && customerId) ? customerId : req.user.id;
+  const isAdminUser = ['admin', 'super_admin'].includes(req.user.role);
+  const finalCustomerId = (isAdminUser && customerId) ? customerId : req.user.id;
 
   // Resolve assigned tailor.
   // Preference order:
@@ -1227,6 +1246,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     remainingPaymentAmount: remainingAmount,
     deliveryAddress,
     status: initialStatus,
+    createdByAdmin: !!isAdminUser,
+    adminCreator: isAdminUser ? req.user.id : undefined,
     fabricPickupRequired,
     isMeasurementHome: isMeasurementHome || formattedItems.some(item => item.measurements?.type === 'home' || item.isTailorAtHome),
     scheduledDate: scheduledDate || null,

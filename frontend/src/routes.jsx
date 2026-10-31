@@ -123,6 +123,8 @@ import MEProtectedRoute from './modules/measurement-executive/components/Protect
 const AdminLogin = React.lazy(() => import('./modules/admin/pages/Login'));
 const AdminDashboard = React.lazy(() => import('./modules/admin/pages/Dashboard'));
 const AdminOrders = React.lazy(() => import('./modules/admin/pages/Orders'));
+const AdminCreateOrderForUser = React.lazy(() => import('./modules/admin/pages/CreateOrderForUser'));
+const AdminCreatedOrders = React.lazy(() => import('./modules/admin/pages/AdminCreatedOrders'));
 const AdminTailors = React.lazy(() => import('./modules/admin/pages/Tailors'));
 const AdminDelivery = React.lazy(() => import('./modules/admin/pages/Delivery'));
 const AdminCustomers = React.lazy(() => import('./modules/admin/pages/Customers'));
@@ -365,6 +367,10 @@ const AppRoutes = () => {
                 <Route element={<AdminLayout />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/orders" element={<AdminOrders />} />
+                    <Route path="/admin/orders/assisted" element={<AdminCreatedOrders />} />
+                    <Route path="/admin/admin-created-orders" element={<AdminCreatedOrders />} />
+                    <Route path="/admin/orders/create" element={<AdminCreateOrderForUser />} />
+                    <Route path="/admin/create-order" element={<AdminCreateOrderForUser />} />
                     <Route path="/admin/offline-orders" element={<AdminOfflineOrders />} />
                     <Route path="/admin/offline-reports" element={<AdminOfflineReports />} />
                     <Route path="/admin/tailors" element={<AdminTailors />} />
