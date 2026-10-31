@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Calendar, Truck, Home } from 'lucide-react';
+import { ChevronRight, Calendar, Truck, Home, Sparkles } from 'lucide-react';
 import { getImageUrl } from '../../../../utils/imageUrl';
 import ReviewModal from './ReviewModal';
 import {
@@ -11,11 +11,13 @@ import {
     orderHasTailorAtHome,
 } from '../../../../utils/orderItems';
 
+const DEFAULT_GARMENT_IMAGE = 'https://res.cloudinary.com/dfpnrwpib/image/upload/v1790608227/tailor_platform/z9cukm3gosnibmiv3ysk.jpg';
+
 const OrderCard = ({ order }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     
     const items = order.items || [];
-    const serviceTitle = formatOrderItemsTitle(items, { fallback: 'Custom Stitching' });
+    const serviceTitle = formatOrderItemsTitle(items, { fallback: 'Custom Stitching Order' });
     const deliveryType = items[0]?.deliveryType || 'Standard Delivery';
     const displayId = order.orderId || "ORD-0000";
     const status = (order.status || 'Pending').replace(/-/g, ' ').toUpperCase();
@@ -26,7 +28,7 @@ const OrderCard = ({ order }) => {
         if (['accepted', 'delivered', 'completed', 'product-delivered', 'order-completed'].includes(s)) {
             return 'bg-green-50 text-green-600 border border-green-100';
         }
-        if (['pending', 'in-progress', 'in progress'].includes(s)) {
+        if (['pending', 'in-progress', 'in progress', 'fabric-ready-for-pickup'].includes(s)) {
             return 'bg-orange-50 text-orange-500 border border-orange-100';
         }
         if (['cancelled'].includes(s)) {
@@ -41,7 +43,8 @@ const OrderCard = ({ order }) => {
         year: 'numeric'
     }) : "Date Unknown";
 
-    const mainImage = getImageUrl(getItemImage(items[0])) || "https://placehold.co/400x500/e6e8f0/843d9b?text=Order";
+    const itemRawImg = getItemImage(items[0]);
+    const mainImage = (itemRawImg && getImageUrl(itemRawImg)) ? getImageUrl(itemRawImg) : DEFAULT_GARMENT_IMAGE;
     
     const isTailorAtHome = orderHasTailorAtHome(items);
 
@@ -55,7 +58,10 @@ const OrderCard = ({ order }) => {
                             src={mainImage}
                             alt={serviceTitle}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x500/e6e8f0/843d9b?text=Order'; }}
+                            onError={(e) => { 
+                                e.target.onerror = null; 
+                                e.target.src = DEFAULT_GARMENT_IMAGE; 
+                            }}
                         />
                         {items.length > 1 && (
                             <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md">
@@ -69,13 +75,18 @@ const OrderCard = ({ order }) => {
                 <div className="flex-1 min-w-0 flex flex-col">
                     {/* Row 1: Status, Order ID, Price */}
                     <div className="flex items-start justify-between gap-1 mb-1">
-                        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
                             <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap ${getStatusBadgeStyle(order.status)}`}>
                                 {status}
                             </span>
                             <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap">
                                 #{displayId}
                             </span>
+                            {order.createdByAdmin && (
+                                <span className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
+                                    <Sparkles size={8} /> Admin Assisted
+                                </span>
+                            )}
                         </div>
                         <span className="text-[13px] font-black text-primary shrink-0 ml-1">₹{order.totalAmount || 0}</span>
                     </div>
@@ -104,63 +115,65 @@ const OrderCard = ({ order }) => {
                     <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-gray-50/50">
                         <div className="flex items-center gap-1.5 min-w-0">
                             <div className="flex -space-x-1.5 shrink-0">
-                                {items.slice(0, 3).map((item, idx) => (
-                                    <div
-                                        key={item._id || idx}
-                                        className="w-5 h-5 rounded-md overflow-hidden border border-white bg-gray-100"
-                                    >
-                                        <img 
-                                            src={getImageUrl(getItemImage(item)) || 'https://placehold.co/100x100/e6e8f0/843d9b?text=Item'} 
-                                            alt={getItemLabel(item)} 
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/e6e8f0/843d9b?text=Item'; }}
-                                        />
-                                    </div>
-                                ))}
+                                {items.slice(0, 3).map((item, idx) => {
+                                    const subImg = getItemImage(item);
+                                    return (
+                                        <div
+                                            key={item._id || idx}
+                                            className="w-5 h-5 rounded-md overflow-hidden border border-white bg-gray-100"
+                                        >
+                                            <img 
+                                                src={getImageUrl(subImg) || DEFAULT_GARMENT_IMAGE} 
+                                                alt={getItemLabel(item)} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_GARMENT_IMAGE; }}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                             <span className="text-[9px] sm:text-[10px] font-bold text-gray-700 truncate capitalize">
                                 {items.length > 1
                                     ? `${items.length} garments · qty ${itemCount}`
                                     : (
                                         <>
-                                            <span className="truncate">{getItemLabel(items[0]).toLowerCase()}</span>
+                                            <span className="truncate">{getItemLabel(items[0])}</span>
                                             <span className="text-gray-400 ml-1 font-semibold">x{items[0]?.quantity || 1}</span>
                                         </>
                                     )}
                             </span>
                         </div>
-                        
+
+                        {/* Right: Badge for Visit vs Standard */}
                         {isTailorAtHome ? (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-primary/30 text-primary text-[8px] font-black uppercase tracking-wider bg-white shrink-0 shadow-sm">
-                                <Home size={10} /> TAILOR AT HOME
-                            </div>
+                            <span className="text-[8px] sm:text-[9px] font-extrabold text-[#843D9B] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100 uppercase tracking-tight shrink-0 flex items-center gap-1">
+                                <Home size={9} /> Doorstep Visit
+                            </span>
                         ) : (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-gray-200 text-gray-500 text-[8px] font-black uppercase tracking-wider bg-gray-50 shrink-0">
-                                {items[0]?.measurements?.type === 'sample' ? 'Sample Garment' :
-                                 items[0]?.measurements?.type === 'slip' ? 'Slip Uploaded' :
-                                 items[0]?.measurements?.type === 'saved' ? 'Saved Profile' : 'Self Measured'}
-                            </div>
+                            <span className="text-[8px] sm:text-[9px] font-extrabold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200/50 uppercase tracking-tight shrink-0">
+                                {items[0]?.measurements?.type === 'sample' ? 'Sample Pickup' : 'Measurement Profile'}
+                            </span>
                         )}
                     </div>
                 </div>
             </Link>
 
-            {/* Review Button & Logic */}
+            {/* Leave Review Action Button (Only when delivered) */}
             {['delivered', 'product-delivered', 'order-completed'].includes((order.status || '').toLowerCase()) && !order.isReviewed && (
                 <div className="mt-2.5 pt-2.5 border-t border-gray-100 flex justify-end">
                     <button 
                         onClick={(e) => {
                             e.preventDefault();
-                            e.stopPropagation();
                             setIsReviewModalOpen(true);
                         }}
-                        className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-amber-50 border border-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors shadow-sm"
+                        className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-lg transition-all"
                     >
-                        Rate Experience
+                        Rate Order & Tailor
                     </button>
                 </div>
             )}
 
+            {/* Review Modal */}
             <ReviewModal 
                 isOpen={isReviewModalOpen}
                 onClose={() => setIsReviewModalOpen(false)}
@@ -169,9 +182,6 @@ const OrderCard = ({ order }) => {
                 deliveryPartnerId={order.deliveryPartner?._id || order.deliveryPartner}
                 onSuccess={() => {
                     setIsReviewModalOpen(false);
-                    if (window.location.pathname.includes('/user/orders')) {
-                        window.location.reload();
-                    }
                 }}
             />
         </div>
