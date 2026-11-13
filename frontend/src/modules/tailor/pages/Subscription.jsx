@@ -7,6 +7,7 @@ const Subscription = () => {
     const [plans, setPlans] = useState([]);
     const [tailorData, setTailorData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubEnabled, setIsSubEnabled] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -16,7 +17,13 @@ const Subscription = () => {
                     api.get('/tailors/me')
                 ]);
                 
-                if (plansRes.data.success) setPlans(plansRes.data.data);
+                if (plansRes.data?.isEnabled === false) {
+                    setIsSubEnabled(false);
+                    setPlans([]);
+                } else if (plansRes.data?.success) {
+                    setIsSubEnabled(true);
+                    setPlans(plansRes.data.data || []);
+                }
                 if (tailorRes.data.success) setTailorData(tailorRes.data.data);
             } catch (error) {
                 console.error('Error fetching subscription data:', error);

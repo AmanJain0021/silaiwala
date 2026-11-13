@@ -58,7 +58,7 @@ function computeVisitFee(distanceKm, visitSettings = {}) {
  * Single source of truth for checkout totals (matches Bill Details on customer app).
  * Measurement visit fee is charged ONCE per order, scaled accurately with distance.
  */
-async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings) {
+async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, settings, customerMembership = null) {
   const visitSettings = settings.visitFee || { baseFee: 150, perKmFee: 20, freeKm: 3 };
   const deliveryRates = settings.deliveryRates || { baseFee: 20, perKmRate: 10 };
   const platformFeePercentage = settings.walletConfig?.platformFeePercentage ?? 5;
@@ -193,7 +193,7 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     }
 
     const merchandiseSubtotal = totalBase + totalAddons + totalFabric + totalTailorAtHome;
-    if (freeDeliveryMinOrder > 0 && merchandiseSubtotal >= freeDeliveryMinOrder) {
+    if ((freeDeliveryMinOrder > 0 && merchandiseSubtotal >= freeDeliveryMinOrder) || customerMembership?.freeDelivery) {
       orderDeliveryFee = 0;
       freeDeliveryApplied = true;
     }
@@ -209,16 +209,22 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount;
   const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
 
-  // Grand total customer pays (delivery fee may be 0 if free-delivery promo)
-  const finalTotal = Math.round(
+  // Membership discount
+  const membershipDiscount = customerMembership?.discountPercentage
+    ? Math.round((totalBase + totalAddons) * (Number(customerMembership.discountPercentage) / 100))
+    : 0;
+
+  // Grand total customer pays (delivery fee may be 0 if free-delivery promo or membership)
+  const finalTotal = Math.max(0, Math.round(
     totalBase +
       totalAddons +
       totalFabric +
       totalTailorAtHome +
       platformFeeAmount +
       totalTaxes +
-      orderDeliveryFee
-  );
+      orderDeliveryFee -
+      membershipDiscount
+  ));
 
   // Sanity: components must recombine to total
   const recomposed =
@@ -228,7 +234,8 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     Math.round(totalTailorAtHome) +
     platformFeeAmount +
     totalTaxes +
-    Math.round(orderDeliveryFee);
+    Math.round(orderDeliveryFee) -
+    membershipDiscount;
   if (recomposed !== finalTotal) {
     console.warn(
       `[checkoutPricing] recompose mismatch: recomposed=${recomposed} finalTotal=${finalTotal}`
@@ -243,6 +250,17 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     actualDeliveryCost: Math.round(actualDeliveryCost),
     pickupDeliveryCost: Math.round(pickupDeliveryCost),
     dropoffDeliveryCost: Math.round(dropoffDeliveryCost),
+    addons: Math.round(totalAddons),
+    tailorAtHome: Math.round(totalTailorAtHome),
+    fabric: Math.round(totalFabric),
+    platformFee: platformFeeAmount,
+    platformFeePercentage,
+    gstPercentage,
+    distanceKm: finalDistanceKm,
+    freeDeliveryApplied,
+    membershipDiscount,
+    isMembershipPerkApplied: !!(customerMembership && (customerMembership.freeDelivery || customerMembership.discountPercentage > 0)),
+  };
     addons: Math.round(totalAddons),
     fabric: Math.round(totalFabric),
     tailorAtHome: Math.round(totalTailorAtHome),

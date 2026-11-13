@@ -1135,12 +1135,20 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     }));
   }
 
-  const serverPricing = await computeCheckoutPricing(
-    pricingItems,
-    deliveryAddress,
-    isCartCheckout,
-    settings
-  );
+    const Customer = require("../../../models/Customer.js");
+    const custRecord = await Customer.findOne({ user: req.user.id }).populate("activeCustomerPlan");
+    let customerMembership = null;
+    if (custRecord?.activeCustomerPlan && custRecord.customerPlanExpiryDate && new Date(custRecord.customerPlanExpiryDate) > new Date()) {
+      customerMembership = custRecord.activeCustomerPlan;
+    }
+
+    const serverPricing = await computeCheckoutPricing(
+      pricingItems,
+      deliveryAddress,
+      isCartCheckout,
+      settings,
+      customerMembership
+    );
 
   let discountAmount = 0;
   let finalAmount = Math.round(serverPricing.total);
@@ -2088,7 +2096,16 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
     pricingItems = await enrichOrderItemsForPricing(items);
   }
 
-  const data = await computeCheckoutPricing(pricingItems, deliveryAddress, !!isCartCheckout, settings);
+  const Customer = require("../../../models/Customer.js");
+  const custRecord = req.user?.id
+    ? await Customer.findOne({ user: req.user.id }).populate("activeCustomerPlan")
+    : null;
+  let customerMembership = null;
+  if (custRecord?.activeCustomerPlan && custRecord.customerPlanExpiryDate && new Date(custRecord.customerPlanExpiryDate) > new Date()) {
+    customerMembership = custRecord.activeCustomerPlan;
+  }
+
+  const data = await computeCheckoutPricing(pricingItems, deliveryAddress, !!isCartCheckout, settings, customerMembership);
 
   res.status(200).json({
     success: true,

@@ -2,11 +2,65 @@ const SubscriptionPlan = require("../../../models/SubscriptionPlan.js");
 const Tailor = require("../../../models/Tailor.js");
 const Customer = require("../../../models/Customer.js");
 const User = require("../../../models/User.js");
+const Settings = require("../../../models/Settings.js");
 const LoyaltyPointTransaction = require("../../../models/LoyaltyPointTransaction.js");
 const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const razorpay = require("../../../config/razorpay.js");
 const crypto = require("crypto");
+
+async function getSubConfig() {
+  const settings = await Settings.getSettings();
+  return {
+    customerMembershipEnabled: settings.subscriptionConfig?.customerMembershipEnabled ?? true,
+    tailorSubscriptionEnabled: settings.subscriptionConfig?.tailorSubscriptionEnabled ?? true,
+  };
+}
+
+/**
+ * @desc    Get subscription system configuration (ON/OFF status)
+ * @route   GET /api/v1/subscriptions/config
+ * @access  Public / Authenticated
+ */
+exports.getSubscriptionConfig = asyncHandler(async (req, res, next) => {
+  const config = await getSubConfig();
+  res.status(200).json({
+    success: true,
+    data: config,
+  });
+});
+
+/**
+ * @desc    Update subscription system configuration (Admin)
+ * @route   PUT /api/v1/subscriptions/config
+ * @access  Private (Admin only)
+ */
+exports.updateSubscriptionConfig = asyncHandler(async (req, res, next) => {
+  const { customerMembershipEnabled, tailorSubscriptionEnabled } = req.body;
+  const settings = await Settings.getSettings();
+
+  if (!settings.subscriptionConfig) {
+    settings.subscriptionConfig = {};
+  }
+
+  if (customerMembershipEnabled !== undefined) {
+    settings.subscriptionConfig.customerMembershipEnabled = !!customerMembershipEnabled;
+  }
+  if (tailorSubscriptionEnabled !== undefined) {
+    settings.subscriptionConfig.tailorSubscriptionEnabled = !!tailorSubscriptionEnabled;
+  }
+
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Subscription configuration updated successfully",
+    data: {
+      customerMembershipEnabled: settings.subscriptionConfig.customerMembershipEnabled,
+      tailorSubscriptionEnabled: settings.subscriptionConfig.tailorSubscriptionEnabled,
+    },
+  });
+});
 
 /**
  * @desc    Get all subscription plans
@@ -14,7 +68,25 @@ const crypto = require("crypto");
  * @access  Public or Authenticated
  */
 exports.getPlans = asyncHandler(async (req, res, next) => {
+  const config = await getSubConfig();
   const audience = req.query.audience === "customer" ? "customer" : "tailor";
+
+  if (audience === "customer" && !config.customerMembershipEnabled) {
+    return res.status(200).json({
+      success: true,
+      isEnabled: false,
+      data: [],
+    });
+  }
+
+  if (audience === "tailor" && !config.tailorSubscriptionEnabled) {
+    return res.status(200).json({
+      success: true,
+      isEnabled: false,
+      data: [],
+    });
+  }
+
   const filter = { isActive: { $ne: false } };
   if (audience === "customer") {
     filter.audience = "customer";
@@ -25,6 +97,7 @@ exports.getPlans = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
+    isEnabled: true,
     data: plans,
   });
 });
@@ -39,6 +112,11 @@ exports.createSubscriptionOrder = asyncHandler(async (req, res, next) => {
   
   if (req.user.role !== "tailor") {
     return next(new ErrorResponse("Not authorized to access this route", 403));
+  }
+
+  const config = await getSubConfig();
+  if (!config.tailorSubscriptionEnabled) {
+    return next(new ErrorResponse("Tailor subscriptions are currently disabled by administrator", 403));
   }
   
   const plan = await SubscriptionPlan.findById(planId);
@@ -67,7 +145,8 @@ exports.createSubscriptionOrder = asyncHandler(async (req, res, next) => {
         orderId: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        planId: plan._id
+        planId: plan._id,
+        key: process.env.RAZORPAY_KEY_ID
       }
     });
   } catch (error) {
@@ -86,6 +165,11 @@ exports.subscribe = asyncHandler(async (req, res, next) => {
 
   if (req.user.role !== "tailor") {
     return next(new ErrorResponse("Not authorized to access this route", 403));
+  }
+
+  const config = await getSubConfig();
+  if (!config.tailorSubscriptionEnabled) {
+    return next(new ErrorResponse("Tailor subscriptions are currently disabled by administrator", 403));
   }
 
   const plan = await SubscriptionPlan.findById(planId);
@@ -151,6 +235,11 @@ exports.redeemWithPoints = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Only customers can redeem plans with points", 403));
   }
 
+  const config = await getSubConfig();
+  if (!config.customerMembershipEnabled) {
+    return next(new ErrorResponse("Customer membership is currently disabled by administrator", 403));
+  }
+
   const plan = await SubscriptionPlan.findById(planId);
   if (!plan || plan.audience !== "customer") {
     return next(new ErrorResponse("Customer subscription plan not found", 404));
@@ -204,6 +293,191 @@ exports.redeemWithPoints = asyncHandler(async (req, res, next) => {
       activePlan: plan,
       planExpiryDate: expiryDate,
       loyaltyPoints: user.loyaltyPoints,
+    },
+  });
+});
+
+/**
+ * @desc    Get active customer membership & points
+ * @route   GET /api/v1/subscriptions/my-membership
+ * @access  Private (Customer)
+ */
+exports.getMyMembership = asyncHandler(async (req, res, next) => {
+  const config = await getSubConfig();
+  if (!config.customerMembershipEnabled) {
+    return res.status(200).json({
+      success: true,
+      isEnabled: false,
+      data: {
+        activePlan: null,
+        planExpiryDate: null,
+        daysRemaining: 0,
+        isExpired: true,
+        loyaltyPoints: 0,
+      },
+    });
+  }
+
+  const customer = await Customer.findOne({ user: req.user.id })
+    .populate("activeCustomerPlan");
+
+  const user = await User.findById(req.user.id).select("loyaltyPoints");
+  const loyaltyPoints = user?.loyaltyPoints || 0;
+
+  if (!customer || !customer.activeCustomerPlan) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        activePlan: null,
+        planExpiryDate: null,
+        daysRemaining: 0,
+        isExpired: true,
+        loyaltyPoints,
+      },
+    });
+  }
+
+  const now = new Date();
+  const expiry = customer.customerPlanExpiryDate ? new Date(customer.customerPlanExpiryDate) : null;
+  const isExpired = !expiry || expiry < now;
+
+  if (isExpired) {
+    customer.activeCustomerPlan = null;
+    await customer.save();
+    return res.status(200).json({
+      success: true,
+      data: {
+        activePlan: null,
+        planExpiryDate: null,
+        daysRemaining: 0,
+        isExpired: true,
+        loyaltyPoints,
+      },
+    });
+  }
+
+  const daysRemaining = Math.max(0, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+  res.status(200).json({
+    success: true,
+    data: {
+      activePlan: customer.activeCustomerPlan,
+      planExpiryDate: expiry,
+      daysRemaining,
+      isExpired: false,
+      loyaltyPoints,
+    },
+  });
+});
+
+/**
+ * @desc    Create Razorpay order for customer membership
+ * @route   POST /api/v1/subscriptions/create-customer-order
+ * @access  Private (Customer)
+ */
+exports.createCustomerSubscriptionOrder = asyncHandler(async (req, res, next) => {
+  const { planId } = req.body;
+
+  if (req.user.role !== "customer") {
+    return next(new ErrorResponse("Only customers can purchase membership", 403));
+  }
+
+  const config = await getSubConfig();
+  if (!config.customerMembershipEnabled) {
+    return next(new ErrorResponse("Customer membership is currently disabled by administrator", 403));
+  }
+
+  const plan = await SubscriptionPlan.findById(planId);
+  if (!plan || plan.audience !== "customer") {
+    return next(new ErrorResponse("Customer membership plan not found", 404));
+  }
+  if (plan.isActive === false) {
+    return next(new ErrorResponse("This plan is currently not available", 400));
+  }
+  if (!plan.price || plan.price <= 0) {
+    return next(new ErrorResponse("This plan is free or redeemed with points only", 400));
+  }
+
+  const options = {
+    amount: Math.round(plan.price * 100),
+    currency: "INR",
+    receipt: `cust_sub_${crypto.randomBytes(5).toString("hex")}`,
+  };
+
+  try {
+    const razorpayOrder = await razorpay.orders.create(options);
+    res.status(200).json({
+      success: true,
+      data: {
+        orderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        planId: plan._id,
+        key: process.env.RAZORPAY_KEY_ID,
+      },
+    });
+  } catch (error) {
+    console.error("Razorpay Customer Subscription Error:", error);
+    return next(new ErrorResponse("Razorpay order creation failed", 500));
+  }
+});
+
+/**
+ * @desc    Activate customer membership after payment
+ * @route   POST /api/v1/subscriptions/subscribe-customer
+ * @access  Private (Customer)
+ */
+exports.subscribeCustomer = asyncHandler(async (req, res, next) => {
+  const { planId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  if (req.user.role !== "customer") {
+    return next(new ErrorResponse("Only customers can purchase membership", 403));
+  }
+
+  const config = await getSubConfig();
+  if (!config.customerMembershipEnabled) {
+    return next(new ErrorResponse("Customer membership is currently disabled by administrator", 403));
+  }
+
+  const plan = await SubscriptionPlan.findById(planId);
+  if (!plan || plan.audience !== "customer") {
+    return next(new ErrorResponse("Customer membership plan not found", 404));
+  }
+
+  if (plan.price > 0) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return next(new ErrorResponse("Payment details are required for this plan", 400));
+    }
+
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest("hex");
+
+    if (razorpay_signature !== expectedSign) {
+      return next(new ErrorResponse("Invalid payment signature", 400));
+    }
+  }
+
+  let customer = await Customer.findOne({ user: req.user.id });
+  if (!customer) {
+    customer = await Customer.create({ user: req.user.id });
+  }
+
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + (plan.durationDays || 30));
+
+  customer.activeCustomerPlan = plan._id;
+  customer.customerPlanExpiryDate = expiryDate;
+  await customer.save();
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully activated ${plan.name} membership!`,
+    data: {
+      activePlan: plan,
+      planExpiryDate: expiryDate,
     },
   });
 });

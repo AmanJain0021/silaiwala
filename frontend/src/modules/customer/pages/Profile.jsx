@@ -247,14 +247,16 @@ const ProfilePage = () => {
                             subLabel={`${displayUser.loyaltyPoints || 0} Points`}
                             to="/user/loyalty"
                         />
-                        <MenuOption
-                            layout="vertical"
-                            icon={Crown}
-                            color="text-orange-500"
-                            label="Membership"
-                            subLabel="Elite Member"
-                            to="/user/membership"
-                        />
+                        {profile?.customerMembershipEnabled !== false && (
+                            <MenuOption
+                                layout="vertical"
+                                icon={Crown}
+                                color="text-orange-500"
+                                label="Membership"
+                                subLabel={profile?.membership?.isActive ? profile.membership.plan?.name : "VIP Club"}
+                                to="/user/membership"
+                            />
+                        )}
                         <MenuOption
                             layout="vertical"
                             icon={Wallet}
@@ -283,25 +285,54 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
-                {/* Membership Banner */}
-                <div className="mb-6 bg-[#25103E] rounded-2xl p-4 text-white shadow-xl flex items-center justify-between group cursor-pointer relative overflow-hidden" onClick={() => navigate('/user/membership')}>
-                    {/* Background glow */}
-                    <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/20 blur-[50px] rounded-full pointer-events-none"></div>
-                    <div className="flex items-start gap-4 relative z-10">
-                        <div className="w-12 h-12 flex items-center justify-center shrink-0 text-[#FFB800]">
-                            <Crown size={32} strokeWidth={1.5} />
+                {/* Membership Banner (Only if enabled by Admin) */}
+                {profile?.customerMembershipEnabled !== false && (() => {
+                    const activeMembership = profile?.membership;
+                    const hasActive = activeMembership?.isActive && activeMembership?.plan;
+                    const planName = hasActive ? activeMembership.plan.name : 'SewZella Club';
+                    const daysRemaining = activeMembership?.daysRemaining ?? 0;
+
+                    return (
+                        <div
+                            className={`mb-6 rounded-2xl p-4 text-white shadow-xl flex items-center justify-between group cursor-pointer relative overflow-hidden transition-all ${
+                                hasActive
+                                    ? 'bg-gradient-to-r from-[#200c3b] via-[#3d115e] to-[#7B1FA2] border border-purple-400/30'
+                                    : 'bg-[#25103E]'
+                            }`}
+                            onClick={() => navigate('/user/membership')}
+                        >
+                            {/* Background glow */}
+                            <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+                            <div className="flex items-start gap-4 relative z-10">
+                                <div className="w-12 h-12 flex items-center justify-center shrink-0 text-[#FFB800]">
+                                    <Crown size={32} strokeWidth={1.5} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <h4 className="text-sm font-bold tracking-tight">{planName}</h4>
+                                        {hasActive ? (
+                                            <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                                                Active · {daysRemaining}d
+                                            </span>
+                                        ) : (
+                                            <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                                VIP Club
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[9px] text-gray-300 font-medium leading-relaxed max-w-[200px]">
+                                        {hasActive
+                                            ? 'Enjoying FREE Delivery, Special Discounts & Priority Support'
+                                            : 'Get FREE Pickup, Stitching Discounts & VIP Priority matching'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button className="shrink-0 bg-white text-[#25103E] px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 group-hover:bg-gray-100 transition-colors z-10">
+                                {hasActive ? 'Manage VIP' : 'Explore Club'} <ChevronRight size={12} />
+                            </button>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-bold mb-1 tracking-tight">SewZella Elite Membership</h4>
-                            <p className="text-[9px] text-gray-300 font-medium leading-relaxed max-w-[180px]">
-                                You are enjoying FREE Pickup, Priority Support & Exclusive Discounts
-                            </p>
-                        </div>
-                    </div>
-                    <button className="shrink-0 bg-white text-[#25103E] px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 group-hover:bg-gray-100 transition-colors">
-                        View Benefits <ChevronRight size={12} />
-                    </button>
-                </div>
+                    );
+                })()}
 
                 {/* Settings Section */}
                 <div className="mb-6">

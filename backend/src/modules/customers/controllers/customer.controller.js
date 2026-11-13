@@ -23,11 +23,34 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("User not found", 404));
   }
   
-  let customerProfile = await Customer.findOne({ user: req.user.id }).lean();
+  let customerProfile = await Customer.findOne({ user: req.user.id })
+    .populate("activeCustomerPlan");
   
   if (!customerProfile) {
     customerProfile = await Customer.create({ user: req.user.id });
-    customerProfile = customerProfile.toJSON();
+  }
+
+  // Check if active plan has expired
+  let activeMembership = null;
+  const Settings = require("../../../models/Settings.js");
+  const settings = await Settings.getSettings();
+  const customerMembershipEnabled = settings.subscriptionConfig?.customerMembershipEnabled ?? true;
+
+  if (customerMembershipEnabled && customerProfile.activeCustomerPlan) {
+    const now = new Date();
+    const expiry = customerProfile.customerPlanExpiryDate ? new Date(customerProfile.customerPlanExpiryDate) : null;
+    if (expiry && expiry < now) {
+      customerProfile.activeCustomerPlan = null;
+      await customerProfile.save();
+    } else {
+      const daysRemaining = expiry ? Math.max(0, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+      activeMembership = {
+        plan: customerProfile.activeCustomerPlan,
+        expiryDate: expiry,
+        daysRemaining,
+        isActive: true,
+      };
+    }
   }
   
   // Calculate Stats
@@ -43,6 +66,8 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
     data: {
       ...user.toJSON(),
       profile: customerProfile,
+      membership: activeMembership,
+      customerMembershipEnabled,
       stats: {
         totalOrders,
         pendingOrders,

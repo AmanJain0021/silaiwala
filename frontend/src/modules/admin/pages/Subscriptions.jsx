@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Plus, Edit2, Trash2, CheckCircle, XCircle, AlertCircle, X, Zap, Star, Users, Calendar, Clock, RefreshCw } from 'lucide-react';
+import { CreditCard, Plus, Edit2, Trash2, CheckCircle, XCircle, AlertCircle, X, Zap, Star, Users, Calendar, Clock, RefreshCw, Crown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../tailor/services/api'; // Using existing API service
 
@@ -29,12 +29,53 @@ const AdminSubscriptions = () => {
         audience: 'tailor',
         pointsPrice: 0,
         durationDays: 30,
+        freeDelivery: false,
+        discountPercentage: 0,
+        prioritySupport: false,
     });
+    const [audienceFilter, setAudienceFilter] = useState('all');
+    const [subConfig, setSubConfig] = useState({
+        customerMembershipEnabled: true,
+        tailorSubscriptionEnabled: true,
+    });
+    const [isUpdatingConfig, setIsUpdatingConfig] = useState(false);
+
+    const fetchConfig = useCallback(async () => {
+        try {
+            const res = await api.get('/subscriptions/config');
+            if (res.data?.success) setSubConfig(res.data.data);
+        } catch (err) {
+            console.error('Failed to load subscription config:', err);
+        }
+    }, []);
 
     useEffect(() => {
         fetchPlans();
         fetchSubscribers();
-    }, []);
+        fetchConfig();
+    }, [fetchConfig]);
+
+    const handleToggleConfig = async (key) => {
+        setIsUpdatingConfig(true);
+        const nextVal = !subConfig[key];
+        const payload = {
+            ...subConfig,
+            [key]: nextVal
+        };
+        try {
+            const res = await api.put('/subscriptions/config', payload);
+            if (res.data?.success) {
+                setSubConfig(res.data.data);
+                toast.success(
+                    `${key === 'customerMembershipEnabled' ? 'Customer Membership' : 'Tailor Subscription'} ${nextVal ? 'ENABLED' : 'DISABLED'} successfully!`
+                );
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update setting');
+        } finally {
+            setIsUpdatingConfig(false);
+        }
+    };
 
     const fetchPlans = async () => {
         setIsLoading(true);
@@ -73,11 +114,11 @@ const AdminSubscriptions = () => {
             setFormData({
                 name: plan.name,
                 price: plan.price,
-                billingCycle: plan.billingCycle,
-                commissionRange: plan.commissionRange,
-                features: plan.features.join(', '),
-                isPopular: plan.isPopular,
-                theme: plan.theme,
+                billingCycle: plan.billingCycle || 'Monthly',
+                commissionRange: plan.commissionRange || '',
+                features: plan.features?.join(', ') || '',
+                isPopular: plan.isPopular ?? false,
+                theme: plan.theme || 'basic',
                 isActive: plan.isActive ?? true,
                 maxOrdersPerMonth: plan.maxOrdersPerMonth ?? -1,
                 sortOrder: plan.sortOrder ?? 0,
@@ -85,6 +126,9 @@ const AdminSubscriptions = () => {
                 audience: plan.audience || 'tailor',
                 pointsPrice: plan.pointsPrice ?? 0,
                 durationDays: plan.durationDays ?? 30,
+                freeDelivery: plan.freeDelivery ?? false,
+                discountPercentage: plan.discountPercentage ?? 0,
+                prioritySupport: plan.prioritySupport ?? false,
             });
         } else {
             setEditingPlan(null);
@@ -103,6 +147,9 @@ const AdminSubscriptions = () => {
                 audience: 'tailor',
                 pointsPrice: 0,
                 durationDays: 30,
+                freeDelivery: false,
+                discountPercentage: 0,
+                prioritySupport: false,
             });
         }
         setIsModalOpen(true);
@@ -128,14 +175,19 @@ const AdminSubscriptions = () => {
         try {
             // Process features string to array
             const featuresArray = formData.features.split(',').map(f => f.trim()).filter(f => f);
+            const isCustomer = formData.audience === 'customer';
             
             const payload = {
                 ...formData,
-                price: Number(formData.price),
-                maxOrdersPerMonth: Number(formData.maxOrdersPerMonth),
-                sortOrder: Number(formData.sortOrder),
+                price: Number(formData.price) || 0,
+                commissionRange: isCustomer ? 'N/A' : (formData.commissionRange || 'N/A'),
+                maxOrdersPerMonth: isCustomer ? -1 : Number(formData.maxOrdersPerMonth),
+                sortOrder: Number(formData.sortOrder) || 0,
                 pointsPrice: Number(formData.pointsPrice) || 0,
                 durationDays: Number(formData.durationDays) || 30,
+                freeDelivery: !!formData.freeDelivery,
+                discountPercentage: Number(formData.discountPercentage) || 0,
+                prioritySupport: !!formData.prioritySupport,
                 features: featuresArray
             };
 
@@ -219,6 +271,115 @@ const AdminSubscriptions = () => {
                 </div>
             </div>
 
+            {/* Master Subscription System Toggles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Customer Membership Toggle */}
+                <div className={`p-5 rounded-2xl border transition-all ${
+                    subConfig.customerMembershipEnabled
+                        ? 'bg-gradient-to-br from-purple-50/50 via-white to-purple-50/30 border-purple-200 shadow-sm'
+                        : 'bg-gray-50 border-gray-200 opacity-90'
+                }`}>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3.5">
+                            <div className={`p-2.5 rounded-xl shrink-0 ${
+                                subConfig.customerMembershipEnabled
+                                    ? 'bg-purple-100 text-[#843D9B]'
+                                    : 'bg-gray-200 text-gray-500'
+                            }`}>
+                                <Crown size={22} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="text-sm font-black text-gray-900">Customer VIP Membership</h3>
+                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                        subConfig.customerMembershipEnabled
+                                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                            : 'bg-gray-200 text-gray-600 border border-gray-300'
+                                    }`}>
+                                        {subConfig.customerMembershipEnabled ? 'ACTIVE / VISIBLE' : 'DISABLED / HIDDEN'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                    {subConfig.customerMembershipEnabled
+                                        ? 'Customer app shows SewZella Club cards, discounts, and free delivery perks.'
+                                        : 'Membership is completely hidden from customer profile, banners, and checkout.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Switch button */}
+                        <button
+                            type="button"
+                            disabled={isUpdatingConfig}
+                            onClick={() => handleToggleConfig('customerMembershipEnabled')}
+                            className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                                subConfig.customerMembershipEnabled ? 'bg-[#843D9B]' : 'bg-gray-300'
+                            }`}
+                            title={`Turn customer membership ${subConfig.customerMembershipEnabled ? 'OFF' : 'ON'}`}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                                    subConfig.customerMembershipEnabled ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
+                </div>
+
+                {/* 2. Tailor Partner Subscription Toggle */}
+                <div className={`p-5 rounded-2xl border transition-all ${
+                    subConfig.tailorSubscriptionEnabled
+                        ? 'bg-gradient-to-br from-indigo-50/50 via-white to-indigo-50/30 border-indigo-200 shadow-sm'
+                        : 'bg-gray-50 border-gray-200 opacity-90'
+                }`}>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3.5">
+                            <div className={`p-2.5 rounded-xl shrink-0 ${
+                                subConfig.tailorSubscriptionEnabled
+                                    ? 'bg-indigo-100 text-indigo-700'
+                                    : 'bg-gray-200 text-gray-500'
+                            }`}>
+                                <Zap size={22} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="text-sm font-black text-gray-900">Tailor Partner Subscriptions</h3>
+                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                        subConfig.tailorSubscriptionEnabled
+                                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                            : 'bg-gray-200 text-gray-600 border border-gray-300'
+                                    }`}>
+                                        {subConfig.tailorSubscriptionEnabled ? 'ENFORCED' : 'DISABLED / UNLIMITED'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                    {subConfig.tailorSubscriptionEnabled
+                                        ? 'Tailors see subscription tier limits and upgrade options in their dashboard.'
+                                        : 'Subscription limits are bypassed. Tailors can accept unlimited orders freely.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Switch button */}
+                        <button
+                            type="button"
+                            disabled={isUpdatingConfig}
+                            onClick={() => handleToggleConfig('tailorSubscriptionEnabled')}
+                            className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                                subConfig.tailorSubscriptionEnabled ? 'bg-indigo-600' : 'bg-gray-300'
+                            }`}
+                            title={`Turn tailor subscriptions ${subConfig.tailorSubscriptionEnabled ? 'OFF' : 'ON'}`}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                                    subConfig.tailorSubscriptionEnabled ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Sub-Navigation Tabs */}
             <div className="flex border-b border-gray-200 space-x-8">
                 <button
@@ -247,8 +408,45 @@ const AdminSubscriptions = () => {
 
             {/* TAB 1: SUBSCRIPTION PLANS GRID */}
             {activeTab === 'plans' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {plans.map((plan) => (
+                <>
+                    {/* Filter by Audience */}
+                    <div className="flex items-center gap-2 mb-6">
+                        <button
+                            onClick={() => setAudienceFilter('all')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                audienceFilter === 'all'
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                            All Plans ({plans.length})
+                        </button>
+                        <button
+                            onClick={() => setAudienceFilter('tailor')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                audienceFilter === 'tailor'
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                            Tailor Plans ({plans.filter(p => p.audience !== 'customer').length})
+                        </button>
+                        <button
+                            onClick={() => setAudienceFilter('customer')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                audienceFilter === 'customer'
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                            Customer VIP Plans ({plans.filter(p => p.audience === 'customer').length})
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {plans
+                            .filter(p => (audienceFilter === 'all' ? true : audienceFilter === 'customer' ? p.audience === 'customer' : p.audience !== 'customer'))
+                            .map((plan) => (
                         <div key={plan._id} className={`bg-white rounded-2xl shadow-sm border relative overflow-hidden flex flex-col ${!plan.isActive ? 'border-gray-200 opacity-75' : plan.theme === 'elite' ? 'border-amber-200' : plan.theme === 'premium' ? 'border-indigo-200' : 'border-gray-200'}`}>
                             
                             {/* Status Ribbon */}
@@ -281,8 +479,10 @@ const AdminSubscriptions = () => {
                                 <div className="mt-4 flex items-end gap-1">
                                     {plan.audience === 'customer' ? (
                                         <>
-                                            <span className="text-3xl font-black text-gray-900">{plan.pointsPrice || 0}</span>
-                                            <span className="text-sm font-medium text-gray-500 mb-1">pts / {plan.durationDays || 30} days</span>
+                                            <span className="text-3xl font-black text-gray-900">₹{plan.price || 0}</span>
+                                            <span className="text-sm font-medium text-gray-500 mb-1">
+                                                {plan.pointsPrice > 0 ? `· ${plan.pointsPrice} pts` : ''} / {plan.durationDays || 30} days
+                                            </span>
                                         </>
                                     ) : (
                                         <>
@@ -292,7 +492,7 @@ const AdminSubscriptions = () => {
                                     )}
                                 </div>
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-2">
-                                    {plan.audience === 'customer' ? 'Customer · points' : 'Tailor · Razorpay'}
+                                    {plan.audience === 'customer' ? 'Customer VIP Club' : 'Tailor · Razorpay'}
                                 </p>
                                 {plan.description && (
                                     <p className="text-sm text-gray-600 mt-3">{plan.description}</p>
@@ -300,16 +500,29 @@ const AdminSubscriptions = () => {
                             </div>
 
                             <div className="p-6 flex-1 flex flex-col">
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Commission</p>
-                                        <p className="font-semibold text-gray-900 text-sm">{plan.commissionRange}</p>
+                                {plan.audience === 'customer' ? (
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                                            <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-800 mb-0.5">Delivery Perk</p>
+                                            <p className="font-bold text-emerald-900 text-xs">{plan.freeDelivery ? '✨ Free Delivery' : 'Standard'}</p>
+                                        </div>
+                                        <div className="bg-purple-50/60 p-3 rounded-xl border border-purple-100">
+                                            <p className="text-[10px] uppercase tracking-wider font-bold text-purple-800 mb-0.5">Stitching Discount</p>
+                                            <p className="font-bold text-purple-900 text-xs">{plan.discountPercentage ? `${plan.discountPercentage}% Off` : 'None'}</p>
+                                        </div>
                                     </div>
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Order Limit</p>
-                                        <p className="font-semibold text-gray-900 text-sm">{plan.maxOrdersPerMonth === -1 ? 'Unlimited' : `${plan.maxOrdersPerMonth}/mo`}</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                            <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Commission</p>
+                                            <p className="font-semibold text-gray-900 text-sm">{plan.commissionRange}</p>
+                                        </div>
+                                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                            <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 mb-1">Order Limit</p>
+                                            <p className="font-semibold text-gray-900 text-sm">{plan.maxOrdersPerMonth === -1 ? 'Unlimited' : `${plan.maxOrdersPerMonth}/mo`}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="mb-6 flex-1">
                                     <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Key Features</p>
@@ -349,6 +562,7 @@ const AdminSubscriptions = () => {
                         </div>
                     ))}
                 </div>
+                </>
             )}
 
             {/* TAB 2: ACTIVE SUBSCRIBERS (TAILORS) */}
@@ -535,29 +749,89 @@ const AdminSubscriptions = () => {
                                         </>
                                     )}
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Billing Cycle</label>
-                                        <select
-                                            name="billingCycle"
-                                            value={formData.billingCycle}
-                                            onChange={handleInputChange}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                        >
-                                            <option value="Monthly">Monthly</option>
-                                            <option value="Yearly">Yearly</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Commission Range (e.g. 15% - 20%)</label>
-                                        <input
-                                            type="text"
-                                            name="commissionRange"
-                                            value={formData.commissionRange}
-                                            onChange={handleInputChange}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                            required
-                                        />
-                                    </div>
+                                     {formData.audience === 'tailor' ? (
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Billing Cycle</label>
+                                                <select
+                                                    name="billingCycle"
+                                                    value={formData.billingCycle}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                >
+                                                    <option value="Monthly">Monthly</option>
+                                                    <option value="Yearly">Yearly</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Commission Range (e.g. 15% - 20%)</label>
+                                                <input
+                                                    type="text"
+                                                    name="commissionRange"
+                                                    value={formData.commissionRange}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    required={formData.audience === 'tailor'}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Max Orders Per Month</label>
+                                                <input
+                                                    type="number"
+                                                    name="maxOrdersPerMonth"
+                                                    value={formData.maxOrdersPerMonth}
+                                                    onChange={handleInputChange}
+                                                    placeholder="-1 for unlimited"
+                                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    required={formData.audience === 'tailor'}
+                                                />
+                                                <p className="text-xs text-gray-500 mt-1">Use -1 for unlimited orders.</p>
+                                            </div>
+                                        </>
+                                     ) : (
+                                        <>
+                                            <div className="col-span-full bg-purple-50/50 p-4 rounded-2xl border border-purple-100 space-y-3">
+                                                <h4 className="text-xs font-black uppercase tracking-wider text-[#843D9B]">Customer VIP Perks</h4>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-700 mb-1">Stitching Discount %</label>
+                                                        <input
+                                                            type="number"
+                                                            name="discountPercentage"
+                                                            value={formData.discountPercentage}
+                                                            onChange={handleInputChange}
+                                                            min="0"
+                                                            max="100"
+                                                            placeholder="e.g. 10"
+                                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold"
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col justify-center space-y-2">
+                                                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="freeDelivery"
+                                                                checked={formData.freeDelivery}
+                                                                onChange={handleInputChange}
+                                                                className="w-4 h-4 text-primary rounded focus:ring-primary border-gray-300"
+                                                            />
+                                                            Free Doorstep Delivery on all orders
+                                                        </label>
+                                                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="prioritySupport"
+                                                                checked={formData.prioritySupport}
+                                                                onChange={handleInputChange}
+                                                                className="w-4 h-4 text-primary rounded focus:ring-primary border-gray-300"
+                                                            />
+                                                            VIP Priority Tailor Matching & Support
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                     )}
 
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-1.5">Theme / Style</label>
@@ -571,19 +845,6 @@ const AdminSubscriptions = () => {
                                             <option value="premium">Premium (Blue/Indigo styling)</option>
                                             <option value="elite">Elite (Gold/Amber styling)</option>
                                         </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Max Orders Per Month</label>
-                                        <input
-                                            type="number"
-                                            name="maxOrdersPerMonth"
-                                            value={formData.maxOrdersPerMonth}
-                                            onChange={handleInputChange}
-                                            placeholder="-1 for unlimited"
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                            required
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Use -1 for unlimited orders.</p>
                                     </div>
                                     
                                     <div>

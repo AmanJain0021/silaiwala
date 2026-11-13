@@ -775,25 +775,31 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   // Check Subscription Limits when accepting an order
   if (status === "accepted" && order.status !== "accepted") {
-    const Tailor = require("../../../models/Tailor.js");
-    const SubscriptionPlan = require("../../../models/SubscriptionPlan.js");
-    const tailorProfile = await Tailor.findOne({ user: req.user.id }).populate('activePlan');
-    
-    if (tailorProfile && tailorProfile.activePlan && tailorProfile.activePlan.maxOrdersPerMonth !== -1) {
-      const maxOrders = tailorProfile.activePlan.maxOrdersPerMonth;
+    const Settings = require("../../../models/Settings.js");
+    const settings = await Settings.getSettings();
+    const tailorSubscriptionEnabled = settings.subscriptionConfig?.tailorSubscriptionEnabled ?? true;
+
+    if (tailorSubscriptionEnabled) {
+      const Tailor = require("../../../models/Tailor.js");
+      const SubscriptionPlan = require("../../../models/SubscriptionPlan.js");
+      const tailorProfile = await Tailor.findOne({ user: req.user.id }).populate('activePlan');
       
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      if (tailorProfile && tailorProfile.activePlan && tailorProfile.activePlan.maxOrdersPerMonth !== -1) {
+        const maxOrders = tailorProfile.activePlan.maxOrdersPerMonth;
+        
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
 
-      const acceptedOrdersCount = await Order.countDocuments({
-        tailor: req.user.id,
-        acceptedAt: { $gte: startOfMonth },
-        status: { $ne: 'cancelled' }
-      });
+        const acceptedOrdersCount = await Order.countDocuments({
+          tailor: req.user.id,
+          acceptedAt: { $gte: startOfMonth },
+          status: { $ne: 'cancelled' }
+        });
 
-      if (acceptedOrdersCount >= maxOrders) {
-        return next(new ErrorResponse(`You have reached your subscription plan limit of ${maxOrders} orders per month. Please upgrade your plan.`, 403));
+        if (acceptedOrdersCount >= maxOrders) {
+          return next(new ErrorResponse(`You have reached your subscription plan limit of ${maxOrders} orders per month. Please upgrade your plan.`, 403));
+        }
       }
     }
   }

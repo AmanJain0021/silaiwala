@@ -24,6 +24,7 @@ const ProfileSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [profile, setProfile] = useState(null);
+    const [isSubEnabled, setIsSubEnabled] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -78,6 +79,12 @@ const ProfileSettings = () => {
                         profileImage: data.user?.profileImage || ''
                     });
                 }
+                try {
+                    const cfgRes = await api.get('/subscriptions/config');
+                    if (cfgRes.data?.success && cfgRes.data.data?.tailorSubscriptionEnabled === false) {
+                        setIsSubEnabled(false);
+                    }
+                } catch (e) {}
             } catch (error) {
                 console.error('Error fetching profile:', error);
             } finally {
@@ -211,7 +218,7 @@ const ProfileSettings = () => {
 
     const menuOptions = [
         { icon: <Edit2 size={20} />, label: 'Edit Profile', action: () => setIsEditing(true) },
-        { icon: <Ticket size={20} />, label: 'Subscription Plan', path: '/partner/subscription' },
+        ...(isSubEnabled ? [{ icon: <Ticket size={20} />, label: 'Subscription Plan', path: '/partner/subscription' }] : []),
         { icon: <History size={20} />, label: 'Order History', path: '/partner/orders' },
         { icon: <Bell size={20} />, label: 'Notifications', path: '/partner/notifications' },
         { icon: <MapPin size={20} />, label: 'Pick Up Information', action: () => setActiveModal('pickup') },
@@ -608,13 +615,15 @@ const ProfileSettings = () => {
                                 extra={<span className="bg-green-50 text-[10px] font-black px-2.5 py-1 rounded-full text-green-600 border border-green-100">₹ 0</span>}
                                 to="/partner/wallet"
                             />
-                            <MenuOption
-                                icon={Ticket}
-                                color="bg-[#843D9B]"
-                                label="Subscription Plan"
-                                subLabel="Manage your plan"
-                                to="/partner/subscription"
-                            />
+                            {isSubEnabled && (
+                                <MenuOption
+                                    icon={Ticket}
+                                    color="bg-[#843D9B]"
+                                    label="Subscription Plan"
+                                    subLabel="Manage your plan"
+                                    to="/partner/subscription"
+                                />
+                            )}
                             <MenuOption
                                 icon={MapPin}
                                 color="bg-[#843D9B]"

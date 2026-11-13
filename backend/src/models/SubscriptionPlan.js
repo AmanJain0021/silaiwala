@@ -10,21 +10,20 @@ const subscriptionPlanSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
+      default: 0,
     },
     billingCycle: {
       type: String,
-      required: true,
-      enum: ["Monthly", "Yearly"],
+      enum: ["Monthly", "Quarterly", "Yearly"],
       default: "Monthly",
     },
     commissionRange: {
       type: String,
-      required: true,
+      default: "N/A",
     },
     commissionPercentage: {
       type: Number,
-      required: true,
-      default: 20,
+      default: 0,
     },
     features: [
       {
@@ -57,7 +56,7 @@ const subscriptionPlanSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    /** tailor = Razorpay tailor plans; customer = redeem with loyalty points */
+    /** tailor = Razorpay tailor plans; customer = loyalty points or cash membership */
     audience: {
       type: String,
       enum: ["tailor", "customer"],
@@ -70,6 +69,21 @@ const subscriptionPlanSchema = new mongoose.Schema(
     durationDays: {
       type: Number,
       default: 30,
+    },
+    /** Customer Membership Perks */
+    freeDelivery: {
+      type: Boolean,
+      default: false,
+    },
+    discountPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    prioritySupport: {
+      type: Boolean,
+      default: true,
     },
   },
   {

@@ -92,6 +92,10 @@ const settingsSchema = new mongoose.Schema(
       /** Loyalty points for new user when they sign up with a referral code */
       refereePointsOnFirstAdvance: { type: Number, default: 25 },
     },
+    subscriptionConfig: {
+      customerMembershipEnabled: { type: Boolean, default: true },
+      tailorSubscriptionEnabled: { type: Boolean, default: true },
+    },
     tailorSearch: {
       searchRadiusKm: { type: mongoose.Schema.Types.Mixed, default: "default" },
     }
