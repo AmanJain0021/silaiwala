@@ -1,0 +1,84 @@
+/*
+ * react-router-dom compatible helpers on top of expo-router, so ported screens
+ * keep the web's navigation code: navigate(path, { replace, state }), navigate(-1),
+ * useLocation().state / .pathname / .search, useParams(), useSearchParams().
+ * Route files mirror web paths, so web paths work unchanged.
+ * `state` objects can't travel in URLs, so they are kept in memory keyed by an id param.
+ */
+import { useMemo, useCallback } from 'react';
+import { useRouter, usePathname, useLocalSearchParams, router as globalRouter } from 'expo-router';
+
+const stateStore = new Map();
+let seq = 0;
+const STATE_PARAM = '__s';
+
+function buildHref(to, state) {
+  const [pathPart, query = ''] = String(to).split('?');
+  const params = {};
+  new URLSearchParams(query).forEach((v, k) => { params[k] = v; });
+  if (state !== undefined && state !== null) {
+    const id = `${Date.now().toString(36)}${(seq++).toString(36)}`;
+    stateStore.set(id, state);
+    if (stateStore.size > 60) stateStore.delete(stateStore.keys().next().value);
+    params[STATE_PARAM] = id;
+  }
+  let pathname = pathPart || '/user';
+  if (pathname.length > 1 && pathname.endsWith('/')) pathname = pathname.slice(0, -1);
+  return Object.keys(params).length ? { pathname, params } : pathname;
+}
+
+export function navigateTo(r, to, opts = {}) {
+  if (typeof to === 'number') {
+    if (to < 0 && r.canGoBack()) r.back();
+    else if (to < 0) r.replace('/user');
+    return;
+  }
+  const href = buildHref(to, opts.state);
+  if (opts.replace) r.replace(href);
+  else r.push(href);
+}
+
+export function useNavigate() {
+  const r = useRouter();
+  return useCallback((to, opts) => navigateTo(r, to, opts), [r]);
+}
+
+/** Imperative navigation outside components (stores, interceptors). */
+export const navigate = (to, opts) => navigateTo(globalRouter, to, opts);
+
+export function useLocation() {
+  const pathname = usePathname();
+  const params = useLocalSearchParams();
+  return useMemo(() => {
+    const { [STATE_PARAM]: sid, ...rest } = params;
+    const qs = new URLSearchParams();
+    Object.entries(rest).forEach(([k, v]) => { if (v != null && !Array.isArray(v)) qs.set(k, v); });
+    const search = qs.toString();
+    return { pathname, search: search ? `?${search}` : '', state: sid ? stateStore.get(sid) ?? null : null, hash: '' };
+  }, [pathname, params]);
+}
+
+export function useParams() {
+  const params = useLocalSearchParams();
+  return useMemo(() => {
+    const { [STATE_PARAM]: _s, ...rest } = params;
+    return rest;
+  }, [params]);
+}
+
+export function useSearchParams() {
+  const params = useLocalSearchParams();
+  const r = useRouter();
+  const sp = useMemo(() => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (k !== STATE_PARAM && v != null && !Array.isArray(v)) qs.set(k, v); });
+    return qs;
+  }, [params]);
+  const setSearchParams = useCallback((next) => {
+    const obj = {};
+    const src = next instanceof URLSearchParams ? next : new URLSearchParams(next);
+    src.forEach((v, k) => { obj[k] = v; });
+    r.setParams(obj);
+  }, [r]);
+  return [sp, setSearchParams];
+}
