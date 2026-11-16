@@ -1,0 +1,64 @@
+// Port of modules/customer/pages/Wishlist.jsx (converted with scripts/web2rn.js, then reviewed)
+import Screen from '../components/common/Screen';
+import React, { useEffect } from "react";
+import { ArrowLeft, Heart, ShoppingBag } from "lucide-react-native";
+import {  useNavigate } from '../lib/nav';
+import useWishlistStore from "../store/wishlistStore";
+import ProductCard from "../components/customer/store/ProductCard";
+import { Box, I, Txt, Btn, Scroll } from '../components/ui/primitives';
+const WishlistPage = () => {
+  const navigate = useNavigate();
+  const {
+    items,
+    clearWishlist,
+    fetchWishlist,
+    isLoading
+  } = useWishlistStore(state => state);
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
+  if (items.length === 0) {
+    return <Screen className="bg-gray-50"><Box className="flex-1 bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <Box className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <I icon={Heart} size={32} className="text-gray-400" />
+                </Box>
+                <Txt className="text-lg font-bold text-gray-900 mb-2">Your Wishlist is Empty</Txt>
+                <Txt className="text-sm text-gray-500 mb-6 max-w-xs">Save items that you like to your wishlist to review them later.</Txt>
+                <Btn onPress={() => navigate("/user/store")} className="px-6 py-3 rounded-xl bg-[#843D9B] text-white font-bold text-sm shadow-lg hover:bg-[#6B2F7E] transition-all">
+                    Explore Store
+                </Btn>
+            </Box></Screen>;
+  }
+  return <Screen className="bg-gray-50"><Box className="flex-1 bg-gray-50 font-sans relative">
+            {/* 1. Header */}
+            <Box className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between pt-safe">
+                <Box className="flex items-center gap-3">
+                    <Btn onPress={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-50 text-gray-700">
+                        <I icon={ArrowLeft} size={20} />
+                    </Btn>
+                    <Box>
+                        <Txt className="text-sm font-bold text-gray-900">My Wishlist</Txt>
+                        <Txt className="text-[10px] text-gray-500">{items.length} Items saved</Txt>
+                    </Box>
+                </Box>
+                <Btn onPress={clearWishlist} className="text-[10px] font-bold text-error uppercase tracking-wider px-3 py-1 hover:bg-indigo-50 rounded-full transition-colors">
+                    Clear All
+                </Btn>
+            </Box>
+            <Scroll className="flex-1" contentClassName="pb-24">
+
+            <Box className="max-w-7xl mx-auto p-4 md:p-8">
+                <Box className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 animate-in fade-in duration-500">
+                    {items.map(product => <ProductCard key={product._id || product.id} product={product} />)}
+                </Box>
+            </Box>
+
+                        </Scroll>
+{/* Quick Link to Cart if items available */}
+            <Btn onPress={() => navigate("/user/cart")} className="fixed bottom-22 right-6 w-14 h-14 bg-[#843D9B] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 md:hidden">
+                <I icon={ShoppingBag} size={24} />
+            </Btn>
+
+        </Box></Screen>;
+};
+export default WishlistPage;

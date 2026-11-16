@@ -1,0 +1,331 @@
+// Port of modules/customer/pages/OrderSuccess.jsx (converted with scripts/web2rn.js, then reviewed)
+import { sessionStore } from '../lib/storage';
+import Screen from '../components/common/Screen';
+import React, { useEffect, useState } from "react";
+import { Check, Clock, FileText, Send, User, CreditCard, Scissors, Truck, BadgeCheck, PackageCheck, ShoppingBag, Share2, MessageSquare, ChevronRight, ShieldCheck, Bell } from "lucide-react-native";
+import {  useLocation, useNavigate } from '../lib/nav';
+import useCheckoutStore from "../store/checkoutStore";
+import useCartStore from "../store/cartStore";
+import api from "../lib/api";
+import toast from '../lib/toast';
+import Confetti from "../components/ui/Confetti";
+import { shareLink, copyText } from "../lib/share";
+import { Box, I, Txt, Btn, Img, Scroll } from '../components/ui/primitives';
+const OrderSuccess = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const state = location.state || {};
+  const {
+    isAlteration = false,
+    isCustomDesign = false,
+    isFullyPaid = false,
+    isBulk = false,
+    pendingAcceptance = false,
+    isNewOrder = false
+  } = state;
+  const savedOrderId = (() => {
+    try {
+      return sessionStore.getItem('lastCreatedOrderId');
+    } catch (e) {
+      return null;
+    }
+  })();
+  const savedOrderNum = (() => {
+    try {
+      return sessionStore.getItem('lastCreatedOrderNum');
+    } catch (e) {
+      return null;
+    }
+  })();
+  const activeOrderId = (typeof state.orderId === 'object' ? state.orderId?._id || state.orderId?.id : state.orderId) || savedOrderId;
+  const displayOrderNum = (typeof state.orderNumber === 'object' ? state.orderNumber?.orderId || state.orderNumber?.alterationId || state.orderNumber?._id : state.orderNumber) || savedOrderNum;
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const clearCheckout = useCheckoutStore(state => state.clearCheckout);
+  const clearCart = useCartStore(state => state.clearCart);
+
+  // Confetti effect ONLY triggers ONCE at the exact time of fresh order creation
+  useEffect(() => {
+    const orderIdentifier = (typeof state.orderId === 'object' ? state.orderId?._id || state.orderId?.id : state.orderId) || state.orderNumber;
+
+    // Strictly require isNewOrder flag and ensure we haven't already celebrated this order in this session
+    if (!isNewOrder || !orderIdentifier) {
+      return;
+    }
+    const storageKey = `confetti_fired_${orderIdentifier}`;
+    try {
+      if (sessionStore.getItem(storageKey)) {
+        return; // Already celebrated this order!
+      }
+      sessionStore.setItem(storageKey, 'true');
+    } catch (e) {}
+    setShowConfetti(true);
+  }, [isNewOrder, state.orderId, state.orderNumber]);
+  useEffect(() => {
+    clearCheckout();
+    clearCart();
+    if (activeOrderId) {
+      const fetchOrder = async () => {
+        try {
+          let endpoint = `/orders/${activeOrderId}`;
+          if (isAlteration) {
+            endpoint = `/alterations/${activeOrderId}`;
+          } else if (isCustomDesign) {
+            endpoint = `/custom-designs/${activeOrderId}`;
+          }
+          const res = await api.get(endpoint);
+          if (res?.data?.success) {
+            setOrderDetails(res.data.data);
+          }
+        } catch (err) {
+          // Silently fail or log if order is not immediately indexed
+          console.log('Order fetch info:', err?.message || err);
+        }
+      };
+      fetchOrder();
+    }
+  }, [activeOrderId, isAlteration, isCustomDesign, clearCheckout, clearCart]);
+
+  // Fallback if accessed without any order context
+  if (!activeOrderId && !orderDetails) {
+    return <Screen className="bg-gray-50"><Box className="flex-1 bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <Box className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-3"><I icon={Check} size={28} className="text-white" /></Box>
+                <Txt className="text-base font-bold text-gray-900 mb-1">Order Requested!</Txt>
+                <Txt className="text-xs text-gray-500 mb-4">Your order has been submitted successfully.</Txt>
+                <Btn onPress={() => navigate('/user/orders')} className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-primary-dark cursor-pointer">
+                    View My Orders
+                </Btn>
+            </Box></Screen>;
+  }
+
+  // Resolve Tailor Info
+  const tailor = orderDetails?.tailor || state.tailor || {};
+  const shopName = tailor.shopName || 'Tailor Partner';
+  const rating = tailor.rating || 4.8;
+  const totalReviews = tailor.totalReviews || 320;
+  const experience = tailor.experienceInYears || 8;
+  const tailorProfileId = tailor.tailorProfileId || tailor._id || tailor.id || '';
+  const profileImage = tailor.profileImage || tailor.image || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=256&auto=format&fit=crop';
+
+  // Order number formatting
+  const displayOrderNumber = orderDetails?.orderId || displayOrderNum || (activeOrderId ? `${isAlteration ? 'ALT' : isCustomDesign ? 'DES' : 'ORD'}-${String(activeOrderId).slice(-8).toUpperCase()}` : 'ORD-459CC94A');
+  const titleText = isAlteration ? "Alteration Requested!" : isCustomDesign ? "Custom Design Requested!" : "Order Requested Successfully!";
+  const subtitleText = isAlteration ? "Your alteration request has been submitted to the tailor. You will receive a quote soon." : isCustomDesign ? "Your custom design request has been submitted to the tailor. You will receive a quote soon." : "Your request has been sent to the tailor. You’ll be notified once the tailor accepts your order.";
+  const handleCopyOrderId = () => {
+    copyText(displayOrderNumber, 'ID copied to clipboard!');
+  };
+  const handleShare = async () => {
+    await shareLink({ title: 'SilaiWala Order', text: `My SilaiWala request (${displayOrderNumber}) has been submitted successfully!` });
+  };
+  const steps = isAlteration ? [{
+    icon: <I icon={Send} size={18} />,
+    label: "Request sent"
+  }, {
+    icon: <I icon={User} size={18} />,
+    label: "Tailor quotes"
+  }, {
+    icon: <I icon={CreditCard} size={18} />,
+    label: "Accept quote"
+  }, {
+    icon: <I icon={Scissors} size={18} />,
+    label: "Garment pickup"
+  }, {
+    icon: <I icon={Truck} size={18} />,
+    label: "Delivered"
+  }] : isCustomDesign ? [{
+    icon: <I icon={Send} size={18} />,
+    label: "Design sent"
+  }, {
+    icon: <I icon={User} size={18} />,
+    label: "Tailor quotes"
+  }, {
+    icon: <I icon={CreditCard} size={18} />,
+    label: "Accept & pay"
+  }, {
+    icon: <I icon={Scissors} size={18} />,
+    label: "Crafting"
+  }, {
+    icon: <I icon={Truck} size={18} />,
+    label: "Delivered"
+  }] : [{
+    icon: <I icon={Send} size={18} />,
+    label: "Order sent to tailor"
+  }, {
+    icon: <I icon={User} size={18} />,
+    label: "Tailor accepts"
+  }, {
+    icon: <I icon={CreditCard} size={18} />,
+    label: "Pay advance"
+  }, {
+    icon: <I icon={Scissors} size={18} />,
+    label: "Stitching begins"
+  }, {
+    icon: <I icon={Truck} size={18} />,
+    label: "Order delivered"
+  }];
+  return <Screen className="bg-gray-50"><Box className="flex-1 bg-gray-50 text-center animate-in fade-in duration-500 font-sans text-gray-900">
+            <Scroll className="flex-1" contentClassName="flex-grow items-center justify-center p-4" contentContainerStyle={{ flexGrow: 1 }}>
+            <Box className="w-full max-w-md space-y-4 py-4">
+
+                {/* Confetti & Top Checkmark Section */}
+                <Box className="relative pt-6 pb-2 flex flex-col items-center">
+                    
+                    {/* Festive Floating Confetti Particles */}
+                    <Box className="absolute inset-x-0 top-0 h-32 overflow-hidden pointer-events-none z-0">
+                        <Box className="absolute top-2 left-6 w-2.5 h-2.5 bg-pink-400 rotate-12 rounded-xs opacity-80 animate-bounce" />
+                        <Box className="absolute top-8 left-16 w-2 h-4 bg-purple-500 -rotate-45 rounded-xs opacity-75 animate-pulse" />
+                        <Box className="absolute top-4 left-1/4 w-3 h-1.5 bg-yellow-400 rotate-45 opacity-90" />
+                        <Box className="absolute top-10 right-1/4 w-2.5 h-2.5 bg-emerald-400 rotate-12 rounded-full opacity-80" />
+                        <Box className="absolute top-3 right-16 w-3 h-2 bg-purple-400 rotate-30 rounded-xs opacity-85" />
+                        <Box className="absolute top-7 right-6 w-2 h-2 bg-pink-500 rounded-full opacity-70 animate-bounce" />
+                        <Box className="absolute top-14 left-10 w-2 h-2 bg-amber-400 rotate-45 opacity-80" />
+                        <Box className="absolute top-16 right-12 w-2.5 h-1.5 bg-indigo-400 -rotate-12 opacity-85" />
+                    </Box>
+
+                    {/* Green Glow Checkmark Icon */}
+                    <Box className="relative z-10 w-20 h-20 bg-green-100/90 rounded-full flex items-center justify-center mb-3">
+                        <Box className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/20 transform transition-transform hover:scale-105">
+                            <I icon={Check} size={32} className="text-white stroke-[3]" />
+                        </Box>
+                    </Box>
+
+                    {/* Main Title */}
+                    <Txt className="text-2xl sm:text-[26px] font-extrabold text-gray-900 tracking-tight mb-2">
+                        {titleText}
+                    </Txt>
+
+                    {/* Order ID Badge */}
+                    <Btn onPress={handleCopyOrderId} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all font-mono font-bold text-xs sm:text-sm tracking-wide shadow-2xs cursor-pointer active:scale-95">
+                        <I icon={FileText} size={16} className="text-primary" />
+                        <Txt>{displayOrderNumber}</Txt>
+                    </Btn>
+
+                    {/* Subtitle */}
+                    <Txt className="text-xs sm:text-sm text-gray-600 max-w-xs text-center mt-3 leading-relaxed font-medium">
+                        {subtitleText}
+                    </Txt>
+                </Box>
+
+                {/* Green Notice Box */}
+                <Box className="w-full bg-green-50 border border-green-200 rounded-3xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm text-left">
+                    <Box className="flex items-center gap-3">
+                        <Box className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+                            <I icon={Clock} size={20} />
+                        </Box>
+                        <Box>
+                            <Txt className="font-bold text-gray-900 text-xs sm:text-sm leading-snug">
+                                {isAlteration || isCustomDesign ? "Tailor will review and provide quote" : "Tailor will respond within 30–60 minutes"}
+                            </Txt>
+                            <Txt className="text-[11px] sm:text-xs text-gray-600 font-medium mt-0.5">
+                                We’ll notify you as soon as your request is updated.
+                            </Txt>
+                        </Box>
+                    </Box>
+                    <Box className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center relative shrink-0">
+                        <I icon={Bell} size={20} className="text-primary" />
+                        <Box className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold border-2 border-white">
+                            ✓
+                        </Box>
+                    </Box>
+                </Box>
+
+                {/* What Happens Next Card */}
+                <Box className="w-full bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-gray-100">
+                    <Txt className="font-bold text-gray-900 text-sm sm:text-base text-left mb-5">
+                        What happens next?
+                    </Txt>
+                    <Box className="relative flex items-start justify-between px-1">
+                        <Box className="absolute top-5 left-8 right-8 border-t-2 border-dashed border-primary/20 z-0" />
+
+                        {steps.map((step, idx) => <Box key={idx} className="relative z-10 flex flex-col items-center text-center w-1/5">
+                                <Box className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-primary/10 flex items-center justify-center text-primary shadow-2xs">
+                                    {step.icon}
+                                </Box>
+                                <Box className="w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center -mt-1.5 shadow-2xs">
+                                    {idx + 1}
+                                </Box>
+                                <Txt className="text-[10px] sm:text-[11px] font-semibold text-gray-700 leading-tight mt-1.5 max-w-[65px]">
+                                    {step.label}
+                                </Txt>
+                            </Box>)}
+                    </Box>
+                </Box>
+
+                {/* Your Tailor Card */}
+                <Box className="w-full text-left">
+                    <Txt className="font-bold text-gray-900 text-xs sm:text-sm mb-2 pl-1">
+                        Your Tailor
+                    </Txt>
+                    <Box className="w-full bg-white rounded-3xl p-3.5 sm:p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+                        <Box className="flex items-center gap-3 min-w-0">
+                            <Img src={profileImage} className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-primary/10 shadow-2xs shrink-0" fallback="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=256&auto=format&fit=crop" />
+                            <Box className="min-w-0">
+                                <Box className="flex items-center gap-1.5">
+                                    <Txt className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                                        {shopName}
+                                    </Txt>
+                                    <I icon={BadgeCheck} size={18} className="text-primary fill-primary shrink-0 stroke-white" />
+                                </Box>
+                                <Txt className="text-xs text-gray-500 font-medium truncate mt-0.5">
+                                    <Txt className="text-amber-500 font-bold">★ {rating}</Txt> ({totalReviews}) • {experience}+ Years Exp.
+                                </Txt>
+                            </Box>
+                        </Box>
+                        <Btn onPress={() => {
+            if (tailorProfileId) navigate(`/user/tailor/${tailorProfileId}`);else navigate('/user/tailors');
+          }} className="px-4 py-2 text-xs font-bold text-primary border border-primary rounded-full hover:bg-primary/5 transition-all active:scale-95 whitespace-nowrap shrink-0 cursor-pointer">
+                            View Profile
+                        </Btn>
+                    </Box>
+                </Box>
+
+                {/* Action Buttons Stack */}
+                <Box className="w-full space-y-3 pt-2">
+                    {/* Track Order Status / View Orders Button */}
+                    <Btn onPress={() => navigate(isAlteration || isCustomDesign ? "/user/orders" : `/user/orders/${activeOrderId}/track`)} className="w-full py-4 px-6 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-full shadow-lg shadow-primary/30 flex items-center justify-between text-base transition-all active:scale-[0.98] cursor-pointer">
+                        <Box className="flex items-center gap-2.5">
+                            <I icon={PackageCheck} size={20} className="text-white shrink-0" />
+                            <Txt className="text-white font-bold">
+                                {isAlteration || isCustomDesign ? "View My Requests" : "Track Order Status"}
+                            </Txt>
+                        </Box>
+                        <I icon={ChevronRight} size={20} className="text-white shrink-0" />
+                    </Btn>
+
+                    {/* Back to Home Button (Pill shape) */}
+                    <Btn onPress={() => navigate("/user")} className="w-full py-3.5 px-6 bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-800 font-bold rounded-full flex items-center justify-center gap-2 text-sm transition-all active:scale-[0.98] shadow-sm">
+                        <I icon={ShoppingBag} size={18} className="text-gray-700 shrink-0" />
+                        <Txt>Back to Home</Txt>
+                    </Btn>
+
+                    {/* Share & Support Row (Pill shapes) */}
+                    <Box className="flex items-center gap-3 pt-1">
+                        <Btn onPress={handleShare} className="w-1/2 py-3 px-4 bg-white border border-gray-200 hover:bg-primary/5 active:bg-primary/10 text-primary font-bold rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-sm">
+                            <I icon={Share2} size={16} />
+                            <Txt>Share Order</Txt>
+                        </Btn>
+
+                        <Btn onPress={() => navigate("/user/support")} className="w-1/2 py-3 px-4 bg-white border border-gray-200 hover:bg-primary/5 active:bg-primary/10 text-primary font-bold rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
+                            <I icon={MessageSquare} size={16} />
+                            <Txt>Chat with Support</Txt>
+                        </Btn>
+                    </Box>
+                </Box>
+
+                {/* Footer Trust Badges */}
+                <Box className="pt-3 pb-1 text-xs text-gray-500 font-medium flex items-center justify-center gap-2 flex-wrap opacity-85">
+                    <Txt className="flex items-center gap-1">
+                        <I icon={ShieldCheck} size={14} className="text-primary" />
+                        100% Secure
+                    </Txt>
+                    <Txt>•</Txt>
+                    <Txt>Verified Tailors</Txt>
+                    <Txt>•</Txt>
+                    <Txt>Easy Support</Txt>
+                </Box>
+
+            </Box>
+                    </Scroll>
+{showConfetti && <Confetti />}</Box></Screen>;
+};
+export default OrderSuccess;
