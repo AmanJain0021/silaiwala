@@ -3,3 +3,7 @@ temp_auto_push.bat
 temp_interactive_push.bat
 config.bat
 node_modules
+
+# Release binaries (built locally)
+releases/*.apk
+releases/*.aab
