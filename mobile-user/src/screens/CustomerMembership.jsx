@@ -23,7 +23,12 @@ const CustomerMembership = () => {
   const loadMembershipData = useCallback(async () => {
     try {
       setLoading(true);
-      const [plansRes, myMemRes] = await Promise.all([api.get('/subscriptions?audience=customer'), api.get('/subscriptions/my-membership')]);
+      // Native fix: load independently. On production `/subscriptions/my-membership` is not deployed yet (404),
+      // and Promise.all then discarded the plans too ("No membership plans available").
+      const [plansRes, myMemRes] = await Promise.all([
+        api.get('/subscriptions?audience=customer'),
+        api.get('/subscriptions/my-membership').catch((e) => (e?.name === 'CanceledError' ? Promise.reject(e) : { data: {} })),
+      ]);
       if (plansRes.data?.isEnabled === false || myMemRes.data?.isEnabled === false) {
         setIsSystemEnabled(false);
         setPlans([]);

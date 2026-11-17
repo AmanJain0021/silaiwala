@@ -1420,7 +1420,7 @@ const ServiceDetail = () => {
 
                 {/* 7. Live bill footer */}
                 {showFooter && (
-                    <Box className="absolute bottom-0 left-0 right-0 z-50 bg-white/95 border-t border-gray-100 p-3 pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]" style={{ elevation: 16, paddingBottom: 16 + bottomInset }}>
+                    <Box className="absolute bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 p-3 pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]" style={{ elevation: 16, paddingBottom: 16 + bottomInset }}>
                         <Box className="w-full max-w-md mx-auto">
                             <Box className="flex justify-between items-center mb-3">
                                 <Box className="flex flex-col">

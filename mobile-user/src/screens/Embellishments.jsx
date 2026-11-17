@@ -119,7 +119,7 @@ const Embellishments = () => {
 
                                 {/* Category Cards */}
                                 <Box className="grid grid-cols-2 gap-3 sm:gap-6">
-                                    {categories.map(category => <Btn key={category.id} onPress={() => setSelectedCategory(category)} className="relative w-full aspect-[4/5] bg-[#3c1e2f] rounded-3xl overflow-hidden cursor-pointer shadow-lg shadow-gray-200/50 group">
+                                    {categories.map(category => <Btn key={category.id} onPress={() => setSelectedCategory(category)} className="block relative w-full aspect-[4/5] bg-[#3c1e2f] rounded-3xl overflow-hidden cursor-pointer shadow-lg shadow-gray-200/50 group">
                                             {category.designs[0] && <Img src={category.designs[0].image} alt={category.name} className="w-full h-full object-cover opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out" />}
                                             <Box className="absolute inset-0 bg-gradient-to-t from-[#2a1320]/90 via-[#2a1320]/20 to-transparent" />
                                             
@@ -150,7 +150,7 @@ const Embellishments = () => {
                                                 <Btn onPress={() => {
                   setDetailDesign(design);
                   setIsDetailModalOpen(true);
-                }} className={cn("relative w-full aspect-[4/5] rounded-[1.5rem] overflow-hidden cursor-pointer bg-gray-900 shadow-lg group", isSelected ? "ring-2 ring-[#CEAA69]" : "")}>
+                }} className={`block ${cn("relative w-full aspect-[4/5] rounded-[1.5rem] overflow-hidden cursor-pointer bg-gray-900 shadow-lg group", isSelected ? "ring-2 ring-[#CEAA69]" : "")}`}>
                                                     <Img src={design.image} alt={design.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-90 group-hover:opacity-100" />
                                                     <Box className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                                                     

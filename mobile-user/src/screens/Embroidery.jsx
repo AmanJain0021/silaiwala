@@ -110,7 +110,7 @@ const EmbroideryPage = () => {
             return <Btn key={design.id} onPress={() => {
               setDetailDesign(design);
               setIsDetailModalOpen(true);
-            }} className={cn("relative bg-white rounded-[2rem] overflow-hidden border transition-all cursor-pointer group", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "border-gray-100 shadow-sm hover:border-indigo-200")}>
+            }} className={`block ${cn("relative bg-white rounded-[2rem] overflow-hidden border transition-all cursor-pointer group", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "border-gray-100 shadow-sm hover:border-indigo-200")}`}>
                                             <Box className="aspect-[4/3] relative">
                                                 <Img src={design.image} alt={design.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                 <Box className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
