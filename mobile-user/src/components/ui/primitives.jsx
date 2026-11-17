@@ -185,7 +185,7 @@ export function Btn({ className, style, children, onPress, disabled, onLongPress
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
           onLayout={grid.onLayout}
-          style={({ pressed }) => [view, style, pressed && !disabled ? { opacity: 0.85 } : null]}
+          style={({ pressed }) => [view, style, pressed && !disabled ? { opacity: 0.7 } : null]}
           {...rest}
         >
           {content}
