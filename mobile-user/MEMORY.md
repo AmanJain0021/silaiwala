@@ -63,6 +63,15 @@ Expo SDK 58 · React Native 0.88 · React 19.3 · Node 24 (dev machine). JavaScr
 - Google login: @react-native-google-signin (webClientId = web OAuth client) → `POST /auth/google-login {credential:idToken}`.
 - Realtime: one shared socket (`store/socketStore.js`); NotificationContext reuses it (web opened a second socket).
 - NotificationProvider wraps `/user/*` in `app/user/_layout.jsx`.
+- Style-engine rules that keep the native layout equal to the web (all in `src/lib/tw.js` / `src/components/ui/primitives.jsx`; change them there, never per screen):
+  `z-[n]` and `flex-[n]` are parsed (twrnc ignores arbitrary values); `w-full aspect-* max-h-*` keeps full width and caps height;
+  wrapped rows/grids use `alignContent: flex-start`; grid cells don't stretch and Fragments are flattened into cells;
+  in-flow `h-full` becomes a stretch (`flexGrow`/`alignSelf`), never `height: 100%`; a `Txt` with `flex` renders as a Box;
+  nested-text horizontal margins become spaces; web `<button>` content is centred vertically, clickable divs are `block`;
+  row items whose text is a single word don't shrink (CSS min-width: auto); percentage-width items do shrink;
+  top-level text gets 1px right slack (Android otherwise drops the last word); `backdrop-blur` bars become opaque;
+  `rows`/`numberOfLines` are coerced to numbers; `maxLength` never truncates an existing value.
+- UI parity check: `scripts/ui-compare/` (README in MEMORY §9) screenshots the live web at 412 px and the app via deep links and pairs them.
 - `<input type=file>` → `src/lib/files.js` (`pickImage({camera, multiple, limit})`, `pickDocument`, `readAsDataUrl`); returns `{uri,name,type,size}` objects that go straight into FormData.
 - `<input type=date|time>` → `src/components/ui/DateField.jsx` (same `YYYY-MM-DD` / `HH:MM` values as web).
 - `<select>` → `src/components/ui/Select.jsx` (`options=[{value,label}]`, opens a sheet).
@@ -79,6 +88,7 @@ None. Backend already accepts Bearer tokens, requests without Origin (CORS), and
 - Install: `npm install`
 - Run (dev build needed for native modules): `npx expo run:android` or `npx expo start`
 - Lint: `npx expo lint`
+- UI compare: `cd scripts/ui-compare && npm i`, then `node scripts/ui-compare/webshot.js .ui-compare/web /user ...` (logged-in pages: `LOGIN_PHONE`/`LOGIN_PASS` env vars for that run only), `WAIT=8 bash scripts/ui-compare/appshot.sh .ui-compare/app /user ...` (emulator running, app installed), `python3 scripts/ui-compare/pair.py .ui-compare/web .ui-compare/app .ui-compare/pairs` → `_sheet*.png`.
 - Doctor: `npx expo-doctor`
 - JS bundle check: `npx expo export --platform android`
 - Release APK (EAS, account `amankuril`, project `sewzella-user` id in app.config.js): `npm run build:apk`. It sets `EAS_NO_VCS=1 EAS_PROJECT_ROOT=<mobile-user>` so ONLY this folder is uploaded (filtered by `.easignore`). Without it EAS archives the whole git repo, including `backend/.env`. Never set NODE_ENV in eas.json (npm would skip packages Babel needs). Copy finished APKs to `../releases/`. `eas.json` production = APK, `credentialsSource: local` → reads `credentials.json` + `credentials/upload-keystore.jks` (both gitignored, never commit).
@@ -88,6 +98,7 @@ None. Backend already accepts Bearer tokens, requests without Origin (CORS), and
 - Native push: `google-services.json` (Firebase project sewzella-26c9e, shared by all four Sewzella apps) is at `mobile-user/google-services.json`; delivery is Built, not tested until a logged-in device test.
 - The Firebase file has no Android OAuth client (client_type 1) for com.sewzella.user, so Google sign-in will fail with DEVELOPER_ERROR until the upload-key SHA-1 is added to the `com.sewzella.user` Android app in Firebase.
 - Default-OTP bypass is off on production → no test login; login-dependent flows are Built, not tested.
+- Production backend is older than the repo: `GET /subscriptions/my-membership` → 404 (Membership screen tolerates it). The live web site also runs an older build, so some screens differ from the repo source; the repo is the spec.
 - Google sign-in on Android needs an Android OAuth client in the same Google Cloud project with package `com.sewzella.user` + the upload key SHA-1 (`45:5B:6F:7E:21:24:8A:ED:60:E7:E7:44:D4:23:10:02:5C:4D:BF:9D`), plus the Play App Signing SHA-1 for Play installs.
 - Long lists render inside ScrollView (same as web: no pagination on these endpoints). Move Orders/Store/ActivityHistory to FlatList if real accounts have hundreds of rows.
 - `expo-doctor`: 19/20; the React Native Directory check failed with a server error (network), not a project problem.

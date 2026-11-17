@@ -173,6 +173,10 @@ Checks run 2026-11-16 against production with read-only GETs only; no writes, pa
 - MyBulkOrders detail drawer and Wallet withdraw form became native bottom sheets (Android back closes them).
 - Arbitrary z-index classes (`z-[100]` etc.) were ignored, so overlays sat under later siblings: the Login/Signup **Skip** button could not be tapped. The style engine now maps `z-[n]`, and AuthLayout renders Skip last.
 - Screen changes felt like a website: slide animation removed (direct switch), the 4 bottom tabs stay mounted in a tab navigator instead of re-creating the screen on every tap, hidden screens are frozen, and press feedback is stronger (opacity 0.7).
+- UI parity pass (web at 412 px vs app, 34 screens incl. logged-in): fixed in the style engine — full-width hero images, missing `·` separators, cut-off Buy/Check buttons, size chips text at top, see-through bottom bars, 2-column grids collapsing, tailor list card filling the screen, Embroidery images (web-relative image URLs were built without a `/`), step-number badges, `Your Cart is Empty` losing a word, words split mid-word in badges, Services header pushed down by a search input, icon+text button labels missing, translucent pills turned white.
+- Textarea `rows="2"` crashed Bulk Inquiry (string numberOfLines on Android).
+- Edit Profile showed the phone number cut to 10 characters (maxLength truncation).
+- Membership showed "No membership plans" because production lacks `/subscriptions/my-membership`; plans now load independently.
 - LegalPage share: shares the public web URL of the document (the web shared `window.location.href`).
 
 ## Device test list

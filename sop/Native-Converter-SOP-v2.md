@@ -260,6 +260,8 @@ sha256sum "$OUT"
 - If the build fails, fix the cause and retry; after two failed attempts on the same error, stop and report the error.
 - Signing passwords are passed on the command line from the gitignored properties file. Never write them into `app.config.js`, `gradle.properties`, MEMORY.md or the checklist.
 
+**17.4a UI parity check** — keep `scripts/ui-compare/` in the app (web screenshots at 412 px with puppeteer, app screenshots via deep links `sewzella://<path>`, side-by-side sheets). Run it for every screen, public and logged in, after each batch of engine fixes; grant location/notification permissions with `adb shell pm grant` first so dialogs don't cover the shots.
+
 **17.4 Smoke test — mandatory before handing over** (emulator or USB device): `adb uninstall <package>`, then `adb install releases/<file>.apk` (build with `ABIS=arm64-v8a,armeabi-v7a,x86_64` for an x86_64 emulator), launch, check `adb logcat` for `FATAL EXCEPTION`, and take screenshots (`adb exec-out screencap -p > shot.png`) of splash, welcome/login and one public screen. Compare them with the web at 390 px.
 
 **17.5 If the user explicitly asks for EAS cloud instead:** run with `EAS_NO_VCS=1 EAS_PROJECT_ROOT=<absolute app folder>` and an `.easignore`, or EAS uploads the **whole git repository, including backend `.env` files**. Never set `NODE_ENV` in `eas.json` (npm then skips packages Babel needs). Dynamic `app.config.js` needs `extra.eas.projectId` and `owner` written by hand after `eas init`.
@@ -282,6 +284,9 @@ sha256sum "$OUT"
 | Cloud build uploaded the monorepo with secrets | Build locally; if EAS, set the project root (17.5) |
 | Release APK crashed at launch: SDK 58 turns R8 minify on by default and it stripped Room's `WorkDatabase_Impl` (WorkManager via Firebase) | Set `enableMinifyInReleaseBuilds: false` and `enableShrinkResourcesInReleaseBuilds: false` in `expo-build-properties`, or add keep rules and re-test |
 | `adb install -r` over an older debug build fails (different signing key), so the old debug app gets tested by mistake | `adb uninstall <package>` first; confirm `dumpsys package` has no `DEBUGGABLE` flag and the new `lastUpdateTime` |
+| Many screens subtly off (cards filling the screen, buttons cut off, words split, labels missing) | Fix in the style engine, not per screen: arbitrary `z-[n]`/`flex-[n]`, aspect+max-height, `alignContent: flex-start` on wrapped rows, `h-full` → stretch, flex spans → Box, Fragments flattened, single-word items don't shrink, 1px text slack. Verify with a web-vs-app screenshot comparison (412 px web vs deep-linked app) for every screen, logged in too |
+| Images stored as web-relative paths (`/images/...`) failed to load | Build `${WEB_ORIGIN}/${path without leading slash}`; check logcat `ExpoImage` errors |
+| Production backend/web older than the repo (missing routes) | Load optional calls independently (`.catch`) so one 404 doesn't blank the screen |
 | `google-services.json` lacks an Android OAuth client for the package | Google sign-in shows DEVELOPER_ERROR until the upload-key SHA-1 (and the Play app-signing SHA-1) is added in Firebase |
 
 ## 19. Final report (short)
