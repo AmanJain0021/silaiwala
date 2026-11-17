@@ -12,7 +12,7 @@ export function resolveImageSource(src) {
   if (ASSETS[decoded]) return ASSETS[decoded];
   if (/^\/?uploads\//.test(s) || /^\/?api\//.test(s)) return { uri: `${SOCKET_URL}${s.startsWith('/') ? '' : '/'}${s}` };
   // unbundled public asset of the web app
-  return { uri: `${WEB_ORIGIN}${s.startsWith('/') ? '' : '/'}${encodeURI(decodeURI(s.replace(/^\//, '')))}` };
+  return { uri: `${WEB_ORIGIN}/${encodeURI(decodeURI(s.replace(/^\/+/, '')))}` };
 }
 
 export const asset = (webPath) => ASSETS[webPath];
