@@ -6,7 +6,7 @@ import { NotificationProvider } from '../../context/NotificationContext';
 export default function UserLayout() {
   return (
     <NotificationProvider>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F8FC' }, animation: 'slide_from_right' }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F8FC' }, animation: 'none', freezeOnBlur: true }} />
     </NotificationProvider>
   );
 }

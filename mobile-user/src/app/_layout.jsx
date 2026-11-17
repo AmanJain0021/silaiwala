@@ -40,7 +40,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor: '#F7F8FC' }}>
         <ErrorBoundary>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F8FC' }, animation: 'slide_from_right' }} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F8FC' }, animation: 'none', freezeOnBlur: true }} />
           <AppManagers />
         </ErrorBoundary>
         <PromptHost />

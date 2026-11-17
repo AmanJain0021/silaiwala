@@ -1,5 +1,5 @@
 // Port of modules/customer/components/BottomNav.jsx
-import { useNavigate } from '../../lib/nav';
+import { useNavigate, TAB_ROOTS } from '../../lib/nav';
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
@@ -35,7 +35,13 @@ const NavItem = ({ to, icon, label }) => {
 
   return (
     <Btn
-      onPress={() => { if (!isActive || path !== to) router.navigate(to); }}
+      onPress={() => {
+        if (path === to) return;
+        // On a tab root: switch tabs (screens stay mounted). Deeper in the stack: pop back to the tabs
+        // instead of pushing another copy of the tab screen.
+        if (TAB_ROOTS.includes(path) || !router.canDismiss()) router.navigate(to);
+        else router.dismissTo(to);
+      }}
       accessibilityLabel={label}
       className="flex flex-col items-center gap-0.5 relative min-w-[56px] py-0.5"
     >

@@ -11,6 +11,7 @@ import { useRouter, usePathname, useLocalSearchParams, router as globalRouter } 
 const stateStore = new Map();
 let seq = 0;
 const STATE_PARAM = '__s';
+export const TAB_ROOTS = ['/user', '/user/store', '/user/orders', '/user/profile'];
 
 function buildHref(to, state) {
   const [pathPart, query = ''] = String(to).split('?');
@@ -34,6 +35,13 @@ export function navigateTo(r, to, opts = {}) {
     return;
   }
   const href = buildHref(to, opts.state);
+  // Tab roots live in one tab navigator (app/user/(tabs)): switch to the mounted tab
+  // (popping back to it from deeper screens) instead of pushing a second copy.
+  if (typeof href === 'string' && TAB_ROOTS.includes(href)) {
+    if (r.canDismiss()) r.dismissTo(href);
+    else r.navigate(href);
+    return;
+  }
   if (opts.replace) r.replace(href);
   else r.push(href);
 }
