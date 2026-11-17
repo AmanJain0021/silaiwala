@@ -67,6 +67,7 @@ Expo SDK 58 · React Native 0.88 · React 19.3 · Node 24 (dev machine). JavaScr
 - `<select>` → `src/components/ui/Select.jsx` (`options=[{value,label}]`, opens a sheet).
 - `dangerouslySetInnerHTML` (CMS, FAQ, legal) → `src/components/ui/HtmlView.jsx` (small HTML→Text renderer; per-tag classes via `tagClassNames`).
 - `navigator.share` / clipboard → `src/lib/share.js` (`shareLink`, `copyText`, `webUrl` → public web URL); `alert/confirm` → `src/lib/alert.js`; `prompt` → `src/lib/prompt.jsx`.
+- R8 minify/resource shrinking are OFF for release (`expo-build-properties`): with SDK 58's default minify ON, the release APK crashed at launch (Room `WorkDatabase_Impl` for WorkManager, pulled in by Firebase, was stripped). Do not turn it back on without keep rules and a device test.
 - Release builds strip `console.log/info/debug` (babel `transform-remove-console`, `babel.config.js`); warn/error stay.
 - Bundled web images were downscaled/palette-encoded (assets 19 MB → 4.7 MB). Originals live in `frontend/public` and `frontend/src`.
 

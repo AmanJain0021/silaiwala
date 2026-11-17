@@ -36,19 +36,19 @@ Status legend: **Verified** (ran it, saw it work) · **Built, not tested** (need
 
 | Web route | Screen | Guard | Native route file | Status |
 |---|---|---|---|---|
-| /welcome | Onboarding | P | app/welcome.jsx | Built, not tested |
-| /user/login | Login (OTP / password / Google) | P | app/user/login.jsx | Built, not tested |
+| /welcome | Onboarding | P | app/welcome.jsx | Verified (release APK on emulator, 2026-11-17) |
+| /user/login | Login (OTP / password / Google) | P | app/user/login.jsx | Verified (release APK on emulator, 2026-11-17) |
 | /user/register | Signup | P | app/user/register.jsx | Built, not tested |
 | /user/forgot-password | ForgotPassword | P | app/user/forgot-password.jsx | Built, not tested |
 | /user/legal/:type | SharedLegalPage (customer) | P | app/user/legal-page/[type].jsx | Built, not tested |
-| /user | Home | P | app/user/index.jsx | Built, not tested |
+| /user | Home | P | app/user/index.jsx | Verified (release APK on emulator, 2026-11-17) |
 | /user/services | Services | P | app/user/services/index.jsx | Built, not tested |
 | /user/services/category/:categoryId | CategoryServices | P | app/user/services/category/[categoryId].jsx | Built, not tested |
 | /user/services/:id | ServiceDetail | P | app/user/services/[id].jsx | Built, not tested |
 | /user/what-we-offer | WhatWeOffer | P | app/user/what-we-offer.jsx | Built, not tested |
 | /user/embellishments | Embellishments | P | app/user/embellishments.jsx | Built, not tested |
 | /user/embroidery | Embroidery | P | app/user/embroidery.jsx | Built, not tested |
-| /user/store | Store | P | app/user/store/index.jsx | Built, not tested |
+| /user/store | Store | P | app/user/store/index.jsx | Verified (release APK on emulator, 2026-11-17) |
 | /user/store/product/:id | StoreProductDetail | P | app/user/store/product/[id].jsx | Built, not tested |
 | /user/fabric/:id | FabricDetail | P | app/user/fabric/[id].jsx | Built, not tested |
 | /user/tailors | TailorListing | P | app/user/tailors.jsx | Built, not tested |
@@ -171,6 +171,7 @@ Checks run 2026-11-16 against production with read-only GETs only; no writes, pa
 - Profile VIP card: the nested "Explore Club" button no longer swallows the tap; the whole card opens Membership.
 - Icons drawn over inputs (e.g. the calendar icon on the Bulk Order date) no longer block taps on the field.
 - MyBulkOrders detail drawer and Wallet withdraw form became native bottom sheets (Android back closes them).
+- Arbitrary z-index classes (`z-[100]` etc.) were ignored, so overlays sat under later siblings: the Login/Signup **Skip** button could not be tapped. The style engine now maps `z-[n]`, and AuthLayout renders Skip last.
 - LegalPage share: shares the public web URL of the document (the web shared `window.location.href`).
 
 ## Device test list

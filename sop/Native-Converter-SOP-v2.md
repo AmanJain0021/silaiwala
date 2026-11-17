@@ -226,12 +226,15 @@ if [ ! -d android ] || [ "$(cat $STAMP 2>/dev/null)" != "$SUM" ]; then
   echo "$SUM" > $STAMP
 fi
 TASK=assembleRelease; [ "$TYPE" = aab ] && TASK=bundleRelease
+# read signing values before cd (the properties path is relative to the app folder)
+KS="$PWD/$(prop storeFile)"; SP="$(prop storePassword)"; KA="$(prop keyAlias)"; KP="$(prop keyPassword)"
+[ -f "$KS" ] || { echo "Keystore not found: $KS"; exit 1; }
 (cd android && ./gradlew "$TASK" \
-  -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
-  -Pandroid.injected.signing.store.file="$PWD/../$(prop storeFile)" \
-  -Pandroid.injected.signing.store.password="$(prop storePassword)" \
-  -Pandroid.injected.signing.key.alias="$(prop keyAlias)" \
-  -Pandroid.injected.signing.key.password="$(prop keyPassword)")
+  -PreactNativeArchitectures="${ABIS:-arm64-v8a,armeabi-v7a}" \
+  -Pandroid.injected.signing.store.file="$KS" \
+  -Pandroid.injected.signing.store.password="$SP" \
+  -Pandroid.injected.signing.key.alias="$KA" \
+  -Pandroid.injected.signing.key.password="$KP")
 mkdir -p ../releases
 if [ "$TYPE" = aab ]; then
   OUT="../releases/$NAME-v$VER-$CODE.aab"
@@ -257,7 +260,7 @@ sha256sum "$OUT"
 - If the build fails, fix the cause and retry; after two failed attempts on the same error, stop and report the error.
 - Signing passwords are passed on the command line from the gitignored properties file. Never write them into `app.config.js`, `gradle.properties`, MEMORY.md or the checklist.
 
-**17.4 Smoke test** (when an emulator or USB device is available): `adb install -r releases/<file>.apk`, launch, and take screenshots (`adb exec-out screencap -p > shot.png`) of splash, welcome/login and one public screen. Compare them with the web at 390 px.
+**17.4 Smoke test — mandatory before handing over** (emulator or USB device): `adb uninstall <package>`, then `adb install releases/<file>.apk` (build with `ABIS=arm64-v8a,armeabi-v7a,x86_64` for an x86_64 emulator), launch, check `adb logcat` for `FATAL EXCEPTION`, and take screenshots (`adb exec-out screencap -p > shot.png`) of splash, welcome/login and one public screen. Compare them with the web at 390 px.
 
 **17.5 If the user explicitly asks for EAS cloud instead:** run with `EAS_NO_VCS=1 EAS_PROJECT_ROOT=<absolute app folder>` and an `.easignore`, or EAS uploads the **whole git repository, including backend `.env` files**. Never set `NODE_ENV` in `eas.json` (npm then skips packages Babel needs). Dynamic `app.config.js` needs `extra.eas.projectId` and `owner` written by hand after `eas init`.
 
@@ -277,6 +280,8 @@ sha256sum "$OUT"
 | Palette PNGs grew 2× after resizing | Quantize to 256 colours; keep the smaller file |
 | Stale `android/` folder after adding Firebase | Prebuild stamp in the build script |
 | Cloud build uploaded the monorepo with secrets | Build locally; if EAS, set the project root (17.5) |
+| Release APK crashed at launch: SDK 58 turns R8 minify on by default and it stripped Room's `WorkDatabase_Impl` (WorkManager via Firebase) | Set `enableMinifyInReleaseBuilds: false` and `enableShrinkResourcesInReleaseBuilds: false` in `expo-build-properties`, or add keep rules and re-test |
+| `adb install -r` over an older debug build fails (different signing key), so the old debug app gets tested by mistake | `adb uninstall <package>` first; confirm `dumpsys package` has no `DEBUGGABLE` flag and the new `lastUpdateTime` |
 | `google-services.json` lacks an Android OAuth client for the package | Google sign-in shows DEVELOPER_ERROR until the upload-key SHA-1 (and the Play app-signing SHA-1) is added in Firebase |
 
 ## 19. Final report (short)
