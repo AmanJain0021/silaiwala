@@ -153,6 +153,8 @@ export function parse(className) {
     if (c === 'fixed') { extra.position = 'absolute'; meta.fixed = true; continue; }
     if (c === 'sticky') { meta.sticky = true; continue; }
     if (c === 'absolute') { extra.position = 'absolute'; continue; }
+    // twrnc ignores arbitrary z-index (`Number('[100]')` is NaN), so overlays fell behind later siblings and lost taps
+    if ((m = c.match(/^(-)?z-\[(-?\d+)\]$/))) { extra.zIndex = (m[1] ? -1 : 1) * Number(m[2]); continue; }
     if (c === 'pointer-events-none') { extra.pointerEvents = 'none'; continue; }
     if (c === 'pointer-events-auto') continue;
     if (c === 'w-screen') { rest.push('w-full'); continue; }

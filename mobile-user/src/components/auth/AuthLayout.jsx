@@ -15,6 +15,12 @@ export default function AuthLayout({ children }) {
   return (
     <Screen className="bg-white">
       <Box className="flex-1 w-full bg-white relative font-['Plus_Jakarta_Sans',sans-serif]">
+        <Scroll className="flex-1" contentClassName="px-4 py-6 pt-5 pb-5" contentContainerStyle={{ flexGrow: 1 }}>
+          <Animated.View style={{ opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [15, 0] }) }] }}>
+            <Box className="w-full max-w-[400px] mx-auto flex flex-col items-center py-4">{children}</Box>
+          </Animated.View>
+        </Scroll>
+        {/* Rendered after the Scroll so it stays on top and receives taps */}
         <Box className="absolute top-4 right-4 z-[100]">
           <Btn
             onPress={() => router.replace('/user')}
@@ -24,11 +30,6 @@ export default function AuthLayout({ children }) {
             <I icon={ChevronRight} size={16} strokeWidth={2.5} />
           </Btn>
         </Box>
-        <Scroll className="flex-1" contentClassName="px-4 py-6 pt-5 pb-5" contentContainerStyle={{ flexGrow: 1 }}>
-          <Animated.View style={{ opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [15, 0] }) }] }}>
-            <Box className="w-full max-w-[400px] mx-auto flex flex-col items-center py-4">{children}</Box>
-          </Animated.View>
-        </Scroll>
       </Box>
     </Screen>
   );
