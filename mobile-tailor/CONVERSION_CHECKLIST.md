@@ -15,11 +15,11 @@ Status legend: **Verified** (ran it, saw it work) · **Built, not tested** (need
 ## Routes (web `routes.jsx` TAILOR / PARTNER MODULE)
 | Web path | Screen | Guard / wrapper | Status |
 |---|---|---|---|
-| /partner/welcome | PartnerLanding | public | Built, not tested |
-| /partner/login | Login | TailorAuthLayout | Built, not tested |
-| /partner/signup (+ /partner/register redirect) | Registration (5 steps) | TailorAuthLayout | Built, not tested (needs SMS OTP) |
-| /partner/forgot-password | ForgotPassword | TailorAuthLayout | Built, not tested |
-| /partner/legal/:type | LegalPage category tailor | public | Built, not tested |
+| /partner/welcome | PartnerLanding | public | Verified (release APK on emulator, matches web) |
+| /partner/login | Login | TailorAuthLayout | Verified (release APK on emulator, matches web) |
+| /partner/signup (+ /partner/register redirect) | Registration (5 steps) | TailorAuthLayout | Step 1 renders like web (verified); OTP + submit not tested (needs SMS OTP) |
+| /partner/forgot-password | ForgotPassword | TailorAuthLayout | Verified (release APK on emulator, matches web) |
+| /partner/legal/:type | LegalPage category tailor | public | Verified (release APK on emulator, matches web) |
 | /partner/under-review · /partner/rejected | StatusPages | public | Built, not tested |
 | /partner/verification | VerificationStatus | approved/pending/rejected + layout | Built, not tested |
 | /partner | Overview | approved + layout (tab) | Built, not tested |
@@ -36,6 +36,8 @@ Status legend: **Verified** (ran it, saw it work) · **Built, not tested** (need
 | /partner/issues · /:issueId | ReportedIssues · TailorIssueDetails | approved + layout | Built, not tested |
 | /partner/orders/:id/chat | TailorOrderChat | approved, full screen | Built, not tested |
 | /partner/notifications | Notifications | approved, full screen | Built, not tested |
+
+Guard verified: opening an approved-only page while logged out redirects to Partner Sign In.
 
 ## Screens left out
 - Desktop sidebar of TailorLayout (mobile layout only). `pages/Dashboard.jsx` and `Withdraw.jsx` are not routed on the web (converted, unused). `Products.jsx.backup` ignored.
