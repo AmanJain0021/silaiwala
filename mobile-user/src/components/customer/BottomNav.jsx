@@ -61,7 +61,7 @@ const BottomNav = () => {
   return (
     <Box
       className="absolute bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] rounded-t-2xl pt-2.5 px-4"
-      style={{ paddingBottom: insets.bottom + 20, elevation: 12 }}
+      style={{ paddingBottom: insets.bottom + 6, elevation: 12 }}
     >
       <Box className="w-full max-w-md mx-auto flex items-center justify-between">
         <NavItem to="/user" icon={Shirt} label="Services" />

@@ -125,6 +125,7 @@ export function parse(className) {
   let leading = null;
 
   const classes = className.split(/\s+/).filter(Boolean);
+  const hasBackdropBlur = classes.some((c) => /^backdrop-blur/.test(c));
   for (let raw of classes) {
     let c = raw.startsWith('!') ? raw.slice(1) : raw;
     if (hasVariant(c)) continue;
@@ -177,6 +178,8 @@ export function parse(className) {
     }
     if (c === 'place-items-center' || c === 'place-content-center') { rest.push('items-center', 'justify-center'); continue; }
     if ((m = c.match(/^size-(.+)$/))) { rest.push(`w-${m[1]}`, `h-${m[1]}`); continue; }
+    // twrnc ignores arbitrary flex (`flex-[1.15]`): CSS `flex: n` = grow n, shrink 1, basis 0
+    if ((m = c.match(/^flex-\[(\d+(?:\.\d+)?)\]$/))) { extra.flexGrow = Number(m[1]); extra.flexShrink = 1; extra.flexBasis = 0; continue; }
     if (c === 'aspect-square') { extra.aspectRatio = 1; continue; }
     if (c === 'aspect-video') { extra.aspectRatio = 16 / 9; continue; }
     if ((m = c.match(/^aspect-\[(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\]$/))) { extra.aspectRatio = Number(m[1]) / Number(m[2]); continue; }
@@ -277,6 +280,21 @@ export function parse(className) {
   }
   Object.assign(style, extra);
 
+  // No backdrop blur in RN: a translucent bar (bg-white/80 + backdrop-blur) would show the page through it.
+  // Only for positioned bars/headers; translucent pills on coloured cards must stay translucent.
+  if (hasBackdropBlur && (style.position === 'absolute' || meta.sticky || meta.fixed) && typeof style.backgroundColor === 'string') {
+    style.backgroundColor = style.backgroundColor.replace(/rgba\(([^)]+),\s*([\d.]+)\)/, (all, rgb, a) => (Number(a) < 0.95 ? `rgba(${rgb}, 0.97)` : all));
+  }
+
+  // CSS: `w-full aspect-[5/4] max-h-[260px]` keeps the full width and caps the height.
+  // Yoga instead shrinks the width to keep the ratio, so resolve the height here
+  // (percentage width measured against the window width).
+  if (style.aspectRatio && style.maxHeight != null && typeof style.width === 'string' && style.width.endsWith('%')) {
+    const w = Dimensions.get('window').width * parseFloat(style.width) / 100;
+    style.height = Math.min(w / style.aspectRatio, style.maxHeight);
+    delete style.aspectRatio;
+  }
+
   // web `flex` defaults to row
   if (meta.flex) {
     const dir = meta.dir || 'flex-row';
@@ -284,11 +302,16 @@ export function parse(className) {
     if (meta.grid) {
       style.flexDirection = 'row';
       style.flexWrap = 'wrap';
+      // grid rows must not stretch into spare height (Yoga's web-default align-content: stretch
+      // made the first card of a list fill the whole screen)
     }
   } else if (meta.dir === 'flex-col-reverse') {
     style.flexDirection = 'column-reverse';
   }
   if (style.display === 'flex') delete style.display;
+  // wrapped rows must not stretch into spare height (Yoga's web-default align-content: stretch
+  // made the first card of a grid list fill the whole screen)
+  if (style.flexWrap === 'wrap' && style.alignContent == null) style.alignContent = 'flex-start';
 
   if (shadowLayers.length || ringWidth != null) {
     const layers = shadowLayers.map((l) => {
