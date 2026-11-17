@@ -274,19 +274,27 @@ export function Btn({ className, style, children, onPress, disabled, onLongPress
   return (
     <TextCtx.Provider value={textStyle}>
       <LayoutCtx.Provider value={layout}><InTextCtx.Provider value={false}>
-        <Pressable
-          onPress={onPress}
-          onLongPress={onLongPress}
-          disabled={disabled}
-          hitSlop={hitSlop}
-          accessibilityRole="button"
-          accessibilityLabel={accessibilityLabel}
-          onLayout={grid.onLayout}
-          style={({ pressed }) => [view, style, pressed && !disabled ? { opacity: 0.7 } : null]}
-          {...rest}
-        >
-          {content}
-        </Pressable>
+        {onPress || onLongPress || rest.accessibilityRole ? (
+          <Pressable
+            onPress={onPress}
+            onLongPress={onLongPress}
+            disabled={disabled}
+            hitSlop={hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={accessibilityLabel}
+            onLayout={grid.onLayout}
+            style={({ pressed }) => [view, style, pressed && !disabled ? { opacity: 0.7 } : null]}
+            {...rest}
+          >
+            {content}
+          </Pressable>
+        ) : (
+          // A button without a handler (decorative "View >" inside a tappable card) must not
+          // capture the touch, so the card underneath receives it like on the web.
+          <View style={[view, style]} onLayout={grid.onLayout} accessibilityLabel={accessibilityLabel} {...rest}>
+            {content}
+          </View>
+        )}
       </InTextCtx.Provider></LayoutCtx.Provider>
     </TextCtx.Provider>
   );

@@ -281,8 +281,9 @@ export function parse(className) {
   Object.assign(style, extra);
 
   // No backdrop blur in RN: a translucent bar (bg-white/80 + backdrop-blur) would show the page through it.
-  // Only for positioned bars/headers; translucent pills on coloured cards must stay translucent.
-  if (hasBackdropBlur && (style.position === 'absolute' || meta.sticky || meta.fixed) && typeof style.backgroundColor === 'string') {
+  // Only for full-width bars/headers; translucent pills (even absolutely positioned ones) stay translucent.
+  const fullWidthBar = (style.position === 'absolute' && style.left === 0 && style.right === 0) || meta.sticky;
+  if (hasBackdropBlur && fullWidthBar && typeof style.backgroundColor === 'string') {
     style.backgroundColor = style.backgroundColor.replace(/rgba\(([^)]+),\s*([\d.]+)\)/, (all, rgb, a) => (Number(a) < 0.95 ? `rgba(${rgb}, 0.97)` : all));
   }
 

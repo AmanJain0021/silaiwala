@@ -5,7 +5,7 @@ A="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 out="$1"; shift; mkdir -p "$out"
 for p in "$@"; do
   name=$(echo "$p" | sed -E 's/[^a-zA-Z0-9]+/_/g; s/^_|_$//g'); [ -z "$name" ] && name=root
-  "$A" shell am start -W -a android.intent.action.VIEW -d "sewzella://${p#/}" com.sewzella.user >/dev/null 2>&1
+  "$A" shell am start -W -a android.intent.action.VIEW -d "${SCHEME:-sewzella}://${p#/}" ${PKG:-com.sewzella.user} >/dev/null 2>&1
   sleep "${WAIT:-7}"
   "$A" exec-out screencap -p > "$out/$name.png"
 done
