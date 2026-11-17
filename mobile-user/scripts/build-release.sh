@@ -15,12 +15,15 @@ if [ ! -d android ] || [ "$(cat $STAMP 2>/dev/null)" != "$SUM" ]; then
   echo "$SUM" > $STAMP
 fi
 TASK=assembleRelease; [ "$TYPE" = aab ] && TASK=bundleRelease
+# read signing values before cd (the properties path is relative to the app folder)
+KS="$PWD/$(prop storeFile)"; SP="$(prop storePassword)"; KA="$(prop keyAlias)"; KP="$(prop keyPassword)"
+[ -f "$KS" ] || { echo "Keystore not found: $KS"; exit 1; }
 (cd android && ./gradlew "$TASK" \
-  -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
-  -Pandroid.injected.signing.store.file="$PWD/../$(prop storeFile)" \
-  -Pandroid.injected.signing.store.password="$(prop storePassword)" \
-  -Pandroid.injected.signing.key.alias="$(prop keyAlias)" \
-  -Pandroid.injected.signing.key.password="$(prop keyPassword)")
+  -PreactNativeArchitectures="${ABIS:-arm64-v8a,armeabi-v7a}" \
+  -Pandroid.injected.signing.store.file="$KS" \
+  -Pandroid.injected.signing.store.password="$SP" \
+  -Pandroid.injected.signing.key.alias="$KA" \
+  -Pandroid.injected.signing.key.password="$KP")
 mkdir -p ../releases
 if [ "$TYPE" = aab ]; then
   OUT="../releases/$NAME-v$VER-$CODE.aab"
