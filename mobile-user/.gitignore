@@ -48,3 +48,7 @@ credentials/
 # Local env and tool settings
 .env
 .claude/
+
+# UI comparison tooling output
+scripts/ui-compare/node_modules/
+.ui-compare/
