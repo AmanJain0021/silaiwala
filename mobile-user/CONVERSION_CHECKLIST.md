@@ -172,6 +172,7 @@ Checks run 2026-11-16 against production with read-only GETs only; no writes, pa
 - Icons drawn over inputs (e.g. the calendar icon on the Bulk Order date) no longer block taps on the field.
 - MyBulkOrders detail drawer and Wallet withdraw form became native bottom sheets (Android back closes them).
 - Arbitrary z-index classes (`z-[100]` etc.) were ignored, so overlays sat under later siblings: the Login/Signup **Skip** button could not be tapped. The style engine now maps `z-[n]`, and AuthLayout renders Skip last.
+- Screen changes felt like a website: slide animation removed (direct switch), the 4 bottom tabs stay mounted in a tab navigator instead of re-creating the screen on every tap, hidden screens are frozen, and press feedback is stronger (opacity 0.7).
 - LegalPage share: shares the public web URL of the document (the web shared `window.location.href`).
 
 ## Device test list
