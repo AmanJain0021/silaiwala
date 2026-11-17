@@ -56,7 +56,8 @@ module.exports = {
       ['expo-image-picker', { photosPermission: 'Allow Sewzella to access your photos to upload designs and fabric images.', cameraPermission: 'Allow Sewzella to use the camera to capture designs and fabric images.', microphonePermission: false }],
       ['expo-notifications', { color: '#843D9B' }],
       '@react-native-google-signin/google-signin',
-      ['expo-build-properties', { android: { usesCleartextTraffic: false } }],
+      // R8 minify is off: with it on, Room/WorkManager (via Firebase) crashed at launch (WorkDatabase_Impl stripped). Reflection-heavy SDKs (Razorpay, Google Sign-In) are also at risk.
+      ['expo-build-properties', { android: { usesCleartextTraffic: false, enableMinifyInReleaseBuilds: false, enableShrinkResourcesInReleaseBuilds: false } }],
     ],
     experiments: { typedRoutes: false },
     owner: 'amankuril',
