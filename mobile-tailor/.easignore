@@ -1,0 +1,19 @@
+# Upload only what the cloud build needs (EAS_NO_VCS=1 uses this instead of .gitignore)
+node_modules/
+.expo/
+dist/
+web-build/
+/android
+/ios
+.kotlin/
+.claude/
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+credentials.json
+credentials/
+.env*.local
+npm-debug.*
+.DS_Store
