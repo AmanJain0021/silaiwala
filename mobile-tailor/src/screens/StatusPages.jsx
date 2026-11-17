@@ -1,0 +1,93 @@
+// Port of modules/tailor/pages/StatusPages.jsx (converted with scripts/web2rn.js, then reviewed)
+import { Linking } from 'react-native';
+import React, { useEffect } from "react";
+import { useNavigate } from '../lib/nav';
+import AppContainer from "../components/common/AppContainer";
+import { Button } from "../components/tailor/UIElements";
+import { Clock, ShieldAlert, LogOut, MessageCircle, Mail } from "lucide-react-native";
+import { useTailorAuth, TAILOR_STATUS } from "../context/tailor/AuthContext";
+import useBrandingStore from "../store/brandingStore";
+import { Box, I, Txt, Scroll } from '../components/ui/primitives';
+export const UnderReview = () => {
+  const {
+    logout,
+    status
+  } = useTailorAuth();
+  const navigate = useNavigate();
+  const {
+    supportEmail
+  } = useBrandingStore();
+  useEffect(() => {
+    if (status === TAILOR_STATUS.APPROVED) {
+      navigate('/partner');
+    }
+  }, [status, navigate]);
+  return <AppContainer>
+            <Box className="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <Box className="h-24 w-24 bg-indigo-50 text-primary rounded-[2rem] flex items-center justify-center mb-8 shadow-xl shadow-indigo-500/5">
+                    <I icon={Clock} size={40} strokeWidth={2.5} className="animate-pulse" />
+                </Box>
+                <Txt className="text-2xl font-black text-gray-900 tracking-tight">Account Under Review</Txt>
+                <Txt className="text-gray-500 mt-4 leading-relaxed font-medium">
+                    Our team is currently verifying your documents and business details. This usually takes 24-48 hours.
+                </Txt>
+
+                <Box className="w-full space-y-4 mt-12">
+                    <Button variant="secondary" className="border-gray-100 text-gray-600" onPress={async () => {
+          await logout();
+          navigate('/partner/login');
+        }}>
+                        <I icon={LogOut} size={18} /> Sign Out
+                    </Button>
+                    <Button variant="ghost" className="text-primary" onPress={() => {
+          const email = supportEmail || 'support@silaiwala.com';
+          Linking.openURL(`mailto:${email}?subject=Partner Account Review Assistance`);
+        }}>
+                        <I icon={MessageCircle} size={18} /> Contact Support
+                    </Button>
+                </Box>
+            </Box>
+        </AppContainer>;
+};
+export const RejectedPage = () => {
+  const {
+    user,
+    logout
+  } = useTailorAuth();
+  const navigate = useNavigate();
+  const {
+    supportEmail
+  } = useBrandingStore();
+  return <AppContainer>
+            <Box className="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <Box className="h-24 w-24 bg-red-50 text-red-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-xl shadow-red-500/5">
+                    <I icon={ShieldAlert} size={40} strokeWidth={2.5} />
+                </Box>
+                <Txt className="text-2xl font-black text-gray-900 tracking-tight">Application Rejected</Txt>
+                <Box className="mt-6 p-6 bg-red-50 rounded-3xl border border-red-100 w-full space-y-4">
+                    <Txt className="text-sm text-red-800 font-bold text-left italic">"Your application was not approved. Please contact support for more information regarding your rejection."</Txt>
+                </Box>
+                <Txt className="text-gray-500 mt-6 leading-relaxed font-medium">
+                    Please re-apply with correct information to get your account approved.
+                </Txt>
+
+                <Box className="w-full space-y-4 mt-12">
+                    <Button onPress={() => navigate('/partner/register')}>
+                        Re-apply Now
+                    </Button>
+                    <Button variant="ghost" className="text-primary" onPress={() => {
+          const email = supportEmail || 'support@silaiwala.com';
+          Linking.openURL(`mailto:${email}?subject=Partner Application Inquiry`);
+        }}>
+                        <I icon={Mail} size={18} /> Contact Support
+                    </Button>
+                    <Button variant="secondary" className="border-gray-100 text-gray-600" onPress={async () => {
+          await logout();
+          navigate('/partner/login');
+        }}>
+                        Sign Out
+                    </Button>
+                </Box>
+            </Box>
+        </AppContainer>;
+};

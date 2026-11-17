@@ -1,0 +1,218 @@
+// Port of modules/tailor/pages/ForgotPassword.jsx (converted with scripts/web2rn.js, then reviewed)
+import React, { useState } from "react";
+import { useNavigate } from '../lib/nav';
+import useAuthStore from "../store/authStore";
+import { validatePhone } from "../utils/validation";
+import api from "../lib/api";
+import { Lock, KeyRound, Scissors, Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react-native";
+import toast from '../lib/toast';
+import { Box, Btn, I, Txt, Input, Scroll } from '../components/ui/primitives';
+const TailorForgotPassword = () => {
+  const navigate = useNavigate();
+  const {
+    sendOTP,
+    resetPassword,
+    isLoading
+  } = useAuthStore();
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [step, setStep] = useState('request'); // 'request', 'verify', or 'reset'
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const handleSendOtp = async e => {
+    if (e) {}
+    setError('');
+    const phoneErr = validatePhone(mobileNumber);
+    if (phoneErr) return setError(phoneErr);
+    if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
+      setError('Please enter a valid 10-digit mobile number starting with 6-9');
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      // Check if user exists before sending OTP
+      const checkRes = await api.post('/auth/check-user', {
+        phoneNumber: mobileNumber
+      });
+      if (!checkRes.data.exists) {
+        setError('No account found with this mobile number.');
+        setSendingOtp(false);
+        return;
+      }
+      if (checkRes.data.role !== 'tailor') {
+        setError('This number is not registered as a Partner/Tailor.');
+        setSendingOtp(false);
+        return;
+      }
+      await sendOTP(mobileNumber);
+      toast.success('OTP sent successfully!');
+      setStep('verify');
+    } catch (err) {
+      setError(err.message || 'Failed to send OTP');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+  const handleVerifyOtp = async e => {
+    if (verifyingOtp) return;
+    setError('');
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP.');
+      return;
+    }
+    setVerifyingOtp(true);
+    try {
+      // Verify OTP using the existing endpoint
+      await api.post('/auth/verify-otp', {
+        phoneNumber: mobileNumber,
+        otp
+      });
+      toast.success('OTP verified successfully!');
+      setStep('reset');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Invalid OTP';
+      setError(msg);
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+  const handleResetPassword = async e => {
+    if (isLoading) return;
+    setError('');
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    try {
+      await resetPassword(mobileNumber, otp, newPassword);
+      toast.success('Password updated successfully!');
+      navigate('/partner/login');
+    } catch (err) {
+      setError(err.message || 'Failed to reset password');
+    }
+  };
+  return <Box className="w-full flex flex-col items-center font-['Plus_Jakarta_Sans',sans-serif] px-2 sm:px-4">
+            <Box className="w-full mb-4">
+                <Btn onPress={() => navigate('/partner/login')} className="flex items-center text-xs font-bold text-[#843D9B] hover:underline cursor-pointer">
+                    <I icon={ArrowLeft} size={16} className="mr-1" /> Back to Partner Login
+                </Btn>
+            </Box>
+
+            {/* Top Squircle Card */}
+            <Box className="w-16 h-16 rounded-[22px] bg-[#F4EFFF] border border-[#E9DFFE] flex items-center justify-center shadow-2xs mb-4 shrink-0 mx-auto mt-2">
+                {step === 'reset' ? <I icon={CheckCircle2} className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} /> : <I icon={Scissors} className="w-6 h-6 text-[#843D9B]" strokeWidth={2.2} />}
+            </Box>
+
+            {/* Title & Subtitle */}
+            <Box className="text-center mb-6 w-full">
+                <Txt className="text-2xl sm:text-[26px] font-bold text-[#0F172A] tracking-tight mb-1">
+                    {step === 'request' ? 'Partner Password Reset' : step === 'verify' ? 'Verify OTP' : 'Set New Password'}
+                </Txt>
+                <Txt className="text-xs sm:text-[13px] font-medium text-[#64748B] max-w-[280px] mx-auto leading-relaxed">
+                    {step === 'request' ? 'Enter your registered mobile number to receive a verification code.' : step === 'verify' ? 'Enter the OTP sent to your mobile.' : 'Create a new, strong password for your partner account.'}
+                </Txt>
+            </Box>
+
+            {error && <Box className="w-full mb-4 bg-red-50 text-red-500 text-xs font-medium p-3 rounded-xl border border-red-100 text-center">
+                    {error}
+                </Box>}
+
+            {step === 'request' && <Box className="w-full space-y-4">
+                    {/* Mobile Number Input */}
+                    <Box className="w-full text-left">
+                        <Txt className="text-xs font-semibold text-[#0F172A] block mb-1.5">
+                            Mobile Number
+                        </Txt>
+                        <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center p-1.5 px-2 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                            <Box className="bg-white shadow-2xs rounded-xl px-3 py-2 text-xs font-bold text-[#0F172A] mr-2.5 select-none flex items-center justify-center shrink-0 border border-gray-100/80">
+                                +91
+                            </Box>
+                            <Input placeholder="Enter mobile number" value={mobileNumber} onChangeText={e => setMobileNumber(e.replace(/\D/g, ''))} maxLength={10} disabled={sendingOtp} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" keyboardType="phone-pad" />
+                        </Box>
+                    </Box>
+
+                    {/* Submit Button */}
+                    <Btn disabled={!mobileNumber || sendingOtp} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${!mobileNumber || sendingOtp ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
+                        {sendingOtp ? 'Sending OTP...' : 'Send OTP'}
+                    </Btn>
+                </Box>}
+
+            {step === 'verify' && <Box className="w-full space-y-4">
+                    {/* OTP Input */}
+                    <Box className="space-y-1.5 text-left">
+                        <Box className="flex justify-between items-center mb-1.5">
+                            <Txt className="text-xs font-semibold text-[#0F172A] block">
+                                Enter 6-Digit OTP
+                            </Txt>
+                            <Btn onPress={handleSendOtp} disabled={sendingOtp || verifyingOtp} className="text-xs font-semibold text-[#843D9B] hover:underline cursor-pointer disabled:opacity-50">
+                                {sendingOtp ? 'Sending...' : 'Resend OTP'}
+                            </Btn>
+                        </Box>
+                        <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                            <I icon={KeyRound} size={18} className="text-[#843D9B] shrink-0" />
+                            <Input placeholder="Enter OTP" value={otp} onChangeText={e => setOtp(e.replace(/\D/g, ''))} maxLength={6} disabled={verifyingOtp} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8] tracking-widest font-mono" />
+                        </Box>
+                    </Box>
+
+                    {/* Submit Button */}
+                    <Btn disabled={!otp || otp.length !== 6 || verifyingOtp} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${!otp || otp.length !== 6 || verifyingOtp ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
+                        {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                    </Btn>
+                    
+                    <Box className="text-center mt-3">
+                         <Btn onPress={() => {
+          setStep('request');
+          setOtp('');
+          setError('');
+        }} className="text-xs font-medium text-gray-500 hover:text-[#843D9B] hover:underline">
+                            Change Mobile Number
+                        </Btn>
+                    </Box>
+                </Box>}
+
+            {step === 'reset' && <Box className="w-full space-y-4">
+                    {/* New Password */}
+                    <Box className="w-full text-left">
+                        <Txt className="text-xs font-semibold text-[#0F172A] block mb-1.5">
+                            New Password
+                        </Txt>
+                        <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                            <I icon={Lock} size={18} className="text-[#94A3B8] shrink-0" />
+                            <Input placeholder="Enter new password" value={newPassword} onChangeText={e => setNewPassword(e)} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
+                            <Btn onPress={() => setShowPassword(!showPassword)} className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer">
+                                {showPassword ? <I icon={EyeOff} size={18} /> : <I icon={Eye} size={18} />}
+                            </Btn>
+                        </Box>
+                    </Box>
+
+                    {/* Confirm Password */}
+                    <Box className="w-full text-left">
+                        <Txt className="text-xs font-semibold text-[#0F172A] block mb-1.5">
+                            Confirm Password
+                        </Txt>
+                        <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
+                            <I icon={Lock} size={18} className="text-[#94A3B8] shrink-0" />
+                            <Input placeholder="Confirm new password" value={confirmPassword} onChangeText={e => setConfirmPassword(e)} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
+                            <Btn onPress={() => setShowConfirmPassword(!showConfirmPassword)} className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer">
+                                {showConfirmPassword ? <I icon={EyeOff} size={18} /> : <I icon={Eye} size={18} />}
+                            </Btn>
+                        </Box>
+                    </Box>
+
+                    {/* Submit Button */}
+                    <Btn disabled={!newPassword || !confirmPassword || isLoading} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${!newPassword || !confirmPassword || isLoading ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
+                        {isLoading ? 'Resetting Password...' : 'Reset Password'}
+                    </Btn>
+                </Box>}
+        </Box>;
+};
+export default TailorForgotPassword;
