@@ -1,0 +1,935 @@
+import { pickImage } from '../lib/files';
+import { reverseGeocode } from '../utils/reverseGeocode';
+import { getDirections } from '../lib/directions';
+import { Dialog, Sheet } from '../components/ui/Sheet';
+import Screen from '../components/common/Screen';
+import React from 'react';
+import Spin from '../components/ui/Spin';
+import { Linking } from 'react-native';
+import { ArrowLeft as FiArrowLeft, MapPin as FiMapPin, Phone as FiPhone, Clock as FiClock, Package as FiPackage, Navigation as FiNavigation, CheckCircle as FiCheckCircle, User as FiUser, Camera as FiCamera, Shield as FiShield, CreditCard as FiCreditCard, Send as FiSend, X as FiX, Maximize as FiMaximize, Image as FiImage, Plus as FiPlus, Zap as FiZap, AlertTriangle as FiAlertTriangle, Loader as FiLoader } from 'lucide-react-native';
+// Port of modules/delivery/pages/OrderDetail.jsx (converted with scripts/web2rn.js, then reviewed)
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, useOutletContext } from '../lib/nav';
+import CancellationModal from "../components/delivery/CancellationModal";
+import TrackingMap from "../components/shared/TrackingMap";
+import DeliveryBoyLiveMap from "../components/shared/DeliveryBoyLiveMap";
+import PageTransition from "../components/shared/PageTransition";
+import { formatPrice } from "../utils/helpers";
+import toast from '../lib/toast';
+import { Box, Txt, Btn, Img, Input, Scroll, I } from '../components/ui/primitives';
+const apiErr = (err, fallback = 'Something went wrong') => err?.response?.data?.message || err?.response?.data?.error || (Array.isArray(err?.response?.data?.errors) ? err.response.data.errors.join(', ') : null) || err?.message || fallback;
+const isValidMapCoord = (lat, lng) => {
+  const la = Number(lat);
+  const ln = Number(lng);
+  return Number.isFinite(la) && Number.isFinite(ln) && la !== 0 && ln !== 0 && Math.abs(la) <= 90 && Math.abs(ln) <= 180;
+};
+import api from "../lib/api";
+import { useDeliveryAuthStore } from "../store/deliveryStore";
+import { useDeliveryTracking } from "../shared/hooks/useDeliveryTracking";
+import useSocketStore from "../store/socketStore";
+import useAuthStore from "../store/authStore";
+import { pickPhotoFromInput, ensurePhotoDataUrl } from "../utils/pickDeliveryPhoto";
+const DeliveryOrderDetail = () => {
+  const {
+    id
+  } = useParams();
+  const navigate = useNavigate();
+  const {
+    socket
+  } = useSocketStore();
+  const outletCtx = useOutletContext();
+  const {
+    layoutLocationStr,
+    layoutLocationCoords
+  } = outletCtx || {};
+  const localIsLoaded = true; // native Google Maps SDK (key in app config) is always available
+  const isLoaded = outletCtx?.isLoaded !== undefined ? outletCtx.isLoaded : localIsLoaded;
+  const {
+    fetchOrderById,
+    resendDeliveryOtp,
+    isLoadingOrder,
+    isUpdatingOrderStatus,
+    updateOrderStatus,
+    markArrivedAtCustomer,
+    submitTryAndBuy,
+    setPaymentMethod,
+    completeDeliveryFlow,
+    cancelOrder,
+    rejectOrder,
+    deliveryBoy
+  } = useDeliveryAuthStore();
+  const [order, setOrder] = useState(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [otpValue, setOtpValue] = useState('');
+  const [deliveryPhoto, setDeliveryPhoto] = useState(null);
+  const [pickupPhoto, setPickupPhoto] = useState(null);
+  const [eta, setEta] = useState(null);
+  const [distanceRemaining, setDistanceRemaining] = useState(null);
+  const [hasArrived, setHasArrived] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState(new Set());
+  const [paymentSelection, setPaymentSelection] = useState(null);
+
+  // Use layout location as the initial fallback for faster rendering
+  const [currentLocation, setCurrentLocation] = useState(layoutLocationCoords || null);
+  const [currentLocationAddress, setCurrentLocationAddress] = useState(layoutLocationStr || 'Current GPS Location');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [totalTripDistanceKm, setTotalTripDistanceKm] = useState(null);
+  const [feeSettings, setFeeSettings] = useState(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const pickupInputRef = useRef(null);
+  const pickupGalleryRef = useRef(null);
+  const deliveryInputRef = useRef(null);
+  const deliveryGalleryRef = useRef(null);
+  const isReturn = order?.type === 'return';
+  const getPhase = () => {
+    if (!order) return null;
+    const s = String(order.status || '').toLowerCase();
+    const rawS = String(order.rawStatus || order.status || '').toLowerCase();
+
+    // Pickup phase
+    if (['pending', 'ready_for_pickup', 'ready-for-pickup', 'ready-for-delivery', 'fabric-ready-for-pickup', 'assigned', 'accepted'].includes(s) || ['ready_for_pickup', 'ready-for-pickup', 'ready-for-delivery', 'fabric-ready-for-pickup', 'assigned', 'accepted'].includes(rawS)) return 'pickup';
+
+    // Delivery phase
+    if (['picked-up', 'picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s) || ['picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out_for_delivery'].includes(rawS)) return 'delivery';
+    return 'pickup'; // Default fallback instead of null
+  };
+  const currentPhase = getPhase();
+  const isFabricPickup = order?.taskType === 'fabric-pickup';
+
+  // Extract coordinates safely from the nested location arrays [lng, lat]
+  const tailorLat = order?.vendorLatitude || order?.tailor?.location?.coordinates?.[1];
+  const tailorLng = order?.vendorLongitude || order?.tailor?.location?.coordinates?.[0];
+  const customerLat = order?.latitude || order?.deliveryAddress?.location?.coordinates?.[1];
+  const customerLng = order?.longitude || order?.deliveryAddress?.location?.coordinates?.[0];
+  const tailorAddress = order?.vendorAddress || order?.tailor?.location?.address;
+  const formatDeliveryAddress = addr => {
+    if (!addr) return 'Address not provided';
+    if (typeof addr === 'string') return addr;
+    if (typeof addr === 'object') {
+      if (typeof addr.address === 'string' && addr.address) return addr.address;
+      const parts = [addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean);
+      if (parts.length > 0) return parts.join(', ');
+      if (addr.receiverName || addr.name) return `${addr.receiverName || addr.name}${addr.phone ? ' (' + addr.phone + ')' : ''}`;
+    }
+    return 'Address not provided';
+  };
+  const customerAddress = formatDeliveryAddress(order?.address || order?.deliveryAddress);
+  const tailorPhone = order?.vendorPhone || order?.tailor?.phone;
+  const customerPhone = order?.phone || order?.customerPhone;
+
+  // Define source and destination dynamically based on task type
+  const pickupName = isFabricPickup ? order?.customerName || order?.customer : order?.vendorName || order?.tailor?.shopName;
+  const pickupAddress = isFabricPickup ? customerAddress : tailorAddress;
+  const pickupLatRaw = isFabricPickup ? customerLat : tailorLat;
+  const pickupLngRaw = isFabricPickup ? customerLng : tailorLng;
+  const pickupLat = isValidMapCoord(pickupLatRaw, pickupLngRaw) ? pickupLatRaw : null;
+  const pickupLng = isValidMapCoord(pickupLatRaw, pickupLngRaw) ? pickupLngRaw : null;
+  const pickupPhone = isFabricPickup ? customerPhone : tailorPhone;
+  const dropoffName = isFabricPickup ? order?.vendorName || order?.tailor?.shopName : order?.customerName || order?.customer;
+  const dropoffAddress = isFabricPickup ? tailorAddress : customerAddress;
+  const dropoffLatRaw = isFabricPickup ? tailorLat : customerLat;
+  const dropoffLngRaw = isFabricPickup ? tailorLng : customerLng;
+  const dropoffLat = isValidMapCoord(dropoffLatRaw, dropoffLngRaw) ? dropoffLatRaw : null;
+  const dropoffLng = isValidMapCoord(dropoffLatRaw, dropoffLngRaw) ? dropoffLngRaw : null;
+  const dropoffPhone = isFabricPickup ? tailorPhone : customerPhone;
+  const mapNavDestination = currentPhase === 'pickup' ? pickupLat && pickupLng ? {
+    lat: Number(pickupLat),
+    lng: Number(pickupLng)
+  } : null : dropoffLat && dropoffLng ? {
+    lat: Number(dropoffLat),
+    lng: Number(dropoffLng)
+  } : null;
+  const mapNavDestinationAddress = currentPhase === 'pickup' ? pickupAddress : dropoffAddress;
+  const mapFallbackOrigin = layoutLocationCoords?.lat && layoutLocationCoords?.lng ? layoutLocationCoords : null;
+  const mapPreviewRoute = pickupLat && pickupLng || pickupAddress ? {
+    origin: pickupLat && pickupLng ? {
+      lat: Number(pickupLat),
+      lng: Number(pickupLng)
+    } : null,
+    originAddress: pickupAddress,
+    destination: dropoffLat && dropoffLng ? {
+      lat: Number(dropoffLat),
+      lng: Number(dropoffLng)
+    } : null,
+    destAddress: dropoffAddress
+  } : null;
+  const {
+    user
+  } = useAuthStore();
+  const dBoyId = user?.id || user?._id || deliveryBoy?.id || deliveryBoy?._id;
+  const liveLocation = useDeliveryTracking(dBoyId, order ? [order] : []);
+  const isAssignedToMe = order && dBoyId && (order.deliveryPartner?._id && String(order.deliveryPartner._id) === String(dBoyId) || typeof order.deliveryPartner === 'string' && String(order.deliveryPartner) === String(dBoyId) || order.pickupPartner?._id && String(order.pickupPartner._id) === String(dBoyId) || typeof order.pickupPartner === 'string' && String(order.pickupPartner) === String(dBoyId) || order.deliveryBoyId?._id && String(order.deliveryBoyId._id) === String(dBoyId) || typeof order.deliveryBoyId === 'string' && String(order.deliveryBoyId) === String(dBoyId));
+  const isAvailableTask = order && !order.deliveryPartner && !order.pickupPartner && !order.deliveryBoyId && (order.rawStatus === 'ready_for_pickup' || order.status === 'pending' || order.rawStatus === 'searching-delivery-partner');
+  useEffect(() => {
+    // Only use live location from hook to ensure accurate tracking
+    if (liveLocation?.lat && liveLocation?.lng) {
+      setCurrentLocation(liveLocation);
+    } else if (layoutLocationCoords?.lat && !currentLocation?.lat) {
+      // Fallback to layout coordinates if live tracking hasn't locked on yet
+      setCurrentLocation(layoutLocationCoords);
+    }
+  }, [liveLocation, layoutLocationCoords]);
+  useEffect(() => {
+    // If we have layoutLocationStr and liveLocation hasn't triggered yet, use layout string
+    if (layoutLocationStr && layoutLocationStr !== 'Fetching Location...' && (!currentLocation?.lat || currentLocationAddress === 'Current GPS Location' || currentLocationAddress === 'Fetching Location...')) {
+      console.log('📍 [OrderDetail] Using layoutLocationStr as fallback:', layoutLocationStr);
+      setCurrentLocationAddress(layoutLocationStr);
+    }
+    if (currentLocation?.lat && currentLocation?.lng) {
+      // web: google.maps.Geocoder; native: the app's reverse-geocode tiers
+      reverseGeocode(Number(currentLocation.lat), Number(currentLocation.lng))
+        .then(res => setCurrentLocationAddress(res?.formattedAddress || layoutLocationStr || 'Current GPS Location'))
+        .catch(() => setCurrentLocationAddress(layoutLocationStr || 'Current GPS Location'));
+    }
+  }, [currentLocation?.lat, currentLocation?.lng, isLoaded, layoutLocationStr]);
+
+  // Calculate dynamic delivery fee and total trip distance
+  useEffect(() => {
+    const hasPickup = pickupLat && pickupLng || pickupAddress;
+    const hasDropoff = dropoffLat && dropoffLng || dropoffAddress;
+    if (hasPickup && hasDropoff) {
+      const fetchSettingsAndCalculate = async () => {
+        // Non-blocking fetch for fee settings
+        api.get('/cms/settings').then(res => {
+          const rates = res.data?.data?.deliveryRates || {
+            baseFee: 20,
+            perKmRate: 10
+          };
+          setFeeSettings(rates);
+        }).catch(err => {
+          console.warn("Failed to fetch settings, using defaults", err);
+          setFeeSettings({
+            baseFee: 20,
+            perKmRate: 10
+          });
+        });
+        const hasCurrentLocation = currentLocation?.lat && currentLocation?.lng;
+        const pickupLocation = pickupLat && pickupLng ? {
+          lat: Number(pickupLat),
+          lng: Number(pickupLng)
+        } : pickupAddress;
+        const dropoffLocation = dropoffLat && dropoffLng ? {
+          lat: Number(dropoffLat),
+          lng: Number(dropoffLng)
+        } : dropoffAddress;
+        // web: DirectionsService (DRIVING, then TWO_WHEELER); native: Directions REST, same result shape
+        const routeWithFallback = (req, onOk, label) => {
+          getDirections(req.origin, req.destination).then(r => {
+            if (!r) { console.warn(`⚠️ [OrderDetail] Directions failed (${label})`); return; }
+            onOk({ routes: [{ legs: [{ distance: { value: r.distanceValue, text: r.distance }, duration: { value: r.durationValue, text: r.duration } }] }] });
+          });
+        };
+        routeWithFallback({
+          origin: pickupLocation,
+          destination: dropoffLocation
+        }, result => {
+          const tripLeg = result.routes[0].legs[0];
+          if (tripLeg) {
+            const km = tripLeg.distance.value / 1000;
+            setTotalTripDistanceKm(km);
+            if (!hasCurrentLocation) {
+              setDistanceRemaining(tripLeg.distance.value);
+              setEta(tripLeg.duration.text);
+            }
+          }
+        }, 'trip');
+        if (hasCurrentLocation) {
+          const isPickup = currentPhase === 'pickup';
+          routeWithFallback({
+            origin: {
+              lat: Number(currentLocation.lat),
+              lng: Number(currentLocation.lng)
+            },
+            destination: isPickup ? pickupLocation : dropoffLocation
+          }, result => {
+            const navLeg = result.routes[0].legs[0];
+            if (navLeg) {
+              setDistanceRemaining(navLeg.distance.value);
+              setEta(navLeg.duration.text);
+            }
+          }, 'nav');
+        }
+      };
+      fetchSettingsAndCalculate();
+    }
+  }, [pickupLat, pickupLng, dropoffLat, dropoffLng, pickupAddress, dropoffAddress, currentLocation?.lat, currentLocation?.lng, isLoaded, currentPhase]);
+  const loadOrder = useCallback(async () => {
+    try {
+      const response = await fetchOrderById(id);
+      setOrder(response || null);
+
+      // Determine phase to correctly evaluate hasArrived
+      const s = String(response?.status || '').toLowerCase();
+      const rawS = String(response?.rawStatus || response?.status || '').toLowerCase();
+      const isDeliveryPhase = ['picked-up', 'picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out-for-delivery', 'out_for_delivery', 'shipped'].includes(s) || ['picked_up', 'picked-up-from-tailor', 'fabric-picked-up', 'out_for_delivery'].includes(rawS);
+
+      // Fabric C→T dropoff stores stage on pickupDeliveryStatus (same partner)
+      const isArrivedStatus = isDeliveryPhase ? ['reached-dropoff'].includes(response?.deliveryStatus) || ['reached-dropoff'].includes(response?.dropoffDeliveryStatus) || ['reached-dropoff'].includes(response?.pickupDeliveryStatus) : ['reached-pickup'].includes(response?.deliveryStatus) || ['reached-pickup'].includes(response?.pickupDeliveryStatus);
+      if (isArrivedStatus || currentPhase === 'pickup' && (response?.arrivedAt || response?.deliveryFlow?.arrivedAt)) {
+        setHasArrived(true);
+        const accepted = (response.deliveryFlow?.tryAndBuyItems || response.items || []).filter(i => i.decision !== 'rejected').map(i => i.productId || i._id);
+        setSelectedItemIds(new Set(accepted));
+        setPaymentSelection(response.paymentMethod);
+      } else {
+        setHasArrived(false);
+        if (response?.items) {
+          setSelectedItemIds(new Set(response.items.map(i => i.productId || i._id)));
+        }
+      }
+      setIsInitialLoading(false);
+    } catch (err) {
+      if (err?.name === 'CanceledError' || err?.message === 'Cancelled by a new request') {
+        console.log('Request cancelled, waiting for new request to complete.');
+        return; // Do not update state if the request was cancelled by a newer one
+      }
+      setOrder(null);
+      setIsInitialLoading(false);
+    }
+  }, [id, fetchOrderById]);
+  useEffect(() => {
+    loadOrder();
+    const handleUpdate = () => loadOrder();
+    if (socket) {
+      socket.on('order_status_updated', handleUpdate);
+      socket.on('order_taken', data => {
+        if (data.id === id || data.orderId === id) {
+          toast.error('Mission taken by another partner');
+          navigate('/delivery/dashboard');
+        }
+      });
+      if (id) socket.emit('join', `order_${id}`);
+    }
+    return () => {
+      if (socket) {
+        socket.off('order_status_updated', handleUpdate);
+        socket.off('order_taken');
+      }
+    };
+  }, [id, loadOrder, navigate, socket]);
+  const handleAcceptMission = async () => {
+    try {
+      // Use stable id from useParams
+      await useDeliveryAuthStore.getState().acceptOrder(id, {
+        calculatedDistance: totalTripDistanceKm
+      });
+      await loadOrder();
+      toast.success('MISSION ACCEPTED! GO TO PICKUP');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to accept mission');
+      navigate('/delivery/dashboard');
+    }
+  };
+  const handleUpdateStatus = async (status, msg, options = {}) => {
+    try {
+      await updateOrderStatus(id, status, options);
+      const isArrivalOnly = ['reached-pickup', 'reached-dropoff'].includes(status);
+      if (!isArrivalOnly) {
+        setOtpValue('');
+        setPickupPhoto(null);
+        setDeliveryPhoto(null);
+        setHasArrived(false);
+      }
+      await loadOrder();
+      toast.success(msg);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Update failed');
+    }
+  };
+  const orderBackendStatus = order?.rawStatus || order?.status;
+  const isFabricDropToTailor = orderBackendStatus === 'fabric-picked-up';
+  const handleArrivalUpdate = async () => {
+    if (!id) return;
+    try {
+      const status = currentPhase === 'pickup' ? 'reached-pickup' : 'reached-dropoff';
+      await updateOrderStatus(id, status);
+      await loadOrder();
+      setHasArrived(true);
+      setOtpValue('');
+      if (status === 'reached-dropoff' && isFabricDropToTailor) {
+        toast.success('OTP sent to tailor — enter the code they share');
+      } else if (status === 'reached-pickup') {
+        toast.success('OTP sent to customer — enter the code they share');
+      } else if (status === 'reached-dropoff') {
+        toast.success('OTP sent to customer — enter the code they share');
+      } else {
+        toast.success('Arrival marked successfully');
+      }
+    } catch (err) {
+      toast.error(apiErr(err, 'Failed to mark arrival'));
+    }
+  };
+  const handleOtpResend = async () => {
+    if (isResending || !id) return;
+    try {
+      setIsResending(true);
+      const res = await resendDeliveryOtp(id);
+      setOtpValue('');
+      // Prefer journey-based copy so we never say "customer" on fabric→tailor
+      if (isFabricDropToTailor || (order?.rawStatus || order?.status) === 'fabric-picked-up') {
+        toast.success('OTP sent to tailor');
+      } else if (currentPhase === 'pickup') {
+        toast.success('OTP sent to customer');
+      } else {
+        toast.success(res?.message || 'OTP sent to customer');
+      }
+    } catch (err) {
+      toast.error(apiErr(err, 'Failed to resend OTP'));
+    } finally {
+      setIsResending(false);
+    }
+  };
+  const toggleItem = pid => {
+    if (!order.isTryAndBuy) return;
+    const next = new Set(selectedItemIds);
+    if (next.has(pid)) {
+      if (next.size <= 1) return toast.error('Min 1 item required');
+      next.delete(pid);
+    } else {
+      next.add(pid);
+    }
+    setSelectedItemIds(next);
+  };
+  const handleItemConfirmation = async () => {
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      toast.success('Items selection confirmed');
+    } catch {
+      toast.error('Failed to confirm selection');
+    }
+  };
+  const handlePaymentMethod = async method => {
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      setPaymentSelection(method);
+      if (method === 'qr') setShowQRModal(true);
+      toast.success(`Method: ${method.toUpperCase()}`);
+    } catch {
+      toast.error('Failed to update payment');
+    }
+  };
+  const isFinalDelivery = order?.taskType === 'order-delivery' || ['out-for-delivery', 'ready-for-delivery', 'ready-for-pickup', 'ready'].includes(order?.status);
+  const calculatedTotal = order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid' ? order.remainingPaymentAmount : order?.isTryAndBuy ? order.items.reduce((sum, item) => selectedItemIds.has(item.productId || item._id) ? sum + item.price * item.quantity : sum, 0) : order?.totalAmount || order?.total || 0;
+
+  // Gate final complete on unpaid remaining (or COD/cash), not just UI labels
+  const isCod = Number(order?.remainingPaymentAmount || 0) > 0 && order?.remainingPaymentStatus !== 'paid' || order?.paymentMethod === 'cod' || order?.paymentMethod === 'cash';
+  const handleCancelOrder = () => {
+    setIsCancellationModalOpen(true);
+  };
+  const confirmCancellation = async reason => {
+    setIsCancelling(true);
+    try {
+      const updated = await cancelOrder(id, reason);
+      setOrder(updated);
+      toast.success('Order cancelled successfully');
+      setIsCancellationModalOpen(false);
+      navigate('/delivery/dashboard');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Cancellation failed');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+  const handleFinalize = async () => {
+    if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
+    if (isCod && isFinalDelivery && !paymentSelection) return toast.error('Select payment method');
+    if (!deliveryPhoto) return toast.error('Delivery photo required');
+    const backendStatus = order?.rawStatus || order?.status;
+    const isFabricJourney = backendStatus === 'fabric-picked-up';
+    // Final T→C must use dropoff stage — NEVER prefer leftover fabric pickupDeliveryStatus
+    const partnerStage = isFabricJourney ? order?.pickupDeliveryStatus || order?.deliveryStatus : order?.dropoffDeliveryStatus || order?.deliveryStatus;
+    const alreadyAtDropoff = hasArrived || partnerStage === 'reached-dropoff' || order?.dropoffDeliveryStatus === 'reached-dropoff' || isFabricJourney && order?.pickupDeliveryStatus === 'reached-dropoff';
+
+    // Only generate drop-off OTP once — do NOT re-run on Complete Delivery
+    if (currentPhase === 'delivery' && !alreadyAtDropoff && ['fabric-picked-up', 'out-for-delivery'].includes(backendStatus)) {
+      try {
+        await updateOrderStatus(id, 'reached-dropoff');
+        await loadOrder();
+        setHasArrived(true);
+        setOtpValue('');
+        toast.success(isFabricJourney ? 'OTP sent to tailor — enter that OTP to complete' : 'OTP sent to customer — enter that OTP to complete');
+        return;
+      } catch (e) {
+        toast.error(apiErr(e, 'Mark arrival at drop-off first'));
+        return;
+      }
+    }
+    try {
+      const proof = await ensurePhotoDataUrl(deliveryPhoto);
+      if (!proof) return toast.error('Photo still processing — wait a moment');
+      const updated = await completeDeliveryFlow(id, {
+        otp: otpValue.trim(),
+        deliveryProofPhoto: proof,
+        paymentMethod: paymentSelection
+      });
+      setOrder(updated);
+      setShowSuccess(true);
+      toast.success(isFabricJourney ? 'Fabric delivered to tailor!' : 'Delivery completed!');
+    } catch (err) {
+      toast.error(apiErr(err, 'Delivery failed'));
+    }
+  };
+  const handleImagePick = (e, setter, fromCamera) => {
+    const input = e?.target;
+    if (!input) return;
+    try {
+      pickPhotoFromInput(input, url => {
+        setter(url);
+        toast.success('Photo added');
+      }, {
+        fromCamera,
+        onProcessing: setPhotoProcessing
+      });
+    } catch (err) {
+      toast.error(err?.message || 'Could not process photo');
+      if (input) input.value = '';
+    }
+  };
+  const handleMapRouteCalculated = useCallback(data => {
+    if (!data || data.distanceValue === -1) return;
+    setEta(data.duration);
+    setDistanceRemaining(data.distanceValue);
+    const loc = useDeliveryAuthStore.getState();
+    const cl = layoutLocationCoords;
+    const lat = currentLocation?.lat ?? cl?.lat;
+    const lng = currentLocation?.lng ?? cl?.lng;
+    if (lat && lng) {
+      loc.updateLocation(lat, lng, data.duration, data.distanceValue);
+    }
+  }, [currentLocation?.lat, currentLocation?.lng, layoutLocationCoords]);
+  console.log("OrderDetail Render:", {
+    isInitialLoading,
+    isLoadingOrder,
+    isLoaded,
+    order: !!order,
+    id
+  });
+
+  // We only show "Order not found" if we have finished initial loading, we are not currently loading, and order is still null.
+  if (isInitialLoading || isLoadingOrder || !isLoaded || !order && isInitialLoading) {
+    return <Screen className="bg-white"><Box className="flex-1 flex flex-col items-center justify-center bg-white space-y-4">
+         <Spin size={40} className="text-slate-100" />
+         <Txt className="text-xs font-bold text-slate-400 tracking-widest uppercase animate-pulse">Fetching the order...</Txt>
+      </Box></Screen>;
+  }
+  if (!order) {
+    return <Screen className="bg-white"><Box className="flex-1 flex flex-col items-center justify-center bg-white p-6">
+        <Box className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+          <I icon={FiAlertTriangle} size={24} />
+        </Box>
+        <Txt className="text-lg font-bold text-slate-800">Order Not Found</Txt>
+        <Txt className="text-slate-500 text-xs mt-2 mb-6 text-center max-w-[240px]">We couldn't find the details for this mission. It may have been reassigned or cancelled.</Txt>
+        <Btn onPress={() => navigate('/delivery/dashboard')} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest">Return to Dashboard</Btn>
+      </Box></Screen>;
+  }
+  if (showSuccess || ['delivered', 'fabric-received', 'fabric-delivered'].includes(order.status)) {
+    return <Screen className="bg-white"><Box className="flex-1 bg-white flex flex-col items-center justify-center p-6 text-center">
+        <Box className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white mb-4 border-4 border-emerald-50">
+          <I icon={FiCheckCircle} size={32} />
+        </Box>
+        <Txt className="text-xl font-bold text-slate-800">Job Complete</Txt>
+        <Txt className="text-slate-500 text-[10px] mt-2 mb-8 max-w-[240px] leading-relaxed uppercase tracking-widest font-bold">Delivery recorded successfully. 
+ Records have been updated.</Txt>
+        <Btn onPress={() => navigate('/delivery/dashboard')} className="w-full max-w-[200px] h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest">Back to Home</Btn>
+      </Box></Screen>;
+  }
+  const getOrderTypeBadge = () => {
+    if (order.isCheckAndBuy) return <Txt className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full text-[8.5px] font-black border border-indigo-100 uppercase tracking-tighter">Check & Buy</Txt>;
+    if (order.isTryAndBuy) return <Txt className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[8.5px] font-black border border-amber-100 uppercase tracking-tighter">Try & Buy</Txt>;
+    return <Txt className="bg-slate-50 text-slate-700 px-2 py-0.5 rounded-full text-[8.5px] font-black border border-slate-100 uppercase tracking-tighter">Standard</Txt>;
+  };
+  return <PageTransition>
+      <Screen className="bg-slate-50"><Box className="flex-1 bg-slate-50 relative">
+        <Box className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+          <Box className="flex items-center gap-3">
+            <Btn onPress={() => navigate(-1)} className="text-slate-600"><I icon={FiArrowLeft} size={20} /></Btn>
+            <Box>
+              <Txt className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mb-0.5">{isAvailableTask ? 'NEW BOOKING OFFER' : 'DRIVER ASSIGNED'}</Txt>
+              <Box className="flex items-center gap-1.5">
+                 <Txt className="font-black text-sm text-slate-800 leading-none">{isAvailableTask ? 'Task' : getOrderTypeBadge()}</Txt>
+              </Box>
+            </Box>
+          </Box>
+          <Txt className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100">#{String(order.orderId || order.id || id).slice(-8).toUpperCase()}</Txt>
+        </Box>
+        <Scroll className="flex-1" contentClassName="pb-6">
+
+        <Box className="max-w-md mx-auto pt-16">
+          {/* HERO MAP SECTION */}
+          {currentPhase && <Box className={`w-full bg-white relative transition-all duration-300 ${hasArrived ? 'h-[140px]' : 'h-[260px]'}`}>
+                 <DeliveryBoyLiveMap currentLocation={currentLocation} fallbackOrigin={mapFallbackOrigin} destination={mapNavDestination} destinationAddress={mapNavDestinationAddress} previewRoute={mapPreviewRoute} isLoaded={isLoaded} height="100%" onRouteCalculated={handleMapRouteCalculated} />
+                 
+                 {/* FLOATING PROMPT LIKE SCREENSHOT */}
+                 <Box className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white px-5 py-2.5 rounded-full shadow-lg border border-slate-100 whitespace-nowrap text-[11px] font-bold text-slate-600 shadow-slate-200/50 z-20">
+                    {isAvailableTask ? 'Review the task details below.' : "Start when you're ready to head to the pickup."}
+                 </Box>
+                 
+                 {/* Distance/ETA Overlay - moved top right for cleaner look */}
+                 <Box className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-slate-100 flex gap-3">
+                   <Box className="flex items-center gap-1">
+                     <I icon={FiMapPin} size={12} className="text-indigo-600" />
+                     <Txt className="text-[10px] font-bold text-slate-800">
+                       {distanceRemaining ? `${(distanceRemaining / 1000).toFixed(1)} km` : <Txt className="animate-pulse text-slate-400">Wait...</Txt>}
+                     </Txt>
+                   </Box>
+                   <Box className="flex items-center gap-1 border-l border-slate-200 pl-3">
+                     <I icon={FiClock} size={12} className="text-indigo-600" />
+                     <Txt className="text-[10px] font-bold text-slate-800">
+                       {eta ? eta : <Txt className="animate-pulse text-slate-400">Wait...</Txt>}
+                     </Txt>
+                   </Box>
+                 </Box>
+             </Box>}
+
+          <Box className="p-4 pt-10 space-y-4">
+             {/* PICKUP TARGET DETAILS CARD */}
+             <Box className={`bg-white rounded-[1.5rem] p-4 shadow-sm border ${currentPhase === 'pickup' ? 'border-orange-200 shadow-orange-100' : 'border-slate-100 opacity-60'}`}>
+                <Box className="flex items-center gap-3 mb-4">
+                    <Box className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border shrink-0 ${currentPhase !== 'pickup' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-orange-50 text-orange-500 border-orange-100'}`}>
+                       {currentPhase !== 'pickup' ? <I icon={FiCheckCircle} size={24} /> : pickupName?.[0]?.toUpperCase() || 'P'}
+                    </Box>
+                    <Box className="flex-1 min-w-0">
+                       <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1 mb-0.5">
+                         PICKUP FROM
+                         {currentPhase !== 'pickup' && <Txt className="text-emerald-500 flex items-center gap-0.5 normal-case tracking-normal text-[10px]"><I icon={FiCheckCircle} size={10} /> Completed</Txt>}
+                       </Txt>
+                       <Txt className="text-base font-black text-slate-800 leading-tight truncate">{pickupName}</Txt>
+                    </Box>
+                </Box>
+
+                <Box className="space-y-3 mb-4 pl-1">
+                    <Box className="flex gap-3">
+                       <I icon={FiMapPin} size={14} className="text-slate-400 mt-0.5 shrink-0" />
+                       <Box>
+                          <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Address</Txt>
+                          <Txt className="text-xs font-bold text-slate-800">{pickupAddress}</Txt>
+                       </Box>
+                    </Box>
+                    <Box className="flex gap-3">
+                       <I icon={FiPhone} size={14} className="text-slate-400 mt-0.5 shrink-0" />
+                       <Box>
+                          <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Phone</Txt>
+                          <Txt className="text-xs font-bold text-slate-800">{pickupPhone || 'N/A'}</Txt>
+                       </Box>
+                    </Box>
+                </Box>
+
+                <Box className="flex gap-2">
+                   <Btn onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pickupAddress)}`)} className={`w-14 h-11 rounded-2xl flex items-center justify-center shadow-sm active:scale-95 transition-all ${currentPhase !== 'pickup' ? 'bg-slate-50 text-slate-400' : 'bg-blue-50 text-blue-600'}`}>
+                      <I icon={FiNavigation} size={18} />
+                   </Btn>
+                   <Btn onPress={() => Linking.openURL(`tel:${pickupPhone}`)} className={`flex-1 h-11 font-bold rounded-2xl flex items-center justify-center gap-2 text-[13px] shadow-sm active:scale-95 transition-all ${currentPhase !== 'pickup' ? 'bg-slate-100 text-slate-400' : 'bg-emerald-500 text-white shadow-emerald-200'}`}>
+                      <I icon={FiPhone} size={16} /> Call
+                   </Btn>
+                </Box>
+             </Box>
+
+             {/* DROPOFF TARGET DETAILS CARD */}
+             <Box className={`bg-white rounded-[1.5rem] p-4 shadow-sm border ${currentPhase === 'delivery' ? 'border-indigo-200 shadow-indigo-100' : 'border-slate-100 opacity-60'}`}>
+                <Box className="flex items-center gap-3 mb-4">
+                    <Box className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center font-bold text-lg border border-indigo-100 shrink-0">
+                       {dropoffName?.[0]?.toUpperCase() || 'D'}
+                    </Box>
+                    <Box className="flex-1 min-w-0">
+                       <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1 mb-0.5">
+                         DELIVER TO
+                       </Txt>
+                       <Txt className="text-base font-black text-slate-800 leading-tight truncate">{dropoffName}</Txt>
+                    </Box>
+                </Box>
+
+                <Box className="space-y-3 mb-4 pl-1">
+                    <Box className="flex gap-3">
+                       <I icon={FiMapPin} size={14} className="text-slate-400 mt-0.5 shrink-0" />
+                       <Box>
+                          <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Address</Txt>
+                          <Txt className="text-xs font-bold text-slate-800">{dropoffAddress}</Txt>
+                       </Box>
+                    </Box>
+                    <Box className="flex gap-3">
+                       <I icon={FiPhone} size={14} className="text-slate-400 mt-0.5 shrink-0" />
+                       <Box>
+                          <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Phone</Txt>
+                          <Txt className="text-xs font-bold text-slate-800">{dropoffPhone || 'N/A'}</Txt>
+                       </Box>
+                    </Box>
+                </Box>
+
+                <Box className="flex gap-2">
+                   <Btn onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dropoffAddress)}`)} className="w-14 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm active:scale-95 transition-all">
+                      <I icon={FiNavigation} size={18} />
+                   </Btn>
+                   <Btn onPress={() => Linking.openURL(`tel:${dropoffPhone}`)} className="flex-1 h-11 bg-emerald-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 text-[13px] shadow-sm shadow-emerald-200 active:scale-95 transition-all">
+                      <I icon={FiPhone} size={16} /> Call
+                   </Btn>
+                </Box>
+             </Box>
+
+             {/* ORDER ITEMS CARD */}
+             <Box className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-slate-100 flex flex-col gap-3">
+                 <Box className="flex items-center gap-3">
+                    <Box className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 shrink-0">
+                       <I icon={FiPackage} className="text-slate-400" size={18} />
+                    </Box>
+                    <Box className="flex-1">
+                       <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">ORDER CONTENTS</Txt>
+                       <Txt className="text-sm font-black text-slate-800 leading-tight">{order.items?.length || 0} Items in Task</Txt>
+                    </Box>
+                 </Box>
+                 
+                 {/* Only show items list if not just an offer */}
+                 {!isAvailableTask && <Box className="space-y-2 mt-2 pt-3 border-t border-slate-50">
+                     {order.items?.map((item, idx) => {
+                const isPicked = selectedItemIds.has(item.productId || item._id);
+                const isTryMode = order.isTryAndBuy && hasArrived;
+                return <Btn key={idx} onPress={() => isTryMode && toggleItem(item.productId || item._id)} className={`block ${`flex gap-3 p-2 rounded-xl border transition-all ${isTryMode ? isPicked ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-transparent opacity-60' : 'bg-slate-50 border-transparent'}`}`}>
+                             <Box className="w-10 h-10 bg-white rounded-lg overflow-hidden border border-slate-100 shrink-0">
+                                {item.image || item.service?.image || item.product?.image || item.product?.images?.[0] ? <Img src={item.image || item.service?.image || item.product?.image || item.product?.images?.[0]} className="w-full h-full object-cover" alt="" /> : <I icon={FiPackage} className="text-slate-200 mt-2.5 mx-auto" size={16} />}
+                             </Box>
+                             <Box className="flex-1 min-w-0 flex flex-col justify-center">
+                                <Txt className="text-[11px] font-bold text-slate-800 truncate">
+                                  {item.productName || item.name || item.service?.title || item.product?.name || `Item ${idx + 1}`}
+                                </Txt>
+                                <Txt className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-tighter">Qty: {item.quantity || 1}</Txt>
+                             </Box>
+                             {isTryMode && <Box className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 my-auto ${isPicked ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-200'}`}>
+                                  {isPicked ? <I icon={FiCheckCircle} size={12} /> : <Box className="w-2.5 h-2.5 border border-slate-300 rounded-full" />}
+                               </Box>}
+                          </Btn>;
+              })}
+                     {order.isTryAndBuy && hasArrived && !order.tryAndBuyCompleted && <Btn onPress={handleItemConfirmation} className="w-full mt-4 h-10 bg-slate-900 text-white font-bold rounded-2xl text-[10px] uppercase tracking-[0.1em]">Confirm Selection</Btn>}
+                   </Box>}
+             </Box>
+
+             {/* TRIP/LOCATION CARD */}
+             <Box className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-slate-100">
+                <Txt className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-4">TRIP</Txt>
+                
+                {/* Distance Overview Box */}
+                <Box className="bg-indigo-50/50 rounded-xl p-3 mb-5 border border-indigo-50 flex items-center justify-between">
+                   <Box>
+                      <Txt className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">
+                        {currentLocation?.lat ? 'Distance from you' : 'Trip Distance'}
+                      </Txt>
+                      <Txt className="text-sm font-black text-indigo-900">
+                        {distanceRemaining === -1 ? 'Unknown' : distanceRemaining !== null ? `${(distanceRemaining / 1000).toFixed(1)} km` : <Txt className="text-xs text-indigo-400 font-bold animate-pulse">Calculating...</Txt>}
+                      </Txt>
+                   </Box>
+                   <Box className="h-6 w-px bg-indigo-100" />
+                   <Box className="text-right">
+                      <Txt className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Est. Time</Txt>
+                      <Txt className="text-sm font-black text-indigo-900">
+                        {eta ? eta : <Txt className="text-xs text-indigo-400 font-bold animate-pulse">Wait...</Txt>}
+                      </Txt>
+                   </Box>
+                </Box>
+
+                <Box className="flex gap-3 relative">
+                   <Box className="mt-0.5 relative z-10 bg-white">
+                      {currentPhase !== 'pickup' ? <I icon={FiCheckCircle} size={16} className="text-emerald-500" /> : <I icon={FiMapPin} size={16} className="text-indigo-500" />}
+                   </Box>
+                   <Box className="flex-1">
+                       <Txt className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 flex items-center gap-1 ${currentPhase !== 'pickup' ? 'text-emerald-500' : 'text-slate-500'}`}>
+                           Pickup
+                           {currentPhase !== 'pickup' && <Txt className="text-emerald-500 normal-case tracking-normal text-[9px]">(Completed)</Txt>}
+                       </Txt>
+                       <Txt className={`text-xs font-semibold leading-snug ${currentPhase !== 'pickup' ? 'text-slate-400' : 'text-slate-700'}`}>
+                           {pickupAddress}
+                       </Txt>
+                       {currentPhase === 'pickup' && <Txt className="text-[9px] font-mono text-indigo-400 font-medium mt-1 uppercase tracking-tighter bg-indigo-50 inline-block px-1.5 py-0.5 rounded border border-indigo-100">
+                               {currentLocationAddress === 'Fetching Location...' ? 'Fetching your distance...' : 'GPS Active'}
+                           </Txt>}
+                   </Box>
+                   <Box className="absolute left-2 top-5 bottom-[-20px] w-px border-l-2 border-dashed border-slate-200 z-0" />
+                </Box>
+                <Box className="flex gap-3 mt-6 relative">
+                   <Box className="mt-0.5 relative z-10 bg-white"><I icon={FiMapPin} size={16} className="text-rose-500" /></Box>
+                   <Box className="flex-1">
+                       <Txt className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">
+                           Dropoff
+                       </Txt>
+                       <Txt className="text-xs font-semibold text-slate-700 leading-snug">
+                           {dropoffAddress}
+                       </Txt>
+                   </Box>
+                </Box>
+             </Box>
+
+             {/* EARNING CARD */}
+             <Box className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-slate-100">
+                <Box className="flex gap-3">
+                    <Box className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center border border-emerald-100 shrink-0">
+                       <I icon={FiCreditCard} size={14} />
+                    </Box>
+                     <Box className="w-full">
+                       <Txt className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Your earning</Txt>
+                       <Txt className="text-lg font-black text-slate-800 leading-tight">
+                          {formatPrice(order.deliveryPartnerEarning || order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20)}
+                       </Txt>
+                       <Txt className="text-[9px] text-slate-400 mt-2 leading-snug">Net amount after platform commission. Credited to your wallet once the trip is completed.</Txt>
+                     </Box>
+                </Box>
+             </Box>
+
+             {/* Verification and OTP Area - only show if accepted and arrived */}
+             {!isAvailableTask && isAssignedToMe && hasArrived && <Box className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
+                     <Box>
+                        <Box className="flex items-center justify-between mb-3">
+                           <Txt className="text-[9px] font-bold text-slate-800 uppercase tracking-widest">Verification Proof</Txt>
+                           <Txt className="text-[8px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded leading-none uppercase">{(currentPhase || 'Phase').toUpperCase()}</Txt>
+                        </Box>
+                        
+                        <Box className="grid grid-cols-1 gap-4">
+                            <Box className="relative aspect-[16/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 flex items-center justify-center group shadow-inner">
+                               {(currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto) ? <>
+                                    <Img src={currentPhase === 'pickup' ? pickupPhoto : deliveryPhoto} alt="Verification" className="w-full h-full object-cover" />
+                                    {photoProcessing && <Box className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                        <I icon={FiLoader} className="w-8 h-8 text-white animate-spin" />
+                                      </Box>}
+                                    <Btn disabled={photoProcessing} onPress={() => currentPhase === 'pickup' ? setPickupPhoto(null) : setDeliveryPhoto(null)} className="absolute top-2 right-2 w-7 h-7 bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md shadow-lg text-sm leading-none">×</Btn>
+                                  </> : photoProcessing ? <Box className="flex flex-col items-center gap-2 text-indigo-600">
+                                    <I icon={FiLoader} className="w-8 h-8 animate-spin" />
+                                    <Txt className="text-[9px] font-black uppercase tracking-widest">Processing photo…</Txt>
+                                  </Box> : <Box className="flex flex-col items-center gap-3">
+                                     <Btn disabled={photoProcessing} onPress={() => pickImage({ camera: true }).then(f => f && handleImagePick({ target: { files: [f] } }, currentPhase === 'pickup' ? setPickupPhoto : setDeliveryPhoto, true))} className="flex flex-col items-center gap-1.5 text-indigo-600 active:scale-95 transition-transform disabled:opacity-40">
+                                        <I icon={FiCamera} size={28} />
+                                        <Txt className="text-[9px] font-black uppercase tracking-tight">CAMERA</Txt>
+                                     </Btn>
+                                     <Box className="w-12 h-px bg-slate-200" />
+                                     <Btn disabled={photoProcessing} onPress={() => pickImage().then(f => f && handleImagePick({ target: { files: [f] } }, currentPhase === 'pickup' ? setPickupPhoto : setDeliveryPhoto, false))} className="flex flex-col items-center gap-1.5 text-slate-400 active:scale-95 transition-transform disabled:opacity-40">
+                                        <I icon={FiImage} size={24} />
+                                        <Txt className="text-[8px] font-black uppercase tracking-tight">GALLERY</Txt>
+                                     </Btn>
+                                  </Box>}
+                            </Box>
+                         </Box>
+                     </Box>
+
+                     {/* OTP AREA */}
+                     {(currentPhase === 'delivery' || currentPhase === 'pickup') && (currentPhase === 'pickup' && pickupPhoto || currentPhase === 'delivery' && deliveryPhoto) && <Box className="pt-4 border-t border-slate-100/50 text-center">
+                          <Txt className="text-[9px] font-bold text-slate-800 uppercase tracking-[0.2em] mb-4">Security Terminal</Txt>
+                          
+                          <Txt className="text-[9px] text-slate-500 font-bold mb-3 px-2">
+                            {(order?.rawStatus || order?.status) === 'fabric-picked-up' ? 'Enter the OTP from the TAILOR (not the customer pickup OTP).' : currentPhase === 'pickup' ? 'Enter the OTP from the CUSTOMER at pickup.' : 'Enter the OTP from the CUSTOMER at drop-off.'}
+                          </Txt>
+
+                          <Box className="max-w-[210px] mx-auto space-y-3">
+                            <Box className="relative group">
+                                <Input maxLength={6} value={otpValue} onChangeText={e => setOtpValue(e.replace(/\D/g, ''))} placeholder="Enter 6-digit OTP" className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xl font-black tracking-[0.2em] text-slate-800 placeholder:text-slate-300 placeholder:text-[10px] placeholder:tracking-normal outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" keyboardType="phone-pad" />
+                                <Box className="absolute inset-y-0 right-4 flex items-center pointer-events-none opacity-20">
+                                    <I icon={FiShield} size={18} />
+                                </Box>
+                            </Box>
+                            <Btn onPress={handleOtpResend} disabled={isResending} className="w-full flex items-center justify-center gap-2 py-2.5 text-[9px] font-bold text-indigo-600 bg-indigo-50/50 rounded-xl active:bg-indigo-50 transition-colors uppercase tracking-[0.1em] shadow-sm active:scale-95">
+                               {isResending ? 'GENERATING NEW OTP...' : <><I icon={FiSend} size={12} /> RE-GENERATE & RESEND OTP</>}
+                            </Btn>
+                            <Txt className="text-[8px] text-slate-400 font-bold uppercase tracking-tight leading-none px-2 mt-2 opacity-60">OTP is sent only during active arrival session.</Txt>
+                          </Box>
+
+                          {/* PAYMENT OPTIONS */}
+                          {isCod && currentPhase === 'delivery' && isFinalDelivery && <Box className="mt-6 pt-5 border-t border-slate-50 text-left">
+                               <Box className="flex items-center justify-between mb-4">
+                                  <Box className="min-w-0">
+                                     <Txt className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1 tracking-tighter">Amount Due</Txt>
+                                     <Txt className="text-xl font-black text-slate-900 leading-none">{formatPrice(calculatedTotal)}</Txt>
+                                  </Box>
+                                  <Box className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                                     <I icon={FiCreditCard} size={18} className="text-indigo-600" />
+                                  </Box>
+                               </Box>
+                               <Box className="grid grid-cols-2 gap-2">
+                                   <Btn onPress={() => handlePaymentMethod('cash')} disabled={isUpdatingOrderStatus} className={`h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 flex items-center justify-center gap-1.5 ${paymentSelection === 'cash' ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-500 border-slate-100'}`}>
+                                     {isUpdatingOrderStatus && paymentSelection === 'cash' ? <><I icon={FiLoader} className="w-3.5 h-3.5 animate-spin" /> SELECTING...</> : 'CASH'}
+                                   </Btn>
+                                   <Btn onPress={() => handlePaymentMethod('qr')} disabled={isUpdatingOrderStatus} className={`h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 flex items-center justify-center gap-1.5 ${paymentSelection === 'qr' ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white text-slate-500 border-slate-100'}`}>
+                                     {isUpdatingOrderStatus && paymentSelection === 'qr' ? <><I icon={FiLoader} className="w-3.5 h-3.5 animate-spin" /> GENERATING...</> : 'UPI QR'}
+                                   </Btn>
+                               </Box>
+                            </Box>}
+                       </Box>}
+                </Box>}
+          </Box>
+        </Box>
+
+                </Scroll>
+        <Box className="p-4 bg-white border-t border-slate-100 z-50 flex flex-col gap-2">
+          {isAvailableTask ? <Box className="flex gap-3">
+              <Btn onPress={async () => {
+            if (confirm("Are you sure you want to decline this task? It will be assigned to someone else.")) {
+              try {
+                await rejectOrder(id);
+                toast.success('Task declined successfully');
+                navigate('/delivery/dashboard');
+              } catch (err) {
+                toast.error(err?.response?.data?.message || 'Failed to decline task');
+              }
+            }
+          }} disabled={isUpdatingOrderStatus} className="flex-1 h-12 bg-white text-slate-700 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] border-2 border-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                  {isUpdatingOrderStatus ? <><I icon={FiLoader} className="w-3.5 h-3.5 animate-spin" /> DECLINING...</> : 'Skip'}
+              </Btn>
+              <Btn onPress={handleAcceptMission} disabled={isUpdatingOrderStatus} className="flex-[2] h-12 bg-amber-400 text-amber-950 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg shadow-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                  {isUpdatingOrderStatus ? <><I icon={FiLoader} className="w-3.5 h-3.5 animate-spin text-amber-950" /> ACCEPTING...</> : 'Accept'}
+              </Btn>
+            </Box> : isAssignedToMe ? <>
+              {!hasArrived ? <Btn onPress={handleArrivalUpdate} className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <I icon={FiZap} size={14} className="animate-pulse" /> GENERATE OTP (I HAVE ARRIVED)
+                 </Btn> : <Btn onPress={currentPhase === 'pickup' ? async () => {
+            if (!/^\d{6}$/.test(otpValue.trim())) return toast.error('Enter 6-digit OTP');
+            const correctStatus = order.taskType === 'fabric-pickup' || order.status === 'fabric-ready-for-pickup' ? 'fabric-picked-up' : 'picked-up-from-tailor';
+            const proof = await ensurePhotoDataUrl(pickupPhoto);
+            if (!proof) return toast.error('Photo still processing — wait a moment');
+            handleUpdateStatus(correctStatus, 'Items picked up!', {
+              proof,
+              otp: otpValue.trim()
+            });
+          } : handleFinalize} disabled={isUpdatingOrderStatus || currentPhase === 'pickup' && (otpValue.length < 6 || !pickupPhoto) || currentPhase === 'delivery' && (otpValue.length < 6 || !deliveryPhoto || isCod && isFinalDelivery && !paymentSelection)} className="w-full h-12 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 disabled:opacity-20 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                    {isUpdatingOrderStatus ? <><I icon={FiLoader} className="w-3.5 h-3.5 animate-spin text-white" /> WAITING...</> : currentPhase === 'pickup' ? otpValue.length < 6 || !pickupPhoto ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'MARK AS PICKED UP' : otpValue.length < 6 || !deliveryPhoto || isCod && isFinalDelivery && !paymentSelection ? 'PROVIDE OTP & PHOTO TO COMPLETE' : 'COMPLETE DELIVERY'}
+                </Btn>}
+              
+              {/* Cancel Trip Button - Only available during pickup phase */}
+              {currentPhase === 'pickup' && <Btn onPress={handleCancelOrder} className="w-full py-2 flex items-center justify-center gap-1.5 text-[9px] font-black text-rose-500 rounded-xl active:bg-rose-50 transition-colors uppercase tracking-widest mt-1">
+                     <I icon={FiX} size={12} /> Cancel Trip
+                  </Btn>}
+            </> : isCancelling || order.status === 'cancelled' || order.status === 'searching-delivery-partner' ? <Box className="text-center py-2 px-4">
+                <Txt className="text-sm font-black text-slate-400">Cancelling...</Txt>
+            </Box> : <Box className="text-center py-2 px-4 bg-rose-50 rounded-xl border border-rose-100">
+               <Txt className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">UNAUTHORIZED ACCESS</Txt>
+               <Txt className="text-[8px] font-bold text-rose-400 uppercase leading-none">This task is assigned to another partner.</Txt>
+            </Box>}
+        </Box>
+
+        {/* QR MODAL */}
+        <React.Fragment>
+          {showQRModal && <Dialog visible={!!(showQRModal)} onClose={() => setShowQRModal(false)} className={`bg-white w-full max-w-xs rounded-[2.5rem] p-6 shadow-2xl relative border-b-[10px] border-indigo-600 overflow-hidden`}>
+<Box className="flex-shrink flex flex-col overflow-hidden">
+                  <Box className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 opacity-50" />
+                  <Btn onPress={() => setShowQRModal(false)} className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 rounded-full z-10"><I icon={FiX} size={18} /></Btn>
+                  
+                  <Box className="text-center relative">
+                    <Txt className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">UPI Payment Gateway</Txt>
+                    <Txt className="text-sm font-black text-slate-800 mb-6 font-mono border-b border-slate-100 pb-4">{formatPrice(calculatedTotal)}</Txt>
+                    
+                     <Box className="aspect-square bg-white border-2 border-slate-50 rounded-[1.5rem] flex items-center justify-center p-5 mb-6 shadow-xl relative group">
+                        <Img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${import.meta.env.VITE_ADMIN_UPI_ID || 'silaiwala@razorpay'}&pn=Silaiwala&am=${calculatedTotal}&cu=INR`)}`} alt="Payment QR" className="w-full h-full" />
+                        
+                     </Box>
+
+                    <Txt className="text-[9px] font-bold text-slate-400 px-2 leading-tight uppercase tracking-tighter mb-8">Scan QR with any UPI app.</Txt>
+                    <Btn onPress={() => setShowQRModal(false)} className="w-full h-12 bg-indigo-600 text-white rounded-2xl text-[11px] font-black shadow-lg shadow-indigo-100 uppercase tracking-[0.1em] flex items-center justify-center gap-2">
+                       <I icon={FiCheckCircle} size={16} /> PAYMENT CONFIRMED
+                    </Btn>
+                  </Box>
+               </Box>
+</Dialog>}
+        </React.Fragment>
+
+        <CancellationModal isOpen={isCancellationModalOpen} onClose={() => setIsCancellationModalOpen(false)} onConfirm={confirmCancellation} isSubmitting={isCancelling} />
+
+        {/* HIDDEN INPUTS FOR FILE UPLOAD */}
+      </Box></Screen>
+    </PageTransition>;
+};
+export default DeliveryOrderDetail;
