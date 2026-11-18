@@ -757,7 +757,7 @@ const Products = () => {
                         </Box>
 
                         {/* Form Body */}
-                        <Scroll contentClassName="p-4 space-y-4" className="sm:p-6 sm:space-y-5 custom-scrollbar flex-1" nestedScrollEnabled>
+                        <Scroll contentClassName="p-4 space-y-4" className="sm:p-6 sm:space-y-5 custom-scrollbar" nestedScrollEnabled>
                             
                             {/* 1. Stitching Price Input with Strict Admin Min-Max Bounds */}
                             {(() => {
@@ -919,7 +919,7 @@ const Products = () => {
                             </Btn>
                         </Box>
 
-                        <Scroll contentClassName="p-4 space-y-4" className="sm:p-6 custom-scrollbar flex-1" nestedScrollEnabled>
+                        <Scroll contentClassName="p-4 space-y-4" className="sm:p-6 custom-scrollbar" nestedScrollEnabled>
                             <Box>
                                 <Txt className="text-xs font-bold text-gray-700 block mb-1">Fabric Category *</Txt>
                                 <Select value={selectedParent} onChange={e => {

@@ -155,6 +155,8 @@ export function parse(className) {
     if (c === 'sticky') { meta.sticky = true; continue; }
     if (c === 'absolute') { extra.position = 'absolute'; continue; }
     // twrnc ignores arbitrary z-index (`Number('[100]')` is NaN), so overlays fell behind later siblings and lost taps
+    // twrnc ignores arbitrary opacity (`opacity-[0.03]`), which left faint decorations fully visible
+    if ((m = c.match(/^opacity-\[(\d*\.?\d+)\]$/))) { extra.opacity = Number(m[1]); continue; }
     if ((m = c.match(/^(-)?z-\[(-?\d+)\]$/))) { extra.zIndex = (m[1] ? -1 : 1) * Number(m[2]); continue; }
     if (c === 'pointer-events-none') { extra.pointerEvents = 'none'; continue; }
     if (c === 'pointer-events-auto') continue;

@@ -99,7 +99,9 @@ export default function TailorLayout({ children, scroll = true }) {
     { icon: ShoppingBag, label: 'Services', path: '/partner/products' },
     { icon: UserCircle, label: 'Profile', path: '/partner/settings' },
   ];
-  const avatar = user?.profile?.profileImage || user?.profileImage;
+  const rawAvatar = user?.profile?.profileImage || user?.profileImage;
+  // the backend's placeholder is not a loadable URL: show the initial instead of an empty box
+  const avatar = rawAvatar && rawAvatar !== 'default_profile.png' ? rawAvatar : null;
   const content = (
     <Box key={`${refreshKey}-${returnKey}`} className={`flex-1 ${isOrderSection ? 'p-4' : ''}`}>
       {children}

@@ -437,13 +437,13 @@ const TailorRegistration = () => {
                                     <Checkbox checked={agreedToTerms} onChange={setAgreedToTerms} />
                                     <Txt className="text-xs text-[#64748B] font-medium">
                                         I agree with{' '}
-                                        <Btn onPress={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] font-semibold hover:underline">
+                                        <Txt onPress={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] font-semibold hover:underline">
                                             Terms & Conditions
-                                        </Btn>
+                                        </Txt>
                                         {' '} & {' '}
-                                        <Btn onPress={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] font-semibold hover:underline">
+                                        <Txt onPress={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] font-semibold hover:underline">
                                             Privacy Policy
-                                        </Btn>
+                                        </Txt>
                                     </Txt>
                                 </Txt>
                             </Box>
@@ -463,9 +463,9 @@ const TailorRegistration = () => {
             <Box className="mt-6 text-center w-full">
                 <Txt className="text-xs font-medium text-[#64748B]">
                     Already have an account?{' '}
-                    <Btn onPress={() => navigate("/partner/login")} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">
+                    <Txt onPress={() => navigate("/partner/login")} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">
                         Sign In
-                    </Btn>
+                    </Txt>
                 </Txt>
             </Box>
         </Box>;

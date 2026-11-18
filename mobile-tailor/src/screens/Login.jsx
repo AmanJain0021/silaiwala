@@ -222,13 +222,13 @@ const TailorLogin = () => {
                             <Checkbox checked={agreedToTerms} onChange={setAgreedToTerms} />
                             <Txt className="text-xs text-[#64748B] font-medium cursor-pointer select-none">
                                 I agree with{' '}
-                                <Btn onPress={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] font-semibold hover:underline">
+                                <Txt onPress={() => navigate('/partner/legal/terms-and-conditions')} className="text-[#843D9B] font-semibold hover:underline">
                                     Terms & Conditions
-                                </Btn>
+                                </Txt>
                                 {' '} & {' '}
-                                <Btn onPress={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] font-semibold hover:underline">
+                                <Txt onPress={() => navigate('/partner/legal/privacy-policy')} className="text-[#843D9B] font-semibold hover:underline">
                                     Privacy Policy
-                                </Btn>
+                                </Txt>
                             </Txt>
                         </Box>
 
@@ -298,9 +298,9 @@ const TailorLogin = () => {
             <Box className="mt-6 text-center w-full">
                 <Txt className="text-xs font-medium text-[#64748B]">
                     New to SewZella Tailor?{' '}
-                    <Btn onPress={() => navigate("/partner/signup")} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">
+                    <Txt onPress={() => navigate("/partner/signup")} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">
                         Register Now
-                    </Btn>
+                    </Txt>
                 </Txt>
             </Box>
         </Box>;
