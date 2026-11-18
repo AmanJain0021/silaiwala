@@ -8,6 +8,7 @@ const MenuOption = ({
   label,
   subLabel,
   to,
+  onPress,
   onClick,
   isDanger,
   color,
@@ -26,7 +27,7 @@ const MenuOption = ({
     return 'text-[#843D9B]';
   };
   if (layout === 'vertical') {
-    return <Component to={to} onPress={onClick} className="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all group min-w-[90px] relative">
+    return <Component to={to} onPress={onPress || onClick} className="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all group min-w-[90px] relative">
                 <Box className={`w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-2 group-hover:bg-[#843D9B]/5 transition-colors ${getIconColor()}`}>
                     <I icon={Icon} size={20} strokeWidth={2} />
                 </Box>
@@ -39,7 +40,7 @@ const MenuOption = ({
   }
 
   // Default Horizontal Layout
-  return <Component to={to} onPress={onClick} className={`w-full flex items-center justify-between p-3.5 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-gray-200 transition-all group mb-2 relative ${isDanger ? 'hover:bg-red-50 hover:border-red-100' : ''}`}>
+  return <Component to={to} onPress={onPress || onClick} className={`w-full flex items-center justify-between p-3.5 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-gray-200 transition-all group mb-2 relative ${isDanger ? 'hover:bg-red-50 hover:border-red-100' : ''}`}>
             <Box className="flex items-center gap-3">
                 <Box className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-105 bg-gray-50 group-hover:bg-[#843D9B]/5 ${getIconColor()}`}>
                     <I icon={Icon} size={20} strokeWidth={2} />
