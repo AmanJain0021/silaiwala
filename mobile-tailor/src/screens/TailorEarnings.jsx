@@ -406,7 +406,7 @@ const TailorEarnings = () => {
                                     <Input value={upiId} onChangeText={e => setUpiId(e)} placeholder="username@bank" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#843D9B] focus:bg-white transition-all" disabled={isSubmitting} />
                                 </Box>
 
-                                <Btn disabled={isSubmitting || !withdrawAmount || !upiId} className="w-full bg-[#843D9B] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3">
+                                <Btn onPress={handleWithdrawRequest} disabled={isSubmitting || !withdrawAmount || !upiId} className="w-full bg-[#843D9B] text-white py-5 rounded-[1.5rem] font-black tracking-[0.2em] uppercase text-xs hover:bg-primary-dark active:scale-95 transition-all shadow-xl shadow-indigo-900/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3">
                                     {isSubmitting ? <>
                                             <Spin size={18} className="animate-spin" />
                                             Processing...

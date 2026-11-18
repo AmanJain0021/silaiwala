@@ -387,7 +387,7 @@ const GarmentForm = ({
                     <Btn onPress={onClose} className="px-6 py-3 rounded-2xl text-xs font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 transition-colors cursor-pointer">
                         Cancel
                     </Btn>
-                    <Btn form="garment-form" disabled={isSubmitting} className="px-8 py-3 rounded-2xl text-xs font-black text-white bg-[#843D9B] hover:bg-[#1f2152] transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-[#843D9B]/10">
+                    <Btn onPress={handleSubmit} form="garment-form" disabled={isSubmitting} className="px-8 py-3 rounded-2xl text-xs font-black text-white bg-[#843D9B] hover:bg-[#1f2152] transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-[#843D9B]/10">
                         {isSubmitting && <Spin size={12} className="text-white" />}
                         {initialData ? 'Save Changes' : 'Publish Garment'}
                     </Btn>

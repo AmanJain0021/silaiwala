@@ -233,7 +233,7 @@ const TailorLogin = () => {
                         </Box>
 
                         {loginMethod === 'password' && <Box className="space-y-3 pt-1 w-full">
-                                <Btn disabled={isLoading || !agreedToTerms} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
+                                <Btn onPress={handleSubmit(onSubmit)} disabled={isLoading || !agreedToTerms} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
                                     {isLoading ? 'Logging in...' : 'Sign In'}
                                 </Btn>
                                 <Btn onPress={() => {
@@ -287,7 +287,7 @@ const TailorLogin = () => {
                                 </Btn>
                             </Box>
 
-                            <Btn disabled={isLoading || !agreedToTerms} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
+                            <Btn onPress={handleSubmit(onSubmit)} disabled={isLoading || !agreedToTerms} className={`w-full py-3.5 sm:py-4 rounded-[22px] font-bold text-sm tracking-wide transition-all shadow-md active:scale-[0.99] cursor-pointer text-center mt-2 ${isLoading || !agreedToTerms ? 'bg-[#E2D9F3] text-white cursor-not-allowed shadow-none' : 'bg-[#843D9B] hover:bg-[#843D9B] text-white shadow-lg shadow-[#843D9B]/20'}`}>
                                 {isLoading ? 'Verifying...' : 'Verify & Sign In'}
                             </Btn>
                         </Box>}

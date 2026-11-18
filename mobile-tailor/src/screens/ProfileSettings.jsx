@@ -286,7 +286,10 @@ const ProfileSettings = () => {
                                     <Btn onPress={() => setIsEditingPickup(false)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
                                         Cancel
                                     </Btn>
-                                    <Btn disabled={isSaving} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-lg hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-50">
+                                    <Btn onPress={(e) => {
+                                handleSave(e);
+                                setIsEditingPickup(false);
+                            }} disabled={isSaving} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-lg hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-50">
                                         {isSaving ? 'Saving...' : 'Save Changes'}
                                     </Btn>
                                 </Box>
@@ -472,7 +475,7 @@ const ProfileSettings = () => {
                                         <Btn onPress={() => setIsEditing(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
                                             Cancel
                                         </Btn>
-                                        <Btn disabled={isSaving} className="flex-[2] py-4 bg-[#843D9B] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#843D9B]/20 hover:bg-[#4E2460] transition-all">
+                                        <Btn onPress={handleSave} disabled={isSaving} className="flex-[2] py-4 bg-[#843D9B] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#843D9B]/20 hover:bg-[#4E2460] transition-all">
                                             {isSaving ? 'Saving Changes...' : 'Update Profile'}
                                         </Btn>
                                     </Box>

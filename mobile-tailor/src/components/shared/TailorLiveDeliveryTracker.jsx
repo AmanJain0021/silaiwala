@@ -192,7 +192,7 @@ const TailorLiveDeliveryTracker = ({
           <Input maxLength={6} value={otp} onChangeText={e => setOtp(e.replace(/\D/g, ''))} placeholder="Enter 6-digit OTP shared by customer" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-center tracking-[0.2em] focus:outline-none focus:border-[#843D9B] focus:bg-white transition-colors" keyboardType="phone-pad" />
         </Box>
 
-        <Btn disabled={isSubmitting || otp.length < 6 || hasRemainingPayment && !paymentMethod} className="w-full py-4 bg-[#843D9B] hover:bg-[#6c317f] disabled:opacity-50 disabled:pointer-events-none text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-[#843D9B]/10 flex items-center justify-center gap-2">
+        <Btn onPress={handleCompleteDelivery} disabled={isSubmitting || otp.length < 6 || hasRemainingPayment && !paymentMethod} className="w-full py-4 bg-[#843D9B] hover:bg-[#6c317f] disabled:opacity-50 disabled:pointer-events-none text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-[#843D9B]/10 flex items-center justify-center gap-2">
           {isSubmitting ? <Spin className="w-4 h-4 animate-spin" /> : <I icon={CheckCircle2} size={16} />}
           Complete Delivery Flow
         </Btn>

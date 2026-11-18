@@ -892,7 +892,7 @@ const Products = () => {
                                         <Btn onPress={handleCloseServiceModal} className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer text-center">
                                             Cancel
                                         </Btn>
-                                        <Btn form="service-form" disabled={isSubmitting || isPriceInvalid} className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 bg-[#843D9B] hover:bg-[#6D2883] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-[#843D9B]/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer text-center">
+                                        <Btn onPress={handleSaveService} form="service-form" disabled={isSubmitting || isPriceInvalid} className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 bg-[#843D9B] hover:bg-[#6D2883] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-[#843D9B]/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer text-center">
                                             {isSubmitting ? 'Submitting...' : editServiceId ? 'Save Changes' : 'Submit for Approval'}
                                         </Btn>
                                     </Box>
@@ -986,7 +986,7 @@ const Products = () => {
                             <Btn onPress={closeModal} className="px-5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600">
                                 Cancel
                             </Btn>
-                            <Btn form="fabric-form" disabled={isSubmitting} className="px-6 py-2 bg-[#843D9B] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-[#6D2883]">
+                            <Btn onPress={handleFabricSubmit} form="fabric-form" disabled={isSubmitting} className="px-6 py-2 bg-[#843D9B] text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-[#6D2883]">
                                 {isSubmitting ? 'Saving...' : 'Save Fabric'}
                             </Btn>
                         </Box>

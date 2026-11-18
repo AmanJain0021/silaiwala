@@ -160,7 +160,7 @@ const TailorOrderChat = () => {
             <Box className="bg-white/80 backdrop-blur-xl border-t border-gray-100 p-3 pb-safe z-10 shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.05)]">
                 <Box className="flex items-center gap-2 relative max-w-3xl mx-auto">
                     <Input value={newMessage} onChangeText={e => setNewMessage(e)} placeholder="Message..." className="flex-1 bg-gray-50/80 border border-gray-200 rounded-full py-3.5 pl-5 pr-14 text-[15px] outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all" />
-                    <Btn disabled={!newMessage.trim() || isSending} className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white transition-all shrink-0 ${newMessage.trim() && !isSending ? 'bg-gradient-to-br from-primary to-[#6a317c] hover:shadow-lg hover:shadow-primary/30 active:scale-95' : 'bg-gray-300'}`}>
+                    <Btn onPress={handleSendMessage} disabled={!newMessage.trim() || isSending} className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white transition-all shrink-0 ${newMessage.trim() && !isSending ? 'bg-gradient-to-br from-primary to-[#6a317c] hover:shadow-lg hover:shadow-primary/30 active:scale-95' : 'bg-gray-300'}`}>
                         {isSending ? <Spin size={18} className="animate-spin" /> : <I icon={Send} size={18} className="ml-0.5" />}
                     </Btn>
                 </Box>

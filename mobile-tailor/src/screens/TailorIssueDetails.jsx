@@ -312,7 +312,7 @@ const TailorIssueDetails = () => {
             <Box className="p-4 bg-white border-t border-gray-100">
                 <Box className="flex items-center gap-2">
                     <Input value={newMessage} onChangeText={e => setNewMessage(e)} placeholder="Message customer..." className="flex-1 h-12 bg-gray-50 border border-gray-100 rounded-full px-4 text-sm font-medium focus:ring-2 focus:ring-primary focus:bg-white outline-none" />
-                    <Btn disabled={isSending || !newMessage.trim()} className="w-12 h-12 bg-primary text-white flex items-center justify-center rounded-full shrink-0 disabled:opacity-50 active:scale-95 transition-transform shadow-lg shadow-primary/20">
+                    <Btn onPress={handleSendMessage} disabled={isSending || !newMessage.trim()} className="w-12 h-12 bg-primary text-white flex items-center justify-center rounded-full shrink-0 disabled:opacity-50 active:scale-95 transition-transform shadow-lg shadow-primary/20">
                         {isSending ? <Spin size={18} className="animate-spin" /> : <I icon={Send} size={18} />}
                     </Btn>
                 </Box>
