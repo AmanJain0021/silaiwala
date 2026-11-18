@@ -180,13 +180,13 @@ const DeliveryLogin = () => {
                             <Checkbox checked={agreedToTerms} onChange={setAgreedToTerms} />
                             <Txt className="text-xs text-[#64748B] font-medium cursor-pointer select-none">
                                 I agree with{' '}
-                                <Btn onPress={() => Linking.openURL('/delivery/legal/terms-and-conditions')} className="text-[#843D9B] font-semibold hover:underline">
+                                <Txt onPress={() => Linking.openURL('/delivery/legal/terms-and-conditions')} className="text-[#843D9B] font-semibold hover:underline">
                                     Terms & Conditions
-                                </Btn>
+                                </Txt>
                                 {' '} & {' '}
-                                <Btn onPress={() => Linking.openURL('/delivery/legal/privacy-policy')} className="text-[#843D9B] font-semibold hover:underline">
+                                <Txt onPress={() => Linking.openURL('/delivery/legal/privacy-policy')} className="text-[#843D9B] font-semibold hover:underline">
                                     Privacy Policy
-                                </Btn>
+                                </Txt>
                             </Txt>
                         </Box>
 
@@ -253,9 +253,9 @@ const DeliveryLogin = () => {
             <Box className="mt-6 text-center w-full">
                 <Txt className="text-xs font-medium text-[#64748B]">
                     New to SewZella Delivery?{' '}
-                    <Btn onPress={() => navigate("/delivery/signup")} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">
+                    <Txt onPress={() => navigate("/delivery/signup")} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">
                         Register Now
-                    </Btn>
+                    </Txt>
                 </Txt>
             </Box>
         </Box>;
