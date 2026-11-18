@@ -13,6 +13,7 @@ import { registerForPush } from '../../lib/push';
 import { getToken } from '../../lib/auth';
 import { useNavigate, TAB_ROOTS } from '../../lib/nav';
 import api from '../../lib/api';
+import useRefreshOnReturn from '../../lib/useRefreshOnReturn';
 import Screen from '../common/Screen';
 import { Box, Btn, I, Img, Scroll, Txt } from '../ui/primitives';
 
@@ -37,6 +38,7 @@ export default function TailorLayout({ children, scroll = true }) {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const returnKey = useRefreshOnReturn();
   const userId = user?._id || user?.id;
   const isOrderSection = ORDER_SECTION.includes(pathname);
 
@@ -99,7 +101,7 @@ export default function TailorLayout({ children, scroll = true }) {
   ];
   const avatar = user?.profile?.profileImage || user?.profileImage;
   const content = (
-    <Box key={refreshKey} className={`flex-1 ${isOrderSection ? 'p-4' : ''}`}>
+    <Box key={`${refreshKey}-${returnKey}`} className={`flex-1 ${isOrderSection ? 'p-4' : ''}`}>
       {children}
     </Box>
   );
