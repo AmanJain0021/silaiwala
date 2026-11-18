@@ -899,13 +899,13 @@ const DeliveryRegister = () => {
                   <Txt className="flex items-center gap-2 cursor-pointer select-none">
                     <Checkbox checked={agreedToTerms} onChange={setAgreedToTerms} />
                     <Txt className="text-xs text-[#64748B] font-medium">
-                      I agree to the <Btn onPress={() => setLegalModal({
+                      I agree to the <Txt onPress={() => setLegalModal({
                     isOpen: true,
                     type: 'terms'
-                  })} className="text-[#843D9B] hover:underline font-semibold cursor-pointer">Terms & Conditions</Btn> and <Btn onPress={() => setLegalModal({
+                  })} className="text-[#843D9B] hover:underline font-semibold cursor-pointer">Terms & Conditions</Txt> and <Txt onPress={() => setLegalModal({
                     isOpen: true,
                     type: 'privacy'
-                  })} className="text-[#843D9B] hover:underline font-semibold cursor-pointer">Privacy Policy</Btn>
+                  })} className="text-[#843D9B] hover:underline font-semibold cursor-pointer">Privacy Policy</Txt>
                     </Txt>
                   </Txt>
                 </Box>
@@ -928,7 +928,7 @@ const DeliveryRegister = () => {
           <Box className="text-center mt-6 w-full">
             <Txt className="text-xs font-medium text-[#64748B]">
               Already have an account?{' '}
-              <Btn onPress={() => storage.removeItem(DRAFT_KEY)} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">Login</Btn>
+              <Txt onPress={() => storage.removeItem(DRAFT_KEY)} className="text-[#843D9B] font-bold hover:underline ml-1 cursor-pointer">Login</Txt>
             </Txt>
           </Box>
         </Box>

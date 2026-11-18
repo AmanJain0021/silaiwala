@@ -45,6 +45,8 @@ Auth: /auth/login · check-user · register · send-otp · verify-otp · reset-p
 - Pending approval "check status" reloaded the whole page; natively the approved state re-renders immediately.
 - Profile rows did nothing: `MenuOption` read `onClick` while the converted screens pass `onPress`. Now accepts both (also fixed in the tailor app).
 - Wallet header menu icon had a press handler on a non-pressable icon; now wrapped in a button.
+- Tab roots no longer fail right after login (login is removed from the stack).
+- Legal popup scroll area no longer collapses; `opacity-[n]` is applied; inline auth links align with their text.
 - Submit buttons wired to their form handlers (`scripts/submitfix.js`).
 - Active tab icons kept their rounded shape when the shadow toggles; tabs refresh after more than 15 s away.
 

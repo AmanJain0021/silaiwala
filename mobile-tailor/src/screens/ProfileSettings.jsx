@@ -580,7 +580,7 @@ const ProfileSettings = () => {
                                 <I icon={X} size={20} />
                             </Btn>
                         </Box>
-                        <Scroll contentClassName="p-8 pt-6" className="flex-1 custom-scrollbar" nestedScrollEnabled>
+                        <Scroll contentClassName="p-8 pt-6" className="custom-scrollbar" nestedScrollEnabled>
                             {renderModalContent()}
                         </Scroll>
                         <Box className="p-8 border-t border-gray-50">

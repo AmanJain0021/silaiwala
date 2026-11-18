@@ -87,7 +87,7 @@ const PendingApproval = () => {
             </Box>
             
             <Txt className="text-slate-400 text-sm mt-8">
-                Need help? Contact support at <Btn onPress={() => Linking.openURL(`mailto:${emailDisplay}`)} className="text-slate-600 hover:underline">{emailDisplay}</Btn>
+                Need help? Contact support at <Txt onPress={() => Linking.openURL(`mailto:${emailDisplay}`)} className="text-slate-600 hover:underline">{emailDisplay}</Txt>
             </Txt>
         </Box></Screen>;
 };

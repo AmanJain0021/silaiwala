@@ -34,7 +34,7 @@ export default function DeliveryLegalModal({
         </Box>
 
         {/* Modal Scrollable Body */}
-        <Scroll contentClassName="p-5 space-y-4" className="flex-1 sm:p-6 text-slate-600 text-sm leading-relaxed custom-scrollbar" nestedScrollEnabled>
+        <Scroll contentClassName="p-5 space-y-4" className="sm:p-6 text-slate-600 text-sm leading-relaxed custom-scrollbar" nestedScrollEnabled>
           {isPrivacy ? <>
               <Txt className="font-semibold text-slate-800">Effective Date: January 1, 2026</Txt>
               <Txt>{appName} ("we", "our", or "us") values your privacy. This policy details how we collect, use, and protect your information when enrolling and serving as a Delivery Partner.</Txt>

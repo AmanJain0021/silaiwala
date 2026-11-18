@@ -68,6 +68,17 @@ Socket: tailor room via socketStore (`new_order`, `receive_new_order`, `order_st
 - Legal links in Login/Registration opened a relative URL; native navigates in-app.
 - Decorative buttons inside tappable cards (e.g. MeasurementList "View") no longer swallow the tap (primitive-level).
 
+## Logged-in verification (approved tailor account, 2026-11-18)
+Verified on the 2 GB emulator after a fresh login: all five tabs, Shop and Alterations order tabs, notifications, Pick Up Info and Privacy popups, Android back from Home leaves the app. View only: nothing was saved or submitted.
+Not tested: Custom and Issues order tabs, order detail, chat, service/fabric/garment forms, withdrawal, profile saving (no orders on the account, and writes were avoided).
+
+Fixed during this pass:
+- Tabs did nothing right after login because the login screen stayed under them.
+- Pick Up Info and Privacy popups were empty (scroll area collapsed to zero height); other popups had the same layout.
+- `opacity-[n]` was ignored, so the Wallet background arrow was fully visible.
+- Header avatar was blank for the `default_profile.png` placeholder; it now shows the initial.
+- Inline Terms, Privacy and Register links were misaligned.
+
 ## Device test list
 1. Fresh install → `/partner/welcome` landing → Login.
 2. Login with an approved tailor (password and OTP) → Home (Overview); kill/reopen stays logged in.

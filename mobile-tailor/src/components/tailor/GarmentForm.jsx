@@ -197,7 +197,7 @@ const GarmentForm = ({
                 </Box>
 
                 {/* Form Content */}
-                <Scroll contentClassName="p-8 pt-6 space-y-8" className="flex-1 custom-scrollbar" nestedScrollEnabled>
+                <Scroll contentClassName="p-8 pt-6 space-y-8" className="custom-scrollbar" nestedScrollEnabled>
                     
                     {/* Basic Info */}
                     <Box className="space-y-4">

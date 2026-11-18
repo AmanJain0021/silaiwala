@@ -235,7 +235,7 @@ const TailorShopOrders = () => {
                         </Box>
 
                         {/* Modal Content */}
-                        <Scroll contentClassName="p-5 space-y-6" className="flex-1 custom-scrollbar" nestedScrollEnabled>
+                        <Scroll contentClassName="p-5 space-y-6" className="custom-scrollbar" nestedScrollEnabled>
                             {/* Customer Contact Card */}
                             <Box className="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between gap-3">
                                 <Box>

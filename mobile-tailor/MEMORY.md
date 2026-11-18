@@ -56,7 +56,7 @@ None.
 - UI compare: as in `../mobile-user/MEMORY.md` §9 (`scripts/ui-compare/`, deep link scheme `sewzellatailor://`).
 
 ## 10. Known issues
-- No approved tailor test account: production has no OTP bypass for tailors, and new tailors need admin approval → every approved-only screen is Built, not tested. Needs the phone + password of an approved (test) tailor.
+- An approved tailor account was used for view-only testing on 2026-11-18; credentials are not stored. Order flows and form submissions remain untested (see CONVERSION_CHECKLIST.md).
 - Registration needs a real SMS OTP (cannot be completed in automated tests).
 - Push delivery and Google sign-in: as user app (Firebase SHA-1 for `com.sewzella.tailor` must be added for Google sign-in).
 

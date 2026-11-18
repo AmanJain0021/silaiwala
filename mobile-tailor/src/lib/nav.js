@@ -5,13 +5,22 @@
  * Route files mirror web paths, so web paths work unchanged.
  * `state` objects can't travel in URLs, so they are kept in memory keyed by an id param.
  */
-import { useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useRouter, usePathname, useLocalSearchParams, router as globalRouter } from 'expo-router';
 
 const stateStore = new Map();
 let seq = 0;
 const STATE_PARAM = '__s';
 export const TAB_ROOTS = ['/partner', '/partner/orders', '/partner/wallet', '/partner/products', '/partner/settings'];
+
+let currentPath = null;
+
+/** Rendered once in the root layout, so navigateTo knows the current route without re-rendering screens. */
+export function NavPathTracker() {
+  const pathname = usePathname();
+  useEffect(() => { currentPath = pathname; }, [pathname]);
+  return null;
+}
 
 function buildHref(to, state) {
   const [pathPart, query = ''] = String(to).split('?');
@@ -38,7 +47,11 @@ export function navigateTo(r, to, opts = {}) {
   // Tab roots live in one tab navigator (app/user/(tabs)): switch to the mounted tab
   // (popping back to it from deeper screens) instead of pushing a second copy.
   if (typeof href === 'string' && TAB_ROOTS.includes(href)) {
-    if (r.canDismiss()) r.dismissTo(href);
+    if (TAB_ROOTS.includes(currentPath)) r.navigate(href); // already inside the tab navigator
+    else if (opts.replace) { // leaving login etc.: nothing should stay underneath the tabs
+      if (r.canDismiss()) r.dismissAll();
+      r.replace(href);
+    } else if (r.canDismiss()) r.dismissTo(href);
     else r.navigate(href);
     return;
   }
