@@ -22,7 +22,7 @@ for (const f of walk(root)) {
       if (n.name.type === 'JSXIdentifier' && /^[a-z]/.test(n.name.name)) report.dom.push(`${rel}:${n.loc.start.line} <${n.name.name}>`);
       if (n.name.name === 'Btn') {
         const names = n.attributes.map((a) => a.name?.name || '...');
-        if (!names.includes('onPress') && !names.includes('...') && !names.includes('disabled')) {
+        if (!names.includes('onPress') && !names.includes('...')) {
           report.noPress.push(`${rel}:${n.loc.start.line} ${src.slice(n.end, n.end + 70).replace(/\s+/g, ' ')}`);
         }
       }

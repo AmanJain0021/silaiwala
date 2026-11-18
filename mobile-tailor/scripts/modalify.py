@@ -47,11 +47,16 @@ while True:
     sheet = 'items-end' in opening
     inner = s[oe:cs]
     # remove backdrop elements
+    # only empty elements are backdrops; `absolute inset-0` elements with content (image overlays etc.) stay
+    bpos = 0
     while True:
-        b = re.search(r'<(Box|Btn) className=(?:"|\{`|\{cn\(")[^"`]*?(?:absolute|fixed) inset-0[^>]*', inner)
+        b = re.compile(r'<(Box|Btn) className=(?:"|\{`|\{cn\(")[^"`]*?(?:absolute|fixed) inset-0[^>]*').search(inner, bpos)
         if not b: break
         boe, bcs, bce = close_of(inner, b.start())
-        if bce - b.start() > 600 and 'onPress' not in inner[b.start():boe]: break
+        empty = boe == bce or not inner[boe:bcs].strip()
+        if not empty:
+            bpos = boe
+            continue
         inner = inner[:b.start()] + inner[bce:]
     # card = first child that is not absolutely positioned (overlay close buttons sit at top-right);
     # those absolute children are kept and moved inside the card
@@ -87,12 +92,13 @@ while True:
         else:
             body = keep + inner[coe:ccs]
     pre = s[:m.start()]
-    vm = list(re.finditer(r'if \(!([\w.?]+)\) return null;\n', pre))
+    # `{flag && other && <Box fixed inset-0>}`: open state = first flag, close = its setter (takes priority)
+    cm = re.search(r'\{\(?(\w+)((?:\s*&&\s*[\w.?]+)*)\s*&&\s*$', pre)
+    # component-level `if (!x) return null;` only when the overlay is not conditionally rendered inline
+    vm = [] if cm else list(re.finditer(r'if \(!([\w.?]+)\) return null;\n', pre))
     visible = vis_arg or (vm[-1].group(1) if vm else 'true')
     close = close_arg
-    # `{flag && other && <Box fixed inset-0>}`: open state = first flag, close = its setter
-    cm = re.search(r'\{\(?(\w+)((?:\s*&&\s*[\w.?]+)*)\s*&&\s*$', pre)
-    if cm and not vis_arg and not vm:
+    if cm and not vis_arg:
         var = cm.group(1)
         visible = var + cm.group(2)
         reset = 'false' if re.search(r'(Open|Modal|^show|^is)', var) else 'null'
