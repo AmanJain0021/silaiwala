@@ -41,5 +41,11 @@ for route, screen, prot in ROUTES:
         body = f"import {{ withAuth }} from '{guard}';\nimport Screen from '{rel}';\n\nexport default withAuth(Screen);\n"
     else:
         body = f"export {{ default }} from '{rel}';\n"
+    if '(tabs)' in route:  # bottom tabs stay mounted: reload after returning (see withTabRefresh)
+        tab = os.path.relpath(os.path.join(ROOT, 'components', 'common', 'withTabRefresh'), os.path.dirname(f))
+        if prot:
+            body = f"import withTabRefresh from '{tab}';\nimport {{ withAuth }} from '{guard}';\nimport Screen from '{rel}';\n\nexport default withTabRefresh(withAuth(Screen));\n"
+        else:
+            body = f"import withTabRefresh from '{tab}';\nimport Screen from '{rel}';\n\nexport default withTabRefresh(Screen);\n"
     open(f, 'w').write(body); made += 1
 print('routes written:', made)
