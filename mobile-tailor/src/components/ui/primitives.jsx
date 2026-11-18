@@ -181,7 +181,8 @@ export function Box({ className, style, children, onLayout, ...rest }) {
   return (
     <TextCtx.Provider value={textStyle}>
       <LayoutCtx.Provider value={layout}><InTextCtx.Provider value={false}>
-        <View style={[view, style]} onLayout={handleLayout} {...rest}>
+        {/* Android loses the corner radius when a shadow is added to a mounted view: re-create it */}
+        <View key={view.boxShadow ? 'shadow' : 'flat'} style={[view, style]} onLayout={handleLayout} {...rest}>
           {content}
         </View>
       </InTextCtx.Provider></LayoutCtx.Provider>
@@ -276,6 +277,7 @@ export function Btn({ className, style, children, onPress, disabled, onLongPress
       <LayoutCtx.Provider value={layout}><InTextCtx.Provider value={false}>
         {onPress || onLongPress || rest.accessibilityRole ? (
           <Pressable
+            key={view.boxShadow ? 'shadow' : 'flat'}
             onPress={onPress}
             onLongPress={onLongPress}
             disabled={disabled}
@@ -291,7 +293,7 @@ export function Btn({ className, style, children, onPress, disabled, onLongPress
         ) : (
           // A button without a handler (decorative "View >" inside a tappable card) must not
           // capture the touch, so the card underneath receives it like on the web.
-          <View style={[view, style]} onLayout={grid.onLayout} accessibilityLabel={accessibilityLabel} {...rest}>
+          <View key={view.boxShadow ? 'shadow' : 'flat'} style={[view, style]} onLayout={grid.onLayout} accessibilityLabel={accessibilityLabel} {...rest}>
             {content}
           </View>
         )}
