@@ -1,9 +1,16 @@
 // Expo config for the Sewzella Delivery app. Name/package/version: see MEMORY.md §2 (Play Store listing).
 const fs = require('fs');
 const path = require('path');
+const { withAndroidManifest } = require('expo/config-plugins');
 
 const hasGoogleServices = fs.existsSync(path.join(__dirname, 'google-services.json'));
-const BRAND_DARK = '#282726';
+const BRAND_BG = '#ffffff';
+
+// Expo writes a plain round bitmap for roundIcon, which launchers show on a tinted plate. Without it they use the adaptive icon.
+const withAdaptiveIconOnly = (config) => withAndroidManifest(config, (c) => {
+  delete c.modResults.manifest.application[0].$['android:roundIcon'];
+  return c;
+});
 
 module.exports = {
   expo: {
@@ -20,7 +27,7 @@ module.exports = {
       versionCode: 20,
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: BRAND_DARK,
+        backgroundColor: BRAND_BG,
       },
       softwareKeyboardLayoutMode: 'resize',
       ...(hasGoogleServices ? { googleServicesFile: './google-services.json' } : {}),
@@ -44,6 +51,7 @@ module.exports = {
     },
     ios: { bundleIdentifier: 'com.sewzella.user' },
     plugins: [
+      withAdaptiveIconOnly,
       'expo-router',
       'expo-status-bar',
       'expo-secure-store',
@@ -51,7 +59,7 @@ module.exports = {
       'expo-image',
       [
         'expo-splash-screen',
-        { image: './assets/splash-icon.png', imageWidth: 220, resizeMode: 'contain', backgroundColor: BRAND_DARK },
+        { image: './assets/splash-icon.png', imageWidth: 288, resizeMode: 'contain', backgroundColor: BRAND_BG },
       ],
       ['expo-location', { locationWhenInUsePermission: 'Allow Sewzella to use your location to find tailors and set your delivery address.' }],
       ['expo-image-picker', { photosPermission: 'Allow Sewzella to access your photos to upload designs and fabric images.', cameraPermission: 'Allow Sewzella to use the camera to capture designs and fabric images.', microphonePermission: false }],

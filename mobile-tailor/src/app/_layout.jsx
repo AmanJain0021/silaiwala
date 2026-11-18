@@ -1,8 +1,10 @@
+import { NavPathTracker } from '../lib/nav';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { SplashGate } from '../lib/splash';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FONTS } from '../lib/fonts';
 import { hydrateStorage } from '../lib/storage';
@@ -32,10 +34,6 @@ export default function RootLayout() {
   }, []);
 
   const loaded = (fontsLoaded || fontError) && ready;
-  useEffect(() => {
-    if (loaded) SplashScreen.hide();
-  }, [loaded]);
-
   if (!loaded) return null;
 
   return (
@@ -48,8 +46,10 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F7F8FC' }, animation: 'none', freezeOnBlur: true }} />
             </TailorNotificationProvider>
           </TailorAuthProvider>
+          <NavPathTracker />
           <AppManagers />
         </ErrorBoundary>
+        <SplashGate />
         <PromptHost />
         <Toaster />
       </View>
