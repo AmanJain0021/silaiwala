@@ -423,7 +423,7 @@ const CheckoutSummary = () => {
           if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
           const rzpOrder = rzpOrderRes.data.data;
           const options = {
-            key: RAZORPAY_KEY_ID,
+            key: rzpOrder.key || RAZORPAY_KEY_ID,
             amount: rzpOrder.amount,
             currency: rzpOrder.currency,
             name: "SilaiWala",
@@ -527,7 +527,7 @@ const CheckoutSummary = () => {
       if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
       const rzpOrder = rzpOrderRes.data.data;
       const options = {
-        key: RAZORPAY_KEY_ID,
+        key: rzpOrder.key || RAZORPAY_KEY_ID,
         amount: rzpOrder.amount,
         currency: rzpOrder.currency,
         name: "SilaiWala",
