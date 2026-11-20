@@ -187,7 +187,7 @@ const TailorForgotPassword = () => {
                         </Txt>
                         <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                             <I icon={Lock} size={18} className="text-[#94A3B8] shrink-0" />
-                            <Input placeholder="Enter new password" value={newPassword} onChangeText={e => setNewPassword(e)} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
+                            <Input placeholder="Enter new password" secureTextEntry={!showPassword} autoCapitalize="none" value={newPassword} onChangeText={e => setNewPassword(e)} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
                             <Btn onPress={() => setShowPassword(!showPassword)} className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer">
                                 {showPassword ? <I icon={EyeOff} size={18} /> : <I icon={Eye} size={18} />}
                             </Btn>
@@ -201,7 +201,7 @@ const TailorForgotPassword = () => {
                         </Txt>
                         <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                             <I icon={Lock} size={18} className="text-[#94A3B8] shrink-0" />
-                            <Input placeholder="Confirm new password" value={confirmPassword} onChangeText={e => setConfirmPassword(e)} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
+                            <Input placeholder="Confirm new password" secureTextEntry={!showConfirmPassword} autoCapitalize="none" value={confirmPassword} onChangeText={e => setConfirmPassword(e)} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
                             <Btn onPress={() => setShowConfirmPassword(!showConfirmPassword)} className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer">
                                 {showConfirmPassword ? <I icon={EyeOff} size={18} /> : <I icon={Eye} size={18} />}
                             </Btn>

@@ -207,7 +207,7 @@ const TailorLogin = () => {
                                 </Box>
                                 <Box className={`w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border transition-all ${errors.password ? 'border-red-300 bg-red-50/50' : 'border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white'}`}>
                                     <I icon={Lock} size={18} className="text-[#94A3B8] shrink-0" />
-                                    <Input placeholder="Enter your password" {...field('password', {
+                                    <Input placeholder="Enter your password" secureTextEntry={!showPassword} autoCapitalize="none" {...field('password', {
               required: loginMethod === 'password' ? 'Password is required' : false
             })} className="w-full text-xs sm:text-sm text-[#0F172A] font-medium bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8]" />
                                     <Btn onPress={() => setShowPassword(!showPassword)} className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer">
@@ -266,8 +266,15 @@ const TailorLogin = () => {
                                 </Txt>
                                 <Box className="w-full bg-[#F6F6F8] rounded-[18px] flex items-center px-4 py-3.5 gap-3 border border-transparent focus-within:border-[#843D9B]/30 focus-within:bg-white transition-all">
                                     <I icon={Lock} size={18} className="text-[#843D9B] shrink-0" />
-                                    <Input placeholder="Enter 6-digit OTP" maxLength={6} {...field('otp', {
-                required: 'OTP is required'
+                                    <Input placeholder="Enter 6-digit OTP" maxLength={6} keyboardType="number-pad" secureTextEntry={!showOtp} {...field('otp', {
+                required: 'OTP is required',
+                pattern: {
+                  value: /^\d{6}$/,
+                  message: 'OTP must be 6 digits'
+                },
+                onChange: e => {
+                  e.target.value = e.target.value.replace(/\D/g, '');
+                }
               })} className="w-full text-xs sm:text-sm text-[#0F172A] font-bold tracking-widest bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-[#94A3B8] placeholder:tracking-normal" />
                                     <Btn onPress={() => setShowOtp(!showOtp)} className="text-[#94A3B8] hover:text-[#843D9B] transition-colors shrink-0 cursor-pointer">
                                         {showOtp ? <I icon={EyeOff} size={18} /> : <I icon={Eye} size={18} />}

@@ -108,7 +108,7 @@ exports.createRazorpayDepositOrder = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: razorpayOrder,
+      data: { ...razorpayOrder, key: process.env.RAZORPAY_KEY_ID },
       depositId: deposit._id
     });
   } catch (error) {
@@ -448,7 +448,7 @@ exports.createTailorRazorpayDepositOrder = asyncHandler(async (req, res, next) =
 
     res.status(200).json({
       success: true,
-      data: razorpayOrder,
+      data: { ...razorpayOrder, key: process.env.RAZORPAY_KEY_ID },
       depositId: deposit._id
     });
   } catch (error) {

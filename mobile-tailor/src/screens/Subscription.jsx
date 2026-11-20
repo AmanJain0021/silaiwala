@@ -46,7 +46,7 @@ const Subscription = () => {
         if (!rzpOrderRes.data.success) throw new Error('Failed to create payment order');
         const rzpOrder = rzpOrderRes.data.data;
         const options = {
-          key: RAZORPAY_KEY_ID,
+          key: rzpOrder.key || RAZORPAY_KEY_ID,
           amount: rzpOrder.amount,
           currency: rzpOrder.currency,
           name: "SilaiWala",

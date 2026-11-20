@@ -203,7 +203,7 @@ exports.createRazorpayCustomDesignOrder = asyncHandler(async (req, res, next) =>
     const razorpayOrder = await razorpay.orders.create(options);
     res.status(200).json({
       success: true,
-      data: razorpayOrder,
+      data: { ...razorpayOrder, key: process.env.RAZORPAY_KEY_ID },
     });
   } catch (error) {
     return next(new ErrorResponse("Razorpay order creation failed", 500));
