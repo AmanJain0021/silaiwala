@@ -99,7 +99,7 @@ const TailorEarnings = () => {
       });
       if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
       const options = {
-        key: RAZORPAY_KEY_ID,
+        key: rzpOrderRes.data.data.key || RAZORPAY_KEY_ID,
         amount: rzpOrderRes.data.data.amount,
         currency: "INR",
         name: appName,
