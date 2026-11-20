@@ -19,18 +19,17 @@ export const Step3Docs = ({
                 <Txt className="text-xs text-orange-800 font-medium leading-relaxed">Please ensure all images are clear and text is readable for faster approval.</Txt>
             </Box>
 
-            <Input label="Aadhar Number" placeholder="12 digit number" maxLength={12} {...field('aadharNumber', {
+            <Input label="Aadhar Number" placeholder="12 digit number" maxLength={12} keyboardType="number-pad" {...field('aadharNumber', {
       required: 'Aadhar is required',
       pattern: {
-        value: /^\d{12}$/,
-        message: 'Aadhar must be exactly 12 digits'
+        value: /^[2-9]\d{11}$/,
+        message: 'Enter a valid 12-digit Aadhaar number'
       },
       onChange: e => {
         const sanitized = e.target.value.replace(/\D/g, '');
         setValue('aadharNumber', sanitized, {
           shouldValidate: true
         });
-        if (clearErrors && sanitized.length === 12) clearErrors('aadharNumber');
       }
     })} error={errors.aadharNumber?.message} />
             <Box className="grid grid-cols-2 gap-4">
@@ -54,18 +53,17 @@ export const Step3Docs = ({
                 </Box>
             </Box>
 
-            <Input label="PAN Number" placeholder="ABCDE1234F" maxLength={10} {...field('panNumber', {
+            <Input label="PAN Number" placeholder="ABCDE1234F" maxLength={10} autoCapitalize="characters" autoCorrect={false} {...field('panNumber', {
       required: 'PAN is required',
       pattern: {
         value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
         message: 'Invalid PAN format (e.g. ABCDE1234F)'
       },
       onChange: e => {
-        const uppercaseVal = e.target.value.toUpperCase();
+        const uppercaseVal = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         setValue('panNumber', uppercaseVal, {
           shouldValidate: true
         });
-        if (clearErrors && uppercaseVal.length === 10) clearErrors('panNumber');
       }
     })} error={errors.panNumber?.message} />
             <Box>
@@ -135,9 +133,8 @@ export const Step4Portfolio = ({
               setValue('workingDays', e.target.value, {
                 shouldValidate: true
               });
-              if (clearErrors && e.target.value) clearErrors('workingDays');
             }
-          })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium" options={[{ value: '', label: 'Select Days' }, { value: 'mon-fri', label: 'Mon - Fri' }, { value: 'mon-sat', label: 'Mon - Sat' }, { value: 'everyday', label: 'Everyday (Mon-Sun)' }]} />
+          })} className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-2xl text-sm font-medium ${errors.workingDays ? 'border-red-300 bg-red-50/40' : 'border-gray-50'}`} textClassName={watch('workingDays') ? 'text-gray-900' : 'text-gray-400'} placeholder="Select Days" title="Working Days" options={[{ value: 'mon-fri', label: 'Mon - Fri' }, { value: 'mon-sat', label: 'Mon - Sat' }, { value: 'everyday', label: 'Everyday (Mon-Sun)' }]} />
                         {errors.workingDays && <Txt className="text-[10px] text-red-500 font-bold pl-1">{errors.workingDays.message}</Txt>}
                     </Box>
                     <Box className="space-y-1">
@@ -148,9 +145,8 @@ export const Step4Portfolio = ({
               setValue('workingHours', e.target.value, {
                 shouldValidate: true
               });
-              if (clearErrors && e.target.value) clearErrors('workingHours');
             }
-          })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium" options={[{ value: '', label: 'Select Hours' }, { value: '9-5', label: '9:00 AM - 5:00 PM' }, { value: '10-7', label: '10:00 AM - 7:00 PM' }, { value: '10-8', label: '10:00 AM - 8:00 PM' }]} />
+          })} className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-2xl text-sm font-medium ${errors.workingHours ? 'border-red-300 bg-red-50/40' : 'border-gray-50'}`} textClassName={watch('workingHours') ? 'text-gray-900' : 'text-gray-400'} placeholder="Select Hours" title="Daily Hours" options={[{ value: '9-5', label: '9:00 AM - 5:00 PM' }, { value: '10-7', label: '10:00 AM - 7:00 PM' }, { value: '10-8', label: '10:00 AM - 8:00 PM' }]} />
                         {errors.workingHours && <Txt className="text-[10px] text-red-500 font-bold pl-1">{errors.workingHours.message}</Txt>}
                     </Box>
                 </Box>

@@ -137,7 +137,6 @@ export const Step1Basic = ({
         setValue('fullName', sanitized, {
           shouldValidate: true
         });
-        if (clearErrors && sanitized.trim()) clearErrors('fullName');
       }
     })} error={errors.fullName?.message} />
 
@@ -158,7 +157,6 @@ export const Step1Basic = ({
                 shouldValidate: true
               });
               setValue('isPhoneVerified', false);
-              if (clearErrors && sanitized.length === 10) clearErrors('phone');
             }
           })} disabled={isPhoneVerified} className="flex-1 bg-transparent border-none focus:ring-0 font-medium text-sm text-gray-900 placeholder:text-gray-300 outline-none w-full disabled:opacity-60" keyboardType="phone-pad" />
                         {isPhoneVerified && <I icon={CheckCircle2} className="w-5 h-5 text-emerald-500 shrink-0 ml-1" />}
@@ -173,7 +171,7 @@ export const Step1Basic = ({
             {otpSent && !isPhoneVerified && <Box className="animate-in slide-in-from-top-2 duration-300 space-y-2 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
                     <Txt className="text-[10px] font-black text-[#843D9B] uppercase tracking-widest">Enter 6-Digit OTP</Txt>
                     <Box className="flex gap-2">
-                        <Input placeholder="••••••" maxLength={6} {...field('otp', {
+                        <Input placeholder="••••••" maxLength={6} keyboardType="number-pad" {...field('otp', {
           required: 'OTP is required',
           pattern: {
             value: /^\d{6}$/,
@@ -184,7 +182,6 @@ export const Step1Basic = ({
             setValue('otp', val, {
               shouldValidate: true
             });
-            if (clearErrors && val.length === 6) clearErrors('otp');
           }
         })} className="flex-1 px-4 py-3 bg-white border border-purple-200 rounded-xl font-bold text-center tracking-[0.3em] text-lg focus:outline-none focus:border-[#843D9B]" />
                         <Btn onPress={handleVerifyOTP} disabled={isVerifying || !watch('otp') || watch('otp').length !== 6} className="px-6 py-3 bg-[#843D9B] hover:bg-[#E04D79] text-white rounded-xl font-bold text-xs uppercase tracking-wider disabled:opacity-40 transition-all">
@@ -201,10 +198,10 @@ export const Step1Basic = ({
         message: 'Invalid email address'
       },
       onChange: e => {
-        setValue('email', e.target.value, {
+        const trimmed = e.target.value.replace(/\s/g, '');
+        setValue('email', trimmed, {
           shouldValidate: true
         });
-        if (clearErrors && e.target.value.includes('@')) clearErrors('email');
       }
     })} error={errors.email?.message} />
 
@@ -212,7 +209,7 @@ export const Step1Basic = ({
                 <Txt className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 transition-colors group-focus-within:text-[#843D9B]">Password</Txt>
                 <Box className={`flex items-center px-4 sm:px-5 py-3 sm:py-3.5 bg-[#F8F9FD] border-2 rounded-2xl focus-within:bg-white transition-all duration-300 ${errors.password ? 'border-red-300 bg-red-50/40' : 'border-transparent focus-within:border-[#843D9B]'}`}>
                     <I icon={Lock} className={`w-4 h-4 mr-3 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400 group-focus-within:text-[#843D9B]'}`} />
-                    <Input placeholder="Password (min. 6 characters)" {...field('password', {
+                    <Input placeholder="Password (min. 6 characters)" secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false} {...field('password', {
           required: 'Password is required',
           minLength: {
             value: 6,
@@ -227,7 +224,6 @@ export const Step1Basic = ({
             setValue('password', e.target.value, {
               shouldValidate: true
             });
-            if (clearErrors && e.target.value.length >= 6) clearErrors('password');
           }
         })} className="flex-1 bg-transparent border-none focus:ring-0 font-medium text-sm text-gray-900 placeholder:text-gray-300 outline-none w-full" />
                     <Btn onPress={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-[#843D9B] shrink-0">
@@ -315,7 +311,6 @@ export const Step2Business = ({
         setValue('shopName', e.target.value, {
           shouldValidate: true
         });
-        if (clearErrors && e.target.value.trim()) clearErrors('shopName');
       }
     })} error={errors.shopName?.message} />
 
@@ -325,7 +320,6 @@ export const Step2Business = ({
         setValue('address', val, {
           shouldValidate: true
         });
-        if (clearErrors && val.trim().length >= 5) clearErrors('address');
       }} onClear={() => setValue('address', '', {
         shouldValidate: true
       })} onPlaceSelect={handlePlaceSelect} />
@@ -339,11 +333,10 @@ export const Step2Business = ({
         setValue('address', e.target.value, {
           shouldValidate: true
         });
-        if (clearErrors && e.target.value.trim().length >= 5) clearErrors('address');
       }
     })} error={errors.address?.message} />}
             <Box className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="City" placeholder="e.g. Mumbai" {...field('city', {
+                <Input label="City" placeholder="e.g. Mumbai" autoCapitalize="words" {...field('city', {
         required: 'City is required',
         validate: v => v && v.trim().length >= 2 || 'City cannot be empty or spaces only',
         pattern: {
@@ -355,13 +348,12 @@ export const Step2Business = ({
           setValue('city', sanitized, {
             shouldValidate: true
           });
-          if (clearErrors && sanitized.trim()) clearErrors('city');
         }
       })} error={errors.city?.message} />
-                <Input label="Pincode" placeholder="400001" maxLength={6} {...field('pincode', {
+                <Input label="Pincode" placeholder="400001" maxLength={6} keyboardType="number-pad" {...field('pincode', {
         required: 'Pincode is required',
         pattern: {
-          value: /^\d{6}$/,
+          value: /^[1-9]\d{5}$/,
           message: 'Enter a valid 6-digit pincode'
         },
         onChange: e => {
@@ -369,21 +361,28 @@ export const Step2Business = ({
           setValue('pincode', sanitized, {
             shouldValidate: true
           });
-          if (clearErrors && sanitized.length === 6) clearErrors('pincode');
         }
       })} error={errors.pincode?.message} />
             </Box>
-            <Input label="Experience (Years)" type="number" placeholder="e.g. 5" {...field('experienceInYears', {
+            <Input label="Experience (Years)" type="number" placeholder="e.g. 5" maxLength={2} keyboardType="number-pad" {...field('experienceInYears', {
       required: 'Experience is required',
+      pattern: {
+        value: /^\d{1,2}$/,
+        message: 'Enter experience in whole years'
+      },
       min: {
         value: 0,
         message: 'Invalid experience'
       },
+      max: {
+        value: 60,
+        message: 'Experience cannot exceed 60 years'
+      },
       onChange: e => {
-        setValue('experienceInYears', e.target.value, {
+        const sanitized = e.target.value.replace(/\D/g, '').slice(0, 2);
+        setValue('experienceInYears', sanitized, {
           shouldValidate: true
         });
-        if (clearErrors && e.target.value !== '') clearErrors('experienceInYears');
       }
     })} error={errors.experienceInYears?.message} />
             <Input label="Specializations (Comma separated)" placeholder="e.g. Suits, Bridal, Alterations" {...field('specializations', {
@@ -393,7 +392,6 @@ export const Step2Business = ({
         setValue('specializations', e.target.value, {
           shouldValidate: true
         });
-        if (clearErrors && e.target.value.trim()) clearErrors('specializations');
       }
     })} error={errors.specializations?.message} />
         </Box>;

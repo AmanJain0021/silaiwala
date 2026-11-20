@@ -5,8 +5,9 @@ import { Sheet } from './Sheet';
 import { Box, Txt, Btn, I, Scroll } from './primitives';
 
 /** options: [{ value, label, disabled? }] or strings */
-export default function Select({ value, onChange, options = [], className = '', textClassName = '', placeholder = 'Select', title, disabled, trigger }) {
+export default function Select({ value, onChange, onValueChange, options = [], className = '', textClassName = '', placeholder = 'Select', title, disabled, trigger }) {
   const [open, setOpen] = useState(false);
+  const emit = onChange || onValueChange; // onValueChange: react-hook-form binding from lib/rnForm
   const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: String(o) }));
   const current = opts.find((o) => String(o.value) === String(value));
   return (
@@ -25,7 +26,7 @@ export default function Select({ value, onChange, options = [], className = '', 
           {opts.map((o) => {
             const sel = String(o.value) === String(value);
             return (
-              <Btn key={String(o.value)} disabled={o.disabled} onPress={() => { onChange?.(o.value); setOpen(false); }}
+              <Btn key={String(o.value)} disabled={o.disabled} onPress={() => { emit?.(o.value); setOpen(false); }}
                 className={`flex flex-row items-center justify-between px-4 py-3.5 rounded-xl ${sel ? 'bg-primary/5' : ''} ${o.disabled ? 'opacity-40' : ''}`}>
                 <Txt className={`text-sm font-bold flex-1 text-left ${sel ? 'text-primary' : 'text-gray-800'}`}>{o.label}</Txt>
                 {sel && <I icon={Check} size={16} color="#843D9B" />}
