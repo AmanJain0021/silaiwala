@@ -1991,7 +1991,7 @@ exports.approveMeasurements = asyncHandler(async (req, res, next) => {
   if (order.status === 'measurements-approved') {
     return res.status(200).json({ success: true, message: "Measurements already approved", data: order });
   }
-  if (order.status !== 'measurements-uploaded') {
+  if (!['measurements-uploaded', 'measurement-otp-verified'].includes(order.status)) {
     return next(new ErrorResponse(`Measurements can't be approved while the order is '${order.status}'`, 400));
   }
 
@@ -2063,6 +2063,11 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not authorized to update this order", 403));
   }
 
+  // Revision is only possible after upload and before the measurements are approved
+  if (!['measurements-uploaded', 'measurement-otp-verified'].includes(order.status)) {
+    return next(new ErrorResponse(`Revision can't be requested while the order is '${order.status}'`, 400));
+  }
+
   order.status = 'measurement-revision-required';
   order.trackingHistory.push({
     status: order.status,
@@ -2077,7 +2082,11 @@ exports.requestMeasurementRevision = asyncHandler(async (req, res, next) => {
   const mRequest = await MeasurementRequest.findOne({ order: order._id }).sort("-createdAt");
   
   if (mRequest) {
-    mRequest.status = 'rejected';
+    // Back to "accepted" so the SAME executive can re-measure and upload again
+    // ('rejected' had no path forward in the executive app — the order got stuck).
+    mRequest.status = 'accepted';
+    mRequest.otp = undefined;
+    mRequest.otpExpiresAt = undefined;
     mRequest.notes = (mRequest.notes ? mRequest.notes + "\n" : "") + `Revision Request: ${notes}`;
     await mRequest.save();
 
@@ -2142,7 +2151,7 @@ exports.getMeasurementReportForCustomer = asyncHandler(async (req, res, next) =>
   }
 
   const MeasurementReport = require("../../../models/MeasurementReport.js");
-  const report = await MeasurementReport.findOne({ order: order._id });
+  const report = await MeasurementReport.findOne({ order: order._id }).sort({ createdAt: -1 }); // latest (after revisions)
 
   if (!report) {
     return res.status(200).json({ success: true, data: null });

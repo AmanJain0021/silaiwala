@@ -1184,7 +1184,7 @@ exports.getMeasurementReport = asyncHandler(async (req, res, next) => {
   if (!order) return next(new ErrorResponse('Order not found or not assigned to you', 404));
 
   const MeasurementReport = require("../../../models/MeasurementReport.js");
-  const report = await MeasurementReport.findOne({ order: order._id }).populate("executive", "name phoneNumber profileImage");
+  const report = await MeasurementReport.findOne({ order: order._id }).sort({ createdAt: -1 }).populate("executive", "name phoneNumber profileImage");
   let reportData = null;
   if (report) {
     reportData = report.toJSON();
@@ -1217,7 +1217,7 @@ exports.updateMeasurementReport = asyncHandler(async (req, res, next) => {
   }
 
   const MeasurementReport = require("../../../models/MeasurementReport.js");
-  let report = await MeasurementReport.findOne({ order: order._id });
+  let report = await MeasurementReport.findOne({ order: order._id }).sort({ createdAt: -1 });
 
   if (!report) {
     // Create report if it doesn't exist

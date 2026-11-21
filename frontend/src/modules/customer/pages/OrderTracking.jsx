@@ -895,8 +895,13 @@ const OrderTracking = () => {
                     const mReq = order.measurementRequestInfo;
                     const isAccepted = mReq && ['accepted', 'otp_sent', 'otp_verified', 'measurements_uploaded'].includes(mReq.status);
                     const execUser = order.measurementExecutive || mReq?.executive;
+                    // Only while the order is actually in the measurement phase. Once the visit is
+                    // done the order moves on (pickup / stitching / delivery) and these cards must go.
+                    const awaitingExecutive = ['measurement-requested', 'measurement-assigned'].includes(order.status);
+                    const executiveOnVisit = ['measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-revision-required'].includes(order.status);
+                    const advancePaid = order.advancePaymentStatus === 'paid' || order.paymentStatus === 'paid';
 
-                    if (order.isMeasurementHome && order.advancePaymentStatus === 'paid' && !isAccepted && !['completed', 'cancelled', 'measurements-uploaded', 'measurements-approved'].includes(order.status)) {
+                    if (order.isMeasurementHome && advancePaid && awaitingExecutive && !isAccepted && mReq?.status !== 'completed') {
                         return (
                             <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm flex flex-col items-center text-center space-y-3 animate-in fade-in duration-300">
                                 <div className="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center text-[#843D9B] relative">
@@ -927,7 +932,7 @@ const OrderTracking = () => {
                         );
                     }
 
-                    if (order.isMeasurementHome && isAccepted && execUser && !['completed', 'cancelled'].includes(order.status)) {
+                    if (order.isMeasurementHome && execUser && (executiveOnVisit || (isAccepted && awaitingExecutive))) {
                         return (
                             <LiveMeasurementTracker 
                                 order={order} 

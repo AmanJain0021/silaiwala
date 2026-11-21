@@ -1023,7 +1023,7 @@ exports.getOrderById = async (req, res) => {
     const MeasurementReport = require("../../../models/MeasurementReport.js");
     const orderObj = order.toObject ? order.toObject() : order;
     if (orderObj.measurementRequest) {
-        const report = await MeasurementReport.findOne({ order: orderObj._id }).lean();
+        const report = await MeasurementReport.findOne({ order: orderObj._id }).sort({ createdAt: -1 }).lean();
         if (report) {
             orderObj.measurementRequest.report = report;
         }

@@ -10,6 +10,18 @@ const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const { sendNotification } = require("../../../utils/notification.js");
 const { getIO } = require("../../../config/socket.js");
+
+// Order statuses while the home-measurement visit is still in progress (before approval).
+// Executive actions only move the order inside this window — never rewind it afterwards.
+const MEASUREMENT_PHASE_STATUSES = [
+  "accepted",
+  "measurement-requested",
+  "measurement-assigned",
+  "measurement-accepted",
+  "measurements-uploaded",
+  "measurement-otp-verified",
+  "measurement-revision-required",
+];
 const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
 const { attachTailorShopPrivacy } = require("../../../utils/tailorPrivacy.js");
 const crypto = require("crypto");
@@ -342,7 +354,7 @@ exports.getRequestDetail = asyncHandler(async (req, res, next) => {
   // Also fetch report if exists
   const report = await MeasurementReport.findOne({
     measurementRequest: request._id,
-  }).lean();
+  }).sort({ createdAt: -1 }).lean(); // latest (after revisions)
 
   const profile = await MeasurementExecutive.findOne({ user: req.user.id }).lean();
   let distance = null;
@@ -424,7 +436,7 @@ exports.acceptRequest = asyncHandler(async (req, res, next) => {
 
   // Update order status
   const order = await Order.findById(request.order);
-  if (order) {
+  if (order && MEASUREMENT_PHASE_STATUSES.includes(order.status)) {
     order.status = "measurement-accepted";
     order.trackingHistory.push({
       status: "measurement-accepted",
@@ -653,11 +665,13 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
 
   // Update order
   const order = await Order.findById(request.order);
-  if (order) {
+  // Only while the order is still in the measurement phase — if the customer already
+  // approved in the app (order moved to pickup/stitching), never rewind it.
+  if (order && MEASUREMENT_PHASE_STATUSES.includes(order.status)) {
     order.status = "measurement-otp-verified";
     order.trackingHistory.push({
       status: "measurement-otp-verified",
-      message: "OTP verified successfully. Executive is taking measurements.",
+      message: "Customer confirmed the measurements with OTP.",
       timestamp: new Date(),
     });
     await order.save();
@@ -732,7 +746,7 @@ exports.uploadMeasurement = asyncHandler(async (req, res, next) => {
 
   // Update order with measurement report reference
   const order = await Order.findById(request.order);
-  if (order) {
+  if (order && MEASUREMENT_PHASE_STATUSES.includes(order.status)) {
     order.measurementReport = report._id;
     order.status = "measurements-uploaded";
     order.trackingHistory.push({
@@ -908,7 +922,9 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
 
   // Update order
   const order = await Order.findById(request.order).session(session);
-  if (order) {
+  // Don't rewind an order the customer already approved in the app (it may already be
+  // on fabric pickup / stitching). The executive still gets paid above.
+  if (order && MEASUREMENT_PHASE_STATUSES.includes(order.status)) {
     order.status = "measurements-approved";
     order.trackingHistory.push({
       status: "measurements-approved",
