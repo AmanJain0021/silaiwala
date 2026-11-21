@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, ArrowUpRight, LayoutGrid } from 'lucide-react';
 import api from '../../../utils/api';
 import { SOCKET_URL } from '../../../config/constants';
-import { Reveal, SectionHeading } from '../components/landingShared';
+import { Reveal, SectionHeading, Shine } from '../components/landingShared';
 import { SERIF, fadeUp, optimizedImg } from '../components/landingTokens';
 
 /* Shown when the CMS list can't be loaded. Admin → CMS → Landing Categories overrides it. */
@@ -22,19 +22,29 @@ const resolveCatImg = (img) => {
   return `${SOCKET_URL}${separator}${img}`;
 };
 
-const CategoryCard = ({ cat, index, onOpen, tall }) => (
+const cardIn = {
+  hidden: { opacity: 0, y: 40, clipPath: 'inset(12% 0% 0% 0% round 26px)' },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    clipPath: 'inset(0% 0% 0% 0% round 26px)',
+    transition: { duration: 0.9, delay: (i % 3) * 0.1, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
+const CategoryCard = ({ cat, index, onOpen, tall, wide }) => (
   <motion.button
     type="button"
     // Data arrives after the section reveal, so each card animates itself in
     initial="hidden"
     whileInView="visible"
     viewport={{ once: true, margin: '-40px' }}
-    variants={fadeUp}
+    variants={cardIn}
     custom={index}
     onClick={onOpen}
     className={`group relative block w-full overflow-hidden rounded-[26px] bg-[#EFE6F3] text-left shadow-[0_20px_50px_-30px_rgba(42,15,56,0.5)] ring-1 ring-[#EDE5F3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#843D9B] ${
-      tall ? 'aspect-[3/4]' : 'aspect-[4/5]'
-    }`}
+      wide ? 'col-span-2 aspect-[16/10] sm:col-span-1 ' : ''
+    }${tall ? (wide ? 'sm:aspect-[3/4]' : 'aspect-[3/4]') : wide ? 'sm:aspect-[4/5]' : 'aspect-[4/5]'}`}
   >
     <img
       src={resolveCatImg(cat.img)}
@@ -59,7 +69,7 @@ const CategoryCard = ({ cat, index, onOpen, tall }) => (
             {cat.title}
           </h3>
           {cat.desc && (
-            <p className="mt-1 max-h-0 overflow-hidden text-[12.5px] leading-snug text-white/80 opacity-0 transition-all duration-500 group-hover:max-h-12 group-hover:opacity-100 group-focus-visible:max-h-12 group-focus-visible:opacity-100">
+            <p className="mt-1 hidden text-[12px] leading-snug text-white/80 sm:block sm:max-h-0 sm:overflow-hidden sm:text-[12.5px] sm:opacity-0 transition-all duration-500 group-hover:max-h-12 group-hover:opacity-100 group-focus-visible:max-h-12 group-focus-visible:opacity-100">
               {cat.desc}
             </p>
           )}
@@ -112,8 +122,9 @@ const Categories = () => {
           <motion.div variants={fadeUp} custom={1} className="shrink-0">
             <Link
               to="/user/services"
-              className="group inline-flex items-center gap-2 rounded-full bg-[#843D9B] px-6 py-3 text-[14px] font-semibold text-white shadow-[0_14px_30px_-12px_rgba(132,61,155,0.8)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#74338a]"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#843D9B] px-6 py-3 text-[14px] font-semibold text-white shadow-[0_14px_30px_-12px_rgba(132,61,155,0.8)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#74338a]"
             >
+              <Shine />
               Explore all
               <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
@@ -127,6 +138,7 @@ const Categories = () => {
               cat={cat}
               index={i}
               tall={count === 4}
+              wide={count % 2 === 0 && count >= 4 && (i === 0 || i === count - 1)}
               onOpen={() => navigate(cat.link || '/user/services')}
             />
           ))}

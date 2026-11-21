@@ -2,29 +2,29 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Award, Clock3, Cpu, BadgeCheck, ArrowRight, Heart } from 'lucide-react';
-import { Reveal, SectionHeading, Glyph } from '../components/landingShared';
+import { Reveal, SectionHeading, Glyph, Shine } from '../components/landingShared';
 import { SERIF, fadeUp, EASE } from '../components/landingTokens';
 
 const PILLARS = [
   {
     icon: Award,
     title: 'Master craftsmanship',
-    desc: 'Experienced tailors who handle every detail, from fine embroidery to the final hem.',
+    desc: 'Experienced tailors who perfect every detail, down to the final hem.',
   },
   {
     icon: Clock3,
     title: 'Effortless convenience',
-    desc: 'Order from your phone. Fabric pickup, home measurement visits and delivery are arranged for you.',
+    desc: 'Order from your phone. Pickup, home measurement and delivery, all arranged.',
   },
   {
     icon: Cpu,
     title: 'Thoughtful technology',
-    desc: 'Live tracking, instant updates and secure online payments. AI-assisted measurement is on the way.',
+    desc: 'Live tracking, instant updates and secure payments. AI measurement is coming soon.',
   },
   {
     icon: BadgeCheck,
     title: 'Trusted professionals',
-    desc: 'Every tailor is verified by our team, and each pickup and handover is confirmed with an OTP.',
+    desc: 'Tailors verified by our team, with every pickup and handover OTP-confirmed.',
   },
 ];
 
@@ -73,27 +73,28 @@ const WhyChoose = ({ appName }) => (
           accent="convenience you'll love."
           lede="We bring the neighbourhood tailor's personal touch together with the ease of a modern app, so getting clothes made feels effortless."
         />
-        <ul className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ul className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-4">
           {PILLARS.map(({ icon, title, desc }, i) => (
             <motion.li
               key={title}
               variants={fadeUp}
               custom={i + 1}
-              className="group rounded-[22px] bg-[#FBF8FD] p-5 ring-1 ring-[#EDE5F3] transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_24px_50px_-30px_rgba(74,21,96,0.5)]"
+              className="group rounded-[20px] bg-[#FBF8FD] p-4 ring-1 sm:rounded-[22px] sm:p-5 ring-[#EDE5F3] transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_24px_50px_-30px_rgba(74,21,96,0.5)]"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#843D9B] text-white shadow-[0_10px_20px_-10px_rgba(132,61,155,0.9)]">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#843D9B] text-white shadow-[0_10px_20px_-10px_rgba(132,61,155,0.9)] transition-transform duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 sm:h-11 sm:w-11">
                 <Glyph icon={icon} size={20} strokeWidth={1.8} />
               </span>
-              <h3 className="mt-4 text-[17px] font-semibold text-[#1A1523]" style={{ fontFamily: SERIF }}>{title}</h3>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#6B6575]">{desc}</p>
+              <h3 className="mt-3 text-[15px] font-semibold leading-snug text-[#1A1523] sm:mt-4 sm:text-[17px]" style={{ fontFamily: SERIF }}>{title}</h3>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B6575] sm:text-[13.5px]">{desc}</p>
             </motion.li>
           ))}
         </ul>
         <motion.div variants={fadeUp} custom={5} className="mt-9">
           <Link
             to="/user/services"
-            className="group inline-flex items-center gap-2 rounded-full bg-[#1A1523] px-6 py-3.5 text-[14px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#843D9B]"
+            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#1A1523] px-6 py-3.5 text-[14px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#843D9B]"
           >
+            <Shine />
             Start your order
             <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
           </Link>

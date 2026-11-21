@@ -134,6 +134,14 @@ const LandingFooter = () => {
             <Link to="/page/accessibility" className="transition-colors hover:text-[#843D9B]">Accessibility</Link>
           </div>
         </div>
+
+        <p
+          aria-hidden="true"
+          className="pointer-events-none mt-8 select-none whitespace-nowrap text-center text-[21vw] font-semibold leading-[0.8] tracking-[-0.04em] text-transparent [-webkit-text-stroke:1px_rgba(132,61,155,0.18)] lg:text-[200px]"
+          style={{ fontFamily: SERIF }}
+        >
+          SewZella
+        </p>
       </div>
     </footer>
   );

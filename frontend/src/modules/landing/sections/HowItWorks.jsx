@@ -127,7 +127,13 @@ const HowItWorks = () => {
 
         {/* Mobile / tablet: vertical timeline */}
         <Reveal className="relative mx-auto mt-12 max-w-xl lg:hidden">
-          <span className="absolute left-[27px] top-4 bottom-4 w-[2px] rounded-full bg-gradient-to-b from-[#843D9B] via-[#D7B9E4] to-[#EDE5F3]" />
+          <motion.span
+            initial={{ scaleY: 0 }}
+            whileInView={{ scaleY: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 1.6, ease: EASE }}
+            className="absolute left-[27px] top-4 bottom-4 w-[2px] origin-top rounded-full bg-gradient-to-b from-[#843D9B] via-[#D7B9E4] to-[#EDE5F3]"
+          />
           <ol className="space-y-4">
             {STEPS.map(({ icon, title, desc }, i) => (
               <motion.li key={title} variants={fadeUp} custom={i} className="relative flex gap-4">

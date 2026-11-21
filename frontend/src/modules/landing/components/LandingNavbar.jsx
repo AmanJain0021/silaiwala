@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, Menu, X, ArrowUpRight } from 'lucide-react';
+import { Shine } from './landingShared';
 import useBrandingStore from '../../../store/brandingStore';
 import { APP_LINKS, SANS } from './landingTokens';
 
@@ -129,8 +130,9 @@ const LandingNavbar = () => {
             href={APP_LINKS.customer}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden items-center gap-2 rounded-full bg-[#843D9B] px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(132,61,155,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#74338a] sm:inline-flex"
+            className="group relative hidden items-center gap-2 overflow-hidden rounded-full bg-[#843D9B] px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(132,61,155,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#74338a] sm:inline-flex"
           >
+            <Shine />
             <Download size={15} strokeWidth={2.2} />
             Download App
           </a>

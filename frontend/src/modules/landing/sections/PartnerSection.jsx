@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Package, Users, BarChart3, Truck, Globe, ArrowUpRight, Scissors, Bell } from 'lucide-react';
-import { Reveal, SectionHeading, Glyph } from '../components/landingShared';
+import { Reveal, SectionHeading, Glyph, Shine } from '../components/landingShared';
 import { fadeUp, EASE, APP_LINKS } from '../components/landingTokens';
 
 const PERKS = [
@@ -49,8 +49,9 @@ const PartnerSection = ({ appName }) => (
               href={APP_LINKS.tailor}
               target="_blank"
               rel="noopener noreferrer"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-[14px] font-bold text-[#4A1560] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgba(255,255,255,0.5)]"
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-white px-7 py-3.5 text-[14px] font-bold text-[#4A1560] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgba(255,255,255,0.5)]"
             >
+              <Shine />
               Join as a Tailor
               <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:rotate-45" />
             </a>
