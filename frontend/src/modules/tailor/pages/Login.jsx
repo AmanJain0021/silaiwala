@@ -86,7 +86,8 @@ const TailorLogin = () => {
                 login(userData, token);
                 setLoggedInUser(userData);
                 setLoggedInToken(token);
-                setIsLocating(true);
+                setIsLocating(false);
+                navigate('/partner', { replace: true });
             }
         } catch (error) {
             if (error.response?.status === 404) {

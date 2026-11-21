@@ -12,6 +12,9 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
     const [errorMsg, setErrorMsg] = useState('');
     const hasFetched = useRef(false);
     const isMounted = useRef(true);
+    const isSkipped = useRef(false);
+    const fallbackTimerRef = useRef(null);
+    const completeTimerRef = useRef(null);
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -19,9 +22,22 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
         libraries: GOOGLE_MAPS_LIBRARIES,
     });
 
+    const handleSkip = useCallback(() => {
+        if (isSkipped.current) return;
+        isSkipped.current = true;
+        isMounted.current = false;
+        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+        if (completeTimerRef.current) clearTimeout(completeTimerRef.current);
+        try {
+            if (onComplete) onComplete();
+        } catch (e) {
+            console.error('Error in location onComplete:', e);
+        }
+    }, [onComplete]);
+
     const getLocation = useCallback(() => {
         if (!navigator.geolocation) {
-            if (isMounted.current) {
+            if (isMounted.current && !isSkipped.current) {
                 setStatus('error');
                 setErrorMsg('Geolocation is not supported by your browser');
             }
@@ -31,8 +47,8 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
         let isPositionHandled = false;
 
         // Fallback timeout since native timeout can be unreliable in some browsers
-        const fallbackTimer = setTimeout(() => {
-            if (!isPositionHandled && isMounted.current) {
+        fallbackTimerRef.current = setTimeout(() => {
+            if (!isPositionHandled && isMounted.current && !isSkipped.current) {
                 isPositionHandled = true;
                 setStatus('error');
                 setErrorMsg('Location request timed out. Please check your browser permissions.');
@@ -41,9 +57,9 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
-                if (!isMounted.current || isPositionHandled) return;
+                if (!isMounted.current || isPositionHandled || isSkipped.current) return;
                 isPositionHandled = true;
-                clearTimeout(fallbackTimer);
+                if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
                 
                 try {
                     const { latitude, longitude } = position.coords;
@@ -60,14 +76,19 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                         console.log("Reverse geocoding failed, using placeholder", e);
                     }
 
-                    import('../../store/locationStore').then((module) => {
+                    if (isSkipped.current || !isMounted.current) return;
+
+                    try {
+                        const module = await import('../../store/locationStore');
                         module.default.getState().setLocation(address, latitude, longitude);
-                    }).catch(err => console.error("Could not load locationStore", err));
+                    } catch (err) {
+                        console.error("Could not load locationStore", err);
+                    }
 
                     const activeToken = token || getToken();
                     const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
 
-                    if (role === 'delivery') {
+                    if (role === 'delivery' && !isSkipped.current) {
                         await api.patch('/deliveries/status', {
                             lat: latitude,
                             lng: longitude,
@@ -76,21 +97,30 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                         }, { headers });
                     }
 
+                    if (isSkipped.current || !isMounted.current) return;
+
                     setStatus('success');
-                    setTimeout(() => {
-                        if (isMounted.current && onComplete) onComplete();
+                    completeTimerRef.current = setTimeout(() => {
+                        if (isMounted.current && !isSkipped.current && onComplete) {
+                            try {
+                                onComplete();
+                            } catch (e) {
+                                console.error('Error in location onComplete:', e);
+                            }
+                        }
                     }, 500);
 
                 } catch (err) {
+                    if (isSkipped.current || !isMounted.current) return;
                     console.error('Failed to save location:', err);
                     setStatus('error');
                     setErrorMsg('Could not save location to profile. You can update it later.');
                 }
             },
             (error) => {
-                if (!isMounted.current || isPositionHandled) return;
+                if (!isMounted.current || isPositionHandled || isSkipped.current) return;
                 isPositionHandled = true;
-                clearTimeout(fallbackTimer);
+                if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
                 console.error('Geolocation error:', error);
                 setStatus('error');
                 setErrorMsg('Location permission denied or unavailable.');
@@ -103,7 +133,7 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
         isMounted.current = true;
         
         const timer = setTimeout(() => {
-            if (!hasFetched.current) {
+            if (!hasFetched.current && !isSkipped.current) {
                 hasFetched.current = true;
                 getLocation();
             }
@@ -112,6 +142,8 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
         return () => {
             isMounted.current = false;
             clearTimeout(timer);
+            if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+            if (completeTimerRef.current) clearTimeout(completeTimerRef.current);
         };
     }, [getLocation]);
 
@@ -156,10 +188,9 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                         </div>
                         
                         <button 
-                            onClick={() => {
-                                if (onComplete) onComplete();
-                            }}
-                            className="mt-8 text-white/50 text-xs font-bold hover:text-white underline transition-colors"
+                            type="button"
+                            onClick={handleSkip}
+                            className="mt-8 text-white/50 text-xs font-bold hover:text-white underline transition-colors cursor-pointer"
                         >
                             Skip & Continue
                         </button>
@@ -202,8 +233,9 @@ const LocationSplashScreen = ({ onComplete, role, token }) => {
                                 I've Enabled It, Try Again
                             </button>
                             <button 
-                                onClick={() => onComplete && onComplete()}
-                                className="w-full py-3.5 bg-transparent border border-white/20 text-white rounded-full font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-colors"
+                                type="button"
+                                onClick={handleSkip}
+                                className="w-full py-3.5 bg-transparent border border-white/20 text-white rounded-full font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-colors cursor-pointer"
                             >
                                 Continue Without Location
                             </button>
