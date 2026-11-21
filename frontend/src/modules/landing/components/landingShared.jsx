@@ -61,6 +61,57 @@ export const AnimatedWords = ({ text, className = '', delay = 0, step = 0.06, in
   );
 };
 
+/**
+ * Brand lockup: logo mark in a soft tile + "Sew*Zella*" serif wordmark + tagline.
+ * `size`: 'md' (navbar) | 'lg' (footer). The mark comes from Admin → Branding.
+ */
+export const BrandLogo = ({ src, appName = 'SewZella', size = 'md', showTagline = true }) => {
+  const name = String(appName || 'SewZella').trim();
+  // Render the brand as "Sew" + italic "Zella"; any other app name is shown as-is.
+  const isSewZella = name.toLowerCase() === 'sewzella';
+  const lg = size === 'lg';
+  return (
+    <span className="group/logo inline-flex items-center gap-2.5 sm:gap-3">
+      <span
+        className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-white ring-1 ring-[#E7D6F0] shadow-[0_10px_24px_-12px_rgba(132,61,155,0.55)] transition-transform duration-500 group-hover/logo:-rotate-6 group-hover/logo:scale-105 ${
+          lg ? 'h-16 w-16 rounded-[20px] p-1.5' : 'h-11 w-11 rounded-2xl p-1 sm:h-[50px] sm:w-[50px]'
+        }`}
+      >
+        {src ? (
+          <img src={src} alt="" className="h-full w-full object-contain" />
+        ) : (
+          <span className="text-[22px] font-semibold text-[#843D9B]" style={{ fontFamily: SERIF }}>S</span>
+        )}
+      </span>
+      <span aria-hidden="true" className="flex min-w-0 flex-col leading-none">
+        <span
+          className={`whitespace-nowrap font-semibold tracking-[-0.01em] text-[#1A1523] ${lg ? 'text-[30px]' : 'text-[21px] sm:text-[24px]'}`}
+          style={{ fontFamily: SERIF }}
+        >
+          {isSewZella ? (
+            <>
+              Sew<em className="font-medium italic text-[#843D9B]">Zella</em>
+            </>
+          ) : (
+            name
+          )}
+        </span>
+        {showTagline && (
+          <span
+            className={`mt-1 flex items-center gap-1.5 whitespace-nowrap font-semibold uppercase text-[#8E7A9B] ${
+              lg ? 'text-[9.5px] tracking-[0.32em]' : 'text-[7.5px] tracking-[0.26em] sm:text-[8.5px]'
+            }`}
+          >
+            <span className="h-px w-3 bg-[#C9A8D8]" />
+            Stitched · Styled · You
+          </span>
+        )}
+      </span>
+      <span className="sr-only">{name}</span>
+    </span>
+  );
+};
+
 /** Light sweep across a button on hover. Parent needs `group relative overflow-hidden`. */
 export const Shine = () => (
   <span

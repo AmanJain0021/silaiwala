@@ -30,7 +30,9 @@ const ScrollProgress = () => {
 };
 
 const SewZellaLanding = () => {
-  const appName = useBrandingStore((state) => state.appName) || 'SewZella';
+  const rawName = useBrandingStore((state) => state.appName) || 'SewZella';
+  // Admin branding stores the name in caps ("SEWZELLA"); show the brand's proper casing in copy
+  const appName = rawName.trim().toLowerCase() === 'sewzella' ? 'SewZella' : rawName;
   const location = useLocation();
 
   // Land on the requested section when arriving via "/#how-it-works" etc. from another

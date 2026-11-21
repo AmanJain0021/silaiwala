@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, Youtube, MapPin, Phone, Mail, ArrowUpRight } from 'lucide-react';
 import useBrandingStore from '../../../store/brandingStore';
-import { StoreButtons, Glyph } from './landingShared';
+import { StoreButtons, Glyph, BrandLogo } from './landingShared';
 import { SANS, SERIF } from './landingTokens';
 
 const COLUMNS = [
@@ -58,7 +58,7 @@ const LandingFooter = () => {
           {/* Brand */}
           <div className="max-w-sm">
             <Link to="/" className="inline-flex items-center">
-              <img src={logos.customer} alt={appName} className="h-12 w-auto object-contain" />
+              <BrandLogo src={logos.customer} appName={appName} size="lg" />
             </Link>
             <p className="mt-5 text-[22px] leading-snug text-[#1A1523]" style={{ fontFamily: SERIF }}>
               Stitching dreams, <em className="text-[#843D9B]">one perfect fit</em> at a time.

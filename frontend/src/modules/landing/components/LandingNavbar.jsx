@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, Menu, X, ArrowUpRight } from 'lucide-react';
-import { Shine } from './landingShared';
+import { Shine, BrandLogo } from './landingShared';
 import useBrandingStore from '../../../store/brandingStore';
 import { APP_LINKS, SANS } from './landingTokens';
 
@@ -98,7 +98,7 @@ const LandingNavbar = () => {
         }`}
       >
         <Link to="/" onClick={(e) => handleNavClick(e, NAV_LINKS[0])} className="flex shrink-0 items-center">
-          <img src={logos.customer} alt={appName} className="h-10 w-auto object-contain md:h-12" />
+          <BrandLogo src={logos.customer} appName={appName} />
         </Link>
 
         <ul className="hidden items-center gap-1 lg:flex">
