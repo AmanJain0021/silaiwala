@@ -196,7 +196,23 @@ const CheckoutSummary = () => {
                 }
             } catch (err) {
                 console.error("Failed to fetch price summary:", err);
-                toast.error("Failed to load price summary");
+                const fallbackBase = isCartCheckout
+                    ? cartItems.reduce((acc, it) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0)
+                    : currentCheckoutItems.reduce((acc, it) => acc + (Number(it.pricing?.base) || 0), 0);
+                const fallbackAddons = !isCartCheckout ? currentCheckoutItems.reduce((acc, it) => acc + (Number(it.pricing?.addons) || 0), 0) : 0;
+                const fallbackFabric = !isCartCheckout ? currentCheckoutItems.reduce((acc, it) => acc + (Number(it.pricing?.fabric) || 0), 0) : 0;
+                const fallbackTailorAtHome = !isCartCheckout ? currentCheckoutItems.reduce((acc, it) => acc + (Number(it.pricing?.tailorAtHome) || 0), 0) : 0;
+                const subtotal = fallbackBase + fallbackAddons + fallbackFabric + fallbackTailorAtHome;
+                setCurrentPricing(prev => ({
+                    ...prev,
+                    base: fallbackBase,
+                    addons: fallbackAddons,
+                    fabric: fallbackFabric,
+                    tailorAtHome: fallbackTailorAtHome,
+                    total: subtotal,
+                    taxes: 0,
+                    delivery: 0,
+                }));
             } finally {
                 setIsLoadingPricing(false);
             }

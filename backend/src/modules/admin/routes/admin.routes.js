@@ -48,6 +48,9 @@ const {
   updatePayoutStatus,
   getSettings,
   updateSettings,
+  getLandingCategories,
+  updateLandingCategories,
+  resetLandingCategories,
   generateReport,
   updateTailorShiprocketLocation,
   retryShiprocketSetup,
@@ -202,6 +205,11 @@ router.get("/cms/content", getAllCMSContent);
 router.post("/cms/content", createCMSContent);
 router.put("/cms/content/:id", updateCMSContent);
 router.delete("/cms/content/:id", deleteCMSContent);
+
+// Landing Page Categories
+router.get("/landing-categories", getLandingCategories);
+router.put("/landing-categories", updateLandingCategories);
+router.post("/landing-categories/reset", resetLandingCategories);
 
 // File Uploads
 router.post("/upload-image", uploadLimiter, upload.single("image"), uploadImage);

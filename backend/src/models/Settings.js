@@ -98,20 +98,43 @@ const settingsSchema = new mongoose.Schema(
     },
     tailorSearch: {
       searchRadiusKm: { type: mongoose.Schema.Types.Mixed, default: "default" },
-    }
+    },
+    landingCategories: [
+      {
+        title: { type: String, required: true },
+        desc: { type: String, default: "" },
+        img: { type: String, required: true },
+        link: { type: String, default: "/user/services" },
+        isActive: { type: Boolean, default: true },
+      }
+    ],
   },
   {
     timestamps: true,
   }
 );
 
+const DEFAULT_LANDING_CATEGORIES = [
+  { title: "Women's Wear", desc: "Designer blouses, suits, kurtis, lehengas & more", img: "/landing/category_womens_wear.png", link: "/user/services", isActive: true },
+  { title: "Men's Wear", desc: "Kurtas, shirts, pathani suits, formal wear", img: "/landing/category_mens_wear.png", link: "/user/services", isActive: true },
+  { title: "Kids Wear", desc: "Adorable outfits for every occasion", img: "/landing/category_kids_wear.png", link: "/user/services", isActive: true },
+  { title: "Bridal Wear", desc: "Wedding & festive custom stitching", img: "/landing/category_bridal_wear.png", link: "/user/services", isActive: true },
+  { title: "Alterations", desc: "Perfect fitting for your existing outfits", img: "/landing/category_alterations.png", link: "/user/alterations", isActive: true },
+  { title: "Bulk Stitching", desc: "For boutiques, schools, companies & more", img: "/landing/category_bulk_stitching.png", link: "/user/bulk-orders", isActive: true },
+];
+
 // We only want ONE settings document
 settingsSchema.statics.getSettings = async function() {
   let settings = await this.findOne();
   if (!settings) {
-    settings = await this.create({});
+    settings = await this.create({ landingCategories: DEFAULT_LANDING_CATEGORIES });
+  } else if (!settings.landingCategories || settings.landingCategories.length === 0) {
+    settings.landingCategories = DEFAULT_LANDING_CATEGORIES;
+    await settings.save();
   }
   return settings;
 };
+
+settingsSchema.statics.DEFAULT_LANDING_CATEGORIES = DEFAULT_LANDING_CATEGORIES;
 
 module.exports = mongoose.model("Settings", settingsSchema);

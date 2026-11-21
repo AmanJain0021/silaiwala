@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Image as ImageIcon, Send, FileText, Bell, Plus, Edit2, Trash2, Smartphone, Megaphone, X } from 'lucide-react';
+import { Image as ImageIcon, Send, FileText, Bell, Plus, Edit2, Trash2, Smartphone, Megaphone, X, ArrowUp, ArrowDown, RefreshCw, Upload, Eye, EyeOff, Check, Layers, ExternalLink } from 'lucide-react';
 import api from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { isUploadedBannerImage } from '../../../utils/bannerImage';
 import { uploadVideoInChunks } from '../../../utils/videoChunkUploader';
+import { SOCKET_URL } from '../../../config/constants';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+
+const resolveCatImage = (img) => {
+    if (!img) return '';
+    if (img.startsWith('http') || img.startsWith('data:') || img.startsWith('/landing/')) return img;
+    const separator = img.startsWith('/') ? '' : '/';
+    return `${SOCKET_URL}${separator}${img}`;
+};
 const AdminCMS = () => {
     const [selectedTab, setSelectedTab] = useState('Banners');
     const [isAddBannerModalOpen, setIsAddBannerModalOpen] = useState(false);
@@ -40,6 +48,20 @@ const AdminCMS = () => {
     const [notification, setNotification] = useState({ title: '', message: '', targetAudience: 'customer' });
     const [isSending, setIsSending] = useState(false);
 
+    // Landing Categories States
+    const [landingCategories, setLandingCategories] = useState([]);
+    const [isLandingModalOpen, setIsLandingModalOpen] = useState(false);
+    const [editingLandingIndex, setEditingLandingIndex] = useState(null);
+    const [currentLandingCat, setCurrentLandingCat] = useState({
+        title: '',
+        desc: '',
+        img: '',
+        link: '/user/services',
+        isActive: true,
+    });
+    const [isUploadingLandingImg, setIsUploadingLandingImg] = useState(false);
+    const [isSavingLanding, setIsSavingLanding] = useState(false);
+
     // Notification Logs
     const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
     const [notificationLogs, setNotificationLogs] = useState([]);
@@ -65,7 +87,7 @@ const AdminCMS = () => {
         }
     }, [isLogsModalOpen]);
 
-    const tabs = ['Banners', 'Notifications', 'Pages', 'FAQs', 'Measurement Video'];
+    const tabs = ['Banners', 'Landing Categories', 'Notifications', 'Pages', 'FAQs', 'Measurement Video'];
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -73,6 +95,9 @@ const AdminCMS = () => {
             if (selectedTab === 'Banners') {
                 const res = await api.get('/admin/cms/banners');
                 setBannersData(res.data.data);
+            } else if (selectedTab === 'Landing Categories') {
+                const res = await api.get('/admin/landing-categories');
+                setLandingCategories(res.data.data || []);
             } else if (selectedTab === 'Pages') {
                 const res = await api.get('/admin/cms/content?type=legal');
                 setCmsContent(res.data.data);
@@ -290,6 +315,143 @@ const AdminCMS = () => {
         }
     };
 
+    const handleOpenAddLandingCat = () => {
+        setEditingLandingIndex(null);
+        setCurrentLandingCat({
+            title: '',
+            desc: '',
+            img: '',
+            link: '/user/services',
+            isActive: true,
+        });
+        setIsLandingModalOpen(true);
+    };
+
+    const handleOpenEditLandingCat = (index) => {
+        setEditingLandingIndex(index);
+        setCurrentLandingCat({ ...landingCategories[index] });
+        setIsLandingModalOpen(true);
+    };
+
+    const handleLandingImgUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('folder', 'landing-categories');
+
+        setIsUploadingLandingImg(true);
+        try {
+            const res = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const uploadedUrl = res.data?.data || res.data?.fileUrl;
+            if (!uploadedUrl) throw new Error('No image URL returned');
+            setCurrentLandingCat(prev => ({ ...prev, img: uploadedUrl }));
+            toast.success('Category photo uploaded successfully');
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error('Failed to upload image');
+        } finally {
+            setIsUploadingLandingImg(false);
+        }
+    };
+
+    const handleSaveLandingCat = async (e) => {
+        e.preventDefault();
+        if (!currentLandingCat.title?.trim()) {
+            toast.error('Please enter category title');
+            return;
+        }
+        if (!currentLandingCat.img?.trim()) {
+            toast.error('Please upload or provide a category photo');
+            return;
+        }
+
+        setIsSavingLanding(true);
+        try {
+            const updatedList = [...landingCategories];
+            if (editingLandingIndex !== null) {
+                updatedList[editingLandingIndex] = currentLandingCat;
+            } else {
+                updatedList.push(currentLandingCat);
+            }
+
+            const res = await api.put('/admin/landing-categories', { categories: updatedList });
+            if (res.data?.success) {
+                setLandingCategories(res.data.data || updatedList);
+                toast.success(editingLandingIndex !== null ? 'Category updated' : 'Category added');
+                setIsLandingModalOpen(false);
+            }
+        } catch (error) {
+            console.error('Save failed:', error);
+            toast.error('Failed to save category');
+        } finally {
+            setIsSavingLanding(false);
+        }
+    };
+
+    const handleDeleteLandingCat = async (index) => {
+        if (!window.confirm(`Delete "${landingCategories[index]?.title}" from landing page?`)) return;
+        const updatedList = landingCategories.filter((_, i) => i !== index);
+        try {
+            const res = await api.put('/admin/landing-categories', { categories: updatedList });
+            if (res.data?.success) {
+                setLandingCategories(res.data.data || updatedList);
+                toast.success('Category removed');
+            }
+        } catch (error) {
+            toast.error('Failed to delete category');
+        }
+    };
+
+    const handleMoveLandingCat = async (index, direction) => {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= landingCategories.length) return;
+
+        const updatedList = [...landingCategories];
+        const temp = updatedList[index];
+        updatedList[index] = updatedList[targetIndex];
+        updatedList[targetIndex] = temp;
+
+        setLandingCategories(updatedList);
+        try {
+            await api.put('/admin/landing-categories', { categories: updatedList });
+            toast.success('Order updated');
+        } catch (error) {
+            toast.error('Failed to save order');
+        }
+    };
+
+    const handleToggleLandingCatActive = async (index) => {
+        const updatedList = [...landingCategories];
+        updatedList[index] = {
+            ...updatedList[index],
+            isActive: updatedList[index].isActive === false ? true : false,
+        };
+        setLandingCategories(updatedList);
+        try {
+            await api.put('/admin/landing-categories', { categories: updatedList });
+            toast.success(`Category ${updatedList[index].isActive ? 'activated' : 'hidden'}`);
+        } catch (error) {
+            toast.error('Failed to update status');
+        }
+    };
+
+    const handleResetLandingCats = async () => {
+        if (!window.confirm('Reset all landing page categories back to default 6 categories?')) return;
+        try {
+            const res = await api.post('/admin/landing-categories/reset');
+            if (res.data?.success) {
+                setLandingCategories(res.data.data || []);
+                toast.success('Reset to default categories');
+            }
+        } catch (error) {
+            toast.error('Failed to reset categories');
+        }
+    };
+
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Active': return 'bg-green-100 text-green-700 border-green-200';
@@ -317,6 +479,23 @@ const AdminCMS = () => {
                     >
                         <Plus size={16} /> Add Banner
                     </button>
+                )}
+                {selectedTab === 'Landing Categories' && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleResetLandingCats}
+                            className="flex items-center gap-2 px-3.5 py-2.5 bg-gray-100 text-gray-700 hover:text-gray-900 text-xs font-black rounded-xl hover:bg-gray-200 transition-all uppercase tracking-wider cursor-pointer"
+                            title="Reset to 6 default categories"
+                        >
+                            <RefreshCw size={14} /> Reset Defaults
+                        </button>
+                        <button
+                            onClick={handleOpenAddLandingCat}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary-dark shadow-lg shadow-purple-900/20 transition-all uppercase tracking-widest cursor-pointer"
+                        >
+                            <Plus size={16} /> Add Category
+                        </button>
+                    </div>
                 )}
                 {(selectedTab === 'Pages' || selectedTab === 'FAQs') && (
                     <button
@@ -418,6 +597,176 @@ const AdminCMS = () => {
                                 </div>
                             </motion.div>
                         ))}
+                    </div>
+                )}
+
+                {selectedTab === 'Landing Categories' && (
+                    <div className="space-y-6">
+                        {/* Information Banner */}
+                        <div className="bg-gradient-to-r from-purple-50 via-pink-50/40 to-purple-50/20 border border-purple-200/80 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-start gap-3.5">
+                                <div className="w-10 h-10 rounded-xl bg-[#843D9B] text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-900/20">
+                                    <Layers size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-gray-900">Landing Page: "Popular Categories"</h3>
+                                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                        These categories appear on the main website homepage with their customized photos, titles, and descriptions. Click any card to edit its photo or details.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[11px] font-bold text-purple-700 bg-purple-100/80 px-3 py-1 rounded-full border border-purple-200">
+                                    {landingCategories.length} Categories Live
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Categories Grid */}
+                        {landingCategories.length === 0 ? (
+                            <div className="bg-white border border-gray-100 rounded-3xl p-12 text-center shadow-sm">
+                                <ImageIcon size={44} className="mx-auto text-gray-300 mb-3" />
+                                <h4 className="text-base font-bold text-gray-800">No Landing Categories Found</h4>
+                                <p className="text-xs text-gray-500 mt-1 mb-5">Click below to restore the standard 6 categories or add a new one.</p>
+                                <div className="flex items-center justify-center gap-3">
+                                    <button
+                                        onClick={handleResetLandingCats}
+                                        className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                                    >
+                                        <RefreshCw size={14} /> Restore Defaults
+                                    </button>
+                                    <button
+                                        onClick={handleOpenAddLandingCat}
+                                        className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
+                                    >
+                                        <Plus size={14} /> Add Category
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {landingCategories.map((cat, idx) => {
+                                    const imageSrc = resolveCatImage(cat.img);
+                                    const isActive = cat.isActive !== false;
+                                    return (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 15 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.04 }}
+                                            key={cat._id || cat.title || idx}
+                                            className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden group shadow-sm hover:shadow-md ${isActive ? 'border-gray-200/80' : 'border-gray-200 opacity-60 bg-gray-50/50'}`}
+                                        >
+                                            {/* Image container in 4:5 ratio matching landing page */}
+                                            <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
+                                                <img
+                                                    src={imageSrc}
+                                                    alt={cat.title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    onError={(e) => {
+                                                        e.target.src = '/landing/category_womens_wear.png';
+                                                    }}
+                                                />
+
+                                                {/* Status Pill Badge */}
+                                                <div className="absolute top-3 left-3 z-10">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleLandingCatActive(idx)}
+                                                        className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider backdrop-blur-md cursor-pointer flex items-center gap-1 shadow-sm transition-transform active:scale-95 ${isActive ? 'bg-emerald-500/90 text-white border-emerald-600' : 'bg-gray-800/80 text-white border-gray-700'}`}
+                                                        title="Click to toggle visibility on landing page"
+                                                    >
+                                                        {isActive ? <Eye size={10} /> : <EyeOff size={10} />}
+                                                        {isActive ? 'Active' : 'Hidden'}
+                                                    </button>
+                                                </div>
+
+                                                {/* Reorder and Action Buttons on Hover */}
+                                                <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
+                                                    {/* Move Up */}
+                                                    <button
+                                                        disabled={idx === 0}
+                                                        onClick={() => handleMoveLandingCat(idx, 'up')}
+                                                        className="p-1.5 bg-white/90 hover:bg-white text-gray-700 shadow-sm rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                                        title="Move earlier"
+                                                    >
+                                                        <ArrowUp size={14} />
+                                                    </button>
+                                                    {/* Move Down */}
+                                                    <button
+                                                        disabled={idx === landingCategories.length - 1}
+                                                        onClick={() => handleMoveLandingCat(idx, 'down')}
+                                                        className="p-1.5 bg-white/90 hover:bg-white text-gray-700 shadow-sm rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                                        title="Move later"
+                                                    >
+                                                        <ArrowDown size={14} />
+                                                    </button>
+                                                    {/* Edit */}
+                                                    <button
+                                                        onClick={() => handleOpenEditLandingCat(idx)}
+                                                        className="p-1.5 bg-white text-gray-700 hover:text-primary shadow-sm rounded-lg transition-colors cursor-pointer"
+                                                        title="Edit photo & details"
+                                                    >
+                                                        <Edit2 size={14} />
+                                                    </button>
+                                                    {/* Delete */}
+                                                    <button
+                                                        onClick={() => handleDeleteLandingCat(idx)}
+                                                        className="p-1.5 bg-white text-gray-700 hover:text-red-600 shadow-sm rounded-lg transition-colors cursor-pointer"
+                                                        title="Remove from landing page"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+
+                                                {/* Quick Overlay button to change photo */}
+                                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEditLandingCat(idx)}
+                                                        className="text-[11px] font-bold text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm px-3 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                                                    >
+                                                        <Upload size={12} /> Change Photo
+                                                    </button>
+                                                    <span className="text-[10px] text-white/80 font-bold uppercase tracking-wider">
+                                                        Position #{idx + 1}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Details */}
+                                            <div className="p-4">
+                                                <div className="flex justify-between items-start gap-2 mb-1.5">
+                                                    <h3 className="text-sm font-black text-gray-900 group-hover:text-primary transition-colors">
+                                                        {cat.title}
+                                                    </h3>
+                                                    {cat.link && (
+                                                        <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono shrink-0">
+                                                            {cat.link}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-500 leading-snug line-clamp-2">
+                                                    {cat.desc || 'No description provided'}
+                                                </p>
+
+                                                <div className="mt-3.5 pt-3 border-t border-gray-100 flex items-center justify-between">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEditLandingCat(idx)}
+                                                        className="text-[11px] font-bold text-primary hover:text-primary-dark flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                        Edit Photo & Details <Edit2 size={11} />
+                                                    </button>
+                                                    <span className="text-[10px] font-bold text-gray-400">
+                                                        Slot {idx + 1} of {landingCategories.length}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1052,6 +1401,209 @@ const AdminCMS = () => {
                                     </table>
                                 )}
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Landing Category Add/Edit Modal */}
+            <AnimatePresence>
+                {isLandingModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={() => setIsLandingModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col my-8"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-lg font-black tracking-tight text-gray-900">
+                                        {editingLandingIndex !== null ? 'Edit Landing Category' : 'Add Landing Category'}
+                                    </h2>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                                        Update Photo & Details for Homepage "Popular Categories"
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setIsLandingModalOpen(false)}
+                                    className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-full transition-colors shadow-sm cursor-pointer"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <form onSubmit={handleSaveLandingCat} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                                {/* Photo Upload & Preview */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                                        Category Photo <span className="text-red-500">*</span>
+                                    </label>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                                        {/* Image Preview Box */}
+                                        <div className="aspect-[4/5] bg-gray-100 rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden relative flex items-center justify-center group">
+                                            {currentLandingCat.img ? (
+                                                <>
+                                                    <img
+                                                        src={resolveCatImage(currentLandingCat.img)}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.src = '/landing/category_womens_wear.png';
+                                                        }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <label className="px-3 py-1.5 bg-white text-gray-900 text-xs font-bold rounded-lg cursor-pointer shadow-md flex items-center gap-1.5 hover:bg-gray-50">
+                                                            <Upload size={14} /> Replace Photo
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={handleLandingImgUpload}
+                                                                className="hidden"
+                                                                disabled={isUploadingLandingImg}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="text-center p-4">
+                                                    <ImageIcon size={32} className="mx-auto text-gray-300 mb-2" />
+                                                    <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">No Photo Selected</p>
+                                                </div>
+                                            )}
+
+                                            {isUploadingLandingImg && (
+                                                <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2">
+                                                    <div className="w-6 h-6 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Uploading...</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Upload Controls */}
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-gray-500 mb-1">
+                                                    Option A: Upload from Device
+                                                </label>
+                                                <label className="w-full px-4 py-2.5 bg-primary/10 hover:bg-primary/15 text-primary border border-primary/20 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                                                    <Upload size={14} /> Choose Photo File
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleLandingImgUpload}
+                                                        className="hidden"
+                                                        disabled={isUploadingLandingImg}
+                                                    />
+                                                </label>
+                                                <p className="text-[10px] text-gray-400 mt-1 leading-snug">
+                                                    JPG, PNG, or WebP. Optimal aspect ratio: 4:5 vertical portrait.
+                                                </p>
+                                            </div>
+
+                                            <div className="pt-2 border-t border-gray-100">
+                                                <label className="block text-[11px] font-bold text-gray-500 mb-1">
+                                                    Option B: Image URL or Path
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={currentLandingCat.img}
+                                                    onChange={e => setCurrentLandingCat({ ...currentLandingCat, img: e.target.value })}
+                                                    placeholder="e.g. /landing/category_womens_wear.png or https://..."
+                                                    className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 outline-none focus:border-primary transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Title */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                                        Category Title <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={currentLandingCat.title}
+                                        onChange={e => setCurrentLandingCat({ ...currentLandingCat, title: e.target.value })}
+                                        placeholder="e.g. Women's Wear, Men's Wear, Kids Wear..."
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors"
+                                    />
+                                </div>
+
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                                        Short Description
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={currentLandingCat.desc}
+                                        onChange={e => setCurrentLandingCat({ ...currentLandingCat, desc: e.target.value })}
+                                        placeholder="e.g. Designer blouses, suits, kurtis, lehengas & more"
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 outline-none focus:border-primary transition-colors resize-none"
+                                    />
+                                </div>
+
+                                {/* Target Link */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                                        Target Route / Link
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={currentLandingCat.link}
+                                        onChange={e => setCurrentLandingCat({ ...currentLandingCat, link: e.target.value })}
+                                        placeholder="e.g. /user/services, /user/alterations, /user/bulk-orders"
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono font-medium text-gray-900 outline-none focus:border-primary transition-colors"
+                                    />
+                                </div>
+
+                                {/* Active Toggle */}
+                                <div className="flex items-center gap-3 pt-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={currentLandingCat.isActive !== false}
+                                            onChange={e => setCurrentLandingCat({ ...currentLandingCat, isActive: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
+                                    <span className="text-xs font-bold text-gray-700">
+                                        Show this category on landing page (Active)
+                                    </span>
+                                </div>
+
+                                {/* Modal Actions */}
+                                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsLandingModalOpen(false)}
+                                        className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSavingLanding || isUploadingLandingImg}
+                                        className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs font-black rounded-xl shadow-lg shadow-purple-900/20 transition-all uppercase tracking-wider disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                                    >
+                                        {isSavingLanding ? 'Saving...' : (editingLandingIndex !== null ? 'Update Category' : 'Save Category')}
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </motion.div>
                 )}

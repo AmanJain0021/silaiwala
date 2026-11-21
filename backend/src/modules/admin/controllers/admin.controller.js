@@ -2064,12 +2064,63 @@ exports.updateSettings = async (req, res) => {
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
     if (updateData.referralConfig) settings.referralConfig = updateData.referralConfig;
     if (updateData.tailorSearch) settings.tailorSearch = updateData.tailorSearch;
+    if (updateData.landingCategories && Array.isArray(updateData.landingCategories)) {
+      settings.landingCategories = updateData.landingCategories;
+    }
 
     await settings.save();
     await invalidateCache("cache:public:settings");
+    await invalidateCache("cache:public:landing-categories");
     res.status(200).json({ success: true, data: settings, message: "Settings updated successfully" });
   } catch (error) {
     console.error("Error in updateSettings:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// --- LANDING PAGE CATEGORIES MANAGEMENT ---
+
+exports.getLandingCategories = async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    const categories = settings.landingCategories && settings.landingCategories.length > 0
+      ? settings.landingCategories
+      : Settings.DEFAULT_LANDING_CATEGORIES;
+    res.status(200).json({ success: true, data: categories });
+  } catch (error) {
+    console.error("Error in getLandingCategories:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateLandingCategories = async (req, res) => {
+  try {
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ success: false, message: "categories must be an array" });
+    }
+    const settings = await Settings.getSettings();
+    settings.landingCategories = categories;
+    await settings.save();
+    await invalidateCache("cache:public:landing-categories");
+    await invalidateCache("cache:public:settings");
+    res.status(200).json({ success: true, data: settings.landingCategories, message: "Landing categories updated successfully" });
+  } catch (error) {
+    console.error("Error in updateLandingCategories:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.resetLandingCategories = async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    settings.landingCategories = Settings.DEFAULT_LANDING_CATEGORIES;
+    await settings.save();
+    await invalidateCache("cache:public:landing-categories");
+    await invalidateCache("cache:public:settings");
+    res.status(200).json({ success: true, data: settings.landingCategories, message: "Landing categories reset to defaults" });
+  } catch (error) {
+    console.error("Error in resetLandingCategories:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

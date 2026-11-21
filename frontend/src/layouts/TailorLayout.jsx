@@ -133,8 +133,8 @@ const TailorLayout = () => {
     };
 
     useEffect(() => {
-        if (mainScrollRef.current) {
-            mainScrollRef.current.scrollTo(0, 0);
+        if (mainRef.current) {
+            mainRef.current.scrollTo(0, 0);
         }
         if (typeof window !== 'undefined') {
             window.scrollTo(0, 0);

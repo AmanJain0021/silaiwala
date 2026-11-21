@@ -256,21 +256,12 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     platformFee: platformFeeAmount,
     platformFeePercentage,
     gstPercentage,
-    distanceKm: finalDistanceKm,
-    freeDeliveryApplied,
-    membershipDiscount,
-    isMembershipPerkApplied: !!(customerMembership && (customerMembership.freeDelivery || customerMembership.discountPercentage > 0)),
-  };
-    addons: Math.round(totalAddons),
-    fabric: Math.round(totalFabric),
-    tailorAtHome: Math.round(totalTailorAtHome),
-    platformFee: platformFeeAmount,
-    platformFeePercentage,
-    gstPercentage,
     subtotalBeforeTax: Math.round(taxableAmount),
+    distanceKm: Number((finalDistanceKm || 0).toFixed(2)),
     freeDeliveryApplied,
     freeDeliveryMinOrder,
-    distanceKm: Number((finalDistanceKm || 0).toFixed(2)),
+    membershipDiscount,
+    isMembershipPerkApplied: !!(customerMembership && (customerMembership.freeDelivery || customerMembership.discountPercentage > 0)),
   };
 }
 

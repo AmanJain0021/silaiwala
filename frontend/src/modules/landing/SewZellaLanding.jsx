@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Download, ChevronRight, ChevronLeft, Scissors, Ruler, Shirt, Star,
@@ -10,6 +11,15 @@ import LandingFooter from './components/LandingFooter';
 import MobileBottomNav from './components/MobileBottomNav';
 import useBrandingStore from '../../store/brandingStore';
 import heroImage from '../../assets/images/ChatGPT Image Aug 25, 2026, 12_08_10 PM.png';
+import api from '../../utils/api';
+import { SOCKET_URL } from '../../config/constants';
+
+const resolveCatImg = (img) => {
+  if (!img) return '';
+  if (img.startsWith('http') || img.startsWith('data:') || img.startsWith('/landing/')) return img;
+  const separator = img.startsWith('/') ? '' : '/';
+  return `${SOCKET_URL}${separator}${img}`;
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -104,8 +114,28 @@ const APP_FEATURES = [
 ];
 
 const SewZellaLanding = () => {
+  const navigate = useNavigate();
+  const [landingCategories, setLandingCategories] = useState(CATEGORIES);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const appName = useBrandingStore((state) => state.appName);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLandingCats = async () => {
+      try {
+        const res = await api.get('/cms/landing-categories');
+        if (isMounted && res.data?.success && Array.isArray(res.data?.data) && res.data.data.length > 0) {
+          setLandingCategories(res.data.data);
+        }
+      } catch (err) {
+        // Fallback to default CATEGORIES silently
+      }
+    };
+    fetchLandingCats();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const testimonials = [
     {
@@ -413,18 +443,24 @@ const SewZellaLanding = () => {
             viewport={{ once: true, margin: '-40px' }}
             variants={stagger}
           >
-            {CATEGORIES.map((cat, i) => (
+            {landingCategories.map((cat, i) => (
               <motion.div
-                key={cat.title}
+                key={cat._id || cat.title || i}
                 variants={fadeUp}
                 custom={i}
-                className="group cursor-default"
+                onClick={() => cat.link ? navigate(cat.link) : navigate('/user/services')}
+                className="group cursor-pointer"
               >
                 <div className="relative aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-[#F3EAF8] border border-[#EDE8F2]">
                   <img
-                    src={cat.img}
+                    src={resolveCatImg(cat.img)}
                     alt={cat.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    onError={(e) => {
+                      if (CATEGORIES[i]?.img && e.target.src !== CATEGORIES[i].img) {
+                        e.target.src = CATEGORIES[i].img;
+                      }
+                    }}
                   />
                 </div>
                 <h3 className="text-[15px] font-bold text-[#1A1523] mb-1 group-hover:text-[#843D9B] transition-colors">

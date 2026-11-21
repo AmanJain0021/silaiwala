@@ -60,3 +60,19 @@ exports.getCMSContentBySlug = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getLandingCategories = async (req, res) => {
+  try {
+    const categories = await getCached("cache:public:landing-categories", 300, async () => {
+      const settings = await Settings.getSettings();
+      const list = settings.landingCategories && settings.landingCategories.length > 0
+        ? settings.landingCategories
+        : Settings.DEFAULT_LANDING_CATEGORIES;
+      return list.filter((c) => c.isActive !== false);
+    });
+    res.status(200).json({ success: true, count: categories.length, data: categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
