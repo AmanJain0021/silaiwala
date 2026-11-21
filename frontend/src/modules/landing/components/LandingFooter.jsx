@@ -1,7 +1,47 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Facebook, Twitter, Youtube, MapPin, Phone, Mail } from 'lucide-react';
+import { Instagram, Facebook, Twitter, Youtube, MapPin, Phone, Mail, ArrowUpRight } from 'lucide-react';
 import useBrandingStore from '../../../store/brandingStore';
+import { StoreButtons, Glyph } from './landingShared';
+import { SANS, SERIF } from './landingTokens';
+
+const COLUMNS = [
+  {
+    title: 'Explore',
+    links: [
+      { label: 'How it Works', path: '/#how-it-works' },
+      { label: 'Categories', path: '/#categories' },
+      { label: 'For Tailors', path: '/#become-partner' },
+      { label: 'Track Order', path: '/user/orders' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About Us', path: '/page/about-us' },
+      { label: 'Community', path: '/page/community' },
+      { label: 'Careers', path: '/page/careers' },
+      { label: 'Blog', path: '/page/blog' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'Help Center', path: '/page/support' },
+      { label: 'Privacy Policy', path: '/page/privacy-policy' },
+      { label: 'Terms & Conditions', path: '/page/terms-of-service' },
+      { label: 'Shipping Policy', path: '/page/shipping-policy' },
+      { label: 'Refund Policy', path: '/page/refund-policy' },
+    ],
+  },
+];
+
+const SOCIALS = [
+  { icon: Instagram, href: 'https://instagram.com/sewzella', label: 'Instagram' },
+  { icon: Facebook, href: 'https://facebook.com/sewzella', label: 'Facebook' },
+  { icon: Twitter, href: 'https://twitter.com/sewzella', label: 'X (Twitter)' },
+  { icon: Youtube, href: 'https://youtube.com/@sewzella', label: 'YouTube' },
+];
 
 const LandingFooter = () => {
   const { appName, logos, supportEmail, supportPhone } = useBrandingStore();
@@ -10,144 +50,88 @@ const LandingFooter = () => {
   const cleanPhone = phoneDisplay.replace(/[^+\d]/g, '');
 
   return (
-    <footer
-      className="bg-white border-t border-[#EDE8F2]"
-      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-    >
-      <div className="max-w-[1200px] mx-auto px-5 md:px-8 pt-16 pb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 mb-14">
+    <footer className="relative overflow-hidden bg-[#FBF8FD]" style={{ fontFamily: SANS }}>
+      <div className="pointer-events-none absolute -top-40 right-[-10%] h-[420px] w-[420px] rounded-full bg-[#EBD9F3]/60 blur-3xl" />
+
+      <div className="relative mx-auto max-w-[1240px] px-5 pt-16 pb-28 md:px-8 md:pb-10">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.3fr_2fr]">
           {/* Brand */}
-          <div>
-            <Link to="/" className="inline-flex items-center mb-5">
-              <img
-                src={logos.customer}
-                alt={appName}
-                className="h-10 w-auto object-contain"
-              />
+          <div className="max-w-sm">
+            <Link to="/" className="inline-flex items-center">
+              <img src={logos.customer} alt={appName} className="h-12 w-auto object-contain" />
             </Link>
-            <p className="text-[#6B6575] text-[13px] leading-relaxed mb-6 max-w-[260px]">
-              Custom tailoring reimagined. We bring tailors and customers together for the perfect fit in your favorite style.
+            <p className="mt-5 text-[22px] leading-snug text-[#1A1523]" style={{ fontFamily: SERIF }}>
+              Stitching dreams, <em className="text-[#843D9B]">one perfect fit</em> at a time.
             </p>
-            <div className="flex gap-2.5">
-              {[
-                { icon: <Instagram size={15} />, href: 'https://instagram.com/sewzella' },
-                { icon: <Facebook size={15} />, href: 'https://facebook.com/sewzella' },
-                { icon: <Twitter size={15} />, href: 'https://twitter.com/sewzella' },
-                { icon: <Youtube size={15} />, href: 'https://youtube.com/@sewzella' },
-              ].map((social, i) => (
+            <p className="mt-3 text-[13.5px] leading-relaxed text-[#6B6575]">
+              Verified tailors, doorstep pickup and live progress updates, all in one app.
+            </p>
+            <StoreButtons className="mt-6" />
+            <div className="mt-6 flex gap-2.5">
+              {SOCIALS.map(({ icon, href, label }) => (
                 <a
-                  key={i}
-                  href={social.href}
+                  key={label}
+                  href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-[#F3EAF8] text-[#843D9B] flex items-center justify-center hover:bg-[#843D9B] hover:text-white transition-all duration-300"
+                  aria-label={label}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#843D9B] ring-1 ring-[#EDE5F3] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#843D9B] hover:text-white"
                 >
-                  {social.icon}
+                  <Glyph icon={icon} size={16} />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-5 text-[#1A1523]">
-              Quick Links
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { label: 'How it Works', path: '/#how-it-works' },
-                { label: 'Categories', path: '/#categories' },
-                { label: 'For Tailors', path: '/#become-partner' },
-                { label: 'About Us', path: '/#about' },
-                { label: 'Track Order', path: '/user/orders' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.path}
-                    className="text-[#6B6575] hover:text-[#843D9B] transition-colors text-[13px]"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Link columns + contact */}
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-[1fr_1fr_1fr_1.5fr]">
+            {COLUMNS.map((col) => (
+              <div key={col.title}>
+                <h4 className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-[#1A1523]">{col.title}</h4>
+                <ul className="mt-5 space-y-3">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        to={link.path}
+                        className="group inline-flex items-center gap-1 text-[13.5px] text-[#6B6575] transition-colors hover:text-[#843D9B]"
+                      >
+                        {link.label}
+                        <ArrowUpRight size={12} className="opacity-0 transition-opacity group-hover:opacity-100" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
 
-          {/* Company + Support merged for 4-col rhythm */}
-          <div>
-            <h4 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-5 text-[#1A1523]">
-              Company
-            </h4>
-            <ul className="space-y-3 mb-8">
-              {[
-                { label: 'About Us', path: '/page/about-us' },
-                { label: 'Community', path: '/page/community' },
-                { label: 'Careers', path: '/page/careers' },
-                { label: 'Blog', path: '/page/blog' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.path}
-                    className="text-[#6B6575] hover:text-[#843D9B] transition-colors text-[13px]"
-                  >
-                    {link.label}
-                  </Link>
+            <div className="col-span-2 sm:col-span-1">
+              <h4 className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-[#1A1523]">Contact</h4>
+              <ul className="mt-5 space-y-4 text-[13.5px] text-[#6B6575]">
+                <li className="flex items-start gap-2.5">
+                  <Phone size={15} className="mt-0.5 shrink-0 text-[#843D9B]" />
+                  <a href={`tel:${cleanPhone}`} className="[overflow-wrap:anywhere] transition-colors hover:text-[#843D9B]">{phoneDisplay}</a>
                 </li>
-              ))}
-            </ul>
-            <h4 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-5 text-[#1A1523]">
-              Support
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { label: 'Help Center', path: '/page/support' },
-                { label: 'Privacy Policy', path: '/page/privacy-policy' },
-                { label: 'Terms & Conditions', path: '/page/terms-of-service' },
-                { label: 'Shipping Policy', path: '/page/shipping-policy' },
-                { label: 'Refund Policy', path: '/page/refund-policy' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.path}
-                    className="text-[#6B6575] hover:text-[#843D9B] transition-colors text-[13px]"
-                  >
-                    {link.label}
-                  </Link>
+                <li className="flex items-start gap-2.5">
+                  <Mail size={15} className="mt-0.5 shrink-0 text-[#843D9B]" />
+                  <a href={`mailto:${emailDisplay}`} className="[overflow-wrap:anywhere] transition-colors hover:text-[#843D9B]">{emailDisplay}</a>
                 </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-5 text-[#1A1523]">
-              Contact Us
-            </h4>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <Phone size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
-                <a href={`tel:${cleanPhone}`} className="text-[#6B6575] hover:text-[#843D9B] text-[13px] transition-colors">{phoneDisplay}</a>
-              </li>
-              <li className="flex items-start gap-3">
-                <Mail size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
-                <a href={`mailto:${emailDisplay}`} className="text-[#6B6575] hover:text-[#843D9B] text-[13px] transition-colors">{emailDisplay}</a>
-              </li>
-              <li className="flex items-start gap-3">
-                <MapPin size={15} className="text-[#843D9B] mt-0.5 shrink-0" />
-                <span className="text-[#6B6575] text-[13px]">Srinagar, Kashmir, India</span>
-              </li>
-            </ul>
+                <li className="flex items-start gap-2.5">
+                  <MapPin size={15} className="mt-0.5 shrink-0 text-[#843D9B]" />
+                  <span>Srinagar, Kashmir, India</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-[#EDE8F2] pt-7 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[#9A94A3] text-[12px]">
-            &copy; {new Date().getFullYear()} {appName}. All Rights Reserved.
+        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-[#EDE5F3] pt-7 md:flex-row">
+          <p className="text-[12.5px] text-[#9A94A3]">
+            &copy; {new Date().getFullYear()} {appName}. All rights reserved.
           </p>
-          <div className="flex flex-wrap justify-center gap-6 text-[#9A94A3] text-[12px]">
-            <Link to="/page/privacy-policy" className="hover:text-[#843D9B] transition-colors">Privacy Policy</Link>
-            <Link to="/page/terms-of-service" className="hover:text-[#843D9B] transition-colors">Terms of Service</Link>
-            <Link to="/page/accessibility" className="hover:text-[#843D9B] transition-colors">Accessibility</Link>
+          <div className="flex flex-wrap justify-center gap-6 text-[12.5px] text-[#9A94A3]">
+            <Link to="/page/privacy-policy" className="transition-colors hover:text-[#843D9B]">Privacy Policy</Link>
+            <Link to="/page/terms-of-service" className="transition-colors hover:text-[#843D9B]">Terms of Service</Link>
+            <Link to="/page/accessibility" className="transition-colors hover:text-[#843D9B]">Accessibility</Link>
           </div>
         </div>
       </div>

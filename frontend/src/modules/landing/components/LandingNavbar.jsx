@@ -1,138 +1,189 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Download, Menu, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Download, Menu, X, ArrowUpRight } from 'lucide-react';
 import useBrandingStore from '../../../store/brandingStore';
+import { APP_LINKS, SANS } from './landingTokens';
 
 const NAV_LINKS = [
-  { label: 'Home', path: '/' },
-  { label: 'How it Works', path: '/#how-it-works' },
-  { label: 'Categories', path: '/#categories' },
-  { label: 'For Tailors', path: '/#become-partner' },
-  { label: 'About Us', path: '/#about' },
-  { label: 'Contact Us', path: '/page/support' },
+  { label: 'Home', path: '/', id: 'top' },
+  { label: 'How it Works', path: '/#how-it-works', id: 'how-it-works' },
+  { label: 'Categories', path: '/#categories', id: 'categories' },
+  { label: 'For Tailors', path: '/#become-partner', id: 'become-partner' },
+  { label: 'About Us', path: '/#about', id: 'about' },
+  { label: 'Contact Us', path: '/page/support', id: 'contact' },
 ];
+
+const SECTION_IDS = ['how-it-works', 'categories', 'about', 'become-partner'];
 
 const LandingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeId, setActiveId] = useState('top');
   const location = useLocation();
+  // Menu is tied to the page it was opened on, so navigating closes it automatically
+  const [openKey, setOpenKey] = useState(null);
+  const mobileOpen = openKey !== null && openKey === location.key;
+  const setMobileOpen = (next) => {
+    const value = typeof next === 'function' ? next(mobileOpen) : next;
+    setOpenKey(value ? location.key : null);
+  };
   const { appName, logos } = useBrandingStore();
+  const onHome = location.pathname === '/';
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 16);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Scroll-spy: highlight the section currently in view (home page only)
   useEffect(() => {
-    setMobileOpen(false);
-  }, [location]);
+    if (!onHome || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveId(visible.target.id);
+        else if (window.scrollY < 200) setActiveId('top');
+      },
+      { rootMargin: '-35% 0px -55% 0px', threshold: [0, 0.25, 0.5] }
+    );
+    const els = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
+    els.forEach((el) => observer.observe(el));
+    const onTop = () => window.scrollY < 200 && setActiveId('top');
+    window.addEventListener('scroll', onTop, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', onTop);
+    };
+  }, [onHome]);
 
-  const handleNavClick = (e, path) => {
-    if (path.startsWith('/#')) {
-      if (location.pathname === '/') {
+  // Lock page scroll behind the open mobile menu
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  const handleNavClick = (e, item) => {
+    if (onHome) {
+      if (item.path === '/') {
         e.preventDefault();
-        const el = document.getElementById(path.replace('/#', ''));
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (item.path.startsWith('/#')) {
+        e.preventDefault();
+        document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history.replaceState(null, '', item.path);
       }
     }
     setMobileOpen(false);
   };
 
+  const isActive = (item) =>
+    item.id === 'contact' ? location.pathname === '/page/support' : onHome && activeId === item.id;
+
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-white/95 backdrop-blur-xl border-b border-[#EDE8F2]/80 shadow-[0_4px_24px_rgba(26,21,35,0.02)] py-2.5 md:py-3'
-          : 'bg-white py-3.5 md:py-4'
-      }`}
-      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+    <header
+      className="fixed inset-x-0 top-0 z-50 px-3 sm:px-5"
+      style={{ fontFamily: SANS, paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)' }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
-        <Link to="/" className="flex items-center shrink-0">
-          <img
-            src={logos.customer}
-            alt={appName}
-            className="h-8 md:h-11 w-auto object-contain transition-all duration-300"
-          />
-        </Link>
-
-        <div className="hidden lg:flex items-center gap-9 absolute left-1/2 -translate-x-1/2">
-          {NAV_LINKS.map((item) =>
-            item.path.startsWith('/page') ? (
-              <Link
-                key={item.label}
-                to={item.path}
-                className="text-[13px] font-medium tracking-wide text-[#2A2433] hover:text-[#843D9B] transition-colors duration-200"
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <Link
-                key={item.label}
-                to={item.path}
-                onClick={(e) => handleNavClick(e, item.path)}
-                className={`text-[13px] font-medium tracking-wide transition-colors duration-200 relative ${
-                  location.pathname === '/' && item.path === '/'
-                    ? 'text-[#843D9B] after:absolute after:left-0 after:-bottom-1 after:h-[1.5px] after:w-full after:bg-[#843D9B]'
-                    : 'text-[#2A2433] hover:text-[#843D9B]'
-                }`}
-              >
-                {item.label}
-              </Link>
-            )
-          )}
-        </div>
-
-        <div className="hidden lg:flex items-center shrink-0">
-          <a
-            href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#843D9B] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#5c0a9e] transition-all duration-300 shadow-[0_8px_24px_rgba(74,5,129,0.22)]"
-          >
-            <Download size={15} strokeWidth={2} />
-            Download App
-          </a>
-        </div>
-
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-[#2A2433] hover:text-[#843D9B] transition-colors"
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </div>
-
-      <div
-        className={`lg:hidden overflow-hidden transition-all duration-300 ${
-          mobileOpen ? 'max-h-[520px] opacity-100' : 'max-h-0 opacity-0'
+      <nav
+        aria-label="Main"
+        className={`mx-auto flex max-w-[1240px] items-center justify-between gap-4 rounded-[22px] px-3.5 sm:px-5 transition-all duration-500 ${
+          scrolled || mobileOpen
+            ? 'bg-white/80 py-2 shadow-[0_10px_40px_-12px_rgba(74,21,96,0.25)] ring-1 ring-[#EDE5F3] backdrop-blur-xl'
+            : 'bg-white/40 py-3 ring-1 ring-white/60 backdrop-blur-md'
         }`}
       >
-        <div className="bg-white border-t border-[#EDE8F2] px-5 py-4 space-y-1">
+        <Link to="/" onClick={(e) => handleNavClick(e, NAV_LINKS[0])} className="flex shrink-0 items-center">
+          <img src={logos.customer} alt={appName} className="h-10 w-auto object-contain md:h-12" />
+        </Link>
+
+        <ul className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              onClick={(e) => handleNavClick(e, item.path)}
-              className="block py-3 px-3 text-[14px] font-medium text-[#2A2433] hover:text-[#843D9B] rounded-lg"
-            >
-              {item.label}
-            </Link>
+            <li key={item.label}>
+              <Link
+                to={item.path}
+                onClick={(e) => handleNavClick(e, item)}
+                aria-current={isActive(item) ? 'page' : undefined}
+                className={`relative isolate rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors duration-300 ${
+                  isActive(item) ? 'text-[#843D9B]' : 'text-[#3A3343] hover:text-[#843D9B]'
+                }`}
+              >
+                {isActive(item) && (
+                  <motion.span
+                    layoutId="nav-pill"
+                    className="absolute inset-0 -z-10 rounded-full bg-[#F3E9F8]"
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                {item.label}
+              </Link>
+            </li>
           ))}
+        </ul>
+
+        <div className="flex items-center gap-2">
           <a
-            href="https://play.google.com/store/apps/details?id=com.sewzella.user&pcampaignid=web_share"
+            href={APP_LINKS.customer}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 flex items-center justify-center gap-2 bg-[#843D9B] text-white px-5 py-3 rounded-xl text-[14px] font-semibold w-full"
+            className="hidden items-center gap-2 rounded-full bg-[#843D9B] px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(132,61,155,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#74338a] sm:inline-flex"
           >
-            <Download size={16} />
+            <Download size={15} strokeWidth={2.2} />
             Download App
           </a>
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-[#2A2433] transition-colors hover:bg-[#F3E9F8] hover:text-[#843D9B] lg:hidden"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto mt-2 max-w-[1240px] overflow-hidden rounded-[22px] bg-white/95 p-3 shadow-[0_24px_60px_-20px_rgba(74,21,96,0.35)] ring-1 ring-[#EDE5F3] backdrop-blur-xl lg:hidden"
+          >
+            <ul className="space-y-0.5">
+              {NAV_LINKS.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    to={item.path}
+                    onClick={(e) => handleNavClick(e, item)}
+                    className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-medium transition-colors ${
+                      isActive(item) ? 'bg-[#F3E9F8] text-[#843D9B]' : 'text-[#2A2433] hover:bg-[#FBF8FD]'
+                    }`}
+                  >
+                    {item.label}
+                    <ArrowUpRight size={16} className="opacity-40" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <a
+              href={APP_LINKS.customer}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#843D9B] px-5 py-3.5 text-[14px] font-semibold text-white"
+            >
+              <Download size={16} />
+              Download the App
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
   );
 };
 

@@ -61,6 +61,47 @@ exports.getCMSContentBySlug = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Real customer testimonials for the landing page (well-rated reviews with a
+ *          meaningful comment). Only a first name + last initial is exposed.
+ * @route   GET /api/v1/cms/testimonials
+ * @access  Public
+ */
+exports.getTestimonials = async (req, res) => {
+  try {
+    const Review = require("../../../models/Review.js");
+    const items = await getCached("cache:public:testimonials", 600, async () => {
+      const reviews = await Review.find({
+        rating: { $gte: 4 },
+        targetType: { $in: ["Tailor", "Order", "Product"] },
+        $expr: { $gte: [{ $strLenCP: { $ifNull: ["$comment", ""] } }, 24] },
+      })
+        .sort({ rating: -1, createdAt: -1 })
+        .limit(9)
+        .select("name rating comment targetType createdAt")
+        .lean();
+
+      const shortName = (full = "") => {
+        const parts = String(full).trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return "SewZella customer";
+        return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+      };
+
+      return reviews.map((r) => ({
+        id: String(r._id),
+        name: shortName(r.name),
+        rating: r.rating,
+        comment: String(r.comment).trim().slice(0, 280),
+        context: r.targetType === "Product" ? "Store order" : "Custom stitching",
+        date: r.createdAt,
+      }));
+    });
+    res.status(200).json({ success: true, count: items.length, data: items });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.getLandingCategories = async (req, res) => {
   try {
     const categories = await getCached("cache:public:landing-categories", 300, async () => {
