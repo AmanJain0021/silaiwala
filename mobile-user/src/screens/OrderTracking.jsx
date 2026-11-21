@@ -274,11 +274,10 @@ const OrderTracking = () => {
   const handlePayment = async paymentType => {
     setIsProcessingPayment(true);
     try {
-      const advanceAmt = order?.advancePaymentAmount && order.advancePaymentAmount > 0 ? order.advancePaymentAmount : Math.max(50, Math.round((order?.totalAmount || 0) * 0.3));
-      const remainingAmt = order?.remainingPaymentAmount && order.remainingPaymentAmount > 0 ? order.remainingPaymentAmount : Math.max(50, (order?.totalAmount || 0) - advanceAmt);
-      const amountToPay = paymentType === 'advance' ? advanceAmt : remainingAmt;
+      // Server derives the exact amount due from the order (no client fallback math)
       const rzpOrderRes = await api.post('/orders/razorpay/create', {
-        amount: amountToPay
+        orderObjectId: order._id,
+        paymentType
       });
       if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
       const rzpOrder = rzpOrderRes.data.data;
@@ -835,7 +834,7 @@ const OrderTracking = () => {
                     </Box>}
 
                 {/* Delivery Preference Selection Card */}
-                {(order.fabricPickupRequired && order.advancePaymentStatus === 'paid' || order.status === 'measurements-approved') && order.fabricDeliveryPreference === 'pending' && !['measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-verification'].includes(order.status) && <Box className="bg-white rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
+                {order.fabricPickupRequired && !order.isMeasurementHome && (order.advancePaymentStatus === 'paid' || order.paymentStatus === 'paid') && order.fabricDeliveryPreference === 'pending' && !['measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-verification'].includes(order.status) && <Box className="bg-white rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
                         <Box className="bg-amber-50 p-3 rounded-full text-amber-600">
                             <I icon={Package} size={24} />
                         </Box>

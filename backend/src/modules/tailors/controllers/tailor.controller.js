@@ -322,8 +322,27 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
                         { $ne: ["$status", "pending"] },
                         { $ne: ["$status", "cancelled"] }
                       ]
-                    }, 
-                    "$totalAmount", 
+                    },
+                    // Tailor's share (stitching + add-ons), not the customer's total
+                    // (which includes GST, delivery, platform fee, visit fee).
+                    {
+                      $ifNull: [
+                        "$tailorEarning",
+                        {
+                          $max: [0, {
+                            $subtract: [
+                              { $ifNull: ["$totalAmount", 0] },
+                              { $add: [
+                                { $ifNull: ["$gstAmount", 0] },
+                                { $ifNull: ["$deliveryFee", 0] },
+                                { $ifNull: ["$platformFee", 0] },
+                                { $ifNull: ["$measurementVisitFee", 0] }
+                              ] }
+                            ]
+                          }]
+                        }
+                      ]
+                    },
                     0
                   ] 
                 }
@@ -478,26 +497,45 @@ exports.getEarningsData = asyncHandler(async (req, res, next) => {
   let groupByFormat = "%Y-%m-%d"; // Daily grouping for week/month
   if (period === 'day') groupByFormat = "%Y-%m-%d %H:00";
 
-  const earnings = await Order.aggregate([
-    { 
-      $match: { 
-        tailor: tailorId, 
-        paymentStatus: "paid",
-        createdAt: { $gte: threshold } 
-      } 
-    },
-    {
-      $group: {
-        _id: { $dateToString: { format: groupByFormat, date: "$createdAt" } },
-        revenue: { $sum: "$totalAmount" },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { _id: 1 } }
+  // Tailor earnings = money actually credited to the tailor's wallet (advance share +
+  // final settlement + bonuses). Previously this summed the customer's order totalAmount,
+  // which wrongly included GST, delivery, platform fee, fabric and measurement visit fee,
+  // and skipped orders where only the advance was paid.
+  const WalletTransaction = require("../../../models/WalletTransaction.js");
+  const EARNING_CATEGORIES = ["advance_payment", "order_earnings", "referral_bonus"];
+  const creditMatch = {
+    user: tailorId,
+    type: "credit",
+    category: { $in: EARNING_CATEGORIES },
+    createdAt: { $gte: threshold },
+  };
+
+  const [earnings, byCategory] = await Promise.all([
+    WalletTransaction.aggregate([
+      { $match: creditMatch },
+      {
+        $group: {
+          _id: { $dateToString: { format: groupByFormat, date: "$createdAt" } },
+          revenue: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    WalletTransaction.aggregate([
+      { $match: creditMatch },
+      { $group: { _id: "$category", total: { $sum: "$amount" } } }
+    ]),
   ]);
 
   // Total in period
-  const periodTotal = earnings.reduce((acc, curr) => acc + curr.revenue, 0);
+  const periodTotal = Math.round(earnings.reduce((acc, curr) => acc + curr.revenue, 0));
+  const catTotal = (cat) => Math.round(byCategory.find((c) => c._id === cat)?.total || 0);
+  const breakdown = {
+    orderEarnings: catTotal("advance_payment") + catTotal("order_earnings"),
+    incentives: catTotal("referral_bonus"),
+    bonus: 0,
+  };
 
   // Map to expected frontend format (e.g., { name: 'Mon', revenue: 1200 })
   const formattedChartData = earnings.map(item => {
@@ -516,6 +554,7 @@ exports.getEarningsData = asyncHandler(async (req, res, next) => {
       chartData: formattedChartData,
       summary: {
         periodTotal,
+        breakdown,
         walletBalance: tailorProfile?.walletBalance || 0,
         totalWithdrawn: tailorProfile?.totalWithdrawn || 0,
         availableToWithdraw: tailorProfile?.walletBalance || 0

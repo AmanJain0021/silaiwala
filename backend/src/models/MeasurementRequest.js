@@ -80,6 +80,11 @@ const measurementRequestSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Broadcast to nearby executives (first to accept claims it)
+    broadcastAt: { type: Date, default: null },
+    broadcastCandidates: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    // Admin was alerted to assign manually (cleared on re-broadcast)
+    adminEscalatedAt: { type: Date, default: null },
     rejectedBy: [
       {
         type: mongoose.Schema.Types.ObjectId,

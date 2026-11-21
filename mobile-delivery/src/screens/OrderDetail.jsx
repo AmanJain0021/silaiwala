@@ -412,10 +412,11 @@ const DeliveryOrderDetail = () => {
     }
   };
   const isFinalDelivery = order?.taskType === 'order-delivery' || ['out-for-delivery', 'ready-for-delivery', 'ready-for-pickup', 'ready'].includes(order?.status);
-  const calculatedTotal = order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid' ? order.remainingPaymentAmount : order?.isTryAndBuy ? order.items.reduce((sum, item) => selectedItemIds.has(item.productId || item._id) ? sum + item.price * item.quantity : sum, 0) : order?.totalAmount || order?.total || 0;
+  // Amount the partner must collect at the door: 0 once the order is fully paid
+  const calculatedTotal = order?.paymentStatus === 'paid' ? 0 : order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid' ? order.remainingPaymentAmount : order?.isTryAndBuy ? order.items.reduce((sum, item) => selectedItemIds.has(item.productId || item._id) ? sum + item.price * item.quantity : sum, 0) : order?.totalAmount || order?.total || 0;
 
   // Gate final complete on unpaid remaining (or COD/cash), not just UI labels
-  const isCod = Number(order?.remainingPaymentAmount || 0) > 0 && order?.remainingPaymentStatus !== 'paid' || order?.paymentMethod === 'cod' || order?.paymentMethod === 'cash';
+  const isCod = order?.paymentStatus !== 'paid' && (Number(order?.remainingPaymentAmount || 0) > 0 && order?.remainingPaymentStatus !== 'paid' || order?.paymentMethod === 'cod' || order?.paymentMethod === 'cash');
   const handleCancelOrder = () => {
     setIsCancellationModalOpen(true);
   };
@@ -913,7 +914,7 @@ const DeliveryOrderDetail = () => {
                     <Txt className="text-sm font-black text-slate-800 mb-6 font-mono border-b border-slate-100 pb-4">{formatPrice(calculatedTotal)}</Txt>
                     
                      <Box className="aspect-square bg-white border-2 border-slate-50 rounded-[1.5rem] flex items-center justify-center p-5 mb-6 shadow-xl relative group">
-                        <Img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${import.meta.env.VITE_ADMIN_UPI_ID || 'silaiwala@razorpay'}&pn=Silaiwala&am=${calculatedTotal}&cu=INR`)}`} alt="Payment QR" className="w-full h-full" />
+                        <Img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${process.env.EXPO_PUBLIC_ADMIN_UPI_ID || 'silaiwala@razorpay'}&pn=Silaiwala&am=${calculatedTotal}&cu=INR`)}`} alt="Payment QR" className="w-full h-full" />
                         
                      </Box>
 

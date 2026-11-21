@@ -99,6 +99,12 @@ const settingsSchema = new mongoose.Schema(
     tailorSearch: {
       searchRadiusKm: { type: mongoose.Schema.Types.Mixed, default: "default" },
     },
+    // Partner broadcast + admin escalation (Admin → Settings → Assignment)
+    assignmentConfig: {
+      deliveryRadiusKm: { type: Number, default: 15 },     // pickup / drop request broadcast range
+      measurementRadiusKm: { type: Number, default: 25 },  // home-measurement request broadcast range
+      adminEscalationMinutes: { type: Number, default: 10 }, // nobody accepted → alert admin to assign
+    },
     landingCategories: [
       {
         title: { type: String, required: true },

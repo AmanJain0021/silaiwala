@@ -18,7 +18,7 @@ const Requests = () => {
             await acceptRequest(id);
             toast.success('Request accepted!');
         } catch (error) {
-            toast.error('Failed to accept request');
+            toast.error(error?.response?.data?.message || 'Failed to accept request');
         }
     };
 
@@ -27,7 +27,7 @@ const Requests = () => {
             await rejectRequest(id);
             toast.success('Request rejected.');
         } catch (error) {
-            toast.error('Failed to reject request');
+            toast.error(error?.response?.data?.message || 'Failed to reject request');
         }
     };
 

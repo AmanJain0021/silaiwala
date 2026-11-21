@@ -182,10 +182,11 @@ const TailorEarnings = () => {
     fetchData();
   }, [activeTab]);
   const periodTotal = earningsData?.summary?.periodTotal || 0;
-  // Derive breakdowns dynamically based on period total
-  const orderEarnings = periodTotal > 0 ? periodTotal * 0.82 : 0;
-  const incentives = periodTotal > 0 ? periodTotal * 0.13 : 0;
-  const bonus = periodTotal > 0 ? periodTotal * 0.05 : 0;
+  // Real split from wallet credits (backend summary.breakdown); no invented percentages
+  const breakdown = earningsData?.summary?.breakdown || {};
+  const orderEarnings = Number(breakdown.orderEarnings) || 0;
+  const incentives = Number(breakdown.incentives) || 0;
+  const bonus = Number(breakdown.bonus) || 0;
   const displayedEarnings = periodTotal || 0;
   const getBadgeStyle = label => {
     if (!label) return 'text-green-700 bg-green-50';

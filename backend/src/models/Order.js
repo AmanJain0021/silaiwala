@@ -37,6 +37,8 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     }],
+    // Admin was alerted to assign manually for the current broadcast (cleared on re-broadcast)
+    deliveryEscalatedAt: { type: Date, default: null },
     requestSentAt: {
       type: Date
     },

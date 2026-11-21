@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { resolveRazorpayKey, createRazorpayInstance } from '../../../utils/razorpay';
 import { ArrowLeft, ArrowRight, CreditCard, Lock, ShieldCheck, MapPin, Package, Loader2, FileText, ShoppingBag, Ruler, Check } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -106,7 +107,7 @@ const CheckoutSummary = () => {
     const location = useLocation();
     const bulkOrderId = location.state?.bulkOrderId;
 
-    const [advancePercentage, setAdvancePercentage] = useState(50);
+    const [advancePercentage, setAdvancePercentage] = useState(30);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false); // Kept for backwards compatibility in JSX if needed
     
     // Fetch Admin Settings
@@ -196,6 +197,8 @@ const CheckoutSummary = () => {
                 }
             } catch (err) {
                 console.error("Failed to fetch price summary:", err);
+                // Estimate only (no GST / fees) — the server recalculates the real total on order
+                toast.error("Couldn't load live pricing. Showing an estimate; final amount is confirmed at payment.");
                 const fallbackBase = isCartCheckout
                     ? cartItems.reduce((acc, it) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0)
                     : currentCheckoutItems.reduce((acc, it) => acc + (Number(it.pricing?.base) || 0), 0);
@@ -279,7 +282,7 @@ const CheckoutSummary = () => {
     }, [currentPricing, appliedCoupon, discountAmount, baseTotal]);
 
     const finalTotal = Math.round(Number(displayPricing?.total) || 0);
-    const effectiveAdvancePct = requireFullPayment ? 100 : (advancePercentage || 25);
+    const effectiveAdvancePct = requireFullPayment ? 100 : (advancePercentage || 30);
     const { advanceAmount } = splitAdvanceRemaining(finalTotal, effectiveAdvancePct);
 
     const handlePayment = async () => {
@@ -369,7 +372,7 @@ const CheckoutSummary = () => {
 
                     payload = {
                         tailorId: resolvedTailorId,
-                        isMeasurementHome: currentCheckoutItems.some(item => item.configuration?.isTailorAtHome || item.configuration?.measurements?.type === 'home'),
+                        isMeasurementHome: currentCheckoutItems.some(item => item.configuration?.isTailorAtHome || item.configuration?.measurements?.type === 'home' || item.configuration?.measurements?.option === 'visit'),
                         items: currentCheckoutItems.map(item => {
                             const rawId = item.serviceDetails?._id || item.serviceDetails?.id;
                             const serviceId = (rawId && typeof rawId === 'string' && rawId.length === 24) ? rawId : (item.serviceDetails?.id || item.serviceDetails?._id);
@@ -438,7 +441,6 @@ const CheckoutSummary = () => {
                 }
 
                 setLoadingText('Submitting order...');
-                setLoadingText('Submitting order...');
                 const endpoint = isCartAlteration ? '/alterations/request' : '/orders';
                 const orderRes = await api.post(endpoint, payload);
                 if (!orderRes.data.success) throw new Error(isCartAlteration ? 'Alteration request failed' : 'Order creation failed');
@@ -457,12 +459,13 @@ const CheckoutSummary = () => {
             if (!bulkOrderId) {
                 if (requireFullPayment && finalTotal > 0) {
                     setLoadingText('Connecting to Secure Payment...');
-                    const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: finalTotal });
+                    // Amount is computed by the server from the created order (never from client math)
+                    const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: finalTotal, orderObjectId: targetOrderId, paymentType: 'full' });
                     if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
                     const rzpOrder = rzpOrderRes.data.data;
 
                     const options = {
-                        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                        key: resolveRazorpayKey(rzpOrder),
                         amount: rzpOrder.amount,
                         currency: rzpOrder.currency,
                         name: "SilaiWala",
@@ -502,10 +505,14 @@ const CheckoutSummary = () => {
                             name: selectedAddress?.receiverName || "",
                             contact: selectedAddress?.phone || ""
                         },
-                        theme: { color: "#843D9B" }
+                        theme: { color: "#843D9B" },
+                        modal: {
+                            // Closing the Razorpay sheet must not leave the button stuck on "processing"
+                            ondismiss: () => { setIsProcessing(false); setLoadingText('Initializing...'); toast('Payment cancelled. Your order is saved — you can pay from My Orders.'); }
+                        }
                     };
 
-                    const rzp = new window.Razorpay(options);
+                    const rzp = await createRazorpayInstance(options);
                     rzp.on('payment.failed', function (response) {
                         setIsProcessing(false);
                         setLoadingText('Initializing...');
@@ -560,7 +567,7 @@ const CheckoutSummary = () => {
             const rzpOrder = rzpOrderRes.data.data;
 
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                key: resolveRazorpayKey(rzpOrder),
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "SilaiWala",
@@ -594,10 +601,11 @@ const CheckoutSummary = () => {
                     name: selectedAddress?.receiverName || "",
                     contact: selectedAddress?.phone || ""
                 },
-                theme: { color: "#843D9B" }
+                theme: { color: "#843D9B" },
+                modal: { ondismiss: () => { setIsProcessing(false); setLoadingText('Initializing...'); } }
             };
 
-            const rzp = new window.Razorpay(options);
+            const rzp = await createRazorpayInstance(options);
             rzp.on('payment.failed', function (response) {
                 setIsProcessing(false);
                 setLoadingText('Initializing...');

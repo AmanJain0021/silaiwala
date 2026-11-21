@@ -45,13 +45,32 @@ function computeVisitFee(distanceKm, visitSettings = {}) {
   const baseFee = Number(visitSettings.baseFee) || 0;
   const perKmFee = Number(visitSettings.perKmFee) || 0;
   const freeKm = Number(visitSettings.freeKm) || 0;
-  const maxFee = Number(visitSettings.maxFee) || 299;
+  // maxFee 0 = "no cap" (admin choice); only fall back to 299 when it was never configured
+  const maxFee = visitSettings.maxFee == null || visitSettings.maxFee === ""
+    ? 299
+    : Number(visitSettings.maxFee) || 0;
   const km = Math.max(0, Number(distanceKm) || 0);
 
   if (baseFee <= 0 && perKmFee <= 0) return 0;
   if (km <= freeKm) return Math.round(baseFee);
   const calculated = Math.round(baseFee + (km - freeKm) * perKmFee);
   return maxFee > 0 ? Math.min(calculated, maxFee) : calculated;
+}
+
+/**
+ * One definition of "this item needs a home measurement visit", shared by pricing,
+ * order creation and the price-summary endpoint (all the flag variants the apps send).
+ */
+function isHomeMeasurementItem(item) {
+  if (!item) return false;
+  return !!(
+    item.isTailorAtHome ||
+    item.configuration?.isTailorAtHome ||
+    item.measurements?.type === "home" ||
+    item.measurements?.option === "visit" ||
+    item.configuration?.measurements?.type === "home" ||
+    item.configuration?.measurements?.option === "visit"
+  );
 }
 
 /**
@@ -114,8 +133,9 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
     actualDeliveryCost = orderDeliveryFee;
     dropoffDeliveryCost = orderDeliveryFee;
 
-    // Free delivery for customer when merchandise meets threshold (partner cost still tracked)
-    if (freeDeliveryMinOrder > 0 && totalBase >= freeDeliveryMinOrder) {
+    // Free delivery for customer when merchandise meets threshold or membership grants it
+    // (partner cost still tracked in actualDeliveryCost)
+    if ((freeDeliveryMinOrder > 0 && totalBase >= freeDeliveryMinOrder) || customerMembership?.freeDelivery) {
       orderDeliveryFee = 0;
       freeDeliveryApplied = true;
     }
@@ -145,12 +165,7 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
       }
 
       // Check if any service in the order requested home measurement
-      if (
-        item.configuration?.isTailorAtHome ||
-        item.isTailorAtHome ||
-        item.measurements?.type === "home" ||
-        item.configuration?.measurements?.option === "visit"
-      ) {
+      if (isHomeMeasurementItem(item)) {
         hasHomeMeasurement = true;
       }
 
@@ -205,14 +220,18 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
   const platformFeeAmount = Math.round(
     (totalBase + totalAddons) * (platformFeePercentage / 100)
   );
-  const taxableAmount =
-    totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount;
-  const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
 
-  // Membership discount
+  // Membership discount (on stitching + addons). Applied BEFORE GST so tax is charged
+  // on the discounted value, not on money the customer never pays.
   const membershipDiscount = customerMembership?.discountPercentage
     ? Math.round((totalBase + totalAddons) * (Number(customerMembership.discountPercentage) / 100))
     : 0;
+
+  const taxableAmount = Math.max(
+    0,
+    totalBase + totalAddons + totalFabric + totalTailorAtHome + platformFeeAmount - membershipDiscount
+  );
+  const totalTaxes = Math.round(taxableAmount * (gstPercentage / 100));
 
   // Grand total customer pays (delivery fee may be 0 if free-delivery promo or membership)
   const finalTotal = Math.max(0, Math.round(
@@ -268,7 +287,8 @@ async function computeCheckoutPricing(items, deliveryAddress, isCartCheckout, se
 /**
  * Build checkout-shaped items from POST /orders body for server-side repricing.
  */
-async function enrichOrderItemsForPricing(items) {
+async function enrichOrderItemsForPricing(items, options = {}) {
+  const orderLevelHomeMeasurement = !!options.isMeasurementHome;
   const Service = require("../models/Service.js");
   const Product = require("../models/Product.js");
   const Tailor = require("../models/Tailor.js");
@@ -351,10 +371,7 @@ async function enrichOrderItemsForPricing(items) {
       Number(item.price) ||
       0;
 
-    const isTailorAtHome =
-      item.isTailorAtHome ||
-      item.configuration?.isTailorAtHome ||
-      item.measurements?.type === "home";
+    const isTailorAtHome = orderLevelHomeMeasurement || isHomeMeasurementItem(item);
 
     const fabricSource =
       item.fabricSource || item.configuration?.fabricSource || "customer";
@@ -385,6 +402,28 @@ async function enrichOrderItemsForPricing(items) {
   return enriched;
 }
 
+/**
+ * Store / cart checkout: replace client-sent unit prices with the catalog Product.price
+ * so totals (and what Razorpay charges) can't be lowered from the client.
+ * Items that don't resolve to a Product (alteration / custom-design placeholders) are left as-is.
+ */
+async function repriceCartItems(items) {
+  const Product = require("../models/Product.js");
+  const idOf = (item) => {
+    const raw = item?.product?._id || item?.product?.id || item?.product || item?.productId || item?._id || item?.id;
+    return raw && mongoose.Types.ObjectId.isValid(String(raw)) ? String(raw) : null;
+  };
+  const ids = [...new Set((items || []).map(idOf).filter(Boolean))];
+  if (!ids.length) return items || [];
+  const products = await Product.find({ _id: { $in: ids } }).select("price").lean();
+  const priceById = new Map(products.map((p) => [String(p._id), Number(p.price) || 0]));
+  return (items || []).map((item) => {
+    const id = idOf(item);
+    if (id && priceById.has(id)) return { ...item, price: priceById.get(id) };
+    return item;
+  });
+}
+
 function splitAdvanceRemaining(total, advancePercentage) {
   const pct = Math.min(100, Math.max(0, Number(advancePercentage) || 0));
   const totalInt = Math.round(Number(total) || 0);
@@ -404,5 +443,7 @@ module.exports = {
   splitAdvanceRemaining,
   computeVisitFee,
   getRoadDistanceKm,
+  isHomeMeasurementItem,
+  repriceCartItems,
 };
 

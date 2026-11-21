@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveRazorpayKey, createRazorpayInstance } from '../../../../utils/razorpay';
 import { Ruler, ChevronRight, Calendar, Truck, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../../utils/api';
@@ -53,7 +54,7 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
             const rzpOrder = rzpOrderRes.data.data;
 
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                key: resolveRazorpayKey(rzpOrder),
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "SilaiWala",
@@ -78,7 +79,7 @@ const AlterationCard = ({ alteration, onPaymentSuccess }) => {
                 theme: { color: "#843D9B" }
             };
 
-            const rzp = new window.Razorpay(options);
+            const rzp = await createRazorpayInstance(options);
             rzp.on('payment.failed', function (response) { toast.error('Payment failed: ' + response.error.description); });
             rzp.open();
         } catch (err) { toast.error('Failed to initialize payment.'); }

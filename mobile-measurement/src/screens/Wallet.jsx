@@ -217,7 +217,7 @@ const MEWallet = () => {
                         </Box>
                         <Txt className="text-[10px] font-bold text-slate-500 mb-1">Total Earnings</Txt>
                         <Txt className="text-sm font-black text-slate-900 mb-0.5">₹{(walletData.totalEarned || 0).toLocaleString()}</Txt>
-                        <Txt className="text-[8px] text-slate-400 font-medium">This Month</Txt>
+                        <Txt className="text-[8px] text-slate-400 font-medium">Lifetime</Txt>
                     </Box>
 
                     <Box className="flex flex-col items-center justify-center flex-1 text-center border-r border-slate-100 px-2">

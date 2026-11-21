@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveRazorpayKey, createRazorpayInstance } from '../../../utils/razorpay';
 import { CreditCard, Zap, Calendar, ArrowUpCircle, AlertTriangle, Star } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -49,7 +50,7 @@ const Subscription = () => {
                 const rzpOrder = rzpOrderRes.data.data;
 
                 const options = {
-                    key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                    key: resolveRazorpayKey(rzpOrder),
                     amount: rzpOrder.amount,
                     currency: rzpOrder.currency,
                     name: "SilaiWala",
@@ -84,7 +85,7 @@ const Subscription = () => {
                     theme: { color: "#843D9B" }
                 };
 
-                const rzp = new window.Razorpay(options);
+                const rzp = await createRazorpayInstance(options);
                 rzp.on('payment.failed', function (response) {
                     toast.error('Payment failed: ' + response.error.description);
                 });

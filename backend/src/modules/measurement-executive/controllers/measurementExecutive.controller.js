@@ -221,7 +221,7 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
         $or: [
           { executive: req.user.id, status: "assigned" },
           { executive: req.user.id, status: "pending" },
-          { executive: null, status: "pending" }
+          { executive: null, status: "pending", $or: [{ broadcastCandidates: req.user.id }, { broadcastCandidates: { $size: 0 } }] }
         ]
       };
     } else {
@@ -232,7 +232,7 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
     query = {
       $or: [
         { executive: req.user.id },
-        { executive: null, status: "pending" }
+        { executive: null, status: "pending", $or: [{ broadcastCandidates: req.user.id }, { broadcastCandidates: { $size: 0 } }] }
       ]
     };
   }
@@ -248,6 +248,7 @@ exports.getMyRequests = asyncHandler(async (req, res, next) => {
 
   const validRequests = requests.filter(r => {
     if (!r.order) return true;
+    if (r.order.status === "cancelled") return false;
     const isAdvancePending = (r.order.advancePaymentAmount > 0) && 
                             r.order.advancePaymentStatus !== 'paid' && 
                             r.order.paymentStatus !== 'paid';
@@ -386,13 +387,40 @@ exports.acceptRequest = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Cannot accept request in '${request.status}' state`, 400));
   }
 
-  // If it was unassigned, assign it now
-  if (!request.executive) {
-    request.executive = req.user.id;
+  // Flow guard: a visit is only dispatched once the order is live and the advance is paid
+  const linkedOrder = await Order.findById(request.order)
+    .select("status advancePaymentAmount advancePaymentStatus paymentStatus")
+    .lean();
+  if (linkedOrder) {
+    if (linkedOrder.status === "cancelled") {
+      return next(new ErrorResponse("This order has been cancelled", 400));
+    }
+    const advancePending =
+      linkedOrder.advancePaymentAmount > 0 &&
+      linkedOrder.advancePaymentStatus !== "paid" &&
+      linkedOrder.paymentStatus !== "paid";
+    if (advancePending) {
+      return next(new ErrorResponse("Customer has not paid the advance yet for this order", 400));
+    }
   }
 
-  request.status = "accepted";
-  await request.save();
+  // Atomic claim: with a broadcast, several executives may tap Accept at once — only the
+  // first one wins; everyone else gets "already accepted".
+  const claimed = await MeasurementRequest.findOneAndUpdate(
+    {
+      _id: request._id,
+      status: { $in: ["pending", "assigned"] },
+      $or: [{ executive: null }, { executive: req.user.id }],
+    },
+    { $set: { executive: req.user.id, status: "accepted" } },
+    { new: true }
+  );
+  if (!claimed) {
+    return next(new ErrorResponse("This request was already accepted by another executive", 409));
+  }
+  const otherCandidates = (request.broadcastCandidates || []).map(String).filter((id) => id !== String(req.user.id));
+  request.executive = claimed.executive;
+  request.status = claimed.status;
 
   // Update order status
   const order = await Order.findById(request.order);
@@ -439,6 +467,14 @@ exports.acceptRequest = asyncHandler(async (req, res, next) => {
       _id: order?._id,
       status: order?.status,
     });
+
+    // Remove the request from every other executive's list
+    for (const candidateId of otherCandidates) {
+      io.to(`user_${candidateId}`).emit("measurement_request_claimed", {
+        requestId: request._id,
+        claimedBy: req.user.id,
+      });
+    }
   }
 
   res.status(200).json({
@@ -602,7 +638,8 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
   }
 
   // Allow dev bypass: "123456"
-  const isDev = process.env.NODE_ENV !== "production";
+  // Master OTP only when USE_DEFAULT_OTP is on (same rule as every other OTP)
+  const isDev = isDefaultOtpEnabled();
   const isValid = request.otp === otp || (isDev && otp === "123456");
 
   if (!isValid) {
@@ -905,6 +942,17 @@ exports.completeMeasurement = asyncHandler(async (req, res, next) => {
   }
 
   await session.commitTransaction();
+
+  // Flow 2: customer approved (OTP) → customer's fabric goes to the tailor via a delivery partner
+  if (order) {
+    try {
+      const { startFabricPickupAfterMeasurement } = require("../../../utils/fabricPickup.js");
+      await startFabricPickupAfterMeasurement(order._id);
+    } catch (pickupErr) {
+      console.error("Auto fabric pickup after measurement failed:", pickupErr.message);
+    }
+  }
+
     res.status(200).json({
     success: true,
     message: "Measurement completed successfully",
@@ -1127,14 +1175,18 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
     profile = await MeasurementExecutive.findById(profile._id).populate("user", "name email phoneNumber profileImage");
   }
 
-  const [totalPending, totalAccepted, completedToday, totalCompleted] =
+  const WalletTransaction = require("../../../models/WalletTransaction.js");
+  const execObjectId = new mongoose.Types.ObjectId(req.user.id);
+
+  const [pendingRequests, totalAccepted, completedToday, totalCompleted, earningsAgg] =
     await Promise.all([
-      MeasurementRequest.countDocuments({
+      // Same visibility rule as the Requests list: hide unpaid-advance / cancelled orders
+      MeasurementRequest.find({
         $or: [
           { executive: req.user.id, status: "assigned" },
-          { executive: null, status: "pending" }
+          { executive: null, status: "pending", $or: [{ broadcastCandidates: req.user.id }, { broadcastCandidates: { $size: 0 } }] }
         ]
-      }),
+      }).populate("order", "status advancePaymentAmount advancePaymentStatus paymentStatus").select("order").lean(),
       MeasurementRequest.countDocuments({
         executive: req.user.id,
         status: { $in: ["accepted", "otp_sent", "otp_verified", "measurements_uploaded"] },
@@ -1148,13 +1200,38 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
         executive: req.user.id,
         status: "completed",
       }),
+      // Actual visit-fee credits (same amount the customer was charged)
+      WalletTransaction.aggregate([
+        { $match: { user: execObjectId, type: "credit", category: "executive_earnings" } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$amount" },
+            today: { $sum: { $cond: [{ $gte: ["$createdAt", today] }, "$amount", 0] } },
+          },
+        },
+      ]),
     ]);
+
+  const totalPending = pendingRequests.filter((r) => {
+    if (!r.order) return true;
+    if (r.order.status === "cancelled") return false;
+    const advancePending =
+      r.order.advancePaymentAmount > 0 &&
+      r.order.advancePaymentStatus !== "paid" &&
+      r.order.paymentStatus !== "paid";
+    return !advancePending;
+  }).length;
+  const todayEarnings = Math.round(earningsAgg[0]?.today || 0);
+  const totalEarnings = Math.round(earningsAgg[0]?.total || profile?.totalEarned || 0);
 
   res.status(200).json({
     success: true,
     data: {
       profile,
       stats: {
+        todayEarnings,
+        totalEarnings,
         totalPending,
         totalAccepted,
         completedToday,

@@ -715,7 +715,7 @@ const Orders = () => {
                                     <Box className="flex-1 min-w-0">
                                         <Box className="flex justify-between items-start gap-2">
                                             <Txt className="text-[15px] font-black text-gray-900 leading-snug truncate">{item.service?.title || item.product?.name || 'Custom Garment'}</Txt>
-                                            <Txt className="text-[15px] font-black text-gray-900 shrink-0">₹{item.price || order.totalAmount || '0'}</Txt>
+                                            <Txt className="text-[15px] font-black text-gray-900 shrink-0">₹{Math.round(((Number(item.price) || 0) + (item.styleAddons || []).reduce((s, a) => s + (Number(a?.price) || 0), 0)) * (Number(item.quantity) || 1))}</Txt>
                                         </Box>
                                         <Txt className="text-[11px] text-gray-400 mt-0.5 font-medium">{item.fabricSource === 'platform' ? 'Platform Fabric' : 'Customer Fabric'}</Txt>
                                         <Box className="flex gap-2 mt-2">

@@ -13,6 +13,7 @@ const asyncHandler = require("../../../utils/asyncHandler.js");
 const ErrorResponse = require("../../../utils/errorResponse.js");
 const { sendNotification } = require("../../../utils/notification.js");
 const razorpay = require("../../../config/razorpay.js");
+const { isHomeMeasurementItem } = require("../../../utils/checkoutPricing.js");
 const { invalidateCache } = require("../../../utils/cache.js");
 
 const PromoCode = require("../../../models/PromoCode.js");
@@ -88,13 +89,126 @@ const autoGeocode = async (addressObj) => {
   return addressObj;
 };
 
+// ─── Payment helpers (shared by create / verify / webhook) ───────────────────────
+
+/** Admin default when walletConfig.advancePercentage is not configured (matches Settings schema default). */
+const DEFAULT_ADVANCE_PCT = 30;
+const getAdvancePct = (settings) =>
+  Number(settings?.walletConfig?.advancePercentage) || DEFAULT_ADVANCE_PCT;
+
+/** Customer (or admin / assigned partners collecting on the customer's behalf) may pay for an order. */
+const canPayForOrder = (order, user) => {
+  if (!order || !user) return false;
+  if (["admin", "super_admin"].includes(user.role)) return true;
+  const uid = String(user.id || user._id);
+  if (String(order.customer?._id || order.customer) === uid) return true;
+  if (user.role === "tailor" && String(order.tailor?._id || order.tailor) === uid) return true;
+  if (user.role === "delivery") return true; // partner collecting balance at the doorstep
+  return false;
+};
+
+/** True once the given payment stage has already been recorded (idempotency guard). */
+const isPaymentAlreadyApplied = (order, paymentType) => {
+  if (!order) return false;
+  if (paymentType === "advance") {
+    return order.advancePaymentStatus === "paid" || order.paymentStatus === "paid";
+  }
+  if (paymentType === "remaining") {
+    return order.remainingPaymentStatus === "paid" || order.paymentStatus === "paid";
+  }
+  return order.paymentStatus === "paid";
+};
+
+/** Server-authoritative rupee amount for a payment stage of an order. */
+const expectedAmountForPayment = (order, paymentType) => {
+  const total = Math.round(Number(order?.totalAmount) || 0);
+  const { splitAdvanceRemaining } = require("../../../utils/checkoutPricing.js");
+  if (paymentType === "advance") {
+    const adv = Math.round(Number(order.advancePaymentAmount) || 0);
+    return adv > 0 ? adv : splitAdvanceRemaining(total, DEFAULT_ADVANCE_PCT).advanceAmount;
+  }
+  if (paymentType === "remaining") {
+    const rem = Math.round(Number(order.remainingPaymentAmount) || 0);
+    if (rem > 0) return rem;
+    const advPaid = order.advancePaymentStatus === "paid" ? Math.round(Number(order.advancePaymentAmount) || 0) : 0;
+    return Math.max(0, total - advPaid);
+  }
+  return total;
+};
+
+/** One PaymentLedger row per successful payment stage (advance / remaining / full). */
+const recordPaymentLedger = async (order, { paymentType, totalPaid, razorpay_payment_id, razorpay_order_id, session }) => {
+  try {
+    const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+    const baseTxn = order.transactionId || ledgerId;
+    await PaymentLedger.create([{
+      ledgerId,
+      order: order._id,
+      orderId: order.orderId,
+      customer: order.customer,
+      tailor: order.tailor,
+      deliveryPartner: order.deliveryPartner || null,
+      paymentId: razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
+      // transactionId is unique — suffix by stage so advance + remaining can coexist
+      transactionId: `${baseTxn}-${String(paymentType).toUpperCase()}`,
+      orderAmount: Math.max(0, (order.totalAmount || 0) - (order.gstAmount || 0) - (order.deliveryFee || 0)),
+      gstAmount: order.gstAmount || 0,
+      gstPercentage: order.gstPercentage || 0,
+      deliveryFee: order.deliveryFee || 0,
+      platformFee: order.platformFee || 0,
+      discountAmount: order.discountAmount || 0,
+      couponCode: order.couponCode || null,
+      tailorEarning: order.tailorEarning || 0,
+      deliveryPartnerEarning: order.deliveryPartnerEarning || 0,
+      netPlatformEarning: order.netPlatformEarning || 0,
+      totalPaid: Math.round(Number(totalPaid) || 0),
+      paymentType,
+      paymentMethod: "online",
+      paymentStatus: "paid",
+      paidAt: new Date(),
+    }], session ? { session } : undefined);
+  } catch (ledgerErr) {
+    console.error(`Failed to create PaymentLedger (${paymentType}) entry:`, ledgerErr.message);
+  }
+};
+
 /**
  * @desc    Create a new order in Razorpay
  * @route   POST /api/v1/orders/razorpay/create
  * @access  Private (Customer)
  */
 exports.createRazorpayOrder = asyncHandler(async (req, res, next) => {
-  const { amount } = req.body;
+  const { orderObjectId, paymentType } = req.body;
+  let amount = req.body.amount;
+  const notes = {};
+
+  // When the payment is for a platform order, the amount is ALWAYS derived from the
+  // order on the server (never trust the client-side total / fallback math).
+  if (orderObjectId) {
+    if (!mongoose.Types.ObjectId.isValid(orderObjectId)) {
+      return next(new ErrorResponse("Invalid order id", 400));
+    }
+    const order = await Order.findById(orderObjectId).lean();
+    if (!order) return next(new ErrorResponse("Order not found", 404));
+    if (!canPayForOrder(order, req.user)) {
+      return next(new ErrorResponse("Not authorized to pay for this order", 403));
+    }
+    if (order.status === "cancelled") {
+      return next(new ErrorResponse("This order has been cancelled", 400));
+    }
+    if (isPaymentAlreadyApplied(order, paymentType)) {
+      return next(new ErrorResponse("This payment has already been completed", 400));
+    }
+    // Flow: the advance is collected only after the tailor has accepted the order
+    if (paymentType === "advance" && order.status === "pending" && !order.acceptedAt) {
+      return next(new ErrorResponse("Please wait for the tailor to accept your order before paying the advance", 400));
+    }
+    amount = expectedAmountForPayment(order, paymentType);
+    notes.orderObjectId = String(order._id);
+    notes.orderId = order.orderId;
+    notes.paymentType = paymentType || "full";
+  }
 
   if (amount === undefined || amount === null) {
     return next(new ErrorResponse("Please provide an amount", 400));
@@ -105,9 +219,10 @@ exports.createRazorpayOrder = asyncHandler(async (req, res, next) => {
   }
 
   const options = {
-    amount: Math.round(amount * 100), // Razorpay expects amount in paise
+    amount: Math.round(Number(amount) * 100), // Razorpay expects amount in paise
     currency: "INR",
     receipt: `receipt_${crypto.randomBytes(5).toString("hex")}`,
+    notes,
   };
 
   try {
@@ -131,39 +246,21 @@ exports.createRazorpayOrder = asyncHandler(async (req, res, next) => {
  * @route   POST /api/v1/orders/razorpay/verify
  * @access  Private (Customer)
  */
-exports.verifyPayment = asyncHandler(async (req, res, next) => {
-  const { 
-    razorpay_order_id, 
-    razorpay_payment_id, 
-    razorpay_signature,
-    orderObjectId, // This is the MongoDB Order ID
-    paymentType    // 'advance' or 'remaining'
-  } = req.body;
-
-  const sign = razorpay_order_id + "|" + razorpay_payment_id;
-  const expectedSign = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(sign.toString())
-    .digest("hex");
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-  if (razorpay_signature === expectedSign) {
-    // Payment verified
-    const order = await Order.findById(orderObjectId).session(session);
-    if (!order) {
-      await session.abortTransaction(); session.endSession(); return next(new ErrorResponse("Order not found during verification", 404));
-    }
-
+/**
+ * Applies a signature-verified Razorpay payment to an order (status, wallet, ledger,
+ * measurement request, notifications). Used by both the client verify call and the
+ * webhook so a payment is never lost if the customer closes the app mid-verify.
+ * Caller owns the transaction (start / commit / abort).
+ */
+async function applyVerifiedPayment(order, { paymentType, razorpay_payment_id, razorpay_order_id, session }) {
     if (paymentType === 'advance') {
        order.advancePaymentStatus = "paid";
        order.advancePaymentId = razorpay_payment_id;
        order.razorpayOrderId = razorpay_order_id;
-       
+
        if (!order.advancePaymentAmount || order.advancePaymentAmount <= 0) {
            const settingsForAdv = await Settings.getSettings();
-           const advPct = settingsForAdv?.walletConfig?.advancePercentage || 50;
+           const advPct = getAdvancePct(settingsForAdv);
            const { splitAdvanceRemaining } = require("../../../utils/checkoutPricing.js");
            const split = splitAdvanceRemaining(order.totalAmount || 0, advPct);
            order.advancePaymentAmount = split.advanceAmount;
@@ -183,7 +280,11 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        // Payment can advance the workflow without going through the tailor status
        // endpoint, so persist acceptance for refresh-safe UI and reporting.
        if (!order.acceptedAt) order.acceptedAt = new Date();
-       order.status = nextStatus;
+       // Only move forward from the pre-payment states; never rewind an order an admin /
+       // partner has already progressed (e.g. late webhook after manual handling).
+       if (["pending", "accepted"].includes(order.status)) {
+         order.status = nextStatus;
+       }
        order.trackingHistory.push({
          status: order.status,
          timestamp: new Date(),
@@ -212,11 +313,14 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
        try {
            const tailorProfile = await Tailor.findOne({ user: order.tailor });
            if (tailorProfile) {
-               const settings = await Settings.getSettings();
-               const advancePct = settings?.walletConfig?.advancePercentage || 30;
                const { computeTailorMerchandise } = require("../../../utils/earningsEngine.js");
                const tailorTotalEarning = computeTailorMerchandise(order);
-               const tailorAdvanceAmount = Math.round(tailorTotalEarning * (advancePct / 100));
+               // Credit the tailor the same fraction the customer actually paid as advance
+               const orderTotal = Number(order.totalAmount) || 0;
+               const paidFraction = orderTotal > 0
+                 ? Math.min(1, (Number(order.advancePaymentAmount) || 0) / orderTotal)
+                 : getAdvancePct(await Settings.getSettings()) / 100;
+               const tailorAdvanceAmount = Math.round(tailorTotalEarning * paidFraction);
 
                tailorProfile.walletBalance = (tailorProfile.walletBalance || 0) + tailorAdvanceAmount;
                await tailorProfile.save({ session });
@@ -235,6 +339,14 @@ user: order.tailor,
            console.error("Failed to credit advance payment to Tailor:", err);
        }
        // -----------------------------------------------
+
+       await recordPaymentLedger(order, {
+         paymentType: "advance",
+         totalPaid: order.advancePaymentAmount,
+         razorpay_payment_id,
+         razorpay_order_id,
+         session,
+       });
 
     } else if (paymentType === 'remaining') {
        order.remainingPaymentStatus = "paid";
@@ -258,38 +370,13 @@ user: order.tailor,
          message: `Remaining payment of ₹${order.remainingPaymentAmount} successful.`,
        });
 
-       // Create PaymentLedger entry for remaining payment
-       try {
-         const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-         await PaymentLedger.create([{
-ledgerId,
-           order: order._id,
-           orderId: order.orderId,
-           customer: order.customer,
-           tailor: order.tailor,
-           deliveryPartner: order.deliveryPartner || null,
-           paymentId: razorpay_payment_id,
-           razorpayOrderId: razorpay_order_id,
-           transactionId: order.transactionId || ledgerId,
-           orderAmount: order.totalAmount - (order.gstAmount || 0) - (order.deliveryFee || 0),
-           gstAmount: order.gstAmount || 0,
-           gstPercentage: order.gstPercentage || 0,
-           deliveryFee: order.deliveryFee || 0,
-           platformFee: order.platformFee,
-           discountAmount: order.discountAmount || 0,
-           couponCode: order.couponCode || null,
-           tailorEarning: order.tailorEarning,
-           deliveryPartnerEarning: order.deliveryPartnerEarning,
-           netPlatformEarning: order.netPlatformEarning,
-           totalPaid: order.remainingPaymentAmount || 0,
-           paymentType: "remaining",
-           paymentMethod: "online",
-           paymentStatus: "paid",
-           paidAt: new Date(),
-}], { session });
-       } catch (ledgerErr) {
-         console.error("Failed to create PaymentLedger entry:", ledgerErr);
-       }
+       await recordPaymentLedger(order, {
+         paymentType: "remaining",
+         totalPaid: order.remainingPaymentAmount || 0,
+         razorpay_payment_id,
+         razorpay_order_id,
+         session,
+       });
 
        await sendNotification({
            recipient: order.tailor,
@@ -305,7 +392,10 @@ ledgerId,
        order.remainingPaymentStatus = "paid";
        order.remainingPaymentId = razorpay_payment_id;
        order.remainingPaymentAmount = 0;
-       order.paymentStatus = "paid"; // <--- ADDED THIS LINE
+       order.paymentStatus = "paid";
+       order.paymentId = razorpay_payment_id;
+       order.razorpayOrderId = razorpay_order_id;
+       order.paidAt = new Date();
        if (order.isMeasurementHome) {
            order.status = 'measurement-requested';
        } else if (order.items.some(item => item.fabricSource === 'customer')) {
@@ -364,6 +454,14 @@ ledgerId,
        } catch (walletErr) {
            console.error("Wallet credit error (Full Payment):", walletErr);
        }
+
+       await recordPaymentLedger(order, {
+         paymentType: "full",
+         totalPaid: order.totalAmount,
+         razorpay_payment_id,
+         razorpay_order_id,
+         session,
+       });
     } else {
        // Legacy fallback or fully upfront payment
        order.paymentStatus = "paid";
@@ -387,37 +485,13 @@ ledgerId,
        order.deliveryPartnerEarning = deliveryBudget;
        order.netPlatformEarning = computePlatformNet(order);
 
-       // Create PaymentLedger for full payment
-       try {
-         const ledgerId = `LED-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-         await PaymentLedger.create([{
-ledgerId,
-           order: order._id,
-           orderId: order.orderId,
-           customer: order.customer,
-           tailor: order.tailor,
-           paymentId: razorpay_payment_id,
-           razorpayOrderId: razorpay_order_id,
-           transactionId: order.transactionId || ledgerId,
-           orderAmount: order.totalAmount - (order.gstAmount || 0) - (order.deliveryFee || 0),
-           gstAmount: order.gstAmount || 0,
-           gstPercentage: order.gstPercentage || 0,
-           deliveryFee: order.deliveryFee || 0,
-           platformFee: order.platformFee,
-           discountAmount: order.discountAmount || 0,
-           couponCode: order.couponCode || null,
-           tailorEarning: order.tailorEarning,
-           deliveryPartnerEarning: order.deliveryPartnerEarning,
-           netPlatformEarning: order.netPlatformEarning,
-           totalPaid: order.totalAmount,
-           paymentType: "full",
-           paymentMethod: "online",
-           paymentStatus: "paid",
-           paidAt: new Date(),
-}], { session });
-       } catch (ledgerErr) {
-         console.error("Failed to create PaymentLedger entry:", ledgerErr);
-       }
+       await recordPaymentLedger(order, {
+         paymentType: "full",
+         totalPaid: order.totalAmount,
+         razorpay_payment_id,
+         razorpay_order_id,
+         session,
+       });
     }
 
     // --- Helper for creating & auto-assigning MeasurementRequest ---
@@ -486,15 +560,9 @@ ledgerId,
             }
         }
 
-        // Trigger auto-assignment if not assigned yet
-        if (existing && (!existing.executive || existing.status === "pending")) {
-            try {
-                await autoAssignMeasurementExecutive(orderDoc);
-            } catch (assignErr) {
-                console.error("⚠️ Failed auto-assigning measurement executive:", assignErr.message);
-            }
-        }
-
+        // NOTE: executive auto-assignment runs AFTER the transaction commits (see verifyPayment /
+        // webhook). Running it here would save the order outside the session while the
+        // transaction still holds it (write conflict + leaking uncommitted payment state).
         return existing;
     };
 
@@ -510,69 +578,80 @@ ledgerId,
 
     await order.save({ session });
 
-    await sendNotification({
-        recipient: order.customer,
-        type: "PAYMENT_SUCCESS",
-        title: "Order Placed Successfully!",
-        message: `Your payment for order ${order.orderId} was successful. Our tailor will start working on it soon.`,
-        data: { orderId: order._id, targetUrl: "/profile/orders" }
-    });
-
-    if (isAdminUser && finalCustomerId) {
-      if (io) {
-        io.to(`user_${String(finalCustomerId)}`).emit('receive_new_order', {
-          orderId: order.orderId,
-          _id: order._id,
-          totalAmount: order.totalAmount,
-          status: order.status,
-        });
-      }
-      await sendNotification({
-        recipient: finalCustomerId,
-        type: "ORDER_CREATED",
-        title: "New Order Created by Sewzella",
-        message: `An order #${order.orderId} of ₹${order.totalAmount} has been booked for you.`,
-        data: { orderId: order._id, targetUrl: `/orders/${order._id}` }
-      });
-    }
-
-    await sendNotification({
-        recipient: "admins",
-        type: "NEW_ORDER",
-        title: "New Paid Order Received! 🛍️",
-        message: `Payment verified for Order #${order.orderId} (₹${order.totalAmount}).`,
-        data: { orderId: order._id, targetUrl: "/admin/orders" }
-    });
-
-    // --- Socket Emission for Tailor (real-time toast) ---
-    try {
-        const io = getIO();
-        if (io) {
-            io.to(`user_${order.tailor}`).emit('receive_new_order', {
-                orderId: order.orderId,
-                _id: order._id,
-                totalAmount: order.totalAmount,
-                status: order.status
-            });
-            console.log(`📡 Socket: Notified Tailor ${order.tailor} of new paid order`);
-        }
-    } catch (err) {
-        console.error("Socket emission failed in verifyPayment:", err.message);
-    }
-
-    // Note: Auto-assignment is no longer triggered here. 
-    // The customer must select their delivery preference ('self' or 'partner') via a separate endpoint.
-    // ---------------------------------
-
     // --- Referral / first-payment loyalty (advance or full only) ---
     const { processReferralRewardsOnFirstPayment } = require("../../../utils/referralRewards.js");
     if (paymentType === "advance" || paymentType === "full") {
       await processReferralRewardsOnFirstPayment(order, session, paymentType);
     }
-    // ---------------------
-    await session.commitTransaction();
 
-    if (order.isMeasurementHome && paymentType !== 'remaining') {
+    return order;
+}
+
+/**
+ * Side effects that must only happen once the payment transaction has COMMITTED
+ * (notifications, sockets, measurement executive auto-assignment, cache busting).
+ */
+async function afterPaymentCommitted(order, paymentType) {
+    const isFinalPayment = paymentType === "remaining";
+
+    try {
+      await sendNotification({
+          recipient: order.customer,
+          type: "PAYMENT_SUCCESS",
+          title: isFinalPayment ? "Payment Received" : "Order Confirmed!",
+          message: isFinalPayment
+            ? `Your remaining payment for order ${order.orderId} was successful.`
+            : `Your payment for order ${order.orderId} was successful. Our tailor will start working on it soon.`,
+          data: { orderId: order._id, targetUrl: "/profile/orders" }
+      });
+
+      // Orders booked by admin on the customer's behalf: let the customer know too
+      if (order.createdByAdmin && !isFinalPayment) {
+        await sendNotification({
+          recipient: order.customer,
+          type: "ORDER_CREATED",
+          title: "New Order Created by Sewzella",
+          message: `An order #${order.orderId} of ₹${order.totalAmount} has been booked for you.`,
+          data: { orderId: order._id, targetUrl: `/orders/${order._id}` }
+        });
+      }
+
+      await sendNotification({
+          recipient: "admins",
+          type: "NEW_ORDER",
+          title: isFinalPayment ? "Final Payment Received 💰" : "New Paid Order Received! 🛍️",
+          message: `Payment verified for Order #${order.orderId} (₹${order.totalAmount}).`,
+          data: { orderId: order._id, targetUrl: "/admin/orders" }
+      });
+    } catch (notifyErr) {
+      console.error("Payment notification failed:", notifyErr.message);
+    }
+
+    // --- Socket emission for tailor + customer (real-time UI sync) ---
+    try {
+        const io = getIO();
+        if (io) {
+            const payload = {
+                orderId: order.orderId,
+                _id: order._id,
+                totalAmount: order.totalAmount,
+                status: order.status,
+                paymentStatus: order.paymentStatus,
+                advancePaymentStatus: order.advancePaymentStatus,
+                remainingPaymentStatus: order.remainingPaymentStatus,
+            };
+            if (!isFinalPayment) io.to(`user_${order.tailor}`).emit('receive_new_order', payload);
+            io.to(`user_${order.tailor}`).emit('order_status_updated', payload);
+            io.to(`user_${order.customer}`).emit('order_status_updated', payload);
+            io.to(`order_${order._id}`).emit('order_status_updated', payload);
+        }
+    } catch (err) {
+        console.error("Socket emission failed after payment:", err.message);
+    }
+
+    // Measurement executive is dispatched only once the advance/full payment is committed.
+    // Delivery partner assignment waits for the customer's delivery preference (separate endpoint).
+    if (order.isMeasurementHome && !isFinalPayment) {
         try {
             const { autoAssignMeasurementExecutive } = require("../../../utils/measurementAssignment.js");
             await autoAssignMeasurementExecutive(order);
@@ -581,28 +660,96 @@ ledgerId,
         }
     }
 
-    // Invalidate dashboard caches after successful payment
     await invalidateCache("cache:admin:dashboard-stats");
     await invalidateCache("cache:admin:crm-dashboard");
     await invalidateCache("cache:admin:finance-dashboard");
     await invalidateCache("cache:admin:finance-stats");
+}
 
-    res.status(200).json({
-      success: true,
-      message: "Payment verified successfully",
-      data: order
-    });
-  } else {
-    await session.abortTransaction();
+/**
+ * @desc    Verify Razorpay payment signature and apply it to the order
+ * @route   POST /api/v1/orders/razorpay/verify
+ * @access  Private (Customer)
+ */
+exports.verifyPayment = asyncHandler(async (req, res, next) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    orderObjectId, // MongoDB Order _id
+  } = req.body;
+  const paymentType = req.body.paymentType || "full"; // 'advance' | 'remaining' | 'full'
+
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderObjectId) {
+    return next(new ErrorResponse("Missing payment verification details", 400));
+  }
+  if (!mongoose.Types.ObjectId.isValid(orderObjectId)) {
+    return next(new ErrorResponse("Invalid order id", 400));
+  }
+
+  const expectedSign = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest("hex");
+  if (razorpay_signature !== expectedSign) {
     return next(new ErrorResponse("Invalid payment signature!", 400));
   }
+
+  const existing = await Order.findById(orderObjectId);
+  if (!existing) return next(new ErrorResponse("Order not found during verification", 404));
+  if (!canPayForOrder(existing, req.user)) {
+    return next(new ErrorResponse("Not authorized to verify payment for this order", 403));
+  }
+
+  // Idempotent: webhook (or a double tap) may already have applied this payment
+  if (isPaymentAlreadyApplied(existing, paymentType)) {
+    return res.status(200).json({ success: true, message: "Payment already verified", data: existing });
+  }
+
+  // Make sure the Razorpay order really is for THIS order and covers the amount due
+  try {
+    const rzpOrder = await razorpay.orders.fetch(razorpay_order_id);
+    const notedOrder = rzpOrder?.notes?.orderObjectId;
+    if (notedOrder && String(notedOrder) !== String(existing._id)) {
+      return next(new ErrorResponse("Payment does not belong to this order", 400));
+    }
+    const paidRupees = Number(rzpOrder?.amount || 0) / 100;
+    const dueRupees = expectedAmountForPayment(existing, paymentType);
+    if (paidRupees + 1 < dueRupees) {
+      console.error(`[verifyPayment] Amount mismatch for ${existing.orderId}: paid ₹${paidRupees}, due ₹${dueRupees} (${paymentType})`);
+      return next(new ErrorResponse(`Paid amount ₹${paidRupees} is less than the amount due ₹${dueRupees}`, 400));
+    }
+  } catch (fetchErr) {
+    // Signature is already verified; don't block the customer on a transient Razorpay API error
+    console.warn("[verifyPayment] Could not fetch Razorpay order for amount check:", fetchErr?.error?.description || fetchErr.message);
+  }
+
+  const session = await mongoose.startSession();
+  let order;
+  try {
+    session.startTransaction();
+    order = await Order.findById(orderObjectId).session(session);
+    if (isPaymentAlreadyApplied(order, paymentType)) {
+      await session.abortTransaction();
+      return res.status(200).json({ success: true, message: "Payment already verified", data: order });
+    }
+    await applyVerifiedPayment(order, { paymentType, razorpay_payment_id, razorpay_order_id, session });
+    await session.commitTransaction();
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) await session.abortTransaction();
     console.error("Payment verification transaction aborted:", error);
-    return next(new ErrorResponse("Payment processing failed", 500));
+    return next(new ErrorResponse("Payment processing failed. If money was deducted it will be reconciled automatically.", 500));
   } finally {
     session.endSession();
   }
+
+  await afterPaymentCommitted(order, paymentType);
+
+  res.status(200).json({
+    success: true,
+    message: "Payment verified successfully",
+    data: order
+  });
 });
 
 /**
@@ -632,7 +779,7 @@ exports.razorpayWebhook = asyncHandler(async (req, res, next) => {
     .digest("hex");
 
   if (expectedSignature !== signature) {
-    console.error("Razorpay webhook signature mismatch. Expected:", expectedSignature, "Got:", signature);
+    console.error("Razorpay webhook signature mismatch");
     return res.status(400).send("Invalid signature");
   }
 
@@ -641,103 +788,87 @@ exports.razorpayWebhook = asyncHandler(async (req, res, next) => {
   console.log(`🔔 RAZORPAY WEBHOOK RECEIVED: ${event}`);
   console.log(`================================\n`);
 
-  if (event === "payment.captured") {
-    const payment = req.body.payload.payment.entity;
+  if (event === "payment.captured" || event === "order.paid") {
+    const payment = req.body.payload?.payment?.entity;
+    if (!payment?.order_id) return res.status(200).send("OK");
+
     const razorpay_order_id = payment.order_id;
     const razorpay_payment_id = payment.id;
-    const amount = payment.amount / 100; // Convert back to rupees
+    const amount = Number(payment.amount || 0) / 100; // paise → rupees
 
-    // Find the order by Razorpay order ID
-    // We check advancePaymentId and remainingPaymentId to see if it's already recorded
-    const order = await Order.findOne({ 
-      $or: [
-        { razorpayOrderId: razorpay_order_id },
-        { "items.razorpayOrderId": razorpay_order_id } // Just in case it's nested
-      ] 
-    });
-
-    if (order) {
-      // Determine if this is advance or remaining based on amounts or status
-      // We know if advancePaymentStatus is pending and advance amount matches roughly
-      let updated = false;
-
-      // Ensure we don't duplicate ledger entries if already verified by frontend
-      if (order.advancePaymentStatus !== 'paid' && order.advancePaymentAmount && Math.abs(order.advancePaymentAmount - amount) < 10) {
-        order.advancePaymentStatus = "paid";
-        order.advancePaymentId = razorpay_payment_id;
-        order.razorpayOrderId = razorpay_order_id;
-        if (order.paymentStatus !== "paid") order.paymentStatus = "advance_paid";
-        
-        order.trackingHistory.push({
-          status: order.status,
-          message: "Advance payment successfully captured via webhook.",
-          timestamp: new Date()
-        });
-        updated = true;
-      } 
-      else if (order.remainingPaymentStatus !== 'paid' && order.remainingPaymentAmount && Math.abs(order.remainingPaymentAmount - amount) < 10) {
-        order.remainingPaymentStatus = "paid";
-        order.remainingPaymentId = razorpay_payment_id;
-        order.paymentStatus = "paid";
-        
-        order.trackingHistory.push({
-          status: order.status,
-          message: "Remaining payment successfully captured via webhook.",
-          timestamp: new Date()
-        });
-        updated = true;
-      }
-      else if (order.paymentStatus === 'pending' && Math.abs(order.totalAmount - amount) < 10) {
-        // Full payment
-        order.paymentStatus = "paid";
-        order.paymentId = razorpay_payment_id;
-        order.razorpayOrderId = razorpay_order_id;
-        
-        order.trackingHistory.push({
-          status: order.status,
-          message: "Full payment successfully captured via webhook.",
-          timestamp: new Date()
-        });
-        updated = true;
-      }
-
-      if (updated) {
-        await order.save();
-        
-        try {
-          const { getIO } = require("../../../config/socket.js");
-          const io = getIO();
-          if (io) {
-            io.to(`user_${order.customer}`).emit("order_status_updated", {
-              orderId: order.orderId,
-              _id: order._id,
-              paymentStatus: order.paymentStatus,
-              advancePaymentStatus: order.advancePaymentStatus,
-              remainingPaymentStatus: order.remainingPaymentStatus
-            });
-            if (order.tailor) {
-              io.to(`user_${order.tailor}`).emit("order_status_updated", {
-                orderId: order.orderId,
-                _id: order._id,
-                paymentStatus: order.paymentStatus,
-                advancePaymentStatus: order.advancePaymentStatus,
-                remainingPaymentStatus: order.remainingPaymentStatus
-              });
-            }
-          }
-          const { sendNotification } = require("../../../utils/notification.js");
-          await sendNotification({
-            recipient: order.customer,
-            type: "PAYMENT_RECEIVED",
-            title: "Payment Successful",
-            message: `Your payment of ₹${amount} for order ${order.orderId} was received.`,
-            data: { orderId: order._id, targetUrl: `/orders/${order._id}/track` }
-          });
-        } catch (err) {
-          console.error("Webhook notification error:", err);
-        }
+    // Prefer the notes we attached when creating the Razorpay order; fall back to the
+    // Razorpay order notes, then to the stored razorpayOrderId (legacy orders).
+    let notes = payment.notes || {};
+    if (!notes.orderObjectId) {
+      try {
+        const rzpOrder = await razorpay.orders.fetch(razorpay_order_id);
+        notes = { ...(rzpOrder?.notes || {}), ...notes };
+      } catch (fetchErr) {
+        console.warn("[webhook] Could not fetch Razorpay order notes:", fetchErr?.error?.description || fetchErr.message);
       }
     }
+
+    let order = null;
+    if (notes.orderObjectId && mongoose.Types.ObjectId.isValid(notes.orderObjectId)) {
+      order = await Order.findById(notes.orderObjectId);
+    }
+    if (!order) {
+      order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+    }
+    if (!order) {
+      // Not a platform order (bulk / alteration / subscription etc. have their own flows)
+      return res.status(200).send("OK");
+    }
+
+    // Work out which stage this payment is for
+    let paymentType = notes.paymentType;
+    if (!paymentType) {
+      if (order.advancePaymentStatus !== "paid" && order.advancePaymentAmount && Math.abs(order.advancePaymentAmount - amount) < 1) {
+        paymentType = "advance";
+      } else if (order.remainingPaymentStatus !== "paid" && order.remainingPaymentAmount && Math.abs(order.remainingPaymentAmount - amount) < 1) {
+        paymentType = "remaining";
+      } else if (order.paymentStatus !== "paid" && Math.abs((order.totalAmount || 0) - amount) < 1) {
+        paymentType = "full";
+      }
+    }
+
+    if (!paymentType || isPaymentAlreadyApplied(order, paymentType)) {
+      // Already handled by the client verify call (or unknown) — nothing to do
+      return res.status(200).send("OK");
+    }
+
+    if (amount + 1 < expectedAmountForPayment(order, paymentType)) {
+      console.error(`[webhook] Underpayment for ${order.orderId}: ₹${amount} for ${paymentType}`);
+      return res.status(200).send("OK");
+    }
+
+    const session = await mongoose.startSession();
+    let applied = false;
+    try {
+      session.startTransaction();
+      const fresh = await Order.findById(order._id).session(session);
+      if (!isPaymentAlreadyApplied(fresh, paymentType)) {
+        await applyVerifiedPayment(fresh, { paymentType, razorpay_payment_id, razorpay_order_id, session });
+        fresh.trackingHistory.push({
+          status: fresh.status,
+          message: `${paymentType} payment of ₹${amount} captured via Razorpay webhook.`,
+          timestamp: new Date(),
+        });
+        await fresh.save({ session });
+        order = fresh;
+        applied = true;
+      }
+      await session.commitTransaction();
+    } catch (err) {
+      if (session.inTransaction()) await session.abortTransaction();
+      console.error("[webhook] Failed to apply payment:", err);
+      // Non-2xx so Razorpay retries later
+      return res.status(500).send("Retry");
+    } finally {
+      session.endSession();
+    }
+
+    if (applied) await afterPaymentCommitted(order, paymentType);
   }
 
   res.status(200).send("OK");
@@ -829,7 +960,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
   const [ownedServices, ownedProducts] = await Promise.all([
     validServiceIds.length
-      ? Service.find({ _id: { $in: validServiceIds } }).select("tailor isActive status").lean()
+      ? Service.find({ _id: { $in: validServiceIds } }).select("tailor isActive status basePrice").lean()
       : [],
     validProductIds.length
       ? Product.find({ _id: { $in: validProductIds } }).select("tailor isActive").lean()
@@ -956,6 +1087,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   // 2. Optimization: Map items to ensure structure matches updated schema
   const StyleAddon = require("../../../models/StyleAddon.js");
   const formattedItems = [];
+  const servicePriceById = new Map(ownedServices.map((s) => [String(s._id), s.basePrice]));
   for (const item of items) {
     const rawService = item.service || item.serviceDetails?.id || item.serviceDetails?._id;
     const rawProduct = item.product || item.productDetails?.id || item.productDetails?._id;
@@ -1016,7 +1148,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
           try {
             const doc = await StyleAddon.findById(addonId).lean();
             if (doc) {
-              if (price <= 0) price = Number(doc.price) || 0;
+              // Catalog price is authoritative (same as checkout pricing) — never trust client addon price
+              if (Number(doc.price) > 0) price = Number(doc.price);
               name = name || doc.name || "";
               image = image || doc.image || doc.referenceImages?.front || "";
               description = description || doc.description || "";
@@ -1098,7 +1231,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       deliveryType: item.deliveryType || item.configuration?.deliveryType || 'standard',
       selectedFabric: validFabric,
       quantity: item.quantity || 1,
-      price: Number(item.price) || Number(item.pricing?.base) || 0,
+      // Same base the customer was charged (checkoutPricing uses Service.basePrice first)
+      price: Number(servicePriceById.get(String(validService))) || Number(item.price) || Number(item.pricing?.base) || 0,
       measurements: rawMeasurements,
       selectedStyle: item.selectedStyle || null,
       styleAddons,
@@ -1120,23 +1254,29 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   const {
     computeCheckoutPricing,
     enrichOrderItemsForPricing,
+    repriceCartItems,
   } = require("../../../utils/checkoutPricing.js");
 
   const isCartCheckout = formattedItems.some((item) => item.product);
   let pricingItems = items;
   if (!isCartCheckout) {
-    pricingItems = await enrichOrderItemsForPricing(items);
+    pricingItems = await enrichOrderItemsForPricing(items, { isMeasurementHome: !!isMeasurementHome });
   } else {
     const Tailor = require("../../../models/Tailor.js");
     const tailorProfile = await Tailor.findOne({ user: targetTailorUserId }).lean();
-    pricingItems = items.map((item) => ({
+    const repricedItems = await repriceCartItems(items);
+    // Keep stored line prices identical to what the customer is charged
+    formattedItems.forEach((fi, idx) => {
+      if (fi.product && repricedItems[idx]) fi.price = Number(repricedItems[idx].price) || 0;
+    });
+    pricingItems = repricedItems.map((item) => ({
       ...item,
       tailor: tailorProfile ? { location: tailorProfile.location } : undefined,
     }));
   }
 
     const Customer = require("../../../models/Customer.js");
-    const custRecord = await Customer.findOne({ user: req.user.id }).populate("activeCustomerPlan");
+    const custRecord = await Customer.findOne({ user: finalCustomerId }).populate("activeCustomerPlan");
     let customerMembership = null;
     if (custRecord?.activeCustomerPlan && custRecord.customerPlanExpiryDate && new Date(custRecord.customerPlanExpiryDate) > new Date()) {
       customerMembership = custRecord.activeCustomerPlan;
@@ -1192,11 +1332,11 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const gstPct = settings?.pricing?.gstPercentage || 5;
+  const gstPct = serverPricing.gstPercentage;
   const gstAmount = serverPricing.taxes;
   const platformFee = serverPricing.platformFee;
   const verifiedDeliveryFee = serverPricing.delivery;
-  const stitchingAdvancePct = settings?.walletConfig?.advancePercentage || 50;
+  const stitchingAdvancePct = getAdvancePct(settings);
   // Store / ready-made = full amount up front; stitching services = configured advance %
   const advancePctForOrder = isCartCheckout || isReadyMade ? 100 : stitchingAdvancePct;
   const { splitAdvanceRemaining } = require("../../../utils/checkoutPricing.js");
@@ -1257,7 +1397,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     createdByAdmin: !!isAdminUser,
     adminCreator: isAdminUser ? req.user.id : undefined,
     fabricPickupRequired,
-    isMeasurementHome: isMeasurementHome || formattedItems.some(item => item.measurements?.type === 'home' || item.isTailorAtHome),
+    isMeasurementHome: !!isMeasurementHome || (items || []).some(isHomeMeasurementItem),
     scheduledDate: scheduledDate || null,
     scheduledTimeSlot: scheduledTimeSlot || null,
     scheduledTime: computedScheduledTime,
@@ -1738,6 +1878,35 @@ exports.updateDeliveryPreference = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not authorized to update this order", 403));
   }
 
+  // ── Flow guards ── fabric hand-off is chosen only after the tailor accepted, the advance
+  // is paid, and (for home measurement) measurements are approved. Never rewind an order
+  // that is already further along.
+  const needsCustomerFabric =
+    order.fabricPickupRequired ||
+    (Array.isArray(order.items) && order.items.some((item) => item.fabricSource === 'customer'));
+  if (!needsCustomerFabric) {
+    return next(new ErrorResponse("This order uses platform fabric — no fabric hand-off is needed", 400));
+  }
+  const PREFERENCE_ALLOWED_FROM = ['accepted', 'measurements-approved', 'fabric-ready-for-pickup', 'waiting-for-customer-dropoff'];
+  if (!PREFERENCE_ALLOWED_FROM.includes(order.status)) {
+    return next(new ErrorResponse(`Fabric delivery preference can't be changed while the order is '${order.status}'`, 400));
+  }
+  const advancePending =
+    order.advancePaymentAmount > 0 &&
+    order.advancePaymentStatus !== 'paid' &&
+    order.paymentStatus !== 'paid';
+  if (advancePending) {
+    return next(new ErrorResponse("Please pay the advance before choosing how the fabric reaches the tailor", 400));
+  }
+  const pickupUnderway = ['accepted', 'reached-pickup', 'picked-up', 'reached-dropoff', 'delivered'].includes(order.pickupDeliveryStatus);
+  if (preference === 'self' && order.status === 'fabric-ready-for-pickup' && pickupUnderway) {
+    return next(new ErrorResponse("A delivery partner has already accepted this pickup", 400));
+  }
+  if (order.fabricDeliveryPreference === preference && order.status !== 'accepted' && order.status !== 'measurements-approved') {
+    // Same choice again (double tap) — no-op
+    return res.status(200).json({ success: true, message: "Delivery preference already set", data: order });
+  }
+
   order.fabricDeliveryPreference = preference;
 
   if (preference === 'self') {
@@ -1818,6 +1987,14 @@ exports.approveMeasurements = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not authorized to update this order", 403));
   }
 
+  // Only uploaded measurements can be approved (never rewind an order that moved on)
+  if (order.status === 'measurements-approved') {
+    return res.status(200).json({ success: true, message: "Measurements already approved", data: order });
+  }
+  if (order.status !== 'measurements-uploaded') {
+    return next(new ErrorResponse(`Measurements can't be approved while the order is '${order.status}'`, 400));
+  }
+
   order.status = 'measurements-approved';
   order.trackingHistory.push({
     status: order.status,
@@ -1826,6 +2003,14 @@ exports.approveMeasurements = asyncHandler(async (req, res, next) => {
   });
 
   await order.save();
+
+  // Flow 2: customer's fabric is picked up by a delivery partner automatically
+  try {
+    const { startFabricPickupAfterMeasurement } = require("../../../utils/fabricPickup.js");
+    await startFabricPickupAfterMeasurement(order._id);
+  } catch (pickupErr) {
+    console.error("Auto fabric pickup after approval failed:", pickupErr.message);
+  }
 
   try {
     const { getIO } = require("../../../config/socket.js");
@@ -2090,10 +2275,13 @@ exports.calculatePriceSummary = asyncHandler(async (req, res, next) => {
 
   const settings = await Settings.getSettings();
   
-  // For service checkouts, enrich items from DB so pricing matches createOrder exactly
+  // Enrich / reprice items from DB so the summary matches createOrder exactly
   let pricingItems = items;
   if (!isCartCheckout) {
-    pricingItems = await enrichOrderItemsForPricing(items);
+    pricingItems = await enrichOrderItemsForPricing(items, { isMeasurementHome: !!req.body.isMeasurementHome });
+  } else {
+    const { repriceCartItems } = require("../../../utils/checkoutPricing.js");
+    pricingItems = await repriceCartItems(items);
   }
 
   const Customer = require("../../../models/Customer.js");
@@ -2167,7 +2355,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
       if (!otp) {
           return next(new ErrorResponse("OTP is required to confirm dropoff", 400));
       }
-      if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+      if (order.dropoffDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
           return next(new ErrorResponse("Invalid OTP", 400));
       }
       order.dropoffOtpVerified = true;
@@ -2179,7 +2367,7 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
       if (!otp) {
           return next(new ErrorResponse("OTP is required to confirm pickup", 400));
       }
-      if (order.pickupDeliveryOtp !== otp && otp !== "123456") {
+      if (order.pickupDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
           return next(new ErrorResponse("Invalid OTP", 400));
       }
 
@@ -2319,7 +2507,7 @@ exports.completeTailorSelfDelivery = asyncHandler(async (req, res, next) => {
   }
 
   // Verify OTP
-  if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+  if (order.dropoffDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
     return next(new ErrorResponse("Invalid OTP", 400));
   }
 

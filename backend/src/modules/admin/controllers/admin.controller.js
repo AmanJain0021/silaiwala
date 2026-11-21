@@ -2064,6 +2064,15 @@ exports.updateSettings = async (req, res) => {
     if (updateData.loyaltyConfig) settings.loyaltyConfig = updateData.loyaltyConfig;
     if (updateData.referralConfig) settings.referralConfig = updateData.referralConfig;
     if (updateData.tailorSearch) settings.tailorSearch = updateData.tailorSearch;
+    if (updateData.assignmentConfig) {
+      const ac = updateData.assignmentConfig;
+      const num = (v, d, min, max) => { const n = Number(v); return Number.isFinite(n) && n >= min ? Math.min(n, max) : d; };
+      settings.assignmentConfig = {
+        deliveryRadiusKm: num(ac.deliveryRadiusKm, 15, 1, 100),
+        measurementRadiusKm: num(ac.measurementRadiusKm, 25, 1, 100),
+        adminEscalationMinutes: num(ac.adminEscalationMinutes, 10, 1, 180),
+      };
+    }
     if (updateData.landingCategories && Array.isArray(updateData.landingCategories)) {
       settings.landingCategories = updateData.landingCategories;
     }

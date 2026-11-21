@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { resolveRazorpayKey, createRazorpayInstance } from '../../../utils/razorpay';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, MapPin, Phone, MessageSquare,
@@ -298,22 +299,17 @@ const OrderTracking = () => {
     const handlePayment = async (paymentType) => {
         setIsProcessingPayment(true);
         try {
-            const advanceAmt = (order?.advancePaymentAmount && order.advancePaymentAmount > 0)
-                ? order.advancePaymentAmount
-                : Math.max(50, Math.round((order?.totalAmount || 0) * 0.3));
-
-            const remainingAmt = (order?.remainingPaymentAmount && order.remainingPaymentAmount > 0)
-                ? order.remainingPaymentAmount
-                : Math.max(50, (order?.totalAmount || 0) - advanceAmt);
-
-            const amountToPay = paymentType === 'advance' ? advanceAmt : remainingAmt;
-            
-            const rzpOrderRes = await api.post('/orders/razorpay/create', { amount: amountToPay });
+            // The server derives the exact amount due from the order (advance / remaining);
+            // no client-side fallback math (it used to charge a ₹50 minimum that wasn't owed).
+            const rzpOrderRes = await api.post('/orders/razorpay/create', {
+                orderObjectId: order._id,
+                paymentType,
+            });
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
             const rzpOrder = rzpOrderRes.data.data;
 
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                key: resolveRazorpayKey(rzpOrder),
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "SilaiWala",
@@ -335,7 +331,8 @@ const OrderTracking = () => {
                         }
                     } catch (err) {
                         console.error('Verification failed:', err);
-                        alert('Payment verification failed. Please contact support.');
+                        alert(err.response?.data?.message || 'Payment verification failed. Please contact support.');
+                        fetchOrderDetails(); // webhook may still have recorded it
                     } finally {
                         setIsProcessingPayment(false);
                     }
@@ -344,10 +341,11 @@ const OrderTracking = () => {
                     name: order.customer?.name || "",
                     contact: order.customer?.phoneNumber || ""
                 },
-                theme: { color: "#843D9B" }
+                theme: { color: "#843D9B" },
+                modal: { ondismiss: () => setIsProcessingPayment(false) }
             };
 
-            const rzp = new window.Razorpay(options);
+            const rzp = await createRazorpayInstance(options);
             rzp.on('payment.failed', function (response) {
                 setIsProcessingPayment(false);
                 alert('Payment failed: ' + response.error.description);
@@ -356,7 +354,7 @@ const OrderTracking = () => {
 
         } catch (error) {
             console.error('Payment process failed:', error);
-            alert('Payment initialization failed. Please try again.');
+            alert(error.response?.data?.message || error.message || 'Payment initialization failed. Please try again.');
             setIsProcessingPayment(false);
         }
     };
@@ -823,7 +821,7 @@ const OrderTracking = () => {
                 )}
 
                 {/* Delivery Preference Selection Card */}
-                {((order.fabricPickupRequired && order.advancePaymentStatus === 'paid') || order.status === 'measurements-approved') && order.fabricDeliveryPreference === 'pending' && 
+                {order.fabricPickupRequired && !order.isMeasurementHome && (order.advancePaymentStatus === 'paid' || order.paymentStatus === 'paid') && order.fabricDeliveryPreference === 'pending' && 
                  !['measurement-requested', 'measurement-assigned', 'measurement-accepted', 'measurement-otp-verified', 'measurements-uploaded', 'measurement-verification'].includes(order.status) && (
                     <div className="bg-white rounded-3xl p-5 border border-amber-100 shadow-sm flex flex-col items-center text-center space-y-4">
                         <div className="bg-amber-50 p-3 rounded-full text-amber-600">

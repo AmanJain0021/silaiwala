@@ -17,14 +17,14 @@ module.exports = {
     name: 'Sewzella Measurement',
     slug: 'sewzella-measurement',
     scheme: 'sewzellameasurement',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     backgroundColor: '#ffffff',
     android: {
       package: 'com.sewzella.measurement',
-      versionCode: 1,
+      versionCode: 2,
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: BRAND_BG,

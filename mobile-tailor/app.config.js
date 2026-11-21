@@ -17,14 +17,14 @@ module.exports = {
     name: 'Sewzella Tailor',
     slug: 'sewzella-tailor',
     scheme: 'sewzellatailor',
-    version: '1.0.4',
+    version: '1.0.5',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     backgroundColor: '#ffffff',
     android: {
       package: 'com.sewzella.tailor',
-      versionCode: 20,
+      versionCode: 21,
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: BRAND_BG,

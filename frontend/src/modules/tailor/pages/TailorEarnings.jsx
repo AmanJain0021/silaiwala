@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveRazorpayKey, createRazorpayInstance } from '../../../utils/razorpay';
 import {
     ShoppingBag, Star, Gift, ArrowUpRight, Menu, Bell,
     Loader2, ChevronRight, X, Send, CreditCard, AlertCircle, History, Building2
@@ -97,7 +98,7 @@ const TailorEarnings = () => {
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
 
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                key: resolveRazorpayKey(rzpOrderRes.data.data),
                 amount: rzpOrderRes.data.data.amount,
                 currency: "INR",
                 name: appName,
@@ -142,7 +143,7 @@ const TailorEarnings = () => {
                 }
             };
 
-            const rzp = new window.Razorpay(options);
+            const rzp = await createRazorpayInstance(options);
             rzp.on('payment.failed', function (response) {
                 toast.error(response.error.description || 'Payment failed');
             });
@@ -184,10 +185,11 @@ const TailorEarnings = () => {
     }, [activeTab]);
 
     const periodTotal = earningsData?.summary?.periodTotal || 0;
-    // Derive breakdowns dynamically based on period total
-    const orderEarnings  = periodTotal > 0 ? periodTotal * 0.82 : 0;
-    const incentives     = periodTotal > 0 ? periodTotal * 0.13 : 0;
-    const bonus          = periodTotal > 0 ? periodTotal * 0.05 : 0;
+    // Real split from wallet credits (backend summary.breakdown); no invented percentages
+    const breakdown = earningsData?.summary?.breakdown || {};
+    const orderEarnings = Number(breakdown.orderEarnings) || 0;
+    const incentives = Number(breakdown.incentives) || 0;
+    const bonus = Number(breakdown.bonus) || 0;
     const displayedEarnings = periodTotal || 0;
 
     const getBadgeStyle = (label) => {

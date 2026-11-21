@@ -128,13 +128,27 @@ const NewMeasurementRequestAlert = () => {
         handleNewSocketRequest(payload);
       }
     };
+    // Broadcast request taken by another executive → close the popup and refresh the list
+    const handleClaimed = data => {
+      const claimedId = String(data?.requestId || '');
+      setRequest(prev => {
+        if (prev && String(prev.requestId || prev._id) === claimedId) {
+          stopRingtone();
+          return null;
+        }
+        return prev;
+      });
+      useMeasurementStore.getState().fetchRequests?.('pending');
+    };
     if (socket) {
       socket.on('new_measurement_request', handleNewSocketRequest);
+      socket.on('measurement_request_claimed', handleClaimed);
     }
     const offFcm = events.on('fcm_message', handleFCMMessage);
     return () => {
       if (socket) {
         socket.off('new_measurement_request', handleNewSocketRequest);
+        socket.off('measurement_request_claimed', handleClaimed);
       }
       offFcm();
     };

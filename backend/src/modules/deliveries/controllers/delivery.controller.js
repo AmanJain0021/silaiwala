@@ -2,6 +2,15 @@ const mongoose = require("mongoose");
 const Delivery = require("../../../models/Delivery.js");
 const Order = require("../../../models/Order.js");
 const { isDefaultOtpEnabled } = require("../../../utils/envUtils");
+
+/** Cash the partner actually collects at the door: unpaid balance, or the full total for COD. */
+const amountDueAtDoor = (order) => {
+  const remaining = Math.round(Number(order.remainingPaymentAmount) || 0);
+  if (remaining > 0 && order.remainingPaymentStatus !== "paid") return remaining;
+  const isCod = ["cod", "cash"].includes(String(order.paymentMethod || "").toLowerCase());
+  if (isCod && order.paymentStatus !== "paid") return Math.round(Number(order.totalAmount) || 0);
+  return 0;
+};
 const { transitionOrder } = require("../../../utils/orderStateMachine.js");
 const User = require("../../../models/User.js");
 const Tailor = require("../../../models/Tailor.js");
@@ -321,7 +330,8 @@ exports.getAssignedOrders = asyncHandler(async (req, res, next) => {
     }
 
     let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20;
+    const { computePhaseDeliveryEarning: phaseEarningForList } = require("../../../utils/earningsEngine.js");
+    let deliveryEarnings = phaseEarningForList(order, ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) ? "pickup" : "delivered");
 
     const isPickupPhase = ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
     const assignedPartner = isPickupPhase ? order.pickupPartner : order.dropoffPartner;
@@ -536,7 +546,9 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
   }
 
     let deliveryDistance = order.deliveryDistance;
-    let deliveryEarnings = order.deliveryFee;
+    const { computePhaseDeliveryEarning: phaseEarningForDetail } = require("../../../utils/earningsEngine.js");
+    // Partner payout for the current trip (customer deliveryFee can be 0 with free delivery)
+    let deliveryEarnings = phaseEarningForDetail(order, ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status) ? "pickup" : "delivered");
     
 
 
@@ -677,100 +689,6 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Reject/Cancel an assigned delivery task
- * @route   POST /api/v1/deliveries/orders/:id/reject
- * @access  Private (Delivery)
- */
-exports.rejectOrder = asyncHandler(async (req, res, next) => {
-  const isObjectId = mongoose.isValidObjectId(req.params.id);
-  const query = isObjectId ? { _id: req.params.id } : { orderId: req.params.id };
-
-  let order = await Order.findOne(query);
-
-  if (!order) {
-    const OfflineOrder = require("../../../models/OfflineOrder.js");
-    const off = await OfflineOrder.findOne(query);
-    if (off) {
-      off.deliveryPartner = null;
-      off.deliveryPartnerStatus = "rejected";
-      off.history.push({
-        status: off.status,
-        message: "Delivery request rejected by partner",
-        updatedBy: req.user.id,
-        timestamp: new Date(),
-      });
-      await off.save();
-      return res.status(200).json({
-        success: true,
-        message: "Delivery request rejected",
-        data: off,
-      });
-    }
-    return next(new ErrorResponse("Order not found", 404));
-  }
-
-  // Check if they are currently assigned
-  const isDeliveryPartner = order.deliveryPartner?.toString() === req.user.id;
-  const isPickupPartner = order.pickupPartner?.toString() === req.user.id;
-  const isDropoffPartner = order.dropoffPartner?.toString() === req.user.id;
-
-  if (!isDeliveryPartner && !isPickupPartner && !isDropoffPartner) {
-    return next(new ErrorResponse("You are not assigned to this order", 403));
-  }
-
-  // Clear assignment and revert status
-  if (isPickupPartner) {
-    order.pickupPartner = null;
-    order.pickupDeliveryStatus = "pending";
-    order.deliveryStatus = "pending";
-    if (["accepted", "fabric-ready-for-pickup", "reached-pickup"].includes(order.status)) {
-       order.status = order.fabricPickupRequired ? 'fabric-ready-for-pickup' : 'pending';
-    }
-  } else if (isDropoffPartner) {
-    order.dropoffPartner = null;
-    order.dropoffDeliveryStatus = "pending";
-    order.deliveryStatus = "pending";
-    if (["out-for-delivery", "reached-pickup", "ready-for-delivery", "ready"].includes(order.status)) {
-       order.status = 'ready-for-delivery';
-    }
-  } else if (isDeliveryPartner) {
-    order.deliveryPartner = null;
-    order.deliveryStatus = "pending";
-    if (["out-for-delivery", "reached-pickup", "ready-for-delivery", "ready"].includes(order.status)) {
-       order.status = 'ready-for-delivery';
-    }
-  }
-
-  // Add to rejectedBy
-  if (!order.rejectedBy) order.rejectedBy = [];
-  if (!order.rejectedBy.includes(req.user.id)) {
-    order.rejectedBy.push(req.user.id);
-  }
-
-  // Remove from pendingPartnerCandidates if they were in there
-  if (order.pendingPartnerCandidates) {
-    order.pendingPartnerCandidates = order.pendingPartnerCandidates.filter(id => id.toString() !== req.user.id);
-  }
-
-  order.trackingHistory.push({
-    status: `delivery-cancelled`,
-    message: req.body.reason ? `Delivery partner cancelled trip: ${req.body.reason}` : `Delivery partner cancelled trip`,
-    timestamp: new Date()
-  });
-
-  await order.save();
-
-  // Trigger auto-assignment again to find a new partner
-  const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
-  const cycle = (isPickupPartner || order.status === 'fabric-ready-for-pickup') ? 'pickup' : 'dropoff';
-  await autoAssignDelivery(order._id, cycle);
-
-  res.status(200).json({
-    success: true,
-    data: order
-  });
-});
 
 /**
  * @desc    Update delivery status of an order
@@ -931,7 +849,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         await session.abortTransaction();
       return next(new ErrorResponse("OTP is required to complete pickup", 400));
       }
-      if (order.pickupDeliveryOtp !== otp && otp !== "123456") {
+      if (order.pickupDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
         await session.abortTransaction();
       return next(new ErrorResponse("Invalid OTP", 400));
       }
@@ -957,7 +875,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         await session.abortTransaction();
         return next(new ErrorResponse("Please tap 'Reached Drop-off' first so the tailor OTP can be generated", 400));
       }
-      if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+      if (order.dropoffDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
         await session.abortTransaction();
         return next(new ErrorResponse("Invalid OTP", 400));
       }
@@ -981,7 +899,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         await session.abortTransaction();
         return next(new ErrorResponse("Please tap 'Reached Drop-off' first so the customer OTP can be generated", 400));
       }
-      if (order.dropoffDeliveryOtp !== otp && otp !== "123456") {
+      if (order.dropoffDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
         await session.abortTransaction();
         return next(new ErrorResponse("Invalid OTP", 400));
       }
@@ -993,6 +911,7 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
           order.remainingPaymentStatus !== "paid");
 
       if (needsPayment) {
+        const cashDue = amountDueAtDoor(order); // computed before statuses flip to paid
         if (!paymentMethod || !["cash", "qr", "online"].includes(paymentMethod)) {
           await session.abortTransaction();
           return next(new ErrorResponse("Collect final payment (Cash or UPI) before completing delivery", 400));
@@ -1000,10 +919,10 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
         order.remainingPaymentMethod = paymentMethod === "cash" ? "cash" : "online";
         order.remainingPaymentStatus = "paid";
         order.paymentStatus = "paid";
-        if (paymentMethod === "cash" && order.remainingPaymentAmount > 0) {
+        if (paymentMethod === "cash" && cashDue > 0) {
           const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
           if (deliveryProfile) {
-            deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + order.remainingPaymentAmount;
+            deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + cashDue;
             deliveryProfile.lastCashCollectionDate = new Date();
 
             const Settings = require("../../../models/Settings.js");
@@ -1123,13 +1042,9 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
       data: { orderId: order._id, targetUrl: "/orders" }
     });
 
-    // Distribute Tailor Earnings
-    const { distributeEarnings } = require("../../../utils/earningsEngine.js");
-    try {
-      await distributeEarnings(order._id);
-    } catch (err) {
-      console.error("Failed to distribute tailor earnings:", err);
-    }
+    // Tailor final settlement runs AFTER the commit below: distributeEarnings opens its own
+    // transaction and must see this order as delivered + paid (it silently skipped before).
+    req._settleEarningsOrderId = order._id;
   }
 
   // Notify for out-for-delivery
@@ -1155,6 +1070,15 @@ exports.updateDeliveryStatus = asyncHandler(async (req, res, next) => {
 
   // Commit first so live OTP/status never outlives a rolled-back write
   await session.commitTransaction();
+
+  if (req._settleEarningsOrderId) {
+    try {
+      const { distributeEarnings } = require("../../../utils/earningsEngine.js");
+      await distributeEarnings(req._settleEarningsOrderId);
+    } catch (err) {
+      console.error("Failed to distribute tailor earnings:", err);
+    }
+  }
 
   // --- Socket Emissions (after durable commit) ---
   try {
@@ -1363,7 +1287,7 @@ exports.getAvailableOrders = asyncHandler(async (req, res, next) => {
       latitude,
       longitude,
       deliveryDistance: order.deliveryDistance,
-      deliveryEarnings: order.deliveryEarnings || order.deliveryFee || order.deliveryPartnerEarning || 20,
+      deliveryEarnings: require("../../../utils/earningsEngine.js").computePhaseDeliveryEarning(order, isFabric ? "pickup" : "delivered"),
       requiresAcceptance: true,
       isBroadcastCandidate: isCandidate,
     };
@@ -1452,11 +1376,22 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order not found", 404));
   }
 
+  if (["cancelled", "delivered", "order-completed", "product-delivered"].includes(order.status)) {
+    return next(new ErrorResponse(`This order is ${order.status} and can no longer be accepted`, 400));
+  }
+
   const isFabricPhase = ["fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
-  const needsFabricPickup = order.fabricPickupRequired && 
+  const needsFabricPickup = order.fabricPickupRequired &&
       ["pending", "accepted", "fabric-ready-for-pickup", "fabric-picked-up"].includes(order.status);
-  const taskType = (isFabricPhase || (needsFabricPickup && !["ready-for-pickup", "out-for-delivery"].includes(order.status))) 
+  const taskType = (isFabricPhase || (needsFabricPickup && !["ready-for-pickup", "out-for-delivery"].includes(order.status)))
       ? "fabric-pickup" : "order-delivery";
+
+  // Flow guard: a fabric pickup only exists once the tailor accepted, the advance is paid
+  // and the customer asked for a partner (status fabric-ready-for-pickup). Rework orders
+  // run their own pickup flow.
+  if (taskType === "fabric-pickup" && !isFabricPhase && !order.isRework) {
+    return next(new ErrorResponse("Fabric pickup has not been requested for this order yet", 400));
+  }
 
   if (taskType === "fabric-pickup") {
     // If pre-assigned pending, or claiming an available task
@@ -1515,9 +1450,11 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
       order.deliveryDistance = Number(calculatedDistance);
   }
   
-  // Ensure we use the exact fee that the customer was charged, unless there's an active override
-  // DO NOT recalculate this on the fly so the driver sees exactly what was charged.
+  // Keep the order-level budget (used as a payout fallback). The partner's own payout
+  // for THIS trip is the phase amount (pickup vs dropoff) — same as the wallet credit.
   order.deliveryEarnings = order.deliveryPartnerEarning || order.deliveryFee || 0;
+  const { computePhaseDeliveryEarning } = require("../../../utils/earningsEngine.js");
+  const tripEarning = computePhaseDeliveryEarning(order, taskType === "fabric-pickup" ? "pickup" : "delivered");
   // --------------------------------------------
 
   const partnerName = req.user.name || "A delivery partner";
@@ -1608,7 +1545,7 @@ exports.acceptOrder = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    data: order,
+    data: { ...order.toObject(), tripEarning },
   });
 });
 
@@ -1660,7 +1597,40 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
   const order = await Order.findOne(query);
 
   if (!order) {
+    // Offline (walk-in) orders share this endpoint
+    const OfflineOrder = require("../../../models/OfflineOrder.js");
+    const off = await OfflineOrder.findOne(query);
+    if (off) {
+      if (off.deliveryPartner?.toString() !== req.user.id) {
+        return next(new ErrorResponse("This delivery request is not assigned to you", 403));
+      }
+      off.deliveryPartner = null;
+      off.deliveryPartnerStatus = "rejected";
+      off.history.push({
+        status: off.status,
+        message: "Delivery request rejected by partner",
+        updatedBy: req.user.id,
+        timestamp: new Date(),
+      });
+      await off.save();
+      return res.status(200).json({ success: true, message: "Delivery request rejected", data: off });
+    }
     return next(new ErrorResponse("Order not found or not assigned to you", 404));
+  }
+
+  const isAssignedHere =
+    [order.pickupPartner, order.dropoffPartner, order.deliveryPartner].some((p) => p?.toString() === req.user.id) ||
+    (order.pendingPartnerCandidates || []).some((c) => c.toString() === req.user.id);
+  if (!isAssignedHere) {
+    return next(new ErrorResponse("You are not assigned to this order", 403));
+  }
+  // Once the fabric / parcel is in hand the trip can't be dropped from the app
+  const inHandStatuses = ["picked-up", "reached-dropoff", "delivered"];
+  if (
+    (order.pickupPartner?.toString() === req.user.id && inHandStatuses.includes(order.pickupDeliveryStatus)) ||
+    (order.dropoffPartner?.toString() === req.user.id && inHandStatuses.includes(order.dropoffDeliveryStatus))
+  ) {
+    return next(new ErrorResponse("You already have the item — please complete the trip or contact support", 400));
   }
 
   // Determine cycle
@@ -1704,10 +1674,21 @@ exports.rejectOrder = asyncHandler(async (req, res, next) => {
     io.to(`user_${req.user.id}`).emit("task_claimed", { orderId: order._id, claimedBy: req.user.id });
   }
 
-  // Trigger auto-assign again if they were the assigned partner or all candidates have rejected
+  // Re-broadcast if the assigned partner dropped out or every candidate declined.
+  // autoAssignDelivery excludes order.rejectedBy, so it never goes back to this partner.
   if (wasAssigned || (wasCandidate && order.pendingPartnerCandidates.length === 0)) {
-    // const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
-    // await autoAssignDelivery(order._id, cycle);
+    try {
+      order.trackingHistory.push({
+        status: "searching-delivery-partner",
+        message: req.body?.reason ? `Partner declined: ${req.body.reason}. Finding another partner.` : "Partner declined. Finding another partner.",
+        timestamp: new Date(),
+      });
+      await order.save();
+      const { autoAssignDelivery } = require("../../../utils/deliveryAssignment.js");
+      await autoAssignDelivery(order._id, cycle);
+    } catch (reassignErr) {
+      console.error("Re-assignment after reject failed:", reassignErr.message);
+    }
   }
 
   res.status(200).json({ success: true, message: "Order rejected and updated" });
@@ -1971,7 +1952,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   };
 
   if (cycle === 'pickup') {
-    if (order.pickupDeliveryOtp !== otp && otp !== "123456") { // Allow 123456 as master for testing/dev
+    if (order.pickupDeliveryOtp !== otp && !(isDefaultOtpEnabled() && otp === "123456")) { // Allow 123456 as master for testing/dev
       await session.abortTransaction();
       return next(new ErrorResponse("Invalid OTP", 400));
     }
@@ -2010,7 +1991,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
         400
       ));
     }
-    if (String(order.dropoffDeliveryOtp).trim() !== otp && otp !== "123456") {
+    if (String(order.dropoffDeliveryOtp).trim() !== otp && !(isDefaultOtpEnabled() && otp === "123456")) {
       await session.abortTransaction();
       const hint = order.status === "fabric-picked-up"
         ? "Invalid OTP. Ask the tailor for the latest Fabric Receive OTP (tap Re-generate if needed)."
@@ -2058,6 +2039,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
           order.remainingPaymentStatus !== 'paid');
 
       if (needsPayment) {
+         const cashDue = amountDueAtDoor(order); // computed before statuses flip to paid
          if (paymentMethod === 'qr' || paymentMethod === 'online') {
              order.remainingPaymentMethod = 'online';
              order.remainingPaymentStatus = 'paid';
@@ -2069,7 +2051,7 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
              
              const deliveryProfile = await Delivery.findOne({ user: req.user.id }).session(session);
              if (deliveryProfile) {
-                deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + (order.remainingPaymentAmount || 0);
+                deliveryProfile.codWalletBalance = (deliveryProfile.codWalletBalance || 0) + cashDue;
                 deliveryProfile.lastCashCollectionDate = new Date();
                 
                 const settings = await Settings.getSettings();
@@ -2131,14 +2113,8 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
          order.platformFee = Math.round(baseForFee * (platformFeePct / 100));
       }
 
-      // Distribute Earnings (Tailor)
-      const { distributeEarnings } = require("../../../utils/earningsEngine.js");
-      try {
-        await order.save({ session }); // Save the status to paid before distributing
-        await distributeEarnings(order._id);
-      } catch (err) {
-        console.error("Failed to distribute earnings automatically:", err);
-      }
+      // Tailor final settlement runs after the commit (needs committed delivered + paid state)
+      req._settleEarningsOrderId = order._id;
     }
   }
 
@@ -2253,6 +2229,15 @@ exports.completeDeliveryFlow = asyncHandler(async (req, res, next) => {
   }
 
   await session.commitTransaction();
+
+  if (req._settleEarningsOrderId) {
+    try {
+      const { distributeEarnings } = require("../../../utils/earningsEngine.js");
+      await distributeEarnings(req._settleEarningsOrderId);
+    } catch (err) {
+      console.error("Failed to distribute tailor earnings:", err);
+    }
+  }
 
   try {
     const { syncIssueFromReworkOrder } = require("../../../utils/issueReworkSync.js");

@@ -4,164 +4,133 @@ const Order = require("../models/Order.js");
 const { sendNotification } = require("./notification.js");
 const { getIO } = require("../config/socket.js");
 
+const ACTIVE_REQUEST_STATUSES = ["accepted", "otp_sent", "otp_verified", "measurements_uploaded"];
+
+const scheduleLabelFor = (request) =>
+  request.scheduledDate
+    ? `${request.scheduledDate}${request.scheduledTimeSlot ? " (" + request.scheduledTimeSlot + ")" : ""}`
+    : request.scheduledTime
+      ? new Date(request.scheduledTime).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+      : "As soon as possible";
+
 /**
- * Auto-assign the nearest online Measurement Executive to a MeasurementRequest.
- * Follows the same geospatial pattern as deliveryAssignment.js.
- * @param {Object} order - The Order document (must have deliveryAddress with location)
+ * Broadcast a paid home-measurement request to every online, verified executive inside
+ * the admin-set range (Settings → Partner Assignment). The first executive to accept
+ * claims it (see acceptRequest). If nobody accepts within the escalation window — or
+ * nobody is in range at all — admins are alerted to assign one manually.
+ *
+ * Kept under its historical name because payment verify / reject / createOrder call it.
+ * @param {Object} order - Order document (needs _id, orderId, customer, tailor, payment fields)
  */
 exports.autoAssignMeasurementExecutive = async (order) => {
   try {
-    // Check if advance payment is required but not paid yet
-    const isAdvanceRequired = (order.advancePaymentAmount > 0) && 
-                              order.advancePaymentStatus !== 'paid' && 
-                              order.paymentStatus !== 'paid';
+    if (!order) return false;
+    if (order.status === "cancelled") return false;
 
+    // Dispatch only after the advance (or full amount) is paid
+    const isAdvanceRequired =
+      order.advancePaymentAmount > 0 &&
+      order.advancePaymentStatus !== "paid" &&
+      order.paymentStatus !== "paid";
     if (isAdvanceRequired) {
-      console.log(`ℹ️ [measurementAssignment] Skipping auto-assignment for Order #${order.orderId}: Advance payment of ₹${order.advancePaymentAmount} is pending.`);
+      console.log(`ℹ️ [measurementAssignment] Order #${order.orderId}: waiting for advance payment before broadcasting.`);
       return false;
     }
 
-    // 1. Build the MeasurementRequest
     const request = await MeasurementRequest.findOne({ order: order._id });
     if (!request) {
       console.error("❌ [measurementAssignment] No MeasurementRequest found for order:", order.orderId);
       return false;
     }
 
-    const customerCoords = request.customerLocation?.coordinates;
-    if (!customerCoords || customerCoords.length < 2) {
-      console.warn("⚠️ [measurementAssignment] No customer coordinates for request:", request.requestId);
-      // Still try to find any available executive
-    }
+    // Already being handled (accepted by an executive, or assigned by admin)
+    if (request.status === "completed" || ACTIVE_REQUEST_STATUSES.includes(request.status)) return true;
+    if (request.status === "assigned" && request.executive) return true;
 
-    // Exclude executives who ALREADY have an active accepted request in progress
+    const { getAssignmentConfig, escalateMeasurementNow } = require("./assignmentEscalation.js");
+    const { measurementRadiusKm } = await getAssignmentConfig();
+
+    // Executives already on a visit, or who declined this request, are skipped
     const busyExecs = await MeasurementRequest.find({
-      status: { $in: ["accepted", "otp_sent", "otp_verified", "measurements_uploaded"] },
-      executive: { $ne: null }
+      status: { $in: ACTIVE_REQUEST_STATUSES },
+      executive: { $ne: null },
     }).distinct("executive");
+    const excludedUserIds = Array.from(
+      new Set([...(request.rejectedBy || []).map(String), ...busyExecs.map(String)])
+    );
 
-    const excludedUserIds = Array.from(new Set([
-      ...(request.rejectedBy || []).map(id => id.toString()),
-      ...busyExecs.map(id => id.toString())
-    ]));
-
-    // 2. Find nearest available, verified executive not in excludedUserIds
-    const query = {
+    const baseQuery = {
       availabilityStatus: "online",
       verificationStatus: { $in: ["verified", "approved"] },
       user: { $nin: excludedUserIds },
     };
 
+    const customerCoords = request.customerLocation?.coordinates;
     let candidates = [];
-
     if (customerCoords && customerCoords.length >= 2) {
       try {
         candidates = await MeasurementExecutive.find({
-          ...query,
+          ...baseQuery,
           currentLocation: {
             $near: {
-              $geometry: {
-                type: "Point",
-                coordinates: customerCoords,
-              },
-              $maxDistance: 25000, // 25km search radius
+              $geometry: { type: "Point", coordinates: customerCoords },
+              $maxDistance: Math.round(measurementRadiusKm * 1000),
             },
           },
-        })
-          .populate("user", "name phoneNumber profileImage")
-          .limit(10);
+        }).select("user").lean();
       } catch (geoError) {
         console.error("⚠️ [measurementAssignment] Geospatial search failed:", geoError.message);
       }
     }
-
-    // Fallback 1: get any available online executive
-    if (!candidates.length) {
-      candidates = await MeasurementExecutive.find(query)
-        .populate("user", "name phoneNumber profileImage")
-        .limit(5);
-    }
-
-    // Fallback 2: get any verified executive (so request is not stranded)
-    if (!candidates.length) {
-      candidates = await MeasurementExecutive.find({
-        verificationStatus: { $in: ["verified", "approved"] },
-        user: { $nin: request.rejectedBy || [] }
-      })
-        .populate("user", "name phoneNumber profileImage")
-        .limit(5);
-    }
-
-    // 3. Assign the nearest (first result from $near query)
-    const nearestExec = candidates[0];
-
-    if (nearestExec && nearestExec.user) {
-      const execUserId = nearestExec.user._id;
-
-      console.log(`\n================================`);
-      console.log(`📐 MEASUREMENT EXECUTIVE ASSIGNED`);
-      console.log(`Name: ${nearestExec.user.name}`);
-      console.log(`Request: ${request.requestId}`);
-      console.log(`Order: ${order.orderId}`);
-      console.log(`================================\n`);
-
-      // Calculate approximate distance
-      let distanceKm = 0;
-      if (customerCoords && nearestExec.currentLocation?.coordinates?.length >= 2) {
-        const [lng1, lat1] = customerCoords;
-        const [lng2, lat2] = nearestExec.currentLocation.coordinates;
-        const R = 6371;
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLng = ((lng2 - lng1) * Math.PI) / 180;
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos((lat1 * Math.PI) / 180) *
-            Math.cos((lat2 * Math.PI) / 180) *
-            Math.sin(dLng / 2) *
-            Math.sin(dLng / 2);
-        distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        distanceKm = Math.round(distanceKm * 10) / 10;
+    // Online executives whose location isn't known yet still get the request
+    const noLocation = await MeasurementExecutive.find({
+      ...baseQuery,
+      $or: [{ currentLocation: null }, { "currentLocation.coordinates": { $size: 0 } }, { currentLocation: { $exists: false } }],
+    }).select("user").lean();
+    const seen = new Set(candidates.map((c) => String(c.user)));
+    for (const c of noLocation) {
+      if (!seen.has(String(c.user))) {
+        candidates.push(c);
+        seen.add(String(c.user));
       }
+    }
+    const candidateIds = candidates.map((c) => c.user).filter(Boolean);
 
-      // Update request
-      request.executive = execUserId;
-      request.status = "assigned";
-      request.distance = distanceKm;
-      await request.save();
+    // Open the request for claiming
+    request.executive = null;
+    request.status = "pending";
+    request.broadcastAt = new Date();
+    request.broadcastCandidates = candidateIds;
+    request.adminEscalatedAt = null;
+    await request.save();
 
-      // Update order status
-      order.status = "measurement-assigned";
-      order.trackingHistory.push({
-        status: "measurement-assigned",
-        message: `Measurement executive ${nearestExec.user.name} has been assigned.`,
+    const orderDoc = await Order.findById(order._id);
+    if (orderDoc && ["accepted", "measurement-requested", "measurement-assigned"].includes(orderDoc.status)) {
+      orderDoc.status = "measurement-requested";
+      orderDoc.trackingHistory.push({
+        status: "measurement-requested",
+        message: candidateIds.length
+          ? `Measurement request sent to ${candidateIds.length} nearby executive(s).`
+          : "No measurement executive nearby right now. Admin will assign one.",
         timestamp: new Date(),
       });
-      await order.save();
+      await orderDoc.save();
+    }
 
-      // Get customer and tailor info for notification
-      const User = require("../models/User.js");
-      const customer = await User.findById(order.customer).lean();
-      const tailor = await User.findById(order.tailor).lean();
+    if (!candidateIds.length) {
+      console.log(`⚠️ [measurementAssignment] No executive within ${measurementRadiusKm} km for ${request.requestId}`);
+      await escalateMeasurementNow(request._id, `no measurement executive online within ${measurementRadiusKm} km`);
+      return false;
+    }
 
-      // Build Google Maps URL
-      const mapsUrl = customerCoords
-        ? `https://www.google.com/maps?q=${customerCoords[1]},${customerCoords[0]}`
-        : "";
-
-      // Determine formatted schedule label
-      const scheduleLabel = request.scheduledDate 
-        ? `${request.scheduledDate}${request.scheduledTimeSlot ? ' (' + request.scheduledTimeSlot + ')' : ''}`
-        : (request.scheduledTime ? new Date(request.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'As soon as possible');
-
-      // Notify the assigned executive
-      const notifTitle = "New Measurement Request! 📐";
-      const notifMessage = `Visit scheduled for ${scheduleLabel} for order #${order.orderId}. Customer: ${customer?.name || "N/A"}.`;
-
+    const scheduleLabel = scheduleLabelFor(request);
+    const io = getIO();
+    for (const execUserId of candidateIds) {
       await sendNotification({
         recipient: execUserId,
         type: "NEW_MEASUREMENT_REQUEST",
-        title: notifTitle,
-        message: notifMessage,
+        title: "New Measurement Request! 📐",
+        message: `Visit for order #${order.orderId} (${scheduleLabel}). First to accept gets it.`,
         data: {
           requestId: request._id,
           requestIdStr: request.requestId,
@@ -173,90 +142,31 @@ exports.autoAssignMeasurementExecutive = async (order) => {
           targetUrl: "/executive/requests",
         },
       });
-
-      // Socket.IO: emit to the executive
-      const io = getIO();
       if (io) {
         io.to(`user_${execUserId}`).emit("new_measurement_request", {
           requestId: request._id,
           requestIdStr: request.requestId,
           orderId: order._id,
           orderIdStr: order.orderId,
-          customerName: customer?.name || "N/A",
-          customerPhone: customer?.phoneNumber || "N/A",
-          tailorName: tailor?.name || "N/A",
           address: request.customerAddress,
-          distance: distanceKm,
-          mapsUrl,
           scheduledTime: request.scheduledTime,
           scheduledDate: request.scheduledDate,
           scheduledTimeSlot: request.scheduledTimeSlot,
-          status: "assigned",
-        });
-
-        // Notify customer
-        io.to(`user_${order.customer}`).emit("order_status_updated", {
-          orderId: order.orderId,
-          _id: order._id,
-          status: order.status,
-          message: "Measurement executive assigned to your order.",
-        });
-
-        // Notify tailor
-        io.to(`user_${order.tailor}`).emit("order_status_updated", {
-          orderId: order.orderId,
-          _id: order._id,
-          status: order.status,
-          message: "Measurement executive assigned.",
+          status: "pending",
         });
       }
-
-      // Notify Admin that an executive has been assigned
-      await sendNotification({
-        recipient: "admins",
-        type: "MEASUREMENT_EXECUTIVE_ASSIGNED",
-        title: "Measurement Executive Assigned 📐",
-        message: `Executive ${nearestExec.user.name} assigned to Order #${order.orderId}. Scheduled visit: ${scheduleLabel}.`,
-        data: {
-          requestId: request._id,
-          orderId: order._id,
-          executiveId: execUserId,
-          executiveName: nearestExec.user.name,
-          scheduledDate: request.scheduledDate,
-          scheduledTimeSlot: request.scheduledTimeSlot,
-          scheduledTime: request.scheduledTime,
-          targetUrl: "/admin/orders",
-        },
-      });
-
-      return true;
-    } else {
-      // No executive found — keep as pending, notify admin
-      console.log(`⚠️ No measurement executive available for request ${request.requestId}`);
-
-      const scheduleLabel = request.scheduledDate 
-        ? `${request.scheduledDate}${request.scheduledTimeSlot ? ' (' + request.scheduledTimeSlot + ')' : ''}`
-        : (request.scheduledTime ? new Date(request.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'As soon as possible');
-
-      await sendNotification({
-        recipient: "admins",
-        type: "MEASUREMENT_NO_EXECUTIVE",
-        title: "⚠️ No Measurement Executive Available",
-        message: `No measurement executive is available nearby for request ${request.requestId} (Order: #${order.orderId}, Scheduled: ${scheduleLabel}). Manual assignment required.`,
-        data: {
-          requestId: request._id,
-          orderId: order._id,
-          scheduledDate: request.scheduledDate,
-          scheduledTimeSlot: request.scheduledTimeSlot,
-          scheduledTime: request.scheduledTime,
-          targetUrl: "/admin/measurement-executives",
-        },
-      });
-
-      return false;
     }
+
+    if (io) {
+      const payload = { orderId: order.orderId, _id: order._id, status: orderDoc?.status || order.status };
+      io.to(`user_${order.customer}`).emit("order_status_updated", payload);
+      io.to(`user_${order.tailor}`).emit("order_status_updated", payload);
+    }
+
+    console.log(`📐 [measurementAssignment] Broadcast ${request.requestId} to ${candidateIds.length} executive(s) within ${measurementRadiusKm} km`);
+    return true;
   } catch (error) {
-    console.error("❌ [measurementAssignment] Auto-assignment failed:", error.message);
+    console.error("❌ [measurementAssignment] Broadcast failed:", error.message);
     return false;
   }
 };

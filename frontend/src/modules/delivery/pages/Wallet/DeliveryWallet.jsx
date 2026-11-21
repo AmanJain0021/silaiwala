@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveRazorpayKey, createRazorpayInstance } from '../../../../utils/razorpay';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Wallet,
@@ -197,7 +198,7 @@ const DeliveryWallet = () => {
             if (!rzpOrderRes.data.success) throw new Error('Razorpay order creation failed');
 
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
+                key: resolveRazorpayKey(rzpOrderRes.data.data),
                 amount: rzpOrderRes.data.data.amount,
                 currency: "INR",
                 name: appName,
@@ -232,7 +233,7 @@ const DeliveryWallet = () => {
                 }
             };
 
-            const rzp = new window.Razorpay(options);
+            const rzp = await createRazorpayInstance(options);
             rzp.on('payment.failed', function (response) {
                 toast.error(response.error.description || 'Payment failed');
             });

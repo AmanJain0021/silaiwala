@@ -19,6 +19,17 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     const order = await Order.findById(orderId).populate("tailor customer");
     if (!order) return false;
 
+    // Flow guard: never broadcast for cancelled / finished orders, and never send a fabric
+    // pickup before the tailor accepted + customer paid + asked for pickup.
+    if (["cancelled", "delivered", "order-completed", "product-delivered"].includes(order.status)) {
+      console.log(`ℹ️ [deliveryAssignment] Skip ${cycle} for ${order.orderId}: order is ${order.status}`);
+      return false;
+    }
+    if (cycle === "pickup" && order.status === "pending" && !order.isRework) {
+      console.log(`ℹ️ [deliveryAssignment] Skip pickup for ${order.orderId}: tailor has not accepted yet`);
+      return false;
+    }
+
     const query = {
       isAvailable: true,
       cashBlocked: { $ne: true },
@@ -99,7 +110,10 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     }
 
     let candidateRiders = [];
-    const searchRadius = order.currentSearchRadius || DEFAULT_SEARCH_RADIUS_M;
+    // Broadcast range is set by admin (Settings → Partner Assignment)
+    const { getAssignmentConfig } = require("./assignmentEscalation.js");
+    const { deliveryRadiusKm } = await getAssignmentConfig();
+    const searchRadius = Math.round(deliveryRadiusKm * 1000) || DEFAULT_SEARCH_RADIUS_M;
 
     if (startCoords) {
       try {
@@ -153,13 +167,8 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
           .map((item) => item.rider);
       }
 
-      // Last resort: notify all available partners if no specific rider matched within radius
-      if (candidateRiders.length === 0 && allRiders.length > 0) {
-        console.warn(
-          `⚠️ [deliveryAssignment] Broadcasting to all ${allRiders.length} available partners.`
-        );
-        candidateRiders = allRiders;
-      }
+      // No "notify everyone" fallback: requests stay inside the admin range. If nobody is
+      // in range, admins are alerted below to assign a partner manually.
     }
 
     if (candidateRiders.length > 0) {
@@ -176,6 +185,7 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
       order.pendingPartnerCandidates = candidateIds;
       order.requestSentAt = new Date();
       order.currentSearchRadius = searchRadius;
+      order.deliveryEscalatedAt = null; // new broadcast → may escalate again after the timeout
 
       // Clean any stale assignments from previous cycle/failure (must $unset, not undefined)
       if (cycle === "pickup") {
@@ -346,22 +356,20 @@ exports.autoAssignDelivery = async (orderId, cycle = "pickup") => {
     } else {
       order.dropoffDeliveryStatus = "pending";
     }
+    order.deliveryEscalatedAt = null;
     order.trackingHistory.push({
       status: "searching-delivery-partner",
-      message: `No partners found within ${searchRadius / 1000}km. Order left in open pool.`,
+      message: `No delivery partners available within ${searchRadius / 1000}km. Admin has been asked to assign one.`,
       timestamp: new Date(),
     });
     await order.save();
 
-    const io = tryGetIO();
-    if (io) {
-      io.to("delivery_partners").emit("receive_new_order", {
-        orderId: order.orderId,
-        _id: order._id,
-        status: order.status,
-        taskType: cycle === "pickup" ? "fabric-pickup" : "order-delivery",
-      });
-      console.log(`📡 Socket: Broadcasted pool task ${order.orderId} to general delivery_partners room`);
+    // Nobody in range → alert admins right away (don't wait for the timeout)
+    try {
+      const { escalateDeliveryNow } = require("./assignmentEscalation.js");
+      await escalateDeliveryNow(order._id, cycle, `no delivery partner online within ${searchRadius / 1000} km`);
+    } catch (escErr) {
+      console.error("Admin escalation (no partners) failed:", escErr.message);
     }
     return false;
   } catch (error) {
@@ -382,11 +390,11 @@ exports.checkStuckDeliveryAssignments = async () => {
 
     const stuckOrders = await Order.find({
       status: {
-        $in: ["pending", "fabric-ready-for-pickup", "ready", "ready-for-delivery", "ready-for-pickup"],
+        $in: ["fabric-ready-for-pickup", "ready", "ready-for-delivery", "ready-for-pickup"],
       },
       requestSentAt: { $lt: thresholdTime },
       $or: [
-        { pickupPartner: null, status: { $in: ["pending", "fabric-ready-for-pickup"] } },
+        { pickupPartner: null, status: "fabric-ready-for-pickup" },
         {
           dropoffPartner: null,
           status: { $in: ["ready", "ready-for-delivery", "ready-for-pickup"] },
@@ -401,7 +409,7 @@ exports.checkStuckDeliveryAssignments = async () => {
     );
 
     for (const order of stuckOrders) {
-      const isFabricPhase = ["pending", "fabric-ready-for-pickup"].includes(order.status);
+      const isFabricPhase = order.status === "fabric-ready-for-pickup";
       const cycle = isFabricPhase ? "pickup" : "dropoff";
 
       const currentRadius = order.currentSearchRadius || DEFAULT_SEARCH_RADIUS_M;

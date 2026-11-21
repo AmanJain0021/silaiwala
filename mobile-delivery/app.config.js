@@ -17,14 +17,14 @@ module.exports = {
     name: 'Sewzella Delivery',
     slug: 'sewzella-delivery',
     scheme: 'sewzelladelivery',
-    version: '1.0.4',
+    version: '1.0.5',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     backgroundColor: '#ffffff',
     android: {
       package: 'com.sewzella.delivery',
-      versionCode: 20,
+      versionCode: 21,
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: BRAND_BG,

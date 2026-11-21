@@ -804,6 +804,36 @@ const AdminSettings = () => {
                                     )}
                                 </div>
                             </div>
+
+                            <div className="pt-6 border-t border-gray-100">
+                                <h3 className="text-lg font-black text-gray-900">Partner Assignment</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">
+                                    Requests are broadcast to partners inside this range. If nobody accepts in time, admins get an alert to assign manually.
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+                                    {[
+                                        { field: 'deliveryRadiusKm', label: 'Delivery Partner Range (km)', def: 15, min: 1, max: 100, hint: 'Fabric pickup & order delivery requests' },
+                                        { field: 'measurementRadiusKm', label: 'Measurement Executive Range (km)', def: 25, min: 1, max: 100, hint: 'Tailor-at-home visit requests' },
+                                        { field: 'adminEscalationMinutes', label: 'Alert Admin After (minutes)', def: 10, min: 1, max: 180, hint: 'When no partner/executive accepts' },
+                                    ].map(({ field, label, def, min, max, hint }) => (
+                                        <div key={field} className="min-w-0">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5">{label}</label>
+                                            <input
+                                                type="number"
+                                                min={min}
+                                                max={max}
+                                                value={settings.assignmentConfig?.[field] === '' ? '' : (settings.assignmentConfig?.[field] ?? def)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    updateNestedSetting('assignmentConfig', field, val === '' ? '' : Number(val));
+                                                }}
+                                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-primary transition-colors shadow-sm"
+                                            />
+                                            <p className="text-[10px] text-gray-500 font-medium mt-1.5">{hint}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
 

@@ -508,16 +508,17 @@ const DeliveryOrderDetail = () => {
   const isFinalDelivery = order?.taskType === 'order-delivery' ||
     ['out-for-delivery', 'ready-for-delivery', 'ready-for-pickup', 'ready'].includes(order?.status);
   
-  const calculatedTotal = (order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid')
+  // Amount the partner must collect at the door: 0 once the order is fully paid
+  const calculatedTotal = order?.paymentStatus === 'paid' ? 0 : (order?.remainingPaymentAmount > 0 && order?.remainingPaymentStatus !== 'paid')
     ? order.remainingPaymentAmount
     : (order?.isTryAndBuy 
         ? order.items.reduce((sum, item) => selectedItemIds.has(item.productId || item._id) ? sum + (item.price * item.quantity) : sum, 0)
         : order?.totalAmount || order?.total || 0);
 
   // Gate final complete on unpaid remaining (or COD/cash), not just UI labels
-  const isCod = (Number(order?.remainingPaymentAmount || 0) > 0 && order?.remainingPaymentStatus !== 'paid') ||
+  const isCod = order?.paymentStatus !== 'paid' && ((Number(order?.remainingPaymentAmount || 0) > 0 && order?.remainingPaymentStatus !== 'paid') ||
     order?.paymentMethod === 'cod' ||
-    order?.paymentMethod === 'cash';
+    order?.paymentMethod === 'cash');
   const handleCancelOrder = () => {
     setIsCancellationModalOpen(true);
   };

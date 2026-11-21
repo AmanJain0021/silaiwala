@@ -284,7 +284,7 @@ const Overview = () => {
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Order #{order.orderId}</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[10px] text-[#843D9B] font-black mb-1">₹{order.totalAmount || 0}</p>
+                                                <p className="text-[10px] text-[#843D9B] font-black mb-1">₹{Math.round(Number(order.tailorEarning) || (order.items || []).reduce((s, it) => s + ((Number(it.price) || 0) + (it.styleAddons || []).reduce((t, a) => t + (Number(a?.price) || 0), 0)) * (Number(it.quantity) || 1), 0))}</p>
                                                 <span className={`text-[8px] font-black px-2 py-1 rounded-lg border uppercase tracking-widest ${
                                                     order.status === 'pending'
                                                         ? 'text-rose-600 bg-rose-50 border-rose-100'
